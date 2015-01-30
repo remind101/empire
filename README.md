@@ -70,7 +70,7 @@ Empire is heavily influenced by Heroku and the philosophies described in [The Tw
 
 There are three phases during deployment:
 
-1. **Build**: This phase happens after a git push to GitHub, which triggers a docker build. Once the image is built, it gets tagged with the git sha that triggered the build.
+1. **Build**: This phase happens after a git push to GitHub, which triggers a docker build. Once the image is built, it gets tagged with the git sha that triggered the build. This is in contrast to systems like heroku, where the build phase always happens during the deployment process. The primary advantage behind Empire's philosophy, is that once a git sha has been built, deployment is nearly instant.
 2. **Release**: This phase happens when a developer triggers a deploy for a git sha via marvin. The git sha is resolved to a docker image, empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
 3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
 
