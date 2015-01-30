@@ -12,7 +12,7 @@ Empire is a distributed system for deploying and running
 [12factor](http://12factor.net/) [Docker](https://www.docker.com/) based
 applications in a compute cluster. The following components are employed:
 
-**[Centurion][centurion]** This is controller API for deploying, scaling, running 1 off processes, etc.
+**[Centurion][centurion]** The controller API for deploying, scaling, running 1 off processes, etc.
 
 **[Celsus][celsus]** Manages application configuration and versioning.
 
