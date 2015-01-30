@@ -1,39 +1,21 @@
-consul:
-  command: -server -bootstrap -advertise 192.168.59.103 -ui-dir /ui
-  image: progrium/consul:latest
+centurion:
+  command: -sluggy=http://sluggy:8080 -envy=http://envy:8080
+  build: ../centurion
   ports:
-    - "8300:8300"
-    - "8400:8400"
-    - "8500:8500"
-    - "8500:53/udp"
-
-lb:
-  build: ./
+    - "8080:8080"
   links:
-    - consul
-  ports:
-    - "8080:80"
+    - sluggy
+    - envy
 
-registrator:
-  command: consul://consul:8500
-  image: progrium/registrator:latest
-  links:
-    - consul
+sluggy:
+  command: -socket=unix:///tmp/docker.sock -registry="quay.io"
+  build: ../sluggy
+  expose:
+    - "8080"
   volumes:
     - "/var/run/docker.sock:/tmp/docker.sock"
 
-centurion:
-  command: -sluggy=http://sluggy.service.consul:8081 -envy=http://envy.service.consul:8082
-  image: centurion
-  ports:
-    - "8080"
-
-sluggy:
-  image: sluggy
-  ports:
-    - "8080"
-
 envy:
-  image: envy
-  ports:
+  build: ../envy
+  expose:
     - "8080"
