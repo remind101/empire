@@ -9,7 +9,7 @@ away from Heroku.
 change as we try to productionize it.
 
 Empire is a distributed system for deploying and running
-[12factor](http://12factor.net/) [Docker](https://www.docker.com/) based
+[12factor][12factor] [Docker][docker] based
 applications in a compute cluster. The following components are employed:
 
 **[Centurion][centurion]** The controller API for deploying, scaling, running 1 off processes, etc.
@@ -45,6 +45,18 @@ your GOPATH then:
 $ fig up
 ```
 
+## Architecture
+
+Empire is heavily influenced by the philosophies describe in [The Twelve-Factor App][12factor].
+
+### Phases
+
+There are three phases during deployment:
+
+1. **Build**: This phase happens after a git push to GitHub, which triggers a docker build. Once the image is built, it gets tagged with the git sha that triggered the build.
+2. **Release**: This phase happens when a developer triggers a deploy for a git sha via hubot. The git sha is resolved to a docker image, empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
+3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
+
 [centurion]: https://github.com/remind101/centurion
 [celsus]: https://github.com/remind101/celsus
 [sluggy]: https://github.com/remind101/sluggy
@@ -57,3 +69,5 @@ $ fig up
 [registrator]: https://github.com/progrium/registrator
 [shipr]: https://github.com/remidn101/shipr
 [hubotdeploy]: https://github.com/remidn101/hubot-deploy
+[12factor]: http://12factor.net/
+[docker]: https://www.docker.com/
