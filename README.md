@@ -22,7 +22,7 @@ applications in a compute cluster. The following components are employed:
 
 **[Ignitr][ignitr]** Our distributed init system.
 
-**[Rectory][rectory]** You don't want to know.
+**[Pantheon][pantheon]** Stores and exposes releases.
 
 **[Quay][quay]** Quay is used to automatically build docker images when we push commits to GitHub.
 
