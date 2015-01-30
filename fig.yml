@@ -1,11 +1,19 @@
 consul:
-  command: -server -bootstrap
+  command: -server -bootstrap -advertise 192.168.59.103 -ui-dir /ui
   image: progrium/consul:latest
   ports:
     - "8300:8300"
     - "8400:8400"
     - "8500:8500"
     - "8500:53/udp"
+
+lb:
+  build: ./
+  links:
+    - consul
+  ports:
+    - "8080:80"
+
 registrator:
   command: consul://consul:8500
   image: progrium/registrator:latest
@@ -13,3 +21,19 @@ registrator:
     - consul
   volumes:
     - "/var/run/docker.sock:/tmp/docker.sock"
+
+centurion:
+  command: -sluggy=http://sluggy.service.consul:8081 -envy=http://envy.service.consul:8082
+  image: centurion
+  ports:
+    - "8080"
+
+sluggy:
+  image: sluggy
+  ports:
+    - "8080"
+
+envy:
+  image: envy
+  ports:
+    - "8080"
