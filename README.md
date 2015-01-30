@@ -62,6 +62,10 @@ The same way you would with Heroku, but easier:
    marvin deploy my-service to staging
    ```
 
+## Can I deploy with Git?
+
+No.
+
 ## Architecture
 
 Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor], as well as similar projects such as [flynn][flynn] and [deis][deis]
