@@ -51,10 +51,13 @@ The same way you would with Heroku, but easier:
 
 1. Create a github repo.
 2. Add a [Dockerfile](https://docs.docker.com/reference/builder/) to run your app. Include a line to copy the Procfile to the root of the container:
+
    ```
    ADD ./Procfile /
    ```
+
 3. Deploy your service with marvin:
+
    ```
    marvin deploy my-service to staging
    ```
