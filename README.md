@@ -47,7 +47,7 @@ $ fig up
 
 ## Architecture
 
-Empire is heavily influenced by the philosophies describe in [The Twelve-Factor App][12factor].
+Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor].
 
 ### Phases
 
