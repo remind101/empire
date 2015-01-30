@@ -47,7 +47,7 @@ $ fig up
 
 ## Architecture
 
-Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor].
+Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor], as well as similar projects such as [flynn][flynn] and [deis][deis]
 
 ### Phases
 
@@ -71,3 +71,5 @@ There are three phases during deployment:
 [hubotdeploy]: https://github.com/remidn101/hubot-deploy
 [12factor]: http://12factor.net/
 [docker]: https://www.docker.com/
+[flynn]: https://flynn.io/
+[deis]: http://deis.io/
