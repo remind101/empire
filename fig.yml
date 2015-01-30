@@ -1,0 +1,15 @@
+consul:
+  command: -server -bootstrap
+  image: progrium/consul:latest
+  ports:
+    - "8300:8300"
+    - "8400:8400"
+    - "8500:8500"
+    - "8500:53/udp"
+registrator:
+  command: consul://consul:8500
+  image: progrium/registrator:latest
+  links:
+    - consul
+  volumes:
+    - "/var/run/docker.sock:/tmp/docker.sock"
