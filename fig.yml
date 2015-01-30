@@ -1,11 +1,11 @@
 centurion:
-  command: -sluggy=http://sluggy:8080 -envy=http://envy:8080
+  command: -sluggy=http://sluggy:8080 -celsus=http://celsus:8080
   build: ../centurion
   ports:
     - "8080:8080"
   links:
     - sluggy
-    - envy
+    - celsus
 
 sluggy:
   command: -socket=unix:///tmp/docker.sock -registry="quay.io"
@@ -15,7 +15,7 @@ sluggy:
   volumes:
     - "/var/run/docker.sock:/tmp/docker.sock"
 
-envy:
-  build: ../envy
+celsus:
+  build: ../celsus
   expose:
     - "8080"
