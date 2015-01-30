@@ -62,7 +62,7 @@ There are three phases during deployment:
 [sluggy]: https://github.com/remind101/sluggy
 [phalanx]: https://github.com/remind101/phalanx
 [ignitr]: https://github.com/remind101/ignitr
-[rectory]: https://github.com/remind101/rectory
+[pantheon]: https://github.com/remind101/pantheon
 [quay]: https://quay.io
 [quayd]: https://github.com/remind101/quayd
 [consul]: https://github.com/hashicorp/consul
