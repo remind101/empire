@@ -1,11 +1,12 @@
 centurion:
-  command: -sluggy=http://sluggy:8080 -celsus=http://celsus:8080
+  command: -sluggy=http://sluggy:8080 -celsus=http://celsus:8080 -pantheon=http://pantheon:8080
   build: ../centurion
   ports:
     - "8080:8080"
   links:
     - sluggy
     - celsus
+    - pantheon
 
 sluggy:
   command: -socket=unix:///tmp/docker.sock -registry="quay.io"
@@ -17,5 +18,10 @@ sluggy:
 
 celsus:
   build: ../celsus
+  expose:
+    - "8080"
+
+pantheon:
+  build: ../pantheon
   expose:
     - "8080"
