@@ -45,7 +45,7 @@ your GOPATH then:
 $ fig up
 ```
 
-## How to I deploy to Empire?
+## How do I deploy to Empire?
 
 The same way you would with Heroku, but easier:
 
