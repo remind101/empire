@@ -20,7 +20,7 @@ applications in a compute cluster. The following components are employed:
 
 **[Phalanx][phalanx]** Manages the desired instance counts for runnable processes.
 
-**[Ignitr][ignitr]** Our distributed init system.
+**[Legion][legion]** Our distributed init system.
 
 **[Pantheon][pantheon]** Stores and exposes releases.
 
@@ -82,7 +82,7 @@ There are three phases during deployment:
 [celsus]: https://github.com/remind101/celsus
 [sluggy]: https://github.com/remind101/sluggy
 [phalanx]: https://github.com/remind101/phalanx
-[ignitr]: https://github.com/remind101/ignitr
+[legion]: https://github.com/remind101/legion
 [pantheon]: https://github.com/remind101/pantheon
 [quay]: https://quay.io
 [quayd]: https://github.com/remind101/quayd
