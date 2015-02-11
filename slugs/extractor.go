@@ -20,6 +20,23 @@ type Extractor interface {
 	Extract(*Image) (ProcessMap, error)
 }
 
+// NewExtractor returns a new Extractor instance.
+func NewExtractor(socket, registry, certPath string) (Extractor, error) {
+	if socket == "" {
+		return nil, nil
+	}
+
+	c, err := newDockerClient(socket, certPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProcfileExtractor{
+		Registry: registry,
+		Client:   c,
+	}, nil
+}
+
 // extractor is a fake implementation of the Extractor interface.
 type extractor struct{}
 
@@ -222,4 +239,15 @@ func firstFile(tr *tar.Reader) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func newDockerClient(socket, certPath string) (*docker.Client, error) {
+	if certPath != "" {
+		cert := certPath + "/cert.pem"
+		key := certPath + "/key.pem"
+		ca := ""
+		return docker.NewTLSClient(socket, cert, key, ca)
+	}
+
+	return docker.NewClient(socket)
 }

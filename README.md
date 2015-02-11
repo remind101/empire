@@ -3,6 +3,16 @@
 Empire is Remind's next generation PaaS, which we will eventually use to migrate
 away from Heroku.
 
+## Usage
+
+```console
+Usage of ./build/empire:
+  -docker.cert="": Path to certificate to use for TLS.
+  -docker.registry="": The docker registry to pull container images from. Leave blank to use the official docker registry.
+  -docker.socket="tcp://localhost:2375": The docker socket to connect to the docker api. Leave blank to use a fake extractor.
+  -port="8080": The port to run the API on.
+```
+
 ## Components
 
 **DISCLAIMER**: Empire is incredibly young and a lot of things will most likely
