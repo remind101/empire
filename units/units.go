@@ -14,6 +14,8 @@ var (
 	ErrProcessTypeNotFound = errors.New("Process type not found for app")
 )
 
+type UnitMap map[slugs.ProcessType]Unit
+
 type Unit struct {
 	Release       *releases.Release
 	ProcessType   slugs.ProcessType `json:"process_type"`
@@ -48,7 +50,7 @@ func NewService(r Repository) *Service {
 	return &Service{Repository: r}
 }
 
-// Create creates a new release for a repo
+// CreateRelease creates a new release for a repo
 //
 // If existing process definitions exist, they are updated with the new release
 // Else a process definition is created for each process type in the release

@@ -6,15 +6,12 @@ import (
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/consulutil"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
 )
 
 func TestCreateRelease(t *testing.T) {
-	c, s := consulutil.MakeClient(t)
-	defer s.Stop()
-	ps := NewService(NewConsulRepository(c))
+	ps := NewService(newRepository())
 
 	err := ps.CreateRelease(buildRelease("api", "1", slugs.ProcessMap{
 		"web":      "./web",
@@ -46,9 +43,7 @@ func TestCreateRelease(t *testing.T) {
 }
 
 func TestScale(t *testing.T) {
-	c, s := consulutil.MakeClient(t)
-	defer s.Stop()
-	ps := NewService(NewConsulRepository(c))
+	ps := NewService(newRepository())
 
 	rel := buildRelease("api", "1", slugs.ProcessMap{
 		"web": "./web",
@@ -70,9 +65,7 @@ func TestScale(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	c, s := consulutil.MakeClient(t)
-	defer s.Stop()
-	ps := NewService(NewConsulRepository(c))
+	ps := NewService(newRepository())
 
 	rel := buildRelease("api", "1", slugs.ProcessMap{
 		"web":      "./web",
