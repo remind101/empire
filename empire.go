@@ -1,4 +1,4 @@
-package empire
+package empire // import "github.com/remind101/empire"
 
 import (
 	"github.com/remind101/empire/apps"
