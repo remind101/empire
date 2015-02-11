@@ -10,11 +10,18 @@ import (
 	"github.com/remind101/empire/slugs"
 )
 
+// ID represents the unique identifier for a Release.
+type ID string
+
+// Version represents the auto incremented human friendly version number of the
+// release.
+type Version string
+
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID        string
-	Version   string
+	ID        ID
+	Version   Version
 	App       *apps.App
 	Config    *configs.Config
 	Slug      *slugs.Slug
@@ -68,9 +75,9 @@ func (p *repository) Create(app *apps.App, config *configs.Config, slug *slugs.S
 	}
 
 	r := &Release{
-		ID:        strconv.Itoa(p.id),
+		ID:        ID(strconv.Itoa(p.id)),
+		Version:   Version(fmt.Sprintf("v%d", version)),
 		App:       app,
-		Version:   fmt.Sprintf("v%d", version),
 		Config:    config,
 		Slug:      slug,
 		CreatedAt: createdAt.UTC(),
