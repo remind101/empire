@@ -106,6 +106,16 @@ func (p *repository) Head(id apps.ID) (*Release, error) {
 	return set[len(set)-1], nil
 }
 
+// Service provides methods for interacting with releases.
 type Service struct {
 	Repository
+}
+
+// NewService returns a new Service instance.
+func NewService(r Repository) *Service {
+	if r == nil {
+		r = newRepository()
+	}
+
+	return &Service{Repository: r}
 }

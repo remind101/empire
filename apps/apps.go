@@ -25,6 +25,11 @@ type Service struct {
 	Repository
 }
 
+// NewService returns a new Service instance.
+func NewService(r Repository) *Service {
+	return &Service{}
+}
+
 func (s *Service) FindOrCreateByRepo(repo repos.Repo) (*App, error) {
 	a, err := s.Repository.FindByRepo(repo)
 	if err != nil {

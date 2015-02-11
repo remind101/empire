@@ -93,6 +93,22 @@ type Service struct {
 	Extractor Extractor
 }
 
+// NewService returns a new Service instance.
+func NewService(r Repository, e Extractor) *Service {
+	if r == nil {
+		r = newRepository()
+	}
+
+	if e == nil {
+		e = newExtractor()
+	}
+
+	return &Service{
+		Repository: r,
+		Extractor:  e,
+	}
+}
+
 // CreateByImageID extracts the process types from the image, then creates a new
 // slug.
 func (s *Service) CreateByImage(image *Image) (*Slug, error) {

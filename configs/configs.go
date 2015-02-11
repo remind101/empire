@@ -87,6 +87,15 @@ type Service struct {
 	Repository
 }
 
+// NewService returns a new Service instance.
+func NewService(r Repository) *Service {
+	if r == nil {
+		r = newRepository()
+	}
+
+	return &Service{Repository: r}
+}
+
 // Apply merges the provided Vars into the latest Config and returns a new
 // Config.
 func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
