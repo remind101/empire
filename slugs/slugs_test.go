@@ -38,7 +38,7 @@ func TestRepository(t *testing.T) {
 	}
 }
 
-func TestService_CreateByImageID(t *testing.T) {
+func TestServiceCreateByImageID(t *testing.T) {
 	s := &Service{
 		Repository: newRepository(),
 		Extractor:  &extractor{},
@@ -60,7 +60,7 @@ func TestService_CreateByImageID(t *testing.T) {
 	}
 }
 
-func TestService_CreateByImageID_AlreadyExists(t *testing.T) {
+func TestServiceCreateByImageIDAlreadyExists(t *testing.T) {
 	s := &Service{
 		Repository: newRepository(),
 		Extractor:  &extractor{},
