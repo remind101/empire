@@ -1,0 +1,70 @@
+{
+  "builders": [{
+    "type": "virtualbox-iso",
+    "virtualbox_version_file": ".vbox_version",
+    "headless": false,
+
+    "guest_os_type": "Ubuntu_64",
+    "disk_size": 40960,
+
+    "iso_url": "http://releases.ubuntu.com/14.04/ubuntu-14.04.1-server-amd64.iso",
+    "iso_checksum": "401c5f6666fe2879ac3a9a3247b487723410cf88",
+    "output_directory": "build",
+    "vm_name": "empire-base",
+    "iso_checksum_type": "sha1",
+
+    "boot_command": [
+      "<esc><esc><enter><wait>",
+      "/install/vmlinuz noapic preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+      "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
+      "hostname={{ .Name }} ",
+      "fb=false debconf/frontend=noninteractive ",
+      "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA keyboard-configuration/variant=USA console-setup/ask_detect=false ",
+      "initrd=/install/initrd.gz -- <enter>"
+    ],
+    "boot_wait": "8s",
+
+    "http_directory": "http",
+    "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+
+    "ssh_username": "vagrant",
+    "ssh_password": "vagrant",
+    "ssh_port": 22,
+    "ssh_wait_timeout": "10000s",
+
+    "vboxmanage": [
+      ["modifyvm", "{{.Name}}", "--memory", "512"],
+      ["modifyvm", "{{.Name}}", "--cpus", "1"]
+    ],
+
+    "shutdown_command": "echo 'vagrant'|sudo -S /sbin/halt -h -p"
+  },
+  {
+    "type": "amazon-ebs",
+    "name": "ubuntu-east",
+    "access_key": "",
+    "secret_key": "",
+    "region": "us-east-1",
+    "source_ami": "ami-018c9568",
+    "instance_type": "m3.medium",
+    "ssh_username": "ubuntu",
+    "ssh_timeout": "5m",
+    "ami_name": "Base Empire Ubuntu 14.04 Image {{isotime | clean_ami_name}}"
+  }],
+
+  "provisioners": [{
+    "type": "shell",
+    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+    "scripts": [
+      "scripts/vagrant.sh",
+      "scripts/base.sh"
+    ]
+  }],
+
+  "post-processors": [{
+    "type": "compress",
+    "output": "empire_base.tar.gz",
+    "only": ["virtualbox-iso"]
+  }]
+
+}
