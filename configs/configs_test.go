@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/remind101/empire/repos"
+	"github.com/remind101/empire/apps"
 )
 
 func TestServiceApply(t *testing.T) {
-	repo := repos.Repo("remind101/r101-api")
+	app := &apps.App{ID: "1234"}
 	s := &Service{
 		Repository: newRepository(),
 	}
@@ -23,7 +23,7 @@ func TestServiceApply(t *testing.T) {
 			},
 			&Config{
 				Version: "20f3b833ad1f83353b1ae1d24ea6833693ce067c",
-				Repo:    repo,
+				App:     app,
 				Vars: Vars{
 					"RAILS_ENV": "production",
 				},
@@ -36,7 +36,7 @@ func TestServiceApply(t *testing.T) {
 			},
 			&Config{
 				Version: "94a8e2be1e57b07526fee99473255a619563d551",
-				Repo:    repo,
+				App:     app,
 				Vars: Vars{
 					"RAILS_ENV":    "production",
 					"DATABASE_URL": "postgres://localhost",
@@ -49,7 +49,7 @@ func TestServiceApply(t *testing.T) {
 			},
 			&Config{
 				Version: "aaa6f356d1507b0f5e14bb9adfddbea04d2569eb",
-				Repo:    repo,
+				App:     app,
 				Vars: Vars{
 					"DATABASE_URL": "postgres://localhost",
 				},
@@ -58,7 +58,7 @@ func TestServiceApply(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		c, err := s.Apply(repo, tt.in)
+		c, err := s.Apply(app, tt.in)
 
 		if err != nil {
 			t.Fatal(err)
@@ -72,14 +72,14 @@ func TestServiceApply(t *testing.T) {
 
 func TestRepository(t *testing.T) {
 	r := newRepository()
-	repo := repos.Repo("r101-api")
+	app := &apps.App{ID: "1234"}
 
-	c, _ := r.Push(repo, &Config{})
-	if h, _ := r.Head(repo); h != c {
+	c, _ := r.Push(&Config{App: app})
+	if h, _ := r.Head(app.ID); h != c {
 		t.Fatal("Head => %q; want %q", h, c)
 	}
 
-	if v, _ := r.Version(repo, c.Version); v != c {
+	if v, _ := r.Version(app.ID, c.Version); v != c {
 		t.Fatal("Version(%s) => %q; want %q", c.Version, v, c)
 	}
 }
