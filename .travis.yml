@@ -1,0 +1,12 @@
+language: go
+
+go:
+  - 1.4
+
+before_install:
+  - go install -a -race std
+  - go get github.com/tools/godep
+  - export PATH=$HOME/gopath/bin:$PATH
+
+script:
+  - go test -race ./...
