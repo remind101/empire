@@ -1,4 +1,4 @@
-# Empire
+# Empire [![Build Status](https://magnum.travis-ci.com/remind101/empire.svg?token=Uca1q7og621AjpUDJUEC&branch=master)](https://magnum.travis-ci.com/remind101/empire)
 
 Empire is Remind's next generation PaaS, which we will eventually use to migrate
 away from Heroku.
