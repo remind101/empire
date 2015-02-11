@@ -14,12 +14,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ernesto-jimenez/go-querystring/query"
 	"io"
 	"net/http"
 	"reflect"
 	"runtime"
-	"time"
+
+	"github.com/ernesto-jimenez/go-querystring/query"
 )
 
 const (
@@ -276,4 +276,3 @@ type Repo struct {
 type Slug struct {
 	ID string `json:"id" url:"id,key"` // unique identifier of slug
 }
-
