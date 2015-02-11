@@ -203,36 +203,52 @@ func String(v string) *string {
 	return p
 }
 
+type App struct {
+	ID string `json:"id" url:"id,key"` // unique identifier of app
+}
+type AppCreateOpts struct {
+	Repo string `json:"repo" url:"repo,key"` // the name of the repo
+}
+
+// Create a new app.
+func (s *Service) AppCreate(o AppCreateOpts) (*App, error) {
+	var app App
+	return &app, s.Post(&app, fmt.Sprintf("/apps"), o)
+}
+
 type Config struct {
 	Vars    map[string]string `json:"vars" url:"vars,key"`       // a hash of configuration values
 	Version string            `json:"version" url:"version,key"` // unique identifier of config
 }
 
-// Get the latest version of an repo's config
-func (s *Service) ConfigHead(repoIdentity string) (*Config, error) {
+// Get the latest version of an app's config
+func (s *Service) ConfigHead(appIdentity string) (*Config, error) {
 	var config Config
-	return &config, s.Get(&config, fmt.Sprintf("/%v/configs/head", repoIdentity), nil, nil)
+	return &config, s.Get(&config, fmt.Sprintf("/apps/%v/configs/head", appIdentity), nil, nil)
 }
 
-// Get a specific version of a repo's config
-func (s *Service) ConfigInfo(repoIdentity string, configIdentity string) (*Config, error) {
+// Get a specific version of an app's config
+func (s *Service) ConfigInfo(appIdentity string, configIdentity string) (*Config, error) {
 	var config Config
-	return &config, s.Get(&config, fmt.Sprintf("/%v/configs/%v", repoIdentity, configIdentity), nil, nil)
+	return &config, s.Get(&config, fmt.Sprintf("/apps/%v/configs/%v", appIdentity, configIdentity), nil, nil)
 }
 
 type ConfigUpdateOpts struct {
-	Vars *map[string]string `json:"vars,omitempty" url:"vars,omitempty,key"` // a hash of configuration values
+	Vars map[string]string `json:"vars" url:"vars,key"` // a hash of configuration values
 }
 
-// Updates the config for a repo
-func (s *Service) ConfigUpdate(repoIdentity string, o ConfigUpdateOpts) (*Config, error) {
+// Updates the config for an app
+func (s *Service) ConfigUpdate(appIdentity string, o ConfigUpdateOpts) (*Config, error) {
 	var config Config
-	return &config, s.Patch(&config, fmt.Sprintf("/%v/configs", repoIdentity), o)
+	return &config, s.Patch(&config, fmt.Sprintf("/apps/%v/configs", appIdentity), o)
 }
 
 type Deploy struct {
 	ID      string `json:"id" url:"id,key"` // unique identifier of deploy
 	Release struct {
+		App struct {
+			ID string `json:"id" url:"id,key"` // unique identifier of app
+		} `json:"app" url:"app,key"`
 		Config struct {
 			Version string `json:"version" url:"version,key"` // unique identifier of config
 		} `json:"config" url:"config,key"`
@@ -245,14 +261,15 @@ type Deploy struct {
 }
 type DeployCreateOpts struct {
 	Image struct {
-		ID string `json:"id" url:"id,key"` // unique identifier of image
+		ID   string `json:"id" url:"id,key"`     // unique identifier of image
+		Repo string `json:"repo" url:"repo,key"` // the name of the repo
 	} `json:"image" url:"image,key"`
 }
 
 // Create a new deploy.
-func (s *Service) DeployCreate(repoIdentity string, o DeployCreateOpts) (*Deploy, error) {
+func (s *Service) DeployCreate(o DeployCreateOpts) (*Deploy, error) {
 	var deploy Deploy
-	return &deploy, s.Post(&deploy, fmt.Sprintf("/%v/deploys", repoIdentity), o)
+	return &deploy, s.Post(&deploy, fmt.Sprintf("/deploys"), o)
 }
 
 type Image struct {

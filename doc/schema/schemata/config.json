@@ -30,22 +30,22 @@
   "description": "",
   "links": [
     {
-      "description": "Get the latest version of an repo's config",
-      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/configs/head",
+      "description": "Get the latest version of an app's config",
+      "href": "/apps/{(%2Fschemata%2Fapp%23%2Fdefinitions%2Fidentity)}/configs/head",
       "method": "GET",
       "rel": "head",
       "title": "Head"
     },
     {
-      "description": "Get a specific version of a repo's config",
-      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/configs/{(%2Fschemata%2Fconfig%23%2Fdefinitions%2Fidentity)}",
+      "description": "Get a specific version of an app's config",
+      "href": "/apps/{(%2Fschemata%2Fapp%23%2Fdefinitions%2Fidentity)}/configs/{(%2Fschemata%2Fconfig%23%2Fdefinitions%2Fidentity)}",
       "method": "GET",
       "rel": "info",
       "title": "Info"
     },
     {
-      "description": "Updates the config for a repo",
-      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/configs",
+      "description": "Updates the config for an app",
+      "href": "/apps/{(%2Fschemata%2Fapp%23%2Fdefinitions%2Fidentity)}/configs",
       "method": "PATCH",
       "rel": "update",
       "schema": {
@@ -54,6 +54,7 @@
             "$ref": "/schemata/config#/definitions/vars"
           }
         },
+        "required": ["vars"],
         "type": [
           "object"
         ]

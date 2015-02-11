@@ -23,6 +23,10 @@ type Extractor interface {
 // extractor is a fake implementation of the Extractor interface.
 type extractor struct{}
 
+func newExtractor() *extractor {
+	return &extractor{}
+}
+
 // Extract implements Extractor Extract.
 func (e *extractor) Extract(image *Image) (ProcessMap, error) {
 	pm := make(ProcessMap)

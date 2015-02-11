@@ -20,12 +20,12 @@ type Version string
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID        ID
-	Version   Version
-	App       *apps.App
-	Config    *configs.Config
-	Slug      *slugs.Slug
-	CreatedAt time.Time
+	ID        ID              `json:"id"`
+	Version   Version         `json:"version"`
+	App       *apps.App       `json:"app"`
+	Config    *configs.Config `json:"config"`
+	Slug      *slugs.Slug     `json:"slug"`
+	CreatedAt time.Time       `json:"created_at"`
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and
@@ -106,6 +106,16 @@ func (p *repository) Head(id apps.ID) (*Release, error) {
 	return set[len(set)-1], nil
 }
 
+// Service provides methods for interacting with releases.
 type Service struct {
 	Repository
+}
+
+// NewService returns a new Service instance.
+func NewService(r Repository) *Service {
+	if r == nil {
+		r = newRepository()
+	}
+
+	return &Service{Repository: r}
 }

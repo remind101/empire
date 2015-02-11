@@ -13,9 +13,9 @@ type Version string
 
 // Config represents a collection of environment variables.
 type Config struct {
-	Version Version
-	App     *apps.App
-	Vars    Vars
+	Version Version   `json:"version"`
+	App     *apps.App `json:"app"`
+	Vars    Vars      `json:"vars"`
 }
 
 // Variable represents the name of an environment variable.
@@ -87,6 +87,15 @@ type Service struct {
 	Repository
 }
 
+// NewService returns a new Service instance.
+func NewService(r Repository) *Service {
+	if r == nil {
+		r = newRepository()
+	}
+
+	return &Service{Repository: r}
+}
+
 // Apply merges the provided Vars into the latest Config and returns a new
 // Config.
 func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
@@ -105,6 +114,22 @@ func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
 	c := newConfig(l, vars)
 
 	return s.Repository.Push(c)
+}
+
+func (s *Service) Head(app *apps.App) (*Config, error) {
+	c, err := s.Repository.Head(app.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if c == nil {
+		return s.Repository.Push(&Config{
+			App:  app,
+			Vars: make(Vars),
+		})
+	}
+
+	return c, nil
 }
 
 // newConfig creates a new config based on the old config, with the new
