@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/remind101/empire/repos"
+	"github.com/remind101/empire/apps"
 )
 
 // Config represents a collection of environment variables.
 type Config struct {
 	Version string
-	Repo    repos.Repo
+	App     *apps.App
 	Vars    Vars
 }
 
@@ -24,43 +24,43 @@ type Vars map[Variable]string
 // Repository represents an interface for retrieving and storing Config's.
 type Repository interface {
 	// Head returns the current Config for the app.
-	Head(repos.Repo) (*Config, error)
+	Head(apps.ID) (*Config, error)
 
 	// Version returns the specific version of a Config for an app.
-	Version(repos.Repo, string) (*Config, error)
+	Version(apps.ID, string) (*Config, error)
 
 	// Store stores the Config for the app.
-	Push(repos.Repo, *Config) (*Config, error)
+	Push(*Config) (*Config, error)
 }
 
 // repository is an in memory implementation of the Repository.
 type repository struct {
 	// Maps an app to an array of Config objects.
-	s map[repos.Repo][]*Config
+	s map[apps.ID][]*Config
 
 	// Keeps a reference to the current Config object for the app.
-	h map[repos.Repo]*Config
+	h map[apps.ID]*Config
 }
 
 func newRepository() *repository {
 	return &repository{
-		s: make(map[repos.Repo][]*Config),
-		h: make(map[repos.Repo]*Config),
+		s: make(map[apps.ID][]*Config),
+		h: make(map[apps.ID]*Config),
 	}
 }
 
 // Head implements Repository Head.
-func (r *repository) Head(repo repos.Repo) (*Config, error) {
-	if r.h[repo] == nil {
+func (r *repository) Head(appID apps.ID) (*Config, error) {
+	if r.h[appID] == nil {
 		return nil, nil
 	}
 
-	return r.h[repo], nil
+	return r.h[appID], nil
 }
 
 // Version implements Repository Version.
-func (r *repository) Version(repo repos.Repo, version string) (*Config, error) {
-	for _, c := range r.s[repo] {
+func (r *repository) Version(appID apps.ID, version string) (*Config, error) {
+	for _, c := range r.s[appID] {
 		if c.Version == version {
 			return c, nil
 		}
@@ -70,9 +70,11 @@ func (r *repository) Version(repo repos.Repo, version string) (*Config, error) {
 }
 
 // Push implements Repository Push.
-func (r *repository) Push(repo repos.Repo, config *Config) (*Config, error) {
-	r.s[repo] = append(r.s[repo], config)
-	r.h[repo] = config
+func (r *repository) Push(config *Config) (*Config, error) {
+	id := config.App.ID
+
+	r.s[id] = append(r.s[id], config)
+	r.h[id] = config
 
 	return config, nil
 }
@@ -84,8 +86,8 @@ type Service struct {
 
 // Apply merges the provided Vars into the latest Config and returns a new
 // Config.
-func (s *Service) Apply(repo repos.Repo, vars Vars) (*Config, error) {
-	l, err := s.Repository.Head(repo)
+func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
+	l, err := s.Repository.Head(app.ID)
 
 	if err != nil {
 		return nil, err
@@ -93,13 +95,13 @@ func (s *Service) Apply(repo repos.Repo, vars Vars) (*Config, error) {
 
 	if l == nil {
 		l = &Config{
-			Repo: repo,
+			App: app,
 		}
 	}
 
 	c := newConfig(l, vars)
 
-	return s.Repository.Push(repo, c)
+	return s.Repository.Push(c)
 }
 
 // newConfig creates a new config based on the old config, with the new
@@ -109,7 +111,7 @@ func newConfig(config *Config, vars Vars) *Config {
 
 	return &Config{
 		Version: hash(v),
-		Repo:    config.Repo,
+		App:     config.App,
 		Vars:    v,
 	}
 }

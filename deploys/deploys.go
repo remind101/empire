@@ -1,6 +1,7 @@
 package deploys
 
 import (
+	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
@@ -14,6 +15,7 @@ type Deploy struct {
 }
 
 type Service struct {
+	AppsService     *apps.Service
 	ConfigsService  *configs.Service
 	SlugsService    *slugs.Service
 	ReleasesService *releases.Service
@@ -21,8 +23,13 @@ type Service struct {
 
 // Deploy deploys an Image to the platform.
 func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
+	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
+	if err != nil {
+		return nil, err
+	}
+
 	// Grab the latest config.
-	config, err := s.ConfigsService.Head(image.Repo)
+	config, err := s.ConfigsService.Head(app.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +46,7 @@ func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
 
 	// Create a new release for the Config
 	// and Slug.
-	release, err := s.ReleasesService.Create(config, slug)
+	release, err := s.ReleasesService.Create(app, config, slug)
 	if err != nil {
 		return nil, err
 	}

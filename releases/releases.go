@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/repos"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -14,8 +14,8 @@ import (
 // release.
 type Release struct {
 	ID        string
-	Repo      repos.Repo
 	Version   string
+	App       *apps.App
 	Config    *configs.Config
 	Slug      *slugs.Slug
 	CreatedAt time.Time
@@ -24,17 +24,15 @@ type Release struct {
 // ReleaseRepository is an interface that can be implemented for storing and
 // retrieving releases.
 type Repository interface {
-	Create(repos.Repo, *configs.Config, *slugs.Slug) (*Release, error)
-	FindByRepo(repos.Repo) ([]*Release, error)
-	FindByReleaseID(string) (*Release, error)
-	Head(repos.Repo) (*Release, error)
+	Create(*apps.App, *configs.Config, *slugs.Slug) (*Release, error)
+	FindByAppID(apps.ID) ([]*Release, error)
+	Head(apps.ID) (*Release, error)
 }
 
 // repository is an in-memory implementation of a Repository
 type repository struct {
-	byRepo       map[repos.Repo][]*Release
-	byReleaseID  map[string]*Release
-	versions     map[repos.Repo]int
+	releases     map[apps.ID][]*Release
+	versions     map[apps.ID]int
 	genTimestamp func() time.Time
 	id           int
 }
@@ -42,9 +40,8 @@ type repository struct {
 // Create a new repository
 func newRepository() *repository {
 	return &repository{
-		byRepo:      make(map[repos.Repo][]*Release),
-		byReleaseID: make(map[string]*Release),
-		versions:    make(map[repos.Repo]int),
+		releases: make(map[apps.ID][]*Release),
+		versions: make(map[apps.ID]int),
 	}
 }
 
@@ -57,7 +54,7 @@ func newFakeRepository() *repository {
 	return r
 }
 
-func (p *repository) Create(repo repos.Repo, config *configs.Config, slug *slugs.Slug) (*Release, error) {
+func (p *repository) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*Release, error) {
 	p.id++
 
 	createdAt := time.Now()
@@ -66,45 +63,35 @@ func (p *repository) Create(repo repos.Repo, config *configs.Config, slug *slugs
 	}
 
 	version := 1
-	if v, ok := p.versions[repo]; ok {
+	if v, ok := p.versions[app.ID]; ok {
 		version = v
 	}
 
 	r := &Release{
 		ID:        strconv.Itoa(p.id),
-		Repo:      repo,
+		App:       app,
 		Version:   fmt.Sprintf("v%d", version),
 		Config:    config,
 		Slug:      slug,
 		CreatedAt: createdAt.UTC(),
 	}
 
-	p.versions[repo] = version + 1
-	p.byRepo[r.Repo] = append(p.byRepo[r.Repo], r)
-	p.byReleaseID[r.ID] = r
+	p.versions[app.ID] = version + 1
+	p.releases[app.ID] = append(p.releases[app.ID], r)
 
 	return r, nil
 }
 
-func (p *repository) FindByRepo(repo repos.Repo) ([]*Release, error) {
-	if set, ok := p.byRepo[repo]; ok {
+func (p *repository) FindByAppID(id apps.ID) ([]*Release, error) {
+	if set, ok := p.releases[id]; ok {
 		return set, nil
 	}
 
 	return []*Release{}, nil
 }
 
-func (p *repository) FindByReleaseID(releaseID string) (*Release, error) {
-	r, ok := p.byReleaseID[releaseID]
-	if !ok {
-		r = &Release{}
-	}
-
-	return r, nil
-}
-
-func (p *repository) Head(repo repos.Repo) (*Release, error) {
-	set, ok := p.byRepo[repo]
+func (p *repository) Head(id apps.ID) (*Release, error) {
+	set, ok := p.releases[id]
 	if !ok {
 		return nil, nil
 	}
@@ -114,8 +101,4 @@ func (p *repository) Head(repo repos.Repo) (*Release, error) {
 
 type Service struct {
 	Repository
-}
-
-func (s *Service) Create(config *configs.Config, slug *slugs.Slug) (*Release, error) {
-	return s.Repository.Create(slug.Image.Repo, config, slug)
 }

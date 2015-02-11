@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
+	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/repos"
@@ -90,11 +91,8 @@ type Server struct {
 func NewServer(e *Empire) *Server {
 	r := newRouter()
 
-	// http://rubular.com/r/q4dWfL2sFu
-	repo := `{repo:[^\/]+?\/[^\/]+}`
-
-	r.Handle("POST", "/"+repo+"/deploys", &PostDeploys{e.DeploysService()})
-	r.Handle("PATCH", "/"+repo+"/configs", &PostConfigs{e.ConfigsService()})
+	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService()})
+	r.Handle("PATCH", "/{app}/configs", &PostConfigs{e.AppsService(), e.ConfigsService()})
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -125,7 +123,8 @@ type PostDeploys struct {
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
 	Image struct {
-		ID string `json:"id"`
+		ID   string `json:"id"`
+		Repo string `json:"repo"`
 	} `json:"image"`
 }
 
@@ -138,7 +137,7 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	d, err := h.DeploysService.Deploy(&slugs.Image{
-		Repo: repos.Repo(req.Vars["repo"]),
+		Repo: repos.Repo(form.Image.Repo),
 		ID:   form.Image.ID,
 	})
 	if err != nil {
@@ -150,6 +149,7 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 
 // PostConfigs is a Handler for the POST /v1/configs/{repo_name} endpoint
 type PostConfigs struct {
+	AppsService    *apps.Service
 	ConfigsService *configs.Service
 }
 
@@ -164,7 +164,18 @@ func (h *PostConfigs) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	c, err := h.ConfigsService.Apply(repos.Repo(req.Vars["repo"]), form.Vars)
+	id := apps.ID(req.Vars["app"])
+
+	a, err := h.AppsService.FindByID(id)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	if a == nil {
+		return http.StatusNotFound, nil, nil
+	}
+
+	c, err := h.ConfigsService.Apply(a, form.Vars)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
