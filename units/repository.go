@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/remind101/empire/apps"
+	"github.com/remind101/empire/releases"
 )
 
 type consulRepository struct {
@@ -15,8 +17,8 @@ func NewConsulRepository(c *api.Client) *consulRepository {
 	return &consulRepository{client: c}
 }
 
-func (c *consulRepository) Create(rel Release) error {
-	val, err := json.Marshal(&rel)
+func (c *consulRepository) Create(rel *releases.Release) error {
+	val, err := json.Marshal(rel)
 	if err != nil {
 		return err
 	}
@@ -26,19 +28,19 @@ func (c *consulRepository) Create(rel Release) error {
 	return err
 }
 
-func (c *consulRepository) FindByRepo(repo string) ([]ProcDef, error) {
+func (c *consulRepository) FindByApp(id apps.ID) ([]Unit, error) {
 	var err error
 
-	pairs, _, err := c.client.KV().List(c.keyForProcDefs(repo), &api.QueryOptions{})
+	pairs, _, err := c.client.KV().List(c.keyForUnits(string(id)), &api.QueryOptions{})
 	if err != nil {
-		return []ProcDef{}, err
+		return []Unit{}, err
 	}
 
 	return c.decodeSlice(pairs)
 }
 
-func (c *consulRepository) Patch(def ProcDef) error {
-	pair, err := c.encode(def)
+func (c *consulRepository) Put(u Unit) error {
+	pair, err := c.encode(u)
 	if err != nil {
 		return err
 	}
@@ -47,8 +49,8 @@ func (c *consulRepository) Patch(def ProcDef) error {
 	return err
 }
 
-func (c *consulRepository) Delete(def ProcDef) error {
-	_, err := c.client.KV().Delete(c.keyForProcDef(def), nil)
+func (c *consulRepository) Delete(u Unit) error {
+	_, err := c.client.KV().Delete(c.keyForUnit(u), nil)
 	return err
 }
 
@@ -58,21 +60,21 @@ func (c *consulRepository) key(k string) string {
 	return fmt.Sprintf("empire/units/%s", k)
 }
 
-func (c *consulRepository) keyForRelease(rel Release) string {
-	return c.key(fmt.Sprintf("releases/%v.%v", rel.Repo, rel.ID))
+func (c *consulRepository) keyForRelease(rel *releases.Release) string {
+	return c.key(fmt.Sprintf("releases/%v.%v", rel.App.ID, rel.ID))
 }
 
-func (c *consulRepository) keyForProcDefs(repo string) string {
+func (c *consulRepository) keyForUnits(repo string) string {
 	return c.key(fmt.Sprintf("processes/%v", repo))
 }
 
-func (c *consulRepository) keyForProcDef(def ProcDef) string {
-	return c.key(fmt.Sprintf("processes/%v.%v", def.Repo, def.ProcessType))
+func (c *consulRepository) keyForUnit(u Unit) string {
+	return c.key(fmt.Sprintf("processes/%v.%v", u.Release.App.ID, u.ProcessType))
 }
 
-func (c *consulRepository) decodeSlice(pairs api.KVPairs) ([]ProcDef, error) {
+func (c *consulRepository) decodeSlice(pairs api.KVPairs) ([]Unit, error) {
 	var err error
-	defs := make([]ProcDef, len(pairs))
+	defs := make([]Unit, len(pairs))
 
 	for i, pair := range pairs {
 		defs[i], err = c.decode(pair)
@@ -84,13 +86,13 @@ func (c *consulRepository) decodeSlice(pairs api.KVPairs) ([]ProcDef, error) {
 	return defs, nil
 }
 
-func (c *consulRepository) decode(pair *api.KVPair) (ProcDef, error) {
-	def := ProcDef{}
+func (c *consulRepository) decode(pair *api.KVPair) (Unit, error) {
+	def := Unit{}
 	err := json.Unmarshal(pair.Value, &def)
 	return def, err
 }
 
-func (c *consulRepository) encode(def ProcDef) (*api.KVPair, error) {
+func (c *consulRepository) encode(def Unit) (*api.KVPair, error) {
 	val, err := json.Marshal(&def)
-	return &api.KVPair{Key: c.keyForProcDef(def), Value: val}, err
+	return &api.KVPair{Key: c.keyForUnit(def), Value: val}, err
 }

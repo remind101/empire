@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/remind101/empire/consulutil"
+	"github.com/remind101/empire/slugs"
 )
 
 func TestConsulCreate(t *testing.T) {
@@ -11,74 +12,59 @@ func TestConsulCreate(t *testing.T) {
 	defer s.Stop()
 	service := NewConsulRepository(c)
 
-	err := service.Create(Release{
-		Repo:    "api",
-		ID:      "1",
-		Version: "v1",
-		Vars: map[string]string{
-			"RAILS_ENV": "production",
-		},
-		ProcessTypes: map[string]string{
-			"web": "./bin/web",
-		},
-		ImageID: "abcd",
-	})
+	err := service.Create(buildRelease("api", "1", slugs.ProcessMap{"web": "./bin/web"}))
 
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestConsulFindByRepo(t *testing.T) {
+func TestConsulFindByApp(t *testing.T) {
 	c, s := consulutil.MakeClient(t)
 	defer s.Stop()
 	service := NewConsulRepository(c)
 
 	// Add some data
-	if err := service.Patch(NewProcDef("api", "v1", "web", 3)); err != nil {
-		t.Fatal(err)
-	}
-	if err := service.Patch(NewProcDef("api", "v1", "worker", 6)); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := service.Patch(NewProcDef("dash", "v1", "web", 9)); err != nil {
-		t.Fatal(err)
-	}
-
-	testProcDefsEql(t, service, "api", []ProcDef{
-		NewProcDef("api", "v1", "web", 3),
-		NewProcDef("api", "v1", "worker", 6),
+	rel := buildRelease("api", "1", slugs.ProcessMap{
+		"web":      "./bin/web",
+		"worker":   "./bin/worker",
+		"consumer": "./bin/consumer",
 	})
+	service.Create(rel)
+	service.Put(NewUnit(rel, "web", 10))
+	service.Put(NewUnit(rel, "worker", 5))
+	service.Put(NewUnit(rel, "consumer", 3))
 
-	testProcDefsEql(t, service, "dash", []ProcDef{
-		NewProcDef("dash", "v1", "web", 9),
-	})
+	units, err := service.FindByApp("api")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := len(units), 3; got != want {
+		t.Errorf("len(service.FindByApp(\"api\")) => %s; want %s", got, want)
+	}
 }
 
-func TestConsulPatch(t *testing.T) {
+func TestConsulPut(t *testing.T) {
 	c, s := consulutil.MakeClient(t)
 	defer s.Stop()
 	service := NewConsulRepository(c)
 
 	var err error
 
-	// Add some data
-	if err = service.Patch(NewProcDef("api", "v1", "web", 3)); err != nil {
-		t.Fatal(err)
-	}
-
-	testProcDefsEql(t, service, "api", []ProcDef{
-		NewProcDef("api", "v1", "web", 3),
+	// Add some data using a release
+	rel := buildRelease("api", "1", slugs.ProcessMap{
+		"web":      "./bin/web",
+		"worker":   "./bin/worker",
+		"consumer": "./bin/consumer",
 	})
 
-	// Update existing data
-	if err = service.Patch(NewProcDef("api", "v1", "web", 10)); err != nil {
+	if err = service.Put(NewUnit(rel, "web", 10)); err != nil {
 		t.Fatal(err)
 	}
 
-	testProcDefsEql(t, service, "api", []ProcDef{
-		NewProcDef("api", "v1", "web", 10),
+	testUnitsEql(t, service, "api", []string{
+		"api.web release=1 count=10",
 	})
 }
 
@@ -89,17 +75,29 @@ func TestConsulDelete(t *testing.T) {
 
 	var err error
 
-	if err = service.Patch(NewProcDef("api", "v1", "web", 3)); err != nil {
-		t.Fatal(err)
-	}
+	// Add some data
+	rel := buildRelease("api", "1", slugs.ProcessMap{
+		"web":      "./bin/web",
+		"worker":   "./bin/worker",
+		"consumer": "./bin/consumer",
+	})
+	service.Create(rel)
+	service.Put(NewUnit(rel, "web", 10))
+	service.Put(NewUnit(rel, "worker", 5))
+	service.Put(NewUnit(rel, "consumer", 3))
 
-	testProcDefsEql(t, service, "api", []ProcDef{
-		NewProcDef("api", "v1", "web", 3),
+	testUnitsEql(t, service, "api", []string{
+		"api.web release=1 count=10",
+		"api.worker release=1 count=5",
+		"api.consumer release=1 count=3",
 	})
 
-	if err = service.Delete(NewProcDef("api", "v1", "web", 3)); err != nil {
+	if err = service.Delete(NewUnit(rel, "web", 0)); err != nil {
 		t.Fatal(err)
 	}
 
-	testProcDefsEql(t, service, "api", []ProcDef{})
+	testUnitsEql(t, service, "api", []string{
+		"api.worker release=1 count=5",
+		"api.consumer release=1 count=3",
+	})
 }

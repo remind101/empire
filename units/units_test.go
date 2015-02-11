@@ -4,79 +4,69 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/remind101/empire/apps"
+	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/consulutil"
+	"github.com/remind101/empire/releases"
+	"github.com/remind101/empire/slugs"
 )
 
-func TestCreate(t *testing.T) {
+func TestCreateRelease(t *testing.T) {
 	c, s := consulutil.MakeClient(t)
 	defer s.Stop()
 	ps := NewService(NewConsulRepository(c))
 
-	// Creates ProcDefs for each process type
-	err := ps.CreateRelease(Release{
-		Repo:    "api",
-		ID:      "1",
-		Version: "v1",
-		ImageID: "abc",
-		ProcessTypes: map[string]string{
-			"web":      "./web",
-			"worker":   "./worker",
-			"consumer": "./consumer",
-		},
-	})
+	err := ps.CreateRelease(buildRelease("api", "1", slugs.ProcessMap{
+		"web":      "./web",
+		"worker":   "./worker",
+		"consumer": "./consumer",
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	testProcDefsEql(t, ps.Repository, "api", []ProcDef{
-		NewProcDef("api", "1", "web", 1),
-		NewProcDef("api", "1", "worker", 0),
-		NewProcDef("api", "1", "consumer", 0),
+	testUnitsEql(t, ps.Repository, "api", []string{
+		"api.web release=1 count=1",
+		"api.worker release=1 count=0",
+		"api.consumer release=1 count=0",
 	})
 
-	// Updates ProcDefs for each process type, removes any that don't exist anymore
-	err = ps.CreateRelease(Release{
-		Repo:    "api",
-		ID:      "2",
-		Version: "v2",
-		ImageID: "abc",
-		ProcessTypes: map[string]string{
-			"web":    "./web",
-			"worker": "./worker",
-		},
-	})
+	err = ps.CreateRelease(buildRelease("api", "2", slugs.ProcessMap{
+		"web":    "./web",
+		"worker": "./worker",
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	testProcDefsEql(t, ps.Repository, "api", []ProcDef{
-		NewProcDef("api", "2", "web", 1),
-		NewProcDef("api", "2", "worker", 0),
+	testUnitsEql(t, ps.Repository, "api", []string{
+		"api.web release=2 count=1",
+		"api.worker release=2 count=0",
 	})
 }
 
-func TestPatch(t *testing.T) {
+func TestScale(t *testing.T) {
 	c, s := consulutil.MakeClient(t)
 	defer s.Stop()
 	ps := NewService(NewConsulRepository(c))
-	var def ProcDef
 
-	// web: 0 -> 3
-	err := ps.CreateRelease(Release{
-		Repo: "api", ID: "1", Version: "v1", ImageID: "abc", ProcessTypes: map[string]string{"web": "./web"},
+	rel := buildRelease("api", "1", slugs.ProcessMap{
+		"web": "./web",
 	})
+
+	err := ps.CreateRelease(rel)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	def, err = ps.Patch("api", "web", 3)
+	_, err = ps.Scale("api", "web", 3)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := NewProcDef("api", "1", "web", 3).Eql(def), true; got != want {
-		t.Fatalf("ProcDef.Eql() => %s; want %s", got, want)
-	}
+	testUnitsEql(t, ps.Repository, "api", []string{
+		"api.web release=1 count=3",
+	})
 }
 
 func TestDelete(t *testing.T) {
@@ -84,24 +74,13 @@ func TestDelete(t *testing.T) {
 	defer s.Stop()
 	ps := NewService(NewConsulRepository(c))
 
-	err := ps.CreateRelease(Release{
-		Repo: "api", ID: "1", Version: "v1", ImageID: "abc", ProcessTypes: map[string]string{"web": "./web"},
+	rel := buildRelease("api", "1", slugs.ProcessMap{
+		"web":      "./web",
+		"worker":   "./worker",
+		"consumer": "./consumer",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	_, err = ps.Patch("api", "web", 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = ps.Patch("api", "worker", 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = ps.Patch("api", "consumer", 1)
+	err := ps.CreateRelease(rel)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,14 +91,10 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defs, err := ps.FindByRepo("api")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := len(defs), 2; got != want {
-		t.Fatalf("len(defs => %s; want %s", got, want)
-	}
+	testUnitsEql(t, ps.Repository, "api", []string{
+		"api.web release=1 count=1",
+		"api.worker release=1 count=0",
+	})
 
 	// Delete all processes for a repo
 	err = ps.Delete("api", "")
@@ -127,49 +102,51 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defs, err = ps.FindByRepo("api")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testUnitsEql(t, ps.Repository, "api", []string{})
+}
 
-	if got, want := len(defs), 0; got != want {
-		t.Fatalf("len(defs => %s; want %s", got, want)
+func buildRelease(appID string, releaseID string, proctypes slugs.ProcessMap) *releases.Release {
+	return &releases.Release{
+		ID:      releaseID,
+		Version: "v1",
+		App: &apps.App{
+			ID: apps.ID(appID),
+		},
+		Config: &configs.Config{
+			Vars: configs.Vars{
+				"RAILS_ENV": "test",
+			},
+		},
+		Slug: &slugs.Slug{
+			Image: &slugs.Image{
+				ID: "abcd",
+			},
+			ProcessTypes: proctypes,
+		},
 	}
 }
 
-func testProcDefsEql(t *testing.T, s Repository, repo string, defs []ProcDef) {
-	foundDefs, err := s.FindByRepo(repo)
+func testUnitsEql(t *testing.T, s Repository, id apps.ID, unitStrings []string) {
+	foundUnits, err := s.FindByApp(id)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	sortedFoundDefs := byString(foundDefs)
-	sortedDefs := byString(defs)
-
-	sort.Sort(sortedFoundDefs)
-	sort.Sort(sortedDefs)
-
-	if got, want := len(sortedFoundDefs), len(sortedDefs); got != want {
-		t.Errorf("len(s.FindByRepo(\"%s\")) => %v; want %v", repo, got, want)
+	foundStrings := make([]string, len(foundUnits))
+	for i, u := range foundUnits {
+		foundStrings[i] = u.String()
 	}
 
-	for i, def := range sortedDefs {
-		if got, want := sortedFoundDefs[i], def; !got.Eql(want) {
-			t.Errorf("s.FindByRepo(\"%s\")[%v] => %v; want %v", repo, i, got, want)
+	sort.Strings(unitStrings)
+	sort.Strings(foundStrings)
+
+	if got, want := len(foundStrings), len(unitStrings); got != want {
+		t.Errorf("len(s.FindByApp(\"%s\")) => %v; want %v", id, got, want)
+	}
+
+	for i, def := range unitStrings {
+		if got, want := foundStrings[i], def; got != want {
+			t.Errorf("s.FindByApp(\"%s\")[%v] => %v; want %v", id, i, got, want)
 		}
 	}
-}
-
-type byString []ProcDef
-
-func (b byString) Len() int {
-	return len(b)
-}
-
-func (b byString) Swap(i, j int) {
-	b[i], b[j] = b[j], b[i]
-}
-
-func (b byString) Less(i, j int) bool {
-	return b[i].String() < b[j].String()
 }

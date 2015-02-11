@@ -72,6 +72,11 @@
 			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.5.0rc1-89-gad484dc",
+			"Rev": "ad484dc62579dba7aef41bba1b2c32cc8cd1b84d"
+		},
+		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "5d6f7e02b7cdad63b06ab3877915532cd30073b4"
 		}

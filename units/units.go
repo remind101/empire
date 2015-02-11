@@ -3,54 +3,41 @@ package units
 import (
 	"errors"
 	"fmt"
+
+	"github.com/remind101/empire/apps"
+	"github.com/remind101/empire/releases"
+	"github.com/remind101/empire/slugs"
 )
 
 var (
-	ErrNoReleaseFound = errors.New("No existing release found for repo")
+	ErrReleaseNotFound     = errors.New("Release not found for app")
+	ErrProcessTypeNotFound = errors.New("Process type not found for app")
 )
 
-type Release struct {
-	Repo         string            `json:"repo"`
-	ID           string            `json:"id"`
-	Version      string            `json:"version"`
-	Vars         map[string]string `json:"vars"`
-	ProcessTypes map[string]string `json:"process_types"`
-	ImageID      string            `json:"image_id"`
+type Unit struct {
+	Release       *releases.Release
+	ProcessType   slugs.ProcessType `json:"process_type"`
+	InstanceCount int               `json:"instance_count"`
 }
 
-type ProcDef struct {
-	Repo          string `json:"repo"`
-	ReleaseID     string `json:"release_id"`
-	ProcessType   string `json:"process_type"`
-	InstanceCount int    `json:"instance_count"`
-}
-
-func NewProcDef(repo string, release string, proctype string, count int) ProcDef {
-	return ProcDef{
-		Repo:          repo,
-		ReleaseID:     release,
+func NewUnit(rel *releases.Release, proctype slugs.ProcessType, count int) Unit {
+	return Unit{
+		Release:       rel,
 		ProcessType:   proctype,
 		InstanceCount: count,
 	}
 }
 
-func (p ProcDef) Eql(other ProcDef) bool {
-	return p.Repo == other.Repo &&
-		p.ReleaseID == other.ReleaseID &&
-		p.ProcessType == other.ProcessType &&
-		p.InstanceCount == other.InstanceCount
+func (u Unit) String() string {
+	return fmt.Sprintf("%v.%v release=%v count=%v", u.Release.App.ID, u.ProcessType, u.Release.ID, u.InstanceCount)
 }
 
-func (p ProcDef) String() string {
-	return fmt.Sprintf("%v/%v release=%v count=%v", p.Repo, p.ProcessType, p.ReleaseID, p.InstanceCount)
-}
-
-// Repository is an interface for storing a ProcDef
+// Repository is an interface for storing a Unit
 type Repository interface {
-	Create(Release) error
-	Patch(ProcDef) error
-	Delete(ProcDef) error
-	FindByRepo(string) ([]ProcDef, error)
+	Create(*releases.Release) error
+	Put(Unit) error
+	Delete(Unit) error
+	FindByApp(apps.ID) ([]Unit, error)
 }
 
 type Service struct {
@@ -70,42 +57,42 @@ func NewService(r Repository) *Service {
 //
 // Additionally, any process definitions that do not exist in this release's
 // process types will be deleted.
-func (s *Service) CreateRelease(rel Release) error {
+func (s *Service) CreateRelease(rel *releases.Release) error {
 	// Create the release
 	err := s.Repository.Create(rel)
 	if err != nil {
 		return err
 	}
 
-	// Find existing process definitions
-	defs, err := s.FindByRepo(rel.Repo)
+	// Find existing units
+	units, err := s.FindByApp(rel.App.ID)
 	if err != nil {
 		return err
 	}
 
-	// Create a process definition map
-	defmap := make(map[string]ProcDef)
-	for _, def := range defs {
-		defmap[def.ProcessType] = def
+	// Create a unit map
+	unitmap := make(map[slugs.ProcessType]Unit)
+	for _, u := range units {
+		unitmap[u.ProcessType] = u
 	}
 
 	// For each process type in new release,
-	// update or create
-	for pt := range rel.ProcessTypes {
-		var def ProcDef
+	// update or create a unit
+	for pt := range rel.Slug.ProcessTypes {
+		var u Unit
 		var found bool
 
-		if def, found = defmap[pt]; found {
-			def.ReleaseID = rel.ID
+		if u, found = unitmap[pt]; found {
+			u.Release = rel
 		} else {
 			count := 0
 			if pt == "web" {
 				count = 1
 			}
-			def = NewProcDef(rel.Repo, rel.ID, pt, count)
+			u = NewUnit(rel, pt, count)
 		}
 
-		err := s.Repository.Patch(def)
+		err := s.Repository.Put(u)
 		if err != nil {
 			return err
 		}
@@ -113,9 +100,9 @@ func (s *Service) CreateRelease(rel Release) error {
 
 	// For each existing process definition
 	// If not included in new release's proc types, delete it
-	for pt, def := range defmap {
-		if _, found := rel.ProcessTypes[pt]; !found {
-			err := s.Repository.Delete(def)
+	for pt, u := range unitmap {
+		if _, found := rel.Slug.ProcessTypes[pt]; !found {
+			err := s.Repository.Delete(u)
 			if err != nil {
 				return err
 			}
@@ -125,42 +112,47 @@ func (s *Service) CreateRelease(rel Release) error {
 	return nil
 }
 
-// Patch updates a process definition
-func (s *Service) Patch(repo string, proctype string, count int) (ProcDef, error) {
-	var def ProcDef
+// Scale updates a unit's instance count
+func (s *Service) Scale(id apps.ID, proctype slugs.ProcessType, count int) (Unit, error) {
+	var u Unit
 	var err error
 
-	defs, err := s.FindByRepo(repo)
+	units, err := s.FindByApp(id)
 	if err != nil {
-		return def, err
+		return u, err
 	}
 
-	if len(defs) == 0 {
-		return def, ErrNoReleaseFound
+	if len(units) == 0 {
+		return u, ErrReleaseNotFound
 	}
 
-	def = NewProcDef(repo, defs[0].ReleaseID, proctype, count)
-	err = s.Repository.Patch(def)
+	rel := units[0].Release
+	if _, ok := rel.Slug.ProcessTypes[proctype]; !ok {
+		return u, ErrProcessTypeNotFound
+	}
+
+	u = NewUnit(rel, proctype, count)
+	err = s.Repository.Put(u)
 	if err != nil {
-		return def, err
+		return u, err
 	}
 
-	return def, nil
+	return u, nil
 }
 
-func (s *Service) FindByRepo(repo string) ([]ProcDef, error) {
-	return s.Repository.FindByRepo(repo)
+func (s *Service) FindByApp(id apps.ID) ([]Unit, error) {
+	return s.Repository.FindByApp(id)
 }
 
-func (s *Service) Delete(repo string, proctype string) error {
-	defs, err := s.FindByRepo(repo)
+func (s *Service) Delete(id apps.ID, proctype slugs.ProcessType) error {
+	units, err := s.FindByApp(id)
 	if err != nil {
 		return err
 	}
 
-	for _, def := range defs {
-		if proctype == "" || proctype == def.ProcessType {
-			err := s.Repository.Delete(def)
+	for _, u := range units {
+		if string(proctype) == "" || proctype == u.ProcessType {
+			err := s.Repository.Delete(u)
 			if err != nil {
 				return err
 			}
