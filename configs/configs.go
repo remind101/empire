@@ -8,9 +8,12 @@ import (
 	"github.com/remind101/empire/apps"
 )
 
+// Version represents a unique identifier for a Config version.
+type Version string
+
 // Config represents a collection of environment variables.
 type Config struct {
-	Version string
+	Version Version
 	App     *apps.App
 	Vars    Vars
 }
@@ -27,7 +30,7 @@ type Repository interface {
 	Head(apps.ID) (*Config, error)
 
 	// Version returns the specific version of a Config for an app.
-	Version(apps.ID, string) (*Config, error)
+	Version(apps.ID, Version) (*Config, error)
 
 	// Store stores the Config for the app.
 	Push(*Config) (*Config, error)
@@ -59,7 +62,7 @@ func (r *repository) Head(appID apps.ID) (*Config, error) {
 }
 
 // Version implements Repository Version.
-func (r *repository) Version(appID apps.ID, version string) (*Config, error) {
+func (r *repository) Version(appID apps.ID, version Version) (*Config, error) {
 	for _, c := range r.s[appID] {
 		if c.Version == version {
 			return c, nil
@@ -110,7 +113,7 @@ func newConfig(config *Config, vars Vars) *Config {
 	v := mergeVars(config.Vars, vars)
 
 	return &Config{
-		Version: hash(v),
+		Version: Version(hash(v)),
 		App:     config.App,
 		Vars:    v,
 	}

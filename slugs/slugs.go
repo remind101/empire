@@ -28,9 +28,12 @@ type Image struct {
 	ID   string
 }
 
+// ID represents the unique identifier of a Slug.
+type ID string
+
 // Slug represents a container image with the extracted ProcessTypes.
 type Slug struct {
-	ID           string
+	ID           ID
 	Image        *Image
 	ProcessTypes ProcessMap
 }
@@ -38,34 +41,33 @@ type Slug struct {
 // Repository represents an interface for creating and finding slugs.
 type Repository interface {
 	Create(*Slug) (*Slug, error)
-	FindByID(id string) (*Slug, error)
+	FindByID(ID) (*Slug, error)
 	FindByImage(*Image) (*Slug, error)
 }
 
 // repository is a fake implementation of the Repository interface.
 type repository struct {
-	// map[slug.ID]*Slug
-	slugs map[string]*Slug
+	slugs map[ID]*Slug
 	id    int
 }
 
 // newRepository returns a new repository instance.
 func newRepository() *repository {
 	return &repository{
-		slugs: make(map[string]*Slug),
+		slugs: make(map[ID]*Slug),
 	}
 }
 
 // Create implements Repository Create.
 func (r *repository) Create(slug *Slug) (*Slug, error) {
 	r.id++
-	slug.ID = strconv.Itoa(r.id)
+	slug.ID = ID(strconv.Itoa(r.id))
 	r.slugs[slug.ID] = slug
 	return slug, nil
 }
 
 // FindByID implements Repository FindByID.
-func (r *repository) FindByID(id string) (*Slug, error) {
+func (r *repository) FindByID(id ID) (*Slug, error) {
 	return r.slugs[id], nil
 }
 
@@ -80,7 +82,7 @@ func (r *repository) FindByImage(image *Image) (*Slug, error) {
 }
 
 func (r *repository) Reset() {
-	r.slugs = make(map[string]*Slug)
+	r.slugs = make(map[ID]*Slug)
 	r.id = 0
 }
 
