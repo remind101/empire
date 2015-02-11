@@ -2,3 +2,6 @@ build
 packer_cache
 *.tar.gz
 .*.sw*
+
+# Virtualbox boxes
+*.box
