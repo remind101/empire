@@ -1,0 +1,375 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "definitions": {
+    "config": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Config",
+      "definitions": {
+        "version": {
+          "description": "unique identifier of config",
+          "example": "0123456789abcdef0123456789abcdef",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/config/definitions/version"
+        },
+        "vars": {
+          "description": "a hash of configuration values",
+          "example": {
+            "RAILS_ENV": "production"
+          },
+          "patternProperties": {
+            ".{1,}": {
+              "type": [
+                "string"
+              ]
+            }
+          },
+          "type": [
+            "object"
+          ]
+        }
+      },
+      "description": "",
+      "links": [
+        {
+          "description": "Get the latest version of an repo's config",
+          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/configs/head",
+          "method": "GET",
+          "rel": "head",
+          "title": "Head"
+        },
+        {
+          "description": "Get a specific version of a repo's config",
+          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/configs/{(%23%2Fdefinitions%2Fconfig%2Fdefinitions%2Fidentity)}",
+          "method": "GET",
+          "rel": "info",
+          "title": "Info"
+        },
+        {
+          "description": "Updates the config for a repo",
+          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/configs",
+          "method": "PATCH",
+          "rel": "update",
+          "schema": {
+            "properties": {
+              "vars": {
+                "$ref": "#/definitions/config/definitions/vars"
+              }
+            },
+            "type": [
+              "object"
+            ]
+          },
+          "title": "Update"
+        }
+      ],
+      "properties": {
+        "version": {
+          "$ref": "#/definitions/config/definitions/version"
+        },
+        "vars": {
+          "$ref": "#/definitions/config/definitions/vars"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
+    "deploy": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Deploy",
+      "definitions": {
+        "id": {
+          "description": "unique identifier of deploy",
+          "example": "01234567-89ab-cdef-0123-456789abcdef",
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/deploy/definitions/id"
+        }
+      },
+      "description": "",
+      "links": [
+        {
+          "description": "Create a new deploy.",
+          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/deploys",
+          "method": "POST",
+          "rel": "create",
+          "schema": {
+            "properties": {
+              "image": {
+                "properties": {
+                  "id": {
+                    "$ref": "#/definitions/image/definitions/id"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "type": [
+                  "object"
+                ]
+              }
+            },
+            "required": [
+              "image"
+            ],
+            "type": [
+              "object"
+            ]
+          },
+          "title": "Create"
+        }
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/deploy/definitions/id"
+        },
+        "release": {
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/release/definitions/id"
+            },
+            "version": {
+              "$ref": "#/definitions/release/definitions/version"
+            },
+            "config": {
+              "properties": {
+                "version": {
+                  "$ref": "#/definitions/config/definitions/version"
+                }
+              },
+              "type": [
+                "object"
+              ]
+            },
+            "slug": {
+              "properties": {
+                "id": {
+                  "$ref": "#/definitions/slug/definitions/id"
+                }
+              },
+              "type": [
+                "object"
+              ]
+            }
+          },
+          "type": [
+            "object"
+          ]
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
+    "image": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Image",
+      "definitions": {
+        "id": {
+          "description": "unique identifier of image",
+          "example": "0123456789abcdef0123456789abcdef",
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/image/definitions/id"
+        },
+        "repo": {
+          "$ref": "#/definitions/repo/definitions/name"
+        }
+      },
+      "description": "",
+      "links": [
+      ],
+      "properties": {
+        "repo": {
+          "$ref": "#/definitions/image/definitions/repo"
+        },
+        "id": {
+          "$ref": "#/definitions/image/definitions/id"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
+    "procdef": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "procdef",
+      "definitions": {
+        "process_type": {
+          "description": "the type of process",
+          "example": "web",
+          "type": [
+            "string"
+          ]
+        },
+        "instance_count": {
+          "description": "the number of running processes to maintain",
+          "example": "2",
+          "type": [
+            "number"
+          ]
+        }
+      },
+      "description": "",
+      "links": [
+      ],
+      "properties": {
+        "process_type": {
+          "$ref": "#/definitions/procdef/definitions/process_type"
+        },
+        "instance_count": {
+          "$ref": "#/definitions/procdef/definitions/instance_count"
+        },
+        "release": {
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/release/definitions/id"
+            }
+          },
+          "type": [
+            "object"
+          ]
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
+    "release": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Release",
+      "definitions": {
+        "id": {
+          "description": "unique identifier of release",
+          "example": "01234567-89ab-cdef-0123-456789abcdef",
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/release/definitions/id"
+        },
+        "version": {
+          "description": "an incremental identifier for the version",
+          "example": "v1",
+          "type": [
+            "string"
+          ]
+        }
+      },
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/release/definitions/id"
+        },
+        "version": {
+          "$ref": "#/definitions/release/definitions/version"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
+    "repo": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Repo",
+      "definitions": {
+        "name": {
+          "description": "the name of the repo",
+          "example": "remind101/r101-api",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/repo/definitions/name"
+        }
+      },
+      "description": "",
+      "properties": {
+        "name": {
+          "$ref": "#/definitions/repo/definitions/name"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
+    "slug": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Slug",
+      "definitions": {
+        "id": {
+          "description": "unique identifier of slug",
+          "example": "01234567-89ab-cdef-0123-456789abcdef",
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/slug/definitions/id"
+        }
+      },
+      "description": "",
+      "links": [
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/slug/definitions/id"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    }
+  },
+  "properties": {
+    "config": {
+      "$ref": "#/definitions/config"
+    },
+    "deploy": {
+      "$ref": "#/definitions/deploy"
+    },
+    "image": {
+      "$ref": "#/definitions/image"
+    },
+    "procdef": {
+      "$ref": "#/definitions/procdef"
+    },
+    "release": {
+      "$ref": "#/definitions/release"
+    },
+    "repo": {
+      "$ref": "#/definitions/repo"
+    },
+    "slug": {
+      "$ref": "#/definitions/slug"
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "description": "Controller API",
+  "id": "empire",
+  "links": [
+    {
+      "href": "http://localhost:8080",
+      "rel": "self"
+    }
+  ],
+  "title": "Empire"
+}

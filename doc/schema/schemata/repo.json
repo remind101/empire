@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "Repo",
+  "definitions": {
+    "name": {
+      "description": "the name of the repo",
+      "example": "remind101/r101-api",
+      "type": [
+        "string"
+      ]
+    },
+    "identity": {
+      "$ref": "/schemata/repo#/definitions/name"
+    }
+  },
+  "description": "",
+  "properties": {
+    "name": {
+      "$ref": "/schemata/repo#/definitions/name"
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "id": "schemata/repo"
+}
