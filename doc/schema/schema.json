@@ -1,6 +1,34 @@
 {
   "$schema": "http://json-schema.org/draft-04/hyper-schema",
   "definitions": {
+    "app": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "App",
+      "definitions": {
+        "id": {
+          "description": "unique identifier of app",
+          "example": "01234567-89ab-cdef-0123-456789abcdef",
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/app/definitions/id"
+        }
+      },
+      "description": "",
+      "links": [
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/app/definitions/id"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    },
     "config": {
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "title": "Config",
@@ -35,22 +63,22 @@
       "description": "",
       "links": [
         {
-          "description": "Get the latest version of an repo's config",
-          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/configs/head",
+          "description": "Get the latest version of an app's config",
+          "href": "/apps/{(%23%2Fdefinitions%2Fapp%2Fdefinitions%2Fidentity)}/configs/head",
           "method": "GET",
           "rel": "head",
           "title": "Head"
         },
         {
-          "description": "Get a specific version of a repo's config",
-          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/configs/{(%23%2Fdefinitions%2Fconfig%2Fdefinitions%2Fidentity)}",
+          "description": "Get a specific version of an app's config",
+          "href": "/apps/{(%23%2Fdefinitions%2Fapp%2Fdefinitions%2Fidentity)}/configs/{(%23%2Fdefinitions%2Fconfig%2Fdefinitions%2Fidentity)}",
           "method": "GET",
           "rel": "info",
           "title": "Info"
         },
         {
-          "description": "Updates the config for a repo",
-          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/configs",
+          "description": "Updates the config for an app",
+          "href": "/apps/{(%23%2Fdefinitions%2Fapp%2Fdefinitions%2Fidentity)}/configs",
           "method": "PATCH",
           "rel": "update",
           "schema": {
@@ -98,7 +126,7 @@
       "links": [
         {
           "description": "Create a new deploy.",
-          "href": "/{(%23%2Fdefinitions%2Frepo%2Fdefinitions%2Fidentity)}/deploys",
+          "href": "/deploys",
           "method": "POST",
           "rel": "create",
           "schema": {
@@ -107,10 +135,14 @@
                 "properties": {
                   "id": {
                     "$ref": "#/definitions/image/definitions/id"
+                  },
+                  "repo": {
+                    "$ref": "#/definitions/image/definitions/repo"
                   }
                 },
                 "required": [
-                  "id"
+                  "id",
+                  "repo"
                 ],
                 "type": [
                   "object"
@@ -338,6 +370,9 @@
     }
   },
   "properties": {
+    "app": {
+      "$ref": "#/definitions/app"
+    },
     "config": {
       "$ref": "#/definitions/config"
     },

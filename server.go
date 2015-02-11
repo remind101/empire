@@ -92,7 +92,7 @@ func NewServer(e *Empire) *Server {
 	r := newRouter()
 
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService()})
-	r.Handle("PATCH", "/{app}/configs", &PostConfigs{e.AppsService(), e.ConfigsService()})
+	r.Handle("PATCH", "/apps/{app}/configs", &PostConfigs{e.AppsService(), e.ConfigsService()})
 
 	n := negroni.Classic()
 	n.UseHandler(r)

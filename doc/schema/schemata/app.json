@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "App",
+  "definitions": {
+    "id": {
+      "description": "unique identifier of app",
+      "example": "01234567-89ab-cdef-0123-456789abcdef",
+      "format": "uuid",
+      "type": [
+        "string"
+      ]
+    },
+    "identity": {
+      "$ref": "/schemata/app#/definitions/id"
+    }
+  },
+  "description": "",
+  "links": [
+  ],
+  "properties": {
+    "id": {
+      "$ref": "/schemata/app#/definitions/id"
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "id": "schemata/app"
+}

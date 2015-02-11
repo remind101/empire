@@ -18,7 +18,7 @@
   "links": [
     {
       "description": "Create a new deploy.",
-      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/deploys",
+      "href": "/deploys",
       "method": "POST",
       "rel": "create",
       "schema": {
@@ -27,9 +27,12 @@
             "properties": {
               "id": {
                 "$ref": "/schemata/image#/definitions/id"
+              },
+              "repo": {
+                "$ref": "/schemata/image#/definitions/repo"
               }
             },
-            "required": ["id"],
+            "required": ["id", "repo"],
             "type": [
               "object"
             ]
