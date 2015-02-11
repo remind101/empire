@@ -19,6 +19,26 @@
       },
       "description": "",
       "links": [
+        {
+          "description": "Create a new app.",
+          "href": "/apps",
+          "method": "POST",
+          "rel": "create",
+          "schema": {
+            "properties": {
+              "repo": {
+                "$ref": "#/definitions/repo/definitions/name"
+              }
+            },
+            "required": [
+              "repo"
+            ],
+            "type": [
+              "object"
+            ]
+          },
+          "title": "Create"
+        }
       ],
       "properties": {
         "id": {
@@ -87,6 +107,9 @@
                 "$ref": "#/definitions/config/definitions/vars"
               }
             },
+            "required": [
+              "vars"
+            ],
             "type": [
               "object"
             ]
@@ -170,6 +193,16 @@
             },
             "version": {
               "$ref": "#/definitions/release/definitions/version"
+            },
+            "app": {
+              "properties": {
+                "id": {
+                  "$ref": "#/definitions/app/definitions/id"
+                }
+              },
+              "type": [
+                "object"
+              ]
             },
             "config": {
               "properties": {

@@ -16,6 +16,24 @@
   },
   "description": "",
   "links": [
+    {
+      "description": "Create a new app.",
+      "href": "/apps",
+      "method": "POST",
+      "rel": "create",
+      "schema": {
+        "properties": {
+          "repo": {
+            "$ref": "/schemata/repo#/definitions/name"
+          }
+        },
+        "required": ["repo"],
+        "type": [
+          "object"
+        ]
+      },
+      "title": "Create"
+    }
   ],
   "properties": {
     "id": {

@@ -92,6 +92,7 @@ func NewServer(e *Empire) *Server {
 	r := newRouter()
 
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService()})
+	r.Handle("POST", "/apps", &PostApps{e.AppsService()})
 	r.Handle("PATCH", "/apps/{app}/configs", &PostConfigs{e.AppsService(), e.ConfigsService()})
 
 	n := negroni.Classic()
@@ -147,7 +148,31 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 	return 201, d, nil
 }
 
-// PostConfigs is a Handler for the POST /v1/configs/{repo_name} endpoint
+type PostAppsForm struct {
+	Repo string `json:"repo"`
+}
+
+type PostApps struct {
+	AppsService *apps.Service
+}
+
+func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
+	var form PostAppsForm
+
+	if err := req.Decode(&form); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	a, err := h.AppsService.Create(&apps.App{
+		Repo: repos.Repo(form.Repo),
+	})
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 201, a, nil
+}
+
 type PostConfigs struct {
 	AppsService    *apps.Service
 	ConfigsService *configs.Service

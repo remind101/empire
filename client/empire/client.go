@@ -206,6 +206,16 @@ func String(v string) *string {
 type App struct {
 	ID string `json:"id" url:"id,key"` // unique identifier of app
 }
+type AppCreateOpts struct {
+	Repo string `json:"repo" url:"repo,key"` // the name of the repo
+}
+
+// Create a new app.
+func (s *Service) AppCreate(o AppCreateOpts) (*App, error) {
+	var app App
+	return &app, s.Post(&app, fmt.Sprintf("/apps"), o)
+}
+
 type Config struct {
 	Vars    map[string]string `json:"vars" url:"vars,key"`       // a hash of configuration values
 	Version string            `json:"version" url:"version,key"` // unique identifier of config
@@ -224,7 +234,7 @@ func (s *Service) ConfigInfo(appIdentity string, configIdentity string) (*Config
 }
 
 type ConfigUpdateOpts struct {
-	Vars *map[string]string `json:"vars,omitempty" url:"vars,omitempty,key"` // a hash of configuration values
+	Vars map[string]string `json:"vars" url:"vars,key"` // a hash of configuration values
 }
 
 // Updates the config for an app
@@ -236,6 +246,9 @@ func (s *Service) ConfigUpdate(appIdentity string, o ConfigUpdateOpts) (*Config,
 type Deploy struct {
 	ID      string `json:"id" url:"id,key"` // unique identifier of deploy
 	Release struct {
+		App struct {
+			ID string `json:"id" url:"id,key"` // unique identifier of app
+		} `json:"app" url:"app,key"`
 		Config struct {
 			Version string `json:"version" url:"version,key"` // unique identifier of config
 		} `json:"config" url:"config,key"`

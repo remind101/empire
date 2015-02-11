@@ -1,3 +1,46 @@
+## App
+
+
+### Attributes
+| Name | Type | Description | Example |
+| ------- | ------- | ------- | ------- |
+| **id** | *uuid* | unique identifier of app | `"01234567-89ab-cdef-0123-456789abcdef"` |
+### App Create
+Create a new app.
+
+```
+POST /apps
+```
+
+#### Required Parameters
+| Name | Type | Description | Example |
+| ------- | ------- | ------- | ------- |
+| **repo** | *string* | the name of the repo | `"remind101/r101-api"` |
+
+
+
+#### Curl Example
+```bash
+$ curl -n -X POST http://localhost:8080/apps \
+  -H "Content-Type: application/json" \
+ \
+  -d '{
+  "repo": "remind101/r101-api"
+}'
+
+```
+
+
+#### Response Example
+```
+HTTP/1.1 201 Created
+```
+```json
+{
+  "id": "01234567-89ab-cdef-0123-456789abcdef"
+}
+```
+
 
 ## Config
 
@@ -70,10 +113,11 @@ Updates the config for an app
 PATCH /apps/{app_id}/configs
 ```
 
-#### Optional Parameters
+#### Required Parameters
 | Name | Type | Description | Example |
 | ------- | ------- | ------- | ------- |
 | **vars** | *object* | a hash of configuration values | `{"RAILS_ENV":"production"}` |
+
 
 
 #### Curl Example
@@ -113,6 +157,7 @@ HTTP/1.1 200 OK
 | **id** | *uuid* | unique identifier of deploy | `"01234567-89ab-cdef-0123-456789abcdef"` |
 | **release:id** | *uuid* | unique identifier of release | `"01234567-89ab-cdef-0123-456789abcdef"` |
 | **release:version** | *string* | an incremental identifier for the version | `"v1"` |
+| **release:app:id** | *uuid* | unique identifier of app | `"01234567-89ab-cdef-0123-456789abcdef"` |
 | **release:config:version** | *string* | unique identifier of config | `"0123456789abcdef0123456789abcdef"` |
 | **release:slug:id** | *uuid* | unique identifier of slug | `"01234567-89ab-cdef-0123-456789abcdef"` |
 ### Deploy Create
@@ -155,6 +200,9 @@ HTTP/1.1 201 Created
   "release": {
     "id": "01234567-89ab-cdef-0123-456789abcdef",
     "version": "v1",
+    "app": {
+      "id": "01234567-89ab-cdef-0123-456789abcdef"
+    },
     "config": {
       "version": "0123456789abcdef0123456789abcdef"
     },

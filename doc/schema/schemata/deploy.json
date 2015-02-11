@@ -58,6 +58,16 @@
         "version": {
           "$ref": "/schemata/release#/definitions/version"
         },
+        "app": {
+          "properties": {
+            "id": {
+              "$ref": "/schemata/app#/definitions/id"
+            }
+          },
+          "type": [
+            "object"
+          ]
+        },
         "config": {
           "properties": {
             "version": {
