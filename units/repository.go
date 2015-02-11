@@ -3,11 +3,74 @@ package units
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/releases"
 )
+
+type repository struct {
+	sync.RWMutex
+	releases map[apps.ID]*releases.Release
+	units    map[apps.ID]UnitMap
+}
+
+func newRepository() *repository {
+	return &repository{
+		releases: make(map[apps.ID]*releases.Release),
+		units:    make(map[apps.ID]UnitMap),
+	}
+}
+
+func (r *repository) Create(rel *releases.Release) error {
+	r.Lock()
+	defer r.Unlock()
+
+	r.releases[rel.App.ID] = rel
+	return nil
+}
+
+func (r *repository) Put(u Unit) error {
+	r.Lock()
+	defer r.Unlock()
+
+	if _, ok := r.units[u.Release.App.ID]; !ok {
+		r.units[u.Release.App.ID] = make(UnitMap)
+	}
+
+	r.units[u.Release.App.ID][u.ProcessType] = u
+	return nil
+}
+
+func (r *repository) Delete(u Unit) error {
+	r.Lock()
+	defer r.Unlock()
+
+	if _, ok := r.units[u.Release.App.ID]; !ok {
+		return nil
+	}
+
+	delete(r.units[u.Release.App.ID], u.ProcessType)
+	return nil
+}
+
+func (r *repository) FindByApp(id apps.ID) ([]Unit, error) {
+	r.Lock()
+	defer r.Unlock()
+
+	if _, ok := r.units[id]; !ok {
+		return []Unit{}, nil
+	}
+
+	var units []Unit
+	m := r.units[id]
+	for _, u := range m {
+		units = append(units, u)
+	}
+
+	return units, nil
+}
 
 type consulRepository struct {
 	client *api.Client
