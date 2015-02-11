@@ -10,6 +10,10 @@ type Empire struct {
 	deploysService *deploys.Service
 }
 
+func New() *Empire {
+	return &Empire{}
+}
+
 func (e *Empire) ConfigsService() *configs.Service {
 	return e.configsService
 }

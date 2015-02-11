@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "Release",
+  "definitions": {
+    "id": {
+      "description": "unique identifier of release",
+      "example": "01234567-89ab-cdef-0123-456789abcdef",
+      "format": "uuid",
+      "type": [
+        "string"
+      ]
+    },
+    "identity": {
+      "$ref": "/schemata/release#/definitions/id"
+    },
+    "version": {
+      "description": "an incremental identifier for the version",
+      "example": "v1",
+      "type": [
+        "string"
+      ]
+    }
+  },
+  "description": "",
+  "properties": {
+    "id": {
+      "$ref": "/schemata/release#/definitions/id"
+    },
+    "version": {
+      "$ref": "/schemata/release#/definitions/version"
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "id": "schemata/release"
+}

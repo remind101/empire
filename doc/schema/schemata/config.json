@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "Config",
+  "definitions": {
+    "version": {
+      "description": "unique identifier of config",
+      "example": "0123456789abcdef0123456789abcdef",
+      "type": [
+        "string"
+      ]
+    },
+    "identity": {
+      "$ref": "/schemata/config#/definitions/version"
+    },
+    "vars": {
+      "description": "a hash of configuration values",
+      "example": {
+        "RAILS_ENV": "production"
+      },
+      "patternProperties": {
+        ".{1,}": {
+          "type": "string"
+        }
+      },
+      "type": [
+        "object"
+      ]
+    }
+  },
+  "description": "",
+  "links": [
+    {
+      "description": "Get the latest version of an repo's config",
+      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/configs/head",
+      "method": "GET",
+      "rel": "head",
+      "title": "Head"
+    },
+    {
+      "description": "Get a specific version of a repo's config",
+      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/configs/{(%2Fschemata%2Fconfig%23%2Fdefinitions%2Fidentity)}",
+      "method": "GET",
+      "rel": "info",
+      "title": "Info"
+    },
+    {
+      "description": "Updates the config for a repo",
+      "href": "/{(%2Fschemata%2Frepo%23%2Fdefinitions%2Fidentity)}/configs",
+      "method": "PATCH",
+      "rel": "update",
+      "schema": {
+        "properties": {
+          "vars": {
+            "$ref": "/schemata/config#/definitions/vars"
+          }
+        },
+        "type": [
+          "object"
+        ]
+      },
+      "title": "Update"
+    }
+  ],
+  "properties": {
+    "version": {
+      "$ref": "/schemata/config#/definitions/version"
+    },
+    "vars": {
+      "$ref": "/schemata/config#/definitions/vars"
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "id": "schemata/config"
+}
