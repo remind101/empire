@@ -107,7 +107,7 @@ func TestDelete(t *testing.T) {
 
 func buildRelease(appID string, releaseID string, proctypes slugs.ProcessMap) *releases.Release {
 	return &releases.Release{
-		ID:      releaseID,
+		ID:      releases.ID(releaseID),
 		Version: "v1",
 		App: &apps.App{
 			ID: apps.ID(appID),
