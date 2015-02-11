@@ -57,22 +57,22 @@ type Repository interface {
 	FindByImage(*Image) (*Slug, error)
 }
 
-// slugsRepository is a fake implementation of the Repository interface.
-type slugsRepository struct {
+// repository is a fake implementation of the Repository interface.
+type repository struct {
 	// map[slug.ID]*Slug
 	slugs map[string]*Slug
 	id    int
 }
 
-// newRepository returns a new slugsRepository instance.
-func newRepository() *slugsRepository {
-	return &slugsRepository{
+// newRepository returns a new repository instance.
+func newRepository() *repository {
+	return &repository{
 		slugs: make(map[string]*Slug),
 	}
 }
 
 // Create implements Repository Create.
-func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
+func (r *repository) Create(slug *Slug) (*Slug, error) {
 	r.id++
 	slug.ID = strconv.Itoa(r.id)
 	r.slugs[slug.ID] = slug
@@ -80,11 +80,11 @@ func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
 }
 
 // FindByID implements Repository FindByID.
-func (r *slugsRepository) FindByID(id string) (*Slug, error) {
+func (r *repository) FindByID(id string) (*Slug, error) {
 	return r.slugs[id], nil
 }
 
-func (r *slugsRepository) FindByImage(image *Image) (*Slug, error) {
+func (r *repository) FindByImage(image *Image) (*Slug, error) {
 	for _, slug := range r.slugs {
 		if *slug.Image == *image {
 			return slug, nil
@@ -94,7 +94,7 @@ func (r *slugsRepository) FindByImage(image *Image) (*Slug, error) {
 	return nil, nil
 }
 
-func (r *slugsRepository) Reset() {
+func (r *repository) Reset() {
 	r.slugs = make(map[string]*Slug)
 	r.id = 0
 }

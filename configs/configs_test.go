@@ -7,7 +7,7 @@ import (
 	"github.com/remind101/empire/repos"
 )
 
-func TestService_Apply(t *testing.T) {
+func TestServiceApply(t *testing.T) {
 	repo := repos.Repo("remind101/r101-api")
 	s := &Service{
 		Repository: newRepository(),

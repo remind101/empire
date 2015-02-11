@@ -30,8 +30,8 @@ type Repository interface {
 	Head(repos.Repo) (*Release, error)
 }
 
-// releasesRepository is an in-memory implementation of a Repository
-type releasesRepository struct {
+// repository is an in-memory implementation of a Repository
+type repository struct {
 	byRepo       map[repos.Repo][]*Release
 	byReleaseID  map[string]*Release
 	versions     map[repos.Repo]int
@@ -39,17 +39,17 @@ type releasesRepository struct {
 	id           int
 }
 
-// Create a new releasesRepository
-func newRepository() *releasesRepository {
-	return &releasesRepository{
+// Create a new repository
+func newRepository() *repository {
+	return &repository{
 		byRepo:      make(map[repos.Repo][]*Release),
 		byReleaseID: make(map[string]*Release),
 		versions:    make(map[repos.Repo]int),
 	}
 }
 
-// Generates a releasesRepository that stubs out the CreatedAt field.
-func newFakeRepository() *releasesRepository {
+// Generates a repository that stubs out the CreatedAt field.
+func newFakeRepository() *repository {
 	r := newRepository()
 	r.genTimestamp = func() time.Time {
 		return time.Date(2014, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -57,7 +57,7 @@ func newFakeRepository() *releasesRepository {
 	return r
 }
 
-func (p *releasesRepository) Create(repo repos.Repo, config *configs.Config, slug *slugs.Slug) (*Release, error) {
+func (p *repository) Create(repo repos.Repo, config *configs.Config, slug *slugs.Slug) (*Release, error) {
 	p.id++
 
 	createdAt := time.Now()
@@ -86,7 +86,7 @@ func (p *releasesRepository) Create(repo repos.Repo, config *configs.Config, slu
 	return r, nil
 }
 
-func (p *releasesRepository) FindByRepo(repo repos.Repo) ([]*Release, error) {
+func (p *repository) FindByRepo(repo repos.Repo) ([]*Release, error) {
 	if set, ok := p.byRepo[repo]; ok {
 		return set, nil
 	}
@@ -94,7 +94,7 @@ func (p *releasesRepository) FindByRepo(repo repos.Repo) ([]*Release, error) {
 	return []*Release{}, nil
 }
 
-func (p *releasesRepository) FindByReleaseID(releaseID string) (*Release, error) {
+func (p *repository) FindByReleaseID(releaseID string) (*Release, error) {
 	r, ok := p.byReleaseID[releaseID]
 	if !ok {
 		r = &Release{}
@@ -103,7 +103,7 @@ func (p *releasesRepository) FindByReleaseID(releaseID string) (*Release, error)
 	return r, nil
 }
 
-func (p *releasesRepository) Head(repo repos.Repo) (*Release, error) {
+func (p *repository) Head(repo repos.Repo) (*Release, error) {
 	set, ok := p.byRepo[repo]
 	if !ok {
 		return nil, nil

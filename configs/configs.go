@@ -33,8 +33,8 @@ type Repository interface {
 	Push(repos.Repo, *Config) (*Config, error)
 }
 
-// configRepository is an in memory implementation of the Repository.
-type configRepository struct {
+// repository is an in memory implementation of the Repository.
+type repository struct {
 	// Maps an app to an array of Config objects.
 	s map[repos.Repo][]*Config
 
@@ -42,15 +42,15 @@ type configRepository struct {
 	h map[repos.Repo]*Config
 }
 
-func newRepository() *configRepository {
-	return &configRepository{
+func newRepository() *repository {
+	return &repository{
 		s: make(map[repos.Repo][]*Config),
 		h: make(map[repos.Repo]*Config),
 	}
 }
 
 // Head implements Repository Head.
-func (r *configRepository) Head(repo repos.Repo) (*Config, error) {
+func (r *repository) Head(repo repos.Repo) (*Config, error) {
 	if r.h[repo] == nil {
 		return nil, nil
 	}
@@ -59,7 +59,7 @@ func (r *configRepository) Head(repo repos.Repo) (*Config, error) {
 }
 
 // Version implements Repository Version.
-func (r *configRepository) Version(repo repos.Repo, version string) (*Config, error) {
+func (r *repository) Version(repo repos.Repo, version string) (*Config, error) {
 	for _, c := range r.s[repo] {
 		if c.Version == version {
 			return c, nil
@@ -70,7 +70,7 @@ func (r *configRepository) Version(repo repos.Repo, version string) (*Config, er
 }
 
 // Push implements Repository Push.
-func (r *configRepository) Push(repo repos.Repo, config *Config) (*Config, error) {
+func (r *repository) Push(repo repos.Repo, config *Config) (*Config, error) {
 	r.s[repo] = append(r.s[repo], config)
 	r.h[repo] = config
 
