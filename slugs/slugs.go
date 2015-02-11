@@ -45,6 +45,11 @@ type Repository interface {
 	FindByImage(*Image) (*Slug, error)
 }
 
+// NewRepository returns a new Repository instance.
+func NewRepository() (Repository, error) {
+	return nil, nil
+}
+
 // repository is a fake implementation of the Repository interface.
 type repository struct {
 	slugs map[ID]*Slug

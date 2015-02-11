@@ -16,7 +16,11 @@ type TestClient struct {
 }
 
 func NewTestClient(t testing.TB) *TestClient {
-	e := empire.New()
+	e, err := empire.New(empire.DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	s := httptest.NewServer(empire.NewServer(e))
 	c := client.NewService(nil)
 	c.URL = s.URL

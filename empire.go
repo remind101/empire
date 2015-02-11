@@ -8,6 +8,28 @@ import (
 	"github.com/remind101/empire/slugs"
 )
 
+// DefaultOptions is a default Options instance that can be passed when
+// intializing a new Empire.
+var DefaultOptions = Options{}
+
+// DockerOptions is a set of options to configure a docker api client.
+type DockerOptions struct {
+	// The unix socket to connect to the docker api.
+	Socket string
+
+	// The docker registry to pull container images from.
+	Registry string
+
+	// Path to a certificate to use for TLS connections.
+	CertPath string
+}
+
+// Options is provided to New to configure the Empire services.
+type Options struct {
+	Docker DockerOptions
+}
+
+// Empire is a context object that contains a collection of services.
 type Empire struct {
 	appsService     *apps.Service
 	configsService  *configs.Service
@@ -16,8 +38,16 @@ type Empire struct {
 	slugsService    *slugs.Service
 }
 
-func New() *Empire {
-	return &Empire{}
+// New returns a new Empire instance.
+func New(options Options) (*Empire, error) {
+	slugs, err := newSlugsService(options)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Empire{
+		slugsService: slugs,
+	}, nil
 }
 
 func (e *Empire) AppsService() *apps.Service {
@@ -63,4 +93,22 @@ func (e *Empire) SlugsService() *slugs.Service {
 	}
 
 	return e.slugsService
+}
+
+func newSlugsService(options Options) (*slugs.Service, error) {
+	r, err := slugs.NewRepository()
+	if err != nil {
+		return nil, err
+	}
+
+	e, err := slugs.NewExtractor(
+		options.Docker.Socket,
+		options.Docker.Registry,
+		options.Docker.CertPath,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return slugs.NewService(r, e), nil
 }
