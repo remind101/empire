@@ -6,6 +6,12 @@ import (
 	"github.com/remind101/empire/repos"
 )
 
+var (
+	// DefaultProcfilePath is the default path where Procfiles will be
+	// extracted from the container.
+	DefaultProcfilePath = "/home/app/Procfile"
+)
+
 // ProcessType represents the type of a given process/command.
 type ProcessType string
 
@@ -27,27 +33,6 @@ type Slug struct {
 	ID           string
 	Image        *Image
 	ProcessTypes ProcessMap
-}
-
-// Extractor represents an object that can extract the process types from an
-// image.
-type Extractor interface {
-	// Extract takes a repo in the form `remind101/r101-api`, and an image
-	// id, and extracts the process types from the image.
-	Extract(*Image) (ProcessMap, error)
-}
-
-// extractor is a fake implementation of the Extractor interface.
-type extractor struct{}
-
-// Extract implements Extractor Extract.
-func (e *extractor) Extract(image *Image) (ProcessMap, error) {
-	pm := make(ProcessMap)
-
-	// Just return some fake processes.
-	pm[ProcessType("web")] = Command("./bin/web")
-
-	return pm, nil
 }
 
 // Repository represents an interface for creating and finding slugs.
