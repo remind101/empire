@@ -21,6 +21,10 @@ func New() *Empire {
 }
 
 func (e *Empire) AppsService() *apps.Service {
+	if e.appsService == nil {
+		e.appsService = apps.NewService(nil)
+	}
+
 	return e.appsService
 }
 
@@ -35,6 +39,7 @@ func (e *Empire) ConfigsService() *configs.Service {
 func (e *Empire) DeploysService() *deploys.Service {
 	if e.deploysService == nil {
 		e.deploysService = &deploys.Service{
+			AppsService:     e.AppsService(),
 			ConfigsService:  e.ConfigsService(),
 			SlugsService:    e.SlugsService(),
 			ReleasesService: e.ReleasesService(),

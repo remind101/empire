@@ -24,8 +24,8 @@ type ProcessMap map[ProcessType]Command
 
 // Image represents a container image, which is tied to a repository.
 type Image struct {
-	Repo repos.Repo
-	ID   string
+	Repo repos.Repo `json:"repo"`
+	ID   string     `json:"id"`
 }
 
 // ID represents the unique identifier of a Slug.
@@ -33,9 +33,9 @@ type ID string
 
 // Slug represents a container image with the extracted ProcessTypes.
 type Slug struct {
-	ID           ID
-	Image        *Image
-	ProcessTypes ProcessMap
+	ID           ID         `json:"id"`
+	Image        *Image     `json:"image"`
+	ProcessTypes ProcessMap `json:"process_types"`
 }
 
 // Repository represents an interface for creating and finding slugs.

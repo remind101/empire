@@ -12,9 +12,9 @@ type ID string
 
 // Deploy represents a deployment to the platform.
 type Deploy struct {
-	ID      ID
-	Status  string
-	Release *releases.Release
+	ID      ID                `json:"id"`
+	Status  string            `json:"status"`
+	Release *releases.Release `json:"release"`
 }
 
 type Service struct {
@@ -32,10 +32,7 @@ func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
 	}
 
 	// Grab the latest config.
-	config, err := s.ConfigsService.Head(app.ID)
-	if err != nil {
-		return nil, err
-	}
+	config, err := s.ConfigsService.Head(app)
 
 	// Create a new slug for the docker image.
 	//
