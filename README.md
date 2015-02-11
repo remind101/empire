@@ -12,18 +12,6 @@ Empire is a distributed system for deploying and running
 [12factor][12factor] [Docker][docker] based
 applications in a compute cluster. The following components are employed:
 
-**[Centurion][centurion]** The controller API for deploying, scaling, running 1 off processes, etc.
-
-**[Celsus][celsus]** Manages application configuration and versioning.
-
-**[Sluggy][sluggy]** Generates "slugs" by extracting runnable process types from containers.
-
-**[Phalanx][phalanx]** Manages the desired instance counts for runnable processes.
-
-**[Legion][legion]** Our distributed init system.
-
-**[Pantheon][pantheon]** Stores and exposes releases.
-
 **[Quay][quay]** Quay is used to automatically build docker images when we push commits to GitHub.
 
 **[Quayd][quayd]** Quayd is used to handle webhook events from Quay and create GitHub Commit Statuses as well as tag the resulting images with the git sha.
