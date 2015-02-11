@@ -21,8 +21,8 @@ type Variable string
 // Vars represents a variable -> value mapping.
 type Vars map[Variable]string
 
-// ConfigRepository represents an interface for retrieving and storing Config's.
-type ConfigRepository interface {
+// Repository represents an interface for retrieving and storing Config's.
+type Repository interface {
 	// Head returns the current Config for the app.
 	Head(repos.Repo) (*Config, error)
 
@@ -33,7 +33,7 @@ type ConfigRepository interface {
 	Push(repos.Repo, *Config) (*Config, error)
 }
 
-// configRepository is an in memory implementation of the ConfigRepository.
+// configRepository is an in memory implementation of the Repository.
 type configRepository struct {
 	// Maps an app to an array of Config objects.
 	s map[repos.Repo][]*Config
@@ -42,14 +42,14 @@ type configRepository struct {
 	h map[repos.Repo]*Config
 }
 
-func newConfigRepository() *configRepository {
+func newRepository() *configRepository {
 	return &configRepository{
 		s: make(map[repos.Repo][]*Config),
 		h: make(map[repos.Repo]*Config),
 	}
 }
 
-// Head implements ConfigRepository Head.
+// Head implements Repository Head.
 func (r *configRepository) Head(repo repos.Repo) (*Config, error) {
 	if r.h[repo] == nil {
 		return nil, nil
@@ -58,7 +58,7 @@ func (r *configRepository) Head(repo repos.Repo) (*Config, error) {
 	return r.h[repo], nil
 }
 
-// Version implements ConfigRepository Version.
+// Version implements Repository Version.
 func (r *configRepository) Version(repo repos.Repo, version string) (*Config, error) {
 	for _, c := range r.s[repo] {
 		if c.Version == version {
@@ -69,7 +69,7 @@ func (r *configRepository) Version(repo repos.Repo, version string) (*Config, er
 	return nil, nil
 }
 
-// Push implements ConfigRepository Push.
+// Push implements Repository Push.
 func (r *configRepository) Push(repo repos.Repo, config *Config) (*Config, error) {
 	r.s[repo] = append(r.s[repo], config)
 	r.h[repo] = config
@@ -77,15 +77,15 @@ func (r *configRepository) Push(repo repos.Repo, config *Config) (*Config, error
 	return config, nil
 }
 
-// ConfigService represents a service for manipulating the Config for a repo.
-type ConfigService struct {
-	ConfigRepository
+// Service represents a service for manipulating the Config for a repo.
+type Service struct {
+	Repository
 }
 
 // Apply merges the provided Vars into the latest Config and returns a new
 // Config.
-func (s *ConfigService) Apply(repo repos.Repo, vars Vars) (*Config, error) {
-	l, err := s.ConfigRepository.Head(repo)
+func (s *Service) Apply(repo repos.Repo, vars Vars) (*Config, error) {
+	l, err := s.Repository.Head(repo)
 
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (s *ConfigService) Apply(repo repos.Repo, vars Vars) (*Config, error) {
 
 	c := newConfig(l, vars)
 
-	return s.ConfigRepository.Push(repo, c)
+	return s.Repository.Push(repo, c)
 }
 
 // newConfig creates a new config based on the old config, with the new

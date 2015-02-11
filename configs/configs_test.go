@@ -7,10 +7,10 @@ import (
 	"github.com/remind101/empire/repos"
 )
 
-func TestConfigService_Apply(t *testing.T) {
+func TestService_Apply(t *testing.T) {
 	repo := repos.Repo("remind101/r101-api")
-	s := &ConfigService{
-		ConfigRepository: newConfigRepository(),
+	s := &Service{
+		Repository: newRepository(),
 	}
 
 	tests := []struct {
@@ -70,8 +70,8 @@ func TestConfigService_Apply(t *testing.T) {
 	}
 }
 
-func TestConfigRepository(t *testing.T) {
-	r := newConfigRepository()
+func TestRepository(t *testing.T) {
+	r := newRepository()
 	repo := repos.Repo("r101-api")
 
 	c, _ := r.Push(repo, &Config{})

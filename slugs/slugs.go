@@ -50,28 +50,28 @@ func (e *extractor) Extract(image *Image) (ProcessMap, error) {
 	return pm, nil
 }
 
-// SlugsRepository represents an interface for creating and finding slugs.
-type SlugsRepository interface {
+// Repository represents an interface for creating and finding slugs.
+type Repository interface {
 	Create(*Slug) (*Slug, error)
 	FindByID(id string) (*Slug, error)
 	FindByImage(*Image) (*Slug, error)
 }
 
-// slugsRepository is a fake implementation of the SlugsRepository interface.
+// slugsRepository is a fake implementation of the Repository interface.
 type slugsRepository struct {
 	// map[slug.ID]*Slug
 	slugs map[string]*Slug
 	id    int
 }
 
-// newSlugsRepository returns a new slugsRepository instance.
-func newSlugsRepository() *slugsRepository {
+// newRepository returns a new slugsRepository instance.
+func newRepository() *slugsRepository {
 	return &slugsRepository{
 		slugs: make(map[string]*Slug),
 	}
 }
 
-// Create implements SlugsRepository Create.
+// Create implements Repository Create.
 func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
 	r.id++
 	slug.ID = strconv.Itoa(r.id)
@@ -79,7 +79,7 @@ func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
 	return slug, nil
 }
 
-// FindByID implements SlugsRepository FindByID.
+// FindByID implements Repository FindByID.
 func (r *slugsRepository) FindByID(id string) (*Slug, error) {
 	return r.slugs[id], nil
 }
@@ -99,17 +99,17 @@ func (r *slugsRepository) Reset() {
 	r.id = 0
 }
 
-// SlugsService is a service for extracting process types then creating a new
+// Service is a service for extracting process types then creating a new
 // Slug.
-type SlugsService struct {
-	SlugsRepository
+type Service struct {
+	Repository
 	Extractor Extractor
 }
 
 // CreateByImageID extracts the process types from the image, then creates a new
 // slug.
-func (s *SlugsService) CreateByImage(image *Image) (*Slug, error) {
-	if slug, err := s.SlugsRepository.FindByImage(image); slug != nil {
+func (s *Service) CreateByImage(image *Image) (*Slug, error) {
+	if slug, err := s.Repository.FindByImage(image); slug != nil {
 		return slug, err
 	}
 
@@ -124,5 +124,5 @@ func (s *SlugsService) CreateByImage(image *Image) (*Slug, error) {
 
 	slug.ProcessTypes = pt
 
-	return s.SlugsRepository.Create(slug)
+	return s.Repository.Create(slug)
 }

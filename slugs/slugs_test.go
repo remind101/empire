@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestSlugsRepository(t *testing.T) {
-	r := newSlugsRepository()
+func TestRepository(t *testing.T) {
+	r := newRepository()
 
 	if got, want := len(r.slugs), 0; got != want {
 		t.Fatal("Expected no slugs")
@@ -38,10 +38,10 @@ func TestSlugsRepository(t *testing.T) {
 	}
 }
 
-func TestSlugsService_CreateByImageID(t *testing.T) {
-	s := &SlugsService{
-		SlugsRepository: newSlugsRepository(),
-		Extractor:       &extractor{},
+func TestService_CreateByImageID(t *testing.T) {
+	s := &Service{
+		Repository: newRepository(),
+		Extractor:  &extractor{},
 	}
 
 	image := &Image{
@@ -60,10 +60,10 @@ func TestSlugsService_CreateByImageID(t *testing.T) {
 	}
 }
 
-func TestSlugsService_CreateByImageID_AlreadyExists(t *testing.T) {
-	s := &SlugsService{
-		SlugsRepository: newSlugsRepository(),
-		Extractor:       &extractor{},
+func TestService_CreateByImageID_AlreadyExists(t *testing.T) {
+	s := &Service{
+		Repository: newRepository(),
+		Extractor:  &extractor{},
 	}
 
 	image := &Image{

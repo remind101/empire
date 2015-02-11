@@ -23,14 +23,14 @@ type Release struct {
 
 // ReleaseRepository is an interface that can be implemented for storing and
 // retrieving releases.
-type ReleasesRepository interface {
+type Repository interface {
 	Create(repos.Repo, *configs.Config, *slugs.Slug) (*Release, error)
 	FindByRepo(repos.Repo) ([]*Release, error)
 	FindByReleaseID(string) (*Release, error)
 	Head(repos.Repo) (*Release, error)
 }
 
-// releasesRepository is an in-memory implementation of a ReleasesRepository
+// releasesRepository is an in-memory implementation of a Repository
 type releasesRepository struct {
 	byRepo       map[repos.Repo][]*Release
 	byReleaseID  map[string]*Release
@@ -40,7 +40,7 @@ type releasesRepository struct {
 }
 
 // Create a new releasesRepository
-func newReleasesRepository() *releasesRepository {
+func newRepository() *releasesRepository {
 	return &releasesRepository{
 		byRepo:      make(map[repos.Repo][]*Release),
 		byReleaseID: make(map[string]*Release),
@@ -49,8 +49,8 @@ func newReleasesRepository() *releasesRepository {
 }
 
 // Generates a releasesRepository that stubs out the CreatedAt field.
-func newFakeReleasesRepository() *releasesRepository {
-	r := newReleasesRepository()
+func newFakeRepository() *releasesRepository {
+	r := newRepository()
 	r.genTimestamp = func() time.Time {
 		return time.Date(2014, time.January, 1, 0, 0, 0, 0, time.UTC)
 	}
@@ -112,10 +112,10 @@ func (p *releasesRepository) Head(repo repos.Repo) (*Release, error) {
 	return set[len(set)-1], nil
 }
 
-type ReleasesService struct {
-	ReleasesRepository
+type Service struct {
+	Repository
 }
 
-func (s *ReleasesService) Create(config *configs.Config, slug *slugs.Slug) (*Release, error) {
-	return s.ReleasesRepository.Create(slug.Image.Repo, config, slug)
+func (s *Service) Create(config *configs.Config, slug *slugs.Slug) (*Release, error) {
+	return s.Repository.Create(slug.Image.Repo, config, slug)
 }

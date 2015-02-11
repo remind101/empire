@@ -13,14 +13,14 @@ type Deploy struct {
 	Release *releases.Release
 }
 
-type DeploysService struct {
-	ConfigsService  configs.ConfigService
-	SlugsService    slugs.SlugsService
-	ReleasesService releases.ReleasesService
+type Service struct {
+	ConfigsService  *configs.Service
+	SlugsService    *slugs.Service
+	ReleasesService *releases.Service
 }
 
 // Deploy deploys an Image to the platform.
-func (s *DeploysService) Deploy(image *slugs.Image) (*Deploy, error) {
+func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
 	// Grab the latest config.
 	config, err := s.ConfigsService.Head(image.Repo)
 	if err != nil {
