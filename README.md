@@ -61,12 +61,7 @@ There are three phases during deployment:
 2. **Release**: This phase happens when a developer triggers a deploy for a git sha via marvin. The git sha is resolved to a docker image, empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
 3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
 
-[centurion]: https://github.com/remind101/centurion
-[celsus]: https://github.com/remind101/celsus
-[sluggy]: https://github.com/remind101/sluggy
-[phalanx]: https://github.com/remind101/phalanx
 [legion]: https://github.com/remind101/legion
-[pantheon]: https://github.com/remind101/pantheon
 [quay]: https://quay.io
 [quayd]: https://github.com/remind101/quayd
 [consul]: https://github.com/hashicorp/consul
