@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/remind101/empire/apps"
 )
@@ -38,10 +39,8 @@ type Repository interface {
 
 // repository is an in memory implementation of the Repository.
 type repository struct {
-	// Maps an app to an array of Config objects.
+	sync.RWMutex
 	s map[apps.ID][]*Config
-
-	// Keeps a reference to the current Config object for the app.
 	h map[apps.ID]*Config
 }
 
@@ -54,6 +53,9 @@ func newRepository() *repository {
 
 // Head implements Repository Head.
 func (r *repository) Head(appID apps.ID) (*Config, error) {
+	r.RLock()
+	defer r.RUnlock()
+
 	if r.h[appID] == nil {
 		return nil, nil
 	}
@@ -63,6 +65,9 @@ func (r *repository) Head(appID apps.ID) (*Config, error) {
 
 // Version implements Repository Version.
 func (r *repository) Version(appID apps.ID, version Version) (*Config, error) {
+	r.RLock()
+	defer r.RUnlock()
+
 	for _, c := range r.s[appID] {
 		if c.Version == version {
 			return c, nil
@@ -74,6 +79,9 @@ func (r *repository) Version(appID apps.ID, version Version) (*Config, error) {
 
 // Push implements Repository Push.
 func (r *repository) Push(config *Config) (*Config, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	id := config.App.ID
 
 	r.s[id] = append(r.s[id], config)

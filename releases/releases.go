@@ -3,6 +3,7 @@ package releases
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/remind101/empire/apps"
@@ -38,8 +39,10 @@ type Repository interface {
 
 // repository is an in-memory implementation of a Repository
 type repository struct {
-	releases     map[apps.ID][]*Release
-	versions     map[apps.ID]int
+	sync.RWMutex
+	releases map[apps.ID][]*Release
+	versions map[apps.ID]int
+
 	genTimestamp func() time.Time
 	id           int
 }
@@ -61,21 +64,24 @@ func newFakeRepository() *repository {
 	return r
 }
 
-func (p *repository) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*Release, error) {
-	p.id++
+func (r *repository) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*Release, error) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.id++
 
 	createdAt := time.Now()
-	if p.genTimestamp != nil {
-		createdAt = p.genTimestamp()
+	if r.genTimestamp != nil {
+		createdAt = r.genTimestamp()
 	}
 
 	version := 1
-	if v, ok := p.versions[app.ID]; ok {
+	if v, ok := r.versions[app.ID]; ok {
 		version = v
 	}
 
-	r := &Release{
-		ID:        ID(strconv.Itoa(p.id)),
+	release := &Release{
+		ID:        ID(strconv.Itoa(r.id)),
 		Version:   Version(fmt.Sprintf("v%d", version)),
 		App:       app,
 		Config:    config,
@@ -83,22 +89,28 @@ func (p *repository) Create(app *apps.App, config *configs.Config, slug *slugs.S
 		CreatedAt: createdAt.UTC(),
 	}
 
-	p.versions[app.ID] = version + 1
-	p.releases[app.ID] = append(p.releases[app.ID], r)
+	r.versions[app.ID] = version + 1
+	r.releases[app.ID] = append(r.releases[app.ID], release)
 
-	return r, nil
+	return release, nil
 }
 
-func (p *repository) FindByAppID(id apps.ID) ([]*Release, error) {
-	if set, ok := p.releases[id]; ok {
+func (r *repository) FindByAppID(id apps.ID) ([]*Release, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	if set, ok := r.releases[id]; ok {
 		return set, nil
 	}
 
 	return []*Release{}, nil
 }
 
-func (p *repository) Head(id apps.ID) (*Release, error) {
-	set, ok := p.releases[id]
+func (r *repository) Head(id apps.ID) (*Release, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	set, ok := r.releases[id]
 	if !ok {
 		return nil, nil
 	}
