@@ -26,12 +26,7 @@ applications in a compute cluster. The following components are employed:
 
 ## Development
 
-This will improve over time, but currently, you need to clone all the repos into
-your GOPATH then:
-
-```console
-$ fig up
-```
+**TODO**
 
 ## How do I deploy to Empire?
 
