@@ -1,0 +1,8 @@
+{
+	"ImportPath": "github.com/remind101/empire",
+	"GoVersion": "go1.4.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": []
+}
