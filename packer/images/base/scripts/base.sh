@@ -1,13 +1,16 @@
 #!/bin/bash
 
 sudo apt-get update
-sudo apt-get -y install wget unzip
+sudo apt-get -y install wget unzip curl
 
 if ! pip --help > /dev/null
 then
     echo "# Installing pip"
     curl https://bootstrap.pypa.io/get-pip.py | sudo python
 fi
+
+sudo pip install httpie
+sudo pip install virtualenv
 
 if ! which docker
 then
