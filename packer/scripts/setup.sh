@@ -43,8 +43,10 @@ then
     curl --location -o /tmp/vagrant.dmg https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.dmg
     echo "# Opening the vagrant .dmg file. Please double click 'Vagrant.pkg' "
     echo "# when it is finished, and follow the instructions to install."
-    reach -p "# Hit ENTER when ready to continue." BLAH
     open /tmp/vagrant.dmg
+    read -p "# Hit ENTER when you are done installing to continue." BLAH
+    echo "# Installing vagrant-vbguest plugin."
+    vagrant plugin install vagrant-vbguest
 fi
 
 echo "# Done"
