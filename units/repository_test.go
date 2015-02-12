@@ -7,18 +7,6 @@ import (
 	"github.com/remind101/empire/slugs"
 )
 
-func TestConsulCreate(t *testing.T) {
-	c, s := consulutil.MakeClient(t)
-	defer s.Stop()
-	service := NewConsulRepository(c)
-
-	err := service.Create(buildRelease("api", "1", slugs.ProcessMap{"web": "./bin/web"}))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestConsulFindByApp(t *testing.T) {
 	c, s := consulutil.MakeClient(t)
 	defer s.Stop()
@@ -30,7 +18,6 @@ func TestConsulFindByApp(t *testing.T) {
 		"worker":   "./bin/worker",
 		"consumer": "./bin/consumer",
 	})
-	service.Create(rel)
 	service.Put(NewUnit(rel, "web", 10))
 	service.Put(NewUnit(rel, "worker", 5))
 	service.Put(NewUnit(rel, "consumer", 3))
@@ -81,7 +68,6 @@ func TestConsulDelete(t *testing.T) {
 		"worker":   "./bin/worker",
 		"consumer": "./bin/consumer",
 	})
-	service.Create(rel)
 	service.Put(NewUnit(rel, "web", 10))
 	service.Put(NewUnit(rel, "worker", 5))
 	service.Put(NewUnit(rel, "consumer", 3))
