@@ -44,7 +44,13 @@ then
     echo "# Opening the vagrant .dmg file. Please double click 'Vagrant.pkg' "
     echo "# when it is finished, and follow the instructions to install."
     open /tmp/vagrant.dmg
-    read -p "# Hit ENTER when you are done installing to continue." BLAH
+    echo "# Hit ENTER when you are done installing to continue."
+    sleep 15
+    read CONTINUE
+fi
+
+if ! vagrant plugin list | grep -q vagrant-vbguest
+then
     echo "# Installing vagrant-vbguest plugin."
     vagrant plugin install vagrant-vbguest
 fi
