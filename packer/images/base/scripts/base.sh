@@ -19,6 +19,7 @@ then
     sudo service docker.io stop
     wget https://get.docker.com/builds/Linux/x86_64/docker-latest -O /tmp/docker
     sudo cp /tmp/docker /usr/bin
+    rm /tmp/docker
     sudo usermod -a -G docker vagrant
     sudo usermod -a -G docker ubuntu
 fi
@@ -28,4 +29,5 @@ if ! which consul
 then
     echo "# Installing consul"
     wget https://dl.bintray.com/mitchellh/consul/${CONSULZIP} && sudo unzip -d /usr/local/bin ${CONSULZIP}
+    rm ${CONSULZIP}
 fi
