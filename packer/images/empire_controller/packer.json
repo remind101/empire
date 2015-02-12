@@ -1,0 +1,38 @@
+{
+  "variables": {
+    "homedir": "{{env `HOME`}}"
+  },
+  "builders": [{
+    "type": "virtualbox-ovf",
+    "source_path": "base_box/empire-base.ovf",
+    "ssh_username": "vagrant",
+    "ssh_key_path": "{{user `homedir`}}/.vagrant.d/insecure_private_key",
+    "ssh_wait_timeout": "60s",
+    "shutdown_command": "echo 'packer' | sudo -S shutdown -P now"
+  },
+
+  {
+    "type": "amazon-ebs",
+    "name": "ubuntu-east",
+    "access_key": "",
+    "secret_key": "",
+    "region": "us-east-1",
+    "source_ami": "ami-018c9568",
+    "instance_type": "m3.medium",
+    "ssh_username": "ubuntu",
+    "ssh_timeout": "5m",
+    "ami_name": "Empire Controller Image {{isotime | clean_ami_name}}"
+  }],
+
+  "post-processors": [{
+    "output": "build/empire-controller.box",
+    "type": "vagrant"
+  }],
+
+  "provisioners": [{
+    "type": "shell",
+    "scripts": [
+      "scripts/setup.sh"
+    ]
+  }]
+}
