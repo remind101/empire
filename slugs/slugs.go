@@ -2,6 +2,7 @@ package slugs
 
 import (
 	"strconv"
+	"sync"
 
 	"github.com/remind101/empire/repos"
 )
@@ -52,8 +53,10 @@ func NewRepository() (Repository, error) {
 
 // repository is a fake implementation of the Repository interface.
 type repository struct {
+	id int
+
+	sync.RWMutex
 	slugs map[ID]*Slug
-	id    int
 }
 
 // newRepository returns a new repository instance.
@@ -65,6 +68,9 @@ func newRepository() *repository {
 
 // Create implements Repository Create.
 func (r *repository) Create(slug *Slug) (*Slug, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	r.id++
 	slug.ID = ID(strconv.Itoa(r.id))
 	r.slugs[slug.ID] = slug
@@ -73,10 +79,16 @@ func (r *repository) Create(slug *Slug) (*Slug, error) {
 
 // FindByID implements Repository FindByID.
 func (r *repository) FindByID(id ID) (*Slug, error) {
+	r.RLock()
+	defer r.RUnlock()
+
 	return r.slugs[id], nil
 }
 
 func (r *repository) FindByImage(image *Image) (*Slug, error) {
+	r.RLock()
+	defer r.RUnlock()
+
 	for _, slug := range r.slugs {
 		if *slug.Image == *image {
 			return slug, nil
@@ -87,6 +99,9 @@ func (r *repository) FindByImage(image *Image) (*Slug, error) {
 }
 
 func (r *repository) Reset() {
+	r.Lock()
+	defer r.Unlock()
+
 	r.slugs = make(map[ID]*Slug)
 	r.id = 0
 }

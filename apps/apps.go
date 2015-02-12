@@ -2,6 +2,7 @@ package apps
 
 import (
 	"strconv"
+	"sync"
 
 	"github.com/remind101/empire/repos"
 )
@@ -25,8 +26,10 @@ type Repository interface {
 }
 
 type repository struct {
+	id int
+
+	sync.RWMutex
 	apps []*App
-	id   int
 }
 
 func newRepository() *repository {
@@ -34,6 +37,9 @@ func newRepository() *repository {
 }
 
 func (r *repository) Create(app *App) (*App, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	r.id++
 	app.ID = ID(strconv.Itoa(r.id))
 	r.apps = append(r.apps, app)
@@ -41,6 +47,9 @@ func (r *repository) Create(app *App) (*App, error) {
 }
 
 func (r *repository) FindByID(id ID) (*App, error) {
+	r.RLock()
+	defer r.RUnlock()
+
 	for _, app := range r.apps {
 		if app.ID == id {
 			return app, nil
@@ -51,6 +60,9 @@ func (r *repository) FindByID(id ID) (*App, error) {
 }
 
 func (r *repository) FindByRepo(repo repos.Repo) (*App, error) {
+	r.RLock()
+	defer r.RUnlock()
+
 	for _, app := range r.apps {
 		if app.Repo == repo {
 			return app, nil
