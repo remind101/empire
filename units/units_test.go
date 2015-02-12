@@ -54,7 +54,7 @@ func TestScale(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = ps.Scale("api", "web", 3)
+	_, err = ps.Scale(GenName("api", "web"), 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,14 +120,14 @@ func buildRelease(appID string, releaseID string, proctypes slugs.ProcessMap) *r
 }
 
 func testUnitsEql(t *testing.T, s Repository, id apps.ID, unitStrings []string) {
-	foundUnits, err := s.FindByApp(id)
+	unitmap, err := s.FindByApp(id)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	foundStrings := make([]string, len(foundUnits))
-	for i, u := range foundUnits {
-		foundStrings[i] = u.String()
+	var foundStrings []string
+	for _, u := range unitmap {
+		foundStrings = append(foundStrings, u.String())
 	}
 
 	sort.Strings(unitStrings)

@@ -14,7 +14,9 @@ var (
 	ErrProcessTypeNotFound = errors.New("Process type not found for app")
 )
 
-type UnitMap map[slugs.ProcessType]Unit
+type Name string
+
+type UnitMap map[Name]Unit
 
 type Unit struct {
 	Release       *releases.Release
@@ -30,16 +32,25 @@ func NewUnit(rel *releases.Release, proctype slugs.ProcessType, count int) Unit 
 	}
 }
 
+func (u Unit) Name() Name {
+	return GenName(u.Release.App.ID, u.ProcessType)
+}
+
 func (u Unit) String() string {
-	return fmt.Sprintf("%v.%v release=%v count=%v", u.Release.App.ID, u.ProcessType, u.Release.ID, u.InstanceCount)
+	return fmt.Sprintf("%v release=%v count=%v", u.Name(), u.Release.ID, u.InstanceCount)
+}
+
+func GenName(id apps.ID, pt slugs.ProcessType) Name {
+	return Name(fmt.Sprintf("%v.%v", id, pt))
 }
 
 // Repository is an interface for storing a Unit
 type Repository interface {
-	Create(*releases.Release) error
+	FindByName(Name) (Unit, bool, error)
+	FindByApp(apps.ID) (UnitMap, error)
+	FindAll() (UnitMap, error)
 	Put(Unit) error
 	Delete(Unit) error
-	FindByApp(apps.ID) ([]Unit, error)
 }
 
 type Service struct {
@@ -60,22 +71,10 @@ func NewService(r Repository) *Service {
 // Additionally, any process definitions that do not exist in this release's
 // process types will be deleted.
 func (s *Service) CreateRelease(rel *releases.Release) error {
-	// Create the release
-	err := s.Repository.Create(rel)
-	if err != nil {
-		return err
-	}
-
 	// Find existing units
-	units, err := s.FindByApp(rel.App.ID)
+	unitmap, err := s.FindByApp(rel.App.ID)
 	if err != nil {
 		return err
-	}
-
-	// Create a unit map
-	unitmap := make(map[slugs.ProcessType]Unit)
-	for _, u := range units {
-		unitmap[u.ProcessType] = u
 	}
 
 	// For each process type in new release,
@@ -84,7 +83,9 @@ func (s *Service) CreateRelease(rel *releases.Release) error {
 		var u Unit
 		var found bool
 
-		if u, found = unitmap[pt]; found {
+		n := GenName(rel.App.ID, pt)
+
+		if u, found = unitmap[n]; found {
 			u.Release = rel
 		} else {
 			count := 0
@@ -102,8 +103,8 @@ func (s *Service) CreateRelease(rel *releases.Release) error {
 
 	// For each existing process definition
 	// If not included in new release's proc types, delete it
-	for pt, u := range unitmap {
-		if _, found := rel.Slug.ProcessTypes[pt]; !found {
+	for _, u := range unitmap {
+		if _, found := rel.Slug.ProcessTypes[u.ProcessType]; !found {
 			err := s.Repository.Delete(u)
 			if err != nil {
 				return err
@@ -115,25 +116,19 @@ func (s *Service) CreateRelease(rel *releases.Release) error {
 }
 
 // Scale updates a unit's instance count
-func (s *Service) Scale(id apps.ID, proctype slugs.ProcessType, count int) (Unit, error) {
+func (s *Service) Scale(n Name, count int) (Unit, error) {
 	var u Unit
 	var err error
 
-	units, err := s.FindByApp(id)
+	u, found, err := s.Repository.FindByName(n)
 	if err != nil {
 		return u, err
 	}
-
-	if len(units) == 0 {
-		return u, ErrReleaseNotFound
-	}
-
-	rel := units[0].Release
-	if _, ok := rel.Slug.ProcessTypes[proctype]; !ok {
+	if !found {
 		return u, ErrProcessTypeNotFound
 	}
 
-	u = NewUnit(rel, proctype, count)
+	u.InstanceCount = count
 	err = s.Repository.Put(u)
 	if err != nil {
 		return u, err
@@ -142,17 +137,17 @@ func (s *Service) Scale(id apps.ID, proctype slugs.ProcessType, count int) (Unit
 	return u, nil
 }
 
-func (s *Service) FindByApp(id apps.ID) ([]Unit, error) {
+func (s *Service) FindByApp(id apps.ID) (UnitMap, error) {
 	return s.Repository.FindByApp(id)
 }
 
 func (s *Service) Delete(id apps.ID, proctype slugs.ProcessType) error {
-	units, err := s.FindByApp(id)
+	unitmap, err := s.FindByApp(id)
 	if err != nil {
 		return err
 	}
 
-	for _, u := range units {
+	for _, u := range unitmap {
 		if string(proctype) == "" || proctype == u.ProcessType {
 			err := s.Repository.Delete(u)
 			if err != nil {
