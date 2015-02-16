@@ -1,7 +1,7 @@
 build: empire_base.tar.gz base_box/empire-base.ovf build/empire-controller.box push
 
 empire_base.tar.gz:
-	curl --location -o ./empire_base.tar.gz http://empire-image-artifacts.s3-website-us-east-1.amazonaws.com/empire_base.tar.gz
+	curl -f --location -o ./empire_base.tar.gz http://empire-image-artifacts.s3-website-us-east-1.amazonaws.com/empire_base.tar.gz
 
 base_box/empire-base.ovf: empire_base.tar.gz
 	mkdir -p base_box
