@@ -1,0 +1,4 @@
+.git
+.vagrant
+packer
+build
