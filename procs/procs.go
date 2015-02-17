@@ -1,6 +1,7 @@
 package procs
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/consul/api"
@@ -30,6 +31,10 @@ type Process struct {
 	ReleaseID   releases.ID
 	ProcessType slugs.ProcessType
 	Node        *Node
+}
+
+func (p *Process) Name() units.Name {
+	return units.GenName(p.AppID, p.ProcessType)
 }
 
 type Processes []Process
@@ -70,29 +75,6 @@ func (s *Scheduler) ReapNodes() error {
 
 	return err
 }
-
-// def run_once(self, **kwargs):
-//     self.process_table.reap_minions()
-//     try:
-//         expected_procs = self.source.get_process_config() # Process counts we expect to be running
-//     except MissingProcessConfig as e:
-//         logger.warn("Missing process config at %s.", e.message)
-//         logger.warn("Cowardly refusing to do anything.")
-//         return
-//     configured_processes = self.process_table.configured_processes() # Processes configured to run on minions
-//     deleted_apps = set(configured_processes) - set(expected_procs)
-//     for process_name, pd in expected_procs.items():
-//         processes = configured_processes.get(process_name, [])
-//         self.update_processes(process_name, pd, processes)
-//         expected_count = pd.instance_count
-//         configured_count = len(processes)
-//         delta = expected_count - configured_count
-//         if delta > 0:
-//             self.scale_up(delta, pd)
-//         if delta < 0:
-//             self.scale_down(delta, pd)
-//     if deleted_apps:
-//         self.delete_apps(deleted_apps)
 
 func (s *Scheduler) ScheduleProcs() error {
 	unitsmap, err := s.UnitsService.FindAll() // Processes we expect to be running
@@ -166,6 +148,18 @@ type Repository interface {
 	ScheduledNodes() (NodeMap, error) // Nodes that are actively scheduled.
 }
 
+// consulRepository is an implementation of Repository backed by Consul.
+//
+// It uses the following key pattern to store the process map:
+//
+//     /empire/nodes/<node address>/<app id>.<process type>.<process id>
+//
+// For example:
+//
+//     /empire/nodes/127.0.0.1/api.web.1
+//     /empire/nodes/127.0.0.2/api.web.2
+//
+// The value of the key is a json encoded version of a Process
 type consulRepository struct {
 	client *api.Client
 }
@@ -201,6 +195,29 @@ func (c *consulRepository) ScheduledNodes() (NodeMap, error) {
 	return nodemap, err
 }
 
+func (c *consulRepository) ProcessMap() (ProcessMap, error) {
+	pairs, _, err := c.client.KV().List(NodesPrefix, &api.QueryOptions{})
+	if err != nil {
+		return m, err
+	}
+
+	procmap := ProcessMap{}
+	for _, pair := range pairs {
+		p, err := c.decode(pair)
+		if err != nil {
+			return ProcessMap{}, err
+		}
+
+		if _, ok := procmap[p.Name()]; !ok {
+			procmap[p.Name()] = Processes{}
+		}
+
+		procmap[p.Name()] = append(procmap[p.Name()], p)
+	}
+
+	return procmap, nil
+}
+
 func (c *consulRepository) DeleteNode(n *Node) error {
 	_, err := c.client.KV().DeleteTree(NodesPrefix+n.Address, nil)
 	return err
@@ -213,4 +230,10 @@ func (c *consulRepository) DeleteProc(p Process) error {
 
 func (c *consulRepository) procKey(p Process) string {
 	return fmt.Sprintf("%s/%s.%s.%d", p.Node.Address, p.AppID, p.ProcessType, p.ID)
+}
+
+func (c *consulRepository) decode(pair *api.KVPair) (Process, error) {
+	p := Process{}
+	err := json.Unmarshal(pair.Value, &p)
+	return p, err
 }
