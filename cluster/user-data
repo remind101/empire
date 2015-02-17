@@ -1,0 +1,76 @@
+#cloud-config
+
+coreos:
+  etcd:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new
+    # WARNING: replace each time you 'vagrant destroy'
+    discovery: https://discovery.etcd.io/d769a7fdbb0ee716aba69e11204bc4bc
+    addr: $public_ipv4:4001
+    peer-addr: $public_ipv4:7001
+  fleet:
+    public-ip: $public_ipv4
+  units:
+    - name: etcd.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: docker-tcp.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Docker Socket for the API
+
+        [Socket]
+        ListenStream=2375
+        Service=docker.service
+        BindIPv6Only=both
+
+        [Install]
+        WantedBy=sockets.target
+    - name: discovery.target
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Core service discovery services
+        Wants=registrator.service
+    - name: registrator.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Registrator
+        After=docker.service etcd.service
+
+        [Service]
+        TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
+        User=core
+
+        ExecStartPre=/bin/bash -c "/usr/bin/docker inspect progrium/registrator &> /dev/null || /usr/bin/docker pull progrium/registrator"
+        ExecStartPre=/bin/bash -c "/usr/bin/docker rm registrator &> /dev/null; exit 0"
+        ExecStart=/usr/bin/docker run --name registrator --rm -h %H -v /var/run/docker.sock:/tmp/docker.sock progrium/registrator -ip=${COREOS_PRIVATE_IPV4} etcd://${COREOS_PRIVATE_IPV4}:4001/services
+        ExecStop=/usr/bin/docker stop registrator
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: empire.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Empire
+        After=discovery.service
+
+        [Service]
+        TimeoutStartSec=30m
+        User=core
+
+        ExecStartPre=/bin/bash -c "/usr/bin/docker inspect quay.io/remind/empire &> /dev/null || /usr/bin/docker pull quay.io/remind/empire"
+        ExecStartPre=/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -P -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire -docker.socket=unix:///tmp/docker.sock -docker.registry=quay.io
+        ExecStop=/usr/bin/docker stop empire
+
+        [Install]
+        WantedBy=multi-user.target
