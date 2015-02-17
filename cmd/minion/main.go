@@ -10,8 +10,8 @@ import (
 
 const (
 	AgentTTL         = "30s"
-	AgentServiceName = "empire-minion"
-	AgentCheckID     = "service:empire-minion"
+	AgentServiceName = "empire-nodes"
+	AgentCheckID     = "service:empire-nodes"
 )
 
 func main() {
