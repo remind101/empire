@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	NodesServiceName = "empire-nodes"
-	NodesPrefix      = "/empire/nodes/"
+	MinionsServiceName = "empire-minions"
+	MinionsPrefix      = "/empire/minions/"
 )
 
-type Address string
-type Node api.Node
+type Node string // api.Node.Node, a.k.a the hostname of the node
+type Minion api.Node
 
 // Process represents a process that has been scheduled to run
 // on a minion. Processes are scheduled based on the Units map.
@@ -30,7 +30,7 @@ type Process struct {
 	AppID       apps.ID
 	ReleaseID   releases.ID
 	ProcessType slugs.ProcessType
-	Node        *Node
+	Minion      *Minion
 }
 
 func (p *Process) Name() units.Name {
@@ -41,35 +41,35 @@ type Processes []Process
 
 type ProcessMap map[units.Name]Processes
 
-type NodeMap map[Address]*Node
+type MinionMap map[Node]*Minion
 
 type Scheduler struct {
 	UnitsService *units.Service // Service to fetch the desired process state from
 	Repository                  // Repository for scheduling processes to minions
 }
 
-func (s *Scheduler) ReapNodes() error {
+func (s *Scheduler) ReapMinions() error {
 	var err error
-	var sn, hn NodeMap // scheduled, healthy
+	var sm, hm MinionMap // scheduled, healthy
 
-	if sn, err = s.Repository.ScheduledNodes(); err != nil {
+	if sm, err = s.Repository.ScheduledMinions(); err != nil {
 		return err
 	}
 
-	if hn, err = s.Repository.HealthyNodes(); err != nil {
+	if hm, err = s.Repository.HealthyMinions(); err != nil {
 		return err
 	}
 
-	delete := func(n *Node) {
+	delete := func(m *Minion) {
 		if err != nil {
 			return
 		}
-		err = s.Repository.DeleteNode(n)
+		err = s.Repository.DeleteMinion(m)
 	}
 
-	for addr, node := range sn {
-		if _, ok := hn[addr]; !ok {
-			delete(node)
+	for node, minion := range sm {
+		if _, ok := hm[node]; !ok {
+			delete(minion)
 		}
 	}
 
@@ -141,64 +141,64 @@ func (s *Scheduler) UnSchedule(u units.Unit) error {
 }
 
 type Repository interface {
-	DeleteNode(*Node) error
+	DeleteMinion(*Minion) error
 	DeleteProc(Process) error
-	ProcessMap() (ProcessMap, error)  // The current ProcessMap
-	HealthyNodes() (NodeMap, error)   // Nodes that are reporting themselves as healthy
-	ScheduledNodes() (NodeMap, error) // Nodes that are actively scheduled.
+	ProcessMap() (ProcessMap, error)      // The current ProcessMap
+	HealthyMinions() (MinionMap, error)   // Minions that are reporting themselves as healthy
+	ScheduledMinions() (MinionMap, error) // Minions that are actively scheduled.
 }
 
 // consulRepository is an implementation of Repository backed by Consul.
 //
 // It uses the following key pattern to store the process map:
 //
-//     /empire/nodes/<node address>/<app id>.<process type>.<process id>
+//     /empire/minions/<node name>/<app id>.<process type>.<process id>
 //
 // For example:
 //
-//     /empire/nodes/127.0.0.1/api.web.1
-//     /empire/nodes/127.0.0.2/api.web.2
+//     /empire/minions/ip-10-10-0-254/api.web.1
+//     /empire/minions/ip-10-10-0-255/api.web.2
 //
 // The value of the key is a json encoded version of a Process
 type consulRepository struct {
 	client *api.Client
 }
 
-func (c *consulRepository) HealthyNodes() (NodeMap, error) {
-	entries, _, err := c.client.Health().Service(NodesServiceName, "", true, nil)
+func (c *consulRepository) HealthyMinions() (MinionMap, error) {
+	entries, _, err := c.client.Health().Service(MinionsServiceName, "", true, nil)
 	if err != nil {
-		return NodeMap{}, err
+		return MinionMap{}, err
 	}
 
-	nodemap := make(NodeMap, len(entries))
+	minionmap := make(MinionMap, len(entries))
 
 	for _, entry := range entries {
-		n := Node(*entry.Node)
-		nodemap[Address(entry.Node.Address)] = &n
+		n := Minion(*entry.Node)
+		minionmap[Node(entry.Node.Node)] = &n
 	}
 
-	return nodemap, err
+	return minionmap, err
 }
 
-func (c *consulRepository) ScheduledNodes() (NodeMap, error) {
-	addrs, _, err := c.client.KV().Keys(NodesPrefix, "/", nil)
+func (c *consulRepository) ScheduledMinions() (MinionMap, error) {
+	nodes, _, err := c.client.KV().Keys(MinionsPrefix, "/", nil)
 	if err != nil {
-		return NodeMap{}, err
+		return MinionMap{}, err
 	}
 
-	nodemap := make(NodeMap, len(addrs))
+	minionmap := make(MinionMap, len(nodes))
 
-	for _, addr := range addrs {
-		nodemap[Address(addr)] = &Node{Address: addr}
+	for _, node := range nodes {
+		minionmap[Node(node)] = &Minion{Node: node}
 	}
 
-	return nodemap, err
+	return minionmap, err
 }
 
 func (c *consulRepository) ProcessMap() (ProcessMap, error) {
-	pairs, _, err := c.client.KV().List(NodesPrefix, &api.QueryOptions{})
+	pairs, _, err := c.client.KV().List(MinionsPrefix, &api.QueryOptions{})
 	if err != nil {
-		return m, err
+		return ProcessMap{}, err
 	}
 
 	procmap := ProcessMap{}
@@ -218,8 +218,8 @@ func (c *consulRepository) ProcessMap() (ProcessMap, error) {
 	return procmap, nil
 }
 
-func (c *consulRepository) DeleteNode(n *Node) error {
-	_, err := c.client.KV().DeleteTree(NodesPrefix+n.Address, nil)
+func (c *consulRepository) DeleteMinion(n *Minion) error {
+	_, err := c.client.KV().DeleteTree(MinionsPrefix+n.Address, nil)
 	return err
 }
 
@@ -229,7 +229,7 @@ func (c *consulRepository) DeleteProc(p Process) error {
 }
 
 func (c *consulRepository) procKey(p Process) string {
-	return fmt.Sprintf("%s/%s.%s.%d", p.Node.Address, p.AppID, p.ProcessType, p.ID)
+	return fmt.Sprintf("%s/%s.%s.%d", p.Minion.Node, p.AppID, p.ProcessType, p.ID)
 }
 
 func (c *consulRepository) decode(pair *api.KVPair) (Process, error) {
