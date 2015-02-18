@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/remind101/empire/apps"
+	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/releases"
-	"github.com/remind101/empire/slugs"
 )
 
 var (
@@ -20,11 +20,11 @@ type UnitMap map[Name]Unit
 
 type Unit struct {
 	Release       *releases.Release
-	ProcessType   slugs.ProcessType `json:"process_type"`
-	InstanceCount int               `json:"instance_count"`
+	ProcessType   formations.ProcessType `json:"process_type"`
+	InstanceCount int                    `json:"instance_count"`
 }
 
-func NewUnit(rel *releases.Release, proctype slugs.ProcessType, count int) Unit {
+func NewUnit(rel *releases.Release, proctype formations.ProcessType, count int) Unit {
 	return Unit{
 		Release:       rel,
 		ProcessType:   proctype,
@@ -40,7 +40,7 @@ func (u Unit) String() string {
 	return fmt.Sprintf("%v release=%v count=%v", u.Name(), u.Release.ID, u.InstanceCount)
 }
 
-func GenName(id apps.ID, pt slugs.ProcessType) Name {
+func GenName(id apps.ID, pt formations.ProcessType) Name {
 	return Name(fmt.Sprintf("%v.%v", id, pt))
 }
 
@@ -141,7 +141,7 @@ func (s *Service) FindByApp(id apps.ID) (UnitMap, error) {
 	return s.Repository.FindByApp(id)
 }
 
-func (s *Service) Delete(id apps.ID, proctype slugs.ProcessType) error {
+func (s *Service) Delete(id apps.ID, proctype formations.ProcessType) error {
 	unitmap, err := s.FindByApp(id)
 	if err != nil {
 		return err

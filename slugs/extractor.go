@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/repos"
 	"gopkg.in/yaml.v2"
 )
@@ -49,7 +50,7 @@ func (e *extractor) Extract(image *Image) (ProcessMap, error) {
 	pm := make(ProcessMap)
 
 	// Just return some fake processes.
-	pm[ProcessType("web")] = Command("./bin/web")
+	pm[formations.ProcessType("web")] = Command("./bin/web")
 
 	return pm, nil
 }
