@@ -3,6 +3,7 @@
 cmd:
 	godep go build -o build/empire ./cmd/empire
 	godep go build -o build/minion ./cmd/minion
+	godep go build -o build/scheduler ./cmd/scheduler
 
 client: doc
 	schematic doc/schema/schema.json > client/empire/client.go

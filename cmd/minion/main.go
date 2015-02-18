@@ -2,16 +2,18 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"time"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/remind101/empire/scheduler"
 )
 
 const (
 	AgentTTL         = "30s"
-	AgentServiceName = "empire-minion"
-	AgentCheckID     = "service:empire-minion"
+	AgentServiceName = "empire-minions"
+	AgentCheckID     = "service:empire-minions"
 )
 
 func main() {
@@ -25,7 +27,7 @@ func main() {
 	go heartBeat(client)
 
 	// Check process config
-	for range time.NewTicker(time.Second * 10).C {
+	for _ = range time.NewTicker(time.Second * 10).C {
 		checkConfig(client)
 	}
 }
@@ -56,10 +58,10 @@ func register(c *api.Client) {
 }
 
 func heartBeat(c *api.Client) {
-	for range time.NewTicker(time.Second * 5).C {
+	for _ = range time.NewTicker(time.Second * 5).C {
 		err := c.Agent().PassTTL(AgentCheckID, "")
 		if err != nil {
-			log.Printf("Error in PassTTL(%s): %s", AgentCheckID, err)
+			log.Printf("Error in PassTTL(%s): %s\n", AgentCheckID, err)
 		}
 	}
 }
@@ -67,4 +69,20 @@ func heartBeat(c *api.Client) {
 func checkConfig(c *api.Client) {
 	// Get list of processes scheduled for this agent,
 	// register/deregister processes with init system.
+	r := scheduler.NewConsulRepository(c)
+
+	host, err := os.Hostname()
+	if err != nil {
+		log.Panicf("Unable to get hostname: %v\n", err)
+	}
+	m := &scheduler.Minion{Node: host}
+
+	procs, err := r.MinionSchedule(m)
+	if err != nil {
+		log.Printf("Error getting schedule for Minion: %v\n", err)
+	}
+
+	for _, proc := range procs {
+		log.Printf("Process scheduled for minion: %v\n", proc)
+	}
 }
