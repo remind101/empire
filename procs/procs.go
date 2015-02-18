@@ -48,6 +48,10 @@ type Scheduler struct {
 	Repository                  // Repository for scheduling processes to minions
 }
 
+func NewScheduler(u *units.Service, r Repository) *Scheduler {
+	return &Scheduler{UnitsService: u, Repository: r}
+}
+
 func (s *Scheduler) ReapMinions() error {
 	var err error
 	var sm, hm MinionMap // scheduled, healthy
@@ -143,9 +147,10 @@ func (s *Scheduler) UnSchedule(u units.Unit) error {
 type Repository interface {
 	DeleteMinion(*Minion) error
 	DeleteProc(Process) error
-	ProcessMap() (ProcessMap, error)      // The current ProcessMap
-	HealthyMinions() (MinionMap, error)   // Minions that are reporting themselves as healthy
-	ScheduledMinions() (MinionMap, error) // Minions that are actively scheduled.
+	ProcessMap() (ProcessMap, error)           // The current ProcessMap
+	HealthyMinions() (MinionMap, error)        // Minions that are reporting themselves as healthy
+	ScheduledMinions() (MinionMap, error)      // Minions that are actively scheduled.
+	MinionSchedule(*Minion) (Processes, error) // Processes scheduled for a particular Minion
 }
 
 // consulRepository is an implementation of Repository backed by Consul.
@@ -162,6 +167,10 @@ type Repository interface {
 // The value of the key is a json encoded version of a Process
 type consulRepository struct {
 	client *api.Client
+}
+
+func NewConsulRepository(c *api.Client) *consulRepository {
+	return &consulRepository{client: c}
 }
 
 func (c *consulRepository) HealthyMinions() (MinionMap, error) {
@@ -195,6 +204,25 @@ func (c *consulRepository) ScheduledMinions() (MinionMap, error) {
 	return minionmap, err
 }
 
+func (c *consulRepository) MinionSchedule(m *Minion) (Processes, error) {
+	pairs, _, err := c.client.KV().List(c.minionKey(m), &api.QueryOptions{})
+	if err != nil {
+		return Processes{}, err
+	}
+
+	procs := make(Processes, len(pairs))
+	for i, pair := range pairs {
+		p, err := c.decode(pair)
+		if err != nil {
+			return Processes{}, err
+		}
+
+		procs[i] = p
+	}
+
+	return procs, nil
+}
+
 func (c *consulRepository) ProcessMap() (ProcessMap, error) {
 	pairs, _, err := c.client.KV().List(MinionsPrefix, &api.QueryOptions{})
 	if err != nil {
@@ -218,8 +246,8 @@ func (c *consulRepository) ProcessMap() (ProcessMap, error) {
 	return procmap, nil
 }
 
-func (c *consulRepository) DeleteMinion(n *Minion) error {
-	_, err := c.client.KV().DeleteTree(MinionsPrefix+n.Address, nil)
+func (c *consulRepository) DeleteMinion(m *Minion) error {
+	_, err := c.client.KV().DeleteTree(c.minionKey(m), nil)
 	return err
 }
 
@@ -230,6 +258,10 @@ func (c *consulRepository) DeleteProc(p Process) error {
 
 func (c *consulRepository) procKey(p Process) string {
 	return fmt.Sprintf("%s/%s.%s.%d", p.Minion.Node, p.AppID, p.ProcessType, p.ID)
+}
+
+func (c *consulRepository) minionKey(m *Minion) string {
+	return fmt.Sprintf("%s/%s", MinionsPrefix, m.Node)
 }
 
 func (c *consulRepository) decode(pair *api.KVPair) (Process, error) {
