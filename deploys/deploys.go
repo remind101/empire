@@ -4,6 +4,7 @@ import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/formations"
+	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/manager"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
@@ -29,7 +30,7 @@ type Service struct {
 }
 
 // Deploy deploys an Image to the platform.
-func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
+func (s *Service) Deploy(image *images.Image) (*Deploy, error) {
 	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err

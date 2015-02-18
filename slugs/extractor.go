@@ -8,7 +8,8 @@ import (
 	"os"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/formations"
+	"github.com/remind101/empire/images"
+	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/repos"
 	"gopkg.in/yaml.v2"
 )
@@ -18,7 +19,7 @@ import (
 type Extractor interface {
 	// Extract takes a repo in the form `remind101/r101-api`, and an image
 	// id, and extracts the process types from the image.
-	Extract(*Image) (ProcessMap, error)
+	Extract(*images.Image) (ProcessMap, error)
 }
 
 // NewExtractor returns a new Extractor instance.
@@ -46,11 +47,11 @@ func newExtractor() *extractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *extractor) Extract(image *Image) (ProcessMap, error) {
+func (e *extractor) Extract(image *images.Image) (ProcessMap, error) {
 	pm := make(ProcessMap)
 
 	// Just return some fake processes.
-	pm[formations.ProcessType("web")] = Command("./bin/web")
+	pm[processes.Type("web")] = processes.Command("./bin/web")
 
 	return pm, nil
 }
@@ -79,7 +80,7 @@ type ProcfileExtractor struct {
 }
 
 // Extract implements Extractor Extract.
-func (e *ProcfileExtractor) Extract(image *Image) (ProcessMap, error) {
+func (e *ProcfileExtractor) Extract(image *images.Image) (ProcessMap, error) {
 	pm := make(ProcessMap)
 
 	repo := e.fullRepo(image.Repo)

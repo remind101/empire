@@ -3,10 +3,12 @@ package slugs
 import (
 	"reflect"
 	"testing"
+
+	"github.com/remind101/empire/images"
 )
 
 func TestProcfileExtractor(t *testing.T) {
-	image := &Image{
+	image := &images.Image{
 		Repo: "ejholmes/docker-statsd",
 		ID:   "1234",
 	}

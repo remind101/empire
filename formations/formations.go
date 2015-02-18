@@ -1,24 +1,30 @@
 package formations
 
-import "github.com/remind101/empire/apps"
-
-// ProcessType represents the type of a given process/command.
-type ProcessType string
+import (
+	"github.com/remind101/empire/apps"
+	"github.com/remind101/empire/processes"
+)
 
 // Formations maps a ProcessType to a Formation definition.
-type Formations map[ProcessType]*Formation
+type Formations map[processes.Type]*Formation
 
 // Formation represents configuration for a process type.
 type Formation struct {
-	ProcessType ProcessType
+	ProcessType processes.Type
 
 	Count int // Count represents the desired number of processes to run.
 
 	// Size Size // The size of the instance to put these processes on.
 }
 
+// CommandFormation is a composition of a Formation and a processes.Command.
+type CommandFormation struct {
+	*Formation
+	Command processes.Command
+}
+
 // NewFormation returns a new Formation with an appropriate default Count.
-func NewFormation(pt ProcessType) *Formation {
+func NewFormation(pt processes.Type) *Formation {
 	count := 0
 
 	if pt == "web" {
@@ -84,7 +90,7 @@ func NewService(r Repository) *Service {
 }
 
 // Scale a given process type up or down.
-func (s *Service) Scale(app *apps.App, pt ProcessType, count int) (*Formation, error) {
+func (s *Service) Scale(app *apps.App, pt processes.Type, count int) (*Formation, error) {
 	formations, err := s.Repository.Get(app)
 	if err != nil {
 		return nil, err
@@ -100,9 +106,9 @@ func (s *Service) Scale(app *apps.App, pt ProcessType, count int) (*Formation, e
 	return f, nil
 }
 
-// findFormation finds a Formation for a ProcessType, or builds a new one if
+// findFormation finds a Formation for a processes.Type, or builds a new one if
 // it's not found.
-func findFormation(formations Formations, pt ProcessType) *Formation {
+func findFormation(formations Formations, pt processes.Type) *Formation {
 	if f, found := formations[pt]; found {
 		return f
 	}

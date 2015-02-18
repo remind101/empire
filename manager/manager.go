@@ -7,6 +7,7 @@ import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/formations"
+	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
 )
@@ -17,7 +18,7 @@ import (
 type Name string
 
 // NewName returns a new Name with the proper format.
-func NewName(id apps.ID, pt formations.ProcessType, i int) Name {
+func NewName(id apps.ID, pt processes.Type, i int) Name {
 	return Name(fmt.Sprintf("%s.%s.%d", id, pt, i))
 }
 
