@@ -52,8 +52,7 @@ fi
 
 if [ ! -d $SYNCDIR ]
 then
-    echo "# Creating $SYNCDIR"
-    mkdir -p $SYNCDIR
+    # Downloading BTSync
     curl --location -o /tmp/btsync.dmg http://download.getsyncapp.com/endpoint/btsync/os/osx/track/stable
     echo "# Opening BTSync .dmg file.  Please drag btsync into your "
     echo "# Applications folder and then launch it. "

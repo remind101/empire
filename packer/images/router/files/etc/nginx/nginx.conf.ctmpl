@@ -1,0 +1,32 @@
+user www-data;
+worker_processes 4;
+pid /run/nginx.pid;
+
+events {
+	worker_connections 768;
+	# multi_accept on;
+}
+
+http {
+	{{ range services }}
+		{{ $service := .Name }}
+		{{ range .Tags }}
+			{{ if eq . "web" }}
+				#{{ $service }}
+				upstream {{ $service }} {
+					{{range service $service }}
+						server {{ .Address }}:{{ .Port }};
+					{{ end }}
+				}
+
+				server {
+					listen 80 default_server;
+					server_name {{ $service }}.remind.com;
+					location / {
+						proxy_pass http://{{ $service }};
+					}
+				}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+}
