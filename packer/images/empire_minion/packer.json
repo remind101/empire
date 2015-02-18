@@ -14,7 +14,7 @@
 
   {
     "type": "amazon-ebs",
-    "name": "ubuntu-east-empire_controller",
+    "name": "ubuntu-east-empire_minion",
     "access_key": "",
     "secret_key": "",
     "region": "us-east-1",
@@ -22,11 +22,11 @@
     "instance_type": "m3.medium",
     "ssh_username": "ubuntu",
     "ssh_timeout": "5m",
-    "ami_name": "Empire Controller Image {{isotime | clean_ami_name}}"
+    "ami_name": "Empire Minion Image {{isotime | clean_ami_name}}"
   }],
 
   "post-processors": [{
-    "output": "../../artifacts/empire_controller.box",
+    "output": "../../artifacts/empire_minion.box",
     "type": "vagrant",
     "only": ["virtualbox-ovf"]
   }],

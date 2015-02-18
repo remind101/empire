@@ -1,6 +1,6 @@
 BASENAME = empire_base.tar.gz
 BASEIMAGE = build/$(BASENAME)
-IMAGENAME = empire_controller
+IMAGENAME = empire_minion
 AMIFILE = ami.txt
 AMIPATH = build/$(AMIFILE)
 BOXNAME = $(IMAGENAME).box

@@ -1,7 +1,18 @@
-build: empire_base.tar.gz push
+ARTIFACTDIR=../../artifacts
+ARTIFACT=$(ARTIFACTDIR)/empire_base.tar.gz
+PACKERLOG=$(ARTIFACTDIR)/base_packer.csv
+AMIFILE=$(ARTIFACTDIR)/ami.txt
 
-empire_base.tar.gz: packer.json
-	packer build packer.json
+.PHONY: image check-aws clean
+
+image: $(ARTIFACT) $(AMIFILE) push
+
+$(ARTIFACT): packer.json scripts/base.sh
+	if [ ! -d $(ARTIFACTDIR) ]; then mkdir -p $(ARTIFACTDIR); fi
+	packer build -machine-readable packer.json 2>&1 | tee $(PACKERLOG)
+
+$(AMIFILE): $(PACKERLOG)
+	awk 'BEGIN { FS = "," }; /base-ubuntu-east,artifact,0,id/ {print $6}' $(PACKERLOG) | cut -f 2 -d : > $(AMIFILE)
 
 check-aws:
 ifndef AWS_ACCESS_KEY_ID
@@ -9,7 +20,8 @@ ifndef AWS_ACCESS_KEY_ID
 endif
 
 push: check-aws
-	aws s3 cp empire_base.tar.gz s3://empire-image-artifacts/empire_base.tar.gz
+	aws s3 cp $(ARTIFACT) s3://empire-image-artifacts/empire_base.tar.gz
+	aws s3 cp $(AMIFILE) s3://empire-image-artifacts/ami.txt
 
 clean:
-	rm empire_base.tar.gz
+	rm -rf build $(ARTIFACT) $(AMIFILE)

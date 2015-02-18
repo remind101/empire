@@ -2,6 +2,7 @@
 
 ARCH=$(uname)
 BINDIR=$HOME/bin
+SYNCDIR=$HOME/Documents/remind_sync
 
 if [ "$ARCH" != "Darwin" ]
 then
@@ -44,9 +45,27 @@ then
     echo "# Opening the vagrant .dmg file. Please double click 'Vagrant.pkg' "
     echo "# when it is finished, and follow the instructions to install."
     open /tmp/vagrant.dmg
-    echo "# Hit ENTER when you are done installing to continue."
     sleep 15
+    echo "# Hit ENTER when you are done installing to continue."
     read CONTINUE
+fi
+
+if [ ! -d $SYNCDIR ]
+then
+    echo "# Creating $SYNCDIR"
+    mkdir -p $SYNCDIR
+    curl --location -o /tmp/btsync.dmg http://download.getsyncapp.com/endpoint/btsync/os/osx/track/stable
+    echo "# Opening BTSync .dmg file.  Please drag btsync into your "
+    echo "# Applications folder and then launch it. "
+    open /tmp/btsync.dmg
+    sleep 15
+    echo "# Hit ENTER when you have finished launching BTSync to continue."
+    read CONTINUE
+    echo "# Adding vagrant image sync - opening a webpage, please accept "
+    echo "# with all the provided defaults."
+    echo "# Hit ENTER to open the webpage."
+    read CONTINUE
+    open "https://link.getsync.com/#f=remind_sync&sz=0&s=LSGXBWIJYLSSJZT2KCKJPU6MQG63IPZC&i=CALQK23E7GGEJX2JUM7GUXSCN3UZ5UTTA&p=CC2KMJFWRZHRDVAYKSW6V7YBWFGDSEKP"
 fi
 
 if ! vagrant plugin list | grep -q vagrant-vbguest

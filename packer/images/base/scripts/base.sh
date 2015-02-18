@@ -1,16 +1,20 @@
 #!/bin/bash
 
-sudo apt-get update
-sudo apt-get -y install wget unzip curl
+FILEBASE=/tmp/files
 
-if ! pip --help > /dev/null
+sudo apt-get update
+sudo apt-get -y install wget unzip curl vim-nox
+
+if ! which pip > /dev/null 2>&1
 then
     echo "# Installing pip"
     curl https://bootstrap.pypa.io/get-pip.py | sudo python
 fi
 
-sudo pip install httpie
-sudo pip install virtualenv
+sudo -H pip install httpie
+sudo -H pip install virtualenv
+sudo -H pip install boto
+sudo -H pip install requests
 
 if ! which docker
 then
@@ -31,3 +35,11 @@ then
     wget https://dl.bintray.com/mitchellh/consul/${CONSULZIP} && sudo unzip -d /usr/local/bin ${CONSULZIP}
     rm ${CONSULZIP}
 fi
+
+cp $FILEBASE/usr/local/bin/consul_join.py /usr/local/bin/consul_join
+chmod +x /usr/local/bin/consul_join
+
+cp $FILEBASE/etc/init/*.conf /etc/init
+
+# Remove old FILEBASE
+rm -rf $FILEBASE

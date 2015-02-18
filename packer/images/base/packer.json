@@ -41,7 +41,7 @@
   },
   {
     "type": "amazon-ebs",
-    "name": "ubuntu-east",
+    "name": "base-ubuntu-east",
     "access_key": "",
     "secret_key": "",
     "region": "us-east-1",
@@ -52,19 +52,25 @@
     "ami_name": "Base Empire Ubuntu 14.04 Image {{isotime | clean_ami_name}}"
   }],
 
-  "provisioners": [{
-    "type": "shell",
-    "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
-    "scripts": [
-      "scripts/vagrant.sh",
-      "scripts/base.sh"
-    ]
-  }],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "files",
+      "destination": "/tmp/files"
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+      "scripts": [
+        "scripts/vagrant.sh",
+        "scripts/base.sh"
+      ]
+    }
+  ],
 
   "post-processors": [{
     "type": "compress",
-    "output": "empire_base.tar.gz",
+    "output": "../../artifacts/empire_base.tar.gz",
     "only": ["virtualbox-iso"]
   }]
-
 }
