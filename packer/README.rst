@@ -47,8 +47,8 @@ installed via setup.sh properly, and it has finished sync'ing the appropriate
 images.  If not, it will have to download the images from S3 which can take
 some time.
 
-When *vagrant up* is finished running, you should have 4 virtual machines
-launched: controller and minion[1-3].
+When *vagrant up* is finished running, you should have 5 virtual machines
+launched: controller, router and minion[1-3].
 
 To get the status of the machines, use the following command::
 
@@ -56,9 +56,11 @@ To get the status of the machines, use the following command::
 
 To connect to any of the machines, use the **vagrant ssh** command in the
 **empire** repo (where the Vagrantfile is located), for example::
-    
+
     # To connect to the controller
     vagrant ssh controller
+    # To connect to the router
+    vagrant ssh router
     #  To connect to minion2
     vagrant ssh minion2
 
