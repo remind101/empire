@@ -4,7 +4,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/remind101/empire/repos"
+	"github.com/remind101/empire/images"
+	"github.com/remind101/empire/processes"
 )
 
 var (
@@ -13,37 +14,24 @@ var (
 	DefaultProcfilePath = "/home/app/Procfile"
 )
 
-// ProcessType represents the type of a given process/command.
-type ProcessType string
-
-// Command represents the actual shell command that gets executed for a given
-// ProcessType.
-type Command string
-
-// ProcessMap represents a map of ProcessType -> Command.
-type ProcessMap map[ProcessType]Command
-
-// Image represents a container image, which is tied to a repository.
-type Image struct {
-	Repo repos.Repo `json:"repo"`
-	ID   string     `json:"id"`
-}
+// ProcessMap represents a map of processes.Type -> processes.Command.
+type ProcessMap map[processes.Type]processes.Command
 
 // ID represents the unique identifier of a Slug.
 type ID string
 
-// Slug represents a container image with the extracted ProcessTypes.
+// Slug represents a container image with the extracted processes.Type.
 type Slug struct {
-	ID           ID         `json:"id"`
-	Image        *Image     `json:"image"`
-	ProcessTypes ProcessMap `json:"process_types"`
+	ID           ID            `json:"id"`
+	Image        *images.Image `json:"image"`
+	ProcessTypes ProcessMap    `json:"process_types"`
 }
 
 // Repository represents an interface for creating and finding slugs.
 type Repository interface {
 	Create(*Slug) (*Slug, error)
 	FindByID(ID) (*Slug, error)
-	FindByImage(*Image) (*Slug, error)
+	FindByImage(*images.Image) (*Slug, error)
 }
 
 // NewRepository returns a new Repository instance.
@@ -85,7 +73,7 @@ func (r *repository) FindByID(id ID) (*Slug, error) {
 	return r.slugs[id], nil
 }
 
-func (r *repository) FindByImage(image *Image) (*Slug, error) {
+func (r *repository) FindByImage(image *images.Image) (*Slug, error) {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -131,7 +119,7 @@ func NewService(r Repository, e Extractor) *Service {
 
 // CreateByImageID extracts the process types from the image, then creates a new
 // slug.
-func (s *Service) CreateByImage(image *Image) (*Slug, error) {
+func (s *Service) CreateByImage(image *images.Image) (*Slug, error) {
 	if slug, err := s.Repository.FindByImage(image); slug != nil {
 		return slug, err
 	}

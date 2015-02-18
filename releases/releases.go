@@ -8,6 +8,7 @@ import (
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
+	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -21,12 +22,13 @@ type Version string
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID        ID              `json:"id"`
-	Version   Version         `json:"version"`
-	App       *apps.App       `json:"app"`
-	Config    *configs.Config `json:"config"`
-	Slug      *slugs.Slug     `json:"slug"`
-	CreatedAt time.Time       `json:"created_at"`
+	ID        ID                             `json:"id"`
+	Version   Version                        `json:"version"`
+	App       *apps.App                      `json:"app"`
+	Config    *configs.Config                `json:"config"`
+	Formation []*formations.CommandFormation `json:"formation"`
+	Slug      *slugs.Slug                    `json:"slug"`
+	CreatedAt time.Time                      `json:"created_at"`
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and
@@ -121,13 +123,45 @@ func (r *repository) Head(id apps.ID) (*Release, error) {
 // Service provides methods for interacting with releases.
 type Service struct {
 	Repository
+	FormationsService *formations.Service
 }
 
 // NewService returns a new Service instance.
-func NewService(r Repository) *Service {
+func NewService(r Repository, f *formations.Service) *Service {
 	if r == nil {
 		r = newRepository()
 	}
 
-	return &Service{Repository: r}
+	return &Service{
+		Repository:        r,
+		FormationsService: f,
+	}
+}
+
+func (s *Service) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*Release, error) {
+	r, err := s.Repository.Create(app, config, slug)
+	if err != nil {
+		return r, err
+	}
+
+	// Get the currently configured process formation.
+	fmtns, err := s.FormationsService.Get(app)
+	if err != nil {
+		return r, err
+	}
+
+	for _, f := range fmtns {
+		cmd, found := slug.ProcessTypes[f.ProcessType]
+		if !found {
+			// TODO Update the formation?
+			continue
+		}
+
+		r.Formation = append(r.Formation, &formations.CommandFormation{
+			Formation: f,
+			Command:   cmd,
+		})
+	}
+
+	return r, nil
 }

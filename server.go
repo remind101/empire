@@ -9,8 +9,8 @@ import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/deploys"
+	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/repos"
-	"github.com/remind101/empire/slugs"
 )
 
 // Decoder represents a function that can decode a request into an interface
@@ -137,7 +137,7 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	d, err := h.DeploysService.Deploy(&slugs.Image{
+	d, err := h.DeploysService.Deploy(&images.Image{
 		Repo: repos.Repo(form.Image.Repo),
 		ID:   form.Image.ID,
 	})

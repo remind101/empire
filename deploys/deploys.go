@@ -3,6 +3,8 @@ package deploys
 import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
+	"github.com/remind101/empire/images"
+	"github.com/remind101/empire/manager"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
 )
@@ -22,10 +24,11 @@ type Service struct {
 	ConfigsService  *configs.Service
 	SlugsService    *slugs.Service
 	ReleasesService *releases.Service
+	ManagerService  *manager.Service
 }
 
 // Deploy deploys an Image to the platform.
-func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
+func (s *Service) Deploy(image *images.Image) (*Deploy, error) {
 	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
@@ -48,6 +51,11 @@ func (s *Service) Deploy(image *slugs.Image) (*Deploy, error) {
 	// and Slug.
 	release, err := s.ReleasesService.Create(app, config, slug)
 	if err != nil {
+		return nil, err
+	}
+
+	// Schedule the new release onto the cluster.
+	if err := s.ManagerService.ScheduleRelease(release); err != nil {
 		return nil, err
 	}
 
