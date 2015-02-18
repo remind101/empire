@@ -1,0 +1,47 @@
+{
+  "variables": {
+    "homedir": "{{env `HOME`}}",
+    "baseami": ""
+  },
+  "builders": [{
+    "type": "virtualbox-ovf",
+    "source_path": "build/empire-base.ovf",
+    "ssh_username": "vagrant",
+    "ssh_key_path": "{{user `homedir`}}/.vagrant.d/insecure_private_key",
+    "ssh_wait_timeout": "60s",
+    "shutdown_command": "echo 'packer' | sudo -S shutdown -P now"
+  },
+
+  {
+    "type": "amazon-ebs",
+    "name": "ubuntu-east-empire_minion",
+    "access_key": "",
+    "secret_key": "",
+    "region": "us-east-1",
+    "source_ami": "{{ user `baseami` }}",
+    "instance_type": "m3.medium",
+    "ssh_username": "ubuntu",
+    "ssh_timeout": "5m",
+    "ami_name": "Empire Minion Image {{isotime | clean_ami_name}}"
+  }],
+
+  "post-processors": [{
+    "output": "../../artifacts/empire_minion.box",
+    "type": "vagrant",
+    "only": ["virtualbox-ovf"]
+  }],
+
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "files",
+      "destination": "/tmp/files"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/setup.sh"
+      ]
+    }
+  ]
+}
