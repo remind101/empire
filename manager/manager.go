@@ -7,6 +7,7 @@ import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/formations"
+	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
@@ -22,16 +23,10 @@ func NewName(id apps.ID, pt processes.Type, i int) Name {
 	return Name(fmt.Sprintf("%s.%s.%d", id, pt, i))
 }
 
-// Image represents a container image.
-type Image struct {
-	Repo string
-	ID   string
-}
-
 // Execute represents a command to execute inside and image.
 type Execute struct {
 	Command string
-	Image   Image
+	Image   images.Image
 }
 
 // Job is a job that can be scheduled.
@@ -130,10 +125,7 @@ func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs
 				Environment: env,
 				Execute: Execute{
 					Command: cmd,
-					Image: Image{
-						Repo: string(slug.Image.Repo),
-						ID:   string(slug.Image.ID),
-					},
+					Image:   *slug.Image,
 				},
 			}
 
