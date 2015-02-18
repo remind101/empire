@@ -3,7 +3,6 @@ package deploys
 import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/manager"
 	"github.com/remind101/empire/releases"
@@ -21,12 +20,11 @@ type Deploy struct {
 }
 
 type Service struct {
-	AppsService       *apps.Service
-	ConfigsService    *configs.Service
-	SlugsService      *slugs.Service
-	ReleasesService   *releases.Service
-	FormationsService *formations.Service
-	ManagerService    *manager.Service
+	AppsService     *apps.Service
+	ConfigsService  *configs.Service
+	SlugsService    *slugs.Service
+	ReleasesService *releases.Service
+	ManagerService  *manager.Service
 }
 
 // Deploy deploys an Image to the platform.
@@ -55,14 +53,6 @@ func (s *Service) Deploy(image *images.Image) (*Deploy, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Get the current formation for the app.
-	formations, err := s.FormationsService.Get(app)
-	if err != nil {
-		return nil, err
-	}
-
-	release.Formations = formations
 
 	// Schedule the new release onto the cluster.
 	if err := s.ManagerService.ScheduleRelease(release); err != nil {

@@ -111,22 +111,16 @@ func (s *Service) ScheduleRelease(release *releases.Release) error {
 		release.App,
 		release.Config,
 		release.Slug,
-		release.Formations,
+		release.Formation,
 	)
 }
 
-func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs.Slug, formation formations.Formations) error {
+func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs.Slug, formations []*formations.CommandFormation) error {
 	var jobs []*Job
 
 	// Build jobs for each process type
-	for _, f := range formation {
-		// We don't want to create jobs for process types that weren't
-		// defined in the Procfile.
-		if _, found := slug.ProcessTypes[f.ProcessType]; !found {
-			continue
-		}
-
-		command := string(slug.ProcessTypes[f.ProcessType])
+	for _, f := range formations {
+		cmd := string(f.Command)
 		env := environment(config.Vars)
 
 		// Build a Job for each instance of the process.
@@ -135,7 +129,7 @@ func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs
 				Name:        NewName(app.ID, f.ProcessType, i),
 				Environment: env,
 				Execute: Execute{
-					Command: command,
+					Command: cmd,
 					Image: Image{
 						Repo: string(slug.Image.Repo),
 						ID:   string(slug.Image.ID),

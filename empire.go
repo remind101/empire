@@ -73,12 +73,11 @@ func (e *Empire) ConfigsService() *configs.Service {
 func (e *Empire) DeploysService() *deploys.Service {
 	if e.deploysService == nil {
 		e.deploysService = &deploys.Service{
-			AppsService:       e.AppsService(),
-			ConfigsService:    e.ConfigsService(),
-			FormationsService: e.FormationsService(),
-			ManagerService:    e.ManagerService(),
-			SlugsService:      e.SlugsService(),
-			ReleasesService:   e.ReleasesService(),
+			AppsService:     e.AppsService(),
+			ConfigsService:  e.ConfigsService(),
+			ManagerService:  e.ManagerService(),
+			SlugsService:    e.SlugsService(),
+			ReleasesService: e.ReleasesService(),
 		}
 	}
 
@@ -103,7 +102,10 @@ func (e *Empire) ManagerService() *manager.Service {
 
 func (e *Empire) ReleasesService() *releases.Service {
 	if e.releasesService == nil {
-		e.releasesService = releases.NewService(nil)
+		e.releasesService = releases.NewService(
+			nil,
+			e.FormationsService(),
+		)
 	}
 
 	return e.releasesService
