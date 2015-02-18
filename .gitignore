@@ -5,3 +5,6 @@ packer_cache
 
 # Virtualbox boxes
 *.box
+
+# Ignore vagrant stuff
+.vagrant
