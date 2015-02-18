@@ -5,13 +5,16 @@ import "github.com/remind101/empire/apps"
 // ProcessType represents the type of a given process/command.
 type ProcessType string
 
+// Formations maps a ProcessType to a Formation definition.
 type Formations map[ProcessType]*Formation
 
-// Formation represents the desired
+// Formation represents configuration for a process type.
 type Formation struct {
 	ProcessType ProcessType
 
 	Count int // Count represents the desired number of processes to run.
+
+	// Size Size // The size of the instance to put these processes on.
 }
 
 // NewFormation returns a new Formation with an appropriate default Count.
@@ -28,6 +31,7 @@ func NewFormation(pt ProcessType) *Formation {
 	}
 }
 
+// Repository is an interface that can store and retrieve formations for apps.
 type Repository interface {
 	// Set sets the apps desired process formations.
 	Set(*apps.App, Formations) error
