@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/remind101/empire/procs"
+	"github.com/remind101/empire/scheduler"
 )
 
 const (
@@ -69,13 +69,13 @@ func heartBeat(c *api.Client) {
 func checkConfig(c *api.Client) {
 	// Get list of processes scheduled for this agent,
 	// register/deregister processes with init system.
-	r := procs.NewConsulRepository(c)
+	r := scheduler.NewConsulRepository(c)
 
 	host, err := os.Hostname()
 	if err != nil {
 		log.Panicf("Unable to get hostname: %v\n", err)
 	}
-	m := &procs.Minion{Node: host}
+	m := &scheduler.Minion{Node: host}
 
 	procs, err := r.MinionSchedule(m)
 	if err != nil {

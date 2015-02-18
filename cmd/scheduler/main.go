@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/remind101/empire/procs"
+	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/units"
 )
 
@@ -15,9 +15,9 @@ func main() {
 	// Connect to consul
 	client := newConsulClient()
 
-	scheduler := procs.NewScheduler(
+	scheduler := scheduler.New(
 		units.NewService(units.NewConsulRepository(client)),
-		procs.NewConsulRepository(client),
+		scheduler.NewConsulRepository(client),
 	)
 
 	lock, err := client.LockKey("/empire/scheduler/leader")

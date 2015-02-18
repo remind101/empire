@@ -1,4 +1,4 @@
-package procs
+package scheduler
 
 import (
 	"encoding/json"
@@ -48,7 +48,7 @@ type Scheduler struct {
 	Repository                  // Repository for scheduling processes to minions
 }
 
-func NewScheduler(u *units.Service, r Repository) *Scheduler {
+func New(u *units.Service, r Repository) *Scheduler {
 	return &Scheduler{UnitsService: u, Repository: r}
 }
 
