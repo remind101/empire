@@ -1,10 +1,11 @@
 {
   "variables": {
-    "homedir": "{{env `HOME`}}"
+    "homedir": "{{env `HOME`}}",
+    "baseami": ""
   },
   "builders": [{
     "type": "virtualbox-ovf",
-    "source_path": "base_box/empire-base.ovf",
+    "source_path": "build/empire-base.ovf",
     "ssh_username": "vagrant",
     "ssh_key_path": "{{user `homedir`}}/.vagrant.d/insecure_private_key",
     "ssh_wait_timeout": "60s",
@@ -13,11 +14,11 @@
 
   {
     "type": "amazon-ebs",
-    "name": "ubuntu-east",
+    "name": "ubuntu-east-empire_controller",
     "access_key": "",
     "secret_key": "",
     "region": "us-east-1",
-    "source_ami": "ami-018c9568",
+    "source_ami": "{{ user `baseami` }}",
     "instance_type": "m3.medium",
     "ssh_username": "ubuntu",
     "ssh_timeout": "5m",
@@ -25,14 +26,22 @@
   }],
 
   "post-processors": [{
-    "output": "build/empire-controller.box",
-    "type": "vagrant"
+    "output": "../../artifacts/empire_controller.box",
+    "type": "vagrant",
+    "only": ["virtualbox-ovf"]
   }],
 
-  "provisioners": [{
-    "type": "shell",
-    "scripts": [
-      "scripts/setup.sh"
-    ]
-  }]
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "files",
+      "destination": "/tmp/files"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/setup.sh"
+      ]
+    }
+  ]
 }
