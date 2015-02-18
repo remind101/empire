@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/repos"
 )
 
@@ -13,15 +14,12 @@ var (
 	DefaultProcfilePath = "/home/app/Procfile"
 )
 
-// ProcessType represents the type of a given process/command.
-type ProcessType string
-
 // Command represents the actual shell command that gets executed for a given
 // ProcessType.
 type Command string
 
 // ProcessMap represents a map of ProcessType -> Command.
-type ProcessMap map[ProcessType]Command
+type ProcessMap map[formations.ProcessType]Command
 
 // Image represents a container image, which is tied to a repository.
 type Image struct {
