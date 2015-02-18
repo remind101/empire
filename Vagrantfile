@@ -29,6 +29,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
+  # Setup router box
+  config.vm.define "router" do |router|
+    router.vm.hostname = "router"
+    router.vm.box = "empire_router"
+    router.vm.box_url = ["file://#{ENV['HOME']}/Documents/remind_sync/empire_router.box", "http://empire-image-artifacts.s3-website-us-east-1.amazonaws.com/empire_router.box"]
+    router.vm.network "private_network", ip: "192.168.55.12"
+    router.vm.provider "virtualbox" do |vb|
+        vb.customize [
+            "modifyvm", :id,
+            "--name", "router",
+            "--memory", "1024",
+            "--cpus", "1",
+            "--natdnspassdomain1", "on",
+            "--natdnsproxy1", "off",
+            "--natdnshostresolver1", "on",
+        ]
+    end
+  end
+
   # Setup minion boxes
   num_minions.times do |i|
     hostname = "minion%d" % [(i+1)]
