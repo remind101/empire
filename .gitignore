@@ -5,3 +5,4 @@ packer_cache
 
 # Virtualbox boxes
 *.box
+*.vagrant
