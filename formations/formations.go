@@ -72,6 +72,17 @@ type Service struct {
 	Repository
 }
 
+// NewService returns a new Service instance.
+func NewService(r Repository) *Service {
+	if r == nil {
+		r = newRepository()
+	}
+
+	return &Service{
+		Repository: r,
+	}
+}
+
 // Scale a given process type up or down.
 func (s *Service) Scale(app *apps.App, pt ProcessType, count int) (*Formation, error) {
 	formations, err := s.Repository.Get(app)

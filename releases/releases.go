@@ -8,6 +8,7 @@ import (
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
+	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -21,12 +22,13 @@ type Version string
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID        ID              `json:"id"`
-	Version   Version         `json:"version"`
-	App       *apps.App       `json:"app"`
-	Config    *configs.Config `json:"config"`
-	Slug      *slugs.Slug     `json:"slug"`
-	CreatedAt time.Time       `json:"created_at"`
+	ID         ID                    `json:"id"`
+	Version    Version               `json:"version"`
+	App        *apps.App             `json:"app"`
+	Config     *configs.Config       `json:"config"`
+	Formations formations.Formations `json:"formation"`
+	Slug       *slugs.Slug           `json:"slug"`
+	CreatedAt  time.Time             `json:"created_at"`
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and

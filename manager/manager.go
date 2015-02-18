@@ -64,19 +64,41 @@ type Scheduler interface {
 	// Unschedule(Name) error
 }
 
+// scheduler is a fake implementation of the Scheduler interface.
+type scheduler struct{}
+
+func newScheduler() *scheduler {
+	return &scheduler{}
+}
+
+func (s *scheduler) Schedule(j *Job) error {
+	return nil
+}
+
 // Service provides a layer of convenience over a Scheduler.
 type Service struct {
 	Scheduler
 }
 
+// NewService returns a new Service instance.
+func NewService(s Scheduler) *Service {
+	if s == nil {
+		s = newScheduler()
+	}
+
+	return &Service{
+		Scheduler: s,
+	}
+}
+
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (s *Service) ScheduleRelease(release *releases.Release, formation formations.Formations) error {
+func (s *Service) ScheduleRelease(release *releases.Release) error {
 	return s.scheduleApp(
 		release.App,
 		release.Config,
 		release.Slug,
-		formation,
+		release.Formations,
 	)
 }
 
