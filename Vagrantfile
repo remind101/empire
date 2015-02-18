@@ -20,8 +20,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.customize [
             "modifyvm", :id,
             "--name", "controller",
-            "--memory", "2048",
-            "--cpus", "2",
+            "--memory", "1024",
+            "--cpus", "1",
             "--natdnspassdomain1", "on",
             "--natdnsproxy1", "off",
             "--natdnshostresolver1", "on",
@@ -33,7 +33,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   num_minions.times do |i|
     hostname = "minion%d" % [(i+1)]
 
-    config.vm.define :"#{hostname}" do |box|
+    # only autostart the first minion
+    opts = { autostart: i == 0 }
+    config.vm.define :"#{hostname}", opts do |box|
       box.vm.hostname = hostname
       box.vm.box = "empire_minion"
       box.vm.box_url = ["file://#{ENV['HOME']}/Documents/remind_sync/empire_minion.box", "http://empire-image-artifacts.s3-website-us-east-1.amazonaws.com/empire_minion.box"]
@@ -43,8 +45,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           vb.customize [
               "modifyvm", :id,
               "--name", hostname,
-              "--memory", "2048",
-              "--cpus", "2",
+              "--memory", "1024",
+              "--cpus", "1",
               "--natdnspassdomain1", "on",
               "--natdnsproxy1", "off",
               "--natdnshostresolver1", "on",
