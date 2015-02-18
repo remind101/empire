@@ -3,6 +3,8 @@ package scheduler
 import (
 	"reflect"
 	"testing"
+
+	"github.com/remind101/empire/manager"
 )
 
 func TestFakeScheduler(t *testing.T) {
@@ -10,17 +12,17 @@ func TestFakeScheduler(t *testing.T) {
 	jm := JobMap{
 		"api.web.1": Job{
 			Name:    "api.web.1",
-			Command: "./bin/web",
+			Execute: manager.Execute{Command: "./bin/web"},
 			Meta:    map[string]string{"app": "api", "type": "web"},
 		},
 		"api.web.2": Job{
 			Name:    "api.web.2",
-			Command: "./bin/web",
+			Execute: manager.Execute{Command: "./bin/web"},
 			Meta:    map[string]string{"app": "api", "type": "web"},
 		},
 		"dash.web.1": Job{
 			Name:    "dash.web.1",
-			Command: "./bin/web",
+			Execute: manager.Execute{Command: "./bin/web"},
 			Meta:    map[string]string{"app": "dash", "type": "web"},
 		},
 	}
@@ -43,7 +45,7 @@ func TestFakeScheduler(t *testing.T) {
 	want := JobMap{
 		"dash.web.1": Job{
 			Name:    "dash.web.1",
-			Command: "./bin/web",
+			Execute: manager.Execute{Command: "./bin/web"},
 			Meta:    map[string]string{"app": "dash", "type": "web"},
 		},
 	}

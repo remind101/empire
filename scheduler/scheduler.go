@@ -1,5 +1,7 @@
 package scheduler
 
+import "github.com/remind101/empire/manager"
+
 // Job is a job that can be scheduled.
 type Job struct {
 	// The unique name of the job.
@@ -9,7 +11,7 @@ type Job struct {
 	Environment map[string]string
 
 	// The command to run.
-	Command string
+	Execute manager.Execute
 
 	// Meta data useful for querying with
 	Meta map[string]string
