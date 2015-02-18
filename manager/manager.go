@@ -21,6 +21,18 @@ func NewName(id apps.ID, pt formations.ProcessType, i int) Name {
 	return Name(fmt.Sprintf("%s.%s.%d", id, pt, i))
 }
 
+// Image represents a container image.
+type Image struct {
+	Repo string
+	ID   string
+}
+
+// Execute represents a command to execute inside and image.
+type Execute struct {
+	Command string
+	Image   Image
+}
+
 // Job is a job that can be scheduled.
 type Job struct {
 	// The unique name of the job.
@@ -30,7 +42,7 @@ type Job struct {
 	Environment map[string]string
 
 	// The command to run.
-	Command string
+	Execute Execute
 }
 
 // State represents the state of a job.
@@ -121,7 +133,13 @@ func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs
 			j := &Job{
 				Name:        NewName(app.ID, f.ProcessType, i),
 				Environment: env,
-				Command:     command,
+				Execute: Execute{
+					Command: command,
+					Image: Image{
+						Repo: string(slug.Image.Repo),
+						ID:   string(slug.Image.ID),
+					},
+				},
 			}
 
 			jobs = append(jobs, j)
