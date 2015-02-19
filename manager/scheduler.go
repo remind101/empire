@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -75,18 +76,7 @@ func newFleetScheduler(fleet string) (*FleetScheduler, error) {
 // Schedule implements Scheduler Schedule and builds an appropritate systemd
 // unit definition to run the container.
 func (s *FleetScheduler) Schedule(j *Job) error {
-	u := &schema.Unit{
-		Name:         string(j.Name) + ".service",
-		DesiredState: "launched",
-		Options: []*schema.UnitOption{
-			{
-				Section: "Service",
-				Name:    "ExecStart",
-				Value:   dockerRun(j.Name, j.Execute.Image),
-			},
-		},
-	}
-
+	u := s.buildUnit(j)
 	return s.client.CreateUnit(u)
 }
 
@@ -100,6 +90,67 @@ func (s *FleetScheduler) ScheduleMulti(jobs []*Job) error {
 	return nil
 }
 
-func dockerRun(name Name, image images.Image) string {
-	return "/usr/bin/docker run --name " + string(name) + " --rm -h %H -P quay.io/" + string(image.Repo) + ":" + string(image.ID)
+// buildUnit builds a Unit file that looks like this:
+//
+// [Unit]
+// Description=app.v1.web.1
+// After=discovery.service
+//
+// [Service]
+// TimeoutStartSec=30m
+//
+// ExecStartPre=/bin/bash -c "/usr/bin/docker inspect remind101/app &> /dev/null || /usr/bin/docker pull remind101/app"
+// ExecStartPre=/bin/bash -c "/usr/bin/docker rm app.v1.web.1 &> /dev/null; exit 0"
+// ExecStart=/usr/bin/docker run --name app.v1.web.1 --rm -h %H remind101/app
+// ExecStop=/usr/bin/docker stop app.v1.web.1
+
+func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
+	img := image(j.Execute.Image)
+	opts := []*schema.UnitOption{
+		{
+			Section: "Unit",
+			Name:    "Description",
+			Value:   string(j.Name),
+		},
+		{
+			Section: "Unit",
+			Name:    "After",
+			Value:   "discovery.service",
+		},
+		{
+			Section: "Service",
+			Name:    "TimeoutStartSec",
+			Value:   "30m",
+		},
+		{
+			Section: "Service",
+			Name:    "ExecStartPre",
+			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker inspect %s &> /dev/null || /usr/bin/docker pull %s"`, img, img),
+		},
+		{
+			Section: "Service",
+			Name:    "ExecStartPre",
+			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker rm %s &> /dev/null; exit 0"`, j.Name),
+		},
+		{
+			Section: "Service",
+			Name:    "ExecStart",
+			Value:   fmt.Sprintf(`/usr/bin/docker run --name %s --rm -h %%H -P %s`, j.Name, img),
+		},
+		{
+			Section: "Service",
+			Name:    "ExecStop",
+			Value:   fmt.Sprintf(`/usr/bin/docker stop %s`, j.Name),
+		},
+	}
+
+	return &schema.Unit{
+		Name:         string(j.Name) + ".service",
+		DesiredState: "launched",
+		Options:      opts,
+	}
+}
+
+func image(i images.Image) string {
+	return fmt.Sprintf("quay.io/%s:%s", i.Repo, i.ID)
 }
