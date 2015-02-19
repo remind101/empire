@@ -149,6 +149,7 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PostAppsForm struct {
+	Name string `json:"name"`
 	Repo string `json:"repo"`
 }
 
@@ -163,9 +164,12 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	a, err := h.AppsService.Create(&apps.App{
-		Repo: repos.Repo(form.Repo),
-	})
+	app, err := apps.New(apps.Name(form.Name), repos.Repo(form.Repo))
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	a, err := h.AppsService.Create(app)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

@@ -15,7 +15,7 @@ import (
 
 // Name represents the (unique) name of a job. The convention is <app>.<type>.<instance>:
 //
-//	589611bf-4e6c-4fc2-a77a-d61dca412289.web.1
+//	my-sweet-app.web.1
 type Name string
 
 // NewName returns a new Name with the proper format.

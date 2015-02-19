@@ -1,21 +1,46 @@
 package apps
 
 import (
-	"strconv"
+	"errors"
+	"regexp"
+	"strings"
 	"sync"
+
+	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/remind101/empire/repos"
 )
 
+var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
+
+var NamePattern = regexp.MustCompile("^[a-z][a-z0-9-]{3,30}$")
+
 // ID represents the unique identifier for an App.
 type ID string
+
+// Name represents the unique name for an App.
+type Name string
 
 // App represents an app.
 type App struct {
 	ID ID `json:"id"`
 
+	Name Name `json:"name"`
+
 	// The associated GitHub/Docker repo.
 	Repo repos.Repo `json:"repo"`
+}
+
+func New(name Name, repo repos.Repo) (*App, error) {
+	if !NamePattern.Match([]byte(name)) {
+		return nil, ErrInvalidName
+	}
+
+	return &App{
+		ID:   ID(uuid.NewRandom()),
+		Name: name,
+		Repo: repo,
+	}, nil
 }
 
 // Repository represents a repository for creating and finding Apps.
@@ -40,8 +65,6 @@ func (r *repository) Create(app *App) (*App, error) {
 	r.Lock()
 	defer r.Unlock()
 
-	r.id++
-	app.ID = ID(strconv.Itoa(r.id))
 	r.apps = append(r.apps, app)
 	return app, nil
 }
@@ -93,10 +116,17 @@ func (s *Service) FindOrCreateByRepo(repo repos.Repo) (*App, error) {
 	}
 
 	if a == nil {
-		return s.Repository.Create(&App{
-			Repo: repo,
-		})
+		a, err = New(nameFromRepo(repo), repo)
+		if err != nil {
+			return a, err
+		}
+		return s.Repository.Create(a)
 	}
 
 	return a, nil
+}
+
+func nameFromRepo(repo repos.Repo) Name {
+	p := strings.Split(string(repo), "/")
+	return Name(p[len(p)-1])
 }

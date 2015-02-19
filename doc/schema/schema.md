@@ -5,6 +5,8 @@
 | Name | Type | Description | Example |
 | ------- | ------- | ------- | ------- |
 | **id** | *uuid* | unique identifier of app | `"01234567-89ab-cdef-0123-456789abcdef"` |
+| **name** | *string* | unique name of app<br/> **pattern:** <code>^[a-z][a-z0-9-]{3,30}$</code> | `"example"` |
+| **repo** | *string* | the name of the repo | `"remind101/r101-api"` |
 ### App Create
 Create a new app.
 
@@ -15,6 +17,7 @@ POST /apps
 #### Required Parameters
 | Name | Type | Description | Example |
 | ------- | ------- | ------- | ------- |
+| **name** | *string* | unique name of app<br/> **pattern:** <code>^[a-z][a-z0-9-]{3,30}$</code> | `"example"` |
 | **repo** | *string* | the name of the repo | `"remind101/r101-api"` |
 
 
@@ -25,6 +28,7 @@ $ curl -n -X POST http://localhost:8080/apps \
   -H "Content-Type: application/json" \
  \
   -d '{
+  "name": "example",
   "repo": "remind101/r101-api"
 }'
 
@@ -37,7 +41,9 @@ HTTP/1.1 201 Created
 ```
 ```json
 {
-  "id": "01234567-89ab-cdef-0123-456789abcdef"
+  "id": "01234567-89ab-cdef-0123-456789abcdef",
+  "name": "example",
+  "repo": "remind101/r101-api"
 }
 ```
 
@@ -54,13 +60,13 @@ HTTP/1.1 201 Created
 Get the latest version of an app's config
 
 ```
-GET /apps/{app_id}/configs/head
+GET /apps/{app_id_or_name}/configs/head
 ```
 
 
 #### Curl Example
 ```bash
-$ curl -n -X GET http://localhost:8080/apps/$APP_ID/configs/head
+$ curl -n -X GET http://localhost:8080/apps/$APP_ID_OR_NAME/configs/head
 
 ```
 
@@ -82,13 +88,13 @@ HTTP/1.1 200 OK
 Get a specific version of an app's config
 
 ```
-GET /apps/{app_id}/configs/{config_version}
+GET /apps/{app_id_or_name}/configs/{config_version}
 ```
 
 
 #### Curl Example
 ```bash
-$ curl -n -X GET http://localhost:8080/apps/$APP_ID/configs/$CONFIG_VERSION
+$ curl -n -X GET http://localhost:8080/apps/$APP_ID_OR_NAME/configs/$CONFIG_VERSION
 
 ```
 
@@ -110,7 +116,7 @@ HTTP/1.1 200 OK
 Updates the config for an app
 
 ```
-PATCH /apps/{app_id}/configs
+PATCH /apps/{app_id_or_name}/configs
 ```
 
 #### Required Parameters
@@ -122,7 +128,7 @@ PATCH /apps/{app_id}/configs
 
 #### Curl Example
 ```bash
-$ curl -n -X PATCH http://localhost:8080/apps/$APP_ID/configs \
+$ curl -n -X PATCH http://localhost:8080/apps/$APP_ID_OR_NAME/configs \
   -H "Content-Type: application/json" \
  \
   -d '{

@@ -36,8 +36,9 @@ func (c *TestClient) Close() {
 	c.Server.Close()
 }
 
-func (c *TestClient) MustAppCreate(repo string) *client.App {
+func (c *TestClient) MustAppCreate(name string, repo string) *client.App {
 	o := client.AppCreateOpts{}
+	o.Name = name
 	o.Repo = repo
 	a, err := c.AppCreate(o)
 	if err != nil {
@@ -63,7 +64,7 @@ func TestEmpirePatchConfig(t *testing.T) {
 	c := NewTestClient(t)
 	defer c.Close()
 
-	a := c.MustAppCreate("remind101/r101-api")
+	a := c.MustAppCreate("api", "remind101/r101-api")
 
 	vars := map[string]string{"RAILS_ENV": "production"}
 	o := client.ConfigUpdateOpts{}
