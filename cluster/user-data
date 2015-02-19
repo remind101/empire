@@ -4,7 +4,7 @@ coreos:
   etcd:
     # generate a new token for each unique cluster from https://discovery.etcd.io/new
     # WARNING: replace each time you 'vagrant destroy'
-    discovery: https://discovery.etcd.io/d769a7fdbb0ee716aba69e11204bc4bc
+    discovery: https://discovery.etcd.io/067d19eb67c15cbb94d5cc3d921ddc38
     addr: $public_ipv4:4001
     peer-addr: $public_ipv4:7001
   fleet:
@@ -65,12 +65,20 @@ coreos:
 
         [Service]
         TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
         User=core
 
         ExecStartPre=/bin/bash -c "/usr/bin/docker inspect quay.io/remind/empire &> /dev/null || /usr/bin/docker pull quay.io/remind/empire"
         ExecStartPre=/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
-        ExecStart=/usr/bin/docker run --name empire --rm -h %H -P -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire -docker.socket=unix:///tmp/docker.sock -docker.registry=quay.io
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -P -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire -docker.socket=unix:///tmp/docker.sock -docker.registry=quay.io -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153
         ExecStop=/usr/bin/docker stop empire
 
         [Install]
         WantedBy=multi-user.target
+write_files:
+  - path: /etc/systemd/system/fleet.socket.d/30-ListenStream.conf
+    permissions: 0644
+    owner: root
+    content: |
+      [Socket]
+      ListenStream=$public_ipv4:49153
