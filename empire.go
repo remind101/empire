@@ -3,7 +3,6 @@ package empire // import "github.com/remind101/empire"
 import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/manager"
 	"github.com/remind101/empire/releases"
@@ -42,7 +41,7 @@ type Options struct {
 type Empire struct {
 	appsService       *apps.Service
 	configsService    *configs.Service
-	deploysService    *deploys.Service
+	deploysService    DeploysService
 	formationsService *formations.Service
 	managerService    *manager.Service
 	releasesService   *releases.Service
@@ -83,9 +82,9 @@ func (e *Empire) ConfigsService() *configs.Service {
 	return e.configsService
 }
 
-func (e *Empire) DeploysService() *deploys.Service {
+func (e *Empire) DeploysService() DeploysService {
 	if e.deploysService == nil {
-		e.deploysService = &deploys.Service{
+		e.deploysService = &deploysService{
 			AppsService:     e.AppsService(),
 			ConfigsService:  e.ConfigsService(),
 			ManagerService:  e.ManagerService(),

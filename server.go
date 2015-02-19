@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/repos"
 )
@@ -118,7 +117,7 @@ func (r *router) Handle(method, path string, h Handler) {
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
 type PostDeploys struct {
-	DeploysService *deploys.Service
+	DeploysService DeploysService
 }
 
 // PostDeployForm is the form object that represents the POST body.
