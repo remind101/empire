@@ -25,7 +25,7 @@ func main() {
 	go heartBeat(client)
 
 	// Check process config
-	for range time.NewTicker(time.Second * 10).C {
+	for _ = range time.NewTicker(time.Second * 10).C {
 		checkConfig(client)
 	}
 }

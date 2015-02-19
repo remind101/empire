@@ -150,6 +150,18 @@ func (s *Service) Create(app *apps.App, config *configs.Config, slug *slugs.Slug
 		return r, err
 	}
 
+	if fmtns == nil {
+		if _, ok := slug.ProcessTypes["web"]; ok {
+			fmtns = formations.Formations{
+				"web": formations.NewFormation("web"),
+			}
+
+			if err := s.FormationsService.Set(app, fmtns); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	for _, f := range fmtns {
 		cmd, found := slug.ProcessTypes[f.ProcessType]
 		if !found {
