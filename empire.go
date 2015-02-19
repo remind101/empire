@@ -26,9 +26,16 @@ type DockerOptions struct {
 	CertPath string
 }
 
+// FleetOptions is a set of options to configure a fleet api client.
+type FleetOptions struct {
+	// The location of the fleet api.
+	API string
+}
+
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
+	Fleet  FleetOptions
 }
 
 // Empire is a context object that contains a collection of services.
@@ -44,13 +51,19 @@ type Empire struct {
 
 // New returns a new Empire instance.
 func New(options Options) (*Empire, error) {
+	manager, err := newManagerService(options)
+	if err != nil {
+		return nil, err
+	}
+
 	slugs, err := newSlugsService(options)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Empire{
-		slugsService: slugs,
+		managerService: manager,
+		slugsService:   slugs,
 	}, nil
 }
 
@@ -135,4 +148,13 @@ func newSlugsService(options Options) (*slugs.Service, error) {
 	}
 
 	return slugs.NewService(r, e), nil
+}
+
+func newManagerService(options Options) (*manager.Service, error) {
+	s, err := manager.NewScheduler(options.Fleet.API)
+	if err != nil {
+		return nil, err
+	}
+
+	return manager.NewService(s), nil
 }

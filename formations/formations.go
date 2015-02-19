@@ -66,10 +66,6 @@ func (r *repository) Set(app *apps.App, f Formations) error {
 
 // Get gets the current process formations for the given app.
 func (r *repository) Get(app *apps.App) (Formations, error) {
-	if _, found := r.formations[app.Name]; !found {
-		r.formations[app.Name] = make(Formations)
-	}
-
 	return r.formations[app.Name], nil
 }
 
@@ -94,6 +90,10 @@ func (s *Service) Scale(app *apps.App, pt processes.Type, count int) (*Formation
 	formations, err := s.Repository.Get(app)
 	if err != nil {
 		return nil, err
+	}
+
+	if formations == nil {
+		formations = make(Formations)
 	}
 
 	f := findFormation(formations, pt)
