@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/schema"
@@ -135,7 +136,7 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		{
 			Section: "Service",
 			Name:    "ExecStart",
-			Value:   fmt.Sprintf(`/usr/bin/docker run --name %s --rm -h %%H -P %s`, j.Name, img),
+			Value:   fmt.Sprintf(`/usr/bin/docker run --name %s --rm -h %%H -P %s %s %s`, j.Name, img, env(j), j.Execute.Command),
 		},
 		{
 			Section: "Service",
@@ -153,4 +154,13 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 
 func image(i images.Image) string {
 	return fmt.Sprintf("quay.io/%s:%s", i.Repo, i.ID)
+}
+
+func env(j *Job) string {
+	envs := []string{}
+	for k, v := range j.Environment {
+		envs = append(envs, fmt.Sprintf("-e %s=%s", k, v))
+	}
+
+	return strings.Join(envs, " ")
 }
