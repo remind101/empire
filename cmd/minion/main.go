@@ -56,7 +56,7 @@ func register(c *api.Client) {
 }
 
 func heartBeat(c *api.Client) {
-	for range time.NewTicker(time.Second * 5).C {
+	for _ = range time.NewTicker(time.Second * 5).C {
 		err := c.Agent().PassTTL(AgentCheckID, "")
 		if err != nil {
 			log.Printf("Error in PassTTL(%s): %s", AgentCheckID, err)
