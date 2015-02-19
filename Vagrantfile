@@ -1,57 +1,51 @@
 # -*- mode: ruby -*-
-# vi: set ft=ruby :
+# # vi: set ft=ruby :
 
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
-VAGRANTFILE_API_VERSION = "2"
+# Adds a user-data file to the machine.
+def cloud_config(config)
+  config.vm.provision :file, source: File.expand_path('../cluster/user-data', __FILE__), destination: '/tmp/vagrantfile-user-data'
+  config.vm.provision :shell, inline: 'mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/', privileged: true
+end
 
-num_minions = 3
-minion_base_ip = "192.168.55.40"
+# Adds docker registry authentication.
+def docker_auth(config)
+  config.vm.provision :file, source: File.expand_path('~/.dockercfg'), destination: '/tmp/dockercfg'
+  config.vm.provision :shell, inline: 'mv /tmp/dockercfg /home/core/.dockercfg', privileged: true
+end
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.ssh.forward_agent = true
+Vagrant.configure('2') do |config|
+  # always use Vagrants insecure key
+  config.ssh.insert_key = false
 
-  # Setup controller box
-  config.vm.define "controller" do |controller|
-    controller.vm.hostname = "controller"
-    controller.vm.box = "empire_controller"
-    controller.vm.box_url = ["file://#{ENV['HOME']}/Documents/remind_sync/empire_controller.box", "http://empire-image-artifacts.s3-website-us-east-1.amazonaws.com/empire_controller.box"]
-    controller.vm.network "private_network", ip: "192.168.55.11"
-    controller.vm.provider "virtualbox" do |vb|
-        vb.customize [
-            "modifyvm", :id,
-            "--name", "controller",
-            "--memory", "1024",
-            "--cpus", "1",
-            "--natdnspassdomain1", "on",
-            "--natdnsproxy1", "off",
-            "--natdnshostresolver1", "on",
-        ]
-    end
+  config.vm.box = 'coreos-stable'
+  config.vm.box_version = '>= 308.0.1'
+  config.vm.box_url = 'http://stable.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json'
+
+  config.vm.provider :virtualbox do |v|
+    # On VirtualBox, we don't have guest additions or a functional vboxsf
+    # in CoreOS, so tell Vagrant that so it can be smarter.
+    v.check_guest_additions = false
+    v.functional_vboxsf     = false
   end
 
-  # Setup minion boxes
-  num_minions.times do |i|
-    hostname = "minion%d" % [(i+1)]
+  # plugin conflict
+  config.vbguest.auto_update = false if Vagrant.has_plugin?('vagrant-vbguest')
 
-    # only autostart the first minion
-    opts = { autostart: i == 0 }
-    config.vm.define :"#{hostname}", opts do |box|
-      box.vm.hostname = hostname
-      box.vm.box = "empire_minion"
-      box.vm.box_url = ["file://#{ENV['HOME']}/Documents/remind_sync/empire_minion.box", "http://empire-image-artifacts.s3-website-us-east-1.amazonaws.com/empire_minion.box"]
-      ip = minion_base_ip.split('.').tap{|ip| ip[-1] = (ip[-1].to_i + i).to_s}.join('.')
-      box.vm.network "private_network", ip: ip
-      box.vm.provider "virtualbox" do |vb|
-          vb.customize [
-              "modifyvm", :id,
-              "--name", hostname,
-              "--memory", "1024",
-              "--cpus", "1",
-              "--natdnspassdomain1", "on",
-              "--natdnsproxy1", "off",
-              "--natdnshostresolver1", "on",
-          ]
-      end
-    end
+  config.vm.synced_folder '.', '/home/core/share', id: 'core', nfs: true, mount_options: ['nolock,vers=3,udp']
+
+  config.vm.define 'c1' do |c1|
+    c1.vm.hostname = 'c1'
+    c1.vm.network :private_network, ip: '172.20.20.10'
+
+    cloud_config c1
+    docker_auth c1
   end
+
+  #config.vm.define 'm1' do |m1|
+    #m1.vm.hostname = 'm1'
+    #m1.vm.network :private_network, ip: '172.20.20.11'
+
+    #cloud_config m1
+    #docker_auth m1
+  #end
 end
