@@ -58,6 +58,9 @@ type Scheduler interface {
 
 	// ScheduleMulti schedules multiple jobs to run on the cluster.
 	ScheduleMulti([]*Job) error
+
+	// Unschedule unschedules a job from the cluster by its name.
+	Unschedule(JobName) error
 }
 
 // NewScheduler is a factory method for generating a new Scheduler instance.
@@ -83,6 +86,11 @@ func (s *scheduler) Schedule(j *Job) error {
 
 // ScheduleMulti implements Scheduler ScheduleMulti.
 func (s *scheduler) ScheduleMulti(jobs []*Job) error {
+	return nil
+}
+
+// Unschedule implements Scheduler Unschedule.
+func (s *scheduler) Unschedule(n JobName) error {
 	return nil
 }
 
@@ -128,6 +136,10 @@ func (s *FleetScheduler) ScheduleMulti(jobs []*Job) error {
 	}
 
 	return nil
+}
+
+func (s *FleetScheduler) Unschedule(n JobName) error {
+	return s.client.DestroyUnit(string(n))
 }
 
 // buildUnit builds a Unit file that looks like this:
