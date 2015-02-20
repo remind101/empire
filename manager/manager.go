@@ -10,17 +10,16 @@ import (
 	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/releases"
-	"github.com/remind101/empire/slugs"
 )
 
 // Name represents the (unique) name of a job. The convention is <app>.<type>.<instance>:
 //
-//	my-sweet-app.web.1
+//	my-sweet-app.v1.web.1
 type Name string
 
 // NewName returns a new Name with the proper format.
-func NewName(id apps.Name, pt processes.Type, i int) Name {
-	return Name(fmt.Sprintf("%s.%s.%d", id, pt, i))
+func NewName(id apps.Name, v releases.Version, pt processes.Type, i int) Name {
+	return Name(fmt.Sprintf("%s.%s.%s.%d", id, v, pt, i))
 }
 
 // Execute represents a command to execute inside and image.
@@ -57,32 +56,6 @@ type JobState struct {
 	State State
 }
 
-// Scheduler is an interface that represents something that can schedule Jobs
-// onto the cluster.
-type Scheduler interface {
-	// Schedule schedules a job to run on the cluster.
-	Schedule(*Job) error
-
-	// TODO Jobs returns all of the jobs currently scheduled onto the
-	// cluster and their state..
-	// JobStates() ([]*JobState, error)
-
-	// TODO Depending on the scheduler, we'd probably need to unschedule old
-	// jobs.
-	// Unschedule(Name) error
-}
-
-// scheduler is a fake implementation of the Scheduler interface.
-type scheduler struct{}
-
-func newScheduler() *scheduler {
-	return &scheduler{}
-}
-
-func (s *scheduler) Schedule(j *Job) error {
-	return nil
-}
-
 // Service provides a layer of convenience over a Scheduler.
 type Service struct {
 	Scheduler
@@ -102,30 +75,33 @@ func NewService(s Scheduler) *Service {
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (s *Service) ScheduleRelease(release *releases.Release) error {
-	return s.scheduleApp(
-		release.App,
-		release.Config,
-		release.Slug,
+	jobs := buildJobs(
+		release.App.Name,
+		release.Version,
+		*release.Slug.Image,
+		release.Config.Vars,
 		release.Formation,
 	)
+
+	return s.Scheduler.ScheduleMulti(jobs)
 }
 
-func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs.Slug, formations []*formations.CommandFormation) error {
+func buildJobs(name apps.Name, version releases.Version, image images.Image, vars configs.Vars, formation []*formations.CommandFormation) []*Job {
 	var jobs []*Job
 
 	// Build jobs for each process type
-	for _, f := range formations {
+	for _, f := range formation {
 		cmd := string(f.Command)
-		env := environment(config.Vars)
+		env := environment(vars)
 
 		// Build a Job for each instance of the process.
 		for i := 1; i <= f.Count; i++ {
 			j := &Job{
-				Name:        NewName(app.Name, f.ProcessType, i),
+				Name:        NewName(name, version, f.ProcessType, i),
 				Environment: env,
 				Execute: Execute{
 					Command: cmd,
-					Image:   *slug.Image,
+					Image:   image,
 				},
 			}
 
@@ -133,14 +109,7 @@ func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs
 		}
 	}
 
-	// Schedule all of the jobs.
-	for _, j := range jobs {
-		if err := s.Scheduler.Schedule(j); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return jobs
 }
 
 // environment coerces a configs.Vars into a map[string]string.
