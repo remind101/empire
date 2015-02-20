@@ -5,7 +5,6 @@ import (
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/slugs"
 )
 
 // DeploysService is an interface that can be implemented to deploy images.
@@ -17,7 +16,7 @@ type DeploysService interface {
 type deploysService struct {
 	AppsService     *apps.Service
 	ConfigsService  *configs.Service
-	SlugsService    *slugs.Service
+	SlugsService    SlugsService
 	ReleasesService ReleasesService
 	Manager         Manager
 }

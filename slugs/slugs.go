@@ -36,7 +36,7 @@ type Repository interface {
 
 // NewRepository returns a new Repository instance.
 func NewRepository() (Repository, error) {
-	return nil, nil
+	return newRepository(), nil
 }
 
 // repository is a fake implementation of the Repository interface.
@@ -92,48 +92,4 @@ func (r *repository) Reset() {
 
 	r.slugs = make(map[ID]*Slug)
 	r.id = 0
-}
-
-// Service is a service for extracting process types then creating a new
-// Slug.
-type Service struct {
-	Repository
-	Extractor Extractor
-}
-
-// NewService returns a new Service instance.
-func NewService(r Repository, e Extractor) *Service {
-	if r == nil {
-		r = newRepository()
-	}
-
-	if e == nil {
-		e = newExtractor()
-	}
-
-	return &Service{
-		Repository: r,
-		Extractor:  e,
-	}
-}
-
-// CreateByImageID extracts the process types from the image, then creates a new
-// slug.
-func (s *Service) CreateByImage(image *images.Image) (*Slug, error) {
-	if slug, err := s.Repository.FindByImage(image); slug != nil {
-		return slug, err
-	}
-
-	slug := &Slug{
-		Image: image,
-	}
-
-	pt, err := s.Extractor.Extract(image)
-	if err != nil {
-		return slug, err
-	}
-
-	slug.ProcessTypes = pt
-
-	return s.Repository.Create(slug)
 }

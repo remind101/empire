@@ -44,7 +44,7 @@ type Empire struct {
 	formationsService *formations.Service
 	manager           Manager
 	releasesService   ReleasesService
-	slugsService      *slugs.Service
+	slugsService      SlugsService
 }
 
 // New returns a new Empire instance.
@@ -122,15 +122,15 @@ func (e *Empire) ReleasesService() ReleasesService {
 	return e.releasesService
 }
 
-func (e *Empire) SlugsService() *slugs.Service {
+func (e *Empire) SlugsService() SlugsService {
 	if e.slugsService == nil {
-		e.slugsService = slugs.NewService(nil, nil)
+		e.slugsService = NewSlugsService(nil, nil)
 	}
 
 	return e.slugsService
 }
 
-func newSlugsService(options Options) (*slugs.Service, error) {
+func newSlugsService(options Options) (SlugsService, error) {
 	r, err := slugs.NewRepository()
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func newSlugsService(options Options) (*slugs.Service, error) {
 		return nil, err
 	}
 
-	return slugs.NewService(r, e), nil
+	return NewSlugsService(r, e), nil
 }
 
 func newManager(options Options) (Manager, error) {
