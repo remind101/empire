@@ -178,7 +178,7 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 
 type PostConfigs struct {
 	AppsService    *apps.Service
-	ConfigsService *configs.Service
+	ConfigsService ConfigsService
 }
 
 type PostConfigsForm struct {

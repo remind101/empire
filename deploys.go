@@ -2,7 +2,6 @@ package empire
 
 import (
 	"github.com/remind101/empire/apps"
-	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/images"
 )
@@ -15,7 +14,7 @@ type DeploysService interface {
 // deploysService is a base implementation of the DeploysService
 type deploysService struct {
 	AppsService     *apps.Service
-	ConfigsService  *configs.Service
+	ConfigsService  ConfigsService
 	SlugsService    SlugsService
 	ReleasesService ReleasesService
 	Manager         Manager
