@@ -69,7 +69,7 @@ func TestEmpirePatchConfig(t *testing.T) {
 	vars := map[string]string{"RAILS_ENV": "production"}
 	o := client.ConfigUpdateOpts{}
 	o.Vars = vars
-	config, err := c.ConfigUpdate(a.ID, o)
+	config, err := c.ConfigUpdate(a.Name, o)
 	if err != nil {
 		t.Fatal(err)
 	}

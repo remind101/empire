@@ -204,7 +204,6 @@ func String(v string) *string {
 }
 
 type App struct {
-	ID   string `json:"id" url:"id,key"`     // unique identifier of app
 	Name string `json:"name" url:"name,key"` // unique name of app
 	Repo string `json:"repo" url:"repo,key"` // the name of the repo
 }
@@ -250,7 +249,7 @@ type Deploy struct {
 	ID      string `json:"id" url:"id,key"` // unique identifier of deploy
 	Release struct {
 		App struct {
-			ID string `json:"id" url:"id,key"` // unique identifier of app
+			Name string `json:"name" url:"name,key"` // unique name of app
 		} `json:"app" url:"app,key"`
 		Config struct {
 			Version string `json:"version" url:"version,key"` // unique identifier of config

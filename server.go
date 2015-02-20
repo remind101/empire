@@ -166,7 +166,7 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 
 	app, err := apps.New(apps.Name(form.Name), repos.Repo(form.Repo))
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return http.StatusBadRequest, nil, err
 	}
 
 	a, err := h.AppsService.Create(app)
@@ -193,9 +193,9 @@ func (h *PostConfigs) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	id := apps.ID(req.Vars["app"])
+	name := apps.Name(req.Vars["app"])
 
-	a, err := h.AppsService.FindByID(id)
+	a, err := h.AppsService.FindByName(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

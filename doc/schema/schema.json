@@ -5,14 +5,6 @@
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "title": "App",
       "definitions": {
-        "id": {
-          "description": "unique identifier of app",
-          "example": "01234567-89ab-cdef-0123-456789abcdef",
-          "format": "uuid",
-          "type": [
-            "string"
-          ]
-        },
         "name": {
           "description": "unique name of app",
           "example": "example",
@@ -22,14 +14,7 @@
           ]
         },
         "identity": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/app/definitions/id"
-            },
-            {
-              "$ref": "#/definitions/app/definitions/name"
-            }
-          ]
+          "$ref": "#/definitions/app/definitions/name"
         }
       },
       "description": "",
@@ -60,9 +45,6 @@
         }
       ],
       "properties": {
-        "id": {
-          "$ref": "#/definitions/app/definitions/id"
-        },
         "name": {
           "$ref": "#/definitions/app/definitions/name"
         },
@@ -221,8 +203,8 @@
             },
             "app": {
               "properties": {
-                "id": {
-                  "$ref": "#/definitions/app/definitions/id"
+                "name": {
+                  "$ref": "#/definitions/app/definitions/name"
                 }
               },
               "type": [

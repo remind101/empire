@@ -6,25 +6,18 @@ import (
 	"strings"
 	"sync"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	"github.com/remind101/empire/repos"
 )
 
 var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
 
-var NamePattern = regexp.MustCompile("^[a-z][a-z0-9-]{3,30}$")
-
-// ID represents the unique identifier for an App.
-type ID string
+var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
 // Name represents the unique name for an App.
 type Name string
 
 // App represents an app.
 type App struct {
-	ID ID `json:"id"`
-
 	Name Name `json:"name"`
 
 	// The associated GitHub/Docker repo.
@@ -37,7 +30,6 @@ func New(name Name, repo repos.Repo) (*App, error) {
 	}
 
 	return &App{
-		ID:   ID(uuid.NewRandom()),
 		Name: name,
 		Repo: repo,
 	}, nil
@@ -46,7 +38,7 @@ func New(name Name, repo repos.Repo) (*App, error) {
 // Repository represents a repository for creating and finding Apps.
 type Repository interface {
 	Create(*App) (*App, error)
-	FindByID(ID) (*App, error)
+	FindByName(Name) (*App, error)
 	FindByRepo(repos.Repo) (*App, error)
 }
 
@@ -69,12 +61,12 @@ func (r *repository) Create(app *App) (*App, error) {
 	return app, nil
 }
 
-func (r *repository) FindByID(id ID) (*App, error) {
+func (r *repository) FindByName(name Name) (*App, error) {
 	r.RLock()
 	defer r.RUnlock()
 
 	for _, app := range r.apps {
-		if app.ID == id {
+		if app.Name == name {
 			return app, nil
 		}
 	}

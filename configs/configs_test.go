@@ -8,7 +8,7 @@ import (
 )
 
 func TestServiceApply(t *testing.T) {
-	app := &apps.App{ID: "1234"}
+	app := &apps.App{Name: "abcd"}
 	s := &Service{
 		Repository: newRepository(),
 	}
@@ -72,14 +72,14 @@ func TestServiceApply(t *testing.T) {
 
 func TestRepository(t *testing.T) {
 	r := newRepository()
-	app := &apps.App{ID: "1234"}
+	app := &apps.App{Name: "abcd"}
 
 	c, _ := r.Push(&Config{App: app})
-	if h, _ := r.Head(app.ID); h != c {
+	if h, _ := r.Head(app.Name); h != c {
 		t.Fatal("Head => %q; want %q", h, c)
 	}
 
-	if v, _ := r.Version(app.ID, c.Version); v != c {
+	if v, _ := r.Version(app.Name, c.Version); v != c {
 		t.Fatal("Version(%s) => %q; want %q", c.Version, v, c)
 	}
 }

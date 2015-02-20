@@ -60,8 +60,8 @@
         },
         "app": {
           "properties": {
-            "id": {
-              "$ref": "/schemata/app#/definitions/id"
+            "name": {
+              "$ref": "/schemata/app#/definitions/name"
             }
           },
           "type": [

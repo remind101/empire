@@ -35,15 +35,15 @@ type Release struct {
 // retrieving releases.
 type Repository interface {
 	Create(*apps.App, *configs.Config, *slugs.Slug) (*Release, error)
-	FindByAppID(apps.ID) ([]*Release, error)
-	Head(apps.ID) (*Release, error)
+	FindByAppID(apps.Name) ([]*Release, error)
+	Head(apps.Name) (*Release, error)
 }
 
 // repository is an in-memory implementation of a Repository
 type repository struct {
 	sync.RWMutex
-	releases map[apps.ID][]*Release
-	versions map[apps.ID]int
+	releases map[apps.Name][]*Release
+	versions map[apps.Name]int
 
 	genTimestamp func() time.Time
 	id           int
@@ -52,8 +52,8 @@ type repository struct {
 // Create a new repository
 func newRepository() *repository {
 	return &repository{
-		releases: make(map[apps.ID][]*Release),
-		versions: make(map[apps.ID]int),
+		releases: make(map[apps.Name][]*Release),
+		versions: make(map[apps.Name]int),
 	}
 }
 
@@ -78,7 +78,7 @@ func (r *repository) Create(app *apps.App, config *configs.Config, slug *slugs.S
 	}
 
 	version := 1
-	if v, ok := r.versions[app.ID]; ok {
+	if v, ok := r.versions[app.Name]; ok {
 		version = v
 	}
 
@@ -91,13 +91,13 @@ func (r *repository) Create(app *apps.App, config *configs.Config, slug *slugs.S
 		CreatedAt: createdAt.UTC(),
 	}
 
-	r.versions[app.ID] = version + 1
-	r.releases[app.ID] = append(r.releases[app.ID], release)
+	r.versions[app.Name] = version + 1
+	r.releases[app.Name] = append(r.releases[app.Name], release)
 
 	return release, nil
 }
 
-func (r *repository) FindByAppID(id apps.ID) ([]*Release, error) {
+func (r *repository) FindByAppID(id apps.Name) ([]*Release, error) {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -108,7 +108,7 @@ func (r *repository) FindByAppID(id apps.ID) ([]*Release, error) {
 	return []*Release{}, nil
 }
 
-func (r *repository) Head(id apps.ID) (*Release, error) {
+func (r *repository) Head(id apps.Name) (*Release, error) {
 	r.RLock()
 	defer r.RUnlock()
 

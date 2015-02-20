@@ -28,7 +28,7 @@ func TestServiceScale(t *testing.T) {
 	r := newRepository()
 	s := &Service{Repository: r}
 
-	app := &apps.App{ID: "1234"}
+	app := &apps.App{Name: "abcd"}
 	if f, err := s.Scale(app, "web", 2); err == nil {
 		if got, want := f.Count, 2; got != want {
 			t.Fatalf("Count => %v; want %v", got, want)

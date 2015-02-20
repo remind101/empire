@@ -28,10 +28,10 @@ type Vars map[Variable]string
 // Repository represents an interface for retrieving and storing Config's.
 type Repository interface {
 	// Head returns the current Config for the app.
-	Head(apps.ID) (*Config, error)
+	Head(apps.Name) (*Config, error)
 
 	// Version returns the specific version of a Config for an app.
-	Version(apps.ID, Version) (*Config, error)
+	Version(apps.Name, Version) (*Config, error)
 
 	// Store stores the Config for the app.
 	Push(*Config) (*Config, error)
@@ -40,35 +40,35 @@ type Repository interface {
 // repository is an in memory implementation of the Repository.
 type repository struct {
 	sync.RWMutex
-	s map[apps.ID][]*Config
-	h map[apps.ID]*Config
+	s map[apps.Name][]*Config
+	h map[apps.Name]*Config
 }
 
 func newRepository() *repository {
 	return &repository{
-		s: make(map[apps.ID][]*Config),
-		h: make(map[apps.ID]*Config),
+		s: make(map[apps.Name][]*Config),
+		h: make(map[apps.Name]*Config),
 	}
 }
 
 // Head implements Repository Head.
-func (r *repository) Head(appID apps.ID) (*Config, error) {
+func (r *repository) Head(appName apps.Name) (*Config, error) {
 	r.RLock()
 	defer r.RUnlock()
 
-	if r.h[appID] == nil {
+	if r.h[appName] == nil {
 		return nil, nil
 	}
 
-	return r.h[appID], nil
+	return r.h[appName], nil
 }
 
 // Version implements Repository Version.
-func (r *repository) Version(appID apps.ID, version Version) (*Config, error) {
+func (r *repository) Version(appName apps.Name, version Version) (*Config, error) {
 	r.RLock()
 	defer r.RUnlock()
 
-	for _, c := range r.s[appID] {
+	for _, c := range r.s[appName] {
 		if c.Version == version {
 			return c, nil
 		}
@@ -82,10 +82,10 @@ func (r *repository) Push(config *Config) (*Config, error) {
 	r.Lock()
 	defer r.Unlock()
 
-	id := config.App.ID
+	n := config.App.Name
 
-	r.s[id] = append(r.s[id], config)
-	r.h[id] = config
+	r.s[n] = append(r.s[n], config)
+	r.h[n] = config
 
 	return config, nil
 }
@@ -107,7 +107,7 @@ func NewService(r Repository) *Service {
 // Apply merges the provided Vars into the latest Config and returns a new
 // Config.
 func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
-	l, err := s.Repository.Head(app.ID)
+	l, err := s.Repository.Head(app.Name)
 
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
 }
 
 func (s *Service) Head(app *apps.App) (*Config, error) {
-	c, err := s.Repository.Head(app.ID)
+	c, err := s.Repository.Head(app.Name)
 	if err != nil {
 		return nil, err
 	}
