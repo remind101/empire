@@ -26,7 +26,10 @@ func TestFindFormation(t *testing.T) {
 }
 
 func TestFormationsServiceScale(t *testing.T) {
-	s := NewFormationsService(nil)
+	s, err := NewFormationsService(DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	app := &apps.App{Name: "abcd"}
 	if f, err := s.Scale(app, "web", 2); err == nil {

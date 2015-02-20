@@ -10,7 +10,8 @@ import (
 
 // ReleaseesService represents a service for interacting with Releases.
 type ReleasesService interface {
-	releases.Repository
+	// Create creates a new release.
+	Create(*apps.App, *configs.Config, *slugs.Slug) (*releases.Release, error)
 }
 
 // releasesService is a base implementation of the ReleasesService interface.
@@ -20,15 +21,11 @@ type releasesService struct {
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(r releases.Repository, f FormationsService) ReleasesService {
-	if r == nil {
-		r = releases.NewRepository()
-	}
-
+func NewReleasesService(options Options, f FormationsService) (ReleasesService, error) {
 	return &releasesService{
-		Repository:        r,
+		Repository:        releases.NewRepository(),
 		FormationsService: f,
-	}
+	}, nil
 }
 
 // Create creates the release, then sets the current process formation on the release.

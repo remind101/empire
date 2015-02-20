@@ -1,10 +1,5 @@
 package empire // import "github.com/remind101/empire"
 
-import (
-	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/slugs"
-)
-
 // DefaultOptions is a default Options instance that can be passed when
 // intializing a new Empire.
 var DefaultOptions = Options{}
@@ -35,121 +30,66 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	appsService       AppsService
-	configsService    ConfigsService
-	deploysService    DeploysService
-	formationsService FormationsService
-	manager           Manager
-	releasesService   ReleasesService
-	slugsService      SlugsService
+	AppsService
+	ConfigsService
+	DeploysService
+	FormationsService
+	Manager
+	ReleasesService
+	SlugsService
 }
 
 // New returns a new Empire instance.
 func New(options Options) (*Empire, error) {
-	manager, err := newManager(options)
+	apps, err := NewAppsService(options)
 	if err != nil {
 		return nil, err
 	}
 
-	slugs, err := newSlugsService(options)
+	configs, err := NewConfigsService(options)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Empire{
-		manager:      manager,
-		slugsService: slugs,
-	}, nil
-}
-
-func (e *Empire) AppsService() AppsService {
-	if e.appsService == nil {
-		e.appsService = NewAppsService(nil)
-	}
-
-	return e.appsService
-}
-
-func (e *Empire) ConfigsService() ConfigsService {
-	if e.configsService == nil {
-		e.configsService = NewConfigsService(nil)
-	}
-
-	return e.configsService
-}
-
-func (e *Empire) DeploysService() DeploysService {
-	if e.deploysService == nil {
-		e.deploysService = &deploysService{
-			AppsService:     e.AppsService(),
-			ConfigsService:  e.ConfigsService(),
-			Manager:         e.Manager(),
-			SlugsService:    e.SlugsService(),
-			ReleasesService: e.ReleasesService(),
-		}
-	}
-
-	return e.deploysService
-}
-
-func (e *Empire) FormationsService() FormationsService {
-	if e.formationsService == nil {
-		e.formationsService = NewFormationsService(nil)
-	}
-
-	return e.formationsService
-}
-
-func (e *Empire) Manager() Manager {
-	if e.manager == nil {
-		e.manager = NewManager(nil)
-	}
-
-	return e.manager
-}
-
-func (e *Empire) ReleasesService() ReleasesService {
-	if e.releasesService == nil {
-		e.releasesService = NewReleasesService(
-			nil,
-			e.FormationsService(),
-		)
-	}
-
-	return e.releasesService
-}
-
-func (e *Empire) SlugsService() SlugsService {
-	if e.slugsService == nil {
-		e.slugsService = NewSlugsService(nil, nil)
-	}
-
-	return e.slugsService
-}
-
-func newSlugsService(options Options) (SlugsService, error) {
-	r, err := slugs.NewRepository()
+	formations, err := NewFormationsService(options)
 	if err != nil {
 		return nil, err
 	}
 
-	e, err := slugs.NewExtractor(
-		options.Docker.Socket,
-		options.Docker.Registry,
-		options.Docker.CertPath,
+	releases, err := NewReleasesService(options, formations)
+	if err != nil {
+		return nil, err
+	}
+
+	manager, err := NewManager(options)
+	if err != nil {
+		return nil, err
+	}
+
+	slugs, err := NewSlugsService(options)
+	if err != nil {
+		return nil, err
+	}
+
+	deploys, err := NewDeploysService(
+		options,
+		apps,
+		configs,
+		slugs,
+		releases,
+		manager,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewSlugsService(r, e), nil
-}
-
-func newManager(options Options) (Manager, error) {
-	s, err := scheduler.NewScheduler(options.Fleet.API)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewManager(s), nil
+	return &Empire{
+		AppsService:       apps,
+		ConfigsService:    configs,
+		DeploysService:    deploys,
+		FormationsService: formations,
+		Manager:           manager,
+		SlugsService:      slugs,
+		ReleasesService:   releases,
+	}, nil
 }

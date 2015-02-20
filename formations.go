@@ -6,8 +6,12 @@ import (
 	"github.com/remind101/empire/processes"
 )
 
+// FormationsService represents a service for configuring the apps process
+// formation.
 type FormationsService interface {
 	formations.Repository
+
+	// Scale scales a process type for an app.
 	Scale(*apps.App, processes.Type, int) (*formations.Formation, error)
 }
 
@@ -17,17 +21,13 @@ type formationsService struct {
 }
 
 // NewFormationsService returns a new Service instance.
-func NewFormationsService(r formations.Repository) FormationsService {
-	if r == nil {
-		r = formations.NewRepository()
-	}
-
+func NewFormationsService(options Options) (FormationsService, error) {
 	return &formationsService{
-		Repository: r,
-	}
+		Repository: formations.NewRepository(),
+	}, nil
 }
 
-// Scale a given process type up or down.
+// Scale scales a given process type up or down.
 func (s *formationsService) Scale(app *apps.App, pt processes.Type, count int) (*formations.Formation, error) {
 	fmtns, err := s.Repository.Get(app)
 	if err != nil {

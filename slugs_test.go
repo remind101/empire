@@ -9,16 +9,10 @@ import (
 )
 
 func TestSlugsServiceCreateByImage(t *testing.T) {
-	r, err := slugs.NewRepository()
+	s, err := NewSlugsService(DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e, err := slugs.NewExtractor("", "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s := NewSlugsService(r, e)
 
 	image := &images.Image{
 		Repo: "ejholmes/docker-statsd",
@@ -37,16 +31,10 @@ func TestSlugsServiceCreateByImage(t *testing.T) {
 }
 
 func TestSlugsServiceCreateByImageAlreadyExists(t *testing.T) {
-	r, err := slugs.NewRepository()
+	s, err := NewSlugsService(DefaultOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e, err := slugs.NewExtractor("", "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s := NewSlugsService(r, e)
 
 	image := &images.Image{
 		Repo: "ejholmes/docker-statsd",

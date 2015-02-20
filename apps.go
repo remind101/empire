@@ -5,26 +5,25 @@ import (
 	"github.com/remind101/empire/repos"
 )
 
+// AppsService represents a service for interacting with Apps.
 type AppsService interface {
 	apps.Repository
 
+	// FindOrCreateByRepo attempts to find an app by a repo name, or creates
+	// a new app if it's not found.
 	FindOrCreateByRepo(repos.Repo) (*apps.App, error)
 }
 
-// appsService provides methods for interacting with Apps.
+// appsService is a base implementation of the AppsService interface.
 type appsService struct {
 	apps.Repository
 }
 
 // NewAppsService returns a new Service instance.
-func NewAppsService(r apps.Repository) AppsService {
-	if r == nil {
-		r = apps.NewRepository()
-	}
-
+func NewAppsService(options Options) (AppsService, error) {
 	return &appsService{
-		Repository: r,
-	}
+		Repository: apps.NewRepository(),
+	}, nil
 }
 
 func (s *appsService) FindOrCreateByRepo(repo repos.Repo) (*apps.App, error) {
@@ -33,6 +32,7 @@ func (s *appsService) FindOrCreateByRepo(repo repos.Repo) (*apps.App, error) {
 		return a, err
 	}
 
+	// If the app wasn't found, create a new up linked to this repo.
 	if a == nil {
 		a, err = apps.New(apps.NewNameFromRepo(repo), repo)
 		if err != nil {

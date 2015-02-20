@@ -7,8 +7,6 @@ import (
 
 // SlugsService is a service for interacting with slugs.
 type SlugsService interface {
-	slugs.Repository
-
 	// CreateByImage extracts process types from an image, then creates a
 	// slug for it.
 	CreateByImage(*images.Image) (*slugs.Slug, error)
@@ -21,11 +19,25 @@ type slugsService struct {
 }
 
 // NewSlugsService returns a new SlugsService instance.
-func NewSlugsService(r slugs.Repository, e slugs.Extractor) SlugsService {
+func NewSlugsService(options Options) (SlugsService, error) {
+	r, err := slugs.NewRepository()
+	if err != nil {
+		return nil, err
+	}
+
+	e, err := slugs.NewExtractor(
+		options.Docker.Socket,
+		options.Docker.Registry,
+		options.Docker.CertPath,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &slugsService{
 		Repository: r,
 		Extractor:  e,
-	}
+	}, nil
 }
 
 // CreateByImageID extracts the process types from the image, then creates a new

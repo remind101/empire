@@ -14,20 +14,16 @@ type ConfigsService interface {
 	Head(*apps.App) (*configs.Config, error)
 }
 
-// configsService is an implementation of the ConfigsService.
+// configsService is a base implementation of the ConfigsService.
 type configsService struct {
 	configs.Repository
 }
 
 // NewConfigsService returns a new Service instance.
-func NewConfigsService(r configs.Repository) ConfigsService {
-	if r == nil {
-		r = configs.NewRepository()
-	}
-
+func NewConfigsService(options Options) (ConfigsService, error) {
 	return &configsService{
-		Repository: r,
-	}
+		Repository: configs.NewRepository(),
+	}, nil
 }
 
 // Apply merges the provided Vars into the latest Config and returns a new
@@ -39,6 +35,7 @@ func (s *configsService) Apply(app *apps.App, vars configs.Vars) (*configs.Confi
 		return nil, err
 	}
 
+	// If the app doesn't have a config, just build a new one.
 	if l == nil {
 		l = &configs.Config{
 			App: app,
@@ -50,6 +47,8 @@ func (s *configsService) Apply(app *apps.App, vars configs.Vars) (*configs.Confi
 	return s.Repository.Push(c)
 }
 
+// Gets the config for an app. If the app doesn't have a config, it will create
+// a new one.
 func (s *configsService) Head(app *apps.App) (*configs.Config, error) {
 	c, err := s.Repository.Head(app.Name)
 	if err != nil {

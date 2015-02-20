@@ -19,16 +19,21 @@ type Manager interface {
 	ScheduleRelease(*releases.Release) error
 }
 
-// manager provides a layer of convenience over a Scheduler.
+// manager is a base implementation of the Manager interface.
 type manager struct {
 	scheduler.Scheduler
 }
 
-// NewService returns a new Service instance.
-func NewManager(s scheduler.Scheduler) Manager {
+// NewManager returns a new Service instance.
+func NewManager(options Options) (Manager, error) {
+	s, err := scheduler.NewScheduler(options.Fleet.API)
+	if err != nil {
+		return nil, err
+	}
+
 	return &manager{
 		Scheduler: s,
-	}
+	}, nil
 }
 
 // ScheduleRelease creates jobs for every process and instance count and

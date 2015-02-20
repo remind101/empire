@@ -7,19 +7,31 @@ import (
 
 // DeploysService is an interface that can be implemented to deploy images.
 type DeploysService interface {
+	// Deploy deploys a container image to the cluster.
 	Deploy(*images.Image) (*deploys.Deploy, error)
+}
+
+// NewDeploysService returns a new DeploysService.
+func NewDeploysService(options Options, apps AppsService, configs ConfigsService, slugs SlugsService, releases ReleasesService, manager Manager) (DeploysService, error) {
+	return &deploysService{
+		AppsService:     apps,
+		ConfigsService:  configs,
+		Manager:         manager,
+		SlugsService:    slugs,
+		ReleasesService: releases,
+	}, nil
 }
 
 // deploysService is a base implementation of the DeploysService
 type deploysService struct {
-	AppsService     AppsService
-	ConfigsService  ConfigsService
-	SlugsService    SlugsService
-	ReleasesService ReleasesService
-	Manager         Manager
+	AppsService
+	ConfigsService
+	SlugsService
+	ReleasesService
+	Manager
 }
 
-// Deploy deploys an Image to the platform.
+// Deploy deploys an Image to the cluster.
 func (s *deploysService) Deploy(image *images.Image) (*deploys.Deploy, error) {
 	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
 	if err != nil {

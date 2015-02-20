@@ -9,8 +9,14 @@ import (
 )
 
 func TestReleasesServiceCreate(t *testing.T) {
-	f := NewFormationsService(nil)
-	s := NewReleasesService(nil, f)
+	f, err := NewFormationsService(DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := NewReleasesService(DefaultOptions, f)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	app := &apps.App{Name: "api"}
 	config := &configs.Config{}

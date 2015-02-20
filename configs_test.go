@@ -10,7 +10,10 @@ import (
 
 func TestConfigsServiceApply(t *testing.T) {
 	app := &apps.App{Name: "abcd"}
-	s := NewConfigsService(nil)
+	s, err := NewConfigsService(DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		in  configs.Vars
