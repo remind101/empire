@@ -1,4 +1,4 @@
-package releases
+package empire
 
 import (
 	"testing"
@@ -9,9 +9,9 @@ import (
 	"github.com/remind101/empire/slugs"
 )
 
-func TestServiceCreate(t *testing.T) {
+func TestReleasesServiceCreate(t *testing.T) {
 	f := formations.NewService(nil)
-	s := NewService(nil, f)
+	s := NewReleasesService(nil, f)
 
 	app := &apps.App{Name: "api"}
 	config := &configs.Config{}

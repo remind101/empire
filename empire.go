@@ -5,7 +5,6 @@ import (
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/manager"
-	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -44,7 +43,7 @@ type Empire struct {
 	deploysService    DeploysService
 	formationsService *formations.Service
 	managerService    *manager.Service
-	releasesService   *releases.Service
+	releasesService   ReleasesService
 	slugsService      *slugs.Service
 }
 
@@ -112,9 +111,9 @@ func (e *Empire) ManagerService() *manager.Service {
 	return e.managerService
 }
 
-func (e *Empire) ReleasesService() *releases.Service {
+func (e *Empire) ReleasesService() ReleasesService {
 	if e.releasesService == nil {
-		e.releasesService = releases.NewService(
+		e.releasesService = NewReleasesService(
 			nil,
 			e.FormationsService(),
 		)

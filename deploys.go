@@ -6,7 +6,6 @@ import (
 	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/manager"
-	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -15,17 +14,12 @@ type DeploysService interface {
 	Deploy(*images.Image) (*deploys.Deploy, error)
 }
 
-// NewDeploysService is a factory method that generates a new DeploysService.
-func NewDeploysService() DeploysService {
-	return &deploysService{}
-}
-
 // deploysService is a base implementation of the DeploysService
 type deploysService struct {
 	AppsService     *apps.Service
 	ConfigsService  *configs.Service
 	SlugsService    *slugs.Service
-	ReleasesService *releases.Service
+	ReleasesService ReleasesService
 	ManagerService  *manager.Service
 }
 
