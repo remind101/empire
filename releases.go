@@ -16,11 +16,11 @@ type ReleasesService interface {
 // releasesService is a base implementation of the ReleasesService interface.
 type releasesService struct {
 	releases.Repository
-	FormationsService *formations.Service
+	FormationsService FormationsService
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(r releases.Repository, f *formations.Service) ReleasesService {
+func NewReleasesService(r releases.Repository, f FormationsService) ReleasesService {
 	if r == nil {
 		r = releases.NewRepository()
 	}

@@ -5,12 +5,11 @@ import (
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/slugs"
 )
 
 func TestReleasesServiceCreate(t *testing.T) {
-	f := formations.NewService(nil)
+	f := NewFormationsService(nil)
 	s := NewReleasesService(nil, f)
 
 	app := &apps.App{Name: "api"}
