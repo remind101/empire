@@ -4,7 +4,7 @@ import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/formations"
-	"github.com/remind101/empire/manager"
+	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -42,14 +42,14 @@ type Empire struct {
 	configsService    *configs.Service
 	deploysService    DeploysService
 	formationsService *formations.Service
-	managerService    *manager.Service
+	manager           Manager
 	releasesService   ReleasesService
 	slugsService      *slugs.Service
 }
 
 // New returns a new Empire instance.
 func New(options Options) (*Empire, error) {
-	manager, err := newManagerService(options)
+	manager, err := newManager(options)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +60,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		managerService: manager,
-		slugsService:   slugs,
+		manager:      manager,
+		slugsService: slugs,
 	}, nil
 }
 
@@ -86,7 +86,7 @@ func (e *Empire) DeploysService() DeploysService {
 		e.deploysService = &deploysService{
 			AppsService:     e.AppsService(),
 			ConfigsService:  e.ConfigsService(),
-			ManagerService:  e.ManagerService(),
+			Manager:         e.Manager(),
 			SlugsService:    e.SlugsService(),
 			ReleasesService: e.ReleasesService(),
 		}
@@ -103,12 +103,12 @@ func (e *Empire) FormationsService() *formations.Service {
 	return e.formationsService
 }
 
-func (e *Empire) ManagerService() *manager.Service {
-	if e.managerService == nil {
-		e.managerService = manager.NewService(nil)
+func (e *Empire) Manager() Manager {
+	if e.manager == nil {
+		e.manager = NewManager(nil)
 	}
 
-	return e.managerService
+	return e.manager
 }
 
 func (e *Empire) ReleasesService() ReleasesService {
@@ -148,11 +148,11 @@ func newSlugsService(options Options) (*slugs.Service, error) {
 	return slugs.NewService(r, e), nil
 }
 
-func newManagerService(options Options) (*manager.Service, error) {
-	s, err := manager.NewScheduler(options.Fleet.API)
+func newManager(options Options) (Manager, error) {
+	s, err := scheduler.NewScheduler(options.Fleet.API)
 	if err != nil {
 		return nil, err
 	}
 
-	return manager.NewService(s), nil
+	return NewManager(s), nil
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/manager"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -20,7 +19,7 @@ type deploysService struct {
 	ConfigsService  *configs.Service
 	SlugsService    *slugs.Service
 	ReleasesService ReleasesService
-	ManagerService  *manager.Service
+	Manager         Manager
 }
 
 // Deploy deploys an Image to the platform.
@@ -51,7 +50,7 @@ func (s *deploysService) Deploy(image *images.Image) (*deploys.Deploy, error) {
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.ManagerService.ScheduleRelease(release); err != nil {
+	if err := s.Manager.ScheduleRelease(release); err != nil {
 		return nil, err
 	}
 
