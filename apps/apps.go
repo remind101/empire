@@ -1,12 +1,16 @@
 package apps
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
 
+	"github.com/coreos/go-etcd/etcd"
 	"github.com/remind101/empire/repos"
+	"github.com/remind101/empire/stores"
 )
 
 var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
@@ -105,4 +109,63 @@ func (r *repository) FindByRepo(repo repos.Repo) (*App, error) {
 	}
 
 	return nil, nil
+}
+
+type etcdRepo struct {
+	client *etcd.Client
+}
+
+func NewEtcdRepo() (*etcdRepo, error) {
+	client, err := stores.NewEtcdClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return &etcdRepo{client: client}, nil
+}
+
+func (e *etcdRepo) Create(app *App) (*App, error) {
+	b, err := json.Marshal(app)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = e.client.Set(e.key(app.Name), string(b), 0)
+	return app, err
+}
+
+func (e *etcdRepo) FindByName(name Name) (*App, error) {
+	r, err := e.client.Get(e.key(name), false, false)
+	if err != nil {
+		return nil, err
+	}
+
+	app := &App{}
+	err = json.Unmarshal([]byte(r.Node.Value), app)
+	return app, err
+}
+
+func (e *etcdRepo) FindByRepo(repo repos.Repo) (*App, error) {
+	r, err := e.client.Get(e.key(Name("")), false, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var a = &App{}
+
+	for _, n := range r.Node.Nodes {
+		err = json.Unmarshal([]byte(n.Value), a)
+		if err != nil {
+			return nil, err
+		}
+		if a.Repo == repo {
+			return a, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (e *etcdRepo) key(name Name) string {
+	return fmt.Sprintf("/empire/apps/%s", name)
 }
