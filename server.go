@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/deploys"
 	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/repos"
 )
@@ -91,9 +90,9 @@ type Server struct {
 func NewServer(e *Empire) *Server {
 	r := newRouter()
 
-	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService()})
-	r.Handle("POST", "/apps", &PostApps{e.AppsService()})
-	r.Handle("PATCH", "/apps/{app}/configs", &PostConfigs{e.AppsService(), e.ConfigsService()})
+	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService})
+	r.Handle("POST", "/apps", &PostApps{e.AppsService})
+	r.Handle("PATCH", "/apps/{app}/configs", &PostConfigs{e.AppsService, e.ConfigsService})
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -118,7 +117,7 @@ func (r *router) Handle(method, path string, h Handler) {
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
 type PostDeploys struct {
-	DeploysService *deploys.Service
+	DeploysService DeploysService
 }
 
 // PostDeployForm is the form object that represents the POST body.
@@ -154,7 +153,7 @@ type PostAppsForm struct {
 }
 
 type PostApps struct {
-	AppsService *apps.Service
+	AppsService AppsService
 }
 
 func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
@@ -178,8 +177,8 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PostConfigs struct {
-	AppsService    *apps.Service
-	ConfigsService *configs.Service
+	AppsService    AppsService
+	ConfigsService ConfigsService
 }
 
 type PostConfigsForm struct {

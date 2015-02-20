@@ -1,4 +1,4 @@
-package manager
+package scheduler
 
 import (
 	"fmt"
@@ -10,6 +10,45 @@ import (
 	"github.com/coreos/fleet/schema"
 	"github.com/remind101/empire/images"
 )
+
+// JobName represents the (unique) name of a job. The convention is <app>.<type>.<instance>:
+//
+//	my-sweet-app.v1.web.1
+type JobName string
+
+// Execute represents a command to execute inside and image.
+type Execute struct {
+	Command string
+	Image   images.Image
+}
+
+// Job is a job that can be scheduled.
+type Job struct {
+	// The unique name of the job.
+	Name JobName
+
+	// A map of environment variables to set.
+	Environment map[string]string
+
+	// The command to run.
+	Execute Execute
+}
+
+// State represents the state of a job.
+type State int
+
+// Various states that a job can be in.
+const (
+	StatePending State = iota
+	StateRunning
+	StateFailed
+)
+
+// JobState represents the status of a job.
+type JobState struct {
+	Job   *Job
+	State State
+}
 
 // Scheduler is an interface that represents something that can schedule Jobs
 // onto the cluster.
@@ -24,7 +63,7 @@ type Scheduler interface {
 // NewScheduler is a factory method for generating a new Scheduler instance.
 func NewScheduler(fleet string) (Scheduler, error) {
 	if fleet == "" {
-		return nil, nil
+		return newScheduler(), nil
 	}
 
 	return newFleetScheduler(fleet)

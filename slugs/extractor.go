@@ -25,7 +25,7 @@ type Extractor interface {
 // NewExtractor returns a new Extractor instance.
 func NewExtractor(socket, registry, certPath string) (Extractor, error) {
 	if socket == "" {
-		return nil, nil
+		return newExtractor(), nil
 	}
 
 	c, err := newDockerClient(socket, certPath)

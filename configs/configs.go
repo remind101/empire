@@ -19,6 +19,18 @@ type Config struct {
 	Vars    Vars      `json:"vars"`
 }
 
+// NewConfig initializes a new config based on the old config, with the new
+// variables provided.
+func NewConfig(old *Config, vars Vars) *Config {
+	v := mergeVars(old.Vars, vars)
+
+	return &Config{
+		Version: Version(hash(v)),
+		App:     old.App,
+		Vars:    v,
+	}
+}
+
 // Variable represents the name of an environment variable.
 type Variable string
 
@@ -35,6 +47,10 @@ type Repository interface {
 
 	// Store stores the Config for the app.
 	Push(*Config) (*Config, error)
+}
+
+func NewRepository() Repository {
+	return newRepository()
 }
 
 // repository is an in memory implementation of the Repository.
@@ -88,68 +104,6 @@ func (r *repository) Push(config *Config) (*Config, error) {
 	r.h[n] = config
 
 	return config, nil
-}
-
-// Service represents a service for manipulating the Config for a repo.
-type Service struct {
-	Repository
-}
-
-// NewService returns a new Service instance.
-func NewService(r Repository) *Service {
-	if r == nil {
-		r = newRepository()
-	}
-
-	return &Service{Repository: r}
-}
-
-// Apply merges the provided Vars into the latest Config and returns a new
-// Config.
-func (s *Service) Apply(app *apps.App, vars Vars) (*Config, error) {
-	l, err := s.Repository.Head(app.Name)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if l == nil {
-		l = &Config{
-			App: app,
-		}
-	}
-
-	c := newConfig(l, vars)
-
-	return s.Repository.Push(c)
-}
-
-func (s *Service) Head(app *apps.App) (*Config, error) {
-	c, err := s.Repository.Head(app.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if c == nil {
-		return s.Repository.Push(&Config{
-			App:  app,
-			Vars: make(Vars),
-		})
-	}
-
-	return c, nil
-}
-
-// newConfig creates a new config based on the old config, with the new
-// variables provided.
-func newConfig(config *Config, vars Vars) *Config {
-	v := mergeVars(config.Vars, vars)
-
-	return &Config{
-		Version: Version(hash(v)),
-		App:     config.App,
-		Vars:    v,
-	}
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a

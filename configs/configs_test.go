@@ -1,74 +1,10 @@
 package configs
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/remind101/empire/apps"
 )
-
-func TestServiceApply(t *testing.T) {
-	app := &apps.App{Name: "abcd"}
-	s := &Service{
-		Repository: newRepository(),
-	}
-
-	tests := []struct {
-		in  Vars
-		out *Config
-	}{
-		{
-			Vars{
-				"RAILS_ENV": "production",
-			},
-			&Config{
-				Version: "20f3b833ad1f83353b1ae1d24ea6833693ce067c",
-				App:     app,
-				Vars: Vars{
-					"RAILS_ENV": "production",
-				},
-			},
-		},
-		{
-			Vars{
-				"RAILS_ENV":    "production",
-				"DATABASE_URL": "postgres://localhost",
-			},
-			&Config{
-				Version: "94a8e2be1e57b07526fee99473255a619563d551",
-				App:     app,
-				Vars: Vars{
-					"RAILS_ENV":    "production",
-					"DATABASE_URL": "postgres://localhost",
-				},
-			},
-		},
-		{
-			Vars{
-				"RAILS_ENV": "",
-			},
-			&Config{
-				Version: "aaa6f356d1507b0f5e14bb9adfddbea04d2569eb",
-				App:     app,
-				Vars: Vars{
-					"DATABASE_URL": "postgres://localhost",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		c, err := s.Apply(app, tt.in)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if got, want := c, tt.out; !reflect.DeepEqual(got, want) {
-			t.Errorf("want %q; got %q", want, got)
-		}
-	}
-}
 
 func TestRepository(t *testing.T) {
 	r := newRepository()

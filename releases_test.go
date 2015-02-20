@@ -1,17 +1,22 @@
-package releases
+package empire
 
 import (
 	"testing"
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/slugs"
 )
 
-func TestServiceCreate(t *testing.T) {
-	f := formations.NewService(nil)
-	s := NewService(nil, f)
+func TestReleasesServiceCreate(t *testing.T) {
+	f, err := NewFormationsService(DefaultOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := NewReleasesService(DefaultOptions, f)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	app := &apps.App{Name: "api"}
 	config := &configs.Config{}

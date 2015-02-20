@@ -39,6 +39,11 @@ type Repository interface {
 	Head(apps.Name) (*Release, error)
 }
 
+// NewRepository is a factory method that returns a new Repository.
+func NewRepository() Repository {
+	return newRepository()
+}
+
 // repository is an in-memory implementation of a Repository
 type repository struct {
 	sync.RWMutex
@@ -118,62 +123,4 @@ func (r *repository) Head(id apps.Name) (*Release, error) {
 	}
 
 	return set[len(set)-1], nil
-}
-
-// Service provides methods for interacting with releases.
-type Service struct {
-	Repository
-	FormationsService *formations.Service
-}
-
-// NewService returns a new Service instance.
-func NewService(r Repository, f *formations.Service) *Service {
-	if r == nil {
-		r = newRepository()
-	}
-
-	return &Service{
-		Repository:        r,
-		FormationsService: f,
-	}
-}
-
-func (s *Service) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*Release, error) {
-	r, err := s.Repository.Create(app, config, slug)
-	if err != nil {
-		return r, err
-	}
-
-	// Get the currently configured process formation.
-	fmtns, err := s.FormationsService.Get(app)
-	if err != nil {
-		return r, err
-	}
-
-	if fmtns == nil {
-		if _, ok := slug.ProcessTypes["web"]; ok {
-			fmtns = formations.Formations{
-				"web": formations.NewFormation("web"),
-			}
-
-			if err := s.FormationsService.Set(app, fmtns); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	for _, f := range fmtns {
-		cmd, found := slug.ProcessTypes[f.ProcessType]
-		if !found {
-			// TODO Update the formation?
-			continue
-		}
-
-		r.Formation = append(r.Formation, &formations.CommandFormation{
-			Formation: f,
-			Command:   cmd,
-		})
-	}
-
-	return r, nil
 }

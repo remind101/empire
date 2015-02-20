@@ -46,6 +46,10 @@ type Repository interface {
 	Get(*apps.App) (Formations, error)
 }
 
+func NewRepository() Repository {
+	return newRepository()
+}
+
 // repository is an in memory implementation of the Repository interface.
 type repository struct {
 	formations map[apps.Name]Formations
@@ -67,53 +71,4 @@ func (r *repository) Set(app *apps.App, f Formations) error {
 // Get gets the current process formations for the given app.
 func (r *repository) Get(app *apps.App) (Formations, error) {
 	return r.formations[app.Name], nil
-}
-
-// Service is a service for managing process formations for apps.
-type Service struct {
-	Repository
-}
-
-// NewService returns a new Service instance.
-func NewService(r Repository) *Service {
-	if r == nil {
-		r = newRepository()
-	}
-
-	return &Service{
-		Repository: r,
-	}
-}
-
-// Scale a given process type up or down.
-func (s *Service) Scale(app *apps.App, pt processes.Type, count int) (*Formation, error) {
-	formations, err := s.Repository.Get(app)
-	if err != nil {
-		return nil, err
-	}
-
-	if formations == nil {
-		formations = make(Formations)
-	}
-
-	f := findFormation(formations, pt)
-	f.Count = count
-
-	if err := s.Repository.Set(app, formations); err != nil {
-		return f, err
-	}
-
-	return f, nil
-}
-
-// findFormation finds a Formation for a processes.Type, or builds a new one if
-// it's not found.
-func findFormation(formations Formations, pt processes.Type) *Formation {
-	if f, found := formations[pt]; found {
-		return f
-	}
-
-	f := NewFormation(pt)
-	formations[pt] = f
-	return f
 }
