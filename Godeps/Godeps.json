@@ -6,14 +6,38 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/gogoprotobuf/proto",
+			"Rev": "5c5c9e5ec21508be656c201ec53c68cd882d36fb"
+		},
+		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.6.4-12-g467d9d5",
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
 		},
 		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-26-gf7ebb76",
+			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1-55-g1dd3ab0",
 			"Rev": "1dd3ab0ff59e13f5b73dcbf70703710aebe50d2f"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/etcdserver/etcdhttp/httptypes",
+			"Comment": "v2.0.3-25-g0ea2173",
+			"Rev": "0ea2173a7e4d481dbfb2c4e360a31a953341f9d2"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/transport",
+			"Comment": "v2.0.3-25-g0ea2173",
+			"Rev": "0ea2173a7e4d481dbfb2c4e360a31a953341f9d2"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/types",
+			"Comment": "v2.0.3-25-g0ea2173",
+			"Rev": "0ea2173a7e4d481dbfb2c4e360a31a953341f9d2"
 		},
 		{
 			"ImportPath": "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/go-semver/semver",
@@ -84,6 +108,11 @@
 			"ImportPath": "github.com/coreos/fleet/unit",
 			"Comment": "v0.3.2-1053-g29651bd",
 			"Rev": "29651bdda43f7be2394de1958ec5ef038c25bb97"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "v0.4.6-6-g4734e7a",
+			"Rev": "4734e7aca379f0d7fcdf04fbb2101696a4b45ce8"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-semver/semver",
@@ -188,8 +217,16 @@
 			"Rev": "907cca0f578a5316fb864ec6992dc3d9730ec58c"
 		},
 		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Rev": "e4ec8152c15fc46bd5056ce65997a07c7d415325"
+		},
+		{
 			"ImportPath": "golang.org/x/crypto/ssh",
 			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
 		},
 		{
 			"ImportPath": "google.golang.org/api/google-api-go-generator",
