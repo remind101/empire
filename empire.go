@@ -1,7 +1,6 @@
 package empire // import "github.com/remind101/empire"
 
 import (
-	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/slugs"
@@ -37,7 +36,7 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	appsService       *apps.Service
+	appsService       AppsService
 	configsService    ConfigsService
 	deploysService    DeploysService
 	formationsService *formations.Service
@@ -64,9 +63,9 @@ func New(options Options) (*Empire, error) {
 	}, nil
 }
 
-func (e *Empire) AppsService() *apps.Service {
+func (e *Empire) AppsService() AppsService {
 	if e.appsService == nil {
-		e.appsService = apps.NewService(nil)
+		e.appsService = NewAppsService(nil)
 	}
 
 	return e.appsService

@@ -16,6 +16,11 @@ var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 // Name represents the unique name for an App.
 type Name string
 
+func NewNameFromRepo(repo repos.Repo) Name {
+	p := strings.Split(string(repo), "/")
+	return Name(p[len(p)-1])
+}
+
 // App represents an app.
 type App struct {
 	Name Name `json:"name"`
@@ -40,6 +45,10 @@ type Repository interface {
 	Create(*App) (*App, error)
 	FindByName(Name) (*App, error)
 	FindByRepo(repos.Repo) (*App, error)
+}
+
+func NewRepository() Repository {
+	return newRepository()
 }
 
 type repository struct {
@@ -85,40 +94,4 @@ func (r *repository) FindByRepo(repo repos.Repo) (*App, error) {
 	}
 
 	return nil, nil
-}
-
-// Service provides methods for interacting with Apps.
-type Service struct {
-	Repository
-}
-
-// NewService returns a new Service instance.
-func NewService(r Repository) *Service {
-	if r == nil {
-		r = newRepository()
-	}
-
-	return &Service{Repository: r}
-}
-
-func (s *Service) FindOrCreateByRepo(repo repos.Repo) (*App, error) {
-	a, err := s.Repository.FindByRepo(repo)
-	if err != nil {
-		return a, err
-	}
-
-	if a == nil {
-		a, err = New(nameFromRepo(repo), repo)
-		if err != nil {
-			return a, err
-		}
-		return s.Repository.Create(a)
-	}
-
-	return a, nil
-}
-
-func nameFromRepo(repo repos.Repo) Name {
-	p := strings.Split(string(repo), "/")
-	return Name(p[len(p)-1])
 }

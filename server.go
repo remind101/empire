@@ -153,7 +153,7 @@ type PostAppsForm struct {
 }
 
 type PostApps struct {
-	AppsService *apps.Service
+	AppsService AppsService
 }
 
 func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
@@ -177,7 +177,7 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PostConfigs struct {
-	AppsService    *apps.Service
+	AppsService    AppsService
 	ConfigsService ConfigsService
 }
 
