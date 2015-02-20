@@ -48,29 +48,29 @@ type Repository interface {
 
 // repository is an in memory implementation of the Repository interface.
 type repository struct {
-	formations map[apps.ID]Formations
+	formations map[apps.Name]Formations
 }
 
 // newRepository returns a new repository instance.
 func newRepository() *repository {
 	return &repository{
-		formations: make(map[apps.ID]Formations),
+		formations: make(map[apps.Name]Formations),
 	}
 }
 
 // Set sets the process formations for the given app.
 func (r *repository) Set(app *apps.App, f Formations) error {
-	r.formations[app.ID] = f
+	r.formations[app.Name] = f
 	return nil
 }
 
 // Get gets the current process formations for the given app.
 func (r *repository) Get(app *apps.App) (Formations, error) {
-	if _, found := r.formations[app.ID]; !found {
-		r.formations[app.ID] = make(Formations)
+	if _, found := r.formations[app.Name]; !found {
+		r.formations[app.Name] = make(Formations)
 	}
 
-	return r.formations[app.ID], nil
+	return r.formations[app.Name], nil
 }
 
 // Service is a service for managing process formations for apps.

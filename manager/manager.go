@@ -15,11 +15,11 @@ import (
 
 // Name represents the (unique) name of a job. The convention is <app>.<type>.<instance>:
 //
-//	589611bf-4e6c-4fc2-a77a-d61dca412289.web.1
+//	my-sweet-app.web.1
 type Name string
 
 // NewName returns a new Name with the proper format.
-func NewName(id apps.ID, pt processes.Type, i int) Name {
+func NewName(id apps.Name, pt processes.Type, i int) Name {
 	return Name(fmt.Sprintf("%s.%s.%d", id, pt, i))
 }
 
@@ -121,7 +121,7 @@ func (s *Service) scheduleApp(app *apps.App, config *configs.Config, slug *slugs
 		// Build a Job for each instance of the process.
 		for i := 1; i <= f.Count; i++ {
 			j := &Job{
-				Name:        NewName(app.ID, f.ProcessType, i),
+				Name:        NewName(app.Name, f.ProcessType, i),
 				Environment: env,
 				Execute: Execute{
 					Command: cmd,
