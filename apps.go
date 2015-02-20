@@ -34,7 +34,7 @@ func (s *appsService) FindOrCreateByRepo(repo repos.Repo) (*apps.App, error) {
 
 	// If the app wasn't found, create a new up linked to this repo.
 	if a == nil {
-		a, err = apps.New(apps.NewNameFromRepo(repo), repo)
+		a, err := apps.NewFromRepo(repo)
 		if err != nil {
 			return a, err
 		}
