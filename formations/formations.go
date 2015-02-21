@@ -13,8 +13,6 @@ type Formation struct {
 	ProcessType processes.Type
 
 	Count int // Count represents the desired number of processes to run.
-
-	// Size Size // The size of the instance to put these processes on.
 }
 
 // CommandFormation is a composition of a Formation and a processes.Command.

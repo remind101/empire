@@ -5,38 +5,134 @@ import (
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/formations"
+	"github.com/remind101/empire/processes"
+	"github.com/remind101/empire/slugs"
 )
 
-func TestFindFormation(t *testing.T) {
-	fmtns := make(formations.Formations)
+func TestFormationsServiceGetOrCreate(t *testing.T) {
+	var set bool
 
-	f := findFormation(fmtns, "web")
-	if got, want := f.Count, 1; got != want {
-		t.Fatalf("Count => %v; want %v", got, want)
+	app := &apps.App{}
+	slug := &slugs.Slug{
+		ProcessTypes: slugs.ProcessMap{
+			"web":    "./bin/web",
+			"worker": "sidekiq",
+		},
 	}
 
-	if got, want := len(fmtns), 1; got != want {
-		t.Fatal("Expected the new formation to be added")
+	r := &mockFormationsRepository{
+		GetFunc: func(app *apps.App) (formations.Formations, error) {
+			return nil, ErrNoFormation
+		},
+		SetFunc: func(app *apps.App, f formations.Formations) error {
+			set = true
+
+			if _, ok := f["web"]; !ok {
+				t.Fatal("Expected a web formation")
+			}
+
+			if _, ok := f["worker"]; !ok {
+				t.Fatal("Expected a worker formation")
+			}
+
+			return nil
+		},
+	}
+	s := &formationsService{
+		Repository: r,
 	}
 
-	f = findFormation(fmtns, "web")
-	if got, want := len(fmtns), 1; got != want {
-		t.Fatal("Expected the old formation to be fetched")
+	if _, err := s.GetOrCreate(app, slug); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := set, true; got != want {
+		t.Fatal("Expected a new formation to be set")
 	}
 }
 
-func TestFormationsServiceScale(t *testing.T) {
-	s, err := NewFormationsService(DefaultOptions)
-	if err != nil {
-		t.Fatal(err)
+func TestFormationsServiceScaleNoFormation(t *testing.T) {
+	app := &apps.App{}
+
+	r := &mockFormationsRepository{
+		SetFunc: func(app *apps.App, f formations.Formations) error {
+			return nil
+		},
+	}
+	s := &formationsService{
+		Repository: r,
 	}
 
-	app := &apps.App{Name: "abcd"}
-	if f, err := s.Scale(app, "web", 2); err == nil {
-		if got, want := f.Count, 2; got != want {
-			t.Fatalf("Count => %v; want %v", got, want)
+	if _, err := s.Scale(app, "web", 5); err != nil {
+		if got, want := err, ErrNoFormation; got != want {
+			t.Fatalf("error => %s; want %s", got, want)
 		}
 	} else {
-		t.Fatal(err)
+		t.Fatal("Expected an error")
 	}
+}
+
+func TestFormationsServiceScaleNoProcessType(t *testing.T) {
+	app := &apps.App{}
+
+	r := &mockFormationsRepository{
+		GetFunc: func(app *apps.App) (formations.Formations, error) {
+			return formations.Formations{}, nil
+		},
+	}
+	s := &formationsService{
+		Repository: r,
+	}
+
+	if _, err := s.Scale(app, "web", 5); err != nil {
+		if got, want := err, ErrInvalidProcessType; got != want {
+			t.Fatalf("error => %s; want %s", got, want)
+		}
+	} else {
+		t.Fatal("Expected an error")
+	}
+}
+
+type mockFormationsRepository struct {
+	SetFunc func(*apps.App, formations.Formations) error
+	GetFunc func(*apps.App) (formations.Formations, error)
+}
+
+func (r *mockFormationsRepository) Set(app *apps.App, f formations.Formations) error {
+	if r.SetFunc != nil {
+		return r.SetFunc(app, f)
+	}
+
+	return nil
+}
+
+func (r *mockFormationsRepository) Get(app *apps.App) (formations.Formations, error) {
+	if r.GetFunc != nil {
+		return r.GetFunc(app)
+	}
+
+	return nil, nil
+}
+
+type mockFormationsService struct {
+	mockFormationsRepository
+
+	GetOrCreateFunc func(*apps.App, *slugs.Slug) (formations.Formations, error)
+	ScaleFunc       func(*apps.App, processes.Type, int) (*formations.Formation, error)
+}
+
+func (s *mockFormationsService) GetOrCreate(app *apps.App, slug *slugs.Slug) (formations.Formations, error) {
+	if s.GetOrCreateFunc != nil {
+		return s.GetOrCreateFunc(app, slug)
+	}
+
+	return nil, nil
+}
+
+func (s *mockFormationsService) Scale(app *apps.App, pt processes.Type, count int) (*formations.Formation, error) {
+	if s.ScaleFunc != nil {
+		return s.ScaleFunc(app, pt, count)
+	}
+
+	return nil, nil
 }
