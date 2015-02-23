@@ -114,6 +114,7 @@ func mergeVars(old, new Vars) Vars {
 	for n, v := range old {
 		vars[n] = v
 	}
+
 	for n, v := range new {
 		if v != "" {
 			vars[n] = v

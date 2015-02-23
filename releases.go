@@ -35,22 +35,12 @@ func (s *releasesService) Create(app *apps.App, config *configs.Config, slug *sl
 		return r, err
 	}
 
-	// Get the currently configured process formation.
-	fmtns, err := s.FormationsService.Get(app)
+	// Get the currently configured process formation, or create a new one
+	// based on the slugs process types if the app doesn't already have a
+	// process formation.
+	fmtns, err := s.FormationsService.GetOrCreate(app, slug)
 	if err != nil {
 		return r, err
-	}
-
-	if fmtns == nil {
-		if _, ok := slug.ProcessTypes["web"]; ok {
-			fmtns = formations.Formations{
-				"web": formations.NewFormation("web"),
-			}
-
-			if err := s.FormationsService.Set(app, fmtns); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	for _, f := range fmtns {

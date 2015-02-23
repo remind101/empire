@@ -40,6 +40,9 @@ func (s *deploysService) Deploy(image *images.Image) (*deploys.Deploy, error) {
 
 	// Grab the latest config.
 	config, err := s.ConfigsService.Head(app)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a new slug for the docker image.
 	//

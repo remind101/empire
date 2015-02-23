@@ -30,7 +30,6 @@ func NewConfigsService(options Options) (ConfigsService, error) {
 // Config.
 func (s *configsService) Apply(app *apps.App, vars configs.Vars) (*configs.Config, error) {
 	l, err := s.Repository.Head(app.Name)
-
 	if err != nil {
 		return nil, err
 	}
