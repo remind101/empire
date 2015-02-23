@@ -12,7 +12,7 @@ import (
 	"github.com/remind101/empire/scheduler"
 )
 
-// Manager is responsible for talking to the schedule to schedule jobs onto the
+// Manager is responsible for talking to the scheduler to schedule jobs onto the
 // cluster.
 type Manager interface {
 	// ScheduleRelease schedules a release onto the cluster.
