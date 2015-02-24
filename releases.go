@@ -4,6 +4,7 @@ import (
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
 	"github.com/remind101/empire/formations"
+	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/slugs"
 )
@@ -30,31 +31,37 @@ func NewReleasesService(options Options, f FormationsService) (ReleasesService, 
 
 // Create creates the release, then sets the current process formation on the release.
 func (s *releasesService) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*releases.Release, error) {
-	r, err := s.Repository.Create(app, config, slug)
+	// Create a new formation for this release.
+	formation, err := s.createFormation(app, slug)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
-	// Get the currently configured process formation, or create a new one
-	// based on the slugs process types if the app doesn't already have a
-	// process formation.
-	fmtns, err := s.FormationsService.GetOrCreate(app, slug)
+	r := &releases.Release{
+		App:       app,
+		Config:    config,
+		Slug:      slug,
+		Formation: formation,
+	}
+
+	return s.Repository.Create(r)
+}
+
+func (s *releasesService) createFormation(app *apps.App, slug *slugs.Slug) (*formations.Formation, error) {
+	// Get the old release, so we can copy the Formation.
+	old, err := s.Repository.Head(app.Name)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
-	for _, f := range fmtns {
-		cmd, found := slug.ProcessTypes[f.ProcessType]
-		if !found {
-			// TODO Update the formation?
-			continue
-		}
-
-		r.Formation = append(r.Formation, &formations.CommandFormation{
-			Formation: f,
-			Command:   cmd,
-		})
+	var p processes.ProcessMap
+	if old != nil {
+		p = old.Formation.Processes
 	}
 
-	return r, nil
+	formation := &formations.Formation{
+		Processes: processes.NewProcessMap(p, slug.ProcessTypes),
+	}
+
+	return s.FormationsService.Create(formation)
 }

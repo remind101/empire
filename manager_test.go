@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/images"
+	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/scheduler"
 )
@@ -27,13 +27,10 @@ func TestBuildJobs(t *testing.T) {
 
 	vars := configs.Vars{"RAILS_ENV": "production"}
 
-	f := []*formations.CommandFormation{
-		{
-			Formation: &formations.Formation{
-				ProcessType: "web",
-				Count:       2,
-			},
-			Command: "./bin/web",
+	f := processes.ProcessMap{
+		"web": &processes.Process{
+			Quantity: 2,
+			Command:  "./bin/web",
 		},
 	}
 

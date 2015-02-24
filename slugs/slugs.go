@@ -14,17 +14,14 @@ var (
 	DefaultProcfilePath = "/home/app/Procfile"
 )
 
-// ProcessMap represents a map of processes.Type -> processes.Command.
-type ProcessMap map[processes.Type]processes.Command
-
 // ID represents the unique identifier of a Slug.
 type ID string
 
 // Slug represents a container image with the extracted processes.Type.
 type Slug struct {
-	ID           ID            `json:"id"`
-	Image        *images.Image `json:"image"`
-	ProcessTypes ProcessMap    `json:"process_types"`
+	ID           ID                   `json:"id"`
+	Image        *images.Image        `json:"image"`
+	ProcessTypes processes.CommandMap `json:"process_types"`
 }
 
 // Repository represents an interface for creating and finding slugs.

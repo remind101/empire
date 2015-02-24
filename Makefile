@@ -2,7 +2,6 @@
 
 cmd:
 	godep go build -o build/empire ./cmd/empire
-	godep go build -o build/minion ./cmd/minion
 
 client: doc
 	schematic doc/schema/schema.json > client/empire/client.go

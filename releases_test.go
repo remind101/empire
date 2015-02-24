@@ -29,15 +29,24 @@ func TestReleasesServiceCreate(t *testing.T) {
 type mockReleasesRepository struct {
 	releases.Repository // Just to satisfy the interface.
 
-	CreateFunc func(*apps.App, *configs.Config, *slugs.Slug) (*releases.Release, error)
+	HeadFunc   func(apps.Name) (*releases.Release, error)
+	CreateFunc func(*releases.Release) (*releases.Release, error)
 }
 
-func (s *mockReleasesRepository) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*releases.Release, error) {
-	if s.CreateFunc != nil {
-		return s.CreateFunc(app, config, slug)
+func (s *mockReleasesRepository) Head(name apps.Name) (*releases.Release, error) {
+	if s.HeadFunc != nil {
+		return s.HeadFunc(name)
 	}
 
 	return nil, nil
+}
+
+func (s *mockReleasesRepository) Create(release *releases.Release) (*releases.Release, error) {
+	if s.CreateFunc != nil {
+		return s.CreateFunc(release)
+	}
+
+	return release, nil
 }
 
 type mockReleasesService struct {

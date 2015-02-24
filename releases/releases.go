@@ -22,19 +22,19 @@ type Version string
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID        ID                             `json:"id"`
-	Version   Version                        `json:"version"`
-	App       *apps.App                      `json:"app"`
-	Config    *configs.Config                `json:"config"`
-	Formation []*formations.CommandFormation `json:"formation"`
-	Slug      *slugs.Slug                    `json:"slug"`
-	CreatedAt time.Time                      `json:"created_at"`
+	ID        ID                    `json:"id"`
+	Version   Version               `json:"version"`
+	App       *apps.App             `json:"app"`
+	Config    *configs.Config       `json:"config"`
+	Formation *formations.Formation `json:"formation"`
+	Slug      *slugs.Slug           `json:"slug"`
+	CreatedAt time.Time             `json:"created_at"`
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and
 // retrieving releases.
 type Repository interface {
-	Create(*apps.App, *configs.Config, *slugs.Slug) (*Release, error)
+	Create(*Release) (*Release, error)
 	FindByAppID(apps.Name) ([]*Release, error)
 	Head(apps.Name) (*Release, error)
 }
@@ -71,11 +71,13 @@ func newFakeRepository() *repository {
 	return r
 }
 
-func (r *repository) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*Release, error) {
+func (r *repository) Create(release *Release) (*Release, error) {
 	r.Lock()
 	defer r.Unlock()
 
 	r.id++
+
+	app := release.App
 
 	createdAt := time.Now()
 	if r.genTimestamp != nil {
@@ -87,14 +89,9 @@ func (r *repository) Create(app *apps.App, config *configs.Config, slug *slugs.S
 		version = v
 	}
 
-	release := &Release{
-		ID:        ID(strconv.Itoa(r.id)),
-		Version:   Version(fmt.Sprintf("v%d", version)),
-		App:       app,
-		Config:    config,
-		Slug:      slug,
-		CreatedAt: createdAt.UTC(),
-	}
+	release.ID = ID(strconv.Itoa(r.id))
+	release.Version = Version(fmt.Sprintf("v%d", version))
+	release.CreatedAt = createdAt.UTC()
 
 	r.versions[app.Name] = version + 1
 	r.releases[app.Name] = append(r.releases[app.Name], release)

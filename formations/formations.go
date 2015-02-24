@@ -1,72 +1,54 @@
 package formations
 
 import (
-	"github.com/remind101/empire/apps"
+	"strconv"
+
 	"github.com/remind101/empire/processes"
 )
 
-// Formations maps a ProcessType to a Formation definition.
-type Formations map[processes.Type]*Formation
+// ID represents a unique identifier for a Formation.
+type ID string
 
-// Formation represents configuration for a process type.
+// Formation represents a collection of configured Processes.
 type Formation struct {
-	ProcessType processes.Type
+	ID ID `json:"id"`
 
-	Count int // Count represents the desired number of processes to run.
+	// Configured processes in this formation.
+	Processes processes.ProcessMap `json:"processes"`
 }
 
-// CommandFormation is a composition of a Formation and a processes.Command.
-type CommandFormation struct {
-	*Formation
-	Command processes.Command
-}
-
-// NewFormation returns a new Formation with an appropriate default Count.
-func NewFormation(pt processes.Type) *Formation {
-	count := 0
-
-	if pt == "web" {
-		count = 1
-	}
-
-	return &Formation{
-		ProcessType: pt,
-		Count:       count,
-	}
-}
-
-// Repository is an interface that can store and retrieve formations for apps.
+// Repository is an interface for creating and finding Formations.
 type Repository interface {
-	// Set sets the apps desired process formations.
-	Set(*apps.App, Formations) error
+	// Find finds a Formation by it's ID.
+	Find(ID) (*Formation, error)
 
-	// Get gets the apps desired process formations.
-	Get(*apps.App) (Formations, error)
+	// Create creates a new Formation.
+	Create(*Formation) (*Formation, error)
 }
 
 func NewRepository() Repository {
 	return newRepository()
 }
 
-// repository is an in memory implementation of the Repository interface.
 type repository struct {
-	formations map[apps.Name]Formations
+	formations map[ID]*Formation
+	id         int
 }
 
-// newRepository returns a new repository instance.
 func newRepository() *repository {
 	return &repository{
-		formations: make(map[apps.Name]Formations),
+		formations: make(map[ID]*Formation),
 	}
 }
 
-// Set sets the process formations for the given app.
-func (r *repository) Set(app *apps.App, f Formations) error {
-	r.formations[app.Name] = f
-	return nil
+func (r *repository) Find(id ID) (*Formation, error) {
+	return r.formations[id], nil
 }
 
-// Get gets the current process formations for the given app.
-func (r *repository) Get(app *apps.App) (Formations, error) {
-	return r.formations[app.Name], nil
+func (r *repository) Create(formation *Formation) (*Formation, error) {
+	r.id++
+
+	formation.ID = ID(strconv.Itoa(r.id))
+
+	return formation, nil
 }
