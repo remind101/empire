@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/remind101/empire/images"
+	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/slugs"
 )
 
@@ -15,11 +16,11 @@ func TestSlugsServiceCreateByImage(t *testing.T) {
 		ID:   "1234",
 	}
 
-	pm := slugs.ProcessMap{"web": "./web"}
+	pm := processes.CommandMap{"web": "./web"}
 
 	r := &mockSlugsRepository{}
 	e := &mockExtractor{
-		ExtractFunc: func(image *images.Image) (slugs.ProcessMap, error) {
+		ExtractFunc: func(image *images.Image) (processes.CommandMap, error) {
 			return pm, nil
 		},
 	}
@@ -57,7 +58,7 @@ func TestSlugsServiceCreateByImageFound(t *testing.T) {
 		},
 	}
 	e := &mockExtractor{
-		ExtractFunc: func(image *images.Image) (slugs.ProcessMap, error) {
+		ExtractFunc: func(image *images.Image) (processes.CommandMap, error) {
 			t.Fatal("Expected Extract to not be called")
 			return nil, nil
 		},
@@ -92,7 +93,7 @@ func TestSlugsServiceCreateByImageFoundError(t *testing.T) {
 		},
 	}
 	e := &mockExtractor{
-		ExtractFunc: func(image *images.Image) (slugs.ProcessMap, error) {
+		ExtractFunc: func(image *images.Image) (processes.CommandMap, error) {
 			t.Fatal("Expected Extract to not be called")
 			return nil, nil
 		},
@@ -109,15 +110,15 @@ func TestSlugsServiceCreateByImageFoundError(t *testing.T) {
 }
 
 type mockExtractor struct {
-	ExtractFunc func(*images.Image) (slugs.ProcessMap, error)
+	ExtractFunc func(*images.Image) (processes.CommandMap, error)
 }
 
-func (e *mockExtractor) Extract(image *images.Image) (slugs.ProcessMap, error) {
+func (e *mockExtractor) Extract(image *images.Image) (processes.CommandMap, error) {
 	if e.ExtractFunc != nil {
 		return e.ExtractFunc(image)
 	}
 
-	return slugs.ProcessMap{}, nil
+	return processes.CommandMap{}, nil
 }
 
 type mockSlugsRepository struct {

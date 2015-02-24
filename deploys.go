@@ -12,11 +12,10 @@ type DeploysService interface {
 }
 
 // NewDeploysService returns a new DeploysService.
-func NewDeploysService(options Options, apps AppsService, configs ConfigsService, slugs SlugsService, releases ReleasesService, manager Manager) (DeploysService, error) {
+func NewDeploysService(options Options, apps AppsService, configs ConfigsService, slugs SlugsService, releases ReleasesService) (DeploysService, error) {
 	return &deploysService{
 		AppsService:     apps,
 		ConfigsService:  configs,
-		Manager:         manager,
 		SlugsService:    slugs,
 		ReleasesService: releases,
 	}, nil
@@ -28,7 +27,6 @@ type deploysService struct {
 	ConfigsService
 	SlugsService
 	ReleasesService
-	Manager
 }
 
 // Deploy deploys an Image to the cluster.
@@ -58,11 +56,6 @@ func (s *deploysService) Deploy(image *images.Image) (*deploys.Deploy, error) {
 	// and Slug.
 	release, err := s.ReleasesService.Create(app, config, slug)
 	if err != nil {
-		return nil, err
-	}
-
-	// Schedule the new release onto the cluster.
-	if err := s.Manager.ScheduleRelease(release); err != nil {
 		return nil, err
 	}
 

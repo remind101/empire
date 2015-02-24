@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/remind101/empire/images"
+	"github.com/remind101/empire/processes"
 )
 
 func TestProcfileExtractor(t *testing.T) {
@@ -15,11 +16,11 @@ func TestProcfileExtractor(t *testing.T) {
 
 	tests := []struct {
 		procfile string
-		pm       ProcessMap
+		pm       processes.CommandMap
 	}{
 		{
 			`web: ./bin/web`,
-			ProcessMap{"web": "./bin/web"},
+			processes.CommandMap{"web": "./bin/web"},
 		},
 	}
 
@@ -41,11 +42,11 @@ func TestProcfileExtractor(t *testing.T) {
 func TestParseProcfile(t *testing.T) {
 	tests := []struct {
 		in string
-		pm ProcessMap
+		pm processes.CommandMap
 	}{
 		{
 			`web: ./bin/web`,
-			ProcessMap{
+			processes.CommandMap{
 				"web": "./bin/web",
 			},
 		},
@@ -55,7 +56,7 @@ func TestParseProcfile(t *testing.T) {
 web: ./bin/web
 worker: ./bin/worker -port=$PORT -sock=unix:///var/run/docker.sock
 `,
-			ProcessMap{
+			processes.CommandMap{
 				"web":    "./bin/web",
 				"worker": "./bin/worker -port=$PORT -sock=unix:///var/run/docker.sock",
 			},

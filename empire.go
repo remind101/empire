@@ -33,7 +33,6 @@ type Empire struct {
 	AppsService
 	ConfigsService
 	DeploysService
-	FormationsService
 	Manager
 	ReleasesService
 	SlugsService
@@ -51,17 +50,12 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	formations, err := NewFormationsService(options)
-	if err != nil {
-		return nil, err
-	}
-
-	releases, err := NewReleasesService(options, formations)
-	if err != nil {
-		return nil, err
-	}
-
 	manager, err := NewManager(options)
+	if err != nil {
+		return nil, err
+	}
+
+	releases, err := NewReleasesService(options, manager)
 	if err != nil {
 		return nil, err
 	}
@@ -77,19 +71,17 @@ func New(options Options) (*Empire, error) {
 		configs,
 		slugs,
 		releases,
-		manager,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Empire{
-		AppsService:       apps,
-		ConfigsService:    configs,
-		DeploysService:    deploys,
-		FormationsService: formations,
-		Manager:           manager,
-		SlugsService:      slugs,
-		ReleasesService:   releases,
+		AppsService:     apps,
+		ConfigsService:  configs,
+		DeploysService:  deploys,
+		Manager:         manager,
+		SlugsService:    slugs,
+		ReleasesService: releases,
 	}, nil
 }

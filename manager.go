@@ -5,7 +5,6 @@ import (
 
 	"github.com/remind101/empire/apps"
 	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/formations"
 	"github.com/remind101/empire/images"
 	"github.com/remind101/empire/processes"
 	"github.com/remind101/empire/releases"
@@ -44,7 +43,7 @@ func (s *manager) ScheduleRelease(release *releases.Release) error {
 		release.Version,
 		*release.Slug.Image,
 		release.Config.Vars,
-		release.Formation,
+		release.Formation.Processes,
 	)
 
 	return s.Scheduler.ScheduleMulti(jobs)
@@ -55,18 +54,18 @@ func newJobName(id apps.Name, v releases.Version, pt processes.Type, i int) sche
 	return scheduler.JobName(fmt.Sprintf("%s.%s.%s.%d", id, v, pt, i))
 }
 
-func buildJobs(name apps.Name, version releases.Version, image images.Image, vars configs.Vars, formation []*formations.CommandFormation) []*scheduler.Job {
+func buildJobs(name apps.Name, version releases.Version, image images.Image, vars configs.Vars, pm processes.ProcessMap) []*scheduler.Job {
 	var jobs []*scheduler.Job
 
 	// Build jobs for each process type
-	for _, f := range formation {
-		cmd := string(f.Command)
+	for t, p := range pm {
+		cmd := string(p.Command)
 		env := environment(vars)
 
 		// Build a Job for each instance of the process.
-		for i := 1; i <= f.Count; i++ {
+		for i := 1; i <= p.Quantity; i++ {
 			j := &scheduler.Job{
-				Name:        newJobName(name, version, f.ProcessType, i),
+				Name:        newJobName(name, version, t, i),
 				Environment: env,
 				Execute: scheduler.Execute{
 					Command: cmd,

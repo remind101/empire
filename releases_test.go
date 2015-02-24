@@ -10,34 +10,56 @@ import (
 )
 
 func TestReleasesServiceCreate(t *testing.T) {
+	var scheduled bool
+
 	app := &apps.App{}
 	config := &configs.Config{}
 	slug := &slugs.Slug{}
 
-	f := &mockFormationsService{}
+	f := &mockFormationsRepository{}
 	r := &mockReleasesRepository{}
+	m := &mockManager{
+		ScheduleReleaseFunc: func(release *releases.Release) error {
+			scheduled = true
+			return nil
+		},
+	}
 	s := &releasesService{
-		Repository:        r,
-		FormationsService: f,
+		Repository:           r,
+		FormationsRepository: f,
+		Manager:              m,
 	}
 
 	if _, err := s.Create(app, config, slug); err != nil {
 		t.Fatal(err)
+	}
+
+	if got, want := scheduled, true; got != want {
+		t.Fatal("Expected a release to be created")
 	}
 }
 
 type mockReleasesRepository struct {
 	releases.Repository // Just to satisfy the interface.
 
-	CreateFunc func(*apps.App, *configs.Config, *slugs.Slug) (*releases.Release, error)
+	HeadFunc   func(apps.Name) (*releases.Release, error)
+	CreateFunc func(*releases.Release) (*releases.Release, error)
 }
 
-func (s *mockReleasesRepository) Create(app *apps.App, config *configs.Config, slug *slugs.Slug) (*releases.Release, error) {
-	if s.CreateFunc != nil {
-		return s.CreateFunc(app, config, slug)
+func (s *mockReleasesRepository) Head(name apps.Name) (*releases.Release, error) {
+	if s.HeadFunc != nil {
+		return s.HeadFunc(name)
 	}
 
 	return nil, nil
+}
+
+func (s *mockReleasesRepository) Create(release *releases.Release) (*releases.Release, error) {
+	if s.CreateFunc != nil {
+		return s.CreateFunc(release)
+	}
+
+	return release, nil
 }
 
 type mockReleasesService struct {

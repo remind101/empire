@@ -19,7 +19,7 @@ import (
 type Extractor interface {
 	// Extract takes a repo in the form `remind101/r101-api`, and an image
 	// id, and extracts the process types from the image.
-	Extract(*images.Image) (ProcessMap, error)
+	Extract(*images.Image) (processes.CommandMap, error)
 }
 
 // NewExtractor returns a new Extractor instance.
@@ -47,8 +47,8 @@ func newExtractor() *extractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *extractor) Extract(image *images.Image) (ProcessMap, error) {
-	pm := make(ProcessMap)
+func (e *extractor) Extract(image *images.Image) (processes.CommandMap, error) {
+	pm := make(processes.CommandMap)
 
 	// Just return some fake processes.
 	pm[processes.Type("web")] = processes.Command("./bin/web")
@@ -57,7 +57,7 @@ func (e *extractor) Extract(image *images.Image) (ProcessMap, error) {
 }
 
 // ProcfileExtractor is an implementation of the Extractor interface that can
-// pull a docker image and extract it's Procfile into a ProcessMap.
+// pull a docker image and extract it's Procfile into a process.CommandMap.
 type ProcfileExtractor struct {
 	// Registry is the registry to use to pull the image from. The zero
 	// value is the default docker registry.
@@ -80,8 +80,8 @@ type ProcfileExtractor struct {
 }
 
 // Extract implements Extractor Extract.
-func (e *ProcfileExtractor) Extract(image *images.Image) (ProcessMap, error) {
-	pm := make(ProcessMap)
+func (e *ProcfileExtractor) Extract(image *images.Image) (processes.CommandMap, error) {
+	pm := make(processes.CommandMap)
 
 	repo := e.fullRepo(image.Repo)
 	if err := e.pullImage(repo, image.ID); err != nil {
@@ -218,9 +218,9 @@ func (e *ProcfileError) Error() string {
 }
 
 // ParseProcfile takes a byte slice representing a YAML Procfile and parses it
-// into a ProcessMap.
-func ParseProcfile(b []byte) (ProcessMap, error) {
-	pm := make(ProcessMap)
+// into a processes.CommandMap.
+func ParseProcfile(b []byte) (processes.CommandMap, error) {
+	pm := make(processes.CommandMap)
 
 	if err := yaml.Unmarshal(b, &pm); err != nil {
 		return pm, err
