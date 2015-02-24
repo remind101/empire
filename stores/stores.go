@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"sync"
 )
 
 type Store interface {
-	Get(k string, v interface{}) error
+	Get(k string, v interface{}) (bool, error)
 	Set(k string, v interface{}) error
 	List(k string, v interface{}) error
 }
@@ -22,15 +23,15 @@ func NewMemStore() *memStore {
 	return &memStore{store: make(map[string][]byte)}
 }
 
-func (s *memStore) Get(k string, v interface{}) error {
+func (s *memStore) Get(k string, v interface{}) (bool, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	if b, ok := s.store[k]; ok {
-		return json.Unmarshal(b, v)
+	if b, found := s.store[k]; found {
+		return found, json.Unmarshal(b, v)
 	}
 
-	return nil
+	return false, nil
 }
 
 func (s *memStore) Set(k string, v interface{}) error {
@@ -65,7 +66,11 @@ func (s *memStore) List(k string, v interface{}) error {
 		elemType = elemType.Elem()
 	}
 
-	for _, b := range s.store {
+	for key, b := range s.store {
+		if !strings.HasPrefix(key, k) {
+			continue
+		}
+
 		elem := reflect.New(elemType)
 
 		if err := json.Unmarshal(b, elem.Interface()); err != nil {
