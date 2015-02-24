@@ -4,10 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/processes"
-	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/scheduler"
 )
 
@@ -20,15 +16,15 @@ func TestNewJobName(t *testing.T) {
 }
 
 func TestBuildJobs(t *testing.T) {
-	image := images.Image{
+	image := Image{
 		Repo: "remind101/r101-api",
 		ID:   "1234",
 	}
 
-	vars := configs.Vars{"RAILS_ENV": "production"}
+	vars := Vars{"RAILS_ENV": "production"}
 
-	f := processes.ProcessMap{
-		"web": &processes.Process{
+	f := ProcessMap{
+		"web": &Process{
 			Quantity: 2,
 			Command:  "./bin/web",
 		},
@@ -44,7 +40,10 @@ func TestBuildJobs(t *testing.T) {
 			},
 			Execute: scheduler.Execute{
 				Command: "./bin/web",
-				Image:   image,
+				Image: scheduler.Image{
+					Repo: string(image.Repo),
+					ID:   image.ID,
+				},
 			},
 		},
 		{
@@ -54,7 +53,10 @@ func TestBuildJobs(t *testing.T) {
 			},
 			Execute: scheduler.Execute{
 				Command: "./bin/web",
-				Image:   image,
+				Image: scheduler.Image{
+					Repo: string(image.Repo),
+					ID:   image.ID,
+				},
 			},
 		},
 	}
@@ -67,10 +69,10 @@ func TestBuildJobs(t *testing.T) {
 type mockManager struct {
 	Manager // Just to satisfy the interface.
 
-	ScheduleReleaseFunc func(*releases.Release) error
+	ScheduleReleaseFunc func(*Release) error
 }
 
-func (m *mockManager) ScheduleRelease(release *releases.Release) error {
+func (m *mockManager) ScheduleRelease(release *Release) error {
 	if m.ScheduleReleaseFunc != nil {
 		return m.ScheduleReleaseFunc(release)
 	}

@@ -1,14 +1,19 @@
 package empire
 
-import (
-	"github.com/remind101/empire/deploys"
-	"github.com/remind101/empire/images"
-)
+// DeployID represents the unique identifier for a Deploy.
+type DeployID string
+
+// Deploy represents a deployment to the platform.
+type Deploy struct {
+	ID      DeployID `json:"id"`
+	Status  string   `json:"status"`
+	Release *Release `json:"release"`
+}
 
 // DeploysService is an interface that can be implemented to deploy images.
 type DeploysService interface {
 	// Deploy deploys a container image to the cluster.
-	Deploy(*images.Image) (*deploys.Deploy, error)
+	Deploy(*Image) (*Deploy, error)
 }
 
 // NewDeploysService returns a new DeploysService.
@@ -30,7 +35,7 @@ type deploysService struct {
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deploysService) Deploy(image *images.Image) (*deploys.Deploy, error) {
+func (s *deploysService) Deploy(image *Image) (*Deploy, error) {
 	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
@@ -61,7 +66,7 @@ func (s *deploysService) Deploy(image *images.Image) (*deploys.Deploy, error) {
 
 	// We're deployed! ...
 	// hopefully.
-	return &deploys.Deploy{
+	return &Deploy{
 		ID:      "1",
 		Release: release,
 	}, nil

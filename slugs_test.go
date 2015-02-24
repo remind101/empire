@@ -4,23 +4,19 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-
-	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/processes"
-	"github.com/remind101/empire/slugs"
 )
 
 func TestSlugsServiceCreateByImage(t *testing.T) {
-	image := &images.Image{
+	image := &Image{
 		Repo: "ejholmes/docker-statsd",
 		ID:   "1234",
 	}
 
-	pm := processes.CommandMap{"web": "./web"}
+	pm := CommandMap{"web": "./web"}
 
 	r := &mockSlugsRepository{}
 	e := &mockExtractor{
-		ExtractFunc: func(image *images.Image) (processes.CommandMap, error) {
+		ExtractFunc: func(image *Image) (CommandMap, error) {
 			return pm, nil
 		},
 	}
@@ -45,20 +41,20 @@ func TestSlugsServiceCreateByImage(t *testing.T) {
 }
 
 func TestSlugsServiceCreateByImageFound(t *testing.T) {
-	image := &images.Image{
+	image := &Image{
 		Repo: "ejholmes/docker-statsd",
 		ID:   "1234",
 	}
 
 	r := &mockSlugsRepository{
-		FindByImageFunc: func(image *images.Image) (*slugs.Slug, error) {
-			return &slugs.Slug{
+		FindByImageFunc: func(image *Image) (*Slug, error) {
+			return &Slug{
 				ID: "1234",
 			}, nil
 		},
 	}
 	e := &mockExtractor{
-		ExtractFunc: func(image *images.Image) (processes.CommandMap, error) {
+		ExtractFunc: func(image *Image) (CommandMap, error) {
 			t.Fatal("Expected Extract to not be called")
 			return nil, nil
 		},
@@ -74,26 +70,26 @@ func TestSlugsServiceCreateByImageFound(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := slug.ID, slugs.ID("1234"); got != want {
+	if got, want := slug.ID, SlugID("1234"); got != want {
 		t.Fatal("Expected a slug to be returned")
 	}
 }
 
 func TestSlugsServiceCreateByImageFoundError(t *testing.T) {
-	image := &images.Image{
+	image := &Image{
 		Repo: "ejholmes/docker-statsd",
 		ID:   "1234",
 	}
 
 	r := &mockSlugsRepository{
-		FindByImageFunc: func(image *images.Image) (*slugs.Slug, error) {
-			return &slugs.Slug{
+		FindByImageFunc: func(image *Image) (*Slug, error) {
+			return &Slug{
 				ID: "1234",
 			}, errors.New("empire: shit")
 		},
 	}
 	e := &mockExtractor{
-		ExtractFunc: func(image *images.Image) (processes.CommandMap, error) {
+		ExtractFunc: func(image *Image) (CommandMap, error) {
 			t.Fatal("Expected Extract to not be called")
 			return nil, nil
 		},
@@ -110,25 +106,25 @@ func TestSlugsServiceCreateByImageFoundError(t *testing.T) {
 }
 
 type mockExtractor struct {
-	ExtractFunc func(*images.Image) (processes.CommandMap, error)
+	ExtractFunc func(*Image) (CommandMap, error)
 }
 
-func (e *mockExtractor) Extract(image *images.Image) (processes.CommandMap, error) {
+func (e *mockExtractor) Extract(image *Image) (CommandMap, error) {
 	if e.ExtractFunc != nil {
 		return e.ExtractFunc(image)
 	}
 
-	return processes.CommandMap{}, nil
+	return CommandMap{}, nil
 }
 
 type mockSlugsRepository struct {
-	slugs.Repository // Just to satisfy the interface.
+	SlugsRepository // Just to satisfy the interface.
 
-	CreateFunc      func(*slugs.Slug) (*slugs.Slug, error)
-	FindByImageFunc func(*images.Image) (*slugs.Slug, error)
+	CreateFunc      func(*Slug) (*Slug, error)
+	FindByImageFunc func(*Image) (*Slug, error)
 }
 
-func (r *mockSlugsRepository) Create(slug *slugs.Slug) (*slugs.Slug, error) {
+func (r *mockSlugsRepository) Create(slug *Slug) (*Slug, error) {
 	if r.CreateFunc != nil {
 		return r.CreateFunc(slug)
 	}
@@ -136,7 +132,7 @@ func (r *mockSlugsRepository) Create(slug *slugs.Slug) (*slugs.Slug, error) {
 	return slug, nil
 }
 
-func (r *mockSlugsRepository) FindByImage(image *images.Image) (*slugs.Slug, error) {
+func (r *mockSlugsRepository) FindByImage(image *Image) (*Slug, error) {
 	if r.FindByImageFunc != nil {
 		return r.FindByImageFunc(image)
 	}
@@ -147,10 +143,10 @@ func (r *mockSlugsRepository) FindByImage(image *images.Image) (*slugs.Slug, err
 type mockSlugsService struct {
 	SlugsService // Just to satisfy the interface.
 
-	CreateByImageFunc func(*images.Image) (*slugs.Slug, error)
+	CreateByImageFunc func(*Image) (*Slug, error)
 }
 
-func (s *mockSlugsService) CreateByImage(image *images.Image) (*slugs.Slug, error) {
+func (s *mockSlugsService) CreateByImage(image *Image) (*Slug, error) {
 	if s.CreateByImageFunc != nil {
 		return s.CreateByImageFunc(image)
 	}

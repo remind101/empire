@@ -3,11 +3,6 @@ package empire
 import (
 	"fmt"
 
-	"github.com/remind101/empire/apps"
-	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/processes"
-	"github.com/remind101/empire/releases"
 	"github.com/remind101/empire/scheduler"
 )
 
@@ -15,7 +10,7 @@ import (
 // cluster.
 type Manager interface {
 	// ScheduleRelease schedules a release onto the cluster.
-	ScheduleRelease(*releases.Release) error
+	ScheduleRelease(*Release) error
 }
 
 // manager is a base implementation of the Manager interface.
@@ -37,7 +32,7 @@ func NewManager(options Options) (Manager, error) {
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (s *manager) ScheduleRelease(release *releases.Release) error {
+func (s *manager) ScheduleRelease(release *Release) error {
 	jobs := buildJobs(
 		release.App.Name,
 		release.Version,
@@ -50,11 +45,11 @@ func (s *manager) ScheduleRelease(release *releases.Release) error {
 }
 
 // newJobName returns a new Name with the proper format.
-func newJobName(id apps.Name, v releases.Version, pt processes.Type, i int) scheduler.JobName {
-	return scheduler.JobName(fmt.Sprintf("%s.%s.%s.%d", id, v, pt, i))
+func newJobName(name AppName, v ReleaseVersion, t ProcessType, i int) scheduler.JobName {
+	return scheduler.JobName(fmt.Sprintf("%s.%s.%s.%d", name, v, t, i))
 }
 
-func buildJobs(name apps.Name, version releases.Version, image images.Image, vars configs.Vars, pm processes.ProcessMap) []*scheduler.Job {
+func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, pm ProcessMap) []*scheduler.Job {
 	var jobs []*scheduler.Job
 
 	// Build jobs for each process type
@@ -69,7 +64,10 @@ func buildJobs(name apps.Name, version releases.Version, image images.Image, var
 				Environment: env,
 				Execute: scheduler.Execute{
 					Command: cmd,
-					Image:   image,
+					Image: scheduler.Image{
+						Repo: string(image.Repo),
+						ID:   image.ID,
+					},
 				},
 			}
 
@@ -80,8 +78,8 @@ func buildJobs(name apps.Name, version releases.Version, image images.Image, var
 	return jobs
 }
 
-// environment coerces a configs.Vars into a map[string]string.
-func environment(vars configs.Vars) map[string]string {
+// environment coerces a Vars into a map[string]string.
+func environment(vars Vars) map[string]string {
 	env := make(map[string]string)
 
 	for k, v := range vars {

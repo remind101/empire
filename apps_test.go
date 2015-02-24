@@ -2,23 +2,37 @@ package empire
 
 import (
 	"testing"
-
-	"github.com/remind101/empire/apps"
-	"github.com/remind101/empire/repos"
 )
+
+func TestNewApp(t *testing.T) {
+	_, err := NewApp("", "")
+	if err != ErrInvalidName {
+		t.Error("An empty name should be invalid")
+	}
+
+	a, err := NewApp("api", "remind101/r101-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := AppName("api"), a.Name; want != got {
+		t.Errorf("a.Name => %s; want %s", got, want)
+
+	}
+}
 
 func TestAppsServiceFindOrCreateByRepo(t *testing.T) {
 	var created bool
-	repo := repos.Repo("remind101/r101-api")
+	repo := Repo("remind101/r101-api")
 
 	r := &mockAppsRepository{
-		CreateFunc: func(app *apps.App) (*apps.App, error) {
+		CreateFunc: func(app *App) (*App, error) {
 			created = true
 			return app, nil
 		},
 	}
 	s := &appsService{
-		Repository: r,
+		AppsRepository: r,
 	}
 
 	app, err := s.FindOrCreateByRepo(repo)
@@ -30,7 +44,7 @@ func TestAppsServiceFindOrCreateByRepo(t *testing.T) {
 		t.Fatal("Expected the app to be created")
 	}
 
-	if got, want := app.Name, apps.Name("r101-api"); got != want {
+	if got, want := app.Name, AppName("r101-api"); got != want {
 		t.Fatal("Expected a name to be set")
 	}
 
@@ -41,16 +55,16 @@ func TestAppsServiceFindOrCreateByRepo(t *testing.T) {
 
 func TestAppsServiceFindOrCreateByRepoFound(t *testing.T) {
 	r := &mockAppsRepository{
-		CreateFunc: func(app *apps.App) (*apps.App, error) {
+		CreateFunc: func(app *App) (*App, error) {
 			t.Fatal("Expected Create to not be called")
 			return nil, nil
 		},
-		FindByRepoFunc: func(repo repos.Repo) (*apps.App, error) {
-			return &apps.App{}, nil
+		FindByRepoFunc: func(repo Repo) (*App, error) {
+			return &App{}, nil
 		},
 	}
 	s := &appsService{
-		Repository: r,
+		AppsRepository: r,
 	}
 
 	if _, err := s.FindOrCreateByRepo("remind101/r101-api"); err != nil {
@@ -59,13 +73,13 @@ func TestAppsServiceFindOrCreateByRepoFound(t *testing.T) {
 }
 
 type mockAppsRepository struct {
-	apps.Repository // Just to satisfy the interface.
+	AppsRepository // Just to satisfy the interface.
 
-	CreateFunc     func(*apps.App) (*apps.App, error)
-	FindByRepoFunc func(repos.Repo) (*apps.App, error)
+	CreateFunc     func(*App) (*App, error)
+	FindByRepoFunc func(Repo) (*App, error)
 }
 
-func (r *mockAppsRepository) Create(app *apps.App) (*apps.App, error) {
+func (r *mockAppsRepository) Create(app *App) (*App, error) {
 	if r.CreateFunc != nil {
 		return r.CreateFunc(app)
 	}
@@ -73,7 +87,7 @@ func (r *mockAppsRepository) Create(app *apps.App) (*apps.App, error) {
 	return app, nil
 }
 
-func (r *mockAppsRepository) FindByRepo(repo repos.Repo) (*apps.App, error) {
+func (r *mockAppsRepository) FindByRepo(repo Repo) (*App, error) {
 	if r.FindByRepoFunc != nil {
 		return r.FindByRepoFunc(repo)
 	}
@@ -84,10 +98,10 @@ func (r *mockAppsRepository) FindByRepo(repo repos.Repo) (*apps.App, error) {
 type mockAppsService struct {
 	mockAppsRepository
 
-	FindOrCreateByRepoFunc func(repo repos.Repo) (*apps.App, error)
+	FindOrCreateByRepoFunc func(repo Repo) (*App, error)
 }
 
-func (s *mockAppsService) FindOrCreateByRepo(repo repos.Repo) (*apps.App, error) {
+func (s *mockAppsService) FindOrCreateByRepo(repo Repo) (*App, error) {
 	if s.FindOrCreateByRepoFunc != nil {
 		return s.FindOrCreateByRepoFunc(repo)
 	}
