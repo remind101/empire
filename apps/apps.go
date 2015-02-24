@@ -4,9 +4,9 @@ import (
 	"errors"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/remind101/empire/repos"
+	"github.com/remind101/empire/stores"
 )
 
 var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
@@ -58,34 +58,34 @@ type Repository interface {
 	FindByRepo(repos.Repo) (*App, error)
 }
 
-func NewRepository() Repository {
-	return newRepository()
-}
-
 type repository struct {
-	id int
-
-	sync.RWMutex
-	apps []*App
+	s stores.Store
 }
 
-func newRepository() *repository {
-	return &repository{apps: make([]*App, 0)}
+func NewRepository() Repository {
+	return &repository{stores.NewMemStore()}
+}
+
+func NewEtcdRepository(ns string) (Repository, error) {
+	s, err := stores.NewEtcdStore(ns)
+	if err != nil {
+		return nil, err
+	}
+	return &repository{s}, nil
 }
 
 func (r *repository) Create(app *App) (*App, error) {
-	r.Lock()
-	defer r.Unlock()
-
-	r.apps = append(r.apps, app)
-	return app, nil
+	err := r.s.Set(string(app.Name), app)
+	return app, err
 }
 
 func (r *repository) FindByName(name Name) (*App, error) {
-	r.RLock()
-	defer r.RUnlock()
+	apps := make([]*App, 0)
+	if err := r.s.List("", &apps); err != nil {
+		return nil, err
+	}
 
-	for _, app := range r.apps {
+	for _, app := range apps {
 		if app.Name == name {
 			return app, nil
 		}
@@ -95,10 +95,12 @@ func (r *repository) FindByName(name Name) (*App, error) {
 }
 
 func (r *repository) FindByRepo(repo repos.Repo) (*App, error) {
-	r.RLock()
-	defer r.RUnlock()
+	apps := make([]*App, 0)
+	if err := r.s.List("", &apps); err != nil {
+		return nil, err
+	}
 
-	for _, app := range r.apps {
+	for _, app := range apps {
 		if app.Repo == repo {
 			return app, nil
 		}
