@@ -4,9 +4,9 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"sort"
-	"sync"
 
 	"github.com/remind101/empire/apps"
+	"github.com/remind101/empire/stores"
 )
 
 // Version represents a unique identifier for a Config version.
@@ -49,61 +49,63 @@ type Repository interface {
 	Push(*Config) (*Config, error)
 }
 
-func NewRepository() Repository {
-	return newRepository()
-}
-
-// repository is an in memory implementation of the Repository.
 type repository struct {
-	sync.RWMutex
-	s map[apps.Name][]*Config
-	h map[apps.Name]*Config
+	s stores.Store
 }
 
-func newRepository() *repository {
-	return &repository{
-		s: make(map[apps.Name][]*Config),
-		h: make(map[apps.Name]*Config),
+func NewRepository() Repository {
+	return &repository{stores.NewMemStore()}
+}
+
+func NewEtcdRepository(ns string) (Repository, error) {
+	s, err := stores.NewEtcdStore(ns)
+	if err != nil {
+		return nil, err
 	}
+	return &repository{s}, nil
 }
 
 // Head implements Repository Head.
 func (r *repository) Head(appName apps.Name) (*Config, error) {
-	r.RLock()
-	defer r.RUnlock()
+	c := &Config{}
 
-	if r.h[appName] == nil {
-		return nil, nil
+	if ok, err := r.s.Get(keyHead(appName), c); err != nil || !ok {
+		return nil, err
 	}
 
-	return r.h[appName], nil
+	return c, nil
 }
 
 // Version implements Repository Version.
 func (r *repository) Version(appName apps.Name, version Version) (*Config, error) {
-	r.RLock()
-	defer r.RUnlock()
+	c := &Config{}
 
-	for _, c := range r.s[appName] {
-		if c.Version == version {
-			return c, nil
-		}
+	if ok, err := r.s.Get(keyVersion(appName, version), c); err != nil || !ok {
+		return nil, err
 	}
 
-	return nil, nil
+	return c, nil
 }
 
 // Push implements Repository Push.
 func (r *repository) Push(config *Config) (*Config, error) {
-	r.Lock()
-	defer r.Unlock()
+	if err := r.s.Set(keyVersion(config.App.Name, config.Version), config); err != nil {
+		return config, err
+	}
 
-	n := config.App.Name
-
-	r.s[n] = append(r.s[n], config)
-	r.h[n] = config
+	if err := r.s.Set(keyHead(config.App.Name), config); err != nil {
+		return config, err
+	}
 
 	return config, nil
+}
+
+func keyHead(appName apps.Name) string {
+	return fmt.Sprintf("%s/head", appName)
+}
+
+func keyVersion(appName apps.Name, version Version) string {
+	return fmt.Sprintf("%s/%s", appName, version)
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a

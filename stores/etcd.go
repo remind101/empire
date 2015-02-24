@@ -28,6 +28,20 @@ func NewEtcdStore(ns string) (*EtcdStore, error) {
 	return &EtcdStore{client: client, ns: ns}, nil
 }
 
+func (s *EtcdStore) Get(k string, v interface{}) (bool, error) {
+	res, err := s.client.Get(s.key(k), false, false)
+	if err != nil {
+		// 100 means key not found
+		if err.(*etcd.EtcdError).ErrorCode == 100 {
+			return false, nil
+		}
+		return false, err
+	}
+
+	r := strings.NewReader(res.Node.Value)
+	return true, json.NewDecoder(r).Decode(v)
+}
+
 func (s *EtcdStore) Set(k string, v interface{}) error {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -36,16 +50,6 @@ func (s *EtcdStore) Set(k string, v interface{}) error {
 
 	_, err = s.client.Set(s.key(k), string(b), 0)
 	return err
-}
-
-func (s *EtcdStore) Get(k string, v interface{}) error {
-	res, err := s.client.Get(s.key(k), false, false)
-	if err != nil {
-		return err
-	}
-
-	r := strings.NewReader(res.Node.Value)
-	return json.NewDecoder(r).Decode(v)
 }
 
 func (s *EtcdStore) List(k string, v interface{}) error {

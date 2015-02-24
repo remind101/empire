@@ -8,16 +8,16 @@ import (
 )
 
 func TestRepository(t *testing.T) {
-	r := newRepository()
+	r := NewRepository()
 	app := &apps.App{Name: "abcd"}
 
 	c, _ := r.Push(&Config{App: app})
-	if h, _ := r.Head(app.Name); h != c {
-		t.Fatal("Head => %q; want %q", h, c)
+	if h, _ := r.Head(app.Name); !reflect.DeepEqual(c, h) {
+		t.Fatalf("Head => %q; want %q", h, c)
 	}
 
-	if v, _ := r.Version(app.Name, c.Version); v != c {
-		t.Fatal("Version(%s) => %q; want %q", c.Version, v, c)
+	if v, _ := r.Version(app.Name, c.Version); !reflect.DeepEqual(c, v) {
+		t.Fatalf("Version(%s) => %q; want %q", c.Version, v, c)
 	}
 }
 
