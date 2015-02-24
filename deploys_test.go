@@ -2,12 +2,6 @@ package empire
 
 import (
 	"testing"
-
-	"github.com/remind101/empire/apps"
-	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/releases"
-	"github.com/remind101/empire/slugs"
 )
 
 func TestDeploysServiceDeploy(t *testing.T) {
@@ -17,7 +11,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 	c := &mockConfigsService{}
 	s := &mockSlugsService{}
 	r := &mockReleasesService{
-		CreateFunc: func(app *apps.App, config *configs.Config, slug *slugs.Slug) (*releases.Release, error) {
+		CreateFunc: func(app *App, config *Config, slug *Slug) (*Release, error) {
 			released = true
 			return nil, nil
 		},
@@ -30,7 +24,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 		ReleasesService: r,
 	}
 
-	image := &images.Image{
+	image := &Image{
 		Repo: "remind101/r101-api",
 		ID:   "1234",
 	}

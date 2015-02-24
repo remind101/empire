@@ -1,13 +1,13 @@
-package processes
+package empire
 
 // DefaultQuantities maps a process type to the default number of instances to
 // run.
-var DefaultQuantities = map[Type]int{
+var DefaultQuantities = map[ProcessType]int{
 	"web": 1,
 }
 
-// Type represents the type of a given process/command.
-type Type string
+// ProcessType represents the type of a given process/command.
+type ProcessType string
 
 // Command represents the actual shell command that gets executed for a given
 // ProcessType.
@@ -19,14 +19,14 @@ type Process struct {
 	Command  Command `json:"command"`
 }
 
-// CommandMap maps a process Type to a Command.
-type CommandMap map[Type]Command
+// CommandMap maps a process ProcessType to a Command.
+type CommandMap map[ProcessType]Command
 
-// ProcessMap maps a process Type to a Process.
-type ProcessMap map[Type]*Process
+// ProcessMap maps a process ProcessType to a Process.
+type ProcessMap map[ProcessType]*Process
 
-// New returns a new Process instance.
-func New(t Type, cmd Command) *Process {
+// NewProcess returns a new Process instance.
+func NewProcess(t ProcessType, cmd Command) *Process {
 	return &Process{
 		Quantity: DefaultQuantities[t],
 		Command:  cmd,
@@ -40,7 +40,7 @@ func NewProcessMap(pm ProcessMap, cm CommandMap) ProcessMap {
 
 	// Iterate through all of the available process types in the CommandMap.
 	for t, cmd := range cm {
-		p := New(t, cmd)
+		p := NewProcess(t, cmd)
 
 		if existing, found := pm[t]; found {
 			// If the existing ProcessMap already had a process

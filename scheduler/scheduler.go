@@ -8,7 +8,6 @@ import (
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/schema"
-	"github.com/remind101/empire/images"
 )
 
 // JobName represents the (unique) name of a job. The convention is <app>.<type>.<instance>:
@@ -16,10 +15,16 @@ import (
 //	my-sweet-app.v1.web.1
 type JobName string
 
+// Image represents a container image, which is tied to a repository.
+type Image struct {
+	Repo string
+	ID   string
+}
+
 // Execute represents a command to execute inside and image.
 type Execute struct {
 	Command string
-	Image   images.Image
+	Image   Image
 }
 
 // Job is a job that can be scheduled.
@@ -208,7 +213,7 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 	}
 }
 
-func image(i images.Image) string {
+func image(i Image) string {
 	return fmt.Sprintf("quay.io/%s:%s", i.Repo, i.ID)
 }
 

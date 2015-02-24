@@ -7,10 +7,6 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
-	"github.com/remind101/empire/apps"
-	"github.com/remind101/empire/configs"
-	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/repos"
 )
 
 // Decoder represents a function that can decode a request into an interface
@@ -138,8 +134,8 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	d, err := h.DeploysService.Deploy(&images.Image{
-		Repo: repos.Repo(form.Image.Repo),
+	d, err := h.DeploysService.Deploy(&Image{
+		Repo: Repo(form.Image.Repo),
 		ID:   form.Image.ID,
 	})
 	if err != nil {
@@ -165,7 +161,7 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	app, err := apps.New(apps.Name(form.Name), repos.Repo(form.Repo))
+	app, err := NewApp(AppName(form.Name), Repo(form.Repo))
 	if err != nil {
 		return http.StatusBadRequest, nil, err
 	}
@@ -184,7 +180,7 @@ type PostConfigs struct {
 }
 
 type PostConfigsForm struct {
-	Vars configs.Vars `json:"vars"`
+	Vars Vars `json:"vars"`
 }
 
 func (h *PostConfigs) Serve(req *Request) (int, interface{}, error) {
@@ -194,7 +190,7 @@ func (h *PostConfigs) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	name := apps.Name(req.Vars["app"])
+	name := AppName(req.Vars["app"])
 
 	a, err := h.AppsService.FindByName(name)
 	if err != nil {

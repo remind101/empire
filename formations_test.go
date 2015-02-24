@@ -1,13 +1,11 @@
 package empire
 
-import "github.com/remind101/empire/formations"
-
 type mockFormationsRepository struct {
-	FindFunc   func(formations.ID) (*formations.Formation, error)
-	CreateFunc func(*formations.Formation) (*formations.Formation, error)
+	FindFunc   func(FormationID) (*Formation, error)
+	CreateFunc func(*Formation) (*Formation, error)
 }
 
-func (r *mockFormationsRepository) Find(id formations.ID) (*formations.Formation, error) {
+func (r *mockFormationsRepository) Find(id FormationID) (*Formation, error) {
 	if r.FindFunc != nil {
 		return r.FindFunc(id)
 	}
@@ -15,7 +13,7 @@ func (r *mockFormationsRepository) Find(id formations.ID) (*formations.Formation
 	return nil, nil
 }
 
-func (r *mockFormationsRepository) Create(formation *formations.Formation) (*formations.Formation, error) {
+func (r *mockFormationsRepository) Create(formation *Formation) (*Formation, error) {
 	if r.CreateFunc != nil {
 		return r.CreateFunc(formation)
 	}

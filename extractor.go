@@ -1,4 +1,4 @@
-package slugs
+package empire
 
 import (
 	"archive/tar"
@@ -8,10 +8,13 @@ import (
 	"os"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/images"
-	"github.com/remind101/empire/processes"
-	"github.com/remind101/empire/repos"
 	"gopkg.in/yaml.v2"
+)
+
+var (
+	// DefaultProcfilePath is the default path where Procfiles will be
+	// extracted from the container.
+	DefaultProcfilePath = "/home/app/Procfile"
 )
 
 // Extractor represents an object that can extract the process types from an
@@ -19,7 +22,7 @@ import (
 type Extractor interface {
 	// Extract takes a repo in the form `remind101/r101-api`, and an image
 	// id, and extracts the process types from the image.
-	Extract(*images.Image) (processes.CommandMap, error)
+	Extract(*Image) (CommandMap, error)
 }
 
 // NewExtractor returns a new Extractor instance.
@@ -47,11 +50,11 @@ func newExtractor() *extractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *extractor) Extract(image *images.Image) (processes.CommandMap, error) {
-	pm := make(processes.CommandMap)
+func (e *extractor) Extract(image *Image) (CommandMap, error) {
+	pm := make(CommandMap)
 
 	// Just return some fake processes.
-	pm[processes.Type("web")] = processes.Command("./bin/web")
+	pm[ProcessType("web")] = Command("./bin/web")
 
 	return pm, nil
 }
@@ -80,8 +83,8 @@ type ProcfileExtractor struct {
 }
 
 // Extract implements Extractor Extract.
-func (e *ProcfileExtractor) Extract(image *images.Image) (processes.CommandMap, error) {
-	pm := make(processes.CommandMap)
+func (e *ProcfileExtractor) Extract(image *Image) (CommandMap, error) {
+	pm := make(CommandMap)
 
 	repo := e.fullRepo(image.Repo)
 	if err := e.pullImage(repo, image.ID); err != nil {
@@ -111,7 +114,7 @@ func (e *ProcfileExtractor) Extract(image *images.Image) (processes.CommandMap, 
 // But the fully qualified repo for the official docker registry is:
 //
 //	ejholmes/docker-statsd
-func (e *ProcfileExtractor) fullRepo(repo repos.Repo) string {
+func (e *ProcfileExtractor) fullRepo(repo Repo) string {
 	if e.Registry != "" {
 		return e.Registry + "/" + string(repo)
 	}
@@ -219,8 +222,8 @@ func (e *ProcfileError) Error() string {
 
 // ParseProcfile takes a byte slice representing a YAML Procfile and parses it
 // into a processes.CommandMap.
-func ParseProcfile(b []byte) (processes.CommandMap, error) {
-	pm := make(processes.CommandMap)
+func ParseProcfile(b []byte) (CommandMap, error) {
+	pm := make(CommandMap)
 
 	if err := yaml.Unmarshal(b, &pm); err != nil {
 		return pm, err

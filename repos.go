@@ -1,3 +1,3 @@
-package repos
+package empire
 
 type Repo string
