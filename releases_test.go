@@ -10,19 +10,32 @@ import (
 )
 
 func TestReleasesServiceCreate(t *testing.T) {
+	var scheduled bool
+
 	app := &apps.App{}
 	config := &configs.Config{}
 	slug := &slugs.Slug{}
 
 	f := &mockFormationsRepository{}
 	r := &mockReleasesRepository{}
+	m := &mockManager{
+		ScheduleReleaseFunc: func(release *releases.Release) error {
+			scheduled = true
+			return nil
+		},
+	}
 	s := &releasesService{
 		Repository:           r,
 		FormationsRepository: f,
+		Manager:              m,
 	}
 
 	if _, err := s.Create(app, config, slug); err != nil {
 		t.Fatal(err)
+	}
+
+	if got, want := scheduled, true; got != want {
+		t.Fatal("Expected a release to be created")
 	}
 }
 

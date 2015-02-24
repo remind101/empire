@@ -19,13 +19,15 @@ type ReleasesService interface {
 type releasesService struct {
 	releases.Repository
 	FormationsRepository formations.Repository
+	Manager              Manager
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(options Options) (ReleasesService, error) {
+func NewReleasesService(options Options, m Manager) (ReleasesService, error) {
 	return &releasesService{
 		Repository:           releases.NewRepository(),
 		FormationsRepository: formations.NewRepository(),
+		Manager:              m,
 	}, nil
 }
 
@@ -42,6 +44,16 @@ func (s *releasesService) Create(app *apps.App, config *configs.Config, slug *sl
 		Config:    config,
 		Slug:      slug,
 		Formation: formation,
+	}
+
+	r, err = s.Repository.Create(r)
+	if err != nil {
+		return r, err
+	}
+
+	// Schedule the new release onto the cluster.
+	if err := s.Manager.ScheduleRelease(r); err != nil {
+		return r, err
 	}
 
 	return s.Repository.Create(r)

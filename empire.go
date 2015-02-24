@@ -50,12 +50,12 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	releases, err := NewReleasesService(options)
+	manager, err := NewManager(options)
 	if err != nil {
 		return nil, err
 	}
 
-	manager, err := NewManager(options)
+	releases, err := NewReleasesService(options, manager)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,6 @@ func New(options Options) (*Empire, error) {
 		configs,
 		slugs,
 		releases,
-		manager,
 	)
 	if err != nil {
 		return nil, err
