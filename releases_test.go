@@ -14,11 +14,11 @@ func TestReleasesServiceCreate(t *testing.T) {
 	config := &configs.Config{}
 	slug := &slugs.Slug{}
 
-	f := &mockFormationsService{}
+	f := &mockFormationsRepository{}
 	r := &mockReleasesRepository{}
 	s := &releasesService{
-		Repository:        r,
-		FormationsService: f,
+		Repository:           r,
+		FormationsRepository: f,
 	}
 
 	if _, err := s.Create(app, config, slug); err != nil {

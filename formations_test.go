@@ -22,7 +22,3 @@ func (r *mockFormationsRepository) Create(formation *formations.Formation) (*for
 
 	return formation, nil
 }
-
-type mockFormationsService struct {
-	mockFormationsRepository
-}

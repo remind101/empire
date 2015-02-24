@@ -18,14 +18,14 @@ type ReleasesService interface {
 // releasesService is a base implementation of the ReleasesService interface.
 type releasesService struct {
 	releases.Repository
-	FormationsService FormationsService
+	FormationsRepository formations.Repository
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(options Options, f FormationsService) (ReleasesService, error) {
+func NewReleasesService(options Options) (ReleasesService, error) {
 	return &releasesService{
-		Repository:        releases.NewRepository(),
-		FormationsService: f,
+		Repository:           releases.NewRepository(),
+		FormationsRepository: formations.NewRepository(),
 	}, nil
 }
 
@@ -63,5 +63,5 @@ func (s *releasesService) createFormation(app *apps.App, slug *slugs.Slug) (*for
 		Processes: processes.NewProcessMap(p, slug.ProcessTypes),
 	}
 
-	return s.FormationsService.Create(formation)
+	return s.FormationsRepository.Create(formation)
 }
