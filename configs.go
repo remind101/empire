@@ -49,9 +49,7 @@ type ConfigsRepository interface {
 }
 
 func NewConfigsRepository() ConfigsRepository {
-	return &configsRepository{
-		s: stores.NewMemStore(),
-	}
+	return &configsRepository{stores.NewMemStore()}
 }
 
 func NewEtcdConfigsRepository(ns string) (ConfigsRepository, error) {
@@ -59,9 +57,7 @@ func NewEtcdConfigsRepository(ns string) (ConfigsRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &configsRepository{
-		s: s,
-	}, nil
+	return &configsRepository{s}, nil
 }
 
 // configsRepository is an in memory implementation of the Repository.

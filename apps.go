@@ -44,8 +44,8 @@ func NewApp(name AppName, repo Repo) (*App, error) {
 	}, nil
 }
 
-// NewFromRepo returns a new App initialized from the name of a Repo.
-func NewFromRepo(repo Repo) (*App, error) {
+// NewAppFromRepo returns a new App initialized from the name of a Repo.
+func NewAppFromRepo(repo Repo) (*App, error) {
 	name := NewAppNameFromRepo(repo)
 	return NewApp(name, repo)
 }
@@ -137,7 +137,7 @@ func (s *appsService) FindOrCreateByRepo(repo Repo) (*App, error) {
 
 	// If the app wasn't found, create a new up linked to this repo.
 	if a == nil {
-		a, err := NewFromRepo(repo)
+		a, err := NewAppFromRepo(repo)
 		if err != nil {
 			return a, err
 		}
