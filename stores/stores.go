@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"sync"
 )
 
 type Store interface {
@@ -13,6 +14,7 @@ type Store interface {
 }
 
 type memStore struct {
+	sync.Mutex
 	store map[string][]byte
 }
 
@@ -21,6 +23,9 @@ func NewMemStore() *memStore {
 }
 
 func (s *memStore) Get(k string, v interface{}) error {
+	s.Lock()
+	defer s.Unlock()
+
 	if b, ok := s.store[k]; ok {
 		return json.Unmarshal(b, v)
 	}
@@ -29,6 +34,9 @@ func (s *memStore) Get(k string, v interface{}) error {
 }
 
 func (s *memStore) Set(k string, v interface{}) error {
+	s.Lock()
+	defer s.Unlock()
+
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -39,6 +47,9 @@ func (s *memStore) Set(k string, v interface{}) error {
 }
 
 func (s *memStore) List(k string, v interface{}) error {
+	s.Lock()
+	defer s.Unlock()
+
 	t := reflect.TypeOf(v)
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Slice {
 		return errors.New("v must be a pointer to a slice")
