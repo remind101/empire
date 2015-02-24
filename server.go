@@ -2,6 +2,7 @@ package empire
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/codegangsta/negroni"
@@ -75,6 +76,7 @@ func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			v = &ErrorResource{Err: err.Error()}
 		}
+		log.Printf("Error: %v\n", v)
 	}
 
 	w.WriteHeader(status)
