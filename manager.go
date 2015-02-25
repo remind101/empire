@@ -78,6 +78,9 @@ func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
 type Manager interface {
 	// ScheduleRelease schedules a release onto the cluster.
 	ScheduleRelease(*Release) error
+
+	// ScaleRelease scales a release based on a process quantity map.
+	ScaleRelease(*Release, ProcessQuantityMap) error
 }
 
 // manager is a base implementation of the Manager interface.
@@ -185,6 +188,56 @@ func (m *manager) unscheduleMulti(jobs []*Job) error {
 
 func (m *manager) unschedule(j *Job) error {
 	return m.Scheduler.Unschedule(j.JobName())
+}
+
+// ScaleRelease takes a release and process quantity map, and
+// schedules/unschedules jobs to make the formation match the quantity map
+func (m *manager) ScaleRelease(release *Release, qm ProcessQuantityMap) error {
+	pm := release.Formation.Processes
+
+	for t, q := range qm {
+		if p, ok := pm[t]; ok {
+			if err := m.scaleProcess(release, t, p, q); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q int) error {
+	// Scale up
+	if p.Quantity < q {
+		for i := p.Quantity + 1; i <= q; i++ {
+			err := m.schedule(
+				&Job{
+					App:         release.App.Name,
+					Release:     release.Version,
+					ProcessType: t,
+					Instance:    i,
+					Environment: release.Config.Vars,
+					Image:       *release.Slug.Image,
+					Command:     p.Command,
+				},
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Scale down
+	if p.Quantity > q {
+		for i := p.Quantity; i >= q; i-- {
+			err := m.Scheduler.Unschedule(newJobName(release.App.Name, release.Version, t, i))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // newJobName returns a new Name with the proper format.

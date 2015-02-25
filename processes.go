@@ -1,8 +1,11 @@
 package empire
 
+// ProcessQuantityMap represents a map of process types to quantities
+type ProcessQuantityMap map[ProcessType]int
+
 // DefaultQuantities maps a process type to the default number of instances to
 // run.
-var DefaultQuantities = map[ProcessType]int{
+var DefaultQuantities = ProcessQuantityMap{
 	"web": 1,
 }
 
