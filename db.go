@@ -6,10 +6,14 @@ import (
 	"github.com/remind101/empire/db"
 )
 
-// DB represents an interface for performaing queries against a SQL db.
+// DB represents an interface for performing queries against a SQL db.
 type DB interface {
 	// Insert inserts a record.
 	Insert(interface{}) error
+
+	// Select performs a query and populates the interface with the
+	// returned records. interface must be a pointer to a slice
+	Select(interface{}, string, ...interface{}) error
 
 	// SelectOne performs a query and populates the interface with the
 	// returned record.
