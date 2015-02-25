@@ -52,6 +52,20 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	slugsRepository, err := NewSlugsRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	extractor, err := NewExtractor(
+		options.Docker.Socket,
+		options.Docker.Registry,
+		options.Docker.CertPath,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	appsRepository, err := NewAppsRepository(db)
 	if err != nil {
 		return nil, err
@@ -82,7 +96,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	slugs, err := NewSlugsService(options)
+	slugs, err := NewSlugsService(slugsRepository, extractor)
 	if err != nil {
 		return nil, err
 	}
