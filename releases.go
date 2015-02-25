@@ -30,7 +30,7 @@ type Release struct {
 // retrieving releases.
 type ReleasesRepository interface {
 	Create(*Release) (*Release, error)
-	FindByAppID(AppName) ([]*Release, error)
+	FindByAppName(AppName) ([]*Release, error)
 	Head(AppName) (*Release, error)
 }
 
@@ -94,7 +94,7 @@ func (r *releasesRepository) Create(release *Release) (*Release, error) {
 	return release, nil
 }
 
-func (r *releasesRepository) FindByAppID(id AppName) ([]*Release, error) {
+func (r *releasesRepository) FindByAppName(id AppName) ([]*Release, error) {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -121,6 +121,9 @@ func (r *releasesRepository) Head(id AppName) (*Release, error) {
 type ReleasesService interface {
 	// Create creates a new release.
 	Create(*App, *Config, *Slug) (*Release, error)
+
+	// Find existing releases for an app
+	FindByApp(*App) ([]*Release, error)
 }
 
 // releasesService is a base implementation of the ReleasesService interface.
@@ -165,6 +168,10 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 	}
 
 	return s.Repository.Create(r)
+}
+
+func (s *releasesService) FindByApp(a *App) ([]*Release, error) {
+	return s.Repository.FindByAppName(a.Name)
 }
 
 func (s *releasesService) createFormation(app *App, slug *Slug) (*Formation, error) {
