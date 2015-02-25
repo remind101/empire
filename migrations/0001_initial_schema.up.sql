@@ -7,7 +7,7 @@ CREATE TABLE apps (
 );
 
 CREATE TABLE configs (
-  version text NOT NULL primary key,
+  id text NOT NULL primary key,
   app_id text NOT NULL references apps(name),
   vars hstore
 );

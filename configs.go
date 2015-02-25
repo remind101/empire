@@ -2,10 +2,11 @@ package empire
 
 import (
 	"crypto/sha1"
+	"database/sql"
 	"fmt"
 	"sort"
 
-	"github.com/remind101/empire/stores"
+	"github.com/lib/pq/hstore"
 )
 
 // ConfigVersion represents a unique identifier for a Config version.
@@ -14,8 +15,9 @@ type ConfigVersion string
 // Config represents a collection of environment variables.
 type Config struct {
 	Version ConfigVersion `json:"version"`
-	App     *App          `json:"app"`
 	Vars    Vars          `json:"vars"`
+
+	App *App `json:"app"`
 }
 
 // NewConfig initializes a new config based on the old config, with the new
@@ -42,70 +44,98 @@ type ConfigsRepository interface {
 	Head(AppName) (*Config, error)
 
 	// Version returns the specific version of a Config for an app.
-	Version(AppName, ConfigVersion) (*Config, error)
+	Find(ConfigVersion) (*Config, error)
 
 	// Store stores the Config for the app.
 	Push(*Config) (*Config, error)
 }
 
-func NewConfigsRepository() ConfigsRepository {
-	return &configsRepository{stores.NewMemStore()}
+func NewConfigsRepository(db DB) (ConfigsRepository, error) {
+	return &configsRepository{db}, nil
 }
 
-func NewEtcdConfigsRepository(ns string) (ConfigsRepository, error) {
-	s, err := stores.NewEtcdStore(ns)
-	if err != nil {
-		return nil, err
-	}
-	return &configsRepository{s}, nil
+// dbConfig is the databse representation of a Config.
+type dbConfig struct {
+	ID    string        `db:"id"`
+	Vars  hstore.Hstore `db:"vars"`
+	AppID string        `db:"app_id"`
 }
 
-// configsRepository is an in memory implementation of the Repository.
+// configsRepository is an implementation of the ConfigsRepository interface backed by
+// a DB.
 type configsRepository struct {
-	s stores.Store
+	DB
 }
 
 // Head implements Repository Head.
 func (r *configsRepository) Head(appName AppName) (*Config, error) {
-	c := &Config{}
-
-	if ok, err := r.s.Get(keyHead(appName), c); err != nil || !ok {
-		return nil, err
-	}
-
-	return c, nil
+	return r.findBy("app_id", string(appName))
 }
 
-// Version implements Repository Version.
-func (r *configsRepository) Version(appName AppName, version ConfigVersion) (*Config, error) {
-	c := &Config{}
-
-	if ok, err := r.s.Get(keyVersion(appName, version), c); err != nil || !ok {
-		return nil, err
-	}
-
-	return c, nil
+// Find implements Repository Find.
+func (r *configsRepository) Find(version ConfigVersion) (*Config, error) {
+	return r.findBy("version", string(version))
 }
 
 // Push implements Repository Push.
 func (r *configsRepository) Push(config *Config) (*Config, error) {
-	if err := r.s.Set(keyVersion(config.App.Name, config.Version), config); err != nil {
+	c := fromConfig(config)
+
+	if err := r.DB.Insert(c); err != nil {
 		return config, err
 	}
 
-	if err := r.s.Set(keyHead(config.App.Name), config); err != nil {
-		return config, err
+	return toConfig(c, config), nil
+}
+
+func (r *configsRepository) findBy(field string, v interface{}) (*Config, error) {
+	var c dbConfig
+
+	if err := r.DB.SelectOne(&c, `select * from configs where `+field+` = $1 limit 1`, v); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
 	}
 
-	return config, nil
+	return toConfig(&c, nil), nil
 }
 
-func keyHead(appName AppName) string {
-	return fmt.Sprintf("%s/head", appName)
+func fromConfig(config *Config) *dbConfig {
+	vars := make(map[string]sql.NullString)
+
+	for k, v := range config.Vars {
+		vars[string(k)] = sql.NullString{
+			Valid:  true,
+			String: v,
+		}
+	}
+
+	return &dbConfig{
+		ID:    string(config.Version),
+		AppID: string(config.App.Name),
+		Vars: hstore.Hstore{
+			Map: vars,
+		},
+	}
 }
 
-func keyVersion(appName AppName, version ConfigVersion) string {
-	return fmt.Sprintf("%s/%s", appName, version)
+func toConfig(c *dbConfig, config *Config) *Config {
+	if config == nil {
+		config = &Config{}
+	}
+
+	vars := make(Vars)
+
+	for k, v := range c.Vars.Map {
+		vars[Variable(k)] = v.String
+	}
+
+	config.Version = ConfigVersion(c.ID)
+	config.Vars = vars
+
+	return config
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a
@@ -162,9 +192,9 @@ type configsService struct {
 }
 
 // NewConfigsService returns a new Service instance.
-func NewConfigsService(options Options) (ConfigsService, error) {
+func NewConfigsService(r ConfigsRepository) (ConfigsService, error) {
 	return &configsService{
-		Repository: NewConfigsRepository(),
+		Repository: r,
 	}, nil
 }
 
