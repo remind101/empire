@@ -13,8 +13,7 @@ before_install:
   - go install -a -race std
   - go get github.com/tools/godep
   - export PATH=$HOME/gopath/bin:$PATH
-  - make cmd
-  - ./build/empire migrate
+  - make bootstrap
 
 script:
   - go test -race ./...
