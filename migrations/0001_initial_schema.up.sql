@@ -2,19 +2,19 @@ CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE apps (
-  name varchar(255) NOT NULL primary key,
-  repo varchar(255) NOT NULL
+  name varchar(30) NOT NULL primary key,
+  repo text NOT NULL
 );
 
 CREATE TABLE configs (
   version text NOT NULL primary key,
-  app_id varchar(255) NOT NULL references apps(name),
+  app_id text NOT NULL references apps(name),
   vars hstore
 );
 
 CREATE TABLE releases (
   id uuid NOT NULL primary key,
-  app_id varchar(255) NOT NULL references apps(name),
+  app_id text NOT NULL references apps(name),
   version int NOT NULL
 );
 
@@ -26,7 +26,7 @@ CREATE TABLE formations (
 CREATE TABLE processes (
   id uuid NOT NULL primary key,
   formation_id uuid NOT NULL references formations(id),
-  "type" varchar(255) NOT NULL,
+  "type" text NOT NULL,
   quantity int NOT NULL,
   command text NOT NULL
 );
