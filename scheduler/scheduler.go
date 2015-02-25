@@ -61,9 +61,6 @@ type Scheduler interface {
 	// Schedule schedules a job to run on the cluster.
 	Schedule(*Job) error
 
-	// ScheduleMulti schedules multiple jobs to run on the cluster.
-	ScheduleMulti([]*Job) error
-
 	// Unschedule unschedules a job from the cluster by its name.
 	Unschedule(JobName) error
 }
@@ -86,11 +83,6 @@ func newScheduler() *scheduler {
 
 // Schedule implements Scheduler Schedule.
 func (s *scheduler) Schedule(j *Job) error {
-	return nil
-}
-
-// ScheduleMulti implements Scheduler ScheduleMulti.
-func (s *scheduler) ScheduleMulti(jobs []*Job) error {
 	return nil
 }
 
@@ -131,16 +123,6 @@ func newFleetScheduler(fleet string) (*FleetScheduler, error) {
 func (s *FleetScheduler) Schedule(j *Job) error {
 	u := s.buildUnit(j)
 	return s.client.CreateUnit(u)
-}
-
-func (s *FleetScheduler) ScheduleMulti(jobs []*Job) error {
-	for _, j := range jobs {
-		if err := s.Schedule(j); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (s *FleetScheduler) Unschedule(n JobName) error {
