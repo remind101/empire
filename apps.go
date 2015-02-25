@@ -52,6 +52,7 @@ func NewAppFromRepo(repo Repo) (*App, error) {
 // AppsRepository represents a repository for creating and finding Apps.
 type AppsRepository interface {
 	Create(*App) (*App, error)
+	FindAll() ([]*App, error)
 	FindByName(AppName) (*App, error)
 	FindByRepo(Repo) (*App, error)
 }
@@ -85,6 +86,20 @@ func (r *appsRepository) Create(app *App) (*App, error) {
 	return toApp(a, app), nil
 }
 
+func (r *appsRepository) FindAll() ([]*App, error) {
+	var dbapps []*dbApp
+	if err := r.Select(&dbapps, `select * from apps order by name`); err != nil {
+		return nil, err
+	}
+
+	apps := make([]*App, len(dbapps))
+	for i, a := range dbapps {
+		apps[i] = toApp(a, nil)
+	}
+
+	return apps, nil
+}
+
 func (r *appsRepository) FindByName(name AppName) (*App, error) {
 	return r.findBy("name", string(name))
 }
@@ -96,7 +111,7 @@ func (r *appsRepository) FindByRepo(repo Repo) (*App, error) {
 func (r *appsRepository) findBy(field string, v interface{}) (*App, error) {
 	var a dbApp
 
-	if err := r.DB.SelectOne(&a, `select * from apps where `+field+` = $1 limit 1`, v); err != nil {
+	if err := r.SelectOne(&a, `select * from apps where `+field+` = $1 limit 1`, v); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

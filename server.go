@@ -88,9 +88,15 @@ type Server struct {
 func NewServer(e *Empire) *Server {
 	r := newRouter()
 
-	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService})
-	r.Handle("POST", "/apps", &PostApps{e.AppsService})
-	r.Handle("PATCH", "/apps/{app}/configs", &PostConfigs{e.AppsService, e.ConfigsService})
+	// Apps
+	r.Handle("GET", "/apps", &GetApps{e.AppsService})   // List apps
+	r.Handle("POST", "/apps", &PostApps{e.AppsService}) // Create a new app
+
+	// Deploys
+	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
+
+	// Configs
+	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ConfigsService}) // Update an app config
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -111,6 +117,48 @@ func newRouter() *router {
 // Handle sets up a route for a Handler.
 func (r *router) Handle(method, path string, h Handler) {
 	r.Router.Handle(path, &Endpoint{Handler: h}).Methods(method)
+}
+
+type GetApps struct {
+	AppsService AppsService
+}
+
+func (h *GetApps) Serve(req *Request) (int, interface{}, error) {
+	apps, err := h.AppsService.FindAll()
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 200, apps, nil
+}
+
+type PostAppsForm struct {
+	Name string `json:"name"`
+	Repo string `json:"repo"`
+}
+
+type PostApps struct {
+	AppsService AppsService
+}
+
+func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
+	var form PostAppsForm
+
+	if err := req.Decode(&form); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	app, err := NewApp(AppName(form.Name), Repo(form.Repo))
+	if err != nil {
+		return http.StatusBadRequest, nil, err
+	}
+
+	a, err := h.AppsService.Create(app)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 201, a, nil
 }
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
@@ -145,46 +193,17 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 	return 201, d, nil
 }
 
-type PostAppsForm struct {
-	Name string `json:"name"`
-	Repo string `json:"repo"`
-}
-
-type PostApps struct {
-	AppsService AppsService
-}
-
-func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
-	var form PostAppsForm
-
-	if err := req.Decode(&form); err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-
-	app, err := NewApp(AppName(form.Name), Repo(form.Repo))
-	if err != nil {
-		return http.StatusBadRequest, nil, err
-	}
-
-	a, err := h.AppsService.Create(app)
-	if err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-
-	return 201, a, nil
-}
-
-type PostConfigs struct {
+type PatchConfigs struct {
 	AppsService    AppsService
 	ConfigsService ConfigsService
 }
 
-type PostConfigsForm struct {
+type PatchConfigsForm struct {
 	Vars Vars `json:"vars"`
 }
 
-func (h *PostConfigs) Serve(req *Request) (int, interface{}, error) {
-	var form PostConfigsForm
+func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
+	var form PatchConfigsForm
 
 	if err := req.Decode(&form); err != nil {
 		return http.StatusInternalServerError, nil, err

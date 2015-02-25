@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	_ "github.com/lib/pq"
-	"gopkg.in/gorp.v1"
+	gorp "gopkg.in/gorp.v1"
 )
 
 type DB struct {
@@ -48,6 +48,11 @@ func (db *DB) AddTableWithName(v interface{}, name string) interface {
 
 func (db *DB) Insert(v interface{}) error {
 	return db.dbmap.Insert(v)
+}
+
+func (db *DB) Select(v interface{}, query string, args ...interface{}) error {
+	_, err := db.dbmap.Select(v, query, args...)
+	return err
 }
 
 func (db *DB) SelectOne(v interface{}, query string, args ...interface{}) error {
