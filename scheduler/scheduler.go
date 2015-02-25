@@ -126,7 +126,7 @@ func (s *FleetScheduler) Schedule(j *Job) error {
 }
 
 func (s *FleetScheduler) Unschedule(n JobName) error {
-	return s.client.DestroyUnit(string(n))
+	return s.client.DestroyUnit(string(n) + ".service")
 }
 
 // buildUnit builds a Unit file that looks like this:
