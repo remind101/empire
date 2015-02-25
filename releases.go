@@ -131,17 +131,17 @@ type ReleasesService interface {
 
 // releasesService is a base implementation of the ReleasesService interface.
 type releasesService struct {
-	Repository           ReleasesRepository
-	FormationsRepository FormationsRepository
-	Manager              Manager
+	ReleasesRepository
+	FormationsService
+	Manager
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(options Options, m Manager) (ReleasesService, error) {
+func NewReleasesService(options Options, f FormationsService, m Manager) (ReleasesService, error) {
 	return &releasesService{
-		Repository:           NewReleasesRepository(),
-		FormationsRepository: NewFormationsRepository(),
-		Manager:              m,
+		ReleasesRepository: NewReleasesRepository(),
+		FormationsService:  f,
+		Manager:            m,
 	}, nil
 }
 
@@ -160,7 +160,7 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 		Formation: formation,
 	}
 
-	r, err = s.Repository.Create(r)
+	r, err = s.ReleasesRepository.Create(r)
 	if err != nil {
 		return r, err
 	}
@@ -170,20 +170,20 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 		return r, err
 	}
 
-	return s.Repository.Create(r)
+	return s.ReleasesRepository.Create(r)
 }
 
 func (s *releasesService) FindByApp(a *App) ([]*Release, error) {
-	return s.Repository.FindByAppName(a.Name)
+	return s.ReleasesRepository.FindByAppName(a.Name)
 }
 
 func (s *releasesService) Head(app *App) (*Release, error) {
-	return s.Repository.Head(app.Name)
+	return s.ReleasesRepository.Head(app.Name)
 }
 
 func (s *releasesService) createFormation(app *App, slug *Slug) (*Formation, error) {
 	// Get the old release, so we can copy the Formation.
-	old, err := s.Repository.Head(app.Name)
+	old, err := s.ReleasesRepository.Head(app.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -197,5 +197,5 @@ func (s *releasesService) createFormation(app *App, slug *Slug) (*Formation, err
 		Processes: NewProcessMap(p, slug.ProcessTypes),
 	}
 
-	return s.FormationsRepository.Create(formation)
+	return s.FormationsService.Create(formation)
 }

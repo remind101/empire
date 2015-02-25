@@ -12,19 +12,19 @@ CREATE TABLE configs (
   vars hstore
 );
 
+CREATE TABLE formations (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key
+);
+
 CREATE TABLE releases (
   id uuid NOT NULL primary key,
   app_id text NOT NULL references apps(name),
+  formation_id uuid NOT NULL references formations(id),
   version int NOT NULL
 );
 
-CREATE TABLE formations (
-  id uuid NOT NULL primary key,
-  release_id uuid NOT NULL references releases(id)
-);
-
 CREATE TABLE processes (
-  id uuid NOT NULL primary key,
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   formation_id uuid NOT NULL references formations(id),
   "type" text NOT NULL,
   quantity int NOT NULL,

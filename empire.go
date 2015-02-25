@@ -76,6 +76,21 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	processesRepository, err := NewProcessesRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	formationsRepository, err := NewFormationsRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	formations, err := NewFormationsService(formationsRepository, processesRepository)
+	if err != nil {
+		return nil, err
+	}
+
 	apps, err := NewAppsService(appsRepository)
 	if err != nil {
 		return nil, err
@@ -91,7 +106,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	releases, err := NewReleasesService(options, manager)
+	releases, err := NewReleasesService(options, formations, manager)
 	if err != nil {
 		return nil, err
 	}

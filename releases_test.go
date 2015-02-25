@@ -20,9 +20,9 @@ func TestReleasesServiceCreate(t *testing.T) {
 		},
 	}
 	s := &releasesService{
-		Repository:           r,
-		FormationsRepository: f,
-		Manager:              m,
+		ReleasesRepository: r,
+		FormationsService:  f,
+		Manager:            m,
 	}
 
 	if _, err := s.Create(app, config, slug); err != nil {
