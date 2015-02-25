@@ -1,7 +1,8 @@
 package empire
 
 import (
-	"strconv"
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/remind101/empire/stores"
 )
 
 // FormationID represents a unique identifier for a Formation.
@@ -24,29 +25,43 @@ type FormationsRepository interface {
 	Create(*Formation) (*Formation, error)
 }
 
+// NewFormationsRepository returns a FormationsRepository backed by an in memory store
 func NewFormationsRepository() FormationsRepository {
-	return newFormationsRepository()
+	return &formationsRepository{stores.NewMemStore()}
+}
+
+// NewEtcdFormationsRepository returns a FormationsRepository backed by etcd
+func NewEtcdFormationsRepository(ns string) (FormationsRepository, error) {
+	s, err := stores.NewEtcdStore(ns)
+	if err != nil {
+		return nil, err
+	}
+	return &formationsRepository{s}, nil
 }
 
 type formationsRepository struct {
-	formations map[FormationID]*Formation
-	id         int
-}
-
-func newFormationsRepository() *formationsRepository {
-	return &formationsRepository{
-		formations: make(map[FormationID]*Formation),
-	}
+	s stores.Store
 }
 
 func (r *formationsRepository) Find(id FormationID) (*Formation, error) {
-	return r.formations[id], nil
+	f := &Formation{}
+
+	if ok, err := r.s.Get(string(id), f); err != nil || !ok {
+		return nil, err
+	}
+
+	return f, nil
 }
 
 func (r *formationsRepository) Create(formation *Formation) (*Formation, error) {
-	r.id++
+	// TODO make formation.ID `App.ID + Release.Version`
+	if formation.ID == "" {
+		formation.ID = FormationID(uuid.NewRandom())
+	}
 
-	formation.ID = FormationID(strconv.Itoa(r.id))
+	if err := r.s.Set(string(formation.ID), formation); err != nil {
+		return formation, err
+	}
 
 	return formation, nil
 }

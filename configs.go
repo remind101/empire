@@ -69,7 +69,7 @@ type configsRepository struct {
 func (r *configsRepository) Head(appName AppName) (*Config, error) {
 	c := &Config{}
 
-	if ok, err := r.s.Get(keyHead(appName), c); err != nil || !ok {
+	if ok, err := r.s.Get(r.keyHead(appName), c); err != nil || !ok {
 		return nil, err
 	}
 
@@ -80,7 +80,7 @@ func (r *configsRepository) Head(appName AppName) (*Config, error) {
 func (r *configsRepository) Version(appName AppName, version ConfigVersion) (*Config, error) {
 	c := &Config{}
 
-	if ok, err := r.s.Get(keyVersion(appName, version), c); err != nil || !ok {
+	if ok, err := r.s.Get(r.keyVersion(appName, version), c); err != nil || !ok {
 		return nil, err
 	}
 
@@ -89,22 +89,22 @@ func (r *configsRepository) Version(appName AppName, version ConfigVersion) (*Co
 
 // Push implements Repository Push.
 func (r *configsRepository) Push(config *Config) (*Config, error) {
-	if err := r.s.Set(keyVersion(config.App.Name, config.Version), config); err != nil {
+	if err := r.s.Set(r.keyVersion(config.App.Name, config.Version), config); err != nil {
 		return config, err
 	}
 
-	if err := r.s.Set(keyHead(config.App.Name), config); err != nil {
+	if err := r.s.Set(r.keyHead(config.App.Name), config); err != nil {
 		return config, err
 	}
 
 	return config, nil
 }
 
-func keyHead(appName AppName) string {
+func (r *configsRepository) keyHead(appName AppName) string {
 	return fmt.Sprintf("%s/head", appName)
 }
 
-func keyVersion(appName AppName, version ConfigVersion) string {
+func (r *configsRepository) keyVersion(appName AppName, version ConfigVersion) string {
 	return fmt.Sprintf("%s/%s", appName, version)
 }
 

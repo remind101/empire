@@ -1,8 +1,9 @@
 package empire
 
 import (
-	"strconv"
-	"sync"
+	"code.google.com/p/go-uuid/uuid"
+
+	"github.com/remind101/empire/stores"
 )
 
 // SlugID represents the unique identifier of a Slug.
@@ -22,64 +23,58 @@ type SlugsRepository interface {
 	FindByImage(*Image) (*Slug, error)
 }
 
-// NewSlugsRepository returns a new Repository instance.
-func NewSlugsRepository() (SlugsRepository, error) {
-	return newSlugsRepository(), nil
-}
-
-// slugsRepository is a fake implementation of the Repository interface.
 type slugsRepository struct {
-	id int
-
-	sync.RWMutex
-	slugs map[SlugID]*Slug
+	s stores.Store
 }
 
-// newSlugsRepository returns a new repository instance.
-func newSlugsRepository() *slugsRepository {
-	return &slugsRepository{
-		slugs: make(map[SlugID]*Slug),
+func NewSlugsRepository() (SlugsRepository, error) {
+	return &slugsRepository{stores.NewMemStore()}, nil
+}
+
+func NewEtcdSlugsRepository(ns string) (SlugsRepository, error) {
+	s, err := stores.NewEtcdStore(ns)
+	if err != nil {
+		return nil, err
 	}
+	return &slugsRepository{s}, nil
 }
 
 // Create implements Repository Create.
 func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
-	r.Lock()
-	defer r.Unlock()
+	slug.ID = SlugID(uuid.NewRandom())
 
-	r.id++
-	slug.ID = SlugID(strconv.Itoa(r.id))
-	r.slugs[slug.ID] = slug
+	if err := r.s.Set(string(slug.ID), slug); err != nil {
+		return nil, err
+	}
+
 	return slug, nil
 }
 
 // FindByID implements Repository FindByID.
 func (r *slugsRepository) FindByID(id SlugID) (*Slug, error) {
-	r.RLock()
-	defer r.RUnlock()
+	s := &Slug{}
 
-	return r.slugs[id], nil
+	if ok, err := r.s.Get(string(id), s); err != nil || !ok {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (r *slugsRepository) FindByImage(image *Image) (*Slug, error) {
-	r.RLock()
-	defer r.RUnlock()
+	slugs := make([]*Slug, 0)
 
-	for _, slug := range r.slugs {
+	if err := r.s.List("", &slugs); err != nil {
+		return nil, err
+	}
+
+	for _, slug := range slugs {
 		if *slug.Image == *image {
 			return slug, nil
 		}
 	}
 
 	return nil, nil
-}
-
-func (r *slugsRepository) Reset() {
-	r.Lock()
-	defer r.Unlock()
-
-	r.slugs = make(map[SlugID]*Slug)
-	r.id = 0
 }
 
 // SlugsService is a service for interacting with slugs.
