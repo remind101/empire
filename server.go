@@ -101,6 +101,9 @@ func NewServer(e *Empire) *Server {
 	// Configs
 	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ConfigsService}) // Update an app config
 
+	// Formations
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.Manager}) // Batch update formation
+
 	n := negroni.Classic()
 	n.UseHandler(r)
 
@@ -254,4 +257,54 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	return 200, c, nil
+}
+
+type PatchFormation struct {
+	AppsService     AppsService
+	ReleasesService ReleasesService
+	Manager         Manager
+}
+
+type PatchFormationForm struct {
+	Updates []struct {
+		Process  string `json:"process"` // Refers to process type
+		Quantity int    `json:"quantity"`
+		Size     string `json:"size"`
+	} `json:"updates"`
+}
+
+func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
+	var form PatchFormationForm
+
+	if err := req.Decode(&form); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	name := AppName(req.Vars["app"])
+
+	a, err := h.AppsService.FindByName(name)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	if a == nil {
+		return http.StatusNotFound, nil, nil
+	}
+
+	qm := ProcessQuantityMap{}
+	for _, up := range form.Updates {
+		qm[ProcessType(up.Process)] = up.Quantity
+	}
+
+	r, err := h.ReleasesService.Head(a)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	err = h.Manager.ScaleRelease(r, qm)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 200, nil, nil
 }
