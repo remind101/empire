@@ -19,12 +19,31 @@ var Commands = []cli.Command{
 				Value: "8080",
 				Usage: "The port to run the server on",
 			},
-		}, EmpireFlags...),
+		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
+	},
+	{
+		Name:  "migrate",
+		Usage: "Migrate the database",
+		Flags: append([]cli.Flag{
+			cli.StringFlag{
+				Name:  "path",
+				Value: "./migrations",
+				Usage: "Path to database migrations",
+			},
+		}, DBFlags...),
+		Action: runMigrate,
 	},
 }
 
-// Flags related to empire.Options.
+var DBFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:  "db",
+		Value: "postgres://localhost/empire?sslmode=disable",
+		Usage: "SQL connection string for the database",
+	},
+}
+
 var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   "docker.socket",
@@ -68,6 +87,7 @@ func empireOptions(c *cli.Context) empire.Options {
 	opts.Docker.Registry = c.String("docker.registry")
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Fleet.API = c.String("fleet.api")
+	opts.DB = c.String("db")
 
 	return opts
 }

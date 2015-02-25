@@ -16,8 +16,16 @@ type TestClient struct {
 }
 
 func NewTestClient(t testing.TB) *TestClient {
-	e, err := empire.New(empire.DefaultOptions)
+	opts := empire.Options{
+		DB: "postgres://localhost/empire?sslmode=disable",
+	}
+
+	e, err := empire.New(opts)
 	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := e.Reset(); err != nil {
 		t.Fatal(err)
 	}
 

@@ -1,5 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
+import "github.com/mattes/migrate/migrate"
+
 // DefaultOptions is a default Options instance that can be passed when
 // intializing a new Empire.
 var DefaultOptions = Options{}
@@ -26,10 +28,15 @@ type FleetOptions struct {
 type Options struct {
 	Docker DockerOptions
 	Fleet  FleetOptions
+
+	// Database connection string.
+	DB string
 }
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
+	DB DB
+
 	AppsService
 	ConfigsService
 	DeploysService
@@ -40,7 +47,17 @@ type Empire struct {
 
 // New returns a new Empire instance.
 func New(options Options) (*Empire, error) {
-	apps, err := NewAppsService(options)
+	db, err := NewDB(options.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	appsRepository, err := NewAppsRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
+	apps, err := NewAppsService(appsRepository)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +94,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
+		DB:              db,
 		AppsService:     apps,
 		ConfigsService:  configs,
 		DeploysService:  deploys,
@@ -84,4 +102,14 @@ func New(options Options) (*Empire, error) {
 		SlugsService:    slugs,
 		ReleasesService: releases,
 	}, nil
+}
+
+func (e *Empire) Reset() error {
+	_, err := e.DB.Exec(`TRUNCATE TABLE apps CASCADE`)
+	return err
+}
+
+// Migrate runs the migrations.
+func Migrate(db, path string) ([]error, bool) {
+	return migrate.UpSync(db, path)
 }

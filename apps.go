@@ -1,11 +1,10 @@
 package empire
 
 import (
+	"database/sql"
 	"errors"
 	"regexp"
 	"strings"
-
-	"github.com/remind101/empire/stores"
 )
 
 var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
@@ -57,55 +56,67 @@ type AppsRepository interface {
 	FindByRepo(Repo) (*App, error)
 }
 
+// dbApp represents the db representation of an app.
+type dbApp struct {
+	Name string `db:"name"`
+	Repo string `db:"repo"`
+}
+
+// appsRepository is an implementation of the AppsRepository interface backed by
+// a DB.
 type appsRepository struct {
-	s stores.Store
+	DB
 }
 
-func NewAppsRepository() AppsRepository {
-	return &appsRepository{stores.NewMemStore()}
-}
-
-func NewEtcdAppsRepository(ns string) (AppsRepository, error) {
-	s, err := stores.NewEtcdStore(ns)
-	if err != nil {
-		return nil, err
-	}
-	return &appsRepository{s}, nil
+func NewAppsRepository(db DB) (AppsRepository, error) {
+	return &appsRepository{db}, nil
 }
 
 func (r *appsRepository) Create(app *App) (*App, error) {
-	err := r.s.Set(string(app.Name), app)
-	return app, err
+	a := &dbApp{
+		Name: string(app.Name),
+		Repo: string(app.Repo),
+	}
+
+	if err := r.DB.Insert(a); err != nil {
+		return app, err
+	}
+
+	return toApp(a, app), nil
 }
 
 func (r *appsRepository) FindByName(name AppName) (*App, error) {
-	apps := make([]*App, 0)
-	if err := r.s.List("", &apps); err != nil {
-		return nil, err
-	}
-
-	for _, app := range apps {
-		if app.Name == name {
-			return app, nil
-		}
-	}
-
-	return nil, nil
+	return r.findBy("name", string(name))
 }
 
 func (r *appsRepository) FindByRepo(repo Repo) (*App, error) {
-	apps := make([]*App, 0)
-	if err := r.s.List("", &apps); err != nil {
+	return r.findBy("repo", string(repo))
+}
+
+func (r *appsRepository) findBy(field string, v interface{}) (*App, error) {
+	var a dbApp
+
+	if err := r.DB.SelectOne(&a, `select * from apps where `+field+` = $1 limit 1`, v); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
-	for _, app := range apps {
-		if app.Repo == repo {
-			return app, nil
-		}
+	return toApp(&a, nil), nil
+}
+
+// toApp maps a dbApp to an App.
+func toApp(a *dbApp, app *App) *App {
+	if app == nil {
+		app = &App{}
 	}
 
-	return nil, nil
+	app.Name = AppName(a.Name)
+	app.Repo = Repo(a.Repo)
+
+	return app
 }
 
 // AppsService represents a service for interacting with Apps.
@@ -123,9 +134,9 @@ type appsService struct {
 }
 
 // NewAppsService returns a new Service instance.
-func NewAppsService(options Options) (AppsService, error) {
+func NewAppsService(r AppsRepository) (AppsService, error) {
 	return &appsService{
-		AppsRepository: NewAppsRepository(),
+		AppsRepository: r,
 	}, nil
 }
 

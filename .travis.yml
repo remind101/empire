@@ -1,5 +1,11 @@
 language: go
 
+addons:
+  postgresql: "9.3"
+
+services:
+  - postgresql
+
 go:
   - 1.4
 
@@ -7,6 +13,8 @@ before_install:
   - go install -a -race std
   - go get github.com/tools/godep
   - export PATH=$HOME/gopath/bin:$PATH
+  - make cmd
+  - ./build/empire migrate
 
 script:
   - go test -race ./...
