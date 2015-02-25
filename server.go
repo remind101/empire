@@ -89,11 +89,14 @@ func NewServer(e *Empire) *Server {
 	r := newRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", &GetApps{e.AppsService})   // List apps
+	r.Handle("GET", "/apps", &GetApps{e.AppsService})   // List existing apps
 	r.Handle("POST", "/apps", &PostApps{e.AppsService}) // Create a new app
 
 	// Deploys
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
+
+	// Releases
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.ReleasesService}) // List existing releases
 
 	// Configs
 	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ConfigsService}) // Update an app config
@@ -191,6 +194,21 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	return 201, d, nil
+}
+
+type GetReleases struct {
+	ReleasesService ReleasesService
+}
+
+func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
+	name := AppName(req.Vars["app"])
+
+	rels, err := h.ReleasesService.FindByAppName(name)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 200, rels, nil
 }
 
 type PatchConfigs struct {
