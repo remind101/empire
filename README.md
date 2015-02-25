@@ -5,12 +5,23 @@ away from Heroku.
 
 ## Usage
 
+Running the server:
+
 ```console
-Usage of ./build/empire:
-  -docker.cert="": Path to certificate to use for TLS.
-  -docker.registry="": The docker registry to pull container images from. Leave blank to use the official docker registry.
-  -docker.socket="tcp://localhost:2375": The docker socket to connect to the docker api. Leave blank to use a fake extractor.
-  -port="8080": The port to run the API on.
+empire $ empire server -h
+NAME:
+   server - Run the empire HTTP api
+
+USAGE:
+   command server [command options] [arguments...]
+
+OPTIONS:
+   --port '8080'                                        The port to run the server on
+   --docker.socket 'unix:///var/run/docker.sock'        The location of the docker api [$DOCKER_HOST]
+   --docker.registry                                    The docker registry to pull container images from [$DOCKER_HOST]
+   --docker.cert                                        If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
+   --fleet.api 'http://127.0.0.1:49153'                 The location of the fleet api
+
 ```
 
 ## Components
