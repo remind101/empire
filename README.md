@@ -8,7 +8,7 @@ away from Heroku.
 Running the server:
 
 ```console
-empire $ empire server -h
+$ empire server -h
 NAME:
    server - Run the empire HTTP api
 
@@ -21,6 +21,7 @@ OPTIONS:
    --docker.registry                                    The docker registry to pull container images from [$DOCKER_HOST]
    --docker.cert                                        If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
    --fleet.api 'http://127.0.0.1:49153'                 The location of the fleet api
+   --db 'postgres://localhost/empire?sslmode=disable'   SQL connection string for the database
 
 ```
 
@@ -47,7 +48,17 @@ applications in a compute cluster. The following components are employed:
 
 ## Development
 
-**TODO**
+To get started, run:
+
+```console
+$ make bootstrap
+```
+
+To run the tests:
+
+```console
+$ godep go test ./...
+```
 
 ## How do I deploy to Empire?
 

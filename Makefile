@@ -11,5 +11,9 @@ doc:
 	prmd verify doc/schema/schema.json
 	prmd doc doc/schema/schema.json > doc/schema/schema.md
 
+bootstrap: cmd
+	createdb empire
+	./build/empire migrate
+
 build: Dockerfile
 	docker build --no-cache -t empire .

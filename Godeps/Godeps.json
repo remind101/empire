@@ -10,6 +10,11 @@
 			"Rev": "5c5c9e5ec21508be656c201ec53c68cd882d36fb"
 		},
 		{
+			"ImportPath": "code.google.com/p/snappy-go/snappy",
+			"Comment": "null-15",
+			"Rev": "12e4b4183793ac4b061921e7980845e750679fd0"
+		},
+		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.6.4-12-g467d9d5",
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
@@ -187,9 +192,23 @@
 			"Rev": "5da2a37ecfb5bcb921a36dbc18e912c3235f139a"
 		},
 		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-86-g7d52f0f",
+			"Rev": "7d52f0fc9e81d12e0d0a2f8b6749fb96058d73d4"
+		},
+		{
+			"ImportPath": "github.com/gocql/gocql",
+			"Comment": "go1.1-300-ga979e19",
+			"Rev": "a979e19e22d3b5dbc46550892fe5d37e74c84599"
+		},
+		{
 			"ImportPath": "github.com/godbus/dbus",
 			"Comment": "0-11-gcfab99a",
 			"Rev": "cfab99a9500db4ba03067996059d2fc425090bf3"
+		},
+		{
+			"ImportPath": "github.com/golang/groupcache/lru",
+			"Rev": "8b25adc0f62632c810997cb38c21111a3f256bf4"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -207,6 +226,31 @@
 		{
 			"ImportPath": "github.com/jonboulle/clockwork",
 			"Rev": "b473f398c464f1988327f67c9e6aa7fba62f80d2"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-22-g73672c2",
+			"Rev": "73672c22431294bd2d012742dfc488523cc631bd"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/driver",
+			"Comment": "v1.2.0-29-gcd2c561",
+			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/file",
+			"Comment": "v1.2.0-29-gcd2c561",
+			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/migrate",
+			"Comment": "v1.2.0-29-gcd2c561",
+			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/pipe",
+			"Comment": "v1.2.0-29-gcd2c561",
+			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
 		},
 		{
 			"ImportPath": "github.com/rakyll/globalconf",
@@ -237,8 +281,17 @@
 			"Rev": "d3edb0282bde692467788c50070a9211afe75cf3"
 		},
 		{
+			"ImportPath": "gopkg.in/gorp.v1",
+			"Comment": "v1.7.1",
+			"Rev": "c87af80f3cc5036b55b83d77171e156791085e2e"
+		},
+		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "5d6f7e02b7cdad63b06ab3877915532cd30073b4"
+		},
+		{
+			"ImportPath": "speter.net/go/exp/math/dec/inf",
+			"Rev": "42ca6cd68aa922bc3f32f1e056e61b65945d9ad7"
 		}
 	]
 }
