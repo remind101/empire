@@ -57,12 +57,17 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	configsRepository, err := NewConfigsRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
 	apps, err := NewAppsService(appsRepository)
 	if err != nil {
 		return nil, err
 	}
 
-	configs, err := NewConfigsService(options)
+	configs, err := NewConfigsService(configsRepository)
 	if err != nil {
 		return nil, err
 	}

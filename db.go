@@ -34,6 +34,7 @@ func NewDB(uri string) (DB, error) {
 	}
 
 	db.AddTableWithName(dbApp{}, "apps")
+	db.AddTableWithName(dbConfig{}, "configs")
 
 	return db, nil
 }
