@@ -2,9 +2,11 @@ package empire
 
 import (
 	"fmt"
-	"strconv"
-	"sync"
 	"time"
+
+	"code.google.com/p/go-uuid/uuid"
+
+	"github.com/remind101/empire/stores"
 )
 
 // ReleaseID represents the unique identifier for a Release.
@@ -30,36 +32,33 @@ type Release struct {
 // retrieving releases.
 type ReleasesRepository interface {
 	Create(*Release) (*Release, error)
-	FindByAppID(AppName) ([]*Release, error)
+	FindByAppName(AppName) ([]*Release, error)
 	Head(AppName) (*Release, error)
 }
 
-// NewReleasesRepository is a factory method that returns a new Repository.
-func NewReleasesRepository() ReleasesRepository {
-	return newReleasesRepository()
-}
-
-// releasesRepository is an in-memory implementation of a Repository
 type releasesRepository struct {
-	sync.RWMutex
-	releases map[AppName][]*Release
-	versions map[AppName]int
-
+	s            stores.Store
 	genTimestamp func() time.Time
-	id           int
 }
 
-// Create a new repository
-func newReleasesRepository() *releasesRepository {
-	return &releasesRepository{
-		releases: make(map[AppName][]*Release),
-		versions: make(map[AppName]int),
+// NewReleasesRepository returns a new repository backed by an in memory store.
+func NewReleasesRepository() *releasesRepository {
+	return &releasesRepository{s: stores.NewMemStore()}
+}
+
+// NewEtcdReleasesRepository returns a new repository backed by etcd
+func NewEtcdReleasesRepository(ns string) (*releasesRepository, error) {
+	s, err := stores.NewEtcdStore(ns)
+	if err != nil {
+		return nil, err
 	}
+
+	return &releasesRepository{s: s}, nil
 }
 
 // Generates a repository that stubs out the CreatedAt field.
 func newFakeRepository() *releasesRepository {
-	r := newReleasesRepository()
+	r := NewReleasesRepository()
 	r.genTimestamp = func() time.Time {
 		return time.Date(2014, time.January, 1, 0, 0, 0, 0, time.UTC)
 	}
@@ -67,11 +66,6 @@ func newFakeRepository() *releasesRepository {
 }
 
 func (r *releasesRepository) Create(release *Release) (*Release, error) {
-	r.Lock()
-	defer r.Unlock()
-
-	r.id++
-
 	app := release.App
 
 	createdAt := time.Now()
@@ -79,42 +73,69 @@ func (r *releasesRepository) Create(release *Release) (*Release, error) {
 		createdAt = r.genTimestamp()
 	}
 
-	version := 1
-	if v, ok := r.versions[app.Name]; ok {
-		version = v
+	// If a version is found, version is set to it, otherwise it stays untouched
+	var version int
+	if _, err := r.s.Get(r.keyVersion(app.Name), &version); err != nil {
+		return nil, err
 	}
+	version++
 
-	release.ID = ReleaseID(strconv.Itoa(r.id))
+	release.ID = ReleaseID(uuid.NewRandom())
 	release.Version = ReleaseVersion(fmt.Sprintf("v%d", version))
 	release.CreatedAt = createdAt.UTC()
 
-	r.versions[app.Name] = version + 1
-	r.releases[app.Name] = append(r.releases[app.Name], release)
+	// Set the current version
+	if err := r.s.Set(r.keyVersion(app.Name), &version); err != nil {
+		return nil, err
+	}
+
+	// Set the head release
+	if err := r.s.Set(r.keyHead(app.Name), &release); err != nil {
+		return nil, err
+	}
+
+	// Set the release
+	if err := r.s.Set(r.keyByRelease(app.Name, release.Version), &release); err != nil {
+		return nil, err
+	}
 
 	return release, nil
 }
 
-func (r *releasesRepository) FindByAppID(id AppName) ([]*Release, error) {
-	r.RLock()
-	defer r.RUnlock()
+func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
+	rels := make([]*Release, 0)
 
-	if set, ok := r.releases[id]; ok {
-		return set, nil
+	if err := r.s.List(r.keyByApp(appName), &rels); err != nil {
+		return nil, err
 	}
 
-	return []*Release{}, nil
+	return rels, nil
 }
 
-func (r *releasesRepository) Head(id AppName) (*Release, error) {
-	r.RLock()
-	defer r.RUnlock()
+func (r *releasesRepository) Head(appName AppName) (*Release, error) {
+	rel := &Release{}
 
-	set, ok := r.releases[id]
-	if !ok {
-		return nil, nil
+	if ok, err := r.s.Get(r.keyHead(appName), rel); err != nil || !ok {
+		return nil, err
 	}
 
-	return set[len(set)-1], nil
+	return rel, nil
+}
+
+func (r *releasesRepository) keyVersion(appName AppName) string {
+	return fmt.Sprintf("%s/version", appName)
+}
+
+func (r *releasesRepository) keyHead(appName AppName) string {
+	return fmt.Sprintf("%s/head", appName)
+}
+
+func (r *releasesRepository) keyByApp(appName AppName) string {
+	return fmt.Sprintf("%s/versions/", appName)
+}
+
+func (r *releasesRepository) keyByRelease(appName AppName, v ReleaseVersion) string {
+	return fmt.Sprintf("%s/versions/%s", appName, v)
 }
 
 // ReleaseesService represents a service for interacting with Releases.
