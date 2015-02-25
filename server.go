@@ -99,7 +99,7 @@ func NewServer(e *Empire) *Server {
 	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService}) // List existing releases
 
 	// Configs
-	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ConfigsService}) // Update an app config
+	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService}) // Update an app config
 
 	// Formations
 	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.Manager}) // Batch update formation
@@ -225,8 +225,9 @@ func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PatchConfigs struct {
-	AppsService    AppsService
-	ConfigsService ConfigsService
+	AppsService     AppsService
+	ReleasesService ReleasesService
+	ConfigsService  ConfigsService
 }
 
 type PatchConfigsForm struct {
@@ -242,6 +243,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 
 	name := AppName(req.Vars["app"])
 
+	// Find app
 	a, err := h.AppsService.FindByName(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
@@ -251,9 +253,25 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
+	// Update the config
 	c, err := h.ConfigsService.Apply(a, form.Vars)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
+	}
+
+	// Find current release
+	r, err := h.ReleasesService.Head(a)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// If there is an existing release, create a new one
+	if r != nil {
+		// Create new release based on new config and old slug
+		_, err = h.ReleasesService.Create(a, c, r.Slug)
+		if err != nil {
+			return http.StatusInternalServerError, nil, err
+		}
 	}
 
 	return 200, c, nil
@@ -299,6 +317,10 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 	r, err := h.ReleasesService.Head(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
+	}
+
+	if r == nil {
+		return http.StatusNotFound, nil, nil
 	}
 
 	err = h.Manager.ScaleRelease(r, qm)
