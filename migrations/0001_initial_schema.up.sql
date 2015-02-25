@@ -13,9 +13,9 @@ CREATE TABLE configs (
 );
 
 CREATE TABLE releases (
-  id uuid NOT NULL primary key,
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   app_id text NOT NULL references apps(name),
-  version int NOT NULL
+  ver int NOT NULL
 );
 
 CREATE TABLE processes (

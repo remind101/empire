@@ -62,9 +62,13 @@ func TestEmpireDeploy(t *testing.T) {
 	o := client.DeployCreateOpts{}
 	o.Image.ID = "1234"
 	o.Image.Repo = "remind101/r101-api"
-	_, err := c.DeployCreate(o)
+	d, err := c.DeployCreate(o)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if d.Release.ID == "" {
+		t.Fatal("Expected a release id")
 	}
 }
 

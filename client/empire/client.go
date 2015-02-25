@@ -258,7 +258,7 @@ type Deploy struct {
 		Slug struct {
 			ID string `json:"id" url:"id,key"` // unique identifier of slug
 		} `json:"slug" url:"slug,key"`
-		Version string `json:"version" url:"version,key"` // an incremental identifier for the version
+		Version float64 `json:"version" url:"version,key"` // an incremental identifier for the version
 	} `json:"release" url:"release,key"`
 }
 type DeployCreateOpts struct {
@@ -286,8 +286,8 @@ type Procdef struct {
 	} `json:"release" url:"release,key"`
 }
 type Release struct {
-	ID      string `json:"id" url:"id,key"`           // unique identifier of release
-	Version string `json:"version" url:"version,key"` // an incremental identifier for the version
+	ID      string  `json:"id" url:"id,key"`           // unique identifier of release
+	Version float64 `json:"version" url:"version,key"` // an incremental identifier for the version
 }
 type Repo struct {
 	Name string `json:"name" url:"name,key"` // the name of the repo

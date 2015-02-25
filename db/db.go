@@ -40,14 +40,12 @@ func NewDB(uri string) (*DB, error) {
 	}, nil
 }
 
-func (db *DB) AddTableWithName(v interface{}, name string) interface {
-	SetKeys(isAutoIncr bool, fieldNames ...string) *gorp.TableMap
-} {
+func (db *DB) AddTableWithName(v interface{}, name string) *gorp.TableMap {
 	return db.dbmap.AddTableWithName(v, name)
 }
 
-func (db *DB) Insert(v interface{}) error {
-	return db.dbmap.Insert(v)
+func (db *DB) Insert(v ...interface{}) error {
+	return db.dbmap.Insert(v...)
 }
 
 func (db *DB) Select(v interface{}, query string, args ...interface{}) error {
@@ -63,6 +61,24 @@ func (db *DB) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return db.dbmap.Exec(query, args...)
 }
 
+func (db *DB) Begin() (*Transaction, error) {
+	t, err := db.dbmap.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{t}, nil
+}
+
 func (db *DB) Close() error {
 	return db.db.Close()
+}
+
+type Transaction struct {
+	*gorp.Transaction
+}
+
+func (t *Transaction) Select(v interface{}, query string, args ...interface{}) error {
+	_, err := t.Transaction.Select(v, query, args...)
+	return err
 }
