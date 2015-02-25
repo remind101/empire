@@ -1,6 +1,5 @@
-build/etcd_peers: main.go
-	mkdir -p build
-	go build -o build/etcd_peers main.go
+etcd_peers: etcd_peers.go
+	go build
 
 clean:
-	rm -rf build
+	rm -rf etcd_peers
