@@ -96,7 +96,7 @@ func NewServer(e *Empire) *Server {
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.ReleasesService}) // List existing releases
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService}) // List existing releases
 
 	// Configs
 	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ConfigsService}) // Update an app config
@@ -197,13 +197,23 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 }
 
 type GetReleases struct {
+	AppsService     AppsService
 	ReleasesService ReleasesService
 }
 
 func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 	name := AppName(req.Vars["app"])
 
-	rels, err := h.ReleasesService.FindByAppName(name)
+	a, err := h.AppsService.FindByName(name)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	if a == nil {
+		return http.StatusNotFound, nil, nil
+	}
+
+	rels, err := h.ReleasesService.FindByApp(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

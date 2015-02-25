@@ -123,7 +123,7 @@ type ReleasesService interface {
 	Create(*App, *Config, *Slug) (*Release, error)
 
 	// Find existing releases for an app
-	FindByAppName(AppName) ([]*Release, error)
+	FindByApp(*App) ([]*Release, error)
 }
 
 // releasesService is a base implementation of the ReleasesService interface.
@@ -170,8 +170,8 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 	return s.Repository.Create(r)
 }
 
-func (s *releasesService) FindByAppName(appName AppName) ([]*Release, error) {
-	return s.Repository.FindByAppName(appName)
+func (s *releasesService) FindByApp(a *App) ([]*Release, error) {
+	return s.Repository.FindByAppName(a.Name)
 }
 
 func (s *releasesService) createFormation(app *App, slug *Slug) (*Formation, error) {
