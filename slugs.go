@@ -1,8 +1,9 @@
 package empire
 
 import (
-	"strconv"
-	"sync"
+	"database/sql"
+
+	"github.com/lib/pq/hstore"
 )
 
 // SlugID represents the unique identifier of a Slug.
@@ -23,63 +24,93 @@ type SlugsRepository interface {
 }
 
 // NewSlugsRepository returns a new Repository instance.
-func NewSlugsRepository() (SlugsRepository, error) {
-	return newSlugsRepository(), nil
+func NewSlugsRepository(db DB) (SlugsRepository, error) {
+	return &slugsRepository{db}, nil
+}
+
+type dbSlug struct {
+	ID           string        `db:"id"`
+	ImageRepo    string        `db:"image_repo"`
+	ImageID      string        `db:"image_id"`
+	ProcessTypes hstore.Hstore `db:"process_types"`
 }
 
 // slugsRepository is a fake implementation of the Repository interface.
 type slugsRepository struct {
-	id int
-
-	sync.RWMutex
-	slugs map[SlugID]*Slug
-}
-
-// newSlugsRepository returns a new repository instance.
-func newSlugsRepository() *slugsRepository {
-	return &slugsRepository{
-		slugs: make(map[SlugID]*Slug),
-	}
+	DB
 }
 
 // Create implements Repository Create.
 func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
-	r.Lock()
-	defer r.Unlock()
+	s := fromSlug(slug)
 
-	r.id++
-	slug.ID = SlugID(strconv.Itoa(r.id))
-	r.slugs[slug.ID] = slug
-	return slug, nil
+	if err := r.DB.Insert(s); err != nil {
+		return slug, err
+	}
+
+	return toSlug(s, slug), nil
 }
 
 // FindByID implements Repository FindByID.
 func (r *slugsRepository) FindByID(id SlugID) (*Slug, error) {
-	r.RLock()
-	defer r.RUnlock()
+	var s dbSlug
 
-	return r.slugs[id], nil
+	if err := r.DB.SelectOne(&s, `select * from slugs where id = $1`, string(id)); err != nil {
+		return nil, err
+	}
+
+	return toSlug(&s, nil), nil
 }
 
 func (r *slugsRepository) FindByImage(image *Image) (*Slug, error) {
-	r.RLock()
-	defer r.RUnlock()
+	var s dbSlug
 
-	for _, slug := range r.slugs {
-		if *slug.Image == *image {
-			return slug, nil
+	if err := r.DB.SelectOne(&s, `select * from slugs where image_repo = $1 and image_id = $2`, string(image.Repo), string(image.ID)); err != nil {
+		return nil, err
+	}
+
+	return toSlug(&s, nil), nil
+}
+
+func fromSlug(slug *Slug) *dbSlug {
+	pt := make(map[string]sql.NullString)
+
+	for k, v := range slug.ProcessTypes {
+		pt[string(k)] = sql.NullString{
+			Valid:  true,
+			String: string(v),
 		}
 	}
 
-	return nil, nil
+	return &dbSlug{
+		ID:        string(slug.ID),
+		ImageRepo: string(slug.Image.Repo),
+		ImageID:   string(slug.Image.ID),
+		ProcessTypes: hstore.Hstore{
+			Map: pt,
+		},
+	}
 }
 
-func (r *slugsRepository) Reset() {
-	r.Lock()
-	defer r.Unlock()
+func toSlug(s *dbSlug, slug *Slug) *Slug {
+	if slug == nil {
+		slug = &Slug{}
+	}
 
-	r.slugs = make(map[SlugID]*Slug)
-	r.id = 0
+	cm := make(CommandMap)
+
+	for k, v := range s.ProcessTypes.Map {
+		cm[ProcessType(k)] = Command(v.String)
+	}
+
+	slug.ID = SlugID(s.ID)
+	slug.Image = &Image{
+		Repo: Repo(s.ImageRepo),
+		ID:   s.ImageRepo,
+	}
+	slug.ProcessTypes = cm
+
+	return slug
 }
 
 // SlugsService is a service for interacting with slugs.
@@ -96,21 +127,7 @@ type slugsService struct {
 }
 
 // NewSlugsService returns a new SlugsService instance.
-func NewSlugsService(options Options) (SlugsService, error) {
-	r, err := NewSlugsRepository()
-	if err != nil {
-		return nil, err
-	}
-
-	e, err := NewExtractor(
-		options.Docker.Socket,
-		options.Docker.Registry,
-		options.Docker.CertPath,
-	)
-	if err != nil {
-		return nil, err
-	}
-
+func NewSlugsService(r SlugsRepository, e Extractor) (SlugsService, error) {
 	return &slugsService{
 		Repository: r,
 		Extractor:  e,

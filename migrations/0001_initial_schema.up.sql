@@ -31,5 +31,12 @@ CREATE TABLE processes (
   command text NOT NULL
 );
 
+CREATE TABLE slugs (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  image_repo text NOT NULL,
+  image_id text NOT NULL,
+  process_types hstore NOT NULL
+);
+
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
 CREATE UNIQUE INDEX index_processes_on_formation_id_and_type ON processes USING btree (formation_id, "type");
