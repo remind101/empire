@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/remind101/empire/db"
 )
@@ -47,11 +48,17 @@ func NewDB(uri string) (DB, error) {
 	}
 
 	db.AddTableWithName(App{}, "apps")
-	db.AddTableWithName(dbConfig{}, "configs").SetKeys(true, "ID")
+	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
 	db.AddTableWithName(dbSlug{}, "slugs").SetKeys(true, "ID")
 	db.AddTableWithName(dbProcess{}, "processes").SetKeys(true, "ID")
 	db.AddTableWithName(dbRelease{}, "releases").SetKeys(true, "ID")
 	db.AddTableWithName(dbJob{}, "jobs").SetKeys(true, "ID")
 
 	return db, nil
+}
+
+func findBy(db Queryier, v interface{}, table, field string, value interface{}) error {
+	q := fmt.Sprintf(`select * from %s where %s = $1 limit 1`, table, field)
+
+	return db.SelectOne(v, q, value)
 }

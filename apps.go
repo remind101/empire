@@ -91,25 +91,11 @@ func (r *appsRepository) FindAll() ([]*App, error) {
 }
 
 func (r *appsRepository) FindByName(name AppName) (*App, error) {
-	return r.findBy("name", string(name))
+	return FindAppBy(r.DB, "name", string(name))
 }
 
 func (r *appsRepository) FindByRepo(repo Repo) (*App, error) {
-	return r.findBy("repo", string(repo))
-}
-
-func (r *appsRepository) findBy(field string, v interface{}) (*App, error) {
-	var app App
-
-	if err := r.SelectOne(&app, `select * from apps where `+field+` = $1 limit 1`, v); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return &app, nil
+	return FindAppBy(r.DB, "repo", string(repo))
 }
 
 // CreateApp inserts the app into the database.
@@ -121,6 +107,21 @@ func CreateApp(db Inserter, app *App) (*App, error) {
 func AllApps(db Queryier) ([]*App, error) {
 	var apps []*App
 	return apps, db.Select(&apps, `select * from apps order by name`)
+}
+
+// FindAppBy finds an app by a field.
+func FindAppBy(db Queryier, field string, value interface{}) (*App, error) {
+	var app App
+
+	if err := findBy(db, &app, "apps", field, value); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &app, nil
 }
 
 // AppsService represents a service for interacting with Apps.

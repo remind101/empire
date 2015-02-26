@@ -70,7 +70,7 @@ func TestConfigsServiceApply(t *testing.T) {
 		t.Fatal("Expected the config to be pushed")
 	}
 
-	if got, want := config.App, app; !reflect.DeepEqual(got, want) {
+	if got, want := config.AppName, app.Name; got != want {
 		t.Fatal("Expected App to be set on config")
 	}
 }
