@@ -37,7 +37,6 @@ func NewDB(uri string) (DB, error) {
 	db.AddTableWithName(dbConfig{}, "configs")
 	db.AddTableWithName(dbSlug{}, "slugs").SetKeys(true, "ID")
 	db.AddTableWithName(dbProcess{}, "processes").SetKeys(true, "ID")
-	db.AddTableWithName(dbFormation{}, "formations").SetKeys(true, "ID")
 
 	return db, nil
 }

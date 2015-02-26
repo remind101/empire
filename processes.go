@@ -21,14 +21,14 @@ type Process struct {
 	Quantity int     `json:"quantity"`
 	Command  Command `json:"command"`
 
-	Formation *Formation `json:"-"`
+	Release *Release `json:"-"`
 }
 
 // CommandMap maps a process ProcessType to a Command.
 type CommandMap map[ProcessType]Command
 
-// ProcessMap maps a process ProcessType to a Process.
-type ProcessMap map[ProcessType]*Process
+// Formation maps a process ProcessType to a Process.
+type Formation map[ProcessType]*Process
 
 // NewProcess returns a new Process instance.
 func NewProcess(t ProcessType, cmd Command) *Process {
@@ -38,17 +38,17 @@ func NewProcess(t ProcessType, cmd Command) *Process {
 	}
 }
 
-// NewProcessMap creates a new ProcessMap based on an existing ProcessMap and
+// NewFormation creates a new Formation based on an existing Formation and
 // the available processes from a CommandMap.
-func NewProcessMap(pm ProcessMap, cm CommandMap) ProcessMap {
-	processes := make(ProcessMap)
+func NewFormation(f Formation, cm CommandMap) Formation {
+	processes := make(Formation)
 
 	// Iterate through all of the available process types in the CommandMap.
 	for t, cmd := range cm {
 		p := NewProcess(t, cmd)
 
-		if existing, found := pm[t]; found {
-			// If the existing ProcessMap already had a process
+		if existing, found := f[t]; found {
+			// If the existing Formation already had a process
 			// configuration for this process type, copy over the
 			// instance count.
 			p.Quantity = existing.Quantity
@@ -66,7 +66,7 @@ type ProcessesRepository interface {
 	Create(ProcessType, *Process) (ProcessType, *Process, error)
 
 	// All returns the Processes that belong to a Formation.
-	All(FormationID) (ProcessMap, error)
+	All(ReleaseID) (Formation, error)
 }
 
 // NewProcessesRepository returns a new ProcessesRepository instance.
@@ -76,11 +76,11 @@ func NewProcessesRepository(db DB) (ProcessesRepository, error) {
 
 // dbProcess is the database representation of a Process.
 type dbProcess struct {
-	ID          string `db:"id"`
-	FormationID string `db:"formation_id"`
-	Type        string `db:"type"`
-	Quantity    int64  `db:"quantity"`
-	Command     string `db:"command"`
+	ID        string `db:"id"`
+	ReleaseID string `db:"release_id"`
+	Type      string `db:"type"`
+	Quantity  int64  `db:"quantity"`
+	Command   string `db:"command"`
 }
 
 // processesRepository is an implementation of the AppsRepository interface backed by
@@ -100,30 +100,30 @@ func (r *processesRepository) Create(t ProcessType, process *Process) (ProcessTy
 	return t, process, nil
 }
 
-// All a ProcessMap for a Formation.
-func (r *processesRepository) All(id FormationID) (ProcessMap, error) {
+// All a Formation for a Formation.
+func (r *processesRepository) All(id ReleaseID) (Formation, error) {
 	var ps []*dbProcess
 
-	if err := r.DB.Select(`select * from processes where formation_id = $1`, string(id)); err != nil {
+	if err := r.DB.Select(`select * from processes where release_id = $1`, string(id)); err != nil {
 		return nil, err
 	}
 
-	pm := make(ProcessMap)
+	f := make(Formation)
 
 	for _, p := range ps {
 		t, process := toProcess(p, nil)
-		pm[t] = process
+		f[t] = process
 	}
 
-	return pm, nil
+	return f, nil
 }
 
 func fromProcess(t ProcessType, process *Process) *dbProcess {
 	return &dbProcess{
-		FormationID: string(process.Formation.ID),
-		Type:        string(t),
-		Quantity:    int64(process.Quantity),
-		Command:     string(process.Command),
+		ReleaseID: string(process.Release.ID),
+		Type:      string(t),
+		Quantity:  int64(process.Quantity),
+		Command:   string(process.Command),
 	}
 }
 
@@ -134,7 +134,7 @@ func toProcess(p *dbProcess, process *Process) (ProcessType, *Process) {
 
 	process.Quantity = int(p.Quantity)
 	process.Command = Command(p.Command)
-	process.Formation = &Formation{ID: FormationID(p.FormationID)}
+	process.Release = &Release{ID: ReleaseID(p.ReleaseID)}
 
 	return ProcessType(p.Type), process
 }

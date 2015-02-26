@@ -116,7 +116,7 @@ func (m *manager) ScheduleRelease(release *Release) error {
 		release.Version,
 		*release.Slug.Image,
 		release.Config.Vars,
-		release.Formation.Processes,
+		release.Formation,
 	)
 
 	if len(existing) > len(jobs) {
@@ -193,10 +193,10 @@ func (m *manager) unschedule(j *Job) error {
 // ScaleRelease takes a release and process quantity map, and
 // schedules/unschedules jobs to make the formation match the quantity map
 func (m *manager) ScaleRelease(release *Release, qm ProcessQuantityMap) error {
-	pm := release.Formation.Processes
+	f := release.Formation
 
 	for t, q := range qm {
-		if p, ok := pm[t]; ok {
+		if p, ok := f[t]; ok {
 			if err := m.scaleProcess(release, t, p, q); err != nil {
 				return err
 			}
@@ -245,11 +245,11 @@ func newJobName(name AppName, v ReleaseVersion, t ProcessType, i int) scheduler.
 	return scheduler.JobName(fmt.Sprintf("%s.%s.%s.%d", name, v, t, i))
 }
 
-func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, pm ProcessMap) []*Job {
+func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, f Formation) []*Job {
 	var jobs []*Job
 
 	// Build jobs for each process type
-	for t, p := range pm {
+	for t, p := range f {
 		// Build a Job for each instance of the process.
 		for i := 1; i <= p.Quantity; i++ {
 			j := &Job{

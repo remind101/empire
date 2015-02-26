@@ -12,20 +12,15 @@ CREATE TABLE configs (
   vars hstore
 );
 
-CREATE TABLE formations (
-  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key
-);
-
 CREATE TABLE releases (
   id uuid NOT NULL primary key,
   app_id text NOT NULL references apps(name),
-  formation_id uuid NOT NULL references formations(id),
   version int NOT NULL
 );
 
 CREATE TABLE processes (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  formation_id uuid NOT NULL references formations(id),
+  release_id text NOT NULL,
   "type" text NOT NULL,
   quantity int NOT NULL,
   command text NOT NULL
@@ -39,5 +34,5 @@ CREATE TABLE slugs (
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
-CREATE UNIQUE INDEX index_processes_on_formation_id_and_type ON processes USING btree (formation_id, "type");
+CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
 CREATE UNIQUE INDEX index_slugs_on_image_repo_and_image_id ON slugs USING btree (image_repo, image_id);
