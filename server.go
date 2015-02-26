@@ -89,8 +89,11 @@ func NewServer(e *Empire) *Server {
 	r := newRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", &GetApps{e.AppsService})   // hk apps
-	r.Handle("POST", "/apps", &PostApps{e.AppsService}) // hk create
+	r.Handle("GET", "/apps", &GetApps{e.AppsService})               // hk apps
+	r.Handle("GET", "/organizations/apps", &GetApps{e.AppsService}) // hk apps
+
+	r.Handle("POST", "/apps", &PostApps{e.AppsService})               // hk create
+	r.Handle("POST", "/organizations/apps", &PostApps{e.AppsService}) // hk create
 
 	// Deploys
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
