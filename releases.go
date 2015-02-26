@@ -86,7 +86,7 @@ func (r *releasesRepository) Head(appName AppName) (*Release, error) {
 func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
 	var rs []*dbRelease
 
-	if err := r.DB.Select(rs, `select * from releases where app_id = $1 order by id desc limit 1`, string(appName)); err != nil {
+	if err := r.DB.Select(rs, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
 		return nil, nil
 	}
 
@@ -112,7 +112,7 @@ func lastVersion(db Queryier, appName AppName) (version int64, err error) {
 func headRelease(db Queryier, appName AppName) (*Release, error) {
 	var rl dbRelease
 
-	if err := db.SelectOne(&rl, `select * from releases where app_id = $1 order by id desc limit 1`, string(appName)); err != nil {
+	if err := db.SelectOne(&rl, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
