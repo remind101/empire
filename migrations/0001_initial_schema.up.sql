@@ -12,25 +12,27 @@ CREATE TABLE configs (
   vars hstore
 );
 
-CREATE TABLE releases (
-  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name),
-  version int NOT NULL
-);
-
-CREATE TABLE processes (
-  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  release_id text NOT NULL,
-  "type" text NOT NULL,
-  quantity int NOT NULL,
-  command text NOT NULL
-);
-
 CREATE TABLE slugs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   image_repo text NOT NULL,
   image_id text NOT NULL,
   process_types hstore NOT NULL
+);
+
+CREATE TABLE releases (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  app_id text NOT NULL references apps(name),
+  config_id uuid NOT NULL references configs(id),
+  slug_id uuid NOT NULL references slugs(id),
+  version int NOT NULL
+);
+
+CREATE TABLE processes (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  release_id uuid NOT NULL references releases(id),
+  "type" text NOT NULL,
+  quantity int NOT NULL,
+  command text NOT NULL
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);

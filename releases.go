@@ -40,9 +40,11 @@ func NewReleasesRepository(db DB) (ReleasesRepository, error) {
 
 // dbRelease is a db representation of a release.
 type dbRelease struct {
-	ID    *string `db:"id"`
-	AppID string  `db:"app_id"`
-	Ver   int64   `db:"version"` // Ver because Version is reserved in gorp for optimistic locking.
+	ID       *string `db:"id"`
+	Ver      int64   `db:"version"` // Ver because Version is reserved in gorp for optimistic locking.
+	AppID    string  `db:"app_id"`
+	ConfigID string  `db:"config_id"`
+	SlugID   string  `db:"slug_id"`
 }
 
 // releasesRepository is an implementation of the ReleasesRepository interface backed by
@@ -125,9 +127,11 @@ func fromRelease(release *Release) *dbRelease {
 	id := string(release.ID)
 
 	return &dbRelease{
-		ID:    &id,
-		AppID: string(release.App.Name),
-		Ver:   int64(release.Version),
+		ID:       &id,
+		Ver:      int64(release.Version),
+		AppID:    string(release.App.Name),
+		ConfigID: string(release.Config.ID),
+		SlugID:   string(release.Slug.ID),
 	}
 }
 
@@ -137,8 +141,19 @@ func toRelease(r *dbRelease, release *Release) *Release {
 	}
 
 	release.ID = ReleaseID(*r.ID)
-	release.App = &App{Name: AppName(r.AppID)}
 	release.Version = ReleaseVersion(r.Ver)
+
+	if release.App == nil {
+		release.App = &App{Name: AppName(r.AppID)}
+	}
+
+	if release.Config == nil {
+		release.Config = &Config{ID: ConfigID(r.ConfigID)}
+	}
+
+	if release.Slug == nil {
+		release.Slug = &Slug{ID: SlugID(r.SlugID)}
+	}
 
 	return release
 }
