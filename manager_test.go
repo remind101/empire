@@ -197,6 +197,7 @@ func TestBuildJobs(t *testing.T) {
 type mockScheduler struct {
 	ScheduleFunc   func(*scheduler.Job) error
 	UnscheduleFunc func(scheduler.JobName) error
+	JobStatesFunc  func() ([]*scheduler.JobState, error)
 }
 
 func (s *mockScheduler) Schedule(j *scheduler.Job) error {
@@ -213,6 +214,14 @@ func (s *mockScheduler) Unschedule(n scheduler.JobName) error {
 	}
 
 	return nil
+}
+
+func (s *mockScheduler) JobStates() ([]*scheduler.JobState, error) {
+	if s.JobStatesFunc != nil {
+		return s.JobStatesFunc()
+	}
+
+	return nil, nil
 }
 
 type mockJobsRepository struct {
