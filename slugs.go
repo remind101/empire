@@ -1,6 +1,9 @@
 package empire
 
-import "database/sql/driver"
+import (
+	"database/sql/driver"
+	"fmt"
+)
 
 // SlugID represents the unique identifier of a Slug.
 type SlugID string
@@ -45,28 +48,28 @@ type slugsRepository struct {
 
 // Create implements Repository Create.
 func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
-	return slug, r.DB.Insert(slug)
+	return CreateSlug(r.DB, slug)
 }
 
 // Find implements Repository Find.
 func (r *slugsRepository) Find(id SlugID) (*Slug, error) {
-	var slug Slug
-
-	if err := r.DB.SelectOne(&slug, `select * from slugs where id = $1`, string(id)); err != nil {
-		return nil, err
-	}
-
-	return &slug, nil
+	return FindSlugBy(r.DB, "id", string(id))
 }
 
 func (r *slugsRepository) FindByImage(image Image) (*Slug, error) {
+	return FindSlugBy(r.DB, "image", image.String())
+}
+
+// CreateSlug inserts a Slug into the database.
+func CreateSlug(db Inserter, slug *Slug) (*Slug, error) {
+	return slug, db.Insert(slug)
+}
+
+// FindSlugBy finds a slug by a field.
+func FindSlugBy(db Queryier, field string, value interface{}) (*Slug, error) {
 	var slug Slug
-
-	if err := r.DB.SelectOne(&slug, `select * from slugs where image = $1`, image.String()); err != nil {
-		return nil, err
-	}
-
-	return &slug, nil
+	q := fmt.Sprintf(`select * from slugs where %s = $1`, field)
+	return &slug, db.SelectOne(&slug, q, value)
 }
 
 // SlugsService is a service for interacting with slugs.
