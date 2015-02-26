@@ -2,11 +2,26 @@ package empire
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"time"
 )
 
 // ReleaseID represents the unique identifier for a Release.
 type ReleaseID string
+
+// Scan implements the sql.Scanner interface.
+func (r *ReleaseID) Scan(src interface{}) error {
+	if src, ok := src.([]byte); ok {
+		*r = ReleaseID(src)
+	}
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (r ReleaseID) Value() (driver.Value, error) {
+	return driver.Value(string(r)), nil
+}
 
 // ReleaseVersion represents the auto incremented human friendly version number of the
 // release.
@@ -237,10 +252,10 @@ func (s *releasesService) createFormation(release *Release) (Formation, error) {
 
 	f := NewFormation(existing, release.Slug.ProcessTypes)
 
-	for t, p := range f {
-		p.Release = release
+	for _, p := range f {
+		p.ReleaseID = release.ID
 
-		if _, _, err := s.ProcessesRepository.Create(t, p); err != nil {
+		if _, err := s.ProcessesRepository.Create(p); err != nil {
 			return f, err
 		}
 	}
