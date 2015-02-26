@@ -6,10 +6,17 @@ import (
 	"github.com/remind101/empire/db"
 )
 
-type Queryier interface {
+type Inserter interface {
 	// Insert inserts a record.
 	Insert(...interface{}) error
+}
 
+type Execer interface {
+	// Exec executes an arbitrary SQL query.
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
+type Queryier interface {
 	// Select performs a query and populates the interface with the
 	// returned records. interface must be a pointer to a slice
 	Select(interface{}, string, ...interface{}) error
@@ -17,13 +24,12 @@ type Queryier interface {
 	// SelectOne performs a query and populates the interface with the
 	// returned record.
 	SelectOne(interface{}, string, ...interface{}) error
-
-	// Exec executes an arbitrary SQL query.
-	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
 // DB represents an interface for performing queries against a SQL db.
 type DB interface {
+	Inserter
+	Execer
 	Queryier
 
 	// Begin opens a transaction.
