@@ -89,21 +89,24 @@ func NewServer(e *Empire) *Server {
 	r := newRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", &GetApps{e.AppsService})   // List existing apps
-	r.Handle("POST", "/apps", &PostApps{e.AppsService}) // Create a new app
+	r.Handle("GET", "/apps", &GetApps{e.AppsService})   // hk apps
+	r.Handle("POST", "/apps", &PostApps{e.AppsService}) // hk create
 
 	// Deploys
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService}) // List existing releases
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService}) // hk releases
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e.AppsService, e.ConfigsService})                        // List app config
-	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService}) // Update an app config
+	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e.AppsService, e.ConfigsService})                        // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService}) // hk set
+
+	// Processes
+	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e.AppsService, e.Manager}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.Manager}) // Batch update formation
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.Manager}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -297,6 +300,48 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	return 200, c.Vars, nil
+}
+
+type GetProcesses struct {
+	AppsService AppsService
+	Manager     Manager
+}
+
+type dyno struct {
+	Command string `json:"command"`
+	Name    string `json:"name"`
+	State   string `json:"state"`
+}
+
+func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
+	name := AppName(req.Vars["app"])
+
+	a, err := h.AppsService.FindByName(name)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	if a == nil {
+		return http.StatusNotFound, nil, nil
+	}
+
+	// Retrieve job states
+	js, err := h.Manager.JobStatesByApp(a)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Convert to hk compatible format
+	dynos := make([]dyno, len(js))
+	for i, j := range js {
+		dynos[i] = dyno{
+			Command: string(j.Job.Command),
+			Name:    string(j.Name),
+			State:   j.State,
+		}
+	}
+
+	return 200, dynos, nil
 }
 
 type PatchFormation struct {

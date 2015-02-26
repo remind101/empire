@@ -51,8 +51,9 @@ const (
 
 // JobState represents the status of a job.
 type JobState struct {
-	Job   *Job
-	State State
+	MachineID string
+	Name      JobName
+	State     string // TODO use State type
 }
 
 // Scheduler is an interface that represents something that can schedule Jobs
@@ -63,6 +64,9 @@ type Scheduler interface {
 
 	// Unschedule unschedules a job from the cluster by its name.
 	Unschedule(JobName) error
+
+	// List JobStates
+	JobStates() ([]*JobState, error)
 }
 
 // NewScheduler is a factory method for generating a new Scheduler instance.
@@ -89,6 +93,10 @@ func (s *scheduler) Schedule(j *Job) error {
 // Unschedule implements Scheduler Unschedule.
 func (s *scheduler) Unschedule(n JobName) error {
 	return nil
+}
+
+func (s *scheduler) JobStates() ([]*JobState, error) {
+	return nil, nil
 }
 
 // FleetScheduler is an implementation of the Scheduler interface that schedules
@@ -127,6 +135,24 @@ func (s *FleetScheduler) Schedule(j *Job) error {
 
 func (s *FleetScheduler) Unschedule(n JobName) error {
 	return s.client.DestroyUnit(string(n) + ".service")
+}
+
+func (s *FleetScheduler) JobStates() ([]*JobState, error) {
+	states, err := s.client.UnitStates()
+	if err != nil {
+		return nil, err
+	}
+
+	js := make([]*JobState, len(states))
+	for i, st := range states {
+		js[i] = &JobState{
+			MachineID: st.MachineID,
+			Name:      JobName(st.Name),
+			State:     st.SystemdActiveState,
+		}
+	}
+
+	return js, nil
 }
 
 // buildUnit builds a Unit file that looks like this:

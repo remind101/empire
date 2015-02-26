@@ -18,6 +18,13 @@ type Job struct {
 	Command     Command
 }
 
+type JobState struct {
+	Job       *Job
+	MachineID string
+	Name      scheduler.JobName
+	State     string
+}
+
 func (j *Job) JobName() scheduler.JobName {
 	return newJobName(
 		j.App,
@@ -65,7 +72,7 @@ func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
 	var jobs []*Job
 
 	for _, j := range r.jobs {
-		if q.App == j.App && q.Release == j.Release {
+		if (string(q.App) == "" || q.App == j.App) && (string(q.Release) == "" || q.Release == j.Release) {
 			jobs = append(jobs, j)
 		}
 	}
@@ -81,6 +88,9 @@ type Manager interface {
 
 	// ScaleRelease scales a release based on a process quantity map.
 	ScaleRelease(*Release, ProcessQuantityMap) error
+
+	// FindJobsByApp returns JobStates for an app.
+	JobStatesByApp(*App) ([]*JobState, error)
 }
 
 // manager is a base implementation of the Manager interface.
@@ -238,6 +248,48 @@ func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q in
 	}
 
 	return nil
+}
+
+func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
+	// Jobs expected to be running
+	jobs, err := m.JobsRepository.List(JobQuery{App: app.Name})
+	if err != nil {
+		return nil, err
+	}
+
+	// Job states for all existing jobs
+	sjs, err := m.Scheduler.JobStates()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map for easy lookups
+	jsm := make(map[scheduler.JobName]*scheduler.JobState, len(sjs))
+	for _, js := range sjs {
+		jsm[js.Name] = js
+	}
+
+	// Create JobState based on Jobs and scheduler.JobStates
+	js := make([]*JobState, len(jobs))
+	for i, j := range jobs {
+		s, ok := jsm[j.JobName()]
+
+		machineID := "unknown"
+		state := "unknown"
+		if ok {
+			machineID = s.MachineID
+			state = s.State
+		}
+
+		js[i] = &JobState{
+			Job:       j,
+			Name:      j.JobName(),
+			MachineID: machineID,
+			State:     state,
+		}
+	}
+
+	return js, nil
 }
 
 // newJobName returns a new Name with the proper format.

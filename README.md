@@ -25,6 +25,28 @@ OPTIONS:
 
 ```
 
+## Heroku API compatibility
+
+We are aiming to be compatible with heroku's API
+
+You can use the `hk` cli with empire like this:
+
+```console
+HEROKU_API_URL=<empire_url> hk ...
+```
+
+### Supported commands
+
+```console
+hk apps
+hk create <name>
+hk env
+hk get
+hk set
+hk scale
+hk dynos
+```
+
 ## Components
 
 **DISCLAIMER**: Empire is incredibly young and a lot of things will most likely
@@ -38,7 +60,13 @@ applications in a compute cluster. The following components are employed:
 
 **[Quayd][quayd]** Quayd is used to handle webhook events from Quay and create GitHub Commit Statuses as well as tag the resulting images with the git sha.
 
-**[Consul][consul]** Used for service discovery and a general key/val store.
+**[Etcd][etcd]** Used for service discovery and a general key/val store.
+
+**[Fleet][fleet]** Used for process scheduling.
+
+** Postgres[postgres]** Used as a backend for empire app data.
+
+
 
 **[Registrator][registrator]** Used to automatically register services with consul.
 
@@ -104,3 +132,6 @@ There are three phases during deployment:
 [docker]: https://www.docker.com/
 [flynn]: https://flynn.io/
 [deis]: http://deis.io/
+[fleet]: https://github.com/coreos/fleet
+[postgres]: http://www.postgresql.org/
+[etcd]: https://github.com/coreos/etcd
