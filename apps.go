@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"regexp"
 	"strings"
@@ -14,6 +15,20 @@ var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 // AppName represents the unique name for an App.
 type AppName string
 
+// Scan implements the sql.Scanner interface.
+func (n *AppName) Scan(src interface{}) error {
+	if src, ok := src.([]byte); ok {
+		*n = AppName(src)
+	}
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (n AppName) Value() (driver.Value, error) {
+	return driver.Value(string(n)), nil
+}
+
 // NewNameFromRepo generates a new name from a Repo
 //
 //	remind101/r101-api => r101-api
@@ -24,10 +39,10 @@ func NewAppNameFromRepo(repo Repo) AppName {
 
 // App represents an app.
 type App struct {
-	Name AppName `json:"name"`
+	Name AppName `json:"name" db:"name"`
 
 	// The associated GitHub/Docker repo.
-	Repo Repo `json:"repo"`
+	Repo Repo `json:"repo" db:"repo"`
 }
 
 // NewApp validates the name of the new App then returns a new App instance. If the
@@ -57,12 +72,6 @@ type AppsRepository interface {
 	FindByRepo(Repo) (*App, error)
 }
 
-// dbApp represents the db representation of an app.
-type dbApp struct {
-	Name string `db:"name"`
-	Repo string `db:"repo"`
-}
-
 // appsRepository is an implementation of the AppsRepository interface backed by
 // a DB.
 type appsRepository struct {
@@ -74,30 +83,11 @@ func NewAppsRepository(db DB) (AppsRepository, error) {
 }
 
 func (r *appsRepository) Create(app *App) (*App, error) {
-	a := &dbApp{
-		Name: string(app.Name),
-		Repo: string(app.Repo),
-	}
-
-	if err := r.DB.Insert(a); err != nil {
-		return app, err
-	}
-
-	return toApp(a, app), nil
+	return CreateApp(r.DB, app)
 }
 
 func (r *appsRepository) FindAll() ([]*App, error) {
-	var dbapps []*dbApp
-	if err := r.Select(&dbapps, `select * from apps order by name`); err != nil {
-		return nil, err
-	}
-
-	apps := make([]*App, len(dbapps))
-	for i, a := range dbapps {
-		apps[i] = toApp(a, nil)
-	}
-
-	return apps, nil
+	return AllApps(r.DB)
 }
 
 func (r *appsRepository) FindByName(name AppName) (*App, error) {
@@ -109,9 +99,9 @@ func (r *appsRepository) FindByRepo(repo Repo) (*App, error) {
 }
 
 func (r *appsRepository) findBy(field string, v interface{}) (*App, error) {
-	var a dbApp
+	var app App
 
-	if err := r.SelectOne(&a, `select * from apps where `+field+` = $1 limit 1`, v); err != nil {
+	if err := r.SelectOne(&app, `select * from apps where `+field+` = $1 limit 1`, v); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -119,19 +109,18 @@ func (r *appsRepository) findBy(field string, v interface{}) (*App, error) {
 		return nil, err
 	}
 
-	return toApp(&a, nil), nil
+	return &app, nil
 }
 
-// toApp maps a dbApp to an App.
-func toApp(a *dbApp, app *App) *App {
-	if app == nil {
-		app = &App{}
-	}
+// CreateApp inserts the app into the database.
+func CreateApp(db Inserter, app *App) (*App, error) {
+	return app, db.Insert(app)
+}
 
-	app.Name = AppName(a.Name)
-	app.Repo = Repo(a.Repo)
-
-	return app
+// AllApps returns all Apps.
+func AllApps(db Queryier) ([]*App, error) {
+	var apps []*App
+	return apps, db.Select(&apps, `select * from apps order by name`)
 }
 
 // AppsService represents a service for interacting with Apps.

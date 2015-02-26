@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"log"
 	"net/url"
+	"os"
 
 	_ "github.com/lib/pq"
 	gorp "gopkg.in/gorp.v1"
@@ -33,6 +35,7 @@ func NewDB(uri string) (*DB, error) {
 	}
 
 	dbmap := &gorp.DbMap{Db: db, Dialect: dialect}
+	dbmap.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
 
 	return &DB{
 		dbmap: dbmap,
