@@ -163,6 +163,8 @@ func mergeVars(old, new Vars) Vars {
 
 // ConfigsService represents a service for interacting with Configs.
 type ConfigsService interface {
+	Find(ConfigID) (*Config, error)
+
 	// Apply applies the vars to the apps latest Config.
 	Apply(*App, Vars) (*Config, error)
 
@@ -172,20 +174,20 @@ type ConfigsService interface {
 
 // configsService is a base implementation of the ConfigsService.
 type configsService struct {
-	Repository ConfigsRepository
+	ConfigsRepository
 }
 
 // NewConfigsService returns a new Service instance.
 func NewConfigsService(r ConfigsRepository) (ConfigsService, error) {
 	return &configsService{
-		Repository: r,
+		ConfigsRepository: r,
 	}, nil
 }
 
 // Apply merges the provided Vars into the latest Config and returns a new
 // Config.
 func (s *configsService) Apply(app *App, vars Vars) (*Config, error) {
-	l, err := s.Repository.Head(app.Name)
+	l, err := s.ConfigsRepository.Head(app.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -199,19 +201,19 @@ func (s *configsService) Apply(app *App, vars Vars) (*Config, error) {
 
 	c := NewConfig(l, vars)
 
-	return s.Repository.Push(c)
+	return s.ConfigsRepository.Push(c)
 }
 
 // Gets the config for an app. If the app doesn't have a config, it will create
 // a new one.
 func (s *configsService) Head(app *App) (*Config, error) {
-	c, err := s.Repository.Head(app.Name)
+	c, err := s.ConfigsRepository.Head(app.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	if c == nil {
-		return s.Repository.Push(&Config{
+		return s.ConfigsRepository.Push(&Config{
 			AppName: app.Name,
 			Vars:    make(Vars),
 		})

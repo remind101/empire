@@ -3,7 +3,6 @@ package empire
 import (
 	"database/sql"
 	"database/sql/driver"
-	"time"
 )
 
 // ReleaseID represents the unique identifier for a Release.
@@ -30,14 +29,12 @@ type ReleaseVersion int
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID        ReleaseID      `json:"id"`
-	Version   ReleaseVersion `json:"version"`
-	CreatedAt time.Time      `json:"created_at"`
+	ID  ReleaseID      `json:"id" db:"id"`
+	Ver ReleaseVersion `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
 
-	App       *App      `json:"app"`
-	Config    *Config   `json:"config"`
-	Formation Formation `json:"formation"`
-	Slug      *Slug     `json:"slug"`
+	AppName  `json:"-" db:"app_id"`
+	ConfigID `json:"-" db:"config_id"`
+	SlugID   `json:"-" db:"slug_id"`
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and
@@ -69,21 +66,19 @@ type releasesRepository struct {
 }
 
 func (r *releasesRepository) Create(release *Release) (*Release, error) {
-	rl := fromRelease(release)
-
 	t, err := r.DB.Begin()
 	if err != nil {
 		return release, err
 	}
 
-	v, err := lastVersion(t, release.App.Name)
+	v, err := lastVersion(t, release.AppName)
 	if err != nil {
 		return release, err
 	}
 
-	rl.Ver = v + 1
+	release.Ver = v + 1
 
-	if err := t.Insert(rl); err != nil {
+	if err := t.Insert(release); err != nil {
 		return release, err
 	}
 
@@ -91,7 +86,7 @@ func (r *releasesRepository) Create(release *Release) (*Release, error) {
 		return release, err
 	}
 
-	return toRelease(rl, release), nil
+	return release, nil
 }
 
 func (r *releasesRepository) Head(appName AppName) (*Release, error) {
@@ -99,22 +94,11 @@ func (r *releasesRepository) Head(appName AppName) (*Release, error) {
 }
 
 func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
-	var rs []*dbRelease
-
-	if err := r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName)); err != nil {
-		return nil, nil
-	}
-
-	var releases []*Release
-
-	for _, r := range rs {
-		releases = append(releases, toRelease(r, nil))
-	}
-
-	return releases, nil
+	var rs []*Release
+	return rs, r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName))
 }
 
-func lastVersion(db Queryier, appName AppName) (version int64, err error) {
+func lastVersion(db Queryier, appName AppName) (version ReleaseVersion, err error) {
 	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
 
 	if err == sql.ErrNoRows {
@@ -125,9 +109,9 @@ func lastVersion(db Queryier, appName AppName) (version int64, err error) {
 }
 
 func headRelease(db Queryier, appName AppName) (*Release, error) {
-	var rl dbRelease
+	var release Release
 
-	if err := db.SelectOne(&rl, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -135,42 +119,7 @@ func headRelease(db Queryier, appName AppName) (*Release, error) {
 		return nil, err
 	}
 
-	return toRelease(&rl, nil), nil
-}
-
-func fromRelease(release *Release) *dbRelease {
-	id := string(release.ID)
-
-	return &dbRelease{
-		ID:       &id,
-		Ver:      int64(release.Version),
-		AppID:    string(release.App.Name),
-		ConfigID: string(release.Config.ID),
-		SlugID:   string(release.Slug.ID),
-	}
-}
-
-func toRelease(r *dbRelease, release *Release) *Release {
-	if release == nil {
-		release = &Release{}
-	}
-
-	release.ID = ReleaseID(*r.ID)
-	release.Version = ReleaseVersion(r.Ver)
-
-	if release.App == nil {
-		release.App = &App{Name: AppName(r.AppID)}
-	}
-
-	if release.Config == nil {
-		release.Config = &Config{ID: ConfigID(r.ConfigID)}
-	}
-
-	if release.Slug == nil {
-		release.Slug = &Slug{ID: SlugID(r.SlugID)}
-	}
-
-	return release
+	return &release, nil
 }
 
 // ReleaseesService represents a service for interacting with Releases.
@@ -204,9 +153,9 @@ func NewReleasesService(r ReleasesRepository, p ProcessesRepository, m Manager) 
 // Create creates the release, then sets the current process formation on the release.
 func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release, error) {
 	r := &Release{
-		App:    app,
-		Config: config,
-		Slug:   slug,
+		AppName:  app.Name,
+		ConfigID: config.ID,
+		SlugID:   slug.ID,
 	}
 
 	r, err := s.ReleasesRepository.Create(r)
@@ -215,15 +164,13 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 	}
 
 	// Create a new formation for this release.
-	formation, err := s.createFormation(r)
+	formation, err := s.createFormation(r, slug)
 	if err != nil {
 		return nil, err
 	}
 
-	r.Formation = formation
-
 	// Schedule the new release onto the cluster.
-	if err := s.Manager.ScheduleRelease(r); err != nil {
+	if err := s.Manager.ScheduleRelease(r, config, slug, formation); err != nil {
 		return r, err
 	}
 
@@ -238,19 +185,23 @@ func (s *releasesService) Head(app *App) (*Release, error) {
 	return s.ReleasesRepository.Head(app.Name)
 }
 
-func (s *releasesService) createFormation(release *Release) (Formation, error) {
+func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
-	last, err := s.ReleasesRepository.Head(release.App.Name)
+	last, err := s.ReleasesRepository.Head(release.AppName)
 	if err != nil {
 		return nil, err
 	}
 
 	var existing Formation
+
 	if last != nil {
-		existing = last.Formation
+		existing, err = s.ProcessesRepository.All(last.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	f := NewFormation(existing, release.Slug.ProcessTypes)
+	f := NewFormation(existing, slug.ProcessTypes)
 
 	for _, p := range f {
 		p.ReleaseID = release.ID

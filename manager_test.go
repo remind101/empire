@@ -30,31 +30,29 @@ func TestManagerScheduleRelease(t *testing.T) {
 		JobsRepository: r,
 	}
 
-	release := &Release{
-		Version: 1,
-		App: &App{
-			Name: "r101-api",
-		},
-		Config: &Config{
-			Vars: Vars{
-				"RAILS_ENV": "production",
-			},
-		},
-		Slug: &Slug{
-			Image: Image{
-				Repo: "remind101/r101-api",
-				ID:   "1234",
-			},
-		},
-		Formation: Formation{
-			"web": &Process{
-				Quantity: 1,
-				Command:  "./bin/web",
-			},
+	config := &Config{
+		ID: "1",
+	}
+
+	slug := &Slug{
+		ID: "1",
+	}
+
+	formation := Formation{
+		"web": &Process{
+			Quantity: 1,
+			Command:  "./bin/web",
 		},
 	}
 
-	if err := m.ScheduleRelease(release); err != nil {
+	release := &Release{
+		Ver:      1,
+		AppName:  "r101-api",
+		ConfigID: config.ID,
+		SlugID:   slug.ID,
+	}
+
+	if err := m.ScheduleRelease(release, config, slug, formation); err != nil {
 		t.Fatal(err)
 	}
 
@@ -106,31 +104,29 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 		JobsRepository: r,
 	}
 
-	release := &Release{
-		Version: 1,
-		App: &App{
-			Name: "r101-api",
-		},
-		Config: &Config{
-			Vars: Vars{
-				"RAILS_ENV": "production",
-			},
-		},
-		Slug: &Slug{
-			Image: Image{
-				Repo: "remind101/r101-api",
-				ID:   "1234",
-			},
-		},
-		Formation: Formation{
-			"web": &Process{
-				Quantity: 1,
-				Command:  "./bin/web",
-			},
+	config := &Config{
+		ID: "1",
+	}
+
+	slug := &Slug{
+		ID: "1",
+	}
+
+	formation := Formation{
+		"web": &Process{
+			Quantity: 1,
+			Command:  "./bin/web",
 		},
 	}
 
-	if err := m.ScheduleRelease(release); err != nil {
+	release := &Release{
+		Ver:      1,
+		AppName:  "r101-api",
+		ConfigID: config.ID,
+		SlugID:   slug.ID,
+	}
+
+	if err := m.ScheduleRelease(release, config, slug, formation); err != nil {
 		t.Fatal(err)
 	}
 
@@ -257,12 +253,12 @@ func (r *mockJobsRepository) List(q JobQuery) ([]*Job, error) {
 type mockManager struct {
 	Manager // Just to satisfy the interface.
 
-	ScheduleReleaseFunc func(*Release) error
+	ScheduleReleaseFunc func(*Release, *Config, *Slug, Formation) error
 }
 
-func (m *mockManager) ScheduleRelease(release *Release) error {
+func (m *mockManager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	if m.ScheduleReleaseFunc != nil {
-		return m.ScheduleReleaseFunc(release)
+		return m.ScheduleReleaseFunc(release, config, slug, formation)
 	}
 
 	return nil

@@ -103,14 +103,14 @@ func NewServer(e *Empire) *Server {
 	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService}) // hk releases
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e.AppsService, e.ConfigsService})                        // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService}) // hk set
+	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e.AppsService, e.ConfigsService})                                        // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService, e.SlugsService}) // hk set
 
 	// Processes
 	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e.AppsService, e.Manager}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.Manager}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.ConfigsService, e.SlugsService, e.ProcessesService, e.Manager}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -284,6 +284,7 @@ type PatchConfigs struct {
 	AppsService     AppsService
 	ReleasesService ReleasesService
 	ConfigsService  ConfigsService
+	SlugsService    SlugsService
 }
 
 func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
@@ -319,8 +320,13 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 
 	// If there is an existing release, create a new one
 	if r != nil {
+		slug, err := h.SlugsService.Find(r.SlugID)
+		if err != nil {
+			return http.StatusInternalServerError, nil, err
+		}
+
 		// Create new release based on new config and old slug
-		_, err = h.ReleasesService.Create(a, c, r.Slug)
+		_, err = h.ReleasesService.Create(a, c, slug)
 		if err != nil {
 			return http.StatusInternalServerError, nil, err
 		}
@@ -372,9 +378,12 @@ func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PatchFormation struct {
-	AppsService     AppsService
-	ReleasesService ReleasesService
-	Manager         Manager
+	AppsService      AppsService
+	ReleasesService  ReleasesService
+	ConfigsService   ConfigsService
+	SlugsService     SlugsService
+	ProcessesService ProcessesRepository
+	Manager          Manager
 }
 
 type PatchFormationForm struct {
@@ -417,7 +426,22 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	err = h.Manager.ScaleRelease(r, qm)
+	config, err := h.ConfigsService.Find(r.ConfigID)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	slug, err := h.SlugsService.Find(r.SlugID)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	formation, err := h.ProcessesService.All(r.ID)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	err = h.Manager.ScaleRelease(r, config, slug, formation, qm)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

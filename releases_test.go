@@ -14,7 +14,7 @@ func TestReleasesServiceCreate(t *testing.T) {
 	p := &mockProcessesRepository{}
 	r := &mockReleasesRepository{}
 	m := &mockManager{
-		ScheduleReleaseFunc: func(release *Release) error {
+		ScheduleReleaseFunc: func(release *Release, config *Config, slug *Slug, formation Formation) error {
 			scheduled = true
 			return nil
 		},
