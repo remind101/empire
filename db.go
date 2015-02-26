@@ -12,6 +12,11 @@ type Inserter interface {
 	Insert(...interface{}) error
 }
 
+type Deleter interface {
+	// Delete deletes one or more records
+	Delete(...interface{}) (int64, error)
+}
+
 type Execer interface {
 	// Exec executes an arbitrary SQL query.
 	Exec(query string, args ...interface{}) (sql.Result, error)
@@ -30,6 +35,7 @@ type Queryier interface {
 // DB represents an interface for performing queries against a SQL db.
 type DB interface {
 	Inserter
+	Deleter
 	Execer
 	Queryier
 
@@ -47,7 +53,7 @@ func NewDB(uri string) (DB, error) {
 		return db, err
 	}
 
-	db.AddTableWithName(App{}, "apps")
+	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name")
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
 	db.AddTableWithName(Slug{}, "slugs").SetKeys(true, "ID")
 	db.AddTableWithName(Process{}, "processes").SetKeys(true, "ID")

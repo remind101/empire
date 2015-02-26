@@ -47,12 +47,14 @@ type Handler interface {
 
 // ErrorResource represents the error response format that we return.
 type ErrorResource struct {
-	Err string `json:"error"`
+	ID      string `json:"id"`
+	Message string `json:"message"`
+	URL     string `json:"url"`
 }
 
 // Error implements error interface.
 func (e *ErrorResource) Error() string {
-	return e.Err
+	return e.Message
 }
 
 // Endpoint wraps a Handler to implement the http.Handler interface.
@@ -70,7 +72,7 @@ func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if _, ok := err.(*ErrorResource); ok {
 			v = err
 		} else {
-			v = &ErrorResource{Err: err.Error()}
+			v = &ErrorResource{Message: err.Error()}
 		}
 		log.Printf("Error: %v\n", v)
 	}
@@ -90,6 +92,7 @@ func NewServer(e *Empire) *Server {
 
 	// Apps
 	r.Handle("GET", "/apps", &GetApps{e.AppsService})                 // hk apps
+	r.Handle("DELETE", "/apps/{app}", &DeleteApp{e.AppsService})      // hk destroy
 	r.Handle("POST", "/apps", &PostApps{e.AppsService})               // hk create
 	r.Handle("POST", "/organizations/apps", &PostApps{e.AppsService}) // hk create
 
@@ -141,6 +144,29 @@ func (h *GetApps) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	return 200, apps, nil
+}
+
+type DeleteApp struct {
+	AppsService AppsService
+}
+
+func (h *DeleteApp) Serve(req *Request) (int, interface{}, error) {
+	name := AppName(req.Vars["app"])
+
+	a, err := h.AppsService.FindByName(name)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	if a == nil {
+		return http.StatusNotFound, nil, nil
+	}
+
+	if err := h.AppsService.Destroy(a); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 200, nil, nil
 }
 
 type PostAppsForm struct {
