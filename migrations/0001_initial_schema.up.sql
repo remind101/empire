@@ -43,8 +43,7 @@ CREATE TABLE jobs (
   instance int NOT NULL,
 
   environment hstore NOT NULL,
-  image_repo text NOT NULL,
-  image_id text NOT NULL,
+  image text NOT NULL,
   command text NOT NULL
 );
 

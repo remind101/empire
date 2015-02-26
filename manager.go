@@ -65,8 +65,7 @@ type dbJob struct {
 	Instance       int64  `db:"instance"`
 
 	Environment Vars   `db:"environment"`
-	ImageRepo   string `db:"image_repo"`
-	ImageID     string `db:"image_id"`
+	Image       Image  `db:"image"`
 	Command     string `db:"command"`
 }
 
@@ -114,10 +113,7 @@ func toJob(j *dbJob, job *Job) *Job {
 	job.ProcessType = ProcessType(j.ProcessType)
 	job.Instance = int(j.Instance)
 	job.Environment = j.Environment
-	job.Image = Image{
-		Repo: Repo(j.ImageRepo),
-		ID:   j.ImageID,
-	}
+	job.Image = j.Image
 	job.Command = Command(j.Command)
 
 	return job
@@ -131,8 +127,7 @@ func fromJob(job *Job) *dbJob {
 		ProcessType:    string(job.ProcessType),
 		Instance:       int64(job.Instance),
 		Environment:    job.Environment,
-		ImageRepo:      string(job.Image.Repo),
-		ImageID:        string(job.Image.ID),
+		Image:          job.Image,
 		Command:        string(job.Command),
 	}
 }
