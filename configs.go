@@ -90,12 +90,12 @@ type configsRepository struct {
 
 // Head implements Repository Head.
 func (r *configsRepository) Head(appName AppName) (*Config, error) {
-	return r.findBy("app_id", string(appName))
+	return FindConfigBy(r.DB, "app_id", string(appName))
 }
 
 // Find implements Repository Find.
 func (r *configsRepository) Find(id ConfigID) (*Config, error) {
-	return r.findBy("id", string(id))
+	return FindConfigBy(r.DB, "id", string(id))
 }
 
 // Push implements Repository Push.
@@ -103,10 +103,16 @@ func (r *configsRepository) Push(config *Config) (*Config, error) {
 	return CreateConfig(r.DB, config)
 }
 
-func (r *configsRepository) findBy(field string, v interface{}) (*Config, error) {
+// CreateConfig inserts a Config in the database.
+func CreateConfig(db Inserter, config *Config) (*Config, error) {
+	return config, db.Insert(config)
+}
+
+// FindConfigBy finds a Config by a field.
+func FindConfigBy(db Queryier, field string, value interface{}) (*Config, error) {
 	var config Config
 
-	if err := r.DB.SelectOne(&config, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, v); err != nil {
+	if err := db.SelectOne(&config, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, value); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -115,11 +121,6 @@ func (r *configsRepository) findBy(field string, v interface{}) (*Config, error)
 	}
 
 	return &config, nil
-}
-
-// CreateConfig inserts a Config in the database.
-func CreateConfig(db Inserter, config *Config) (*Config, error) {
-	return config, db.Insert(config)
 }
 
 func hstoreToVars(h hstore.Hstore) Vars {
