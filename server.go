@@ -307,6 +307,12 @@ type GetProcesses struct {
 	Manager     Manager
 }
 
+type dyno struct {
+	Command string `json:"command"`
+	Name    string `json:"name"`
+	State   string `json:"state"`
+}
+
 func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 	name := AppName(req.Vars["app"])
 
@@ -325,7 +331,17 @@ func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	return 200, js, nil
+	// Convert to hk compatible format
+	dynos := make([]dyno, len(js))
+	for i, j := range js {
+		dynos[i] = dyno{
+			Command: string(j.Job.Command),
+			Name:    string(j.Name),
+			State:   j.State,
+		}
+	}
+
+	return 200, dynos, nil
 }
 
 type PatchFormation struct {
