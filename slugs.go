@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 )
@@ -68,13 +69,23 @@ func CreateSlug(db Inserter, slug *Slug) (*Slug, error) {
 // FindSlugBy finds a slug by a field.
 func FindSlugBy(db Queryier, field string, value interface{}) (*Slug, error) {
 	var slug Slug
+
 	q := fmt.Sprintf(`select * from slugs where %s = $1`, field)
-	return &slug, db.SelectOne(&slug, q, value)
+	if err := db.SelectOne(&slug, q, value); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &slug, nil
 }
 
 // SlugsService is a service for interacting with slugs.
 type SlugsService interface {
 	Find(SlugID) (*Slug, error)
+
 	// CreateByImage extracts process types from an image, then creates a
 	// slug for it.
 	CreateByImage(Image) (*Slug, error)

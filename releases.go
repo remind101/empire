@@ -66,39 +66,45 @@ type releasesRepository struct {
 }
 
 func (r *releasesRepository) Create(release *Release) (*Release, error) {
-	t, err := r.DB.Begin()
+	return CreateRelease(r.DB, release)
+}
+
+func (r *releasesRepository) Head(appName AppName) (*Release, error) {
+	return LastRelease(r.DB, appName)
+}
+
+func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
+	var rs []*Release
+	return rs, r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName))
+}
+
+// CreateRelease creates a new Release and inserts it into the database.
+func CreateRelease(db DB, release *Release) (*Release, error) {
+	t, err := db.Begin()
 	if err != nil {
 		return release, err
 	}
 
-	v, err := lastVersion(t, release.AppName)
+	// Get the last release version for this app.
+	v, err := LastReleaseVersion(t, release.AppName)
 	if err != nil {
 		return release, err
 	}
 
+	// Increment the release version.
 	release.Ver = v + 1
 
 	if err := t.Insert(release); err != nil {
 		return release, err
 	}
 
-	if err := t.Commit(); err != nil {
-		return release, err
-	}
-
-	return release, nil
+	return release, t.Commit()
 }
 
-func (r *releasesRepository) Head(appName AppName) (*Release, error) {
-	return headRelease(r.DB, appName)
-}
-
-func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
-	var rs []*Release
-	return rs, r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName))
-}
-
-func lastVersion(db Queryier, appName AppName) (version ReleaseVersion, err error) {
+// LastReleaseVersion returns the last ReleaseVersion for the given App. This
+// function also ensures that the last release is locked until the transaction
+// is commited, so the release version can be incremented atomically.
+func LastReleaseVersion(db Queryier, appName AppName) (version ReleaseVersion, err error) {
 	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
 
 	if err == sql.ErrNoRows {
@@ -108,7 +114,8 @@ func lastVersion(db Queryier, appName AppName) (version ReleaseVersion, err erro
 	return
 }
 
-func headRelease(db Queryier, appName AppName) (*Release, error) {
+// LastRelease returns the last Release for the given App.
+func LastRelease(db Queryier, appName AppName) (*Release, error) {
 	var release Release
 
 	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
