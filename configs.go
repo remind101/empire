@@ -55,14 +55,32 @@ func (v *Vars) Scan(src interface{}) error {
 		return err
 	}
 
-	*v = hstoreToVars(h)
+	vars := make(Vars)
+
+	for k, v := range h.Map {
+		vars[Variable(k)] = v.String
+	}
+
+	*v = vars
 
 	return nil
 }
 
 // Value implements the driver.Value interface.
 func (v Vars) Value() (driver.Value, error) {
-	h := varsToHstore(v)
+	m := make(map[string]sql.NullString)
+
+	for k, v := range v {
+		m[string(k)] = sql.NullString{
+			Valid:  true,
+			String: v,
+		}
+	}
+
+	h := hstore.Hstore{
+		Map: m,
+	}
+
 	return h.Value()
 }
 
@@ -121,31 +139,6 @@ func FindConfigBy(db Queryier, field string, value interface{}) (*Config, error)
 	}
 
 	return &config, nil
-}
-
-func hstoreToVars(h hstore.Hstore) Vars {
-	vars := make(Vars)
-
-	for k, v := range h.Map {
-		vars[Variable(k)] = v.String
-	}
-
-	return vars
-}
-
-func varsToHstore(vars Vars) hstore.Hstore {
-	m := make(map[string]sql.NullString)
-
-	for k, v := range vars {
-		m[string(k)] = sql.NullString{
-			Valid:  true,
-			String: v,
-		}
-	}
-
-	return hstore.Hstore{
-		Map: m,
-	}
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a

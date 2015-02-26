@@ -3,7 +3,6 @@ package empire
 import (
 	"fmt"
 
-	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/scheduler"
 )
 
@@ -65,10 +64,10 @@ type dbJob struct {
 	ProcessType    string `db:"process_type"`
 	Instance       int64  `db:"instance"`
 
-	Environment hstore.Hstore `db:"environment"`
-	ImageRepo   string        `db:"image_repo"`
-	ImageID     string        `db:"image_id"`
-	Command     string        `db:"command"`
+	Environment Vars   `db:"environment"`
+	ImageRepo   string `db:"image_repo"`
+	ImageID     string `db:"image_id"`
+	Command     string `db:"command"`
 }
 
 type jobsRepository struct {
@@ -114,7 +113,7 @@ func toJob(j *dbJob, job *Job) *Job {
 	job.Release = ReleaseVersion(j.ReleaseVersion)
 	job.ProcessType = ProcessType(j.ProcessType)
 	job.Instance = int(j.Instance)
-	job.Environment = hstoreToVars(j.Environment)
+	job.Environment = j.Environment
 	job.Image = Image{
 		Repo: Repo(j.ImageRepo),
 		ID:   j.ImageID,
@@ -131,7 +130,7 @@ func fromJob(job *Job) *dbJob {
 		ReleaseVersion: int64(job.Release),
 		ProcessType:    string(job.ProcessType),
 		Instance:       int64(job.Instance),
-		Environment:    varsToHstore(job.Environment),
+		Environment:    job.Environment,
 		ImageRepo:      string(job.Image.Repo),
 		ImageID:        string(job.Image.ID),
 		Command:        string(job.Command),
