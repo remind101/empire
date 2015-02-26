@@ -8,7 +8,7 @@ CREATE TABLE apps (
 
 CREATE TABLE configs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name),
+  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
   vars hstore,
   created_at timestamp without time zone default (now() at time zone 'utc')
 );
@@ -21,15 +21,15 @@ CREATE TABLE slugs (
 
 CREATE TABLE releases (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name),
-  config_id uuid NOT NULL references configs(id),
-  slug_id uuid NOT NULL references slugs(id),
+  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
+  config_id uuid NOT NULL references configs(id) ON DELETE CASCADE,
+  slug_id uuid NOT NULL references slugs(id) ON DELETE CASCADE,
   version int NOT NULL
 );
 
 CREATE TABLE processes (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  release_id uuid NOT NULL references releases(id),
+  release_id uuid NOT NULL references releases(id) ON DELETE CASCADE,
   "type" text NOT NULL,
   quantity int NOT NULL,
   command text NOT NULL
@@ -37,7 +37,7 @@ CREATE TABLE processes (
 
 CREATE TABLE jobs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name),
+  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
   release_version int NOT NULL,
   process_type text NOT NULL,
   instance int NOT NULL,

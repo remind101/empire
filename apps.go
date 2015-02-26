@@ -67,6 +67,7 @@ func NewAppFromRepo(repo Repo) (*App, error) {
 // AppsRepository represents a repository for creating and finding Apps.
 type AppsRepository interface {
 	Create(*App) (*App, error)
+	Destroy(*App) error
 	FindAll() ([]*App, error)
 	FindByName(AppName) (*App, error)
 	FindByRepo(Repo) (*App, error)
@@ -84,6 +85,14 @@ func NewAppsRepository(db DB) (AppsRepository, error) {
 
 func (r *appsRepository) Create(app *App) (*App, error) {
 	return CreateApp(r.DB, app)
+}
+
+func (r *appsRepository) Destroy(app *App) error {
+	if _, err := r.DB.Delete(app); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *appsRepository) FindAll() ([]*App, error) {
