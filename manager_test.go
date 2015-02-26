@@ -41,7 +41,7 @@ func TestManagerScheduleRelease(t *testing.T) {
 			},
 		},
 		Slug: &Slug{
-			Image: &Image{
+			Image: Image{
 				Repo: "remind101/r101-api",
 				ID:   "1234",
 			},
@@ -117,7 +117,7 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 			},
 		},
 		Slug: &Slug{
-			Image: &Image{
+			Image: Image{
 				Repo: "remind101/r101-api",
 				ID:   "1234",
 			},

@@ -1,5 +1,12 @@
 package empire
 
+import (
+	"database/sql"
+	"database/sql/driver"
+
+	"github.com/lib/pq/hstore"
+)
+
 // ProcessQuantityMap represents a map of process types to quantities
 type ProcessQuantityMap map[ProcessType]int
 
@@ -26,6 +33,42 @@ type Process struct {
 
 // CommandMap maps a process ProcessType to a Command.
 type CommandMap map[ProcessType]Command
+
+// Scan implements the sql.Scanner interface.
+func (cm *CommandMap) Scan(src interface{}) error {
+	h := hstore.Hstore{}
+	if err := h.Scan(src); err != nil {
+		return err
+	}
+
+	m := make(CommandMap)
+
+	for k, v := range h.Map {
+		m[ProcessType(k)] = Command(v.String)
+	}
+
+	*cm = m
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (cm CommandMap) Value() (driver.Value, error) {
+	m := make(map[string]sql.NullString)
+
+	for k, v := range cm {
+		m[string(k)] = sql.NullString{
+			Valid:  true,
+			String: string(v),
+		}
+	}
+
+	h := hstore.Hstore{
+		Map: m,
+	}
+
+	return h.Value()
+}
 
 // Formation maps a process ProcessType to a Process.
 type Formation map[ProcessType]*Process

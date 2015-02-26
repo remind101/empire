@@ -24,7 +24,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 		ReleasesService: r,
 	}
 
-	image := &Image{
+	image := Image{
 		Repo: "remind101/r101-api",
 		ID:   "1234",
 	}

@@ -178,7 +178,7 @@ func (m *manager) ScheduleRelease(release *Release) error {
 	jobs := buildJobs(
 		release.App.Name,
 		release.Version,
-		*release.Slug.Image,
+		release.Slug.Image,
 		release.Config.Vars,
 		release.Formation,
 	)
@@ -281,7 +281,7 @@ func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q in
 					ProcessType: t,
 					Instance:    i,
 					Environment: release.Config.Vars,
-					Image:       *release.Slug.Image,
+					Image:       release.Slug.Image,
 					Command:     p.Command,
 				},
 			)

@@ -13,7 +13,7 @@ type Deploy struct {
 // DeploysService is an interface that can be implemented to deploy images.
 type DeploysService interface {
 	// Deploy deploys a container image to the cluster.
-	Deploy(*Image) (*Deploy, error)
+	Deploy(Image) (*Deploy, error)
 }
 
 // NewDeploysService returns a new DeploysService.
@@ -35,7 +35,7 @@ type deploysService struct {
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deploysService) Deploy(image *Image) (*Deploy, error) {
+func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
