@@ -3,11 +3,16 @@ package empire
 import (
 	"fmt"
 
+	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/scheduler"
 )
 
+type JobID string
+
 // Job represents a Job that was submitted to the scheduler.
 type Job struct {
+	ID JobID
+
 	App         AppName
 	Release     ReleaseVersion
 	ProcessType ProcessType
@@ -48,36 +53,89 @@ type JobsRepository interface {
 	List(JobQuery) ([]*Job, error)
 }
 
+func NewJobsRepository(db DB) (JobsRepository, error) {
+	return &jobsRepository{db}, nil
+}
+
+// dbJob is the DB representation of a Job.
+type dbJob struct {
+	ID             string `db:"id"`
+	AppID          string `db:"app_id"`
+	ReleaseVersion int64  `db:"release_version"`
+	ProcessType    string `db:"process_type"`
+	Instance       int64  `db:"instance"`
+
+	Environment hstore.Hstore `db:"environment"`
+	ImageRepo   string        `db:"image_repo"`
+	ImageID     string        `db:"image_id"`
+	Command     string        `db:"command"`
+}
+
 type jobsRepository struct {
-	jobs map[scheduler.JobName]*Job
+	DB
 }
 
-func newJobsRepository() *jobsRepository {
-	return &jobsRepository{
-		jobs: make(map[scheduler.JobName]*Job),
-	}
+func (r *jobsRepository) Add(job *Job) error {
+	j := fromJob(job)
+
+	return r.DB.Insert(j)
 }
 
-func (r *jobsRepository) Add(j *Job) error {
-	r.jobs[j.JobName()] = j
-	return nil
-}
-
-func (r *jobsRepository) Remove(j *Job) error {
-	delete(r.jobs, j.JobName())
-	return nil
+func (r *jobsRepository) Remove(job *Job) error {
+	_, err := r.DB.Exec(`delete from jobs where id = $1`, job.ID)
+	return err
 }
 
 func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
+	var js []*dbJob
+
+	query := `select * from jobs where app_id = $1 and release_version = $2`
+
+	if err := r.DB.Select(&js, query, string(q.App), int(q.Release)); err != nil {
+		return nil, err
+	}
+
 	var jobs []*Job
 
-	for _, j := range r.jobs {
-		if (string(q.App) == "" || q.App == j.App) && (string(q.Release) == "" || q.Release == j.Release) {
-			jobs = append(jobs, j)
-		}
+	for _, j := range js {
+		jobs = append(jobs, toJob(j, nil))
 	}
 
 	return jobs, nil
+}
+
+func toJob(j *dbJob, job *Job) *Job {
+	if job == nil {
+		job = &Job{}
+	}
+
+	job.ID = JobID(j.ID)
+	job.App = AppName(j.AppID)
+	job.Release = ReleaseVersion(j.ReleaseVersion)
+	job.ProcessType = ProcessType(j.ProcessType)
+	job.Instance = int(j.Instance)
+	job.Environment = hstoreToVars(j.Environment)
+	job.Image = Image{
+		Repo: Repo(j.ImageRepo),
+		ID:   j.ImageID,
+	}
+	job.Command = Command(j.Command)
+
+	return job
+}
+
+func fromJob(job *Job) *dbJob {
+	return &dbJob{
+		ID:             string(job.ID),
+		AppID:          string(job.App),
+		ReleaseVersion: int64(job.Release),
+		ProcessType:    string(job.ProcessType),
+		Instance:       int64(job.Instance),
+		Environment:    varsToHstore(job.Environment),
+		ImageRepo:      string(job.Image.Repo),
+		ImageID:        string(job.Image.ID),
+		Command:        string(job.Command),
+	}
 }
 
 // Manager is responsible for talking to the scheduler to schedule jobs onto the
@@ -100,15 +158,11 @@ type manager struct {
 }
 
 // NewManager returns a new Service instance.
-func NewManager(options Options) (Manager, error) {
-	s, err := scheduler.NewScheduler(options.Fleet.API)
-	if err != nil {
-		return nil, err
-	}
+func NewManager(r JobsRepository, s scheduler.Scheduler) (Manager, error) {
 
 	return &manager{
+		JobsRepository: r,
 		Scheduler:      s,
-		JobsRepository: newJobsRepository(),
 	}, nil
 }
 

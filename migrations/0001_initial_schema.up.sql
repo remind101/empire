@@ -36,6 +36,19 @@ CREATE TABLE processes (
   command text NOT NULL
 );
 
+CREATE TABLE jobs (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  app_id text NOT NULL references apps(name),
+  release_version int NOT NULL,
+  process_type text NOT NULL,
+  instance int NOT NULL,
+
+  environment hstore NOT NULL,
+  image_repo text NOT NULL,
+  image_id text NOT NULL,
+  command text NOT NULL
+);
+
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
 CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
 CREATE UNIQUE INDEX index_slugs_on_image_repo_and_image_id ON slugs USING btree (image_repo, image_id);

@@ -98,6 +98,31 @@ func (r *configsRepository) findBy(field string, v interface{}) (*Config, error)
 	return toConfig(&c, nil), nil
 }
 
+func hstoreToVars(h hstore.Hstore) Vars {
+	vars := make(Vars)
+
+	for k, v := range h.Map {
+		vars[Variable(k)] = v.String
+	}
+
+	return vars
+}
+
+func varsToHstore(vars Vars) hstore.Hstore {
+	m := make(map[string]sql.NullString)
+
+	for k, v := range vars {
+		m[string(k)] = sql.NullString{
+			Valid:  true,
+			String: v,
+		}
+	}
+
+	return hstore.Hstore{
+		Map: m,
+	}
+}
+
 func fromConfig(config *Config) *dbConfig {
 	vars := make(map[string]sql.NullString)
 
@@ -111,9 +136,7 @@ func fromConfig(config *Config) *dbConfig {
 	return &dbConfig{
 		ID:    string(config.ID),
 		AppID: string(config.App.Name),
-		Vars: hstore.Hstore{
-			Map: vars,
-		},
+		Vars:  varsToHstore(config.Vars),
 	}
 }
 
@@ -122,14 +145,8 @@ func toConfig(c *dbConfig, config *Config) *Config {
 		config = &Config{}
 	}
 
-	vars := make(Vars)
-
-	for k, v := range c.Vars.Map {
-		vars[Variable(k)] = v.String
-	}
-
 	config.ID = ConfigID(c.ID)
-	config.Vars = vars
+	config.Vars = hstoreToVars(c.Vars)
 
 	return config
 }
