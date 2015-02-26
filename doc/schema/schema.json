@@ -336,9 +336,9 @@
         },
         "version": {
           "description": "an incremental identifier for the version",
-          "example": "v1",
+          "example": 1,
           "type": [
-            "string"
+            "number"
           ]
         }
       },

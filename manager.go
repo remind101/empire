@@ -242,7 +242,7 @@ func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q in
 
 // newJobName returns a new Name with the proper format.
 func newJobName(name AppName, v ReleaseVersion, t ProcessType, i int) scheduler.JobName {
-	return scheduler.JobName(fmt.Sprintf("%s.%s.%s.%d", name, v, t, i))
+	return scheduler.JobName(fmt.Sprintf("%s.%d.%s.%d", name, v, t, i))
 }
 
 func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, f Formation) []*Job {

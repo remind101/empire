@@ -31,7 +31,7 @@ func TestManagerScheduleRelease(t *testing.T) {
 	}
 
 	release := &Release{
-		Version: "v1",
+		Version: 1,
 		App: &App{
 			Name: "r101-api",
 		},
@@ -74,8 +74,8 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 		UnscheduleFunc: func(n scheduler.JobName) error {
 			unscheduled = true
 
-			if got, want := n, scheduler.JobName("r101-api.v1.web.2"); got != want {
-				t.Fatal("Job name => %s; want %s", got, want)
+			if got, want := n, scheduler.JobName("r101-api.1.web.2"); got != want {
+				t.Fatalf("Job name => %s; want %s", got, want)
 			}
 
 			return nil
@@ -86,13 +86,13 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 			jobs := []*Job{
 				{
 					App:         "r101-api",
-					Release:     "v1",
+					Release:     1,
 					ProcessType: "web",
 					Instance:    1,
 				},
 				{
 					App:         "r101-api",
-					Release:     "v1",
+					Release:     1,
 					ProcessType: "web",
 					Instance:    2,
 				},
@@ -107,7 +107,7 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 	}
 
 	release := &Release{
-		Version: "v1",
+		Version: 1,
 		App: &App{
 			Name: "r101-api",
 		},
@@ -140,10 +140,10 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 }
 
 func TestNewJobName(t *testing.T) {
-	n := newJobName("r101-api", "v1", "web", 1)
+	n := newJobName("r101-api", 1, "web", 1)
 
-	if got, want := n, scheduler.JobName("r101-api.v1.web.1"); got != want {
-		t.Fatal("newJobName => %s; want %s", got, want)
+	if got, want := n, scheduler.JobName("r101-api.1.web.1"); got != want {
+		t.Fatalf("newJobName => %s; want %s", got, want)
 	}
 }
 
@@ -162,12 +162,12 @@ func TestBuildJobs(t *testing.T) {
 		},
 	}
 
-	jobs := buildJobs("r101-api", "v1", image, vars, f)
+	jobs := buildJobs("r101-api", 1, image, vars, f)
 
 	expected := []*Job{
 		{
 			App:         "r101-api",
-			Release:     "v1",
+			Release:     1,
 			ProcessType: "web",
 			Instance:    1,
 			Environment: Vars{
@@ -178,7 +178,7 @@ func TestBuildJobs(t *testing.T) {
 		},
 		{
 			App:         "r101-api",
-			Release:     "v1",
+			Release:     1,
 			ProcessType: "web",
 			Instance:    2,
 			Environment: Vars{

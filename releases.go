@@ -1,9 +1,7 @@
 package empire
 
 import (
-	"fmt"
-	"strconv"
-	"sync"
+	"database/sql"
 	"time"
 )
 
@@ -12,18 +10,19 @@ type ReleaseID string
 
 // ReleaseVersion represents the auto incremented human friendly version number of the
 // release.
-type ReleaseVersion string
+type ReleaseVersion int
 
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
 	ID        ReleaseID      `json:"id"`
 	Version   ReleaseVersion `json:"version"`
-	App       *App           `json:"app"`
-	Config    *Config        `json:"config"`
-	Formation Formation      `json:"formation"`
-	Slug      *Slug          `json:"slug"`
 	CreatedAt time.Time      `json:"created_at"`
+
+	App       *App      `json:"app"`
+	Config    *Config   `json:"config"`
+	Formation Formation `json:"formation"`
+	Slug      *Slug     `json:"slug"`
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and
@@ -35,86 +34,128 @@ type ReleasesRepository interface {
 }
 
 // NewReleasesRepository is a factory method that returns a new Repository.
-func NewReleasesRepository() ReleasesRepository {
-	return newReleasesRepository()
+func NewReleasesRepository(db DB) (ReleasesRepository, error) {
+	return &releasesRepository{db}, nil
 }
 
-// releasesRepository is an in-memory implementation of a Repository
+// dbRelease is a db representation of a release.
+type dbRelease struct {
+	ID       *string `db:"id"`
+	Ver      int64   `db:"version"` // Ver because Version is reserved in gorp for optimistic locking.
+	AppID    string  `db:"app_id"`
+	ConfigID string  `db:"config_id"`
+	SlugID   string  `db:"slug_id"`
+}
+
+// releasesRepository is an implementation of the ReleasesRepository interface backed by
+// a DB.
 type releasesRepository struct {
-	sync.RWMutex
-	releases map[AppName][]*Release
-	versions map[AppName]int
-
-	genTimestamp func() time.Time
-	id           int
-}
-
-// Create a new repository
-func newReleasesRepository() *releasesRepository {
-	return &releasesRepository{
-		releases: make(map[AppName][]*Release),
-		versions: make(map[AppName]int),
-	}
-}
-
-// Generates a repository that stubs out the CreatedAt field.
-func newFakeRepository() *releasesRepository {
-	r := newReleasesRepository()
-	r.genTimestamp = func() time.Time {
-		return time.Date(2014, time.January, 1, 0, 0, 0, 0, time.UTC)
-	}
-	return r
+	DB
 }
 
 func (r *releasesRepository) Create(release *Release) (*Release, error) {
-	r.Lock()
-	defer r.Unlock()
+	rl := fromRelease(release)
 
-	r.id++
-
-	app := release.App
-
-	createdAt := time.Now()
-	if r.genTimestamp != nil {
-		createdAt = r.genTimestamp()
+	t, err := r.DB.Begin()
+	if err != nil {
+		return release, err
 	}
 
-	version := 1
-	if v, ok := r.versions[app.Name]; ok {
-		version = v
+	v, err := lastVersion(t, release.App.Name)
+	if err != nil {
+		return release, err
 	}
 
-	release.ID = ReleaseID(strconv.Itoa(r.id))
-	release.Version = ReleaseVersion(fmt.Sprintf("v%d", version))
-	release.CreatedAt = createdAt.UTC()
+	rl.Ver = v + 1
 
-	r.versions[app.Name] = version + 1
-	r.releases[app.Name] = append(r.releases[app.Name], release)
+	if err := t.Insert(rl); err != nil {
+		return release, err
+	}
 
-	return release, nil
+	if err := t.Commit(); err != nil {
+		return release, err
+	}
+
+	return toRelease(rl, release), nil
 }
 
-func (r *releasesRepository) FindByAppName(id AppName) ([]*Release, error) {
-	r.RLock()
-	defer r.RUnlock()
-
-	if set, ok := r.releases[id]; ok {
-		return set, nil
-	}
-
-	return []*Release{}, nil
+func (r *releasesRepository) Head(appName AppName) (*Release, error) {
+	return headRelease(r.DB, appName)
 }
 
-func (r *releasesRepository) Head(id AppName) (*Release, error) {
-	r.RLock()
-	defer r.RUnlock()
+func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
+	var rs []*dbRelease
 
-	set, ok := r.releases[id]
-	if !ok {
+	if err := r.DB.Select(rs, `select * from releases where app_id = $1 order by id desc limit 1`, string(appName)); err != nil {
 		return nil, nil
 	}
 
-	return set[len(set)-1], nil
+	var releases []*Release
+
+	for _, r := range rs {
+		releases = append(releases, toRelease(r, nil))
+	}
+
+	return releases, nil
+}
+
+func lastVersion(db Queryier, appName AppName) (version int64, err error) {
+	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+
+	return
+}
+
+func headRelease(db Queryier, appName AppName) (*Release, error) {
+	var rl dbRelease
+
+	if err := db.SelectOne(&rl, `select * from releases where app_id = $1 order by id desc limit 1`, string(appName)); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return toRelease(&rl, nil), nil
+}
+
+func fromRelease(release *Release) *dbRelease {
+	id := string(release.ID)
+
+	return &dbRelease{
+		ID:       &id,
+		Ver:      int64(release.Version),
+		AppID:    string(release.App.Name),
+		ConfigID: string(release.Config.ID),
+		SlugID:   string(release.Slug.ID),
+	}
+}
+
+func toRelease(r *dbRelease, release *Release) *Release {
+	if release == nil {
+		release = &Release{}
+	}
+
+	release.ID = ReleaseID(*r.ID)
+	release.Version = ReleaseVersion(r.Ver)
+
+	if release.App == nil {
+		release.App = &App{Name: AppName(r.AppID)}
+	}
+
+	if release.Config == nil {
+		release.Config = &Config{ID: ConfigID(r.ConfigID)}
+	}
+
+	if release.Slug == nil {
+		release.Slug = &Slug{ID: SlugID(r.SlugID)}
+	}
+
+	return release
 }
 
 // ReleaseesService represents a service for interacting with Releases.
@@ -137,9 +178,9 @@ type releasesService struct {
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(options Options, p ProcessesRepository, m Manager) (ReleasesService, error) {
+func NewReleasesService(r ReleasesRepository, p ProcessesRepository, m Manager) (ReleasesService, error) {
 	return &releasesService{
-		ReleasesRepository:  NewReleasesRepository(),
+		ReleasesRepository:  r,
 		ProcessesRepository: p,
 		Manager:             m,
 	}, nil
@@ -171,7 +212,7 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 		return r, err
 	}
 
-	return s.ReleasesRepository.Create(r)
+	return r, nil
 }
 
 func (s *releasesService) FindByApp(a *App) ([]*Release, error) {

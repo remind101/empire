@@ -160,7 +160,7 @@ HTTP/1.1 200 OK
 | ------- | ------- | ------- | ------- |
 | **id** | *uuid* | unique identifier of deploy | `"01234567-89ab-cdef-0123-456789abcdef"` |
 | **release:id** | *uuid* | unique identifier of release | `"01234567-89ab-cdef-0123-456789abcdef"` |
-| **release:version** | *string* | an incremental identifier for the version | `"v1"` |
+| **release:version** | *number* | an incremental identifier for the version | `1` |
 | **release:app:name** | *string* | unique name of app<br/> **pattern:** <code>^[a-z][a-z0-9-]{3,30}$</code> | `"example"` |
 | **release:config:version** | *string* | unique identifier of config | `"0123456789abcdef0123456789abcdef"` |
 | **release:slug:id** | *uuid* | unique identifier of slug | `"01234567-89ab-cdef-0123-456789abcdef"` |
@@ -203,7 +203,7 @@ HTTP/1.1 201 Created
   "id": "01234567-89ab-cdef-0123-456789abcdef",
   "release": {
     "id": "01234567-89ab-cdef-0123-456789abcdef",
-    "version": "v1",
+    "version": 1,
     "app": {
       "name": "example"
     },
