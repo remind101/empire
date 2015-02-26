@@ -245,6 +245,23 @@ func (s *Service) ConfigUpdate(appIdentity string, o ConfigUpdateOpts) (*Config,
 	return &config, s.Patch(&config, fmt.Sprintf("/apps/%v/configs", appIdentity), o)
 }
 
+// Config Vars allow you to manage the configuration information
+// provided to an app on Heroku.
+type ConfigVar map[string]string
+
+// Get config-vars for app.
+func (s *Service) ConfigVarInfo(appIdentity string) (map[string]string, error) {
+	var configVar ConfigVar
+	return configVar, s.Get(&configVar, fmt.Sprintf("/apps/%v/config-vars", appIdentity), nil, nil)
+}
+
+// Update config-vars for app. You can update existing config-vars by
+// setting them again, and remove by setting it to `NULL`.
+func (s *Service) ConfigVarUpdate(appIdentity string, o map[string]string) (map[string]string, error) {
+	var configVar map[string]string
+	return configVar, s.Patch(&configVar, fmt.Sprintf("/apps/%v/config-vars", appIdentity), o)
+}
+
 type Deploy struct {
 	ID      string `json:"id" url:"id,key"` // unique identifier of deploy
 	Release struct {

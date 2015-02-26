@@ -1,0 +1,59 @@
+{
+  "description": "Configuration information for an app",
+  "id": "schemata/config-var",
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "stability": "production",
+  "title": "Config Vars",
+  "type": [
+    "object"
+  ],
+  "definitions": {
+  },
+  "links": [
+    {
+      "description": "Get config-vars for app.",
+      "href": "/apps/{(%2Fschemata%2Fapp%23%2Fdefinitions%2Fidentity)}/config-vars",
+      "method": "GET",
+      "rel": "self",
+      "title": "Info"
+    },
+    {
+      "description": "Update config-vars for app. You can update existing config-vars by setting them again, and remove by setting it to `NULL`.",
+      "href": "/apps/{(%2Fschemata%2Fapp%23%2Fdefinitions%2Fidentity)}/config-vars",
+      "method": "PATCH",
+      "rel": "update",
+      "schema": {
+        "additionalProperties": false,
+        "description": "hash of config changes – update values or delete by seting it to NULL",
+        "example": {
+          "FOO": null,
+          "BAZ": "grault"
+        },
+        "patternProperties": {
+          "^\\w+$": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": [
+          "object"
+        ]
+      },
+      "title": "Update"
+    }
+  ],
+  "example": {
+    "FOO": "bar",
+    "BAZ": "qux"
+  },
+  "patternProperties": {
+    "^\\w+$": {
+      "type": [
+        "string"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

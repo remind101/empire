@@ -87,7 +87,7 @@ func (r *configsRepository) Push(config *Config) (*Config, error) {
 func (r *configsRepository) findBy(field string, v interface{}) (*Config, error) {
 	var c dbConfig
 
-	if err := r.DB.SelectOne(&c, `select * from configs where `+field+` = $1 limit 1`, v); err != nil {
+	if err := r.DB.SelectOne(&c, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, v); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -185,10 +185,10 @@ func (s *configsService) Apply(app *App, vars Vars) (*Config, error) {
 
 	// If the app doesn't have a config, just build a new one.
 	if l == nil {
-		l = &Config{
-			App: app,
-		}
+		l = &Config{}
 	}
+
+	l.App = app
 
 	c := NewConfig(l, vars)
 
