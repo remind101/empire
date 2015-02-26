@@ -47,37 +47,6 @@ func TestMergeVars(t *testing.T) {
 	}
 }
 
-func TestHash(t *testing.T) {
-	tests := []struct {
-		in  Vars
-		out string
-	}{
-		// Simple
-		{
-			Vars{"RAILS_ENV": "production"},
-			"20f3b833ad1f83353b1ae1d24ea6833693ce067c",
-		},
-
-		// More
-		{
-			Vars{"RAILS_ENV": "production", "FOO": "bar"},
-			"e74293df4e696ca0247c3508456712a8541b826c",
-		},
-
-		// Swapped
-		{
-			Vars{"FOO": "bar", "RAILS_ENV": "production"},
-			"e74293df4e696ca0247c3508456712a8541b826c",
-		},
-	}
-
-	for _, tt := range tests {
-		if got, want := hash(tt.in), tt.out; got != want {
-			t.Errorf("hash(%q) => %s; want %s", tt.in, got, want)
-		}
-	}
-}
-
 func TestConfigsServiceApply(t *testing.T) {
 	var pushed bool
 	app := &App{}

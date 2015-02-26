@@ -59,17 +59,16 @@ func (r *releasesRepository) Create(release *Release) (*Release, error) {
 		return release, err
 	}
 
-	// Get the last release for this app.
-	last, err := headRelease(t, release.App.Name)
-	if err != nil {
-		return release, err
+	var version int64
+	if err := t.SelectOne(&version, `select ver from releases where app_id = $1 order by ver desc`, string(release.App.Name)); err != nil {
+		if err == sql.ErrNoRows {
+			version = 1
+		} else {
+			return release, err
+		}
 	}
 
-	// If there was a previous release for this app, increment the version
-	// by 1.
-	if last != nil {
-		rl.Version = int64(last.Version) + 1
-	}
+	rl.Version = version
 
 	if err := t.Insert(rl); err != nil {
 		return release, err
@@ -192,7 +191,7 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 		return r, err
 	}
 
-	return s.ReleasesRepository.Create(r)
+	return r, nil
 }
 
 func (s *releasesService) FindByApp(a *App) ([]*Release, error) {

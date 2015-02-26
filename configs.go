@@ -1,21 +1,18 @@
 package empire
 
 import (
-	"crypto/sha1"
 	"database/sql"
-	"fmt"
-	"sort"
 
 	"github.com/lib/pq/hstore"
 )
 
-// ConfigVersion represents a unique identifier for a Config version.
-type ConfigVersion string
+// ConfigID represents a unique identifier for a Config.
+type ConfigID string
 
 // Config represents a collection of environment variables.
 type Config struct {
-	Version ConfigVersion `json:"version"`
-	Vars    Vars          `json:"vars"`
+	ID   ConfigID `json:"id"`
+	Vars Vars     `json:"vars"`
 
 	App *App `json:"app"`
 }
@@ -26,9 +23,8 @@ func NewConfig(old *Config, vars Vars) *Config {
 	v := mergeVars(old.Vars, vars)
 
 	return &Config{
-		Version: ConfigVersion(hash(v)),
-		App:     old.App,
-		Vars:    v,
+		App:  old.App,
+		Vars: v,
 	}
 }
 
@@ -43,8 +39,8 @@ type ConfigsRepository interface {
 	// Head returns the current Config for the app.
 	Head(AppName) (*Config, error)
 
-	// Version returns the specific version of a Config for an app.
-	Find(ConfigVersion) (*Config, error)
+	// Find returns the specific version of a Config for an app.
+	Find(ConfigID) (*Config, error)
 
 	// Store stores the Config for the app.
 	Push(*Config) (*Config, error)
@@ -73,8 +69,8 @@ func (r *configsRepository) Head(appName AppName) (*Config, error) {
 }
 
 // Find implements Repository Find.
-func (r *configsRepository) Find(version ConfigVersion) (*Config, error) {
-	return r.findBy("version", string(version))
+func (r *configsRepository) Find(id ConfigID) (*Config, error) {
+	return r.findBy("id", string(id))
 }
 
 // Push implements Repository Push.
@@ -113,7 +109,7 @@ func fromConfig(config *Config) *dbConfig {
 	}
 
 	return &dbConfig{
-		ID:    string(config.Version),
+		ID:    string(config.ID),
 		AppID: string(config.App.Name),
 		Vars: hstore.Hstore{
 			Map: vars,
@@ -132,7 +128,7 @@ func toConfig(c *dbConfig, config *Config) *Config {
 		vars[Variable(k)] = v.String
 	}
 
-	config.Version = ConfigVersion(c.ID)
+	config.ID = ConfigID(c.ID)
 	config.Vars = vars
 
 	return config
@@ -156,25 +152,6 @@ func mergeVars(old, new Vars) Vars {
 	}
 
 	return vars
-}
-
-// hash creates a sha1 hash of a set of Vars.
-func hash(vars Vars) string {
-	s := make(sort.StringSlice, len(vars))
-
-	for n := range vars {
-		s = append(s, string(n))
-	}
-
-	sort.Sort(s)
-
-	v := ""
-
-	for _, n := range s {
-		v = v + n + "=" + vars[Variable(n)]
-	}
-
-	return fmt.Sprintf("%x", sha1.Sum([]byte(v)))
 }
 
 // ConfigsService represents a service for interacting with Configs.
