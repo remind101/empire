@@ -12,7 +12,6 @@ doc:
 	prmd doc doc/schema/schema.json > doc/schema/schema.md
 
 bootstrap: cmd
-	dropdb empire
 	createdb empire
 	./build/empire migrate
 
