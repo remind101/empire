@@ -1,5 +1,5 @@
 {
-  "description": "Config Vars allow you to manage the configuration information provided to an app on Heroku.",
+  "description": "Configuration information for an app",
   "id": "schemata/config-var",
   "$schema": "http://json-schema.org/draft-04/hyper-schema",
   "stability": "production",
