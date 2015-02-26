@@ -1,6 +1,9 @@
 package empire // import "github.com/remind101/empire"
 
-import "github.com/mattes/migrate/migrate"
+import (
+	"github.com/mattes/migrate/migrate"
+	"github.com/remind101/empire/scheduler"
+)
 
 // DefaultOptions is a default Options instance that can be passed when
 // intializing a new Empire.
@@ -52,6 +55,11 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	scheduler, err := scheduler.NewScheduler(options.Fleet.API)
+	if err != nil {
+		return nil, err
+	}
+
 	slugsRepository, err := NewSlugsRepository(db)
 	if err != nil {
 		return nil, err
@@ -86,6 +94,11 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	jobsRepository, err := NewJobsRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
 	apps, err := NewAppsService(appsRepository)
 	if err != nil {
 		return nil, err
@@ -96,7 +109,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	manager, err := NewManager(options)
+	manager, err := NewManager(jobsRepository, scheduler)
 	if err != nil {
 		return nil, err
 	}
