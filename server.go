@@ -193,7 +193,7 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	d, err := h.DeploysService.Deploy(&Image{
+	d, err := h.DeploysService.Deploy(Image{
 		Repo: Repo(form.Image.Repo),
 		ID:   form.Image.ID,
 	})

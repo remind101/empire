@@ -3,7 +3,6 @@ package empire
 import (
 	"fmt"
 
-	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/scheduler"
 )
 
@@ -65,10 +64,9 @@ type dbJob struct {
 	ProcessType    string `db:"process_type"`
 	Instance       int64  `db:"instance"`
 
-	Environment hstore.Hstore `db:"environment"`
-	ImageRepo   string        `db:"image_repo"`
-	ImageID     string        `db:"image_id"`
-	Command     string        `db:"command"`
+	Environment Vars   `db:"environment"`
+	Image       Image  `db:"image"`
+	Command     string `db:"command"`
 }
 
 type jobsRepository struct {
@@ -114,11 +112,8 @@ func toJob(j *dbJob, job *Job) *Job {
 	job.Release = ReleaseVersion(j.ReleaseVersion)
 	job.ProcessType = ProcessType(j.ProcessType)
 	job.Instance = int(j.Instance)
-	job.Environment = hstoreToVars(j.Environment)
-	job.Image = Image{
-		Repo: Repo(j.ImageRepo),
-		ID:   j.ImageID,
-	}
+	job.Environment = j.Environment
+	job.Image = j.Image
 	job.Command = Command(j.Command)
 
 	return job
@@ -131,9 +126,8 @@ func fromJob(job *Job) *dbJob {
 		ReleaseVersion: int64(job.Release),
 		ProcessType:    string(job.ProcessType),
 		Instance:       int64(job.Instance),
-		Environment:    varsToHstore(job.Environment),
-		ImageRepo:      string(job.Image.Repo),
-		ImageID:        string(job.Image.ID),
+		Environment:    job.Environment,
+		Image:          job.Image,
 		Command:        string(job.Command),
 	}
 }
@@ -178,7 +172,7 @@ func (m *manager) ScheduleRelease(release *Release) error {
 	jobs := buildJobs(
 		release.App.Name,
 		release.Version,
-		*release.Slug.Image,
+		release.Slug.Image,
 		release.Config.Vars,
 		release.Formation,
 	)
@@ -281,7 +275,7 @@ func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q in
 					ProcessType: t,
 					Instance:    i,
 					Environment: release.Config.Vars,
-					Image:       *release.Slug.Image,
+					Image:       release.Slug.Image,
 					Command:     p.Command,
 				},
 			)

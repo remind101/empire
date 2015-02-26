@@ -1,38 +1,41 @@
 package empire
 
-import (
-	"database/sql"
-
-	"github.com/lib/pq/hstore"
-)
+import "database/sql/driver"
 
 // SlugID represents the unique identifier of a Slug.
 type SlugID string
 
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
-	ID           SlugID     `json:"id"`
-	Image        *Image     `json:"image"`
-	ProcessTypes CommandMap `json:"process_types"`
+	ID           SlugID     `json:"id" db:"id"`
+	Image        Image      `json:"image"`
+	ProcessTypes CommandMap `json:"process_types" db:"process_types"`
+}
+
+// Scan implements the sql.Scanner interface.
+func (id *SlugID) Scan(src interface{}) error {
+	if src, ok := src.([]byte); ok {
+		*id = SlugID(src)
+	}
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (id SlugID) Value() (driver.Value, error) {
+	return driver.Value(string(id)), nil
 }
 
 // SlugsRepository represents an interface for creating and finding slugs.
 type SlugsRepository interface {
 	Create(*Slug) (*Slug, error)
 	FindByID(SlugID) (*Slug, error)
-	FindByImage(*Image) (*Slug, error)
+	FindByImage(Image) (*Slug, error)
 }
 
 // NewSlugsRepository returns a new Repository instance.
 func NewSlugsRepository(db DB) (SlugsRepository, error) {
 	return &slugsRepository{db}, nil
-}
-
-type dbSlug struct {
-	ID           string        `db:"id"`
-	ImageRepo    string        `db:"image_repo"`
-	ImageID      string        `db:"image_id"`
-	ProcessTypes hstore.Hstore `db:"process_types"`
 }
 
 // slugsRepository is a fake implementation of the Repository interface.
@@ -42,82 +45,35 @@ type slugsRepository struct {
 
 // Create implements Repository Create.
 func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
-	s := fromSlug(slug)
-
-	if err := r.DB.Insert(s); err != nil {
-		return slug, err
-	}
-
-	return toSlug(s, slug), nil
+	return slug, r.DB.Insert(slug)
 }
 
 // FindByID implements Repository FindByID.
 func (r *slugsRepository) FindByID(id SlugID) (*Slug, error) {
-	var s dbSlug
+	var slug Slug
 
-	if err := r.DB.SelectOne(&s, `select * from slugs where id = $1`, string(id)); err != nil {
+	if err := r.DB.SelectOne(&slug, `select * from slugs where id = $1`, string(id)); err != nil {
 		return nil, err
 	}
 
-	return toSlug(&s, nil), nil
+	return &slug, nil
 }
 
-func (r *slugsRepository) FindByImage(image *Image) (*Slug, error) {
-	var s dbSlug
+func (r *slugsRepository) FindByImage(image Image) (*Slug, error) {
+	var slug Slug
 
-	if err := r.DB.SelectOne(&s, `select * from slugs where image_repo = $1 and image_id = $2`, string(image.Repo), string(image.ID)); err != nil {
+	if err := r.DB.SelectOne(&slug, `select * from slugs where image = $1`, image.String()); err != nil {
 		return nil, err
 	}
 
-	return toSlug(&s, nil), nil
-}
-
-func fromSlug(slug *Slug) *dbSlug {
-	pt := make(map[string]sql.NullString)
-
-	for k, v := range slug.ProcessTypes {
-		pt[string(k)] = sql.NullString{
-			Valid:  true,
-			String: string(v),
-		}
-	}
-
-	return &dbSlug{
-		ID:        string(slug.ID),
-		ImageRepo: string(slug.Image.Repo),
-		ImageID:   string(slug.Image.ID),
-		ProcessTypes: hstore.Hstore{
-			Map: pt,
-		},
-	}
-}
-
-func toSlug(s *dbSlug, slug *Slug) *Slug {
-	if slug == nil {
-		slug = &Slug{}
-	}
-
-	cm := make(CommandMap)
-
-	for k, v := range s.ProcessTypes.Map {
-		cm[ProcessType(k)] = Command(v.String)
-	}
-
-	slug.ID = SlugID(s.ID)
-	slug.Image = &Image{
-		Repo: Repo(s.ImageRepo),
-		ID:   s.ImageRepo,
-	}
-	slug.ProcessTypes = cm
-
-	return slug
+	return &slug, nil
 }
 
 // SlugsService is a service for interacting with slugs.
 type SlugsService interface {
 	// CreateByImage extracts process types from an image, then creates a
 	// slug for it.
-	CreateByImage(*Image) (*Slug, error)
+	CreateByImage(Image) (*Slug, error)
 }
 
 // slugsService is a base implementation of the SlugsService interface.
@@ -136,7 +92,7 @@ func NewSlugsService(r SlugsRepository, e Extractor) (SlugsService, error) {
 
 // CreateByImageID extracts the process types from the image, then creates a new
 // slug.
-func (s *slugsService) CreateByImage(image *Image) (*Slug, error) {
+func (s *slugsService) CreateByImage(image Image) (*Slug, error) {
 	if slug, err := s.Repository.FindByImage(image); slug != nil {
 		return slug, err
 	}

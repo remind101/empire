@@ -20,6 +20,7 @@ func TestNewFormation(t *testing.T) {
 			},
 			expected: Formation{
 				"web": &Process{
+					Type:     "web",
 					Quantity: 1,
 					Command:  "./bin/web",
 				},
@@ -33,6 +34,7 @@ func TestNewFormation(t *testing.T) {
 			},
 			expected: Formation{
 				"web": &Process{
+					Type:     "web",
 					Quantity: 1,
 					Command:  "./bin/web",
 				},
@@ -46,6 +48,7 @@ func TestNewFormation(t *testing.T) {
 			},
 			expected: Formation{
 				"worker": &Process{
+					Type:     "worker",
 					Quantity: 0,
 					Command:  "sidekiq",
 				},
@@ -55,10 +58,12 @@ func TestNewFormation(t *testing.T) {
 		{
 			f: Formation{
 				"web": &Process{
+					Type:     "web",
 					Quantity: 5,
 					Command:  "rackup",
 				},
 				"worker": &Process{
+					Type:     "worker",
 					Quantity: 2,
 					Command:  "sidekiq",
 				},
@@ -68,6 +73,7 @@ func TestNewFormation(t *testing.T) {
 			},
 			expected: Formation{
 				"web": &Process{
+					Type:     "web",
 					Quantity: 5,
 					Command:  "./bin/web",
 				},
@@ -75,26 +81,26 @@ func TestNewFormation(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		f := NewFormation(tt.f, tt.cm)
 
 		if got, want := f, tt.expected; !reflect.DeepEqual(got, want) {
-			t.Fatalf("processes => %v; want %v", got, want)
+			t.Fatalf("%d processes => %v; want %v", i, got, want)
 		}
 	}
 }
 
 type mockProcessesRepository struct {
-	CreateFunc func(ProcessType, *Process) (ProcessType, *Process, error)
+	CreateFunc func(*Process) (*Process, error)
 	AllFunc    func(ReleaseID) (Formation, error)
 }
 
-func (r *mockProcessesRepository) Create(t ProcessType, p *Process) (ProcessType, *Process, error) {
+func (r *mockProcessesRepository) Create(p *Process) (*Process, error) {
 	if r.CreateFunc != nil {
-		return r.CreateFunc(t, p)
+		return r.CreateFunc(p)
 	}
 
-	return "", nil, nil
+	return nil, nil
 }
 
 func (r *mockProcessesRepository) All(id ReleaseID) (Formation, error) {

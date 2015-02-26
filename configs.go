@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql"
+	"database/sql/driver"
 
 	"github.com/lib/pq/hstore"
 )
@@ -9,12 +10,25 @@ import (
 // ConfigID represents a unique identifier for a Config.
 type ConfigID string
 
+// Scan implements the sql.Scanner interface.
+func (id *ConfigID) Scan(src interface{}) error {
+	if src, ok := src.([]byte); ok {
+		*id = ConfigID(src)
+	}
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (id ConfigID) Value() (driver.Value, error) {
+	return driver.Value(string(id)), nil
+}
+
 // Config represents a collection of environment variables.
 type Config struct {
-	ID   ConfigID `json:"id"`
-	Vars Vars     `json:"vars"`
-
-	App *App `json:"app"`
+	ID      ConfigID `json:"id" db:"id"`
+	Vars    Vars     `json:"vars" db:"vars"`
+	AppName AppName  `json:"-" db:"app_id"`
 }
 
 // NewConfig initializes a new config based on the old config, with the new
@@ -23,8 +37,8 @@ func NewConfig(old *Config, vars Vars) *Config {
 	v := mergeVars(old.Vars, vars)
 
 	return &Config{
-		App:  old.App,
-		Vars: v,
+		AppName: old.AppName,
+		Vars:    v,
 	}
 }
 
@@ -33,6 +47,42 @@ type Variable string
 
 // Vars represents a variable -> value mapping.
 type Vars map[Variable]string
+
+// Scan implements the sql.Scanner interface.
+func (v *Vars) Scan(src interface{}) error {
+	h := hstore.Hstore{}
+	if err := h.Scan(src); err != nil {
+		return err
+	}
+
+	vars := make(Vars)
+
+	for k, v := range h.Map {
+		vars[Variable(k)] = v.String
+	}
+
+	*v = vars
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (v Vars) Value() (driver.Value, error) {
+	m := make(map[string]sql.NullString)
+
+	for k, v := range v {
+		m[string(k)] = sql.NullString{
+			Valid:  true,
+			String: v,
+		}
+	}
+
+	h := hstore.Hstore{
+		Map: m,
+	}
+
+	return h.Value()
+}
 
 // ConfigsRepository represents an interface for retrieving and storing Config's.
 type ConfigsRepository interface {
@@ -50,13 +100,6 @@ func NewConfigsRepository(db DB) (ConfigsRepository, error) {
 	return &configsRepository{db}, nil
 }
 
-// dbConfig is the databse representation of a Config.
-type dbConfig struct {
-	ID    string        `db:"id"`
-	Vars  hstore.Hstore `db:"vars"`
-	AppID string        `db:"app_id"`
-}
-
 // configsRepository is an implementation of the ConfigsRepository interface backed by
 // a DB.
 type configsRepository struct {
@@ -65,29 +108,29 @@ type configsRepository struct {
 
 // Head implements Repository Head.
 func (r *configsRepository) Head(appName AppName) (*Config, error) {
-	return r.findBy("app_id", string(appName))
+	return FindConfigBy(r.DB, "app_id", string(appName))
 }
 
 // Find implements Repository Find.
 func (r *configsRepository) Find(id ConfigID) (*Config, error) {
-	return r.findBy("id", string(id))
+	return FindConfigBy(r.DB, "id", string(id))
 }
 
 // Push implements Repository Push.
 func (r *configsRepository) Push(config *Config) (*Config, error) {
-	c := fromConfig(config)
-
-	if err := r.DB.Insert(c); err != nil {
-		return config, err
-	}
-
-	return toConfig(c, config), nil
+	return CreateConfig(r.DB, config)
 }
 
-func (r *configsRepository) findBy(field string, v interface{}) (*Config, error) {
-	var c dbConfig
+// CreateConfig inserts a Config in the database.
+func CreateConfig(db Inserter, config *Config) (*Config, error) {
+	return config, db.Insert(config)
+}
 
-	if err := r.DB.SelectOne(&c, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, v); err != nil {
+// FindConfigBy finds a Config by a field.
+func FindConfigBy(db Queryier, field string, value interface{}) (*Config, error) {
+	var config Config
+
+	if err := db.SelectOne(&config, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, value); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -95,60 +138,7 @@ func (r *configsRepository) findBy(field string, v interface{}) (*Config, error)
 		return nil, err
 	}
 
-	return toConfig(&c, nil), nil
-}
-
-func hstoreToVars(h hstore.Hstore) Vars {
-	vars := make(Vars)
-
-	for k, v := range h.Map {
-		vars[Variable(k)] = v.String
-	}
-
-	return vars
-}
-
-func varsToHstore(vars Vars) hstore.Hstore {
-	m := make(map[string]sql.NullString)
-
-	for k, v := range vars {
-		m[string(k)] = sql.NullString{
-			Valid:  true,
-			String: v,
-		}
-	}
-
-	return hstore.Hstore{
-		Map: m,
-	}
-}
-
-func fromConfig(config *Config) *dbConfig {
-	vars := make(map[string]sql.NullString)
-
-	for k, v := range config.Vars {
-		vars[string(k)] = sql.NullString{
-			Valid:  true,
-			String: v,
-		}
-	}
-
-	return &dbConfig{
-		ID:    string(config.ID),
-		AppID: string(config.App.Name),
-		Vars:  varsToHstore(config.Vars),
-	}
-}
-
-func toConfig(c *dbConfig, config *Config) *Config {
-	if config == nil {
-		config = &Config{}
-	}
-
-	config.ID = ConfigID(c.ID)
-	config.Vars = hstoreToVars(c.Vars)
-
-	return config
+	return &config, nil
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a
@@ -205,7 +195,7 @@ func (s *configsService) Apply(app *App, vars Vars) (*Config, error) {
 		l = &Config{}
 	}
 
-	l.App = app
+	l.AppName = app.Name
 
 	c := NewConfig(l, vars)
 
@@ -222,8 +212,8 @@ func (s *configsService) Head(app *App) (*Config, error) {
 
 	if c == nil {
 		return s.Repository.Push(&Config{
-			App:  app,
-			Vars: make(Vars),
+			AppName: app.Name,
+			Vars:    make(Vars),
 		})
 	}
 

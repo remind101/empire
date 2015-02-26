@@ -15,8 +15,7 @@ CREATE TABLE configs (
 
 CREATE TABLE slugs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  image_repo text NOT NULL,
-  image_id text NOT NULL,
+  image text NOT NULL,
   process_types hstore NOT NULL
 );
 
@@ -44,13 +43,12 @@ CREATE TABLE jobs (
   instance int NOT NULL,
 
   environment hstore NOT NULL,
-  image_repo text NOT NULL,
-  image_id text NOT NULL,
+  image text NOT NULL,
   command text NOT NULL
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
 CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
-CREATE UNIQUE INDEX index_slugs_on_image_repo_and_image_id ON slugs USING btree (image_repo, image_id);
+CREATE UNIQUE INDEX index_slugs_on_image ON slugs USING btree (image);
 CREATE UNIQUE INDEX index_releases_on_app_id_and_version ON releases USING btree (app_id, version);
 CREATE INDEX index_configs_on_created_at ON configs (created_at);
