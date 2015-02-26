@@ -99,7 +99,8 @@ func NewServer(e *Empire) *Server {
 	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService}) // List existing releases
 
 	// Configs
-	r.Handle("PATCH", "/apps/{app}/configs", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService}) // Update an app config
+	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e.AppsService, e.ConfigsService})                        // List app config
+	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService}) // Update an app config
 
 	// Formations
 	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.Manager}) // Batch update formation
@@ -224,20 +225,41 @@ func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 	return 200, rels, nil
 }
 
+type GetConfigs struct {
+	AppsService    AppsService
+	ConfigsService ConfigsService
+}
+
+func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
+	name := AppName(req.Vars["app"])
+
+	a, err := h.AppsService.FindByName(name)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	if a == nil {
+		return http.StatusNotFound, nil, nil
+	}
+
+	c, err := h.ConfigsService.Head(a)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return 200, c.Vars, nil
+}
+
 type PatchConfigs struct {
 	AppsService     AppsService
 	ReleasesService ReleasesService
 	ConfigsService  ConfigsService
 }
 
-type PatchConfigsForm struct {
-	Vars Vars `json:"vars"`
-}
-
 func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
-	var form PatchConfigsForm
+	var configVars Vars
 
-	if err := req.Decode(&form); err != nil {
+	if err := req.Decode(&configVars); err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
@@ -254,7 +276,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Update the config
-	c, err := h.ConfigsService.Apply(a, form.Vars)
+	c, err := h.ConfigsService.Apply(a, configVars)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -274,7 +296,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 		}
 	}
 
-	return 200, c, nil
+	return 200, c.Vars, nil
 }
 
 type PatchFormation struct {

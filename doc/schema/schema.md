@@ -46,6 +46,68 @@ HTTP/1.1 201 Created
 ```
 
 
+## Config Vars
+Config Vars allow you to manage the configuration information provided to an app on Heroku.
+
+### Config Vars Info
+Get config-vars for app.
+
+```
+GET /apps/{app_name}/config-vars
+```
+
+
+#### Curl Example
+```bash
+$ curl -n -X GET http://localhost:8080/apps/$APP_NAME/config-vars
+
+```
+
+
+#### Response Example
+```
+HTTP/1.1 200 OK
+```
+```json
+{
+  "FOO": "bar",
+  "BAZ": "qux"
+}
+```
+
+### Config Vars Update
+Update config-vars for app. You can update existing config-vars by setting them again, and remove by setting it to `NULL`.
+
+```
+PATCH /apps/{app_name}/config-vars
+```
+
+
+#### Curl Example
+```bash
+$ curl -n -X PATCH http://localhost:8080/apps/$APP_NAME/config-vars \
+  -H "Content-Type: application/json" \
+ \
+  -d '{
+  "FOO": null,
+  "BAZ": "grault"
+}'
+
+```
+
+
+#### Response Example
+```
+HTTP/1.1 200 OK
+```
+```json
+{
+  "FOO": "bar",
+  "BAZ": "qux"
+}
+```
+
+
 ## Config
 
 

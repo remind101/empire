@@ -79,14 +79,12 @@ func TestEmpirePatchConfig(t *testing.T) {
 	a := c.MustAppCreate("api", "remind101/r101-api")
 
 	vars := map[string]string{"RAILS_ENV": "production"}
-	o := client.ConfigUpdateOpts{}
-	o.Vars = vars
-	config, err := c.ConfigUpdate(a.Name, o)
+	config, err := c.ConfigVarUpdate(a.Name, vars)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := config.Vars, vars; !reflect.DeepEqual(got, want) {
+	if got, want := config, vars; !reflect.DeepEqual(got, want) {
 		t.Fatalf("Vars => %q; want %q", got, want)
 	}
 }

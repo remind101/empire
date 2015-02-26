@@ -185,10 +185,10 @@ func (s *configsService) Apply(app *App, vars Vars) (*Config, error) {
 
 	// If the app doesn't have a config, just build a new one.
 	if l == nil {
-		l = &Config{
-			App: app,
-		}
+		l = &Config{}
 	}
+
+	l.App = app
 
 	c := NewConfig(l, vars)
 
