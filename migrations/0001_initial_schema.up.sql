@@ -15,7 +15,7 @@ CREATE TABLE configs (
 CREATE TABLE releases (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   app_id text NOT NULL references apps(name),
-  ver int NOT NULL
+  version int NOT NULL
 );
 
 CREATE TABLE processes (
@@ -36,4 +36,4 @@ CREATE TABLE slugs (
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
 CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
 CREATE UNIQUE INDEX index_slugs_on_image_repo_and_image_id ON slugs USING btree (image_repo, image_id);
-CREATE UNIQUE INDEX index_releases_on_app_id_and_version ON releases USING btree (app_id, ver);
+CREATE UNIQUE INDEX index_releases_on_app_id_and_version ON releases USING btree (app_id, version);

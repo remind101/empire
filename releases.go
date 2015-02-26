@@ -40,9 +40,9 @@ func NewReleasesRepository(db DB) (ReleasesRepository, error) {
 
 // dbRelease is a db representation of a release.
 type dbRelease struct {
-	ID      *string `db:"id"`
-	AppID   string  `db:"app_id"`
-	Version int64   `db:"ver"`
+	ID    *string `db:"id"`
+	AppID string  `db:"app_id"`
+	Ver   int64   `db:"version"` // Ver because Version is reserved in gorp for optimistic locking.
 }
 
 // releasesRepository is an implementation of the ReleasesRepository interface backed by
@@ -59,16 +59,12 @@ func (r *releasesRepository) Create(release *Release) (*Release, error) {
 		return release, err
 	}
 
-	var version int64
-	if err := t.SelectOne(&version, `select ver from releases where app_id = $1 order by ver desc`, string(release.App.Name)); err != nil {
-		if err == sql.ErrNoRows {
-			version = 1
-		} else {
-			return release, err
-		}
+	v, err := lastVersion(t, release.App.Name)
+	if err != nil {
+		return release, err
 	}
 
-	rl.Version = version
+	rl.Ver = v + 1
 
 	if err := t.Insert(rl); err != nil {
 		return release, err
@@ -101,6 +97,16 @@ func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) 
 	return releases, nil
 }
 
+func lastVersion(db Queryier, appName AppName) (version int64, err error) {
+	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+
+	return
+}
+
 func headRelease(db Queryier, appName AppName) (*Release, error) {
 	var rl dbRelease
 
@@ -119,9 +125,9 @@ func fromRelease(release *Release) *dbRelease {
 	id := string(release.ID)
 
 	return &dbRelease{
-		ID:      &id,
-		AppID:   string(release.App.Name),
-		Version: int64(release.Version),
+		ID:    &id,
+		AppID: string(release.App.Name),
+		Ver:   int64(release.Version),
 	}
 }
 
@@ -132,7 +138,7 @@ func toRelease(r *dbRelease, release *Release) *Release {
 
 	release.ID = ReleaseID(*r.ID)
 	release.App = &App{Name: AppName(r.AppID)}
-	release.Version = ReleaseVersion(r.Version)
+	release.Version = ReleaseVersion(r.Ver)
 
 	return release
 }
