@@ -72,7 +72,7 @@ func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
 	var jobs []*Job
 
 	for _, j := range r.jobs {
-		if (q.App == "" || q.App == j.App) && (q.Release == "" || q.Release == j.Release) {
+		if (string(q.App) == "" || q.App == j.App) && (string(q.Release) == "" || q.Release == j.Release) {
 			jobs = append(jobs, j)
 		}
 	}
