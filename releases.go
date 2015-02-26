@@ -21,7 +21,7 @@ type Release struct {
 	Version   ReleaseVersion `json:"version"`
 	App       *App           `json:"app"`
 	Config    *Config        `json:"config"`
-	Formation *Formation     `json:"formation"`
+	Formation Formation      `json:"formation"`
 	Slug      *Slug          `json:"slug"`
 	CreatedAt time.Time      `json:"created_at"`
 }
@@ -131,71 +131,78 @@ type ReleasesService interface {
 
 // releasesService is a base implementation of the ReleasesService interface.
 type releasesService struct {
-	Repository           ReleasesRepository
-	FormationsRepository FormationsRepository
-	Manager              Manager
+	ReleasesRepository
+	ProcessesRepository
+	Manager
 }
 
 // NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(options Options, m Manager) (ReleasesService, error) {
+func NewReleasesService(options Options, p ProcessesRepository, m Manager) (ReleasesService, error) {
 	return &releasesService{
-		Repository:           NewReleasesRepository(),
-		FormationsRepository: NewFormationsRepository(),
-		Manager:              m,
+		ReleasesRepository:  NewReleasesRepository(),
+		ProcessesRepository: p,
+		Manager:             m,
 	}, nil
 }
 
 // Create creates the release, then sets the current process formation on the release.
 func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release, error) {
+	r := &Release{
+		App:    app,
+		Config: config,
+		Slug:   slug,
+	}
+
+	r, err := s.ReleasesRepository.Create(r)
+	if err != nil {
+		return r, err
+	}
+
 	// Create a new formation for this release.
-	formation, err := s.createFormation(app, slug)
+	formation, err := s.createFormation(r)
 	if err != nil {
 		return nil, err
 	}
 
-	r := &Release{
-		App:       app,
-		Config:    config,
-		Slug:      slug,
-		Formation: formation,
-	}
-
-	r, err = s.Repository.Create(r)
-	if err != nil {
-		return r, err
-	}
+	r.Formation = formation
 
 	// Schedule the new release onto the cluster.
 	if err := s.Manager.ScheduleRelease(r); err != nil {
 		return r, err
 	}
 
-	return s.Repository.Create(r)
+	return s.ReleasesRepository.Create(r)
 }
 
 func (s *releasesService) FindByApp(a *App) ([]*Release, error) {
-	return s.Repository.FindByAppName(a.Name)
+	return s.ReleasesRepository.FindByAppName(a.Name)
 }
 
 func (s *releasesService) Head(app *App) (*Release, error) {
-	return s.Repository.Head(app.Name)
+	return s.ReleasesRepository.Head(app.Name)
 }
 
-func (s *releasesService) createFormation(app *App, slug *Slug) (*Formation, error) {
+func (s *releasesService) createFormation(release *Release) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
-	old, err := s.Repository.Head(app.Name)
+	last, err := s.ReleasesRepository.Head(release.App.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	var p ProcessMap
-	if old != nil {
-		p = old.Formation.Processes
+	var existing Formation
+	if last != nil {
+		existing = last.Formation
 	}
 
-	formation := &Formation{
-		Processes: NewProcessMap(p, slug.ProcessTypes),
+	f := NewFormation(existing, release.Slug.ProcessTypes)
+
+	for t, p := range f {
+		p.Release = release
+
+		if _, _, err := s.ProcessesRepository.Create(t, p); err != nil {
+			return f, err
+		}
 	}
 
-	return s.FormationsRepository.Create(formation)
+	return f, nil
 }

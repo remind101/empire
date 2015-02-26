@@ -46,12 +46,10 @@ func TestManagerScheduleRelease(t *testing.T) {
 				ID:   "1234",
 			},
 		},
-		Formation: &Formation{
-			Processes: ProcessMap{
-				"web": &Process{
-					Quantity: 1,
-					Command:  "./bin/web",
-				},
+		Formation: Formation{
+			"web": &Process{
+				Quantity: 1,
+				Command:  "./bin/web",
 			},
 		},
 	}
@@ -124,12 +122,10 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 				ID:   "1234",
 			},
 		},
-		Formation: &Formation{
-			Processes: ProcessMap{
-				"web": &Process{
-					Quantity: 1,
-					Command:  "./bin/web",
-				},
+		Formation: Formation{
+			"web": &Process{
+				Quantity: 1,
+				Command:  "./bin/web",
 			},
 		},
 	}
@@ -159,7 +155,7 @@ func TestBuildJobs(t *testing.T) {
 
 	vars := Vars{"RAILS_ENV": "production"}
 
-	f := ProcessMap{
+	f := Formation{
 		"web": &Process{
 			Quantity: 2,
 			Command:  "./bin/web",

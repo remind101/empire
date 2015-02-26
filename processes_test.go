@@ -5,19 +5,20 @@ import (
 	"testing"
 )
 
-func TestNewProcessMap(t *testing.T) {
+func TestNewFormation(t *testing.T) {
 	tests := []struct {
-		pm ProcessMap
+		f  Formation
 		cm CommandMap
 
-		expected ProcessMap
+		expected Formation
 	}{
+
 		{
-			pm: ProcessMap{},
+			f: nil,
 			cm: CommandMap{
 				"web": "./bin/web",
 			},
-			expected: ProcessMap{
+			expected: Formation{
 				"web": &Process{
 					Quantity: 1,
 					Command:  "./bin/web",
@@ -26,11 +27,24 @@ func TestNewProcessMap(t *testing.T) {
 		},
 
 		{
-			pm: ProcessMap{},
+			f: Formation{},
+			cm: CommandMap{
+				"web": "./bin/web",
+			},
+			expected: Formation{
+				"web": &Process{
+					Quantity: 1,
+					Command:  "./bin/web",
+				},
+			},
+		},
+
+		{
+			f: Formation{},
 			cm: CommandMap{
 				"worker": "sidekiq",
 			},
-			expected: ProcessMap{
+			expected: Formation{
 				"worker": &Process{
 					Quantity: 0,
 					Command:  "sidekiq",
@@ -39,7 +53,7 @@ func TestNewProcessMap(t *testing.T) {
 		},
 
 		{
-			pm: ProcessMap{
+			f: Formation{
 				"web": &Process{
 					Quantity: 5,
 					Command:  "rackup",
@@ -52,7 +66,7 @@ func TestNewProcessMap(t *testing.T) {
 			cm: CommandMap{
 				"web": "./bin/web",
 			},
-			expected: ProcessMap{
+			expected: Formation{
 				"web": &Process{
 					Quantity: 5,
 					Command:  "./bin/web",
@@ -62,10 +76,31 @@ func TestNewProcessMap(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		pm := NewProcessMap(tt.pm, tt.cm)
+		f := NewFormation(tt.f, tt.cm)
 
-		if got, want := pm, tt.expected; !reflect.DeepEqual(got, want) {
+		if got, want := f, tt.expected; !reflect.DeepEqual(got, want) {
 			t.Fatalf("processes => %v; want %v", got, want)
 		}
 	}
+}
+
+type mockProcessesRepository struct {
+	CreateFunc func(ProcessType, *Process) (ProcessType, *Process, error)
+	AllFunc    func(ReleaseID) (Formation, error)
+}
+
+func (r *mockProcessesRepository) Create(t ProcessType, p *Process) (ProcessType, *Process, error) {
+	if r.CreateFunc != nil {
+		return r.CreateFunc(t, p)
+	}
+
+	return "", nil, nil
+}
+
+func (r *mockProcessesRepository) All(id ReleaseID) (Formation, error) {
+	if r.AllFunc != nil {
+		return r.All(id)
+	}
+
+	return nil, nil
 }

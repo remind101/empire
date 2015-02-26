@@ -76,6 +76,11 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	processesRepository, err := NewProcessesRepository(db)
+	if err != nil {
+		return nil, err
+	}
+
 	apps, err := NewAppsService(appsRepository)
 	if err != nil {
 		return nil, err
@@ -91,7 +96,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	releases, err := NewReleasesService(options, manager)
+	releases, err := NewReleasesService(options, processesRepository, manager)
 	if err != nil {
 		return nil, err
 	}

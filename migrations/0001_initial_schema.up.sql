@@ -18,14 +18,9 @@ CREATE TABLE releases (
   version int NOT NULL
 );
 
-CREATE TABLE formations (
-  id uuid NOT NULL primary key,
-  release_id uuid NOT NULL references releases(id)
-);
-
 CREATE TABLE processes (
-  id uuid NOT NULL primary key,
-  formation_id uuid NOT NULL references formations(id),
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  release_id text NOT NULL,
   "type" text NOT NULL,
   quantity int NOT NULL,
   command text NOT NULL
@@ -39,5 +34,5 @@ CREATE TABLE slugs (
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
-CREATE UNIQUE INDEX index_processes_on_formation_id_and_type ON processes USING btree (formation_id, "type");
+CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
 CREATE UNIQUE INDEX index_slugs_on_image_repo_and_image_id ON slugs USING btree (image_repo, image_id);
