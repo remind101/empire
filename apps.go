@@ -84,11 +84,7 @@ func (r *appsRepository) Create(app *App) (*App, error) {
 }
 
 func (r *appsRepository) Destroy(app *App) error {
-	if _, err := r.DB.Delete(app); err != nil {
-		return err
-	}
-
-	return nil
+	return DestroyApp(r.DB, app)
 }
 
 func (r *appsRepository) FindAll() ([]*App, error) {
@@ -106,6 +102,12 @@ func (r *appsRepository) FindByRepo(repo Repo) (*App, error) {
 // CreateApp inserts the app into the database.
 func CreateApp(db Inserter, app *App) (*App, error) {
 	return app, db.Insert(app)
+}
+
+// DestroyApp destroys an app.
+func DestroyApp(db Deleter, app *App) error {
+	_, err := db.Delete(app)
+	return err
 }
 
 // AllApps returns all Apps.

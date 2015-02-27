@@ -6,128 +6,6 @@ import (
 	"github.com/remind101/empire/scheduler"
 )
 
-type JobID string
-
-// Job represents a Job that was submitted to the scheduler.
-type Job struct {
-	ID JobID
-
-	App         AppName
-	Release     ReleaseVersion
-	ProcessType ProcessType
-	Instance    int
-
-	Environment Vars
-	Image       Image
-	Command     Command
-}
-
-type JobState struct {
-	Job       *Job
-	MachineID string
-	Name      scheduler.JobName
-	State     string
-}
-
-func (j *Job) JobName() scheduler.JobName {
-	return newJobName(
-		j.App,
-		j.Release,
-		j.ProcessType,
-		j.Instance,
-	)
-}
-
-// JobQuery is a query object to filter results from JobsRepository List.
-type JobQuery struct {
-	App     AppName
-	Release ReleaseVersion
-}
-
-// JobsRepository keeps track of all the Jobs that have been submitted to the
-// scheduler.
-type JobsRepository interface {
-	Add(*Job) error
-	Remove(*Job) error
-	List(JobQuery) ([]*Job, error)
-}
-
-// dbJob is the DB representation of a Job.
-type dbJob struct {
-	ID             string `db:"id"`
-	AppID          string `db:"app_id"`
-	ReleaseVersion int64  `db:"release_version"`
-	ProcessType    string `db:"process_type"`
-	Instance       int64  `db:"instance"`
-
-	Environment Vars   `db:"environment"`
-	Image       Image  `db:"image"`
-	Command     string `db:"command"`
-}
-
-type jobsRepository struct {
-	DB
-}
-
-func (r *jobsRepository) Add(job *Job) error {
-	j := fromJob(job)
-
-	return r.DB.Insert(j)
-}
-
-func (r *jobsRepository) Remove(job *Job) error {
-	_, err := r.DB.Exec(`delete from jobs where id = $1`, job.ID)
-	return err
-}
-
-func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
-	var js []*dbJob
-
-	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
-
-	if err := r.DB.Select(&js, query, string(q.App), int(q.Release)); err != nil {
-		return nil, err
-	}
-
-	var jobs []*Job
-
-	for _, j := range js {
-		jobs = append(jobs, toJob(j, nil))
-	}
-
-	return jobs, nil
-}
-
-func toJob(j *dbJob, job *Job) *Job {
-	if job == nil {
-		job = &Job{}
-	}
-
-	job.ID = JobID(j.ID)
-	job.App = AppName(j.AppID)
-	job.Release = ReleaseVersion(j.ReleaseVersion)
-	job.ProcessType = ProcessType(j.ProcessType)
-	job.Instance = int(j.Instance)
-	job.Environment = j.Environment
-	job.Image = j.Image
-	job.Command = Command(j.Command)
-
-	return job
-}
-
-func fromJob(job *Job) *dbJob {
-	return &dbJob{
-		ID:             string(job.ID),
-		AppID:          string(job.App),
-		ReleaseVersion: int64(job.Release),
-		ProcessType:    string(job.ProcessType),
-		Instance:       int64(job.Instance),
-		Environment:    job.Environment,
-		Image:          job.Image,
-		Command:        string(job.Command),
-	}
-}
-
 // Manager is responsible for talking to the scheduler to schedule jobs onto the
 // cluster.
 type Manager interface {
@@ -255,13 +133,13 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 		for i := p.Quantity + 1; i <= q; i++ {
 			err := m.schedule(
 				&Job{
-					App:         release.AppName,
-					Release:     release.Ver,
-					ProcessType: t,
-					Instance:    i,
-					Environment: config.Vars,
-					Image:       slug.Image,
-					Command:     p.Command,
+					AppName:        release.AppName,
+					ReleaseVersion: release.Ver,
+					ProcessType:    t,
+					Instance:       i,
+					Environment:    config.Vars,
+					Image:          slug.Image,
+					Command:        p.Command,
 				},
 			)
 			if err != nil {
@@ -338,13 +216,13 @@ func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, f F
 		// Build a Job for each instance of the process.
 		for i := 1; i <= p.Quantity; i++ {
 			j := &Job{
-				App:         name,
-				Release:     version,
-				ProcessType: t,
-				Instance:    i,
-				Environment: vars,
-				Image:       image,
-				Command:     p.Command,
+				AppName:        name,
+				ReleaseVersion: version,
+				ProcessType:    t,
+				Instance:       i,
+				Environment:    vars,
+				Image:          image,
+				Command:        p.Command,
 			}
 
 			jobs = append(jobs, j)
