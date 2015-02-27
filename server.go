@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -334,6 +335,7 @@ type GetProcesses struct {
 	Manager     Manager
 }
 
+// dyno is a heroku compatible response struct to the hk dynos command.
 type dyno struct {
 	Command string `json:"command"`
 	Name    string `json:"name"`
@@ -385,6 +387,17 @@ type PatchFormationForm struct {
 	} `json:"updates"`
 }
 
+// formation is a heroku compatible response struct to the hk scale command.
+type formation struct {
+	Command   string    `json:"command"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+	Quantity  int       `json:"quantity"`
+	Size      string    `json:"size"`
+	Type      string    `json:"type"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 	var form PatchFormationForm
 
@@ -422,5 +435,11 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	return 200, nil, nil
+	// Create the response object
+	resp := make([]formation, len(form.Updates))
+	for i, up := range form.Updates {
+		resp[i] = formation{Type: up.Process, Quantity: up.Quantity, Size: "1X"}
+	}
+
+	return 200, resp, nil
 }
