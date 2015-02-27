@@ -172,7 +172,7 @@ func CreateProcess(db Inserter, process *Process) (*Process, error) {
 func AllProcesses(db Queryier, id ReleaseID) (Formation, error) {
 	var ps []*Process
 
-	if err := db.Select(`select * from processes where release_id = $1`, string(id)); err != nil {
+	if err := db.Select(&ps, `select * from processes where release_id = $1`, string(id)); err != nil {
 		return nil, err
 	}
 

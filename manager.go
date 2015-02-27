@@ -87,7 +87,7 @@ func (r *jobsRepository) Remove(job *Job) error {
 func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
 	var js []*dbJob
 
-	query := `select * from jobs where app_id = $1 and release_version = $2`
+	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
 
 	if err := r.DB.Select(&js, query, string(q.App), int(q.Release)); err != nil {
 		return nil, err

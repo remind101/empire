@@ -101,7 +101,7 @@ func (r *releasesRepository) Head(appName AppName) (*Release, error) {
 func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
 	var rs []*dbRelease
 
-	if err := r.DB.Select(rs, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
+	if err := r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName)); err != nil {
 		return nil, nil
 	}
 
