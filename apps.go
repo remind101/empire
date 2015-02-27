@@ -6,6 +6,9 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"time"
+
+	"gopkg.in/gorp.v1"
 )
 
 var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
@@ -43,6 +46,8 @@ type App struct {
 
 	// The associated GitHub/Docker repo.
 	Repo Repo `json:"repo" db:"repo"`
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
 // NewApp validates the name of the new App then returns a new App instance. If the
@@ -62,6 +67,12 @@ func NewApp(name AppName, repo Repo) (*App, error) {
 func NewAppFromRepo(repo Repo) (*App, error) {
 	name := NewAppNameFromRepo(repo)
 	return NewApp(name, repo)
+}
+
+// PreInsert implements a pre insert hook for the db interface
+func (a *App) PreInsert(s gorp.SqlExecutor) error {
+	a.CreatedAt = time.Now()
+	return nil
 }
 
 // AppsRepository represents a repository for creating and finding Apps.
