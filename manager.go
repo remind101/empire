@@ -52,10 +52,6 @@ type JobsRepository interface {
 	List(JobQuery) ([]*Job, error)
 }
 
-func NewJobsRepository(db DB) (JobsRepository, error) {
-	return &jobsRepository{db}, nil
-}
-
 // dbJob is the DB representation of a Job.
 type dbJob struct {
 	ID             string `db:"id"`
@@ -149,15 +145,6 @@ type Manager interface {
 type manager struct {
 	scheduler.Scheduler
 	JobsRepository
-}
-
-// NewManager returns a new Service instance.
-func NewManager(r JobsRepository, s scheduler.Scheduler) (Manager, error) {
-
-	return &manager{
-		JobsRepository: r,
-		Scheduler:      s,
-	}, nil
 }
 
 // ScheduleRelease creates jobs for every process and instance count and

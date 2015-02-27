@@ -96,10 +96,6 @@ type ConfigsRepository interface {
 	Push(*Config) (*Config, error)
 }
 
-func NewConfigsRepository(db DB) (ConfigsRepository, error) {
-	return &configsRepository{db}, nil
-}
-
 // configsRepository is an implementation of the ConfigsRepository interface backed by
 // a DB.
 type configsRepository struct {
@@ -175,13 +171,6 @@ type ConfigsService interface {
 // configsService is a base implementation of the ConfigsService.
 type configsService struct {
 	ConfigsRepository
-}
-
-// NewConfigsService returns a new Service instance.
-func NewConfigsService(r ConfigsRepository) (ConfigsService, error) {
-	return &configsService{
-		ConfigsRepository: r,
-	}, nil
 }
 
 // Apply merges the provided Vars into the latest Config and returns a new

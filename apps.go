@@ -79,10 +79,6 @@ type appsRepository struct {
 	DB
 }
 
-func NewAppsRepository(db DB) (AppsRepository, error) {
-	return &appsRepository{db}, nil
-}
-
 func (r *appsRepository) Create(app *App) (*App, error) {
 	return CreateApp(r.DB, app)
 }
@@ -145,13 +141,6 @@ type AppsService interface {
 // appsService is a base implementation of the AppsService interface.
 type appsService struct {
 	AppsRepository
-}
-
-// NewAppsService returns a new Service instance.
-func NewAppsService(r AppsRepository) (AppsService, error) {
-	return &appsService{
-		AppsRepository: r,
-	}, nil
 }
 
 func (s *appsService) FindOrCreateByRepo(repo Repo) (*App, error) {

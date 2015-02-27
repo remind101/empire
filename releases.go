@@ -45,11 +45,6 @@ type ReleasesRepository interface {
 	Head(AppName) (*Release, error)
 }
 
-// NewReleasesRepository is a factory method that returns a new Repository.
-func NewReleasesRepository(db DB) (ReleasesRepository, error) {
-	return &releasesRepository{db}, nil
-}
-
 // dbRelease is a db representation of a release.
 type dbRelease struct {
 	ID       *string `db:"id"`
@@ -146,15 +141,6 @@ type releasesService struct {
 	ReleasesRepository
 	ProcessesRepository
 	Manager
-}
-
-// NewReleasesService returns a new ReleasesService instance.
-func NewReleasesService(r ReleasesRepository, p ProcessesRepository, m Manager) (ReleasesService, error) {
-	return &releasesService{
-		ReleasesRepository:  r,
-		ProcessesRepository: p,
-		Manager:             m,
-	}, nil
 }
 
 // Create creates the release, then sets the current process formation on the release.

@@ -143,11 +143,6 @@ type ProcessesRepository interface {
 	All(ReleaseID) (Formation, error)
 }
 
-// NewProcessesRepository returns a new ProcessesRepository instance.
-func NewProcessesRepository(db DB) (ProcessesRepository, error) {
-	return &processesRepository{db}, nil
-}
-
 // processesRepository is an implementation of the AppsRepository interface backed by
 // a DB.
 type processesRepository struct {
