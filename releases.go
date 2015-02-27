@@ -45,15 +45,6 @@ type ReleasesRepository interface {
 	Head(AppName) (*Release, error)
 }
 
-// dbRelease is a db representation of a release.
-type dbRelease struct {
-	ID       *string `db:"id"`
-	Ver      int64   `db:"version"` // Ver because Version is reserved in gorp for optimistic locking.
-	AppID    string  `db:"app_id"`
-	ConfigID string  `db:"config_id"`
-	SlugID   string  `db:"slug_id"`
-}
-
 // releasesRepository is an implementation of the ReleasesRepository interface backed by
 // a DB.
 type releasesRepository struct {
