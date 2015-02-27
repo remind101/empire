@@ -61,11 +61,6 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	slugsRepository, err := NewSlugsRepository(db)
-	if err != nil {
-		return nil, err
-	}
-
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
 		options.Docker.Registry,
@@ -75,69 +70,42 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	appsRepository, err := NewAppsRepository(db)
-	if err != nil {
-		return nil, err
+	slugsRepo := &slugsRepository{db}
+	appsRepo := &appsRepository{db}
+	configsRepo := &configsRepository{db}
+	processesRepo := &processesRepository{db}
+	releasesRepo := &releasesRepository{db}
+	jobsRepo := &jobsRepository{db}
+
+	apps := &appsService{
+		AppsRepository: appsRepo,
 	}
 
-	configsRepository, err := NewConfigsRepository(db)
-	if err != nil {
-		return nil, err
+	configs := &configsService{
+		ConfigsRepository: configsRepo,
 	}
 
-	processesRepository, err := NewProcessesRepository(db)
-	if err != nil {
-		return nil, err
+	manager := &manager{
+		JobsRepository: jobsRepo,
+		Scheduler:      scheduler,
 	}
 
-	releasesRepository, err := NewReleasesRepository(db)
-	if err != nil {
-		return nil, err
+	releases := &releasesService{
+		ReleasesRepository:  releasesRepo,
+		ProcessesRepository: processesRepo,
+		Manager:             manager,
 	}
 
-	jobsRepository, err := NewJobsRepository(db)
-	if err != nil {
-		return nil, err
+	slugs := &slugsService{
+		SlugsRepository: slugsRepo,
+		Extractor:       extractor,
 	}
 
-	apps, err := NewAppsService(appsRepository)
-	if err != nil {
-		return nil, err
-	}
-
-	configs, err := NewConfigsService(configsRepository)
-	if err != nil {
-		return nil, err
-	}
-
-	manager, err := NewManager(jobsRepository, scheduler)
-	if err != nil {
-		return nil, err
-	}
-
-	releases, err := NewReleasesService(
-		releasesRepository,
-		processesRepository,
-		manager,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	slugs, err := NewSlugsService(slugsRepository, extractor)
-	if err != nil {
-		return nil, err
-	}
-
-	deploys, err := NewDeploysService(
-		options,
-		apps,
-		configs,
-		slugs,
-		releases,
-	)
-	if err != nil {
-		return nil, err
+	deploys := &deploysService{
+		AppsService:     apps,
+		ConfigsService:  configs,
+		SlugsService:    slugs,
+		ReleasesService: releases,
 	}
 
 	return &Empire{
@@ -148,7 +116,7 @@ func New(options Options) (*Empire, error) {
 		Manager:          manager,
 		SlugsService:     slugs,
 		ReleasesService:  releases,
-		ProcessesService: processesRepository,
+		ProcessesService: processesRepo,
 	}, nil
 }
 

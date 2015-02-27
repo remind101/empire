@@ -37,11 +37,6 @@ type SlugsRepository interface {
 	FindByImage(Image) (*Slug, error)
 }
 
-// NewSlugsRepository returns a new Repository instance.
-func NewSlugsRepository(db DB) (SlugsRepository, error) {
-	return &slugsRepository{db}, nil
-}
-
 // slugsRepository is a fake implementation of the Repository interface.
 type slugsRepository struct {
 	DB
@@ -95,14 +90,6 @@ type SlugsService interface {
 type slugsService struct {
 	SlugsRepository
 	Extractor Extractor
-}
-
-// NewSlugsService returns a new SlugsService instance.
-func NewSlugsService(r SlugsRepository, e Extractor) (SlugsService, error) {
-	return &slugsService{
-		SlugsRepository: r,
-		Extractor:       e,
-	}, nil
 }
 
 // CreateByImageID extracts the process types from the image, then creates a new

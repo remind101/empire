@@ -16,16 +16,6 @@ type DeploysService interface {
 	Deploy(Image) (*Deploy, error)
 }
 
-// NewDeploysService returns a new DeploysService.
-func NewDeploysService(options Options, apps AppsService, configs ConfigsService, slugs SlugsService, releases ReleasesService) (DeploysService, error) {
-	return &deploysService{
-		AppsService:     apps,
-		ConfigsService:  configs,
-		SlugsService:    slugs,
-		ReleasesService: releases,
-	}, nil
-}
-
 // deploysService is a base implementation of the DeploysService
 type deploysService struct {
 	AppsService
