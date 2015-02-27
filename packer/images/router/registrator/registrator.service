@@ -32,4 +32,3 @@ ExecStop=/usr/bin/docker stop registrator
 
 [X-Fleet]
 Conflicts=registrator.service
-

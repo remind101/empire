@@ -5,24 +5,24 @@
 set -eo pipefail
 
 export ETCD_PORT=${ETCD_PORT:-4001}
-export HOST_IP=${HOST_IP:-10.0.2.15}
+export HOST_IP=${HOST_IP:-127.0.0.1}
 export ETCD=$HOST_IP:$ETCD_PORT
 
-echo "[nginx] booting container. ETCD: $ETCD"
+echo "$(date --utc +%FT%TZ) [nginx] booting container. ETCD: $ETCD"
 
 # Try to make initial configuration every 5 seconds until successful
 until confd -onetime -node $ETCD -config-file /etc/confd/conf.d/nginx.toml; do
-    echo "[nginx] waiting for confd to create initial nginx configuration"
+    echo "$(date --utc +%FT%TZ) [nginx] waiting for confd to create initial nginx configuration"
     sleep 5
 done
 
 # Put a continual polling `confd` process into the background to watch
 # for changes every second
 confd -interval 1 -node $ETCD -config-file /etc/confd/conf.d/nginx.toml &
-echo "[nginx] confd is now monitoring etcd for changes..."
+echo "$(date --utc +%FT%TZ) [nginx] confd is now monitoring etcd for changes..."
 
 # Start the Nginx service using the generated config
-echo "[nginx] starting nginx service..."
+echo "$(date --utc +%FT%TZ) [nginx] starting nginx service..."
 service nginx start
 
 # Follow the logs to allow the script to continue running

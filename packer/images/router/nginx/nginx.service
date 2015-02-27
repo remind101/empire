@@ -24,7 +24,7 @@ EnvironmentFile=/etc/environment
 ## Directives with "=-" are allowed to fail without consequence
 ExecStartPre=-/usr/bin/docker kill nginx
 ExecStartPre=-/usr/bin/docker rm nginx
-#ExecStartPre=/usr/bin/docker pull remind101/nginx
+ExecStartPre=/usr/bin/docker pull remind101/nginx
 ExecStart=/usr/bin/docker run --name nginx -e "HOST_IP=${COREOS_PRIVATE_IPV4}" -p ${COREOS_PUBLIC_IPV4}:80:80 remind101/nginx /usr/local/bin/confd-watch
 
 # Stop
