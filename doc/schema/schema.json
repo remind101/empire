@@ -57,7 +57,7 @@
       ]
     },
     "config-var": {
-      "description": "Config Vars allow you to manage the configuration information provided to an app on Heroku.",
+      "description": "Configuration information for an app",
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "stability": "production",
       "title": "Config Vars",
@@ -299,6 +299,63 @@
         "object"
       ]
     },
+    "formation": {
+      "$schema": "http://json-schema.org/draft-04/hyper-schema",
+      "title": "Formation",
+      "definitions": {
+      },
+      "description": "",
+      "links": [
+        {
+          "description": "Update an apps formation",
+          "href": "/apps/{(%23%2Fdefinitions%2Fapp%2Fdefinitions%2Fidentity)}/formation",
+          "method": "PATCH",
+          "rel": "update",
+          "schema": {
+            "properties": {
+              "updates": {
+                "items": {
+                  "properties": {
+                    "process": {
+                      "type": [
+                        "string"
+                      ]
+                    },
+                    "quantity": {
+                      "type": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "process",
+                    "quantity"
+                  ],
+                  "type": [
+                    "object"
+                  ]
+                },
+                "type": [
+                  "array"
+                ]
+              }
+            },
+            "required": [
+              "updates"
+            ],
+            "type": [
+              "object"
+            ]
+          },
+          "title": "Update"
+        }
+      ],
+      "properties": {
+      },
+      "type": [
+        "object"
+      ]
+    },
     "image": {
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
       "title": "Image",
@@ -333,20 +390,38 @@
         "object"
       ]
     },
-    "procdef": {
+    "process": {
       "$schema": "http://json-schema.org/draft-04/hyper-schema",
-      "title": "procdef",
+      "title": "Process",
       "definitions": {
-        "process_type": {
+        "id": {
+          "description": "unique identifier of process",
+          "example": "01234567-89ab-cdef-0123-456789abcdef",
+          "format": "uuid",
+          "type": [
+            "string"
+          ]
+        },
+        "identity": {
+          "$ref": "#/definitions/process/definitions/id"
+        },
+        "type": {
           "description": "the type of process",
           "example": "web",
           "type": [
             "string"
           ]
         },
-        "instance_count": {
-          "description": "the number of running processes to maintain",
-          "example": "2",
+        "command": {
+          "description": "the command that this process runs",
+          "example": "./bin/web",
+          "type": [
+            "string"
+          ]
+        },
+        "quantity": {
+          "description": "the number of instances of this process to maintain",
+          "example": 1,
           "type": [
             "number"
           ]
@@ -356,21 +431,17 @@
       "links": [
       ],
       "properties": {
-        "process_type": {
-          "$ref": "#/definitions/procdef/definitions/process_type"
+        "id": {
+          "$ref": "#/definitions/process/definitions/id"
         },
-        "instance_count": {
-          "$ref": "#/definitions/procdef/definitions/instance_count"
+        "command": {
+          "$ref": "#/definitions/process/definitions/command"
         },
-        "release": {
-          "properties": {
-            "id": {
-              "$ref": "#/definitions/release/definitions/id"
-            }
-          },
-          "type": [
-            "object"
-          ]
+        "type": {
+          "$ref": "#/definitions/process/definitions/type"
+        },
+        "quantity": {
+          "$ref": "#/definitions/process/definitions/quantity"
         }
       },
       "type": [
@@ -480,11 +551,14 @@
     "deploy": {
       "$ref": "#/definitions/deploy"
     },
+    "formation": {
+      "$ref": "#/definitions/formation"
+    },
     "image": {
       "$ref": "#/definitions/image"
     },
-    "procdef": {
-      "$ref": "#/definitions/procdef"
+    "process": {
+      "$ref": "#/definitions/process"
     },
     "release": {
       "$ref": "#/definitions/release"

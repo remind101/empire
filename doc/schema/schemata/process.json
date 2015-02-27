@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "Process",
+  "definitions": {
+    "id": {
+      "description": "unique identifier of process",
+      "example": "01234567-89ab-cdef-0123-456789abcdef",
+      "format": "uuid",
+      "type": [
+        "string"
+      ]
+    },
+    "identity": {
+      "$ref": "/schemata/process#/definitions/id"
+    },
+    "type": {
+      "description": "the type of process",
+      "example": "web",
+      "type": [
+        "string"
+      ]
+    },
+    "command": {
+      "description": "the command that this process runs",
+      "example": "./bin/web",
+      "type": [
+        "string"
+      ]
+    },
+    "quantity": {
+      "description": "the number of instances of this process to maintain",
+      "example": 1,
+      "type": [
+        "number"
+      ]
+    }
+  },
+  "description": "",
+  "links": [
+  ],
+  "properties": {
+    "id": {
+      "$ref": "/schemata/process#/definitions/id"
+    },
+    "command": {
+      "$ref": "/schemata/process#/definitions/command"
+    },
+    "type": {
+      "$ref": "/schemata/process#/definitions/type"
+    },
+    "quantity": {
+      "$ref": "/schemata/process#/definitions/quantity"
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "id": "schemata/process"
+}

@@ -245,8 +245,7 @@ func (s *Service) ConfigUpdate(appIdentity string, o ConfigUpdateOpts) (*Config,
 	return &config, s.Patch(&config, fmt.Sprintf("/apps/%v/configs", appIdentity), o)
 }
 
-// Config Vars allow you to manage the configuration information
-// provided to an app on Heroku.
+// Configuration information for an app
 type ConfigVar map[string]string
 
 // Get config-vars for app.
@@ -257,8 +256,8 @@ func (s *Service) ConfigVarInfo(appIdentity string) (map[string]string, error) {
 
 // Update config-vars for app. You can update existing config-vars by
 // setting them again, and remove by setting it to `NULL`.
-func (s *Service) ConfigVarUpdate(appIdentity string, o map[string]string) (map[string]string, error) {
-	var configVar map[string]string
+func (s *Service) ConfigVarUpdate(appIdentity string, o map[string]*string) (map[string]string, error) {
+	var configVar ConfigVar
 	return configVar, s.Patch(&configVar, fmt.Sprintf("/apps/%v/config-vars", appIdentity), o)
 }
 
@@ -291,16 +290,29 @@ func (s *Service) DeployCreate(o DeployCreateOpts) (*Deploy, error) {
 	return &deploy, s.Post(&deploy, fmt.Sprintf("/deploys"), o)
 }
 
+type Formation struct{}
+type FormationUpdateOpts struct {
+	Updates []struct {
+		Process  string  `json:"process" url:"process,key"`
+		Quantity float64 `json:"quantity" url:"quantity,key"`
+	} `json:"updates" url:"updates,key"`
+}
+
+// Update an apps formation
+func (s *Service) FormationUpdate(appIdentity string, o FormationUpdateOpts) (struct{}, error) {
+	var formation Formation
+	return formation, s.Patch(&formation, fmt.Sprintf("/apps/%v/formation", appIdentity), o)
+}
+
 type Image struct {
 	ID   string `json:"id" url:"id,key"`     // unique identifier of image
 	Repo string `json:"repo" url:"repo,key"` // the name of the repo
 }
-type Procdef struct {
-	InstanceCount float64 `json:"instance_count" url:"instance_count,key"` // the number of running processes to maintain
-	ProcessType   string  `json:"process_type" url:"process_type,key"`     // the type of process
-	Release       struct {
-		ID string `json:"id" url:"id,key"` // unique identifier of release
-	} `json:"release" url:"release,key"`
+type Process struct {
+	Command  string  `json:"command" url:"command,key"`   // the command that this process runs
+	ID       string  `json:"id" url:"id,key"`             // unique identifier of process
+	Quantity float64 `json:"quantity" url:"quantity,key"` // the number of instances of this process to maintain
+	Type     string  `json:"type" url:"type,key"`         // the type of process
 }
 type Release struct {
 	ID      string  `json:"id" url:"id,key"`           // unique identifier of release

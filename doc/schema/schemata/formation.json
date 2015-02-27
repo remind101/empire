@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/hyper-schema",
+  "title": "Formation",
+  "definitions": {
+  },
+  "description": "",
+  "links": [
+    {
+      "description": "Update an apps formation",
+      "href": "/apps/{(%2Fschemata%2Fapp%23%2Fdefinitions%2Fidentity)}/formation",
+      "method": "PATCH",
+      "rel": "update",
+      "schema": {
+        "properties": {
+          "updates": {
+            "items": {
+              "properties": {
+                "process": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "quantity": {
+                  "type": [
+                    "number"
+                  ]
+                }
+              },
+              "required": ["process", "quantity"],
+              "type": [
+                "object"
+              ]
+            },
+            "type": [
+              "array"
+            ]
+          }
+        },
+        "required": ["updates"],
+        "type": [
+          "object"
+        ]
+      },
+      "title": "Update"
+    }
+  ],
+  "properties": {
+  },
+  "type": [
+    "object"
+  ],
+  "id": "schemata/formation"
+}
