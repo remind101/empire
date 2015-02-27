@@ -47,7 +47,7 @@ HTTP/1.1 201 Created
 
 
 ## Config Vars
-Config Vars allow you to manage the configuration information provided to an app on Heroku.
+Configuration information for an app
 
 ### Config Vars Info
 Get config-vars for app.
@@ -276,6 +276,51 @@ HTTP/1.1 201 Created
       "id": "01234567-89ab-cdef-0123-456789abcdef"
     }
   }
+}
+```
+
+
+## Formation
+
+
+### Formation Update
+Update an apps formation
+
+```
+PATCH /apps/{app_name}/formation
+```
+
+#### Required Parameters
+| Name | Type | Description | Example |
+| ------- | ------- | ------- | ------- |
+| **updates/process** | *string* |  |  |
+| **updates/quantity** | *number* |  |  |
+
+
+
+#### Curl Example
+```bash
+$ curl -n -X PATCH http://localhost:8080/apps/$APP_NAME/formation \
+  -H "Content-Type: application/json" \
+ \
+  -d '{
+  "updates": [
+    {
+      "process": null,
+      "quantity": null
+    }
+  ]
+}'
+
+```
+
+
+#### Response Example
+```
+HTTP/1.1 200 OK
+```
+```json
+{
 }
 ```
 

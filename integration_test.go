@@ -44,28 +44,14 @@ func (c *TestClient) Close() {
 	c.Server.Close()
 }
 
-func (c *TestClient) MustAppCreate(name string, repo string) *client.App {
-	o := client.AppCreateOpts{}
-	o.Name = name
-	o.Repo = repo
-	a, err := c.AppCreate(o)
-	if err != nil {
-		c.T.Fatal(err)
-	}
-	return a
-}
-
 func TestEmpireDeploy(t *testing.T) {
 	c := NewTestClient(t)
 	defer c.Close()
 
-	o := client.DeployCreateOpts{}
-	o.Image.ID = "1234"
-	o.Image.Repo = "remind101/r101-api"
-	d, err := c.DeployCreate(o)
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := mustDeploy(t, c, empire.Image{
+		Repo: "remind101/r101-api",
+		ID:   "1234",
+	})
 
 	if d.Release.ID == "" {
 		t.Fatal("Expected a release id")
@@ -76,15 +62,69 @@ func TestEmpirePatchConfig(t *testing.T) {
 	c := NewTestClient(t)
 	defer c.Close()
 
-	a := c.MustAppCreate("api", "remind101/r101-api")
+	a := mustAppCreate(t, c, empire.App{
+		Name: "api",
+		Repo: "remind101/r101-api",
+	})
 
-	vars := map[string]string{"RAILS_ENV": "production"}
+	vars := map[string]*string{"RAILS_ENV": client.String("production")}
 	config, err := c.ConfigVarUpdate(a.Name, vars)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := config, vars; !reflect.DeepEqual(got, want) {
+	expected := map[string]string{"RAILS_ENV": "production"}
+	if got, want := config, expected; !reflect.DeepEqual(got, want) {
 		t.Fatalf("Vars => %q; want %q", got, want)
 	}
+}
+
+func TestEmpireScaleProcess(t *testing.T) {
+	c := NewTestClient(t)
+	defer c.Close()
+
+	mustDeploy(t, c, empire.Image{
+		Repo: "remind101/r101-api",
+		ID:   "1234",
+	})
+
+	o := client.FormationUpdateOpts{
+		Updates: []struct {
+			Process  string  `json:"process" url:"process,key"`
+			Quantity float64 `json:"quantity" url:"quantity,key"`
+		}{
+			{"web", 2},
+		},
+	}
+
+	_, err := c.FormationUpdate("r101-api", o)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mustAppCreate(t testing.TB, c *TestClient, app empire.App) *client.App {
+	o := client.AppCreateOpts{}
+	o.Name = string(app.Name)
+	o.Repo = string(app.Repo)
+
+	a, err := c.AppCreate(o)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return a
+}
+
+func mustDeploy(t testing.TB, c *TestClient, image empire.Image) *client.Deploy {
+	o := client.DeployCreateOpts{}
+	o.Image.ID = image.ID
+	o.Image.Repo = string(image.Repo)
+
+	d, err := c.DeployCreate(o)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return d
 }
