@@ -449,12 +449,12 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	formation, err := h.ProcessesService.All(r.ID)
+	f, err := h.ProcessesService.All(r.ID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	err = h.Manager.ScaleRelease(r, config, slug, formation, qm)
+	err = h.Manager.ScaleRelease(r, config, slug, f, qm)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
