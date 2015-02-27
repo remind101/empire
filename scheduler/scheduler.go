@@ -205,7 +205,7 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		{
 			Section: "Service",
 			Name:    "ExecStart",
-			Value:   fmt.Sprintf(`/usr/bin/docker run --name %s --rm -h %%H -P %s %s %s`, j.Name, img, env(j), j.Execute.Command),
+			Value:   fmt.Sprintf(`/usr/bin/docker run --name %s %s --rm -h %%H -P %s %s`, j.Name, env(j), img, j.Execute.Command),
 		},
 		{
 			Section: "Service",
