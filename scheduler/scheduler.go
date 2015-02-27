@@ -10,9 +10,9 @@ import (
 	"github.com/coreos/fleet/schema"
 )
 
-// JobName represents the (unique) name of a job. The convention is <app>.<type>.<instance>:
+// JobName represents the (unique) name of a job. The convention is <app>.<type>.<instance>.service:
 //
-//	my-sweet-app.v1.web.1
+//	my-sweet-app.v1.web.1.service
 type JobName string
 
 // Image represents a container image, which is tied to a repository.
@@ -134,7 +134,7 @@ func (s *FleetScheduler) Schedule(j *Job) error {
 }
 
 func (s *FleetScheduler) Unschedule(n JobName) error {
-	return s.client.DestroyUnit(string(n) + ".service")
+	return s.client.DestroyUnit(unitNameFromJobName(n))
 }
 
 func (s *FleetScheduler) JobStates() ([]*JobState, error) {
@@ -147,12 +147,20 @@ func (s *FleetScheduler) JobStates() ([]*JobState, error) {
 	for i, st := range states {
 		js[i] = &JobState{
 			MachineID: st.MachineID,
-			Name:      JobName(st.Name),
+			Name:      jobNameFromUnitName(st.Name),
 			State:     st.SystemdActiveState,
 		}
 	}
 
 	return js, nil
+}
+
+func unitNameFromJobName(n JobName) string {
+	return string(n) + ".service"
+}
+
+func jobNameFromUnitName(un string) JobName {
+	return JobName(strings.TrimSuffix(un, ".service"))
 }
 
 // buildUnit builds a Unit file that looks like this:
