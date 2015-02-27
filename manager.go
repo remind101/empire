@@ -57,8 +57,7 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 
 func (m *manager) existingJobs(release *Release) ([]*Job, error) {
 	return m.JobsRepository.List(JobQuery{
-		App:     release.AppName,
-		Release: release.Ver,
+		App: release.AppName,
 	})
 }
 
