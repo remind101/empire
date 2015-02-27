@@ -2,7 +2,9 @@ package empire
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/coreos/fleet/log"
 	"github.com/remind101/empire/scheduler"
 )
 
@@ -28,11 +30,19 @@ type manager struct {
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
-	// Find any existing jobs that have been scheduled for this release.
+	// Find any existing jobs that have been scheduled for this app.
 	existing, err := m.existingJobs(release)
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		time.Sleep(time.Second * 60)
+		if err := m.unscheduleMulti(existing); err != nil {
+			// TODO What to do here?
+			log.Errorf("Error unscheduling stale jobs: %s", err)
+		}
+	}()
 
 	jobs := buildJobs(
 		release.AppName,
@@ -41,14 +51,6 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 		config.Vars,
 		formation,
 	)
-
-	if len(existing) > len(jobs) {
-		remove := existing[len(jobs):]
-
-		if err := m.unscheduleMulti(remove); err != nil {
-			return err
-		}
-	}
 
 	return m.scheduleMulti(jobs)
 }
@@ -150,7 +152,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 
 	// Scale down
 	if p.Quantity > q {
-		for i := p.Quantity; i >= q; i-- {
+		for i := p.Quantity; i > q; i-- {
 			err := m.Scheduler.Unschedule(newJobName(release.AppName, release.Ver, t, i))
 			if err != nil {
 				return err

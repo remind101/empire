@@ -114,10 +114,12 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 
 	formation := Formation{
 		"web": &Process{
-			Quantity: 1,
+			Quantity: 2,
 			Command:  "./bin/web",
 		},
 	}
+
+	quantityMap := ProcessQuantityMap{"web": 1}
 
 	release := &Release{
 		Ver:      1,
@@ -126,7 +128,7 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 		SlugID:   slug.ID,
 	}
 
-	if err := m.ScheduleRelease(release, config, slug, formation); err != nil {
+	if err := m.ScaleRelease(release, config, slug, formation, quantityMap); err != nil {
 		t.Fatal(err)
 	}
 
