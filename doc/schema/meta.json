@@ -1,9 +1,0 @@
-{
- "description": "Controller API",
- "id": "empire",
- "links": [{
-   "href": "http://localhost:8080",
-   "rel": "self"
- }],
- "title": "Empire"
-}
