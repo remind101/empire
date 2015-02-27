@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"database/sql/driver"
 	"fmt"
 
 	"github.com/remind101/empire/scheduler"
@@ -8,18 +9,32 @@ import (
 
 type JobID string
 
+// Scan implements the sql.Scanner interface.
+func (id *JobID) Scan(src interface{}) error {
+	if src, ok := src.([]byte); ok {
+		*id = JobID(src)
+	}
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (id JobID) Value() (driver.Value, error) {
+	return driver.Value(string(id)), nil
+}
+
 // Job represents a Job that was submitted to the scheduler.
 type Job struct {
-	ID JobID
+	ID JobID `db:"id"`
 
-	App         AppName
-	Release     ReleaseVersion
-	ProcessType ProcessType
-	Instance    int
+	AppName        `db:"app_id"`
+	ReleaseVersion `db:"release_version"`
+	ProcessType    `db:"process_type"`
+	Instance       int `db:"instance"`
 
-	Environment Vars
-	Image       Image
-	Command     Command
+	Environment Vars    `db:"environment"`
+	Image       Image   `db:"image"`
+	Command     Command `db:"command"`
 }
 
 type JobState struct {
@@ -31,8 +46,8 @@ type JobState struct {
 
 func (j *Job) JobName() scheduler.JobName {
 	return newJobName(
-		j.App,
-		j.Release,
+		j.AppName,
+		j.ReleaseVersion,
 		j.ProcessType,
 		j.Instance,
 	)
@@ -52,80 +67,23 @@ type JobsRepository interface {
 	List(JobQuery) ([]*Job, error)
 }
 
-// dbJob is the DB representation of a Job.
-type dbJob struct {
-	ID             string `db:"id"`
-	AppID          string `db:"app_id"`
-	ReleaseVersion int64  `db:"release_version"`
-	ProcessType    string `db:"process_type"`
-	Instance       int64  `db:"instance"`
-
-	Environment Vars   `db:"environment"`
-	Image       Image  `db:"image"`
-	Command     string `db:"command"`
-}
-
 type jobsRepository struct {
 	DB
 }
 
 func (r *jobsRepository) Add(job *Job) error {
-	j := fromJob(job)
-
-	return r.DB.Insert(j)
+	return r.DB.Insert(job)
 }
 
 func (r *jobsRepository) Remove(job *Job) error {
-	_, err := r.DB.Exec(`delete from jobs where id = $1`, job.ID)
+	_, err := r.DB.Exec(`delete from jobs where id = $1`, string(job.ID))
 	return err
 }
 
 func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
-	var js []*dbJob
-
-	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
-
-	if err := r.DB.Select(&js, query, string(q.App), int(q.Release)); err != nil {
-		return nil, err
-	}
-
 	var jobs []*Job
-
-	for _, j := range js {
-		jobs = append(jobs, toJob(j, nil))
-	}
-
-	return jobs, nil
-}
-
-func toJob(j *dbJob, job *Job) *Job {
-	if job == nil {
-		job = &Job{}
-	}
-
-	job.ID = JobID(j.ID)
-	job.App = AppName(j.AppID)
-	job.Release = ReleaseVersion(j.ReleaseVersion)
-	job.ProcessType = ProcessType(j.ProcessType)
-	job.Instance = int(j.Instance)
-	job.Environment = j.Environment
-	job.Image = j.Image
-	job.Command = Command(j.Command)
-
-	return job
-}
-
-func fromJob(job *Job) *dbJob {
-	return &dbJob{
-		ID:             string(job.ID),
-		AppID:          string(job.App),
-		ReleaseVersion: int64(job.Release),
-		ProcessType:    string(job.ProcessType),
-		Instance:       int64(job.Instance),
-		Environment:    job.Environment,
-		Image:          job.Image,
-		Command:        string(job.Command),
-	}
+	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
+	return jobs, r.DB.Select(&jobs, query, string(q.App), int(q.Release))
 }
 
 // Manager is responsible for talking to the scheduler to schedule jobs onto the
@@ -255,13 +213,13 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 		for i := p.Quantity + 1; i <= q; i++ {
 			err := m.schedule(
 				&Job{
-					App:         release.AppName,
-					Release:     release.Ver,
-					ProcessType: t,
-					Instance:    i,
-					Environment: config.Vars,
-					Image:       slug.Image,
-					Command:     p.Command,
+					AppName:        release.AppName,
+					ReleaseVersion: release.Ver,
+					ProcessType:    t,
+					Instance:       i,
+					Environment:    config.Vars,
+					Image:          slug.Image,
+					Command:        p.Command,
 				},
 			)
 			if err != nil {
@@ -338,13 +296,13 @@ func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, f F
 		// Build a Job for each instance of the process.
 		for i := 1; i <= p.Quantity; i++ {
 			j := &Job{
-				App:         name,
-				Release:     version,
-				ProcessType: t,
-				Instance:    i,
-				Environment: vars,
-				Image:       image,
-				Command:     p.Command,
+				AppName:        name,
+				ReleaseVersion: version,
+				ProcessType:    t,
+				Instance:       i,
+				Environment:    vars,
+				Image:          image,
+				Command:        p.Command,
 			}
 
 			jobs = append(jobs, j)

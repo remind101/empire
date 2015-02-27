@@ -83,16 +83,16 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 		ListFunc: func(q JobQuery) ([]*Job, error) {
 			jobs := []*Job{
 				{
-					App:         "r101-api",
-					Release:     1,
-					ProcessType: "web",
-					Instance:    1,
+					AppName:        "r101-api",
+					ReleaseVersion: 1,
+					ProcessType:    "web",
+					Instance:       1,
 				},
 				{
-					App:         "r101-api",
-					Release:     1,
-					ProcessType: "web",
-					Instance:    2,
+					AppName:        "r101-api",
+					ReleaseVersion: 1,
+					ProcessType:    "web",
+					Instance:       2,
 				},
 			}
 
@@ -162,10 +162,10 @@ func TestBuildJobs(t *testing.T) {
 
 	expected := []*Job{
 		{
-			App:         "r101-api",
-			Release:     1,
-			ProcessType: "web",
-			Instance:    1,
+			AppName:        "r101-api",
+			ReleaseVersion: 1,
+			ProcessType:    "web",
+			Instance:       1,
 			Environment: Vars{
 				"RAILS_ENV": "production",
 			},
@@ -173,10 +173,10 @@ func TestBuildJobs(t *testing.T) {
 			Command: "./bin/web",
 		},
 		{
-			App:         "r101-api",
-			Release:     1,
-			ProcessType: "web",
-			Instance:    2,
+			AppName:        "r101-api",
+			ReleaseVersion: 1,
+			ProcessType:    "web",
+			Instance:       2,
 			Environment: Vars{
 				"RAILS_ENV": "production",
 			},
