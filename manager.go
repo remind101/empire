@@ -1,90 +1,10 @@
 package empire
 
 import (
-	"database/sql/driver"
 	"fmt"
 
 	"github.com/remind101/empire/scheduler"
 )
-
-type JobID string
-
-// Scan implements the sql.Scanner interface.
-func (id *JobID) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*id = JobID(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (id JobID) Value() (driver.Value, error) {
-	return driver.Value(string(id)), nil
-}
-
-// Job represents a Job that was submitted to the scheduler.
-type Job struct {
-	ID JobID `db:"id"`
-
-	AppName        `db:"app_id"`
-	ReleaseVersion `db:"release_version"`
-	ProcessType    `db:"process_type"`
-	Instance       int `db:"instance"`
-
-	Environment Vars    `db:"environment"`
-	Image       Image   `db:"image"`
-	Command     Command `db:"command"`
-}
-
-type JobState struct {
-	Job       *Job
-	MachineID string
-	Name      scheduler.JobName
-	State     string
-}
-
-func (j *Job) JobName() scheduler.JobName {
-	return newJobName(
-		j.AppName,
-		j.ReleaseVersion,
-		j.ProcessType,
-		j.Instance,
-	)
-}
-
-// JobQuery is a query object to filter results from JobsRepository List.
-type JobQuery struct {
-	App     AppName
-	Release ReleaseVersion
-}
-
-// JobsRepository keeps track of all the Jobs that have been submitted to the
-// scheduler.
-type JobsRepository interface {
-	Add(*Job) error
-	Remove(*Job) error
-	List(JobQuery) ([]*Job, error)
-}
-
-type jobsRepository struct {
-	DB
-}
-
-func (r *jobsRepository) Add(job *Job) error {
-	return r.DB.Insert(job)
-}
-
-func (r *jobsRepository) Remove(job *Job) error {
-	_, err := r.DB.Exec(`delete from jobs where id = $1`, string(job.ID))
-	return err
-}
-
-func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
-	var jobs []*Job
-	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
-	return jobs, r.DB.Select(&jobs, query, string(q.App), int(q.Release))
-}
 
 // Manager is responsible for talking to the scheduler to schedule jobs onto the
 // cluster.
