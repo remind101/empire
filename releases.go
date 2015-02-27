@@ -3,6 +3,9 @@ package empire
 import (
 	"database/sql"
 	"database/sql/driver"
+	"time"
+
+	"gopkg.in/gorp.v1"
 )
 
 // ReleaseID represents the unique identifier for a Release.
@@ -35,6 +38,14 @@ type Release struct {
 	AppName  `json:"-" db:"app_id"`
 	ConfigID `json:"-" db:"config_id"`
 	SlugID   `json:"-" db:"slug_id"`
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+}
+
+// PreInsert implements a pre insert hook for the db interface
+func (r *Release) PreInsert(s gorp.SqlExecutor) error {
+	r.CreatedAt = time.Now()
+	return nil
 }
 
 // ReleaseRepository is an interface that can be implemented for storing and
@@ -42,6 +53,7 @@ type Release struct {
 type ReleasesRepository interface {
 	Create(*Release) (*Release, error)
 	FindByAppName(AppName) ([]*Release, error)
+	FindByAppNameAndVersion(AppName, ReleaseVersion) (*Release, error)
 	Head(AppName) (*Release, error)
 }
 
@@ -61,7 +73,18 @@ func (r *releasesRepository) Head(appName AppName) (*Release, error) {
 
 func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
 	var rs []*Release
-	return rs, r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName))
+	return rs, r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName))
+}
+
+func (r *releasesRepository) FindByAppNameAndVersion(a AppName, v ReleaseVersion) (*Release, error) {
+	rel := &Release{}
+	err := r.DB.SelectOne(rel, `select * from releases where app_id = $1 and version = $2 limit 1`, string(a), int(v))
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	return rel, nil
 }
 
 // CreateRelease creates a new Release and inserts it into the database.
@@ -123,6 +146,9 @@ type ReleasesService interface {
 	// Find existing releases for an app
 	FindByApp(*App) ([]*Release, error)
 
+	// Find an existing release by app and version
+	FindByAppAndVersion(*App, ReleaseVersion) (*Release, error)
+
 	// Find current release for an app
 	Head(*App) (*Release, error)
 }
@@ -163,6 +189,10 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release
 
 func (s *releasesService) FindByApp(a *App) ([]*Release, error) {
 	return s.ReleasesRepository.FindByAppName(a.Name)
+}
+
+func (s *releasesService) FindByAppAndVersion(a *App, v ReleaseVersion) (*Release, error) {
+	return s.ReleasesRepository.FindByAppNameAndVersion(a.Name, v)
 }
 
 func (s *releasesService) Head(app *App) (*Release, error) {

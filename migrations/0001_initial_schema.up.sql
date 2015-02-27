@@ -24,7 +24,8 @@ CREATE TABLE releases (
   app_id text NOT NULL references apps(name) ON DELETE CASCADE,
   config_id uuid NOT NULL references configs(id) ON DELETE CASCADE,
   slug_id uuid NOT NULL references slugs(id) ON DELETE CASCADE,
-  version int NOT NULL
+  version int NOT NULL,
+  created_at timestamp without time zone default (now() at time zone 'utc')
 );
 
 CREATE TABLE processes (
