@@ -1,0 +1,35 @@
+[Unit]
+Description=Registrator binary to register services to etcd
+
+# Requirements
+Requires=etcd.service
+Requires=docker.service
+
+# Dependency ordering
+After=etcd.service
+After=docker.service
+
+[Service]
+# Let processes take awhile to start up (for first run Docker containers)
+TimeoutStartSec=0
+
+# Change killmode from "control-group" to "none" to let Docker remove
+# work correctly.
+KillMode=none
+
+# Get CoreOS environmental variables
+EnvironmentFile=/etc/environment
+
+# Pre-start and Start
+# Directives with "=-" are allowed to fail without consequence
+ExecStartPre=-/usr/bin/docker kill registrator
+ExecStartPre=-/usr/bin/docker rm registrator
+ExecStartPre=/usr/bin/docker pull gliderlabs/registrator
+ExecStart=/usr/bin/docker run --name registrator -v /var/run/docker.sock:/tmp/docker.sock -h %H gliderlabs/registrator etcd://${COREOS_PRIVATE_IPV4}:4001/services
+
+# Stop
+ExecStop=/usr/bin/docker stop registrator
+
+[X-Fleet]
+Conflicts=registrator.service
+
