@@ -58,7 +58,7 @@ func TestConfigsServiceApply(t *testing.T) {
 		},
 	}
 	s := &configsService{
-		Repository: r,
+		ConfigsRepository: r,
 	}
 
 	config, err := s.Apply(app, Vars{"RAILS_ENV": "production"})

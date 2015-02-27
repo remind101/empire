@@ -53,7 +53,7 @@ func (c Command) Value() (driver.Value, error) {
 
 // Process holds configuration information about a Process Type.
 type Process struct {
-	ID       string      `json:"id"`
+	ID       string      `json:"id" db:"id"`
 	Type     ProcessType `json:"type" db:"type"`
 	Quantity int         `json:"quantity" db:"quantity"`
 	Command  Command     `json:"command" db:"command"`

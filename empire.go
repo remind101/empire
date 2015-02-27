@@ -46,6 +46,7 @@ type Empire struct {
 	Manager
 	ReleasesService
 	SlugsService
+	ProcessesService ProcessesRepository
 }
 
 // New returns a new Empire instance.
@@ -140,13 +141,14 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		DB:              db,
-		AppsService:     apps,
-		ConfigsService:  configs,
-		DeploysService:  deploys,
-		Manager:         manager,
-		SlugsService:    slugs,
-		ReleasesService: releases,
+		DB:               db,
+		AppsService:      apps,
+		ConfigsService:   configs,
+		DeploysService:   deploys,
+		Manager:          manager,
+		SlugsService:     slugs,
+		ReleasesService:  releases,
+		ProcessesService: processesRepository,
 	}, nil
 }
 

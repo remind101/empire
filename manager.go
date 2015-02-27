@@ -136,10 +136,10 @@ func fromJob(job *Job) *dbJob {
 // cluster.
 type Manager interface {
 	// ScheduleRelease schedules a release onto the cluster.
-	ScheduleRelease(*Release) error
+	ScheduleRelease(*Release, *Config, *Slug, Formation) error
 
 	// ScaleRelease scales a release based on a process quantity map.
-	ScaleRelease(*Release, ProcessQuantityMap) error
+	ScaleRelease(*Release, *Config, *Slug, Formation, ProcessQuantityMap) error
 
 	// FindJobsByApp returns JobStates for an app.
 	JobStatesByApp(*App) ([]*JobState, error)
@@ -162,7 +162,7 @@ func NewManager(r JobsRepository, s scheduler.Scheduler) (Manager, error) {
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (m *manager) ScheduleRelease(release *Release) error {
+func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this release.
 	existing, err := m.existingJobs(release)
 	if err != nil {
@@ -170,11 +170,11 @@ func (m *manager) ScheduleRelease(release *Release) error {
 	}
 
 	jobs := buildJobs(
-		release.App.Name,
-		release.Version,
-		release.Slug.Image,
-		release.Config.Vars,
-		release.Formation,
+		release.AppName,
+		release.Ver,
+		slug.Image,
+		config.Vars,
+		formation,
 	)
 
 	if len(existing) > len(jobs) {
@@ -190,8 +190,8 @@ func (m *manager) ScheduleRelease(release *Release) error {
 
 func (m *manager) existingJobs(release *Release) ([]*Job, error) {
 	return m.JobsRepository.List(JobQuery{
-		App:     release.App.Name,
-		Release: release.Version,
+		App:     release.AppName,
+		Release: release.Ver,
 	})
 }
 
@@ -250,12 +250,10 @@ func (m *manager) unschedule(j *Job) error {
 
 // ScaleRelease takes a release and process quantity map, and
 // schedules/unschedules jobs to make the formation match the quantity map
-func (m *manager) ScaleRelease(release *Release, qm ProcessQuantityMap) error {
-	f := release.Formation
-
+func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
 	for t, q := range qm {
-		if p, ok := f[t]; ok {
-			if err := m.scaleProcess(release, t, p, q); err != nil {
+		if p, ok := formation[t]; ok {
+			if err := m.scaleProcess(release, config, slug, t, p, q); err != nil {
 				return err
 			}
 		}
@@ -264,18 +262,18 @@ func (m *manager) ScaleRelease(release *Release, qm ProcessQuantityMap) error {
 	return nil
 }
 
-func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q int) error {
+func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t ProcessType, p *Process, q int) error {
 	// Scale up
 	if p.Quantity < q {
 		for i := p.Quantity + 1; i <= q; i++ {
 			err := m.schedule(
 				&Job{
-					App:         release.App.Name,
-					Release:     release.Version,
+					App:         release.AppName,
+					Release:     release.Ver,
 					ProcessType: t,
 					Instance:    i,
-					Environment: release.Config.Vars,
-					Image:       release.Slug.Image,
+					Environment: config.Vars,
+					Image:       slug.Image,
 					Command:     p.Command,
 				},
 			)
@@ -288,7 +286,7 @@ func (m *manager) scaleProcess(release *Release, t ProcessType, p *Process, q in
 	// Scale down
 	if p.Quantity > q {
 		for i := p.Quantity; i >= q; i-- {
-			err := m.Scheduler.Unschedule(newJobName(release.App.Name, release.Version, t, i))
+			err := m.Scheduler.Unschedule(newJobName(release.AppName, release.Ver, t, i))
 			if err != nil {
 				return err
 			}

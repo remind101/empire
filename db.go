@@ -57,7 +57,7 @@ func NewDB(uri string) (DB, error) {
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
 	db.AddTableWithName(Slug{}, "slugs").SetKeys(true, "ID")
 	db.AddTableWithName(Process{}, "processes").SetKeys(true, "ID")
-	db.AddTableWithName(dbRelease{}, "releases").SetKeys(true, "ID")
+	db.AddTableWithName(Release{}, "releases").SetKeys(true, "ID")
 	db.AddTableWithName(dbJob{}, "jobs").SetKeys(true, "ID")
 
 	return db, nil

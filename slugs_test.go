@@ -22,8 +22,8 @@ func TestSlugsServiceCreateByImage(t *testing.T) {
 	}
 
 	s := &slugsService{
-		Repository: r,
-		Extractor:  e,
+		SlugsRepository: r,
+		Extractor:       e,
 	}
 
 	slug, err := s.CreateByImage(image)
@@ -61,8 +61,8 @@ func TestSlugsServiceCreateByImageFound(t *testing.T) {
 	}
 
 	s := &slugsService{
-		Repository: r,
-		Extractor:  e,
+		SlugsRepository: r,
+		Extractor:       e,
 	}
 
 	slug, err := s.CreateByImage(image)
@@ -96,8 +96,8 @@ func TestSlugsServiceCreateByImageFoundError(t *testing.T) {
 	}
 
 	s := &slugsService{
-		Repository: r,
-		Extractor:  e,
+		SlugsRepository: r,
+		Extractor:       e,
 	}
 
 	if _, err := s.CreateByImage(image); err == nil {

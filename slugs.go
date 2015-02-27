@@ -1,6 +1,10 @@
 package empire
 
-import "database/sql/driver"
+import (
+	"database/sql"
+	"database/sql/driver"
+	"fmt"
+)
 
 // SlugID represents the unique identifier of a Slug.
 type SlugID string
@@ -29,7 +33,7 @@ func (id SlugID) Value() (driver.Value, error) {
 // SlugsRepository represents an interface for creating and finding slugs.
 type SlugsRepository interface {
 	Create(*Slug) (*Slug, error)
-	FindByID(SlugID) (*Slug, error)
+	Find(SlugID) (*Slug, error)
 	FindByImage(Image) (*Slug, error)
 }
 
@@ -45,24 +49,33 @@ type slugsRepository struct {
 
 // Create implements Repository Create.
 func (r *slugsRepository) Create(slug *Slug) (*Slug, error) {
-	return slug, r.DB.Insert(slug)
+	return CreateSlug(r.DB, slug)
 }
 
-// FindByID implements Repository FindByID.
-func (r *slugsRepository) FindByID(id SlugID) (*Slug, error) {
-	var slug Slug
-
-	if err := r.DB.SelectOne(&slug, `select * from slugs where id = $1`, string(id)); err != nil {
-		return nil, err
-	}
-
-	return &slug, nil
+// Find implements Repository Find.
+func (r *slugsRepository) Find(id SlugID) (*Slug, error) {
+	return FindSlugBy(r.DB, "id", string(id))
 }
 
 func (r *slugsRepository) FindByImage(image Image) (*Slug, error) {
+	return FindSlugBy(r.DB, "image", image.String())
+}
+
+// CreateSlug inserts a Slug into the database.
+func CreateSlug(db Inserter, slug *Slug) (*Slug, error) {
+	return slug, db.Insert(slug)
+}
+
+// FindSlugBy finds a slug by a field.
+func FindSlugBy(db Queryier, field string, value interface{}) (*Slug, error) {
 	var slug Slug
 
-	if err := r.DB.SelectOne(&slug, `select * from slugs where image = $1`, image.String()); err != nil {
+	q := fmt.Sprintf(`select * from slugs where %s = $1`, field)
+	if err := db.SelectOne(&slug, q, value); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
@@ -71,6 +84,8 @@ func (r *slugsRepository) FindByImage(image Image) (*Slug, error) {
 
 // SlugsService is a service for interacting with slugs.
 type SlugsService interface {
+	Find(SlugID) (*Slug, error)
+
 	// CreateByImage extracts process types from an image, then creates a
 	// slug for it.
 	CreateByImage(Image) (*Slug, error)
@@ -78,22 +93,22 @@ type SlugsService interface {
 
 // slugsService is a base implementation of the SlugsService interface.
 type slugsService struct {
-	Repository SlugsRepository
-	Extractor  Extractor
+	SlugsRepository
+	Extractor Extractor
 }
 
 // NewSlugsService returns a new SlugsService instance.
 func NewSlugsService(r SlugsRepository, e Extractor) (SlugsService, error) {
 	return &slugsService{
-		Repository: r,
-		Extractor:  e,
+		SlugsRepository: r,
+		Extractor:       e,
 	}, nil
 }
 
 // CreateByImageID extracts the process types from the image, then creates a new
 // slug.
 func (s *slugsService) CreateByImage(image Image) (*Slug, error) {
-	if slug, err := s.Repository.FindByImage(image); slug != nil {
+	if slug, err := s.SlugsRepository.FindByImage(image); slug != nil {
 		return slug, err
 	}
 
@@ -108,5 +123,5 @@ func (s *slugsService) CreateByImage(image Image) (*Slug, error) {
 
 	slug.ProcessTypes = pt
 
-	return s.Repository.Create(slug)
+	return s.SlugsRepository.Create(slug)
 }
