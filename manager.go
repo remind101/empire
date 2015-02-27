@@ -31,7 +31,20 @@ type manager struct {
 // schedules them onto the cluster.
 func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this app.
-	existing, err := m.existingJobs(release)
+	existing, err := m.existingJobs(release.AppName)
+	if err != nil {
+		return err
+	}
+
+	jobs := buildJobs(
+		release.AppName,
+		release.Ver,
+		slug.Image,
+		config.Vars,
+		formation,
+	)
+
+	err = m.scheduleMulti(jobs)
 	if err != nil {
 		return err
 	}
@@ -44,20 +57,12 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 		}
 	}()
 
-	jobs := buildJobs(
-		release.AppName,
-		release.Ver,
-		slug.Image,
-		config.Vars,
-		formation,
-	)
-
-	return m.scheduleMulti(jobs)
+	return nil
 }
 
-func (m *manager) existingJobs(release *Release) ([]*Job, error) {
+func (m *manager) existingJobs(appName AppName) ([]*Job, error) {
 	return m.JobsRepository.List(JobQuery{
-		App: release.AppName,
+		App: appName,
 	})
 }
 
