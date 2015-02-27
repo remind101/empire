@@ -45,6 +45,21 @@ hk get
 hk set
 hk scale
 hk dynos
+hk rollback
+```
+
+## Quickstart
+
+```console
+./build/empire server -docker.registry=quay.io
+http http://localhost:8080/deploys image:='{"id":"ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02", "repo":"ejholmes/acme-inc"}'
+HEROKU_API_URL=http://localhost:8080 hk apps
+HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc
+HEROKU_API_URL=http://localhost:8080 hk env -a acme-inc
+HEROKU_API_URL=http://localhost:8080 hk set RAILS_ENV=production -a acme-inc
+HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc
+HEROKU_API_URL=http://localhost:8080 hk rollback V1 -a acme-inc
+HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc
 ```
 
 ## Components
