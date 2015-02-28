@@ -71,7 +71,7 @@ func NewAppFromRepo(repo Repo) (*App, error) {
 
 // PreInsert implements a pre insert hook for the db interface
 func (a *App) PreInsert(s gorp.SqlExecutor) error {
-	a.CreatedAt = time.Now()
+	a.CreatedAt = Now()
 	return nil
 }
 

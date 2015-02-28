@@ -1,0 +1,14 @@
+#!/bin/bash
+
+repo=$(echo $1 | cut -d : -f 1)
+id=$(echo $1 | cut -d : -f 2)
+
+function deploy() {
+  curl -X POST "${HEROKU_API_URL}/deploys" -d "{\"image\":{\"repo\":\"${repo}\",\"id\":\"${id}\"}}" > /dev/null 2>&1
+}
+
+if deploy; then
+  echo "Deployed $1"
+else
+  echo "Failed to deploy $1"
+fi

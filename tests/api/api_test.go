@@ -6,12 +6,10 @@ import (
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/empiretest"
 )
 
 var (
-	// DatabaseURL is a connection string for the postgres database to use
-	// during integration tests.
-	DatabaseURL = "postgres://localhost/empire?sslmode=disable"
 
 	// An test docker image that can be deployed.
 	DefaultImage = empire.Image{
@@ -20,21 +18,16 @@ var (
 	}
 )
 
+// Run the tests with empiretest.Run, which will lock access to the database
+// since it can't be shared by parallel tests.
+func TestMain(m *testing.M) {
+	empiretest.Run(m)
+}
+
 // NewTestClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
 func NewTestClient(t testing.TB) (*heroku.Client, *httptest.Server) {
-	opts := empire.Options{DB: DatabaseURL}
-
-	e, err := empire.New(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := e.Reset(); err != nil {
-		t.Fatal(err)
-	}
-
-	s := httptest.NewServer(empire.NewServer(e))
+	s := empiretest.NewServer(t)
 	c := &heroku.Client{}
 	c.URL = s.URL
 
