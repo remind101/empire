@@ -93,7 +93,7 @@ func CreateJob(db Inserter, job *Job) (*Job, error) {
 	return job, db.Insert(job)
 }
 
-// DestroyJob removes a Job from he database.
+// DestroyJob removes a Job from the database.
 func DestroyJob(db Deleter, job *Job) error {
 	_, err := db.Delete(job)
 	return err

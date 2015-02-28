@@ -116,7 +116,12 @@ func (m *manager) unscheduleMulti(jobs []*Job) error {
 }
 
 func (m *manager) unschedule(j *Job) error {
-	return m.Scheduler.Unschedule(j.JobName())
+	err := m.Scheduler.Unschedule(j.JobName())
+	if err != nil {
+		return err
+	}
+
+	return m.JobsRepository.Remove(j)
 }
 
 // ScaleRelease takes a release and process quantity map, and
@@ -156,10 +161,25 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 
 	// Scale down
 	if p.Quantity > q {
+		// Find existing jobs for this app
+		existing, err := m.existingJobs(release.AppName)
+		if err != nil {
+			return err
+		}
+
+		// Create a map for easy lookup
+		jm := make(map[scheduler.JobName]*Job, len(existing))
+		for _, j := range existing {
+			jm[j.JobName()] = j
+		}
+
+		// Unschedule jobs
 		for i := p.Quantity; i > q; i-- {
-			err := m.Scheduler.Unschedule(newJobName(release.AppName, release.Ver, t, i))
-			if err != nil {
-				return err
+			jobName := newJobName(release.AppName, release.Ver, t, i)
+			if j, ok := jm[jobName]; ok {
+				m.unschedule(j)
+			} else {
+				return fmt.Errorf("Job not found to unschedule: %s", jobName)
 			}
 		}
 	}
@@ -169,7 +189,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 
 func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
 	// Jobs expected to be running
-	jobs, err := m.JobsRepository.List(JobQuery{App: app.Name})
+	jobs, err := m.existingJobs(app.Name)
 	if err != nil {
 		return nil, err
 	}
