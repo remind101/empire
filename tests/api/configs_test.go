@@ -1,4 +1,4 @@
-package empire_test
+package api_test
 
 import (
 	"reflect"
