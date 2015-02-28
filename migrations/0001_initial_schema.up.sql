@@ -53,4 +53,5 @@ CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
 CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
 CREATE UNIQUE INDEX index_slugs_on_image ON slugs USING btree (image);
 CREATE UNIQUE INDEX index_releases_on_app_id_and_version ON releases USING btree (app_id, version);
+CREATE UNIQUE INDEX index_jobs_on_app_id_and_release_version_and_process_type_and_instance ON jobs (app_id, release_version, process_type, instance);
 CREATE INDEX index_configs_on_created_at ON configs (created_at);
