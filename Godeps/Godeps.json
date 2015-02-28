@@ -6,6 +6,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-12",
+			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
+		},
+		{
 			"ImportPath": "code.google.com/p/gogoprotobuf/proto",
 			"Rev": "5c5c9e5ec21508be656c201ec53c68cd882d36fb"
 		},
@@ -18,6 +23,10 @@
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.6.4-12-g467d9d5",
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
+		},
+		{
+			"ImportPath": "github.com/bgentry/heroku-go",
+			"Rev": "b891b4c66c7a330c5da052a0789f66c4e83c1bed"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
