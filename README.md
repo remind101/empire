@@ -79,9 +79,7 @@ applications in a compute cluster. The following components are employed:
 
 **[Fleet][fleet]** Used for process scheduling.
 
-** Postgres[postgres]** Used as a backend for empire app data.
-
-
+**[Postgres][postgres]** Used as a backend for empire app data.
 
 **[Registrator][registrator]** Used to automatically register services with consul.
 
@@ -102,6 +100,17 @@ To run the tests:
 ```console
 $ godep go test ./...
 ```
+
+## Tests
+
+Unit tests live alongside each go file as `_test.go`.
+
+There is also a `tests` directory that contains
+integration and functional tests that tests the system
+using the
+**[heroku-go](https://github.com/bgentry/heroku-go)**
+client and the **[hk
+command](https://github.com/heroku/hk)**.
 
 ## How do I deploy to Empire?
 

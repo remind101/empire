@@ -193,6 +193,10 @@
 			"Rev": "8c0303d92862eccc4bb9a07d7dac9065e4a32014"
 		},
 		{
+			"ImportPath": "github.com/ejholmes/flock",
+			"Rev": "3c37e99d21fd913bd81c35b3c2f661cd04f2b1e8"
+		},
+		{
 			"ImportPath": "github.com/ernesto-jimenez/go-querystring/query",
 			"Rev": "a9b7f983e384616b2a317c8f345701fb1688d061"
 		},

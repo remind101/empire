@@ -10,10 +10,17 @@ go:
   - 1.4
 
 before_install:
+  - mkdir -p $HOME/gopath/bin
+  - L=$HOME/gopath/bin/hk && curl -sL -A "`uname -sp`" https://hk.heroku.com/hk.gz | zcat >$L && chmod +x $L
+  - hk version
   - go install -a -race std
   - go get github.com/tools/godep
   - export PATH=$HOME/gopath/bin:$PATH
   - make bootstrap
+
+before_script:
+  - echo 'America/Los_Angeles' | sudo tee /etc/timezone
+  - sudo dpkg-reconfigure --frontend noninteractive tzdata
 
 script:
   - go test -race ./...

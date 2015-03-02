@@ -1,9 +1,17 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"time"
+
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/scheduler"
 )
+
+// A function to return the current time. It can be useful to stub this out in
+// tests.
+var Now = func() time.Time {
+	return time.Now()
+}
 
 // DefaultOptions is a default Options instance that can be passed when
 // intializing a new Empire.

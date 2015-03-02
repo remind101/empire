@@ -45,7 +45,7 @@ type Release struct {
 
 // PreInsert implements a pre insert hook for the db interface
 func (r *Release) PreInsert(s gorp.SqlExecutor) error {
-	r.CreatedAt = time.Now()
+	r.CreatedAt = Now()
 	return nil
 }
 
