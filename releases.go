@@ -203,7 +203,8 @@ func (s *releasesService) Head(app *App) (*Release, error) {
 
 func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
-	last, err := s.ReleasesRepository.Head(release.AppName)
+	prev := int(release.Ver) - 1
+	last, err := s.ReleasesRepository.FindByAppNameAndVersion(release.AppName, ReleaseVersion(prev))
 	if err != nil {
 		return nil, err
 	}

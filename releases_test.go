@@ -37,13 +37,22 @@ func TestReleasesServiceCreate(t *testing.T) {
 type mockReleasesRepository struct {
 	ReleasesRepository // Just to satisfy the interface.
 
-	HeadFunc   func(AppName) (*Release, error)
-	CreateFunc func(*Release) (*Release, error)
+	HeadFunc                    func(AppName) (*Release, error)
+	CreateFunc                  func(*Release) (*Release, error)
+	FindByAppNameAndVersionFunc func(AppName, ReleaseVersion) (*Release, error)
 }
 
 func (s *mockReleasesRepository) Head(name AppName) (*Release, error) {
 	if s.HeadFunc != nil {
 		return s.HeadFunc(name)
+	}
+
+	return nil, nil
+}
+
+func (s *mockReleasesRepository) FindByAppNameAndVersion(a AppName, v ReleaseVersion) (*Release, error) {
+	if s.FindByAppNameAndVersionFunc != nil {
+		return s.FindByAppNameAndVersionFunc(a, v)
 	}
 
 	return nil, nil
