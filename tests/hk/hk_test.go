@@ -67,6 +67,42 @@ func TestConfig(t *testing.T) {
 	})
 }
 
+func TestUpdateConfigNewReleaseSameFormation(t *testing.T) {
+	now(time.Now().AddDate(0, 0, -5))
+	defer resetNow()
+
+	run(t, []Command{
+		{
+			"deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+			"Deployed ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+		},
+		{
+			"dynos -a acme-inc",
+			"acme-inc.1.web.1    unknown   5d  \"./bin/web\"",
+		},
+		{
+			"scale web=2 -a acme-inc",
+			"Scaled acme-inc to web=2:1X.",
+		},
+		{
+			"dynos -a acme-inc",
+			`acme-inc.1.web.1    unknown   5d  "./bin/web"
+acme-inc.1.web.2    unknown   5d  "./bin/web"`,
+		},
+		{
+			"set DATABASE_URL=postgres://localhost AUTH=foo -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"dynos -a acme-inc",
+			`acme-inc.1.web.1    unknown   5d  "./bin/web"
+acme-inc.1.web.2    unknown   5d  "./bin/web"
+acme-inc.2.web.1    unknown   5d  "./bin/web"
+acme-inc.2.web.2    unknown   5d  "./bin/web"`,
+		},
+	})
+}
+
 func TestDeploy(t *testing.T) {
 	run(t, []Command{
 		{
