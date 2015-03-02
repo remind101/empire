@@ -14,7 +14,7 @@ func TestManagerScheduleRelease(t *testing.T) {
 	)
 
 	s := &mockScheduler{
-		ScheduleFunc: func(j *scheduler.Job) error {
+		ScheduleFunc: func(c *scheduler.Container) error {
 			scheduled = true
 			return nil
 		},
@@ -69,10 +69,10 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 	var unscheduled bool
 
 	s := &mockScheduler{
-		UnscheduleFunc: func(n scheduler.JobName) error {
+		UnscheduleFunc: func(n scheduler.ContainerName) error {
 			unscheduled = true
 
-			if got, want := n, scheduler.JobName("r101-api.1.web.2"); got != want {
+			if got, want := n, scheduler.ContainerName("r101-api.1.web.2"); got != want {
 				t.Fatalf("Job name => %s; want %s", got, want)
 			}
 
@@ -137,11 +137,11 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 	}
 }
 
-func TestNewJobName(t *testing.T) {
-	n := newJobName("r101-api", 1, "web", 1)
+func TestNewContainerName(t *testing.T) {
+	n := newContainerName("r101-api", 1, "web", 1)
 
-	if got, want := n, scheduler.JobName("r101-api.1.web.1"); got != want {
-		t.Fatalf("newJobName => %s; want %s", got, want)
+	if got, want := n, scheduler.ContainerName("r101-api.1.web.1"); got != want {
+		t.Fatalf("newContainerName => %s; want %s", got, want)
 	}
 }
 
@@ -193,20 +193,20 @@ func TestBuildJobs(t *testing.T) {
 }
 
 type mockScheduler struct {
-	ScheduleFunc   func(*scheduler.Job) error
-	UnscheduleFunc func(scheduler.JobName) error
-	JobStatesFunc  func() ([]*scheduler.JobState, error)
+	ScheduleFunc        func(*scheduler.Container) error
+	UnscheduleFunc      func(scheduler.ContainerName) error
+	ContainerStatesFunc func() ([]*scheduler.ContainerState, error)
 }
 
-func (s *mockScheduler) Schedule(j *scheduler.Job) error {
+func (s *mockScheduler) Schedule(c *scheduler.Container) error {
 	if s.ScheduleFunc != nil {
-		return s.ScheduleFunc(j)
+		return s.ScheduleFunc(c)
 	}
 
 	return nil
 }
 
-func (s *mockScheduler) Unschedule(n scheduler.JobName) error {
+func (s *mockScheduler) Unschedule(n scheduler.ContainerName) error {
 	if s.UnscheduleFunc != nil {
 		s.UnscheduleFunc(n)
 	}
@@ -214,9 +214,9 @@ func (s *mockScheduler) Unschedule(n scheduler.JobName) error {
 	return nil
 }
 
-func (s *mockScheduler) JobStates() ([]*scheduler.JobState, error) {
-	if s.JobStatesFunc != nil {
-		return s.JobStatesFunc()
+func (s *mockScheduler) ContainerStates() ([]*scheduler.ContainerState, error) {
+	if s.ContainerStatesFunc != nil {
+		return s.ContainerStatesFunc()
 	}
 
 	return nil, nil

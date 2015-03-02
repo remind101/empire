@@ -40,12 +40,12 @@ type Job struct {
 type JobState struct {
 	Job       *Job
 	MachineID string
-	Name      scheduler.JobName
+	Name      scheduler.ContainerName
 	State     string
 }
 
-func (j *Job) JobName() scheduler.JobName {
-	return newJobName(
+func (j *Job) ContainerName() scheduler.ContainerName {
+	return newContainerName(
 		j.AppName,
 		j.ReleaseVersion,
 		j.ProcessType,
