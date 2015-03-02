@@ -10,7 +10,7 @@ import (
 // A function to return the current time. It can be useful to stub this out in
 // tests.
 var Now = func() time.Time {
-	return time.Now()
+	return time.Now().UTC()
 }
 
 // DefaultOptions is a default Options instance that can be passed when
