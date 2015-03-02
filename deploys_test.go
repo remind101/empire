@@ -11,7 +11,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 	c := &mockConfigsService{}
 	s := &mockSlugsService{}
 	r := &mockReleasesService{
-		CreateFunc: func(app *App, config *Config, slug *Slug) (*Release, error) {
+		CreateFunc: func(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
 			released = true
 			return nil, nil
 		},

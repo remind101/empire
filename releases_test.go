@@ -25,7 +25,7 @@ func TestReleasesServiceCreate(t *testing.T) {
 		Manager:             m,
 	}
 
-	if _, err := s.Create(app, config, slug); err != nil {
+	if _, err := s.Create(app, config, slug, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -60,12 +60,12 @@ func (s *mockReleasesRepository) Create(release *Release) (*Release, error) {
 type mockReleasesService struct {
 	ReleasesService // Just to satisfy the interface.
 
-	CreateFunc func(*App, *Config, *Slug) (*Release, error)
+	CreateFunc func(*App, *Config, *Slug, string) (*Release, error)
 }
 
-func (s *mockReleasesService) Create(app *App, config *Config, slug *Slug) (*Release, error) {
+func (s *mockReleasesService) Create(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
 	if s.CreateFunc != nil {
-		return s.CreateFunc(app, config, slug)
+		return s.CreateFunc(app, config, slug, desc)
 	}
 
 	return nil, nil

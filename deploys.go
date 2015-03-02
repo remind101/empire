@@ -1,5 +1,7 @@
 package empire
 
+import "fmt"
+
 // DeployID represents the unique identifier for a Deploy.
 type DeployID string
 
@@ -49,7 +51,8 @@ func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 
 	// Create a new release for the Config
 	// and Slug.
-	release, err := s.ReleasesService.Create(app, config, slug)
+	desc := fmt.Sprintf("Deploy %s", image.String())
+	release, err := s.ReleasesService.Create(app, config, slug, desc)
 	if err != nil {
 		return nil, err
 	}
