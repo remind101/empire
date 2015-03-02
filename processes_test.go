@@ -92,6 +92,7 @@ func TestNewFormation(t *testing.T) {
 
 type mockProcessesRepository struct {
 	CreateFunc func(*Process) (*Process, error)
+	UpdateFunc func(*Process) (int64, error)
 	AllFunc    func(ReleaseID) (Formation, error)
 }
 
@@ -101,6 +102,14 @@ func (r *mockProcessesRepository) Create(p *Process) (*Process, error) {
 	}
 
 	return nil, nil
+}
+
+func (r *mockProcessesRepository) Update(p *Process) (int64, error) {
+	if r.UpdateFunc != nil {
+		return r.UpdateFunc(p)
+	}
+
+	return 0, nil
 }
 
 func (r *mockProcessesRepository) All(id ReleaseID) (Formation, error) {

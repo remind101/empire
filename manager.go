@@ -25,6 +25,7 @@ type Manager interface {
 type manager struct {
 	scheduler.Scheduler
 	JobsRepository
+	ProcessesRepository
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
@@ -184,7 +185,10 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 		}
 	}
 
-	return nil
+	// Update quantity for this process in the formation
+	p.Quantity = q
+	_, err := m.ProcessesRepository.Update(p)
+	return err
 }
 
 func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {

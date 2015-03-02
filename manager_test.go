@@ -25,9 +25,12 @@ func TestManagerScheduleRelease(t *testing.T) {
 			return nil
 		},
 	}
+	p := &mockProcessesRepository{}
+
 	m := &manager{
-		Scheduler:      s,
-		JobsRepository: r,
+		Scheduler:           s,
+		JobsRepository:      r,
+		ProcessesRepository: p,
 	}
 
 	config := &Config{
@@ -67,6 +70,7 @@ func TestManagerScheduleRelease(t *testing.T) {
 
 func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 	var unscheduled bool
+	var updated bool
 
 	s := &mockScheduler{
 		UnscheduleFunc: func(n scheduler.JobName) error {
@@ -99,9 +103,17 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 			return jobs, nil
 		},
 	}
+	p := &mockProcessesRepository{
+		UpdateFunc: func(p *Process) (int64, error) {
+			updated = true
+			return 1, nil
+		},
+	}
+
 	m := &manager{
-		Scheduler:      s,
-		JobsRepository: r,
+		Scheduler:           s,
+		JobsRepository:      r,
+		ProcessesRepository: p,
 	}
 
 	config := &Config{
@@ -134,6 +146,10 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 
 	if got, want := unscheduled, true; got != want {
 		t.Fatal("Expected a job to have been unscheduled")
+	}
+
+	if got, want := updated, true; got != want {
+		t.Fatal("Expected formation to have been updated")
 	}
 }
 

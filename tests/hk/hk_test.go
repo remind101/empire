@@ -104,15 +104,14 @@ func TestScale(t *testing.T) {
 acme-inc.1.web.2    unknown  -106751d  "./bin/web"`,
 		},
 
-		// TODO Scaling down
-		//{
-		//"scale web=1 -a acme-inc",
-		//"Scaled acme-inc to web=1:1X.",
-		//},
-		//{
-		//"dynos -a acme-inc",
-		//"acme-inc.1.web.1    unknown  -106751d  \"./bin/web\"",
-		//},
+		{
+			"scale web=1 -a acme-inc",
+			"Scaled acme-inc to web=1:1X.",
+		},
+		{
+			"dynos -a acme-inc",
+			"acme-inc.1.web.1    unknown  -106751d  \"./bin/web\"",
+		},
 	})
 }
 
