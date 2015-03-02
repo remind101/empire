@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire/server"
 )
 
 func runServer(c *cli.Context) {
@@ -17,7 +18,7 @@ func runServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	s := empire.NewServer(e)
+	s := server.New(e)
 
 	log.Printf("Starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, s))
