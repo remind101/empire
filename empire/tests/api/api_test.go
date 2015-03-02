@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/bgentry/heroku-go"
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empiretest"
 )
 

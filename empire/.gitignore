@@ -1,6 +1,2 @@
-.git
-.vagrant
-packer
-build
+# Quay can't handle broken symlinks
 Godeps/_workspace/src/github.com/fsouza/go-dockerclient/testing/data/symlink
-tests

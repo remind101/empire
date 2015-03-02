@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.

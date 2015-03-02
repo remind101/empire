@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 type GetConfigs struct {

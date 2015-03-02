@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/remind101/empire/db"
+	"github.com/remind101/empire/empire/db"
 )
 
 type Inserter interface {

@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"time"
 
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/empire/scheduler"
 	"gopkg.in/gorp.v1"
 )
 
