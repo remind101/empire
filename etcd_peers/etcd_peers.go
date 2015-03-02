@@ -135,7 +135,7 @@ func main() {
 
 		// XXX: Not sure if it's worth allowing someone to use a template here
 		//      but for now this should be fine.
-		_, err = fd.WriteString(fmt.Sprintf("%s=\"%s\"", *envVar, strings.Join(*peers, ",")))
+		_, err = fd.WriteString(fmt.Sprintf("%s=\"%s\"\n", *envVar, strings.Join(*peers, ",")))
 		if err != nil {
 			msg := fmt.Sprintf("Unable to write to %s", *outputFile)
 			LogErr(err, msg)
