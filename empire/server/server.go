@@ -87,8 +87,8 @@ type Server struct {
 	http.Handler
 }
 
-// NewServer creates the API routes and returns a new Server instance.
-func NewServer(e *empire.Empire) *Server {
+// New creates the API routes and returns a new Server instance.
+func New(e *empire.Empire) *Server {
 	r := newRouter()
 
 	// Apps

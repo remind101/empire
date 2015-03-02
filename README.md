@@ -51,7 +51,9 @@ hk rollback
 ## Quickstart
 
 ```console
-./build/empire server -docker.registry=quay.io
+boot2docker up
+vagrant up
+./build/empire server -docker.registry=quay.io -fleet.api=http://172.20.20.10:49153
 http --timeout=300 http://localhost:8080/deploys image:='{"id":"ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02", "repo":"ejholmes/acme-inc"}'
 HEROKU_API_URL=http://localhost:8080 hk apps
 HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc

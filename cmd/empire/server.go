@@ -18,7 +18,7 @@ func runServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	s := server.NewServer(e)
+	s := server.New(e)
 
 	log.Printf("Starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, s))

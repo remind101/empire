@@ -37,7 +37,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 // running the empire API.
 func NewServer(t testing.TB) *httptest.Server {
 	e := NewEmpire(t)
-	return httptest.NewServer(server.NewServer(e))
+	return httptest.NewServer(server.New(e))
 }
 
 var dblock = "/tmp/empire.lock"
