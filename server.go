@@ -2,9 +2,11 @@ package empire
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/codegangsta/negroni"
@@ -334,7 +336,8 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Create new release
-	release, err := h.ReleasesService.Create(app, config, slug)
+	desc := fmt.Sprintf("Rollback to v%d", version)
+	release, err := h.ReleasesService.Create(app, config, slug, desc)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -412,8 +415,15 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 			return http.StatusInternalServerError, nil, err
 		}
 
+		keys := make([]string, 0, len(configVars))
+		for k, _ := range configVars {
+			keys = append(keys, string(k))
+		}
+
+		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
+
 		// Create new release based on new config and old slug
-		_, err = h.ReleasesService.Create(a, c, slug)
+		_, err = h.ReleasesService.Create(a, c, slug, desc)
 		if err != nil {
 			return http.StatusInternalServerError, nil, err
 		}

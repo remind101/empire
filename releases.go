@@ -39,7 +39,8 @@ type Release struct {
 	ConfigID `json:"-" db:"config_id"`
 	SlugID   `json:"-" db:"slug_id"`
 
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	Description string    `json:"description" db:"description"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
 // PreInsert implements a pre insert hook for the db interface
@@ -141,7 +142,7 @@ func LastRelease(db Queryier, appName AppName) (*Release, error) {
 // ReleaseesService represents a service for interacting with Releases.
 type ReleasesService interface {
 	// Create creates a new release.
-	Create(*App, *Config, *Slug) (*Release, error)
+	Create(*App, *Config, *Slug, string) (*Release, error)
 
 	// Find existing releases for an app
 	FindByApp(*App) ([]*Release, error)
@@ -161,11 +162,12 @@ type releasesService struct {
 }
 
 // Create creates the release, then sets the current process formation on the release.
-func (s *releasesService) Create(app *App, config *Config, slug *Slug) (*Release, error) {
+func (s *releasesService) Create(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
 	r := &Release{
-		AppName:  app.Name,
-		ConfigID: config.ID,
-		SlugID:   slug.ID,
+		AppName:     app.Name,
+		ConfigID:    config.ID,
+		SlugID:      slug.ID,
+		Description: desc,
 	}
 
 	r, err := s.ReleasesRepository.Create(r)

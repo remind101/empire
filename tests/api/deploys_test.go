@@ -16,8 +16,9 @@ type DeployForm struct {
 
 type Deploy struct {
 	Release struct {
-		ID      string `json:"id"`
-		Version int    `json:"version"`
+		ID          string `json:"id"`
+		Version     int    `json:"version"`
+		Description string `json:"description"`
 	} `json:"release"`
 }
 
@@ -28,7 +29,11 @@ func TestDeploy(t *testing.T) {
 	d := mustDeploy(t, c, DefaultImage)
 
 	if got, want := d.Release.Version, 1; got != want {
-		t.Fatal("Version => %v; want %v", got, want)
+		t.Fatalf("Version => %v; want %v", got, want)
+	}
+
+	if got, want := d.Release.Description, "Deploy "+DefaultImage.String(); got != want {
+		t.Fatalf("Description => %v; want %v", got, want)
 	}
 }
 

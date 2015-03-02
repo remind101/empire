@@ -26,6 +26,7 @@ CREATE TABLE releases (
   config_id uuid NOT NULL references configs(id) ON DELETE CASCADE,
   slug_id uuid NOT NULL references slugs(id) ON DELETE CASCADE,
   version int NOT NULL,
+  description text,
   created_at timestamp without time zone default (now() at time zone 'utc')
 );
 
