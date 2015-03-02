@@ -94,8 +94,9 @@ func New(options Options) (*Empire, error) {
 	}
 
 	manager := &manager{
-		JobsRepository: jobsRepo,
-		Scheduler:      scheduler,
+		JobsRepository:      jobsRepo,
+		Scheduler:           scheduler,
+		ProcessesRepository: processesRepo,
 	}
 
 	releases := &releasesService{

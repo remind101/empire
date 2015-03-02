@@ -139,6 +139,9 @@ type ProcessesRepository interface {
 	// Create creates a new Process.
 	Create(*Process) (*Process, error)
 
+	// Update updates an existing Process.
+	Update(*Process) (int64, error)
+
 	// All returns the Processes that belong to a Formation.
 	All(ReleaseID) (Formation, error)
 }
@@ -153,6 +156,10 @@ func (r *processesRepository) Create(process *Process) (*Process, error) {
 	return CreateProcess(r.DB, process)
 }
 
+func (r *processesRepository) Update(process *Process) (int64, error) {
+	return UpdateProcess(r.DB, process)
+}
+
 // All a Formation for a Formation.
 func (r *processesRepository) All(id ReleaseID) (Formation, error) {
 	return AllProcesses(r.DB, id)
@@ -161,6 +168,11 @@ func (r *processesRepository) All(id ReleaseID) (Formation, error) {
 // CreateProcess inserts a process into the database.
 func CreateProcess(db Inserter, process *Process) (*Process, error) {
 	return process, db.Insert(process)
+}
+
+// UpdateProcess updates an existing process into the database.
+func UpdateProcess(db Updater, process *Process) (int64, error) {
+	return db.Update(process)
 }
 
 // AllProcesses returns all Processes for a Release as a Formation.

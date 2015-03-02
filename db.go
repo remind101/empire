@@ -12,6 +12,11 @@ type Inserter interface {
 	Insert(...interface{}) error
 }
 
+type Updater interface {
+	// Update updates an existing record.
+	Update(...interface{}) (int64, error)
+}
+
 type Deleter interface {
 	// Delete deletes one or more records
 	Delete(...interface{}) (int64, error)
@@ -35,6 +40,7 @@ type Queryier interface {
 // DB represents an interface for performing queries against a SQL db.
 type DB interface {
 	Inserter
+	Updater
 	Deleter
 	Execer
 	Queryier

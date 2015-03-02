@@ -49,6 +49,10 @@ func (db *DB) Insert(v ...interface{}) error {
 	return db.dbmap.Insert(v...)
 }
 
+func (db *DB) Update(v ...interface{}) (int64, error) {
+	return db.dbmap.Update(v...)
+}
+
 func (db *DB) Delete(list ...interface{}) (int64, error) {
 	return db.dbmap.Delete(list...)
 }
