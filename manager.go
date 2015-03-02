@@ -78,21 +78,19 @@ func (m *manager) scheduleMulti(jobs []*Job) error {
 
 // schedule schedules a Job and adds it to the list of scheduled jobs.
 func (m *manager) schedule(j *Job) error {
-	name := j.JobName()
+	name := j.ContainerName()
 	env := environment(j.Environment)
-	exec := scheduler.Execute{
-		Command: string(j.Command),
-		Image: scheduler.Image{
-			Repo: string(j.Image.Repo),
-			ID:   j.Image.ID,
-		},
+	img := scheduler.Image{
+		Repo: string(j.Image.Repo),
+		ID:   j.Image.ID,
 	}
 
 	// Schedule the job onto the cluster.
-	if err := m.Scheduler.Schedule(&scheduler.Job{
+	if err := m.Scheduler.Schedule(&scheduler.Container{
 		Name:        name,
 		Environment: env,
-		Execute:     exec,
+		Command:     string(j.Command),
+		Image:       img,
 	}); err != nil {
 		return err
 	}
@@ -116,7 +114,7 @@ func (m *manager) unscheduleMulti(jobs []*Job) error {
 }
 
 func (m *manager) unschedule(j *Job) error {
-	return m.Scheduler.Unschedule(j.JobName())
+	return m.Scheduler.Unschedule(j.ContainerName())
 }
 
 // ScaleRelease takes a release and process quantity map, and
@@ -157,7 +155,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 	// Scale down
 	if p.Quantity > q {
 		for i := p.Quantity; i > q; i-- {
-			err := m.Scheduler.Unschedule(newJobName(release.AppName, release.Ver, t, i))
+			err := m.Scheduler.Unschedule(newContainerName(release.AppName, release.Ver, t, i))
 			if err != nil {
 				return err
 			}
@@ -175,13 +173,13 @@ func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
 	}
 
 	// Job states for all existing jobs
-	sjs, err := m.Scheduler.JobStates()
+	sjs, err := m.Scheduler.ContainerStates()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a map for easy lookups
-	jsm := make(map[scheduler.JobName]*scheduler.JobState, len(sjs))
+	jsm := make(map[scheduler.ContainerName]*scheduler.ContainerState, len(sjs))
 	for _, js := range sjs {
 		jsm[js.Name] = js
 	}
@@ -189,7 +187,7 @@ func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
 	// Create JobState based on Jobs and scheduler.JobStates
 	js := make([]*JobState, len(jobs))
 	for i, j := range jobs {
-		s, ok := jsm[j.JobName()]
+		s, ok := jsm[j.ContainerName()]
 
 		machineID := "unknown"
 		state := "unknown"
@@ -200,7 +198,7 @@ func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
 
 		js[i] = &JobState{
 			Job:       j,
-			Name:      j.JobName(),
+			Name:      j.ContainerName(),
 			MachineID: machineID,
 			State:     state,
 		}
@@ -209,9 +207,9 @@ func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
 	return js, nil
 }
 
-// newJobName returns a new Name with the proper format.
-func newJobName(name AppName, v ReleaseVersion, t ProcessType, i int) scheduler.JobName {
-	return scheduler.JobName(fmt.Sprintf("%s.%d.%s.%d", name, v, t, i))
+// newContainerName returns a new Name with the proper format.
+func newContainerName(name AppName, v ReleaseVersion, t ProcessType, i int) scheduler.ContainerName {
+	return scheduler.ContainerName(fmt.Sprintf("%s.%d.%s.%d", name, v, t, i))
 }
 
 func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, f Formation) []*Job {
