@@ -47,7 +47,8 @@ CREATE TABLE jobs (
 
   environment hstore NOT NULL,
   image text NOT NULL,
-  command text NOT NULL
+  command text NOT NULL,
+  updated_at timestamp without time zone default (now() at time zone 'utc')
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);

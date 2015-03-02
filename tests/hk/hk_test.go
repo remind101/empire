@@ -89,6 +89,9 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestScale(t *testing.T) {
+	now(time.Now().AddDate(0, 0, -5))
+	defer resetNow()
+
 	run(t, []Command{
 		{
 			"deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
@@ -100,8 +103,8 @@ func TestScale(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    unknown  -106751d  "./bin/web"
-acme-inc.1.web.2    unknown  -106751d  "./bin/web"`,
+			`acme-inc.1.web.1    unknown   5d  "./bin/web"
+acme-inc.1.web.2    unknown   5d  "./bin/web"`,
 		},
 
 		{
@@ -110,7 +113,7 @@ acme-inc.1.web.2    unknown  -106751d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			"acme-inc.1.web.1    unknown  -106751d  \"./bin/web\"",
+			"acme-inc.1.web.1    unknown   5d  \"./bin/web\"",
 		},
 	})
 }
@@ -121,11 +124,22 @@ func TestMain(m *testing.M) {
 	empiretest.Run(m)
 }
 
+var fakeNow = time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
+
 // Stubs out time.Now in empire.
 func init() {
+	now(fakeNow)
+}
+
+// now stubs out empire.Now.
+func now(t time.Time) {
 	empire.Now = func() time.Time {
-		return time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
+		return t
 	}
+}
+
+func resetNow() {
+	now(fakeNow)
 }
 
 // hk runs an hk command against a server.

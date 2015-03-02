@@ -2,8 +2,10 @@ package empire
 
 import (
 	"database/sql/driver"
+	"time"
 
 	"github.com/remind101/empire/scheduler"
+	"gopkg.in/gorp.v1"
 )
 
 // JobID represents a unique identifier for a Job.
@@ -35,6 +37,15 @@ type Job struct {
 	Environment Vars  `db:"environment"`
 	Image       Image `db:"image"`
 	Command     `db:"command"`
+
+	// UpdatedAt indicates when this job last changed state.
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+// PreInsert implements a pre insert hook for the db interface
+func (j *Job) PreInsert(s gorp.SqlExecutor) error {
+	j.UpdatedAt = Now()
+	return nil
 }
 
 type JobState struct {

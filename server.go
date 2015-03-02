@@ -439,9 +439,10 @@ type GetProcesses struct {
 
 // dyno is a heroku compatible response struct to the hk dynos command.
 type dyno struct {
-	Command string `json:"command"`
-	Name    string `json:"name"`
-	State   string `json:"state"`
+	Command   string    `json:"command"`
+	Name      string    `json:"name"`
+	State     string    `json:"state"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
@@ -466,9 +467,10 @@ func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 	dynos := make([]dyno, len(js))
 	for i, j := range js {
 		dynos[i] = dyno{
-			Command: string(j.Job.Command),
-			Name:    string(j.Name),
-			State:   j.State,
+			Command:   string(j.Job.Command),
+			Name:      string(j.Name),
+			State:     j.State,
+			UpdatedAt: j.Job.UpdatedAt,
 		}
 	}
 
