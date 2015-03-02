@@ -7,6 +7,7 @@ import (
 
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire/server"
 )
 
 var (
@@ -36,7 +37,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 // running the empire API.
 func NewServer(t testing.TB) *httptest.Server {
 	e := NewEmpire(t)
-	return httptest.NewServer(empire.NewServer(e))
+	return httptest.NewServer(server.NewServer(e))
 }
 
 var dblock = "/tmp/empire.lock"
