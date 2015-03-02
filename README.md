@@ -51,17 +51,20 @@ hk rollback
 ## Quickstart
 
 ```console
-boot2docker up
-vagrant up
-./build/empire server -docker.registry=quay.io -fleet.api=http://172.20.20.10:49153
-http --timeout=300 http://localhost:8080/deploys image:='{"id":"ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02", "repo":"ejholmes/acme-inc"}'
-HEROKU_API_URL=http://localhost:8080 hk apps
-HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc
-HEROKU_API_URL=http://localhost:8080 hk env -a acme-inc
-HEROKU_API_URL=http://localhost:8080 hk set RAILS_ENV=production -a acme-inc
-HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc
-HEROKU_API_URL=http://localhost:8080 hk rollback V1 -a acme-inc
-HEROKU_API_URL=http://localhost:8080 hk releases -a acme-inc
+$ make vagrant
+$ cp hk-plugins/* /usr/local/lib/hk/plugin
+$ cat <<EOF > /usr/local/bin/empire && chmod +x empire
+#!/bin/bash
+ 
+EMPIRE_URL=\${EMPIRE_URL:-"http://localhost:8080"}
+HEROKU_API_URL="\$EMPIRE_URL" hk "\$@"
+EOF
+$ empire deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+$ empire apps
+$ empire releases -a acme-inc
+$ empire env -a acme-inc
+$ empire rollback V1 -a acme-inc
+$ empire releases -a acme-inc
 ```
 
 ## Components
