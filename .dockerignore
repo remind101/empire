@@ -3,3 +3,4 @@
 packer
 build
 Godeps/_workspace/src/github.com/fsouza/go-dockerclient/testing/data/symlink
+tests
