@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 // Commands are the subcommands that are available.

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ejholmes/flock"
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/server"
 )
 

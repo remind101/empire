@@ -7,7 +7,7 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 // Decoder represents a function that can decode a request into an interface

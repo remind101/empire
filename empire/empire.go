@@ -1,10 +1,10 @@
-package empire // import "github.com/remind101/empire"
+package empire // import "github.com/remind101/empire/empire"
 
 import (
 	"time"
 
 	"github.com/mattes/migrate/migrate"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/empire/scheduler"
 )
 
 // A function to return the current time. It can be useful to stub this out in

@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 type GetApps struct {

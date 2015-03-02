@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empiretest"
 )
 
@@ -185,7 +185,7 @@ func hk(t testing.TB, url, command string) string {
 	cmd := exec.Command("hk", args...)
 	cmd.Env = []string{
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
-		"HKPATH=../../hk",
+		"HKPATH=../../../hk-plugins",
 		fmt.Sprintf("HEROKU_API_URL=%s", url),
 	}
 

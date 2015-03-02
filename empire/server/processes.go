@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 // dyno is a heroku compatible response struct to the hk dynos command.

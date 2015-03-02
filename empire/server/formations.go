@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 )
 
 // formation is a heroku compatible response struct to the hk scale command.

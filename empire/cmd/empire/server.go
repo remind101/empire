@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/codegangsta/cli"
-	"github.com/remind101/empire"
+	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/server"
 )
 

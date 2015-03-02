@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/empire/scheduler"
 )
 
 func TestManagerScheduleRelease(t *testing.T) {

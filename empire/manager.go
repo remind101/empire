@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/coreos/fleet/log"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/empire/scheduler"
 )
 
 // Manager is responsible for talking to the scheduler to schedule jobs onto the
