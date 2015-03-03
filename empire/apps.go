@@ -44,7 +44,7 @@ func NewAppNameFromRepo(repo Repo) AppName {
 type App struct {
 	Name AppName `json:"name" db:"name"`
 
-	// The associated GitHub/Docker repo.
+	// The associated Docker repo.
 	Repo Repo `json:"repo" db:"repo"`
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
