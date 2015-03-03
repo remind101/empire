@@ -27,4 +27,3 @@ service nginx start
 
 # Follow the logs to allow the script to continue running
 tail -f /var/log/nginx/*.log
-
