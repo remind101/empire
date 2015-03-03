@@ -116,3 +116,66 @@ func ListJobs(db Queryier, q JobQuery) ([]*Job, error) {
 	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
 	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
 }
+
+type JobsService interface {
+	JobsRepository
+
+	// FindJobsByApp returns JobStates for an app.
+	JobStatesByApp(*App) ([]*JobState, error)
+
+	// Find existing jobs by app name.
+	JobsByApp(AppName) ([]*Job, error)
+}
+
+type jobsService struct {
+	JobsRepository
+	scheduler.Scheduler
+}
+
+func (s *jobsService) JobStatesByApp(app *App) ([]*JobState, error) {
+	// Jobs expected to be running
+	jobs, err := s.JobsByApp(app.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Job states for all existing jobs
+	sjs, err := s.Scheduler.JobStates()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map for easy lookups
+	jsm := make(map[scheduler.JobName]*scheduler.JobState, len(sjs))
+	for _, js := range sjs {
+		jsm[js.Name] = js
+	}
+
+	// Create JobState based on Jobs and scheduler.JobStates
+	js := make([]*JobState, len(jobs))
+	for i, j := range jobs {
+		s, ok := jsm[j.JobName()]
+
+		machineID := "unknown"
+		state := "unknown"
+		if ok {
+			machineID = s.MachineID
+			state = s.State
+		}
+
+		js[i] = &JobState{
+			Job:       j,
+			Name:      j.JobName(),
+			MachineID: machineID,
+			State:     state,
+		}
+	}
+
+	return js, nil
+}
+
+func (s *jobsService) JobsByApp(appName AppName) ([]*Job, error) {
+	return s.JobsRepository.List(JobQuery{
+		App: appName,
+	})
+}

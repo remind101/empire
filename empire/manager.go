@@ -16,15 +16,12 @@ type Manager interface {
 
 	// ScaleRelease scales a release based on a process quantity map.
 	ScaleRelease(*Release, *Config, *Slug, Formation, ProcessQuantityMap) error
-
-	// FindJobsByApp returns JobStates for an app.
-	JobStatesByApp(*App) ([]*JobState, error)
 }
 
 // manager is a base implementation of the Manager interface.
 type manager struct {
 	scheduler.Scheduler
-	JobsRepository
+	JobsService
 	ProcessesRepository
 }
 
@@ -32,7 +29,7 @@ type manager struct {
 // schedules them onto the cluster.
 func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this app.
-	existing, err := m.existingJobs(release.AppName)
+	existing, err := m.JobsService.JobsByApp(release.AppName)
 	if err != nil {
 		return err
 	}
@@ -59,12 +56,6 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 	}()
 
 	return nil
-}
-
-func (m *manager) existingJobs(appName AppName) ([]*Job, error) {
-	return m.JobsRepository.List(JobQuery{
-		App: appName,
-	})
 }
 
 func (m *manager) scheduleMulti(jobs []*Job) error {
@@ -99,7 +90,7 @@ func (m *manager) schedule(j *Job) error {
 	}
 
 	// Add it to the list of scheduled jobs.
-	if err := m.JobsRepository.Add(j); err != nil {
+	if err := m.JobsService.Add(j); err != nil {
 		return err
 	}
 
@@ -122,7 +113,7 @@ func (m *manager) unschedule(j *Job) error {
 		return err
 	}
 
-	return m.JobsRepository.Remove(j)
+	return m.JobsService.Remove(j)
 }
 
 // ScaleRelease takes a release and process quantity map, and
@@ -163,7 +154,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 	// Scale down
 	if p.Quantity > q {
 		// Find existing jobs for this app
-		existing, err := m.existingJobs(release.AppName)
+		existing, err := m.JobsService.JobsByApp(release.AppName)
 		if err != nil {
 			return err
 		}
@@ -189,48 +180,6 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 	p.Quantity = q
 	_, err := m.ProcessesRepository.Update(p)
 	return err
-}
-
-func (m *manager) JobStatesByApp(app *App) ([]*JobState, error) {
-	// Jobs expected to be running
-	jobs, err := m.existingJobs(app.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	// Job states for all existing jobs
-	sjs, err := m.Scheduler.JobStates()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a map for easy lookups
-	jsm := make(map[scheduler.JobName]*scheduler.JobState, len(sjs))
-	for _, js := range sjs {
-		jsm[js.Name] = js
-	}
-
-	// Create JobState based on Jobs and scheduler.JobStates
-	js := make([]*JobState, len(jobs))
-	for i, j := range jobs {
-		s, ok := jsm[j.JobName()]
-
-		machineID := "unknown"
-		state := "unknown"
-		if ok {
-			machineID = s.MachineID
-			state = s.State
-		}
-
-		js[i] = &JobState{
-			Job:       j,
-			Name:      j.JobName(),
-			MachineID: machineID,
-			State:     state,
-		}
-	}
-
-	return js, nil
 }
 
 // newJobName returns a new Name with the proper format.
