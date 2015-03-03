@@ -1,0 +1,28 @@
+user www-data;
+worker_processes 4;
+pid /run/nginx.pid;
+
+events {
+  worker_connections 768;
+  # multi_accept on;
+}
+
+http {
+  log_format upstreamlog '[$time_local] $remote_addr passed to: $upstream_addr: $request Upstream Response Time: $upstream_response_time Request time: $request_time';
+
+  {{range $dir := lsdir "/services/web"}}
+  upstream {{base $dir}} {
+    {{$custdir := printf "/services/web/%s/*" $dir}}{{range gets $custdir}}
+    server {{.Value}};
+    {{end}}
+  }
+
+  server {
+    listen 80 default_server;
+    server_name {{base $dir}}.remind.com;
+    location / {
+        proxy_pass http://{{base $dir}};
+    }
+  }
+  {{end}}
+}
