@@ -4,7 +4,7 @@ coreos:
   etcd:
     # generate a new token for each unique cluster from https://discovery.etcd.io/new
     # WARNING: replace each time you 'vagrant destroy'
-    discovery: https://discovery.etcd.io/067d19eb67c15cbb94d5cc3d921ddc38
+    # discovery: https://discovery.etcd.io/12345693838asdfasfadf13939923
     addr: $public_ipv4:4001
     peer-addr: $public_ipv4:7001
   fleet:
@@ -47,11 +47,33 @@ coreos:
         TimeoutStartSec=30m
         EnvironmentFile=/etc/environment
         User=core
+        Restart=on-failure
 
-        ExecStartPre=/bin/bash -c "/usr/bin/docker inspect progrium/registrator &> /dev/null || /usr/bin/docker pull progrium/registrator"
-        ExecStartPre=/bin/bash -c "/usr/bin/docker rm registrator &> /dev/null; exit 0"
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker inspect progrium/registrator &> /dev/null || /usr/bin/docker pull progrium/registrator"
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm registrator &> /dev/null; exit 0"
         ExecStart=/usr/bin/docker run --name registrator --rm -h %H -v /var/run/docker.sock:/tmp/docker.sock progrium/registrator -ip=${COREOS_PRIVATE_IPV4} etcd://${COREOS_PRIVATE_IPV4}:4001/services
         ExecStop=/usr/bin/docker stop registrator
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: postgres.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Postgres
+        After=discovery.service
+
+        [Service]
+        TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker inspect postgres &> /dev/null || /usr/bin/docker pull postgres"
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm postgres &> /dev/null; exit 0"
+        ExecStart=/usr/bin/docker run --name postgres --rm -h %H -p 5432:5432 postgres
+        ExecStop=/usr/bin/docker stop postgres
 
         [Install]
         WantedBy=multi-user.target
@@ -61,16 +83,18 @@ coreos:
       content: |
         [Unit]
         Description=Empire
-        After=discovery.service
+        After=discovery.service postgres.service
 
         [Service]
         TimeoutStartSec=30m
         EnvironmentFile=/etc/environment
         User=core
+        Restart=on-failure
 
-        ExecStartPre=/bin/bash -c "/usr/bin/docker inspect quay.io/remind/empire &> /dev/null || /usr/bin/docker pull quay.io/remind/empire"
-        ExecStartPre=/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
-        ExecStart=/usr/bin/docker run --name empire --rm -h %H -P -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -docker.registry=quay.io -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/empire && docker build -t quay.io/remind/empire ."
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
+        ExecStartPre=/usr/bin/docker run quay.io/remind/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -docker.registry=quay.io -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
         ExecStop=/usr/bin/docker stop empire
 
         [Install]

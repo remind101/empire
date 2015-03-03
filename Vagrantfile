@@ -36,6 +36,7 @@ Vagrant.configure('2') do |config|
   config.vm.define 'c1' do |c1|
     c1.vm.hostname = 'c1'
     c1.vm.network :private_network, ip: '172.20.20.10'
+    c1.vm.network :forwarded_port, guest: 8080, host: 8080
 
     cloud_config c1
     docker_auth c1
