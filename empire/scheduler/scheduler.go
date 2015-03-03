@@ -202,6 +202,11 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		},
 		{
 			Section: "Service",
+			Name:    "KillMode",
+			Value:   "none",
+		},
+		{
+			Section: "Service",
 			Name:    "ExecStartPre",
 			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker inspect %s &> /dev/null || /usr/bin/docker pull %s"`, img, img),
 		},
