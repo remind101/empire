@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 
 	"github.com/fsouza/go-dockerclient"
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	// DefaultProcfilePath is the default path where Procfiles will be
-	// extracted from the container.
-	DefaultProcfilePath = "/home/app/Procfile"
+	// Procfile is the name of the Procfile file.
+	Procfile = "Procfile"
 )
 
 // Extractor represents an object that can extract the process types from an
@@ -66,13 +66,10 @@ type ProcfileExtractor struct {
 	// value is the default docker registry.
 	Registry string
 
-	// Path is the path to the Procfile to extract. The zero value is
-	// /Procfile.
-	Path string
-
 	// Client is the docker client to use to pull the container image.
 	Client interface {
 		PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
+		InspectImage(string) (*docker.Image, error)
 		CreateContainer(docker.CreateContainerOptions) (*docker.Container, error)
 		RemoveContainer(docker.RemoveContainerOptions) error
 		CopyFromContainer(docker.CopyFromContainerOptions) error
@@ -98,7 +95,7 @@ func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
 
 	defer e.removeContainer(c.ID)
 
-	b, err := e.copyFile(c.ID, e.path())
+	b, err := e.copyFile(c.ID, e.procfile(image.ID))
 	if err != nil {
 		return pm, &ProcfileError{Err: err}
 	}
@@ -122,13 +119,17 @@ func (e *ProcfileExtractor) fullRepo(repo Repo) string {
 	return string(repo)
 }
 
-// path returns the path to the Procfile.
-func (e *ProcfileExtractor) path() string {
-	if e.Path != "" {
-		return e.Path
+// procfile returns the path to the Procfile. If the container has a WORKDIR
+// set, then this will return a path to the Procfile within that directory.
+func (e *ProcfileExtractor) procfile(id string) string {
+	p := ""
+
+	i, err := e.Client.InspectImage(id)
+	if err == nil && i.Config != nil {
+		p = i.Config.WorkingDir
 	}
 
-	return DefaultProcfilePath
+	return path.Join(p, Procfile)
 }
 
 // pullImage can pull a docker image from a repo, by it's imageID.
