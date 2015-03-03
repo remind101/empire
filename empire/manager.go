@@ -62,7 +62,7 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
 	for t, q := range qm {
 		if p, ok := formation[t]; ok {
-			if err := m.scaleProcess(release, config, slug, t, p, q); err != nil {
+			if err := m.scaleProcess(release, config, slug, p, q); err != nil {
 				return err
 			}
 		}
@@ -71,7 +71,7 @@ func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, for
 	return nil
 }
 
-func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t ProcessType, p *Process, q int) error {
+func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	// Scale up
 	if p.Quantity < q {
 		for i := p.Quantity + 1; i <= q; i++ {
@@ -79,7 +79,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 				&Job{
 					AppName:        release.AppName,
 					ReleaseVersion: release.Ver,
-					ProcessType:    t,
+					ProcessType:    p.Type,
 					Instance:       i,
 					Environment:    config.Vars,
 					Image:          slug.Image,
@@ -108,7 +108,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, t P
 
 		// Unschedule jobs
 		for i := p.Quantity; i > q; i-- {
-			jobName := newJobName(release.AppName, release.Ver, t, i)
+			jobName := newJobName(release.AppName, release.Ver, p.Type, i)
 			if j, ok := jm[jobName]; ok {
 				m.JobsService.Unschedule(j)
 			} else {

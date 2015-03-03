@@ -130,6 +130,7 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 
 	formation := Formation{
 		"web": &Process{
+			Type:     "web",
 			Quantity: 2,
 			Command:  "./bin/web",
 		},
