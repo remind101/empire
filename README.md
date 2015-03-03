@@ -18,9 +18,9 @@ USAGE:
 OPTIONS:
    --port '8080'                                        The port to run the server on
    --docker.socket 'unix:///var/run/docker.sock'        The location of the docker api [$DOCKER_HOST]
-   --docker.registry                                    The docker registry to pull container images from [$DOCKER_HOST]
+   --docker.registry                                    The docker registry to pull container images from [$DOCKER_REGISTRY]
    --docker.cert                                        If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
-   --fleet.api 'http://127.0.0.1:49153'                 The location of the fleet api
+   --fleet.api                                          The location of the fleet api [$FLEET_URL]
    --db 'postgres://localhost/empire?sslmode=disable'   SQL connection string for the database
 
 ```

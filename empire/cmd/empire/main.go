@@ -55,7 +55,7 @@ var EmpireFlags = []cli.Flag{
 		Name:   "docker.registry",
 		Value:  "",
 		Usage:  "The docker registry to pull container images from",
-		EnvVar: "DOCKER_HOST",
+		EnvVar: "DOCKER_REGISTRY",
 	},
 	cli.StringFlag{
 		Name:   "docker.cert",
@@ -64,9 +64,10 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "DOCKER_CERT_PATH",
 	},
 	cli.StringFlag{
-		Name:  "fleet.api",
-		Value: "http://127.0.0.1:49153",
-		Usage: "The location of the fleet api",
+		Name:   "fleet.api",
+		Value:  "",
+		Usage:  "The location of the fleet api",
+		EnvVar: "FLEET_URL",
 	},
 }
 
