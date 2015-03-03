@@ -28,7 +28,6 @@ func TestManagerScheduleRelease(t *testing.T) {
 	p := &mockProcessesRepository{}
 
 	m := &manager{
-		Scheduler: s,
 		JobsService: &jobsService{
 			JobsRepository: r,
 			Scheduler:      s,
@@ -114,7 +113,6 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 	}
 
 	m := &manager{
-		Scheduler: s,
 		JobsService: &jobsService{
 			JobsRepository: r,
 			Scheduler:      s,

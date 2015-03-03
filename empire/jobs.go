@@ -117,8 +117,18 @@ func ListJobs(db Queryier, q JobQuery) ([]*Job, error) {
 	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
 }
 
+// Schedule is an interface that represents something that can schedule jobs
+// onto the cluster.
+type Scheduler interface {
+	Schedule(*Job) error
+	ScheduleMulti([]*Job) error
+	Unschedule(*Job) error
+	UnscheduleMulti([]*Job) error
+}
+
 type JobsService interface {
 	JobsRepository
+	Scheduler
 
 	// FindJobsByApp returns JobStates for an app.
 	JobStatesByApp(*App) ([]*JobState, error)
@@ -178,4 +188,62 @@ func (s *jobsService) JobsByApp(appName AppName) ([]*Job, error) {
 	return s.JobsRepository.List(JobQuery{
 		App: appName,
 	})
+}
+
+func (s *jobsService) ScheduleMulti(jobs []*Job) error {
+	for _, j := range jobs {
+		if err := s.Schedule(j); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// schedule schedules a Job and adds it to the list of scheduled jobs.
+func (s *jobsService) Schedule(j *Job) error {
+	name := j.JobName()
+	env := environment(j.Environment)
+	exec := scheduler.Execute{
+		Command: string(j.Command),
+		Image: scheduler.Image{
+			Repo: string(j.Image.Repo),
+			ID:   j.Image.ID,
+		},
+	}
+
+	// Schedule the job onto the cluster.
+	if err := s.Scheduler.Schedule(&scheduler.Job{
+		Name:        name,
+		Environment: env,
+		Execute:     exec,
+	}); err != nil {
+		return err
+	}
+
+	// Add it to the list of scheduled jobs.
+	if err := s.JobsRepository.Add(j); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *jobsService) UnscheduleMulti(jobs []*Job) error {
+	for _, j := range jobs {
+		if err := s.Unschedule(j); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *jobsService) Unschedule(j *Job) error {
+	err := s.Scheduler.Unschedule(j.JobName())
+	if err != nil {
+		return err
+	}
+
+	return s.JobsRepository.Remove(j)
 }

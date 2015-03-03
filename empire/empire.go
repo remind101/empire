@@ -101,7 +101,6 @@ func New(options Options) (*Empire, error) {
 
 	manager := &manager{
 		JobsService:         jobs,
-		Scheduler:           scheduler,
 		ProcessesRepository: processesRepo,
 	}
 
