@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/remind101/empire/empire/scheduler"
@@ -213,6 +214,7 @@ func (s *jobsService) schedule(j *Job) error {
 	// Schedule the job onto the cluster.
 	if err := s.Scheduler.Schedule(&scheduler.Job{
 		Name:        name,
+		Service:     fmt.Sprintf("%s/%s", j.ProcessType, j.AppName), // Used for registrator integration
 		Environment: env,
 		Execute:     exec,
 	}); err != nil {
