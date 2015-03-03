@@ -72,33 +72,40 @@ func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, for
 }
 
 func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
-	// Scale up
-	if p.Quantity < q {
-		jobs := ScaleUp(release, config, slug, p, q)
-		if err := m.JobsService.Schedule(jobs...); err != nil {
-			return err
-		}
+	var scale func(*Release, *Config, *Slug, *Process, int) error
+
+	switch {
+	case p.Quantity < q:
+		scale = m.scaleUp
+	case p.Quantity > q:
+		scale = m.scaleDown
 	}
 
-	// Scale down
-	if p.Quantity > q {
-		// Find existing jobs for this app
-		existing, err := m.JobsService.JobsByApp(release.AppName)
-		if err != nil {
-			return err
-		}
-
-		jobs := ScaleDown(existing, release, config, slug, p, q)
-
-		if err := m.JobsService.Unschedule(jobs...); err != nil {
-			return err
-		}
+	if err := scale(release, config, slug, p, q); err != nil {
+		return err
 	}
 
 	// Update quantity for this process in the formation
 	p.Quantity = q
 	_, err := m.ProcessesRepository.Update(p)
 	return err
+}
+
+func (m *manager) scaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+	jobs := ScaleUp(release, config, slug, p, q)
+	return m.JobsService.Schedule(jobs...)
+}
+
+func (m *manager) scaleDown(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+	// Find existing jobs for this app
+	existing, err := m.JobsService.JobsByApp(release.AppName)
+	if err != nil {
+		return err
+	}
+
+	jobs := ScaleDown(existing, release, config, slug, p, q)
+
+	return m.JobsService.Unschedule(jobs...)
 }
 
 // ScaleUp returns new Jobs to schedule when scaling up.
