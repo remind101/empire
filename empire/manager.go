@@ -41,14 +41,14 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 		formation,
 	)
 
-	err = m.JobsService.ScheduleMulti(jobs)
+	err = m.JobsService.Schedule(jobs...)
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		time.Sleep(time.Second * 60)
-		if err := m.JobsService.UnscheduleMulti(existing); err != nil {
+		if err := m.JobsService.Unschedule(existing...); err != nil {
 			// TODO What to do here?
 			log.Errorf("Error unscheduling stale jobs: %s", err)
 		}

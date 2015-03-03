@@ -120,10 +120,8 @@ func ListJobs(db Queryier, q JobQuery) ([]*Job, error) {
 // Schedule is an interface that represents something that can schedule jobs
 // onto the cluster.
 type Scheduler interface {
-	Schedule(*Job) error
-	ScheduleMulti([]*Job) error
-	Unschedule(*Job) error
-	UnscheduleMulti([]*Job) error
+	Schedule(...*Job) error
+	Unschedule(...*Job) error
 }
 
 type JobsService interface {
@@ -190,9 +188,9 @@ func (s *jobsService) JobsByApp(appName AppName) ([]*Job, error) {
 	})
 }
 
-func (s *jobsService) ScheduleMulti(jobs []*Job) error {
+func (s *jobsService) Schedule(jobs ...*Job) error {
 	for _, j := range jobs {
-		if err := s.Schedule(j); err != nil {
+		if err := s.schedule(j); err != nil {
 			return err
 		}
 	}
@@ -201,7 +199,7 @@ func (s *jobsService) ScheduleMulti(jobs []*Job) error {
 }
 
 // schedule schedules a Job and adds it to the list of scheduled jobs.
-func (s *jobsService) Schedule(j *Job) error {
+func (s *jobsService) schedule(j *Job) error {
 	name := j.JobName()
 	env := environment(j.Environment)
 	exec := scheduler.Execute{
@@ -229,9 +227,9 @@ func (s *jobsService) Schedule(j *Job) error {
 	return nil
 }
 
-func (s *jobsService) UnscheduleMulti(jobs []*Job) error {
+func (s *jobsService) Unschedule(jobs ...*Job) error {
 	for _, j := range jobs {
-		if err := s.Unschedule(j); err != nil {
+		if err := s.unschedule(j); err != nil {
 			return err
 		}
 	}
@@ -239,7 +237,7 @@ func (s *jobsService) UnscheduleMulti(jobs []*Job) error {
 	return nil
 }
 
-func (s *jobsService) Unschedule(j *Job) error {
+func (s *jobsService) unschedule(j *Job) error {
 	err := s.Scheduler.Unschedule(j.JobName())
 	if err != nil {
 		return err
