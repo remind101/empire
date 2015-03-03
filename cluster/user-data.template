@@ -9,6 +9,7 @@ coreos:
     peer-addr: $public_ipv4:7001
   fleet:
     public-ip: $public_ipv4
+    metadata: role=empire_minion
   units:
     - name: etcd.service
       command: start

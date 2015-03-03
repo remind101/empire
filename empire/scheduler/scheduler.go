@@ -225,6 +225,11 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 			Name:    "ExecStop",
 			Value:   fmt.Sprintf(`/usr/bin/docker stop %s`, j.Name),
 		},
+		{
+			Section: "X-Fleet",
+			Name:    "MachineMetadata",
+			Value:   "role=empire_minion",
+		},
 	}
 
 	return &schema.Unit{
