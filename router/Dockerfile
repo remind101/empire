@@ -14,3 +14,4 @@ ADD ./files/etc/confd/templates/nginx.conf.tmpl /etc/confd/templates/nginx.conf.
 
 ADD ./files/usr/local/bin/confd-watch /usr/local/bin/confd-watch
 RUN chmod +x /usr/local/bin/confd-watch
+CMD /usr/local/bin/confd-watch
