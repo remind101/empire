@@ -12,7 +12,7 @@ import (
 
 // JobName represents the (unique) name of a job. The convention is <app>.<type>.<instance>.service:
 //
-//	my-sweet-app.v1.web.1.service
+//	my-sweet-app.v1.web.1
 type JobName string
 
 // Image represents a container image, which is tied to a repository.
@@ -35,6 +35,9 @@ type Execute struct {
 type Job struct {
 	// The unique name of the job.
 	Name JobName
+
+	// The name to expose for service discovery if applicable.
+	Service string
 
 	// A map of environment variables to set.
 	Environment map[string]string
@@ -247,6 +250,10 @@ func env(j *Job) string {
 	envs := []string{}
 	for k, v := range j.Environment {
 		envs = append(envs, fmt.Sprintf("-e %s=%s", k, v))
+	}
+
+	if j.Service != "" {
+		envs = append(envs, fmt.Sprintf("-e SERVICE_NAME=%s", j.Service))
 	}
 
 	return strings.Join(envs, " ")
