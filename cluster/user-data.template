@@ -99,6 +99,27 @@ coreos:
 
         [Install]
         WantedBy=multi-user.target
+    - name: router.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Nginx load balancer for web server backends
+        After=registrator.service
+
+        [Service]
+        TimeoutStartSec=30m
+        KillMode=none
+        EnvironmentFile=/etc/environment
+
+        ExecStartPre=-/usr/bin/docker kill nginx-router
+        ExecStartPre=-/usr/bin/docker rm nginx-router
+        ExecStartPre=/usr/bin/docker pull quay.io/remind/nginx_router
+        ExecStart=/usr/bin/docker run --name nginx-router -e "HOST_IP=${COREOS_PRIVATE_IPV4}" -p ${COREOS_PUBLIC_IPV4}:80:80 remind/nginx_router /usr/local/bin/confd-watch
+        ExecStop=/usr/bin/docker stop nginx-router
+
+        [Install]
+        WantedBy=multi-user.target
 write_files:
   - path: /etc/systemd/system/fleet.socket.d/30-ListenStream.conf
     permissions: 0644
