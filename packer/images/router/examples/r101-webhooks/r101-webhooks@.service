@@ -1,0 +1,35 @@
+[Unit]
+Description=r101-webhooks app instance %1
+
+# Requirements
+Requires=etcd.service
+Requires=docker.service
+
+# Dependency ordering
+After=etcd.service
+After=docker.service
+
+[Service]
+# Let processes take awhile to start up (for first run Docker containers)
+TimeoutStartSec=0
+
+# Change killmode from "control-group" to "none" to let Docker remove
+# work correctly.
+KillMode=none
+
+# Get CoreOS environmental variables
+EnvironmentFile=/etc/environment
+
+# Pre-start and Start
+## Directives with "=-" are allowed to fail without consequence
+ExecStartPre=-/usr/bin/docker kill r101-webhooks.%i
+ExecStartPre=-/usr/bin/docker rm r101-webhooks.%i
+ExecStartPre=/usr/bin/docker pull quay.io/remind/r101-webhooks
+ExecStart=/usr/bin/docker run --name r101-webhooks.%i --link redis:redis -p ${COREOS_PRIVATE_IPV4}::9000 -e "SERVICE_NAME=web/r101-webhooks" remind101/r101-webhooks ruby ./app.rb -p 9000 -e prod -s
+
+# Stop
+ExecStop=/usr/bin/docker stop r101-webhooks.%i
+
+[X-Fleet]
+# Don't schedule on the same machine as other r101-webhooks instances
+#Conflicts=r101-webhooks@*.service
