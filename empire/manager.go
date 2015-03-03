@@ -79,6 +79,8 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 		scale = m.scaleUp
 	case p.Quantity > q:
 		scale = m.scaleDown
+	default:
+		return nil
 	}
 
 	if err := scale(release, config, slug, p, q); err != nil {
