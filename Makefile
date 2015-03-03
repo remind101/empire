@@ -12,5 +12,6 @@ build:
 
 vagrant:
 	vagrant destroy
+	rm -f cluster/user-data
 	sed -e "s,# discovery:,discovery:," -e "s,discovery: https://discovery.etcd.io/.*,discovery: $$(curl -s -w '\n' https://discovery.etcd.io/new)," cluster/user-data.template > cluster/user-data
 	vagrant up
