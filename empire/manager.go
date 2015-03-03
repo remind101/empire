@@ -74,21 +74,9 @@ func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, for
 func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	// Scale up
 	if p.Quantity < q {
-		for i := p.Quantity + 1; i <= q; i++ {
-			err := m.JobsService.Schedule(
-				&Job{
-					AppName:        release.AppName,
-					ReleaseVersion: release.Ver,
-					ProcessType:    p.Type,
-					Instance:       i,
-					Environment:    config.Vars,
-					Image:          slug.Image,
-					Command:        p.Command,
-				},
-			)
-			if err != nil {
-				return err
-			}
+		jobs := ScaleUp(release, config, slug, p, q)
+		if err := m.JobsService.Schedule(jobs...); err != nil {
+			return err
 		}
 	}
 
@@ -100,20 +88,10 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 			return err
 		}
 
-		// Create a map for easy lookup
-		jm := make(map[scheduler.JobName]*Job, len(existing))
-		for _, j := range existing {
-			jm[j.JobName()] = j
-		}
+		jobs := ScaleDown(existing, release, config, slug, p, q)
 
-		// Unschedule jobs
-		for i := p.Quantity; i > q; i-- {
-			jobName := newJobName(release.AppName, release.Ver, p.Type, i)
-			if j, ok := jm[jobName]; ok {
-				m.JobsService.Unschedule(j)
-			} else {
-				return fmt.Errorf("Job not found to unschedule: %s", jobName)
-			}
+		if err := m.JobsService.Unschedule(jobs...); err != nil {
+			return err
 		}
 	}
 
@@ -121,6 +99,46 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 	p.Quantity = q
 	_, err := m.ProcessesRepository.Update(p)
 	return err
+}
+
+// ScaleUp returns new Jobs to schedule when scaling up.
+func ScaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
+	var jobs []*Job
+
+	for i := p.Quantity + 1; i <= q; i++ {
+		jobs = append(jobs, &Job{
+			AppName:        release.AppName,
+			ReleaseVersion: release.Ver,
+			ProcessType:    p.Type,
+			Instance:       i,
+			Environment:    config.Vars,
+			Image:          slug.Image,
+			Command:        p.Command,
+		})
+	}
+
+	return jobs
+}
+
+// ScaleDown returns Jobs to unschedule when scaling down.
+func ScaleDown(existing []*Job, release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
+	// Create a map for easy lookup
+	jm := make(map[scheduler.JobName]*Job, len(existing))
+	for _, j := range existing {
+		jm[j.JobName()] = j
+	}
+
+	var jobs []*Job
+
+	// Unschedule jobs
+	for i := p.Quantity; i > q; i-- {
+		jobName := newJobName(release.AppName, release.Ver, p.Type, i)
+		if j, ok := jm[jobName]; ok {
+			jobs = append(jobs, j)
+		}
+	}
+
+	return jobs
 }
 
 // newJobName returns a new Name with the proper format.
