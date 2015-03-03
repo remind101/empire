@@ -4,10 +4,6 @@
 # Return value of the last command to fail or run
 set -eo pipefail
 
-export ETCD_PORT=${ETCD_PORT:-4001}
-export HOST_IP=${HOST_IP:-127.0.0.1}
-export ETCD=$HOST_IP:$ETCD_PORT
-
 echo "$(date --utc +%FT%TZ) [nginx] booting container. ETCD: $ETCD"
 
 # Try to make initial configuration every 5 seconds until successful

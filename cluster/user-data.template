@@ -115,7 +115,7 @@ coreos:
         ExecStartPre=-/usr/bin/docker kill nginx-router
         ExecStartPre=-/usr/bin/docker rm nginx-router
         ExecStartPre=/usr/bin/docker pull quay.io/remind/nginx_router
-        ExecStart=/usr/bin/docker run --name nginx-router -e "HOST_IP=${COREOS_PRIVATE_IPV4}" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/nginx_router
+        ExecStart=/usr/bin/docker run --name nginx-router -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/nginx_router
         ExecStop=/usr/bin/docker stop nginx-router
 
         [Install]
