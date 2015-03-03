@@ -83,7 +83,7 @@ func FindPeers(discoveryURL string) (*[]string, error) {
 			continue
 		}
 		hostParts = strings.Split(peerUrl.Host, ":")
-		host := fmt.Sprintf("%s:%d", hostParts[0], 4001)
+		host := fmt.Sprintf("http://%s:4001/", hostParts[0])
 		peers = append(peers, host)
 	}
 	return &peers, nil
