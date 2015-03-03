@@ -26,7 +26,7 @@ type Extractor interface {
 }
 
 // NewExtractor returns a new Extractor instance.
-func NewExtractor(socket, registry, certPath string) (Extractor, error) {
+func NewExtractor(socket, certPath string) (Extractor, error) {
 	if socket == "" {
 		return newExtractor(), nil
 	}
@@ -37,8 +37,7 @@ func NewExtractor(socket, registry, certPath string) (Extractor, error) {
 	}
 
 	return &ProcfileExtractor{
-		Registry: registry,
-		Client:   c,
+		Client: c,
 	}, nil
 }
 
@@ -62,10 +61,6 @@ func (e *extractor) Extract(image Image) (CommandMap, error) {
 // ProcfileExtractor is an implementation of the Extractor interface that can
 // pull a docker image and extract it's Procfile into a process.CommandMap.
 type ProcfileExtractor struct {
-	// Registry is the registry to use to pull the image from. The zero
-	// value is the default docker registry.
-	Registry string
-
 	// Client is the docker client to use to pull the container image.
 	Client interface {
 		PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
@@ -83,12 +78,11 @@ type ProcfileExtractor struct {
 func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
-	repo := e.fullRepo(image.Repo)
-	if err := e.pullImage(repo, image.ID); err != nil {
+	if err := e.pullImage(image); err != nil {
 		return pm, err
 	}
 
-	c, err := e.createContainer(repo, image.ID)
+	c, err := e.createContainer(image)
 	if err != nil {
 		return pm, err
 	}
@@ -101,22 +95,6 @@ func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
 	}
 
 	return ParseProcfile(b)
-}
-
-// fullRepo returns the fully qualified docker repo. For example, the fully
-// qualified path for `ejholmes/docker-statsd` on quay.io would be:
-//
-//	quay.io/ejholmes/docker-statsd
-//
-// But the fully qualified repo for the official docker registry is:
-//
-//	ejholmes/docker-statsd
-func (e *ProcfileExtractor) fullRepo(repo Repo) string {
-	if e.Registry != "" {
-		return e.Registry + "/" + string(repo)
-	}
-
-	return string(repo)
 }
 
 // procfile returns the path to the Procfile. If the container has a WORKDIR
@@ -136,19 +114,19 @@ func (e *ProcfileExtractor) procfile(id string) string {
 //
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with it's own ID beforehand.
-func (e *ProcfileExtractor) pullImage(repo, imageID string) error {
+func (e *ProcfileExtractor) pullImage(i Image) error {
 	return e.Client.PullImage(docker.PullImageOptions{
-		Repository:   repo,
-		Tag:          imageID,
+		Repository:   string(i.Repo),
+		Tag:          i.ID,
 		OutputStream: os.Stdout,
 	}, e.AuthConfiguration)
 }
 
 // createContainer creates a new docker container for the given docker image.
-func (e *ProcfileExtractor) createContainer(repo, imageID string) (*docker.Container, error) {
+func (e *ProcfileExtractor) createContainer(i Image) (*docker.Container, error) {
 	return e.Client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Image: repo + ":" + imageID,
+			Image: i.String(),
 		},
 	})
 }

@@ -52,12 +52,6 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "DOCKER_HOST",
 	},
 	cli.StringFlag{
-		Name:   "docker.registry",
-		Value:  "",
-		Usage:  "The docker registry to pull container images from",
-		EnvVar: "DOCKER_REGISTRY",
-	},
-	cli.StringFlag{
 		Name:   "docker.cert",
 		Value:  "",
 		Usage:  "If using TLS, a path to a certificate to use",
@@ -85,7 +79,6 @@ func empireOptions(c *cli.Context) empire.Options {
 	opts := empire.Options{}
 
 	opts.Docker.Socket = c.String("docker.socket")
-	opts.Docker.Registry = c.String("docker.registry")
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")

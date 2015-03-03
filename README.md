@@ -59,7 +59,7 @@ $ cat <<EOF > /usr/local/bin/empire && chmod +x empire
 EMPIRE_URL=\${EMPIRE_URL:-"http://localhost:8080"}
 HEROKU_API_URL="\$EMPIRE_URL" hk "\$@"
 EOF
-$ empire deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+$ empire deploy quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
 $ empire apps
 $ empire releases -a acme-inc
 $ empire env -a acme-inc

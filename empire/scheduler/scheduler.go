@@ -21,6 +21,10 @@ type Image struct {
 	ID   string
 }
 
+func (i Image) String() string {
+	return fmt.Sprintf("%s:%s", i.Repo, i.ID)
+}
+
 // Execute represents a command to execute inside and image.
 type Execute struct {
 	Command string
@@ -178,7 +182,7 @@ func jobNameFromUnitName(un string) JobName {
 // ExecStop=/usr/bin/docker stop app.v1.web.1
 
 func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
-	img := image(j.Execute.Image)
+	img := j.Execute.Image.String()
 	opts := []*schema.UnitOption{
 		{
 			Section: "Unit",
@@ -237,10 +241,6 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		DesiredState: "launched",
 		Options:      opts,
 	}
-}
-
-func image(i Image) string {
-	return fmt.Sprintf("quay.io/%s:%s", i.Repo, i.ID)
 }
 
 func env(j *Job) string {

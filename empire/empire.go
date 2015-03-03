@@ -22,9 +22,6 @@ type DockerOptions struct {
 	// The unix socket to connect to the docker api.
 	Socket string
 
-	// The docker registry to pull container images from.
-	Registry string
-
 	// Path to a certificate to use for TLS connections.
 	CertPath string
 }
@@ -72,7 +69,6 @@ func New(options Options) (*Empire, error) {
 
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
-		options.Docker.Registry,
 		options.Docker.CertPath,
 	)
 	if err != nil {
