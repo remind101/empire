@@ -51,6 +51,7 @@ type Empire struct {
 	AppsService
 	ConfigsService
 	DeploysService
+	JobsService
 	Manager
 	ReleasesService
 	SlugsService
@@ -93,9 +94,13 @@ func New(options Options) (*Empire, error) {
 		ConfigsRepository: configsRepo,
 	}
 
+	jobs := &jobsService{
+		JobsRepository: jobsRepo,
+		Scheduler:      scheduler,
+	}
+
 	manager := &manager{
-		JobsRepository:      jobsRepo,
-		Scheduler:           scheduler,
+		JobsService:         jobs,
 		ProcessesRepository: processesRepo,
 	}
 
@@ -122,6 +127,7 @@ func New(options Options) (*Empire, error) {
 		AppsService:      apps,
 		ConfigsService:   configs,
 		DeploysService:   deploys,
+		JobsService:      jobs,
 		Manager:          manager,
 		SlugsService:     slugs,
 		ReleasesService:  releases,

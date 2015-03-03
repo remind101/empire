@@ -28,8 +28,10 @@ func TestManagerScheduleRelease(t *testing.T) {
 	p := &mockProcessesRepository{}
 
 	m := &manager{
-		Scheduler:           s,
-		JobsRepository:      r,
+		JobsService: &jobsService{
+			JobsRepository: r,
+			Scheduler:      s,
+		},
 		ProcessesRepository: p,
 	}
 
@@ -111,8 +113,10 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 	}
 
 	m := &manager{
-		Scheduler:           s,
-		JobsRepository:      r,
+		JobsService: &jobsService{
+			JobsRepository: r,
+			Scheduler:      s,
+		},
 		ProcessesRepository: p,
 	}
 
@@ -233,36 +237,6 @@ func (s *mockScheduler) Unschedule(n scheduler.JobName) error {
 func (s *mockScheduler) JobStates() ([]*scheduler.JobState, error) {
 	if s.JobStatesFunc != nil {
 		return s.JobStatesFunc()
-	}
-
-	return nil, nil
-}
-
-type mockJobsRepository struct {
-	AddFunc    func(*Job) error
-	RemoveFunc func(*Job) error
-	ListFunc   func(JobQuery) ([]*Job, error)
-}
-
-func (r *mockJobsRepository) Add(j *Job) error {
-	if r.AddFunc != nil {
-		return r.AddFunc(j)
-	}
-
-	return nil
-}
-
-func (r *mockJobsRepository) Remove(j *Job) error {
-	if r.RemoveFunc != nil {
-		return r.RemoveFunc(j)
-	}
-
-	return nil
-}
-
-func (r *mockJobsRepository) List(q JobQuery) ([]*Job, error) {
-	if r.ListFunc != nil {
-		return r.ListFunc(q)
 	}
 
 	return nil, nil

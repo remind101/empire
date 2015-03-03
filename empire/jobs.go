@@ -116,3 +116,132 @@ func ListJobs(db Queryier, q JobQuery) ([]*Job, error) {
 	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
 	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
 }
+
+// Schedule is an interface that represents something that can schedule jobs
+// onto the cluster.
+type Scheduler interface {
+	Schedule(...*Job) error
+	Unschedule(...*Job) error
+}
+
+type JobsService interface {
+	JobsRepository
+	Scheduler
+
+	// FindJobsByApp returns JobStates for an app.
+	JobStatesByApp(*App) ([]*JobState, error)
+
+	// Find existing jobs by app name.
+	JobsByApp(AppName) ([]*Job, error)
+}
+
+type jobsService struct {
+	JobsRepository
+	scheduler.Scheduler
+}
+
+func (s *jobsService) JobStatesByApp(app *App) ([]*JobState, error) {
+	// Jobs expected to be running
+	jobs, err := s.JobsByApp(app.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Job states for all existing jobs
+	sjs, err := s.Scheduler.JobStates()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map for easy lookups
+	jsm := make(map[scheduler.JobName]*scheduler.JobState, len(sjs))
+	for _, js := range sjs {
+		jsm[js.Name] = js
+	}
+
+	// Create JobState based on Jobs and scheduler.JobStates
+	js := make([]*JobState, len(jobs))
+	for i, j := range jobs {
+		s, ok := jsm[j.JobName()]
+
+		machineID := "unknown"
+		state := "unknown"
+		if ok {
+			machineID = s.MachineID
+			state = s.State
+		}
+
+		js[i] = &JobState{
+			Job:       j,
+			Name:      j.JobName(),
+			MachineID: machineID,
+			State:     state,
+		}
+	}
+
+	return js, nil
+}
+
+func (s *jobsService) JobsByApp(appName AppName) ([]*Job, error) {
+	return s.JobsRepository.List(JobQuery{
+		App: appName,
+	})
+}
+
+func (s *jobsService) Schedule(jobs ...*Job) error {
+	for _, j := range jobs {
+		if err := s.schedule(j); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// schedule schedules a Job and adds it to the list of scheduled jobs.
+func (s *jobsService) schedule(j *Job) error {
+	name := j.JobName()
+	env := environment(j.Environment)
+	exec := scheduler.Execute{
+		Command: string(j.Command),
+		Image: scheduler.Image{
+			Repo: string(j.Image.Repo),
+			ID:   j.Image.ID,
+		},
+	}
+
+	// Schedule the job onto the cluster.
+	if err := s.Scheduler.Schedule(&scheduler.Job{
+		Name:        name,
+		Environment: env,
+		Execute:     exec,
+	}); err != nil {
+		return err
+	}
+
+	// Add it to the list of scheduled jobs.
+	if err := s.JobsRepository.Add(j); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *jobsService) Unschedule(jobs ...*Job) error {
+	for _, j := range jobs {
+		if err := s.unschedule(j); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *jobsService) unschedule(j *Job) error {
+	err := s.Scheduler.Unschedule(j.JobName())
+	if err != nil {
+		return err
+	}
+
+	return s.JobsRepository.Remove(j)
+}
