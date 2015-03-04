@@ -121,7 +121,7 @@ func (s *appsService) AppsFindByRepo(repo Repo) (*App, error) {
 }
 
 func (s *appsService) AppsFindOrCreateByRepo(repo Repo) (*App, error) {
-	return AppsFindOrAppsCreateByRepo(s.DB, repo)
+	return AppsFindOrCreateByRepo(s.DB, repo)
 }
 
 // AppsCreate inserts the app into the database.
@@ -166,7 +166,9 @@ func AppsFindBy(db Queryier, field string, value interface{}) (*App, error) {
 	return &app, nil
 }
 
-func AppsFindOrAppsCreateByRepo(db DB, repo Repo) (*App, error) {
+// AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
+// creating a new app.
+func AppsFindOrCreateByRepo(db DB, repo Repo) (*App, error) {
 	a, err := AppsFindByRepo(db, repo)
 	if err != nil {
 		return a, err
