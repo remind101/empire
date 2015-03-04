@@ -11,8 +11,8 @@ import (
 type GetConfigs struct {
 	Empire interface {
 		empire.AppsFinder
+		empire.ConfigsFinder
 	}
-	ConfigsService empire.ConfigsService
 }
 
 func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
@@ -27,7 +27,7 @@ func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	c, err := h.ConfigsService.Head(a)
+	c, err := h.Empire.ConfigsCurrent(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -38,9 +38,9 @@ func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 type PatchConfigs struct {
 	Empire interface {
 		empire.AppsFinder
+		empire.ConfigsApplier
 	}
 	ReleasesService empire.ReleasesService
-	ConfigsService  empire.ConfigsService
 	SlugsService    empire.SlugsService
 }
 
@@ -64,7 +64,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Update the config
-	c, err := h.ConfigsService.Apply(a, configVars)
+	c, err := h.Empire.ConfigsApply(a, configVars)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

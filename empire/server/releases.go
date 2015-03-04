@@ -38,9 +38,9 @@ func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 type PostReleases struct {
 	Empire interface {
 		empire.AppsFinder
+		empire.ConfigsFinder
 	}
 	ReleasesService empire.ReleasesService
-	ConfigsService  empire.ConfigsService
 	SlugsService    empire.SlugsService
 }
 
@@ -93,7 +93,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find config
-	config, err := h.ConfigsService.Find(rel.ConfigID)
+	config, err := h.Empire.ConfigsFind(rel.ConfigID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

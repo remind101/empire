@@ -34,7 +34,7 @@ func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	}
 
 	// Grab the latest config.
-	config, err := s.ConfigsService.Head(app)
+	config, err := s.ConfigsService.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
 	}

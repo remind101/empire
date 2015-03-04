@@ -76,7 +76,6 @@ func New(options Options) (*Empire, error) {
 	}
 
 	slugsRepo := &slugsRepository{db}
-	configsRepo := &configsRepository{db}
 	processesRepo := &processesRepository{db}
 	releasesRepo := &releasesRepository{db}
 	jobsRepo := &jobsRepository{db}
@@ -86,7 +85,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	configs := &configsService{
-		ConfigsRepository: configsRepo,
+		DB: db,
 	}
 
 	jobs := &jobsService{

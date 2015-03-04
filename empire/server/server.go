@@ -101,18 +101,18 @@ func New(e *empire.Empire) *Server {
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e, e.ReleasesService})                                     // hk releases
-	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e, e.ReleasesService, e.ConfigsService, e.SlugsService}) // hk rollback
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e, e.ReleasesService})                   // hk releases
+	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e, e.ReleasesService, e.SlugsService}) // hk rollback
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e, e.ConfigsService})                                        // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e, e.ReleasesService, e.ConfigsService, e.SlugsService}) // hk set
+	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e})                                        // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e, e.ReleasesService, e.SlugsService}) // hk set
 
 	// Processes
 	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e, e.JobsService}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.ReleasesService, e.ConfigsService, e.SlugsService, e.ProcessesService, e.Manager}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.ReleasesService, e.SlugsService, e.ProcessesService, e.Manager}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)
