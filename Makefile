@@ -1,4 +1,4 @@
-.PHONY: bootstrap build cmd vagrant
+.PHONY: bootstrap build cmd user_data vagrant
 
 cmd:
 	$(MAKE) -C empire cmd
@@ -10,7 +10,10 @@ build:
 	$(MAKE) -C empire build
 	$(MAKE) -C etcd_peers build
 
-vagrant:
+user_data:
+	$(eval URL := $(shell curl -s -w '\n' https://discovery.etcd.io/new))
+	sed -e "s,# discovery:,discovery:," -e "s,discovery: https://discovery.etcd.io/.*,discovery: $(URL)," cluster/user-data.template > cluster/user-data
+
+vagrant: user_data
 	vagrant destroy
-	sed -e "s,# discovery:,discovery:," -e "s,discovery: https://discovery.etcd.io/.*,discovery: $$(curl -s -w '\n' https://discovery.etcd.io/new)," cluster/user-data.template > cluster/user-data
 	vagrant up
