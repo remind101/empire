@@ -24,9 +24,9 @@ type PatchFormation struct {
 		empire.ConfigsFinder
 		empire.SlugsFinder
 		empire.ProcessesFinder
+		empire.ReleasesFinder
 	}
-	ReleasesService empire.ReleasesService
-	Manager         empire.Manager
+	Manager empire.Manager
 }
 
 type PatchFormationForm struct {
@@ -60,7 +60,7 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		qm[empire.ProcessType(up.Process)] = up.Quantity
 	}
 
-	r, err := h.ReleasesService.Head(a)
+	r, err := h.Empire.ReleasesLast(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

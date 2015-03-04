@@ -52,7 +52,7 @@ func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	release, err := s.ReleasesService.Create(app, config, slug, desc)
+	release, err := s.ReleasesService.ReleasesCreate(app, config, slug, desc)
 	if err != nil {
 		return nil, err
 	}

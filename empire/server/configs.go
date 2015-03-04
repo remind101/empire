@@ -40,8 +40,8 @@ type PatchConfigs struct {
 		empire.AppsFinder
 		empire.ConfigsApplier
 		empire.SlugsFinder
+		empire.ReleasesService
 	}
-	ReleasesService empire.ReleasesService
 }
 
 func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
@@ -70,7 +70,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find current release
-	r, err := h.ReleasesService.Head(a)
+	r, err := h.Empire.ReleasesLast(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -90,7 +90,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
 
 		// Create new release based on new config and old slug
-		_, err = h.ReleasesService.Create(a, c, slug, desc)
+		_, err = h.Empire.ReleasesCreate(a, c, slug, desc)
 		if err != nil {
 			return http.StatusInternalServerError, nil, err
 		}

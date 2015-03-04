@@ -101,18 +101,18 @@ func New(e *empire.Empire) *Server {
 	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e, e.ReleasesService})   // hk releases
-	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e, e.ReleasesService}) // hk rollback
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})   // hk releases
+	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e}) // hk rollback
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e})                        // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e, e.ReleasesService}) // hk set
+	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e})     // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e}) // hk set
 
 	// Processes
 	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.ReleasesService, e.Manager}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.Manager}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)

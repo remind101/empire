@@ -11,8 +11,8 @@ import (
 type GetReleases struct {
 	Empire interface {
 		empire.AppsFinder
+		empire.ReleasesFinder
 	}
-	ReleasesService empire.ReleasesService
 }
 
 func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
@@ -27,7 +27,7 @@ func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	rels, err := h.ReleasesService.FindByApp(a)
+	rels, err := h.Empire.ReleasesFindByApp(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -40,8 +40,8 @@ type PostReleases struct {
 		empire.AppsFinder
 		empire.ConfigsFinder
 		empire.SlugsFinder
+		empire.ReleasesService
 	}
-	ReleasesService empire.ReleasesService
 }
 
 type PostReleasesForm struct {
@@ -83,7 +83,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find previous release
-	rel, err := h.ReleasesService.FindByAppAndVersion(app, version)
+	rel, err := h.Empire.ReleasesFindByAppAndVersion(app, version)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -114,7 +114,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 
 	// Create new release
 	desc := fmt.Sprintf("Rollback to v%d", version)
-	release, err := h.ReleasesService.Create(app, config, slug, desc)
+	release, err := h.Empire.ReleasesCreate(app, config, slug, desc)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
