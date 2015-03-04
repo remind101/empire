@@ -17,3 +17,8 @@ user_data:
 vagrant: user_data
 	vagrant destroy
 	vagrant up
+
+install:
+	mkdir -p /usr/local/lib/hk/plugin
+	cp hk-plugins/* /usr/local/lib/hk/plugin
+	cat emp > /usr/local/bin/emp
