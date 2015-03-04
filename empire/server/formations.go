@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -30,22 +31,23 @@ type PatchFormationForm struct {
 	} `json:"updates"`
 }
 
-func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
+func (h *PatchFormation) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var form PatchFormationForm
 
-	if err := req.Decode(&form); err != nil {
-		return http.StatusInternalServerError, nil, err
+	if err := Decode(r, &form); err != nil {
+		return err
 	}
 
-	name := empire.AppName(req.Vars["app"])
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	a, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if a == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	qm := empire.ProcessQuantityMap{}
@@ -53,33 +55,33 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		qm[empire.ProcessType(up.Process)] = up.Quantity
 	}
 
-	r, err := h.ReleasesLast(a)
+	release, err := h.ReleasesLast(a)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	if r == nil {
-		return http.StatusNotFound, nil, nil
+	if release == nil {
+		return ErrNotFound
 	}
 
-	config, err := h.ConfigsFind(r.ConfigID)
+	config, err := h.ConfigsFind(release.ConfigID)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	slug, err := h.SlugsFind(r.SlugID)
+	slug, err := h.SlugsFind(release.SlugID)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	f, err := h.ProcessesAll(r)
+	f, err := h.ProcessesAll(release)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	err = h.ScaleRelease(r, config, slug, f, qm)
+	err = h.ScaleRelease(release, config, slug, f, qm)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	// Create the response object
@@ -88,5 +90,6 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		resp[i] = formation{Type: up.Process, Quantity: up.Quantity, Size: "1X"}
 	}
 
-	return 200, resp, nil
+	w.WriteHeader(200)
+	return Encode(w, resp)
 }

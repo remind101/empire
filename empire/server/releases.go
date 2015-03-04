@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -12,24 +13,26 @@ type GetReleases struct {
 	Empire
 }
 
-func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
-	name := empire.AppName(req.Vars["app"])
+func (h *GetReleases) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	a, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if a == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	rels, err := h.ReleasesFindByApp(a)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 200, rels, nil
+	w.WriteHeader(200)
+	return Encode(w, rels)
 }
 
 type PostReleases struct {
@@ -50,66 +53,68 @@ func (p *PostReleasesForm) ReleaseVersion() (empire.ReleaseVersion, error) {
 	return empire.ReleaseVersion(i), nil
 }
 
-func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
+func (h *PostReleases) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var form PostReleasesForm
 
-	if err := req.Decode(&form); err != nil {
-		return http.StatusInternalServerError, nil, err
+	if err := Decode(r, &form); err != nil {
+		return err
 	}
 
 	version, err := form.ReleaseVersion()
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	name := empire.AppName(req.Vars["app"])
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	// Find app
 	app, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if app == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	// Find previous release
 	rel, err := h.ReleasesFindByAppAndVersion(app, version)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if rel == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	// Find config
 	config, err := h.ConfigsFind(rel.ConfigID)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if config == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	// Find slug
 	slug, err := h.SlugsFind(rel.SlugID)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if slug == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	// Create new release
 	desc := fmt.Sprintf("Rollback to v%d", version)
 	release, err := h.ReleasesCreate(app, config, slug, desc)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 200, release, nil
+	w.WriteHeader(200)
+	return Encode(w, release)
 }

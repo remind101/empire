@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -12,66 +13,69 @@ type GetConfigs struct {
 	Empire
 }
 
-func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
-	name := empire.AppName(req.Vars["app"])
+func (h *GetConfigs) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	a, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if a == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	c, err := h.ConfigsCurrent(a)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 200, c.Vars, nil
+	w.WriteHeader(200)
+	return Encode(w, c.Vars)
 }
 
 type PatchConfigs struct {
 	Empire
 }
 
-func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
+func (h *PatchConfigs) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var configVars empire.Vars
 
-	if err := req.Decode(&configVars); err != nil {
-		return http.StatusInternalServerError, nil, err
+	if err := Decode(r, &configVars); err != nil {
+		return err
 	}
 
-	name := empire.AppName(req.Vars["app"])
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	// Find app
 	a, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if a == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	// Update the config
 	c, err := h.ConfigsApply(a, configVars)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	// Find current release
-	r, err := h.ReleasesLast(a)
+	release, err := h.ReleasesLast(a)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	// If there is an existing release, create a new one
-	if r != nil {
-		slug, err := h.SlugsFind(r.SlugID)
+	if release != nil {
+		slug, err := h.SlugsFind(release.SlugID)
 		if err != nil {
-			return http.StatusInternalServerError, nil, err
+			return err
 		}
 
 		keys := make([]string, 0, len(configVars))
@@ -84,9 +88,10 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 		// Create new release based on new config and old slug
 		_, err = h.ReleasesCreate(a, c, slug, desc)
 		if err != nil {
-			return http.StatusInternalServerError, nil, err
+			return err
 		}
 	}
 
-	return 200, c.Vars, nil
+	w.WriteHeader(200)
+	return Encode(w, c.Vars)
 }

@@ -20,11 +20,11 @@ type PostDeployForm struct {
 }
 
 // Serve implements the Handler interface.
-func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
+func (h *PostDeploys) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var form PostDeployForm
 
-	if err := req.Decode(&form); err != nil {
-		return http.StatusInternalServerError, nil, err
+	if err := Decode(r, &form); err != nil {
+		return err
 	}
 
 	d, err := h.Deploy(empire.Image{
@@ -32,8 +32,9 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 		ID:   form.Image.ID,
 	})
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 201, d, nil
+	w.WriteHeader(201)
+	return Encode(w, d)
 }

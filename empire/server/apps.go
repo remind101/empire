@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -10,36 +11,38 @@ type GetApps struct {
 	Empire
 }
 
-func (h *GetApps) Serve(req *Request) (int, interface{}, error) {
+func (h *GetApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	apps, err := h.AppsAll()
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 200, apps, nil
+	w.WriteHeader(200)
+	return Encode(w, apps)
 }
 
 type DeleteApp struct {
 	Empire
 }
 
-func (h *DeleteApp) Serve(req *Request) (int, interface{}, error) {
-	name := empire.AppName(req.Vars["app"])
+func (h *DeleteApp) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	a, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if a == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	if err := h.AppsDestroy(a); err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 200, nil, nil
+	return NoContent(w)
 }
 
 type PostAppsForm struct {
@@ -51,22 +54,23 @@ type PostApps struct {
 	Empire
 }
 
-func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
+func (h *PostApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var form PostAppsForm
 
-	if err := req.Decode(&form); err != nil {
-		return http.StatusInternalServerError, nil, err
+	if err := Decode(r, &form); err != nil {
+		return err
 	}
 
 	app, err := empire.NewApp(empire.AppName(form.Name), empire.Repo(form.Repo))
 	if err != nil {
-		return http.StatusBadRequest, nil, err
+		return ErrBadRequest
 	}
 
 	a, err := h.AppsCreate(app)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
-	return 201, a, nil
+	w.WriteHeader(201)
+	return Encode(w, a)
 }
