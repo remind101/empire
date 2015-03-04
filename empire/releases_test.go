@@ -11,7 +11,7 @@ func TestReleasesServiceCreate(t *testing.T) {
 	config := &Config{}
 	slug := &Slug{}
 
-	p := &mockProcessesRepository{}
+	p := &mockProcessesService{}
 	r := &mockReleasesRepository{}
 	m := &mockManager{
 		ScheduleReleaseFunc: func(release *Release, config *Config, slug *Slug, formation Formation) error {
@@ -20,9 +20,9 @@ func TestReleasesServiceCreate(t *testing.T) {
 		},
 	}
 	s := &releasesService{
-		ReleasesRepository:  r,
-		ProcessesRepository: p,
-		Manager:             m,
+		ReleasesRepository: r,
+		ProcessesService:   p,
+		Manager:            m,
 	}
 
 	if _, err := s.Create(app, config, slug, ""); err != nil {

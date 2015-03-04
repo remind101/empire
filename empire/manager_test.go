@@ -25,14 +25,14 @@ func TestManagerScheduleRelease(t *testing.T) {
 			return nil
 		},
 	}
-	p := &mockProcessesRepository{}
+	p := &mockProcessesService{}
 
 	m := &manager{
 		JobsService: &jobsService{
 			JobsRepository: r,
 			Scheduler:      s,
 		},
-		ProcessesRepository: p,
+		ProcessesService: p,
 	}
 
 	config := &Config{
@@ -105,8 +105,8 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 			return jobs, nil
 		},
 	}
-	p := &mockProcessesRepository{
-		UpdateFunc: func(p *Process) (int64, error) {
+	p := &mockProcessesService{
+		ProcessesUpdateFunc: func(p *Process) (int64, error) {
 			updated = true
 			return 1, nil
 		},
@@ -117,7 +117,7 @@ func TestManagerScheduleReleaseScaleDown(t *testing.T) {
 			JobsRepository: r,
 			Scheduler:      s,
 		},
-		ProcessesRepository: p,
+		ProcessesService: p,
 	}
 
 	config := &Config{

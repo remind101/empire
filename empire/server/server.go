@@ -112,7 +112,7 @@ func New(e *empire.Empire) *Server {
 	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e, e.JobsService}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.ReleasesService, e.ProcessesService, e.Manager}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.ReleasesService, e.Manager}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)

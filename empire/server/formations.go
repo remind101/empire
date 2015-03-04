@@ -23,10 +23,10 @@ type PatchFormation struct {
 		empire.AppsFinder
 		empire.ConfigsFinder
 		empire.SlugsFinder
+		empire.ProcessesFinder
 	}
-	ReleasesService  empire.ReleasesService
-	ProcessesService empire.ProcessesRepository
-	Manager          empire.Manager
+	ReleasesService empire.ReleasesService
+	Manager         empire.Manager
 }
 
 type PatchFormationForm struct {
@@ -79,7 +79,7 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	f, err := h.ProcessesService.All(r.ID)
+	f, err := h.Empire.ProcessesAll(r)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

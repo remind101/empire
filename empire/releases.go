@@ -157,7 +157,7 @@ type ReleasesService interface {
 // releasesService is a base implementation of the ReleasesService interface.
 type releasesService struct {
 	ReleasesRepository
-	ProcessesRepository
+	ProcessesService
 	Manager
 }
 
@@ -212,7 +212,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	var existing Formation
 
 	if last != nil {
-		existing, err = s.ProcessesRepository.All(last.ID)
+		existing, err = s.ProcessesService.ProcessesAll(last)
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +223,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	for _, p := range f {
 		p.ReleaseID = release.ID
 
-		if _, err := s.ProcessesRepository.Create(p); err != nil {
+		if _, err := s.ProcessesService.ProcessesCreate(p); err != nil {
 			return f, err
 		}
 	}

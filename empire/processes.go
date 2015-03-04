@@ -134,52 +134,57 @@ func NewFormation(f Formation, cm CommandMap) Formation {
 	return processes
 }
 
-// ProcessesRepository is an interface for creating and retreiving Processes.
-type ProcessesRepository interface {
-	// Create creates a new Process.
-	Create(*Process) (*Process, error)
-
-	// Update updates an existing Process.
-	Update(*Process) (int64, error)
-
-	// All returns the Processes that belong to a Formation.
-	All(ReleaseID) (Formation, error)
+type ProcessesCreator interface {
+	ProcessesCreate(*Process) (*Process, error)
 }
 
-// processesRepository is an implementation of the AppsRepository interface backed by
+type ProcessesUpdater interface {
+	ProcessesUpdate(*Process) (int64, error)
+}
+
+type ProcessesFinder interface {
+	ProcessesAll(*Release) (Formation, error)
+}
+
+type ProcessesService interface {
+	ProcessesCreator
+	ProcessesUpdater
+	ProcessesFinder
+}
+
+// processesService is an implementation of the AppsRepository interface backed by
 // a DB.
-type processesRepository struct {
+type processesService struct {
 	DB
 }
 
-func (r *processesRepository) Create(process *Process) (*Process, error) {
-	return CreateProcess(r.DB, process)
+func (s *processesService) ProcessesCreate(process *Process) (*Process, error) {
+	return ProcessesCreate(s.DB, process)
 }
 
-func (r *processesRepository) Update(process *Process) (int64, error) {
-	return UpdateProcess(r.DB, process)
+func (s *processesService) ProcessesUpdate(process *Process) (int64, error) {
+	return ProcessesUpdate(s.DB, process)
 }
 
-// All a Formation for a Formation.
-func (r *processesRepository) All(id ReleaseID) (Formation, error) {
-	return AllProcesses(r.DB, id)
+func (s *processesService) ProcessesAll(release *Release) (Formation, error) {
+	return ProcessesAll(s.DB, release)
 }
 
-// CreateProcess inserts a process into the database.
-func CreateProcess(db Inserter, process *Process) (*Process, error) {
+// ProcessesCreate inserts a process into the database.
+func ProcessesCreate(db Inserter, process *Process) (*Process, error) {
 	return process, db.Insert(process)
 }
 
-// UpdateProcess updates an existing process into the database.
-func UpdateProcess(db Updater, process *Process) (int64, error) {
+// ProcessesUpdate updates an existing process into the database.
+func ProcessesUpdate(db Updater, process *Process) (int64, error) {
 	return db.Update(process)
 }
 
-// AllProcesses returns all Processes for a Release as a Formation.
-func AllProcesses(db Queryier, id ReleaseID) (Formation, error) {
+// ProcessesAll returns all Processes for a Release as a Formation.
+func ProcessesAll(db Queryier, release *Release) (Formation, error) {
 	var ps []*Process
 
-	if err := db.Select(&ps, `select * from processes where release_id = $1`, string(id)); err != nil {
+	if err := db.Select(&ps, `select * from processes where release_id = $1`, string(release.ID)); err != nil {
 		return nil, err
 	}
 
