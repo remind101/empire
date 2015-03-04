@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/codegangsta/negroni"
@@ -143,6 +144,7 @@ func Error(w http.ResponseWriter, err error, status int) error {
 		}
 	}
 
+	log.Printf("error=%+v\n", v)
 	w.WriteHeader(status)
 	return Encode(w, v)
 }
