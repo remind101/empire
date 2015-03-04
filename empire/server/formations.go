@@ -19,7 +19,9 @@ type formation struct {
 }
 
 type PatchFormation struct {
-	AppsService      empire.AppsService
+	Empire interface {
+		empire.AppsFinder
+	}
 	ReleasesService  empire.ReleasesService
 	ConfigsService   empire.ConfigsService
 	SlugsService     empire.SlugsService
@@ -44,7 +46,7 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.Find(name)
+	a, err := h.Empire.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

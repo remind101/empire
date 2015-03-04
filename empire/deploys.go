@@ -28,7 +28,7 @@ type deploysService struct {
 
 // Deploy deploys an Image to the cluster.
 func (s *deploysService) Deploy(image Image) (*Deploy, error) {
-	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
+	app, err := s.AppsService.AppsFindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
 	}

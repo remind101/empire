@@ -24,12 +24,12 @@ func TestNewApp(t *testing.T) {
 type mockAppsService struct {
 	AppsService
 
-	FindOrCreateByRepoFunc func(repo Repo) (*App, error)
+	AppsFindOrCreateByRepoFunc func(repo Repo) (*App, error)
 }
 
-func (s *mockAppsService) FindOrCreateByRepo(repo Repo) (*App, error) {
-	if s.FindOrCreateByRepoFunc != nil {
-		return s.FindOrCreateByRepoFunc(repo)
+func (s *mockAppsService) AppsFindOrCreateByRepo(repo Repo) (*App, error) {
+	if s.AppsFindOrCreateByRepoFunc != nil {
+		return s.AppsFindOrCreateByRepoFunc(repo)
 	}
 
 	return nil, nil

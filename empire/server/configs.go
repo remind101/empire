@@ -9,14 +9,16 @@ import (
 )
 
 type GetConfigs struct {
-	AppsService    empire.AppsService
+	Empire interface {
+		empire.AppsFinder
+	}
 	ConfigsService empire.ConfigsService
 }
 
 func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.Find(name)
+	a, err := h.Empire.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -34,7 +36,9 @@ func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PatchConfigs struct {
-	AppsService     empire.AppsService
+	Empire interface {
+		empire.AppsFinder
+	}
 	ReleasesService empire.ReleasesService
 	ConfigsService  empire.ConfigsService
 	SlugsService    empire.SlugsService
@@ -50,7 +54,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
 	// Find app
-	a, err := h.AppsService.Find(name)
+	a, err := h.Empire.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

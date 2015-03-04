@@ -76,18 +76,18 @@ func (a *App) PreInsert(s gorp.SqlExecutor) error {
 }
 
 type AppsCreator interface {
-	Create(*App) (*App, error)
+	AppsCreate(*App) (*App, error)
 }
 
 type AppsDestroyer interface {
-	Destroy(*App) error
+	AppsDestroy(*App) error
 }
 
 type AppsFinder interface {
-	All() ([]*App, error)
-	Find(AppName) (*App, error)
-	FindByRepo(Repo) (*App, error)
-	FindOrCreateByRepo(Repo) (*App, error)
+	AppsAll() ([]*App, error)
+	AppsFind(AppName) (*App, error)
+	AppsFindByRepo(Repo) (*App, error)
+	AppsFindOrCreateByRepo(Repo) (*App, error)
 }
 
 type AppsService interface {
@@ -100,59 +100,59 @@ type appsService struct {
 	DB
 }
 
-func (s *appsService) Create(app *App) (*App, error) {
-	return CreateApp(s.DB, app)
+func (s *appsService) AppsCreate(app *App) (*App, error) {
+	return AppsCreate(s.DB, app)
 }
 
-func (s *appsService) Destroy(app *App) error {
-	return DestroyApp(s.DB, app)
+func (s *appsService) AppsDestroy(app *App) error {
+	return AppsDestroy(s.DB, app)
 }
 
-func (s *appsService) All() ([]*App, error) {
-	return AllApps(s.DB)
+func (s *appsService) AppsAll() ([]*App, error) {
+	return AppsAll(s.DB)
 }
 
-func (s *appsService) Find(name AppName) (*App, error) {
-	return FindApp(s.DB, name)
+func (s *appsService) AppsFind(name AppName) (*App, error) {
+	return AppsFind(s.DB, name)
 }
 
-func (s *appsService) FindByRepo(repo Repo) (*App, error) {
-	return FindAppByRepo(s.DB, repo)
+func (s *appsService) AppsFindByRepo(repo Repo) (*App, error) {
+	return AppsFindByRepo(s.DB, repo)
 }
 
-func (s *appsService) FindOrCreateByRepo(repo Repo) (*App, error) {
-	return FindOrCreateAppByRepo(s.DB, repo)
+func (s *appsService) AppsFindOrCreateByRepo(repo Repo) (*App, error) {
+	return AppsFindOrAppsCreateByRepo(s.DB, repo)
 }
 
-// CreateApp inserts the app into the database.
-func CreateApp(db Inserter, app *App) (*App, error) {
+// AppsCreate inserts the app into the database.
+func AppsCreate(db Inserter, app *App) (*App, error) {
 	return app, db.Insert(app)
 }
 
-// DestroyApp destroys an app.
-func DestroyApp(db Deleter, app *App) error {
+// AppsDestroy destroys an app.
+func AppsDestroy(db Deleter, app *App) error {
 	_, err := db.Delete(app)
 	return err
 }
 
-// AllApps returns all Apps.
-func AllApps(db Queryier) ([]*App, error) {
+// AppsAll returns all Apps.
+func AppsAll(db Queryier) ([]*App, error) {
 	var apps []*App
 	return apps, db.Select(&apps, `select * from apps order by name`)
 }
 
 // Finds an app by name.
-func FindApp(db Queryier, name AppName) (*App, error) {
-	return FindAppBy(db, "name", string(name))
+func AppsFind(db Queryier, name AppName) (*App, error) {
+	return AppsFindBy(db, "name", string(name))
 }
 
 // Finds an app by it's Repo field.
-func FindAppByRepo(db Queryier, repo Repo) (*App, error) {
-	return FindAppBy(db, "repo", string(repo))
+func AppsFindByRepo(db Queryier, repo Repo) (*App, error) {
+	return AppsFindBy(db, "repo", string(repo))
 }
 
-// FindAppBy finds an app by a field.
-func FindAppBy(db Queryier, field string, value interface{}) (*App, error) {
+// AppsFindBy finds an app by a field.
+func AppsFindBy(db Queryier, field string, value interface{}) (*App, error) {
 	var app App
 
 	if err := findBy(db, &app, "apps", field, value); err != nil {
@@ -166,8 +166,8 @@ func FindAppBy(db Queryier, field string, value interface{}) (*App, error) {
 	return &app, nil
 }
 
-func FindOrCreateAppByRepo(db DB, repo Repo) (*App, error) {
-	a, err := FindAppByRepo(db, repo)
+func AppsFindOrAppsCreateByRepo(db DB, repo Repo) (*App, error) {
+	a, err := AppsFindByRepo(db, repo)
 	if err != nil {
 		return a, err
 	}
@@ -178,7 +178,7 @@ func FindOrCreateAppByRepo(db DB, repo Repo) (*App, error) {
 		if err != nil {
 			return a, err
 		}
-		return CreateApp(db, a)
+		return AppsCreate(db, a)
 	}
 
 	return a, nil
