@@ -66,6 +66,7 @@ type ProcfileExtractor struct {
 	Client interface {
 		PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
 		InspectImage(string) (*docker.Image, error)
+		InspectContainer(string) (*docker.Container, error)
 		CreateContainer(docker.CreateContainerOptions) (*docker.Container, error)
 		RemoveContainer(docker.RemoveContainerOptions) error
 		CopyFromContainer(docker.CopyFromContainerOptions) error
@@ -90,7 +91,12 @@ func (e *ProcfileExtractor) Extract(image Image, auth *docker.AuthConfigurations
 
 	defer e.removeContainer(c.ID)
 
-	b, err := e.copyFile(c.ID, e.procfile(image.ID))
+	procfile, err := e.procfile(c.ID)
+	if err != nil {
+		return pm, err
+	}
+
+	b, err := e.copyFile(c.ID, procfile)
 	if err != nil {
 		return pm, &ProcfileError{Err: err}
 	}
@@ -100,15 +106,19 @@ func (e *ProcfileExtractor) Extract(image Image, auth *docker.AuthConfigurations
 
 // procfile returns the path to the Procfile. If the container has a WORKDIR
 // set, then this will return a path to the Procfile within that directory.
-func (e *ProcfileExtractor) procfile(id string) string {
+func (e *ProcfileExtractor) procfile(id string) (string, error) {
 	p := ""
 
-	i, err := e.Client.InspectImage(id)
-	if err == nil && i.Config != nil {
-		p = i.Config.WorkingDir
+	c, err := e.Client.InspectContainer(id)
+	if err != nil {
+		return "", err
 	}
 
-	return path.Join(p, Procfile)
+	if c.Config != nil {
+		p = c.Config.WorkingDir
+	}
+
+	return path.Join(p, Procfile), nil
 }
 
 // pullImage can pull a docker image from a repo, by it's imageID.
