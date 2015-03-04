@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM remind101/base
 MAINTAINER Benjamin Guillet <beng@remind101.com>
 
 RUN apt-get update && apt-get install -y nginx curl \
