@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/codegangsta/negroni"
@@ -10,77 +9,20 @@ import (
 	"github.com/remind101/empire/empire"
 )
 
-// Decoder represents a function that can decode a request into an interface
-// value.
-type Decoder func(r *http.Request, v interface{}) error
-
-func JSONDecode(r *http.Request, v interface{}) error {
-	return json.NewDecoder(r.Body).Decode(v)
-}
-
-// Request wraps an http.Request for convenience.
-type Request struct {
-	*http.Request
-	Vars map[string]string
-	Decoder
-}
-
-// NewRequest parse the mux vars and returns a new Request instance.
-func NewRequest(r *http.Request) *Request {
-	return &Request{Request: r, Vars: mux.Vars(r)}
-}
-
-// Decode decodes the request using the Decoder.
-func (r *Request) Decode(v interface{}) error {
-	d := r.Decoder
-
-	if d == nil {
-		d = JSONDecode
+// Named matching heroku's error codes. See
+// https://devcenter.heroku.com/articles/platform-api-reference#error-responses
+var (
+	ErrBadRequest = &ErrorResource{
+		Status:  http.StatusBadRequest,
+		ID:      "bad_request",
+		Message: "Request invalid, validate usage and try again",
 	}
-
-	return d(r.Request, v)
-}
-
-// Handler defines an interface for service an HTTP request.
-type Handler interface {
-	Serve(*Request) (int, interface{}, error)
-}
-
-// ErrorResource represents the error response format that we return.
-type ErrorResource struct {
-	ID      string `json:"id"`
-	Message string `json:"message"`
-	URL     string `json:"url"`
-}
-
-// Error implements error interface.
-func (e *ErrorResource) Error() string {
-	return e.Message
-}
-
-// Endpoint wraps a Handler to implement the http.Handler interface.
-type Endpoint struct {
-	Handler
-}
-
-// ServeHTTP implements the http.Handler interface. It will parse the form
-// params, then serve the request, finally JSON encoding the returned value.
-func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := NewRequest(r)
-
-	status, v, err := e.Handler.Serve(req)
-	if err != nil {
-		if _, ok := err.(*ErrorResource); ok {
-			v = err
-		} else {
-			v = &ErrorResource{Message: err.Error()}
-		}
-		log.Printf("Error: %v\n", v)
+	ErrNotFound = &ErrorResource{
+		Status:  http.StatusNotFound,
+		ID:      "not_found",
+		Message: "Request failed, the specified resource does not exist",
 	}
-
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
-}
+)
 
 // Server represents the API.
 type Server struct {
@@ -120,6 +62,19 @@ func New(e *empire.Empire) *Server {
 	return &Server{n}
 }
 
+// ErrorResource represents the error response format that we return.
+type ErrorResource struct {
+	Status  int    `json:"-"`
+	ID      string `json:"id"`
+	Message string `json:"message"`
+	URL     string `json:"url"`
+}
+
+// Error implements error interface.
+func (e *ErrorResource) Error() string {
+	return e.Message
+}
+
 // router is an http router for Handlers.
 type router struct {
 	*mux.Router
@@ -130,7 +85,70 @@ func newRouter() *router {
 	return &router{Router: mux.NewRouter()}
 }
 
-// Handle sets up a route for a Handler.
+type Handler interface {
+	ServeHTTP(w http.ResponseWriter, r *http.Request) error
+}
+
 func (r *router) Handle(method, path string, h Handler) {
-	r.Router.Handle(path, &Endpoint{Handler: h}).Methods(method)
+	r.Router.Handle(path, &handler{h}).Methods(method)
+}
+
+// handler adapts a Handler to an http.Handler.
+type handler struct {
+	Handler
+}
+
+// ServeHTTP calls the Hander. If an error is returned, the error will be
+// encoded into the response.
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := h.Handler.ServeHTTP(w, r); err != nil {
+		Error(w, err, http.StatusInternalServerError)
+	}
+}
+
+// Encode json ecnodes v into w.
+func Encode(w http.ResponseWriter, v interface{}) error {
+	if v == nil {
+		// Empty JSON body "{}"
+		v = map[string]interface{}{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
+}
+
+// Decode json decodes the request body into v.
+func Decode(r *http.Request, v interface{}) error {
+	return json.NewDecoder(r.Body).Decode(v)
+}
+
+// Error is used to respond with errors in the heroku error format, which is
+// specified at
+// https://devcenter.heroku.com/articles/platform-api-reference#errors
+//
+// If an ErrorResource is provided as the error, and it provides a non-zero
+// status, that will be used as the response status code.
+func Error(w http.ResponseWriter, err error, status int) error {
+	var v interface{}
+	switch err := err.(type) {
+	case *ErrorResource:
+		if err.Status != 0 {
+			status = err.Status
+		}
+
+		v = err
+	default:
+		v = &ErrorResource{
+			Message: err.Error(),
+		}
+	}
+
+	w.WriteHeader(status)
+	return Encode(w, v)
+}
+
+// NoContent responds with a 404 and an empty body.
+func NoContent(w http.ResponseWriter) error {
+	w.WriteHeader(http.StatusNoContent)
+	return Encode(w, nil)
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -19,22 +20,23 @@ type GetProcesses struct {
 	Empire
 }
 
-func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
-	name := empire.AppName(req.Vars["app"])
+func (h *GetProcesses) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	vars := mux.Vars(r)
+	name := empire.AppName(vars["app"])
 
 	a, err := h.AppsFind(name)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	if a == nil {
-		return http.StatusNotFound, nil, nil
+		return ErrNotFound
 	}
 
 	// Retrieve job states
 	js, err := h.JobStatesByApp(a)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return err
 	}
 
 	// Convert to hk compatible format
@@ -48,5 +50,6 @@ func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 		}
 	}
 
-	return 200, dynos, nil
+	w.WriteHeader(200)
+	return Encode(w, dynos)
 }
