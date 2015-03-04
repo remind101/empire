@@ -76,14 +76,13 @@ func New(options Options) (*Empire, error) {
 	}
 
 	slugsRepo := &slugsRepository{db}
-	appsRepo := &appsRepository{db}
 	configsRepo := &configsRepository{db}
 	processesRepo := &processesRepository{db}
 	releasesRepo := &releasesRepository{db}
 	jobsRepo := &jobsRepository{db}
 
 	apps := &appsService{
-		AppsRepository: appsRepo,
+		DB: db,
 	}
 
 	configs := &configsService{

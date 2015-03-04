@@ -11,7 +11,7 @@ type GetApps struct {
 }
 
 func (h *GetApps) Serve(req *Request) (int, interface{}, error) {
-	apps, err := h.AppsService.FindAll()
+	apps, err := h.AppsService.All()
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -26,7 +26,7 @@ type DeleteApp struct {
 func (h *DeleteApp) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsService.Find(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

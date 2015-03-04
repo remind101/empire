@@ -16,7 +16,7 @@ type GetConfigs struct {
 func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsService.Find(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -50,7 +50,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
 	// Find app
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsService.Find(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

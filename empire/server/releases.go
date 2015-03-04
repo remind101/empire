@@ -16,7 +16,7 @@ type GetReleases struct {
 func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsService.Find(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -69,7 +69,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
 	// Find app
-	app, err := h.AppsService.FindByName(name)
+	app, err := h.AppsService.Find(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

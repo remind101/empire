@@ -75,39 +75,53 @@ func (a *App) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
-// AppsRepository represents a repository for creating and finding Apps.
-type AppsRepository interface {
+type AppsCreator interface {
 	Create(*App) (*App, error)
-	Destroy(*App) error
-	FindAll() ([]*App, error)
-	FindByName(AppName) (*App, error)
-	FindByRepo(Repo) (*App, error)
 }
 
-// appsRepository is an implementation of the AppsRepository interface backed by
-// a DB.
-type appsRepository struct {
+type AppsDestroyer interface {
+	Destroy(*App) error
+}
+
+type AppsFinder interface {
+	All() ([]*App, error)
+	Find(AppName) (*App, error)
+	FindByRepo(Repo) (*App, error)
+	FindOrCreateByRepo(Repo) (*App, error)
+}
+
+type AppsService interface {
+	AppsCreator
+	AppsDestroyer
+	AppsFinder
+}
+
+type appsService struct {
 	DB
 }
 
-func (r *appsRepository) Create(app *App) (*App, error) {
-	return CreateApp(r.DB, app)
+func (s *appsService) Create(app *App) (*App, error) {
+	return CreateApp(s.DB, app)
 }
 
-func (r *appsRepository) Destroy(app *App) error {
-	return DestroyApp(r.DB, app)
+func (s *appsService) Destroy(app *App) error {
+	return DestroyApp(s.DB, app)
 }
 
-func (r *appsRepository) FindAll() ([]*App, error) {
-	return AllApps(r.DB)
+func (s *appsService) All() ([]*App, error) {
+	return AllApps(s.DB)
 }
 
-func (r *appsRepository) FindByName(name AppName) (*App, error) {
-	return FindAppBy(r.DB, "name", string(name))
+func (s *appsService) Find(name AppName) (*App, error) {
+	return FindApp(s.DB, name)
 }
 
-func (r *appsRepository) FindByRepo(repo Repo) (*App, error) {
-	return FindAppBy(r.DB, "repo", string(repo))
+func (s *appsService) FindByRepo(repo Repo) (*App, error) {
+	return FindAppByRepo(s.DB, repo)
+}
+
+func (s *appsService) FindOrCreateByRepo(repo Repo) (*App, error) {
+	return FindOrCreateAppByRepo(s.DB, repo)
 }
 
 // CreateApp inserts the app into the database.
@@ -127,6 +141,16 @@ func AllApps(db Queryier) ([]*App, error) {
 	return apps, db.Select(&apps, `select * from apps order by name`)
 }
 
+// Finds an app by name.
+func FindApp(db Queryier, name AppName) (*App, error) {
+	return FindAppBy(db, "name", string(name))
+}
+
+// Finds an app by it's Repo field.
+func FindAppByRepo(db Queryier, repo Repo) (*App, error) {
+	return FindAppBy(db, "repo", string(repo))
+}
+
 // FindAppBy finds an app by a field.
 func FindAppBy(db Queryier, field string, value interface{}) (*App, error) {
 	var app App
@@ -142,22 +166,8 @@ func FindAppBy(db Queryier, field string, value interface{}) (*App, error) {
 	return &app, nil
 }
 
-// AppsService represents a service for interacting with Apps.
-type AppsService interface {
-	AppsRepository
-
-	// FindOrCreateByRepo attempts to find an app by a repo name, or creates
-	// a new app if it's not found.
-	FindOrCreateByRepo(Repo) (*App, error)
-}
-
-// appsService is a base implementation of the AppsService interface.
-type appsService struct {
-	AppsRepository
-}
-
-func (s *appsService) FindOrCreateByRepo(repo Repo) (*App, error) {
-	a, err := s.AppsRepository.FindByRepo(repo)
+func FindOrCreateAppByRepo(db DB, repo Repo) (*App, error) {
+	a, err := FindAppByRepo(db, repo)
 	if err != nil {
 		return a, err
 	}
@@ -168,7 +178,7 @@ func (s *appsService) FindOrCreateByRepo(repo Repo) (*App, error) {
 		if err != nil {
 			return a, err
 		}
-		return s.AppsRepository.Create(a)
+		return CreateApp(db, a)
 	}
 
 	return a, nil

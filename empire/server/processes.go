@@ -23,7 +23,7 @@ type GetProcesses struct {
 func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsService.Find(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
