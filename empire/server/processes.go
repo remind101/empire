@@ -18,8 +18,8 @@ type dyno struct {
 type GetProcesses struct {
 	Empire interface {
 		empire.AppsFinder
+		empire.JobStatesFinder
 	}
-	JobsService empire.JobsService
 }
 
 func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
@@ -35,7 +35,7 @@ func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Retrieve job states
-	js, err := h.JobsService.JobStatesByApp(a)
+	js, err := h.Empire.JobStatesByApp(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

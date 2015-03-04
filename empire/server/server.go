@@ -109,7 +109,7 @@ func New(e *empire.Empire) *Server {
 	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e, e.ReleasesService}) // hk set
 
 	// Processes
-	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e, e.JobsService}) // hk dynos
+	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e}) // hk dynos
 
 	// Formations
 	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.ReleasesService, e.Manager}) // hk scale
