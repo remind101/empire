@@ -1,3 +1,3 @@
 #!/bin/bash
-EMPIRE_URL=${EMPIRE_URL:-"http://172.20.20.10:8080"}
+EMPIRE_URL=${EMPIRE_URL:-"http://0.0.0.0:8080"}
 HEROKU_API_URL=${EMPIRE_URL} hk $@

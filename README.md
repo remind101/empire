@@ -51,20 +51,15 @@ hk rollback
 ## Quickstart
 
 ```console
-$ make vagrant
-$ cp hk-plugins/* /usr/local/lib/hk/plugin
-$ cat <<EOF > /usr/local/bin/empire && chmod +x empire
-#!/bin/bash
- 
-EMPIRE_URL=\${EMPIRE_URL:-"http://localhost:8080"}
-HEROKU_API_URL="\$EMPIRE_URL" hk "\$@"
-EOF
-$ empire deploy quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
-$ empire apps
-$ empire releases -a acme-inc
-$ empire env -a acme-inc
-$ empire rollback V1 -a acme-inc
-$ empire releases -a acme-inc
+$ make install
+$ vagrant up
+# Wait for vagrant image to boot...
+$ emp deploy quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+$ emp apps
+$ emp releases -a acme-inc
+$ emp env -a acme-inc
+$ emp rollback V1 -a acme-inc
+$ emp releases -a acme-inc
 ```
 
 ## Components
