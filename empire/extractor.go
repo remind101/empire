@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/fsouza/go-dockerclient"
 	"gopkg.in/yaml.v2"
@@ -22,7 +23,7 @@ var (
 type Extractor interface {
 	// Extract takes a repo in the form `remind101/r101-api`, and an image
 	// id, and extracts the process types from the image.
-	Extract(Image) (CommandMap, error)
+	Extract(Image, *docker.AuthConfigurations) (CommandMap, error)
 }
 
 // NewExtractor returns a new Extractor instance.
@@ -49,7 +50,7 @@ func newExtractor() *extractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *extractor) Extract(image Image) (CommandMap, error) {
+func (e *extractor) Extract(image Image, auth *docker.AuthConfigurations) (CommandMap, error) {
 	pm := make(CommandMap)
 
 	// Just return some fake processes.
@@ -75,10 +76,10 @@ type ProcfileExtractor struct {
 }
 
 // Extract implements Extractor Extract.
-func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
+func (e *ProcfileExtractor) Extract(image Image, auth *docker.AuthConfigurations) (CommandMap, error) {
 	pm := make(CommandMap)
 
-	if err := e.pullImage(image); err != nil {
+	if err := e.pullImage(image, auth); err != nil {
 		return pm, err
 	}
 
@@ -114,12 +115,21 @@ func (e *ProcfileExtractor) procfile(id string) string {
 //
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with it's own ID beforehand.
-func (e *ProcfileExtractor) pullImage(i Image) error {
+func (e *ProcfileExtractor) pullImage(i Image, auth *docker.AuthConfigurations) error {
+	var a docker.AuthConfiguration
+
+	if auth != nil {
+		registry := strings.Split(string(i.Repo), "/")[0]
+		if c, ok := auth.Configs[registry]; ok {
+			a = c
+		}
+	}
+
 	return e.Client.PullImage(docker.PullImageOptions{
 		Repository:   string(i.Repo),
 		Tag:          i.ID,
 		OutputStream: os.Stdout,
-	}, e.AuthConfiguration)
+	}, a)
 }
 
 // createContainer creates a new docker container for the given docker image.

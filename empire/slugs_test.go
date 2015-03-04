@@ -1,5 +1,7 @@
 package empire
 
+import "github.com/fsouza/go-dockerclient"
+
 type mockExtractor struct {
 	ExtractFunc func(Image) (CommandMap, error)
 }
@@ -18,7 +20,7 @@ type mockSlugsService struct {
 	SlugsCreateByImageFunc func(Image) (*Slug, error)
 }
 
-func (s *mockSlugsService) SlugsCreateByImage(image Image) (*Slug, error) {
+func (s *mockSlugsService) SlugsCreateByImage(image Image, auth *docker.AuthConfigurations) (*Slug, error) {
 	if s.SlugsCreateByImageFunc != nil {
 		return s.SlugsCreateByImageFunc(image)
 	}
