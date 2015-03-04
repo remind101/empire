@@ -39,9 +39,9 @@ type PostReleases struct {
 	Empire interface {
 		empire.AppsFinder
 		empire.ConfigsFinder
+		empire.SlugsFinder
 	}
 	ReleasesService empire.ReleasesService
-	SlugsService    empire.SlugsService
 }
 
 type PostReleasesForm struct {
@@ -103,7 +103,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find slug
-	slug, err := h.SlugsService.Find(rel.SlugID)
+	slug, err := h.Empire.SlugsFind(rel.SlugID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

@@ -39,9 +39,9 @@ type PatchConfigs struct {
 	Empire interface {
 		empire.AppsFinder
 		empire.ConfigsApplier
+		empire.SlugsFinder
 	}
 	ReleasesService empire.ReleasesService
-	SlugsService    empire.SlugsService
 }
 
 func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
@@ -77,7 +77,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 
 	// If there is an existing release, create a new one
 	if r != nil {
-		slug, err := h.SlugsService.Find(r.SlugID)
+		slug, err := h.Empire.SlugsFind(r.SlugID)
 		if err != nil {
 			return http.StatusInternalServerError, nil, err
 		}

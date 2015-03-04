@@ -22,9 +22,9 @@ type PatchFormation struct {
 	Empire interface {
 		empire.AppsFinder
 		empire.ConfigsFinder
+		empire.SlugsFinder
 	}
 	ReleasesService  empire.ReleasesService
-	SlugsService     empire.SlugsService
 	ProcessesService empire.ProcessesRepository
 	Manager          empire.Manager
 }
@@ -74,7 +74,7 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	slug, err := h.SlugsService.Find(r.SlugID)
+	slug, err := h.Empire.SlugsFind(r.SlugID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

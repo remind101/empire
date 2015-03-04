@@ -75,7 +75,6 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	slugsRepo := &slugsRepository{db}
 	processesRepo := &processesRepository{db}
 	releasesRepo := &releasesRepository{db}
 	jobsRepo := &jobsRepository{db}
@@ -105,8 +104,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	slugs := &slugsService{
-		SlugsRepository: slugsRepo,
-		Extractor:       extractor,
+		DB:        db,
+		extractor: extractor,
 	}
 
 	deploys := &deploysService{

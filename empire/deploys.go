@@ -44,7 +44,7 @@ func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	// TODO This is actually going to be pretty slow, so
 	// we'll need to do
 	// some polling or events/webhooks here.
-	slug, err := s.SlugsService.CreateByImage(image)
+	slug, err := s.SlugsService.SlugsCreateByImage(image)
 	if err != nil {
 		return nil, err
 	}
