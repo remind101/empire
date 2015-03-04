@@ -7,13 +7,11 @@ import (
 )
 
 type GetApps struct {
-	Empire interface {
-		empire.AppsFinder
-	}
+	Empire
 }
 
 func (h *GetApps) Serve(req *Request) (int, interface{}, error) {
-	apps, err := h.Empire.AppsAll()
+	apps, err := h.AppsAll()
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -22,16 +20,13 @@ func (h *GetApps) Serve(req *Request) (int, interface{}, error) {
 }
 
 type DeleteApp struct {
-	Empire interface {
-		empire.AppsFinder
-		empire.AppsDestroyer
-	}
+	Empire
 }
 
 func (h *DeleteApp) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.Empire.AppsFind(name)
+	a, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -40,7 +35,7 @@ func (h *DeleteApp) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	if err := h.Empire.AppsDestroy(a); err != nil {
+	if err := h.AppsDestroy(a); err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
@@ -53,9 +48,7 @@ type PostAppsForm struct {
 }
 
 type PostApps struct {
-	Empire interface {
-		empire.AppsCreator
-	}
+	Empire
 }
 
 func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
@@ -70,7 +63,7 @@ func (h *PostApps) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusBadRequest, nil, err
 	}
 
-	a, err := h.Empire.AppsCreate(app)
+	a, err := h.AppsCreate(app)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

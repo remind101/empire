@@ -98,7 +98,7 @@ func New(e *empire.Empire) *Server {
 	r.Handle("POST", "/organizations/apps", &PostApps{e}) // hk create
 
 	// Deploys
-	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
+	r.Handle("POST", "/deploys", &PostDeploys{e}) // Deploy an app
 
 	// Releases
 	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})   // hk releases
@@ -112,7 +112,7 @@ func New(e *empire.Empire) *Server {
 	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e, e.Manager}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)

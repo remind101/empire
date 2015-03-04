@@ -9,16 +9,13 @@ import (
 )
 
 type GetConfigs struct {
-	Empire interface {
-		empire.AppsFinder
-		empire.ConfigsFinder
-	}
+	Empire
 }
 
 func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.Empire.AppsFind(name)
+	a, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -27,7 +24,7 @@ func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	c, err := h.Empire.ConfigsCurrent(a)
+	c, err := h.ConfigsCurrent(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -36,12 +33,7 @@ func (h *GetConfigs) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PatchConfigs struct {
-	Empire interface {
-		empire.AppsFinder
-		empire.ConfigsApplier
-		empire.SlugsFinder
-		empire.ReleasesService
-	}
+	Empire
 }
 
 func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
@@ -54,7 +46,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
 	// Find app
-	a, err := h.Empire.AppsFind(name)
+	a, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -64,20 +56,20 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Update the config
-	c, err := h.Empire.ConfigsApply(a, configVars)
+	c, err := h.ConfigsApply(a, configVars)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
 	// Find current release
-	r, err := h.Empire.ReleasesLast(a)
+	r, err := h.ReleasesLast(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
 	// If there is an existing release, create a new one
 	if r != nil {
-		slug, err := h.Empire.SlugsFind(r.SlugID)
+		slug, err := h.SlugsFind(r.SlugID)
 		if err != nil {
 			return http.StatusInternalServerError, nil, err
 		}
@@ -90,7 +82,7 @@ func (h *PatchConfigs) Serve(req *Request) (int, interface{}, error) {
 		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
 
 		// Create new release based on new config and old slug
-		_, err = h.Empire.ReleasesCreate(a, c, slug, desc)
+		_, err = h.ReleasesCreate(a, c, slug, desc)
 		if err != nil {
 			return http.StatusInternalServerError, nil, err
 		}
