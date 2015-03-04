@@ -96,7 +96,7 @@ coreos:
         ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
         ExecStartPre=/usr/bin/docker run quay.io/remind/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
-        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -docker.registry=quay.io -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
         ExecStop=/usr/bin/docker stop empire
 
