@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+
+	"github.com/fsouza/go-dockerclient"
 )
 
 // SlugID represents the unique identifier of a Slug.
@@ -32,7 +34,7 @@ func (id SlugID) Value() (driver.Value, error) {
 
 type SlugsCreator interface {
 	SlugsCreate(*Slug) (*Slug, error)
-	SlugsCreateByImage(Image) (*Slug, error)
+	SlugsCreateByImage(Image, *docker.AuthConfigurations) (*Slug, error)
 }
 
 type SlugsFinder interface {
@@ -63,14 +65,14 @@ func (s *slugsService) SlugsFindByImage(image Image) (*Slug, error) {
 	return SlugsFindByImage(s.DB, image)
 }
 
-func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
-	return SlugsCreateByImage(s.DB, s.extractor, image)
+func (s *slugsService) SlugsCreateByImage(image Image, auth *docker.AuthConfigurations) (*Slug, error) {
+	return SlugsCreateByImage(s.DB, s.extractor, image, auth)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func SlugsCreateByImage(db DB, e Extractor, image Image) (*Slug, error) {
+func SlugsCreateByImage(db DB, e Extractor, image Image, auth *docker.AuthConfigurations) (*Slug, error) {
 	slug, err := SlugsFindByImage(db, image)
 	if err != nil {
 		return slug, err
@@ -80,7 +82,7 @@ func SlugsCreateByImage(db DB, e Extractor, image Image) (*Slug, error) {
 		return slug, nil
 	}
 
-	slug, err = SlugsExtract(e, image)
+	slug, err = SlugsExtract(e, image, auth)
 	if err != nil {
 		return slug, err
 	}
@@ -90,12 +92,12 @@ func SlugsCreateByImage(db DB, e Extractor, image Image) (*Slug, error) {
 
 // SlugsExtract extracts the process types from the image, then returns a new
 // Slug instance.
-func SlugsExtract(e Extractor, image Image) (*Slug, error) {
+func SlugsExtract(e Extractor, image Image, auth *docker.AuthConfigurations) (*Slug, error) {
 	slug := &Slug{
 		Image: image,
 	}
 
-	pt, err := e.Extract(image)
+	pt, err := e.Extract(image, auth)
 	if err != nil {
 		return slug, err
 	}
