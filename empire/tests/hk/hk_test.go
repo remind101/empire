@@ -154,6 +154,29 @@ acme-inc.1.web.2    unknown   5d  "./bin/web"`,
 	})
 }
 
+func TestRollback(t *testing.T) {
+	run(t, []Command{
+		{
+			"deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+			"Deployed ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+		},
+		{
+			"deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+			"Deployed ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+		},
+		{
+			"rollback v1 -a acme-inc",
+			"Rolled back acme-inc to v1 as v3.",
+		},
+		{
+			"releases -a acme-inc",
+			`v1    Dec 31 17:01  Deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+v2    Dec 31 17:01  Deploy ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+v3    Dec 31 17:01  Rollback to v1`,
+		},
+	})
+}
+
 // Run the tests with empiretest.Run, which will lock access to the database
 // since it can't be shared by parallel tests.
 func TestMain(m *testing.M) {
