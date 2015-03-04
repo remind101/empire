@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -14,16 +13,9 @@ type GetConfigs struct {
 }
 
 func (h *GetConfigs) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	a, err := h.AppsFind(name)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if a == nil {
-		return ErrNotFound
 	}
 
 	c, err := h.ConfigsCurrent(a)
@@ -46,17 +38,9 @@ func (h *PatchConfigs) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	// Find app
-	a, err := h.AppsFind(name)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if a == nil {
-		return ErrNotFound
 	}
 
 	// Update the config

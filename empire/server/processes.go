@@ -3,9 +3,6 @@ package server
 import (
 	"net/http"
 	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/remind101/empire/empire"
 )
 
 // dyno is a heroku compatible response struct to the hk dynos command.
@@ -21,16 +18,9 @@ type GetProcesses struct {
 }
 
 func (h *GetProcesses) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	a, err := h.AppsFind(name)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if a == nil {
-		return ErrNotFound
 	}
 
 	// Retrieve job states

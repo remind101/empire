@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -38,16 +37,9 @@ func (h *PatchFormation) ServeHTTP(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	a, err := h.AppsFind(name)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if a == nil {
-		return ErrNotFound
 	}
 
 	qm := empire.ProcessQuantityMap{}
