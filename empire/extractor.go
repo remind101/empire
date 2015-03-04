@@ -65,7 +65,6 @@ type ProcfileExtractor struct {
 	// Client is the docker client to use to pull the container image.
 	Client interface {
 		PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
-		InspectImage(string) (*docker.Image, error)
 		InspectContainer(string) (*docker.Container, error)
 		CreateContainer(docker.CreateContainerOptions) (*docker.Container, error)
 		RemoveContainer(docker.RemoveContainerOptions) error
