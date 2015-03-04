@@ -90,8 +90,9 @@ func New(options Options) (*Empire, error) {
 	}
 
 	jobStates := &jobStatesService{
-		DB:        db,
-		scheduler: scheduler,
+		DB:          db,
+		JobsService: jobs,
+		scheduler:   scheduler,
 	}
 
 	processes := &processesService{

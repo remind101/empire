@@ -178,12 +178,13 @@ type JobStatesService interface {
 
 type jobStatesService struct {
 	DB
+	JobsService
 	scheduler scheduler.Scheduler
 }
 
 func (s *jobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
 	// Jobs expected to be running
-	jobs, err := JobsList(s.DB, JobsListQuery{
+	jobs, err := s.JobsService.JobsList(JobsListQuery{
 		App: app.Name,
 	})
 	if err != nil {
