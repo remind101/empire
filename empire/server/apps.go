@@ -26,16 +26,9 @@ type DeleteApp struct {
 }
 
 func (h *DeleteApp) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	a, err := h.AppsFind(name)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if a == nil {
-		return ErrNotFound
 	}
 
 	if err := h.AppsDestroy(a); err != nil {
@@ -73,4 +66,16 @@ func (h *PostApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 
 	w.WriteHeader(201)
 	return Encode(w, a)
+}
+
+func findApp(r *http.Request, e empire.AppsFinder) (*empire.App, error) {
+	vars := mux.Vars(r)
+	name := vars["app"]
+
+	a, err := e.AppsFind(empire.AppName(name))
+	if a == nil {
+		return a, ErrNotFound
+	}
+
+	return a, err
 }

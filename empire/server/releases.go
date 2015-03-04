@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
 
@@ -14,16 +13,9 @@ type GetReleases struct {
 }
 
 func (h *GetReleases) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	a, err := h.AppsFind(name)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if a == nil {
-		return ErrNotFound
 	}
 
 	rels, err := h.ReleasesFindByApp(a)
@@ -65,17 +57,9 @@ func (h *PostReleases) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	vars := mux.Vars(r)
-	name := empire.AppName(vars["app"])
-
-	// Find app
-	app, err := h.AppsFind(name)
+	app, err := findApp(r, h)
 	if err != nil {
 		return err
-	}
-
-	if app == nil {
-		return ErrNotFound
 	}
 
 	// Find previous release
