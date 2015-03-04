@@ -1,0 +1,11 @@
+{
+	"ImportPath": "github.com/remind101/empire/etcd_peers",
+	"GoVersion": "go1.4.1",
+	"Deps": [
+		{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "v0.4.6",
+			"Rev": "6aa2da5a7a905609c93036b9307185a04a5a84a5"
+		}
+	]
+}
