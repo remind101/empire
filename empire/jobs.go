@@ -49,13 +49,6 @@ func (j *Job) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
-type JobState struct {
-	Job       *Job
-	MachineID string
-	Name      scheduler.JobName
-	State     string
-}
-
 func (j *Job) JobName() scheduler.JobName {
 	return newJobName(
 		j.AppName,
@@ -65,57 +58,12 @@ func (j *Job) JobName() scheduler.JobName {
 	)
 }
 
-// JobQuery is a query object to filter results from JobsRepository List.
-type JobQuery struct {
-	App     AppName
-	Release ReleaseVersion
-}
-
-// JobsRepository keeps track of all the Jobs that have been submitted to the
-// scheduler.
-type JobsRepository interface {
-	Add(*Job) error
-	Remove(*Job) error
-	List(JobQuery) ([]*Job, error)
-}
-
-func NewJobsRepository(db DB) (JobsRepository, error) {
-	return &jobsRepository{db}, nil
-}
-
-type jobsRepository struct {
-	DB
-}
-
-func (r *jobsRepository) Add(job *Job) error {
-	_, err := CreateJob(r.DB, job)
-	return err
-}
-
-func (r *jobsRepository) Remove(job *Job) error {
-	return DestroyJob(r.DB, job)
-}
-
-func (r *jobsRepository) List(q JobQuery) ([]*Job, error) {
-	return ListJobs(r.DB, q)
-}
-
-// CreateJob inserts the Job into the database.
-func CreateJob(db Inserter, job *Job) (*Job, error) {
-	return job, db.Insert(job)
-}
-
-// DestroyJob removes a Job from the database.
-func DestroyJob(db Deleter, job *Job) error {
-	_, err := db.Delete(job)
-	return err
-}
-
-// ListJobs returns a filtered list of Jobs.
-func ListJobs(db Queryier, q JobQuery) ([]*Job, error) {
-	var jobs []*Job
-	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
-	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
+// JobState represents the state of a submitted job.
+type JobState struct {
+	Job       *Job
+	MachineID string
+	Name      scheduler.JobName
+	State     string
 }
 
 // Schedule is an interface that represents something that can schedule jobs
@@ -125,31 +73,126 @@ type Scheduler interface {
 	Unschedule(...*Job) error
 }
 
+type JobsFinder interface {
+	JobsList(JobsListQuery) ([]*Job, error)
+}
+
 type JobsService interface {
-	JobsRepository
 	Scheduler
-
-	// FindJobsByApp returns JobStates for an app.
-	JobStatesByApp(*App) ([]*JobState, error)
-
-	// Find existing jobs by app name.
-	JobsByApp(AppName) ([]*Job, error)
+	JobsFinder
 }
 
 type jobsService struct {
-	JobsRepository
-	scheduler.Scheduler
+	DB
+	scheduler scheduler.Scheduler
 }
 
-func (s *jobsService) JobStatesByApp(app *App) ([]*JobState, error) {
+func (s *jobsService) JobsList(q JobsListQuery) ([]*Job, error) {
+	return JobsList(s.DB, q)
+}
+
+func (s *jobsService) Schedule(jobs ...*Job) error {
+	for _, j := range jobs {
+		if _, err := Schedule(s.DB, s.scheduler, j); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *jobsService) Unschedule(jobs ...*Job) error {
+	for _, j := range jobs {
+		if err := Unschedule(s.DB, s.scheduler, j); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// JobsCreate inserts the Job into the database.
+func JobsCreate(db Inserter, job *Job) (*Job, error) {
+	return job, db.Insert(job)
+}
+
+// JobsDestroy removes a Job from the database.
+func JobsDestroy(db Deleter, job *Job) error {
+	_, err := db.Delete(job)
+	return err
+}
+
+// JobsListQuery is a query object to filter results from JobsRepository List.
+type JobsListQuery struct {
+	App     AppName
+	Release ReleaseVersion
+}
+
+// JobsList returns a filtered list of Jobs.
+func JobsList(db Queryier, q JobsListQuery) ([]*Job, error) {
+	var jobs []*Job
+	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
+	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
+}
+
+// Schedule schedules to job onto the cluster, then persists it to the database.
+func Schedule(db Inserter, s scheduler.Scheduler, j *Job) (*Job, error) {
+	name := j.JobName()
+	env := environment(j.Environment)
+	exec := scheduler.Execute{
+		Command: string(j.Command),
+		Image: scheduler.Image{
+			Repo: string(j.Image.Repo),
+			ID:   j.Image.ID,
+		},
+	}
+
+	// Schedule the job onto the cluster.
+	if err := s.Schedule(&scheduler.Job{
+		Name:        name,
+		Service:     fmt.Sprintf("%s/%s", j.ProcessType, j.AppName), // Used for registrator integration
+		Environment: env,
+		Execute:     exec,
+	}); err != nil {
+		return nil, err
+	}
+
+	return JobsCreate(db, j)
+}
+
+func Unschedule(db Deleter, s scheduler.Scheduler, j *Job) error {
+	if err := s.Unschedule(j.JobName()); err != nil {
+		return err
+	}
+
+	return JobsDestroy(db, j)
+}
+
+type JobStatesFinder interface {
+	JobStatesByApp(*App) ([]*JobState, error)
+}
+
+type JobStatesService interface {
+	JobStatesFinder
+}
+
+type jobStatesService struct {
+	DB
+	JobsService
+	scheduler scheduler.Scheduler
+}
+
+func (s *jobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
 	// Jobs expected to be running
-	jobs, err := s.JobsByApp(app.Name)
+	jobs, err := s.JobsService.JobsList(JobsListQuery{
+		App: app.Name,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Job states for all existing jobs
-	sjs, err := s.Scheduler.JobStates()
+	sjs, err := s.scheduler.JobStates()
 	if err != nil {
 		return nil, err
 	}
@@ -181,69 +224,4 @@ func (s *jobsService) JobStatesByApp(app *App) ([]*JobState, error) {
 	}
 
 	return js, nil
-}
-
-func (s *jobsService) JobsByApp(appName AppName) ([]*Job, error) {
-	return s.JobsRepository.List(JobQuery{
-		App: appName,
-	})
-}
-
-func (s *jobsService) Schedule(jobs ...*Job) error {
-	for _, j := range jobs {
-		if err := s.schedule(j); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// schedule schedules a Job and adds it to the list of scheduled jobs.
-func (s *jobsService) schedule(j *Job) error {
-	name := j.JobName()
-	env := environment(j.Environment)
-	exec := scheduler.Execute{
-		Command: string(j.Command),
-		Image: scheduler.Image{
-			Repo: string(j.Image.Repo),
-			ID:   j.Image.ID,
-		},
-	}
-
-	// Schedule the job onto the cluster.
-	if err := s.Scheduler.Schedule(&scheduler.Job{
-		Name:        name,
-		Service:     fmt.Sprintf("%s/%s", j.ProcessType, j.AppName), // Used for registrator integration
-		Environment: env,
-		Execute:     exec,
-	}); err != nil {
-		return err
-	}
-
-	// Add it to the list of scheduled jobs.
-	if err := s.JobsRepository.Add(j); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *jobsService) Unschedule(jobs ...*Job) error {
-	for _, j := range jobs {
-		if err := s.unschedule(j); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *jobsService) unschedule(j *Job) error {
-	err := s.Scheduler.Unschedule(j.JobName())
-	if err != nil {
-		return err
-	}
-
-	return s.JobsRepository.Remove(j)
 }

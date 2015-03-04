@@ -49,10 +49,11 @@ type Empire struct {
 	ConfigsService
 	DeploysService
 	JobsService
+	JobStatesService
 	Manager
 	ReleasesService
 	SlugsService
-	ProcessesService ProcessesRepository
+	ProcessesService
 }
 
 // New returns a new Empire instance.
@@ -75,40 +76,43 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	slugsRepo := &slugsRepository{db}
-	appsRepo := &appsRepository{db}
-	configsRepo := &configsRepository{db}
-	processesRepo := &processesRepository{db}
-	releasesRepo := &releasesRepository{db}
-	jobsRepo := &jobsRepository{db}
-
 	apps := &appsService{
-		AppsRepository: appsRepo,
+		DB: db,
 	}
 
 	configs := &configsService{
-		ConfigsRepository: configsRepo,
+		DB: db,
 	}
 
 	jobs := &jobsService{
-		JobsRepository: jobsRepo,
-		Scheduler:      scheduler,
+		DB:        db,
+		scheduler: scheduler,
+	}
+
+	jobStates := &jobStatesService{
+		DB:          db,
+		JobsService: jobs,
+		scheduler:   scheduler,
+	}
+
+	processes := &processesService{
+		DB: db,
 	}
 
 	manager := &manager{
-		JobsService:         jobs,
-		ProcessesRepository: processesRepo,
+		JobsService:      jobs,
+		ProcessesService: processes,
 	}
 
 	releases := &releasesService{
-		ReleasesRepository:  releasesRepo,
-		ProcessesRepository: processesRepo,
-		Manager:             manager,
+		DB:               db,
+		ProcessesService: processes,
+		Manager:          manager,
 	}
 
 	slugs := &slugsService{
-		SlugsRepository: slugsRepo,
-		Extractor:       extractor,
+		DB:        db,
+		extractor: extractor,
 	}
 
 	deploys := &deploysService{
@@ -124,10 +128,11 @@ func New(options Options) (*Empire, error) {
 		ConfigsService:   configs,
 		DeploysService:   deploys,
 		JobsService:      jobs,
+		JobStatesService: jobStates,
 		Manager:          manager,
 		SlugsService:     slugs,
 		ReleasesService:  releases,
-		ProcessesService: processesRepo,
+		ProcessesService: processes,
 	}, nil
 }
 

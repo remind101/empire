@@ -8,7 +8,7 @@ import (
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
 type PostDeploys struct {
-	DeploysService empire.DeploysService
+	Empire
 }
 
 // PostDeployForm is the form object that represents the POST body.
@@ -27,7 +27,7 @@ func (h *PostDeploys) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	d, err := h.DeploysService.Deploy(empire.Image{
+	d, err := h.Deploy(empire.Image{
 		Repo: empire.Repo(form.Image.Repo),
 		ID:   form.Image.ID,
 	})

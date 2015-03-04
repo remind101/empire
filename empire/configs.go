@@ -84,46 +84,98 @@ func (v Vars) Value() (driver.Value, error) {
 	return h.Value()
 }
 
-// ConfigsRepository represents an interface for retrieving and storing Config's.
-type ConfigsRepository interface {
-	// Head returns the current Config for the app.
-	Head(AppName) (*Config, error)
-
-	// Find returns the specific version of a Config for an app.
-	Find(ConfigID) (*Config, error)
-
-	// Store stores the Config for the app.
-	Push(*Config) (*Config, error)
+type ConfigsCreator interface {
+	ConfigsCreate(*Config) (*Config, error)
 }
 
-// configsRepository is an implementation of the ConfigsRepository interface backed by
-// a DB.
-type configsRepository struct {
+type ConfigsFinder interface {
+	ConfigsFind(ConfigID) (*Config, error)
+	ConfigsCurrent(*App) (*Config, error)
+}
+
+type ConfigsApplier interface {
+	ConfigsApply(*App, Vars) (*Config, error)
+}
+
+type ConfigsService interface {
+	ConfigsCreator
+	ConfigsFinder
+	ConfigsApplier
+}
+
+type configsService struct {
 	DB
 }
 
-// Head implements Repository Head.
-func (r *configsRepository) Head(appName AppName) (*Config, error) {
-	return FindConfigBy(r.DB, "app_id", string(appName))
+func (s *configsService) ConfigsCreate(config *Config) (*Config, error) {
+	return ConfigsCreate(s.DB, config)
 }
 
-// Find implements Repository Find.
-func (r *configsRepository) Find(id ConfigID) (*Config, error) {
-	return FindConfigBy(r.DB, "id", string(id))
+func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
+	return ConfigsCurrent(s.DB, app)
 }
 
-// Push implements Repository Push.
-func (r *configsRepository) Push(config *Config) (*Config, error) {
-	return CreateConfig(r.DB, config)
+func (s *configsService) ConfigsFind(id ConfigID) (*Config, error) {
+	return ConfigsFind(s.DB, id)
 }
 
-// CreateConfig inserts a Config in the database.
-func CreateConfig(db Inserter, config *Config) (*Config, error) {
+func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
+	return ConfigsApply(s.DB, app, vars)
+}
+
+// ConfigsCreate inserts a Config in the database.
+func ConfigsCreate(db Inserter, config *Config) (*Config, error) {
 	return config, db.Insert(config)
 }
 
-// FindConfigBy finds a Config by a field.
-func FindConfigBy(db Queryier, field string, value interface{}) (*Config, error) {
+// ConfigsCurrent returns the current Config for the given app, creating it if
+// it does not already exist.
+func ConfigsCurrent(db DB, app *App) (*Config, error) {
+	c, err := ConfigsFindByApp(db, app)
+	if err != nil {
+		return nil, err
+	}
+
+	if c != nil {
+		return c, nil
+	}
+
+	return ConfigsCreate(db, &Config{
+		AppName: app.Name,
+		Vars:    make(Vars),
+	})
+}
+
+// ConfigsFind finds a Config by id.
+func ConfigsFind(db Queryier, id ConfigID) (*Config, error) {
+	return ConfigsFindBy(db, "id", string(id))
+}
+
+// ConfigsFindByApp finds the current config for the given App.
+func ConfigsFindByApp(db Queryier, app *App) (*Config, error) {
+	return ConfigsFindBy(db, "app_id", string(app.Name))
+}
+
+// ConfigsApply gets the current config for the given app, copies it, merges the
+// new Vars in, then inserts it.
+func ConfigsApply(db DB, app *App, vars Vars) (*Config, error) {
+	c, err := ConfigsCurrent(db, app)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the app doesn't have a config, just build a new one.
+	if c == nil {
+		c = &Config{
+			AppName: app.Name,
+		}
+	}
+
+	return ConfigsCreate(db, NewConfig(c, vars))
+}
+
+// ConfigsFindBy finds a Config by a field.
+func ConfigsFindBy(db Queryier, field string, value interface{}) (*Config, error) {
 	var config Config
 
 	if err := db.SelectOne(&config, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, value); err != nil {
@@ -155,58 +207,4 @@ func mergeVars(old, new Vars) Vars {
 	}
 
 	return vars
-}
-
-// ConfigsService represents a service for interacting with Configs.
-type ConfigsService interface {
-	Find(ConfigID) (*Config, error)
-
-	// Apply applies the vars to the apps latest Config.
-	Apply(*App, Vars) (*Config, error)
-
-	// Returns the Head Config for an App.
-	Head(*App) (*Config, error)
-}
-
-// configsService is a base implementation of the ConfigsService.
-type configsService struct {
-	ConfigsRepository
-}
-
-// Apply merges the provided Vars into the latest Config and returns a new
-// Config.
-func (s *configsService) Apply(app *App, vars Vars) (*Config, error) {
-	l, err := s.ConfigsRepository.Head(app.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	// If the app doesn't have a config, just build a new one.
-	if l == nil {
-		l = &Config{}
-	}
-
-	l.AppName = app.Name
-
-	c := NewConfig(l, vars)
-
-	return s.ConfigsRepository.Push(c)
-}
-
-// Gets the config for an app. If the app doesn't have a config, it will create
-// a new one.
-func (s *configsService) Head(app *App) (*Config, error) {
-	c, err := s.ConfigsRepository.Head(app.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if c == nil {
-		return s.ConfigsRepository.Push(&Config{
-			AppName: app.Name,
-			Vars:    make(Vars),
-		})
-	}
-
-	return c, nil
 }

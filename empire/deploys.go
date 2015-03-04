@@ -28,13 +28,13 @@ type deploysService struct {
 
 // Deploy deploys an Image to the cluster.
 func (s *deploysService) Deploy(image Image) (*Deploy, error) {
-	app, err := s.AppsService.FindOrCreateByRepo(image.Repo)
+	app, err := s.AppsService.AppsFindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
 	}
 
 	// Grab the latest config.
-	config, err := s.ConfigsService.Head(app)
+	config, err := s.ConfigsService.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	// TODO This is actually going to be pretty slow, so
 	// we'll need to do
 	// some polling or events/webhooks here.
-	slug, err := s.SlugsService.CreateByImage(image)
+	slug, err := s.SlugsService.SlugsCreateByImage(image)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	release, err := s.ReleasesService.Create(app, config, slug, desc)
+	release, err := s.ReleasesService.ReleasesCreate(app, config, slug, desc)
 	if err != nil {
 		return nil, err
 	}

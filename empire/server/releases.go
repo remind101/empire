@@ -9,14 +9,13 @@ import (
 )
 
 type GetReleases struct {
-	AppsService     empire.AppsService
-	ReleasesService empire.ReleasesService
+	Empire
 }
 
 func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -25,7 +24,7 @@ func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	rels, err := h.ReleasesService.FindByApp(a)
+	rels, err := h.ReleasesFindByApp(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -34,10 +33,7 @@ func (h *GetReleases) Serve(req *Request) (int, interface{}, error) {
 }
 
 type PostReleases struct {
-	AppsService     empire.AppsService
-	ReleasesService empire.ReleasesService
-	ConfigsService  empire.ConfigsService
-	SlugsService    empire.SlugsService
+	Empire
 }
 
 type PostReleasesForm struct {
@@ -69,7 +65,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
 	// Find app
-	app, err := h.AppsService.FindByName(name)
+	app, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -79,7 +75,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find previous release
-	rel, err := h.ReleasesService.FindByAppAndVersion(app, version)
+	rel, err := h.ReleasesFindByAppAndVersion(app, version)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -89,7 +85,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find config
-	config, err := h.ConfigsService.Find(rel.ConfigID)
+	config, err := h.ConfigsFind(rel.ConfigID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -99,7 +95,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Find slug
-	slug, err := h.SlugsService.Find(rel.SlugID)
+	slug, err := h.SlugsFind(rel.SlugID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -110,7 +106,7 @@ func (h *PostReleases) Serve(req *Request) (int, interface{}, error) {
 
 	// Create new release
 	desc := fmt.Sprintf("Rollback to v%d", version)
-	release, err := h.ReleasesService.Create(app, config, slug, desc)
+	release, err := h.ReleasesCreate(app, config, slug, desc)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

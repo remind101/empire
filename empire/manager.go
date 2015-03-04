@@ -21,14 +21,16 @@ type Manager interface {
 // manager is a base implementation of the Manager interface.
 type manager struct {
 	JobsService
-	ProcessesRepository
+	ProcessesService
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this app.
-	existing, err := m.JobsService.JobsByApp(release.AppName)
+	existing, err := m.JobsService.JobsList(JobsListQuery{
+		App: release.AppName,
+	})
 	if err != nil {
 		return err
 	}
@@ -89,7 +91,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 
 	// Update quantity for this process in the formation
 	p.Quantity = q
-	_, err := m.ProcessesRepository.Update(p)
+	_, err := m.ProcessesService.ProcessesUpdate(p)
 	return err
 }
 
@@ -100,7 +102,9 @@ func (m *manager) scaleUp(release *Release, config *Config, slug *Slug, p *Proce
 
 func (m *manager) scaleDown(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	// Find existing jobs for this app
-	existing, err := m.JobsService.JobsByApp(release.AppName)
+	existing, err := m.JobsService.JobsList(JobsListQuery{
+		App: release.AppName,
+	})
 	if err != nil {
 		return err
 	}

@@ -19,12 +19,7 @@ type formation struct {
 }
 
 type PatchFormation struct {
-	AppsService      empire.AppsService
-	ReleasesService  empire.ReleasesService
-	ConfigsService   empire.ConfigsService
-	SlugsService     empire.SlugsService
-	ProcessesService empire.ProcessesRepository
-	Manager          empire.Manager
+	Empire
 }
 
 type PatchFormationForm struct {
@@ -44,7 +39,7 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -58,7 +53,7 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		qm[empire.ProcessType(up.Process)] = up.Quantity
 	}
 
-	r, err := h.ReleasesService.Head(a)
+	r, err := h.ReleasesLast(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -67,22 +62,22 @@ func (h *PatchFormation) Serve(req *Request) (int, interface{}, error) {
 		return http.StatusNotFound, nil, nil
 	}
 
-	config, err := h.ConfigsService.Find(r.ConfigID)
+	config, err := h.ConfigsFind(r.ConfigID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	slug, err := h.SlugsService.Find(r.SlugID)
+	slug, err := h.SlugsFind(r.SlugID)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	f, err := h.ProcessesService.All(r.ID)
+	f, err := h.ProcessesAll(r)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	err = h.Manager.ScaleRelease(r, config, slug, f, qm)
+	err = h.ScaleRelease(r, config, slug, f, qm)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

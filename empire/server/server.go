@@ -92,27 +92,27 @@ func New(e *empire.Empire) *Server {
 	r := newRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", &GetApps{e.AppsService})                 // hk apps
-	r.Handle("DELETE", "/apps/{app}", &DeleteApp{e.AppsService})      // hk destroy
-	r.Handle("POST", "/apps", &PostApps{e.AppsService})               // hk create
-	r.Handle("POST", "/organizations/apps", &PostApps{e.AppsService}) // hk create
+	r.Handle("GET", "/apps", &GetApps{e})                 // hk apps
+	r.Handle("DELETE", "/apps/{app}", &DeleteApp{e})      // hk destroy
+	r.Handle("POST", "/apps", &PostApps{e})               // hk create
+	r.Handle("POST", "/organizations/apps", &PostApps{e}) // hk create
 
 	// Deploys
-	r.Handle("POST", "/deploys", &PostDeploys{e.DeploysService}) // Deploy an app
+	r.Handle("POST", "/deploys", &PostDeploys{e}) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e.AppsService, e.ReleasesService})                                     // hk releases
-	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e.AppsService, e.ReleasesService, e.ConfigsService, e.SlugsService}) // hk rollback
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})   // hk releases
+	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e}) // hk rollback
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e.AppsService, e.ConfigsService})                                        // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e.AppsService, e.ReleasesService, e.ConfigsService, e.SlugsService}) // hk set
+	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e})     // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e}) // hk set
 
 	// Processes
-	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e.AppsService, e.JobsService}) // hk dynos
+	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e}) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e.AppsService, e.ReleasesService, e.ConfigsService, e.SlugsService, e.ProcessesService, e.Manager}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e}) // hk scale
 
 	n := negroni.Classic()
 	n.UseHandler(r)

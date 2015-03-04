@@ -16,14 +16,13 @@ type dyno struct {
 }
 
 type GetProcesses struct {
-	AppsService empire.AppsService
-	JobsService empire.JobsService
+	Empire
 }
 
 func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 	name := empire.AppName(req.Vars["app"])
 
-	a, err := h.AppsService.FindByName(name)
+	a, err := h.AppsFind(name)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -33,7 +32,7 @@ func (h *GetProcesses) Serve(req *Request) (int, interface{}, error) {
 	}
 
 	// Retrieve job states
-	js, err := h.JobsService.JobStatesByApp(a)
+	js, err := h.JobStatesByApp(a)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

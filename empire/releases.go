@@ -49,120 +49,44 @@ func (r *Release) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
-// ReleaseRepository is an interface that can be implemented for storing and
-// retrieving releases.
-type ReleasesRepository interface {
-	Create(*Release) (*Release, error)
-	FindByAppName(AppName) ([]*Release, error)
-	FindByAppNameAndVersion(AppName, ReleaseVersion) (*Release, error)
-	Head(AppName) (*Release, error)
+type ReleasesCreator interface {
+	ReleasesCreate(*App, *Config, *Slug, string) (*Release, error)
 }
 
-// releasesRepository is an implementation of the ReleasesRepository interface backed by
-// a DB.
-type releasesRepository struct {
-	DB
-}
-
-func (r *releasesRepository) Create(release *Release) (*Release, error) {
-	return CreateRelease(r.DB, release)
-}
-
-func (r *releasesRepository) Head(appName AppName) (*Release, error) {
-	return LastRelease(r.DB, appName)
-}
-
-func (r *releasesRepository) FindByAppName(appName AppName) ([]*Release, error) {
-	var rs []*Release
-	return rs, r.DB.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName))
-}
-
-func (r *releasesRepository) FindByAppNameAndVersion(a AppName, v ReleaseVersion) (*Release, error) {
-	rel := &Release{}
-	err := r.DB.SelectOne(rel, `select * from releases where app_id = $1 and version = $2 limit 1`, string(a), int(v))
-
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-
-	return rel, nil
-}
-
-// CreateRelease creates a new Release and inserts it into the database.
-func CreateRelease(db DB, release *Release) (*Release, error) {
-	t, err := db.Begin()
-	if err != nil {
-		return release, err
-	}
-
-	// Get the last release version for this app.
-	v, err := LastReleaseVersion(t, release.AppName)
-	if err != nil {
-		return release, err
-	}
-
-	// Increment the release version.
-	release.Ver = v + 1
-
-	if err := t.Insert(release); err != nil {
-		return release, err
-	}
-
-	return release, t.Commit()
-}
-
-// LastReleaseVersion returns the last ReleaseVersion for the given App. This
-// function also ensures that the last release is locked until the transaction
-// is commited, so the release version can be incremented atomically.
-func LastReleaseVersion(db Queryier, appName AppName) (version ReleaseVersion, err error) {
-	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
-
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
-
-	return
-}
-
-// LastRelease returns the last Release for the given App.
-func LastRelease(db Queryier, appName AppName) (*Release, error) {
-	var release Release
-
-	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return &release, nil
+type ReleasesFinder interface {
+	ReleasesFindByApp(*App) ([]*Release, error)
+	ReleasesFindByAppAndVersion(*App, ReleaseVersion) (*Release, error)
+	ReleasesLast(*App) (*Release, error)
 }
 
 // ReleaseesService represents a service for interacting with Releases.
 type ReleasesService interface {
-	// Create creates a new release.
-	Create(*App, *Config, *Slug, string) (*Release, error)
-
-	// Find existing releases for an app
-	FindByApp(*App) ([]*Release, error)
-
-	// Find an existing release by app and version
-	FindByAppAndVersion(*App, ReleaseVersion) (*Release, error)
-
-	// Find current release for an app
-	Head(*App) (*Release, error)
+	ReleasesCreator
+	ReleasesFinder
 }
 
-// releasesService is a base implementation of the ReleasesService interface.
+// releasesService is an implementation of the ReleasesRepository interface backed by
+// a DB.
 type releasesService struct {
-	ReleasesRepository
-	ProcessesRepository
+	DB
+	ProcessesService
 	Manager
 }
 
+func (s *releasesService) ReleasesLast(app *App) (*Release, error) {
+	return ReleasesLast(s.DB, app.Name)
+}
+
+func (s *releasesService) ReleasesFindByApp(app *App) ([]*Release, error) {
+	return ReleasesAllByAppName(s.DB, app.Name)
+}
+
+func (s *releasesService) ReleasesFindByAppAndVersion(app *App, v ReleaseVersion) (*Release, error) {
+	return ReleasesFindByAppNameAndVersion(s.DB, app.Name, v)
+}
+
 // Create creates the release, then sets the current process formation on the release.
-func (s *releasesService) Create(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
+func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
 	r := &Release{
 		AppName:     app.Name,
 		ConfigID:    config.ID,
@@ -170,7 +94,7 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug, desc stri
 		Description: desc,
 	}
 
-	r, err := s.ReleasesRepository.Create(r)
+	r, err := ReleasesCreate(s.DB, r)
 	if err != nil {
 		return r, err
 	}
@@ -189,22 +113,10 @@ func (s *releasesService) Create(app *App, config *Config, slug *Slug, desc stri
 	return r, nil
 }
 
-func (s *releasesService) FindByApp(a *App) ([]*Release, error) {
-	return s.ReleasesRepository.FindByAppName(a.Name)
-}
-
-func (s *releasesService) FindByAppAndVersion(a *App, v ReleaseVersion) (*Release, error) {
-	return s.ReleasesRepository.FindByAppNameAndVersion(a.Name, v)
-}
-
-func (s *releasesService) Head(app *App) (*Release, error) {
-	return s.ReleasesRepository.Head(app.Name)
-}
-
 func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
 	prev := int(release.Ver) - 1
-	last, err := s.ReleasesRepository.FindByAppNameAndVersion(release.AppName, ReleaseVersion(prev))
+	last, err := ReleasesFindByAppNameAndVersion(s.DB, release.AppName, ReleaseVersion(prev))
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +124,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	var existing Formation
 
 	if last != nil {
-		existing, err = s.ProcessesRepository.All(last.ID)
+		existing, err = s.ProcessesService.ProcessesAll(last)
 		if err != nil {
 			return nil, err
 		}
@@ -223,10 +135,82 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	for _, p := range f {
 		p.ReleaseID = release.ID
 
-		if _, err := s.ProcessesRepository.Create(p); err != nil {
+		if _, err := s.ProcessesService.ProcessesCreate(p); err != nil {
 			return f, err
 		}
 	}
 
 	return f, nil
+}
+
+// ReleasesFindByAppNameAndVersion finds a specific version of a release for a
+// given app.
+func ReleasesFindByAppNameAndVersion(db Queryier, a AppName, v ReleaseVersion) (*Release, error) {
+	var release Release
+
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 and version = $2 limit 1`, string(a), int(v)); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &release, nil
+}
+
+// ReleasesCreate creates a new Release and inserts it into the database.
+func ReleasesCreate(db DB, release *Release) (*Release, error) {
+	t, err := db.Begin()
+	if err != nil {
+		return release, err
+	}
+
+	// Get the last release version for this app.
+	v, err := ReleasesLastVersion(t, release.AppName)
+	if err != nil {
+		return release, err
+	}
+
+	// Increment the release version.
+	release.Ver = v + 1
+
+	if err := t.Insert(release); err != nil {
+		return release, err
+	}
+
+	return release, t.Commit()
+}
+
+// ReleasesLastVersion returns the last ReleaseVersion for the given App. This
+// function also ensures that the last release is locked until the transaction
+// is commited, so the release version can be incremented atomically.
+func ReleasesLastVersion(db Queryier, appName AppName) (version ReleaseVersion, err error) {
+	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+
+	return
+}
+
+// ReleasesLast returns the last Release for the given App.
+func ReleasesLast(db Queryier, appName AppName) (*Release, error) {
+	var release Release
+
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &release, nil
+}
+
+// ReleasesFindByAppName finds the latest release for the given app.
+func ReleasesAllByAppName(db Queryier, appName AppName) ([]*Release, error) {
+	var rs []*Release
+	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName))
 }
