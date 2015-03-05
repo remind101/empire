@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path"
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire/empire"
@@ -58,6 +59,12 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "DOCKER_CERT_PATH",
 	},
 	cli.StringFlag{
+		Name:   "docker.auth",
+		Value:  path.Join(os.Getenv("HOME"), ".dockercfg"),
+		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
+		EnvVar: "DOCKER_AUTH_PATH",
+	},
+	cli.StringFlag{
 		Name:   "fleet.api",
 		Value:  "",
 		Usage:  "The location of the fleet api",
@@ -80,6 +87,7 @@ func empireOptions(c *cli.Context) empire.Options {
 
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
+	opts.Docker.AuthPath = c.String("docker.auth")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
 

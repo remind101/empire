@@ -23,11 +23,11 @@ var (
 type Extractor interface {
 	// Extract takes a repo in the form `remind101/r101-api`, and an image
 	// id, and extracts the process types from the image.
-	Extract(Image, *docker.AuthConfigurations) (CommandMap, error)
+	Extract(Image) (CommandMap, error)
 }
 
 // NewExtractor returns a new Extractor instance.
-func NewExtractor(socket, certPath string) (Extractor, error) {
+func NewExtractor(socket, certPath string, authPath string) (Extractor, error) {
 	if socket == "" {
 		return newExtractor(), nil
 	}
@@ -37,8 +37,20 @@ func NewExtractor(socket, certPath string) (Extractor, error) {
 		return nil, err
 	}
 
+	f, err := os.Open(authPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	auth, err := docker.NewAuthConfigurations(f)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ProcfileExtractor{
-		Client: c,
+		Client:             c,
+		AuthConfigurations: auth,
 	}, nil
 }
 
@@ -50,7 +62,7 @@ func newExtractor() *extractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *extractor) Extract(image Image, auth *docker.AuthConfigurations) (CommandMap, error) {
+func (e *extractor) Extract(image Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
 	// Just return some fake processes.
@@ -72,14 +84,14 @@ type ProcfileExtractor struct {
 	}
 
 	// AuthConfiguration contains the docker AuthConfiguration.
-	docker.AuthConfiguration
+	*docker.AuthConfigurations
 }
 
 // Extract implements Extractor Extract.
-func (e *ProcfileExtractor) Extract(image Image, auth *docker.AuthConfigurations) (CommandMap, error) {
+func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
-	if err := e.pullImage(image, auth); err != nil {
+	if err := e.pullImage(image); err != nil {
 		return pm, err
 	}
 
@@ -124,14 +136,12 @@ func (e *ProcfileExtractor) procfile(id string) (string, error) {
 //
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with it's own ID beforehand.
-func (e *ProcfileExtractor) pullImage(i Image, auth *docker.AuthConfigurations) error {
+func (e *ProcfileExtractor) pullImage(i Image) error {
 	var a docker.AuthConfiguration
 
-	if auth != nil {
-		registry := strings.Split(string(i.Repo), "/")[0]
-		if c, ok := auth.Configs[registry]; ok {
-			a = c
-		}
+	registry := strings.Split(string(i.Repo), "/")[0]
+	if c, ok := e.Configs[registry]; ok {
+		a = c
 	}
 
 	return e.Client.PullImage(docker.PullImageOptions{

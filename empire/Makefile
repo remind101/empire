@@ -1,4 +1,4 @@
-.PHONY: cmd build
+.PHONY: cmd build test
 
 cmd:
 	godep go build -o build/empire ./cmd/empire
@@ -9,3 +9,6 @@ bootstrap: cmd
 
 build: Dockerfile
 	docker build --no-cache -t empire .
+
+test:
+	godep go test ./...

@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/remind101/empire",
+	"ImportPath": "github.com/remind101/empire/empire",
 	"GoVersion": "go1.4.1",
 	"Packages": [
 		"./..."
@@ -202,7 +202,7 @@
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
-			"Rev": "5da2a37ecfb5bcb921a36dbc18e912c3235f139a"
+			"Rev": "86685ba63cf0bb59ec6e1908c90585a25f163ad5"
 		},
 		{
 			"ImportPath": "github.com/go-sql-driver/mysql",

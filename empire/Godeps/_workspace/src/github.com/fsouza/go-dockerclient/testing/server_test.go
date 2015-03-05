@@ -1,4 +1,4 @@
-// Copyright 2014 go-dockerclient authors. All rights reserved.
+// Copyright 2015 go-dockerclient authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -82,6 +82,19 @@ func TestHandleWithHook(t *testing.T) {
 	}
 }
 
+func TestSetHook(t *testing.T) {
+	var called bool
+	server, _ := NewServer("127.0.0.1:0", nil, nil)
+	defer server.Stop()
+	server.SetHook(func(*http.Request) { called = true })
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/containers/json?all=1", nil)
+	server.ServeHTTP(recorder, request)
+	if !called {
+		t.Error("ServeHTTP did not call the hook function.")
+	}
+}
+
 func TestCustomHandler(t *testing.T) {
 	var called bool
 	server, _ := NewServer("127.0.0.1:0", nil, nil)
@@ -92,6 +105,25 @@ func TestCustomHandler(t *testing.T) {
 	}))
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/containers/json?all=1", nil)
+	server.ServeHTTP(recorder, request)
+	if !called {
+		t.Error("Did not call the custom handler")
+	}
+	if got := recorder.Body.String(); got != "Hello world" {
+		t.Errorf("Wrong output for custom handler: want %q. Got %q.", "Hello world", got)
+	}
+}
+
+func TestCustomHandlerRegexp(t *testing.T) {
+	var called bool
+	server, _ := NewServer("127.0.0.1:0", nil, nil)
+	addContainers(server, 2)
+	server.CustomHandler("/containers/.*/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		fmt.Fprint(w, "Hello world")
+	}))
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/containers/.*/json?all=1", nil)
 	server.ServeHTTP(recorder, request)
 	if !called {
 		t.Error("Did not call the custom handler")
@@ -274,6 +306,27 @@ func TestCommitContainerComplete(t *testing.T) {
 	cmd := []string{"cat", "/world"}
 	if !reflect.DeepEqual(image.Config.Cmd, cmd) {
 		t.Errorf("CommitContainer: wrong cmd in config. Want %#v. Got %#v.", cmd, image.Config.Cmd)
+	}
+}
+
+func TestCommitContainerWithTag(t *testing.T) {
+	server := DockerServer{}
+	server.imgIDs = make(map[string]string)
+	addContainers(&server, 2)
+	server.buildMuxer()
+	recorder := httptest.NewRecorder()
+	queryString := "container=" + server.containers[0].ID + "&repo=tsuru/python&tag=v1"
+	request, _ := http.NewRequest("POST", "/commit?"+queryString, nil)
+	server.ServeHTTP(recorder, request)
+	image := server.images[0]
+	if image.Parent != server.containers[0].Image {
+		t.Errorf("CommitContainer: wrong parent image. Want %q. Got %q.", server.containers[0].Image, image.Parent)
+	}
+	if image.Container != server.containers[0].ID {
+		t.Errorf("CommitContainer: wrong container. Want %q. Got %q.", server.containers[0].ID, image.Container)
+	}
+	if id := server.imgIDs["tsuru/python:v1"]; id != image.ID {
+		t.Errorf("CommitContainer: wrong ID saved for repository. Want %q. Got %q.", image.ID, id)
 	}
 }
 
@@ -778,6 +831,17 @@ func TestPushImage(t *testing.T) {
 	}
 }
 
+func TestPushImageWithTag(t *testing.T) {
+	server := DockerServer{imgIDs: map[string]string{"tsuru/python:v1": "a123"}}
+	server.buildMuxer()
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("POST", "/images/tsuru/python/push?tag=v1", nil)
+	server.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("PushImage: wrong status. Want %d. Got %d.", http.StatusOK, recorder.Code)
+	}
+}
+
 func TestPushImageNotFound(t *testing.T) {
 	server := DockerServer{}
 	server.buildMuxer()
@@ -799,6 +863,20 @@ func TestTagImage(t *testing.T) {
 		t.Errorf("TagImage: wrong status. Want %d. Got %d.", http.StatusCreated, recorder.Code)
 	}
 	if server.imgIDs["tsuru/python"] != server.imgIDs["tsuru/new-python"] {
+		t.Errorf("TagImage: did not tag the image")
+	}
+}
+
+func TestTagImageWithRepoAndTag(t *testing.T) {
+	server := DockerServer{imgIDs: map[string]string{"tsuru/python": "a123"}}
+	server.buildMuxer()
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("POST", "/images/tsuru/python/tag?repo=tsuru/new-python&tag=v1", nil)
+	server.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusCreated {
+		t.Errorf("TagImage: wrong status. Want %d. Got %d.", http.StatusCreated, recorder.Code)
+	}
+	if server.imgIDs["tsuru/python"] != server.imgIDs["tsuru/new-python:v1"] {
 		t.Errorf("TagImage: did not tag the image")
 	}
 }
@@ -1168,4 +1246,133 @@ func TestInspectExecContainer(t *testing.T) {
 	if !reflect.DeepEqual(got2, expected) {
 		t.Errorf("InspectContainer: wrong value. Want:\n%#v\nGot:\n%#v\n", expected, got2)
 	}
+}
+
+func TestStartExecContainer(t *testing.T) {
+	server, _ := NewServer("127.0.0.1:0", nil, nil)
+	addContainers(server, 1)
+	server.buildMuxer()
+	recorder := httptest.NewRecorder()
+	body := `{"Cmd": ["bash", "-c", "ls"]}`
+	path := fmt.Sprintf("/containers/%s/exec", server.containers[0].ID)
+	request, _ := http.NewRequest("POST", path, strings.NewReader(body))
+	server.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("CreateExec: wrong status. Want %d. Got %d.", http.StatusOK, recorder.Code)
+	}
+	var exec docker.Exec
+	err := json.NewDecoder(recorder.Body).Decode(&exec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unleash := make(chan bool)
+	server.PrepareExec(exec.ID, func() {
+		<-unleash
+	})
+	codes := make(chan int, 1)
+	sent := make(chan bool)
+	go func() {
+		recorder := httptest.NewRecorder()
+		path := fmt.Sprintf("/exec/%s/start", exec.ID)
+		body := `{"Tty":true}`
+		request, _ := http.NewRequest("POST", path, strings.NewReader(body))
+		close(sent)
+		server.ServeHTTP(recorder, request)
+		codes <- recorder.Code
+	}()
+	<-sent
+	execInfo, err := waitExec(server.URL(), exec.ID, true, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !execInfo.Running {
+		t.Error("StartExec: expected exec to be running, but it's not running")
+	}
+	close(unleash)
+	if code := <-codes; code != http.StatusOK {
+		t.Errorf("StartExec: wrong status. Want %d. Got %d.", http.StatusOK, code)
+	}
+	execInfo, err = waitExec(server.URL(), exec.ID, false, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if execInfo.Running {
+		t.Error("StartExec: expected exec to be not running after start returns, but it's running")
+	}
+}
+
+func TestStartExecContainerWildcardCallback(t *testing.T) {
+	server, _ := NewServer("127.0.0.1:0", nil, nil)
+	addContainers(server, 1)
+	server.buildMuxer()
+	recorder := httptest.NewRecorder()
+	body := `{"Cmd": ["bash", "-c", "ls"]}`
+	path := fmt.Sprintf("/containers/%s/exec", server.containers[0].ID)
+	request, _ := http.NewRequest("POST", path, strings.NewReader(body))
+	server.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("CreateExec: wrong status. Want %d. Got %d.", http.StatusOK, recorder.Code)
+	}
+	unleash := make(chan bool)
+	server.PrepareExec("*", func() {
+		<-unleash
+	})
+	var exec docker.Exec
+	err := json.NewDecoder(recorder.Body).Decode(&exec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codes := make(chan int, 1)
+	sent := make(chan bool)
+	go func() {
+		recorder := httptest.NewRecorder()
+		path := fmt.Sprintf("/exec/%s/start", exec.ID)
+		body := `{"Tty":true}`
+		request, _ := http.NewRequest("POST", path, strings.NewReader(body))
+		close(sent)
+		server.ServeHTTP(recorder, request)
+		codes <- recorder.Code
+	}()
+	<-sent
+	execInfo, err := waitExec(server.URL(), exec.ID, true, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !execInfo.Running {
+		t.Error("StartExec: expected exec to be running, but it's not running")
+	}
+	close(unleash)
+	if code := <-codes; code != http.StatusOK {
+		t.Errorf("StartExec: wrong status. Want %d. Got %d.", http.StatusOK, code)
+	}
+	execInfo, err = waitExec(server.URL(), exec.ID, false, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if execInfo.Running {
+		t.Error("StartExec: expected exec to be not running after start returns, but it's running")
+	}
+}
+
+func TestStartExecContainerNotFound(t *testing.T) {
+	server, _ := NewServer("127.0.0.1:0", nil, nil)
+	addContainers(server, 1)
+	server.buildMuxer()
+	recorder := httptest.NewRecorder()
+	body := `{"Tty":true}`
+	request, _ := http.NewRequest("POST", "/exec/something-wat/start", strings.NewReader(body))
+	server.ServeHTTP(recorder, request)
+}
+
+func waitExec(url, execID string, running bool, maxTry int) (*docker.ExecInspect, error) {
+	client, err := docker.NewClient(url)
+	if err != nil {
+		return nil, err
+	}
+	exec, err := client.InspectExec(execID)
+	for i := 0; i < maxTry && exec.Running != running && err == nil; i++ {
+		time.Sleep(100e6)
+		exec, err = client.InspectExec(exec.ID)
+	}
+	return exec, err
 }
