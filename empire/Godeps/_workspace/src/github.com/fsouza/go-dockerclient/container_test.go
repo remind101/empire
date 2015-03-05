@@ -1,4 +1,4 @@
-// Copyright 2014 go-dockerclient authors. All rights reserved.
+// Copyright 2015 go-dockerclient authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -510,6 +510,11 @@ func TestStartContainerNilHostConfig(t *testing.T) {
 	expectedContentType := "application/json"
 	if contentType := req.Header.Get("Content-Type"); contentType != expectedContentType {
 		t.Errorf("StartContainer(%q): Wrong content-type in request. Want %q. Got %q.", id, expectedContentType, contentType)
+	}
+	var buf [4]byte
+	req.Body.Read(buf[:])
+	if string(buf[:]) != "null" {
+		t.Errorf("Startcontainer(%q): Wrong body. Want null. Got %s", buf[:])
 	}
 }
 

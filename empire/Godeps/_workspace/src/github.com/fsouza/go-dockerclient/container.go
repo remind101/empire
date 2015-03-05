@@ -1,4 +1,4 @@
-// Copyright 2014 go-dockerclient authors. All rights reserved.
+// Copyright 2015 go-dockerclient authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -56,7 +56,7 @@ type APIContainers struct {
 // See http://goo.gl/6Y4Gz7 for more details.
 func (c *Client) ListContainers(opts ListContainersOptions) ([]APIContainers, error) {
 	path := "/containers/json?" + queryString(opts)
-	body, _, err := c.do("GET", path, nil)
+	body, _, err := c.do("GET", path, nil, false)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +193,8 @@ type Config struct {
 	WorkingDir      string              `json:"WorkingDir,omitempty" yaml:"WorkingDir,omitempty"`
 	Entrypoint      []string            `json:"Entrypoint,omitempty" yaml:"Entrypoint,omitempty"`
 	NetworkDisabled bool                `json:"NetworkDisabled,omitempty" yaml:"NetworkDisabled,omitempty"`
+	SecurityOpts    []string            `json:"SecurityOpts,omitempty" yaml:"SecurityOpts,omitempty"`
+	OnBuild         []string            `json:"OnBuild,omitempty" yaml:"OnBuild,omitempty"`
 }
 
 // Container is the type encompasing everything about a container - its config,
@@ -228,7 +230,7 @@ type Container struct {
 // See http://goo.gl/CxVuJ5 for more details.
 func (c *Client) InspectContainer(id string) (*Container, error) {
 	path := "/containers/" + id + "/json"
-	body, status, err := c.do("GET", path, nil)
+	body, status, err := c.do("GET", path, nil, false)
 	if status == http.StatusNotFound {
 		return nil, &NoSuchContainer{ID: id}
 	}
@@ -248,7 +250,7 @@ func (c *Client) InspectContainer(id string) (*Container, error) {
 // See http://goo.gl/QkW9sH for more details.
 func (c *Client) ContainerChanges(id string) ([]Change, error) {
 	path := "/containers/" + id + "/changes"
-	body, status, err := c.do("GET", path, nil)
+	body, status, err := c.do("GET", path, nil, false)
 	if status == http.StatusNotFound {
 		return nil, &NoSuchContainer{ID: id}
 	}
@@ -284,7 +286,7 @@ func (c *Client) CreateContainer(opts CreateContainerOptions) (*Container, error
 	}{
 		opts.Config,
 		opts.HostConfig,
-	})
+	}, false)
 
 	if status == http.StatusNotFound {
 		return nil, ErrNoSuchImage
@@ -366,11 +368,8 @@ type HostConfig struct {
 //
 // See http://goo.gl/iM5GYs for more details.
 func (c *Client) StartContainer(id string, hostConfig *HostConfig) error {
-	if hostConfig == nil {
-		hostConfig = &HostConfig{}
-	}
 	path := "/containers/" + id + "/start"
-	_, status, err := c.do("POST", path, hostConfig)
+	_, status, err := c.do("POST", path, hostConfig, true)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: id}
 	}
@@ -389,7 +388,7 @@ func (c *Client) StartContainer(id string, hostConfig *HostConfig) error {
 // See http://goo.gl/EbcpXt for more details.
 func (c *Client) StopContainer(id string, timeout uint) error {
 	path := fmt.Sprintf("/containers/%s/stop?t=%d", id, timeout)
-	_, status, err := c.do("POST", path, nil)
+	_, status, err := c.do("POST", path, nil, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: id}
 	}
@@ -408,7 +407,7 @@ func (c *Client) StopContainer(id string, timeout uint) error {
 // See http://goo.gl/VOzR2n for more details.
 func (c *Client) RestartContainer(id string, timeout uint) error {
 	path := fmt.Sprintf("/containers/%s/restart?t=%d", id, timeout)
-	_, status, err := c.do("POST", path, nil)
+	_, status, err := c.do("POST", path, nil, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: id}
 	}
@@ -423,7 +422,7 @@ func (c *Client) RestartContainer(id string, timeout uint) error {
 // See http://goo.gl/AM5t42 for more details.
 func (c *Client) PauseContainer(id string) error {
 	path := fmt.Sprintf("/containers/%s/pause", id)
-	_, status, err := c.do("POST", path, nil)
+	_, status, err := c.do("POST", path, nil, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: id}
 	}
@@ -438,7 +437,7 @@ func (c *Client) PauseContainer(id string) error {
 // See http://goo.gl/eBrNSL for more details.
 func (c *Client) UnpauseContainer(id string) error {
 	path := fmt.Sprintf("/containers/%s/unpause", id)
-	_, status, err := c.do("POST", path, nil)
+	_, status, err := c.do("POST", path, nil, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: id}
 	}
@@ -467,7 +466,7 @@ func (c *Client) TopContainer(id string, psArgs string) (TopResult, error) {
 		args = fmt.Sprintf("?ps_args=%s", psArgs)
 	}
 	path := fmt.Sprintf("/containers/%s/top%s", id, args)
-	body, status, err := c.do("GET", path, nil)
+	body, status, err := c.do("GET", path, nil, false)
 	if status == http.StatusNotFound {
 		return result, &NoSuchContainer{ID: id}
 	}
@@ -499,7 +498,7 @@ type KillContainerOptions struct {
 // See http://goo.gl/TFkECx for more details.
 func (c *Client) KillContainer(opts KillContainerOptions) error {
 	path := "/containers/" + opts.ID + "/kill" + "?" + queryString(opts)
-	_, status, err := c.do("POST", path, nil)
+	_, status, err := c.do("POST", path, nil, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: opts.ID}
 	}
@@ -530,7 +529,7 @@ type RemoveContainerOptions struct {
 // See http://goo.gl/ZB83ji for more details.
 func (c *Client) RemoveContainer(opts RemoveContainerOptions) error {
 	path := "/containers/" + opts.ID + "?" + queryString(opts)
-	_, status, err := c.do("DELETE", path, nil)
+	_, status, err := c.do("DELETE", path, nil, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: opts.ID}
 	}
@@ -559,7 +558,7 @@ func (c *Client) CopyFromContainer(opts CopyFromContainerOptions) error {
 		return &NoSuchContainer{ID: opts.Container}
 	}
 	url := fmt.Sprintf("/containers/%s/copy", opts.Container)
-	body, status, err := c.do("POST", url, opts)
+	body, status, err := c.do("POST", url, opts, false)
 	if status == http.StatusNotFound {
 		return &NoSuchContainer{ID: opts.Container}
 	}
@@ -575,7 +574,7 @@ func (c *Client) CopyFromContainer(opts CopyFromContainerOptions) error {
 //
 // See http://goo.gl/J88DHU for more details.
 func (c *Client) WaitContainer(id string) (int, error) {
-	body, status, err := c.do("POST", "/containers/"+id+"/wait", nil)
+	body, status, err := c.do("POST", "/containers/"+id+"/wait", nil, false)
 	if status == http.StatusNotFound {
 		return 0, &NoSuchContainer{ID: id}
 	}
@@ -607,7 +606,7 @@ type CommitContainerOptions struct {
 // See http://goo.gl/Jn8pe8 for more details.
 func (c *Client) CommitContainer(opts CommitContainerOptions) (*Image, error) {
 	path := "/commit?" + queryString(opts)
-	body, status, err := c.do("POST", path, opts.Run)
+	body, status, err := c.do("POST", path, opts.Run, false)
 	if status == http.StatusNotFound {
 		return nil, &NoSuchContainer{ID: opts.Container}
 	}
@@ -706,7 +705,7 @@ func (c *Client) ResizeContainerTTY(id string, height, width int) error {
 	params := make(url.Values)
 	params.Set("h", strconv.Itoa(height))
 	params.Set("w", strconv.Itoa(width))
-	_, _, err := c.do("POST", "/containers/"+id+"/resize?"+params.Encode(), nil)
+	_, _, err := c.do("POST", "/containers/"+id+"/resize?"+params.Encode(), nil, false)
 	return err
 }
 
