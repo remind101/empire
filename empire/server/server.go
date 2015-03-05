@@ -43,6 +43,9 @@ func New(e *empire.Empire) *Server {
 	// Deploys
 	r.Handle("POST", "/deploys", &PostDeploys{e}) // Deploy an app
 
+	// GitHub hooks.
+	r.Handle("POST", "/github", NewGitHubServer(e))
+
 	// Releases
 	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})   // hk releases
 	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e}) // hk rollback
@@ -90,8 +93,18 @@ type Handler interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request) error
 }
 
-func (r *router) Handle(method, path string, h Handler) {
-	r.Router.Handle(path, &handler{h}).Methods(method)
+func (r *router) Handle(method, path string, hdl interface{}) {
+	var h http.Handler
+	switch hdl := hdl.(type) {
+	case Handler:
+		h = &handler{hdl}
+	case http.Handler:
+		h = hdl
+	default:
+		panic("Not a compatible handler.")
+	}
+
+	r.Router.Handle(path, h).Methods(method)
 }
 
 // handler adapts a Handler to an http.Handler.

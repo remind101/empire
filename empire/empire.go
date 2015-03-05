@@ -35,10 +35,21 @@ type FleetOptions struct {
 	API string
 }
 
+// GitHub options is a set of options to configure the GitHub integration.
+type GitHubOptions struct {
+	// Secret is the shared secret for GitHub webhooks.
+	Secret string
+
+	// Token is the GitHub OAuth token to use when creating
+	// DeploymentStatuses.
+	Token string
+}
+
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
 	Fleet  FleetOptions
+	GitHub GitHubOptions
 
 	// Database connection string.
 	DB string
@@ -46,17 +57,22 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
+	// Stored options
+	Options *Options
+
 	DB DB
 
 	AppsService
 	ConfigsService
-	DeploysService
 	JobsService
 	JobStatesService
 	Manager
 	ReleasesService
 	SlugsService
 	ProcessesService
+
+	*DeploysService
+	*GitHubDeploysService
 }
 
 // New returns a new Empire instance.
@@ -119,24 +135,34 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
-	deploys := &deploysService{
+	deploys := &DeploysService{
 		AppsService:     apps,
 		ConfigsService:  configs,
 		SlugsService:    slugs,
 		ReleasesService: releases,
 	}
 
+	ghDeploys := &GitHubDeploysService{
+		DeploysService: deploys,
+		resolver: &RegistryResolver{
+			Registry: "quay.io",
+		},
+	}
+
 	return &Empire{
+		Options:          &options,
 		DB:               db,
 		AppsService:      apps,
 		ConfigsService:   configs,
-		DeploysService:   deploys,
 		JobsService:      jobs,
 		JobStatesService: jobStates,
 		Manager:          manager,
 		SlugsService:     slugs,
 		ReleasesService:  releases,
 		ProcessesService: processes,
+
+		DeploysService:       deploys,
+		GitHubDeploysService: ghDeploys,
 	}, nil
 }
 

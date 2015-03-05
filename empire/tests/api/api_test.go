@@ -16,6 +16,13 @@ var (
 		Repo: "ejholmes/acme-inc",
 		ID:   "ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
 	}
+
+	// DefaultCommit is a commit the commit that corresponds to the
+	// DefaultImage.
+	DefaultCommit = empire.Commit{
+		Repo: "ejholmes/acme-inc",
+		Sha:  "66a675359fc5077881bbd57cef20429e43481667",
+	}
 )
 
 // Run the tests with empiretest.Run, which will lock access to the database

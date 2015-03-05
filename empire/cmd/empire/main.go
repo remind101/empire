@@ -70,6 +70,18 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The location of the fleet api",
 		EnvVar: "FLEET_URL",
 	},
+	cli.StringFlag{
+		Name:   "github.secret",
+		Value:  "",
+		Usage:  "The shared secret for GitHub webhooks",
+		EnvVar: "GITHUB_SECRET",
+	},
+	cli.StringFlag{
+		Name:   "github.token",
+		Value:  "",
+		Usage:  "The github oauth token to use to create deployment statuses.",
+		EnvVar: "GITHUB_TOKEN",
+	},
 }
 
 func main() {
@@ -90,6 +102,8 @@ func empireOptions(c *cli.Context) empire.Options {
 	opts.Docker.AuthPath = c.String("docker.auth")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
+	opts.GitHub.Secret = c.String("github.secret")
+	opts.GitHub.Token = c.String("github.token")
 
 	return opts
 }

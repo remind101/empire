@@ -8,8 +8,10 @@ type Empire interface {
 	empire.SlugsService
 	empire.ReleasesService
 	empire.ProcessesService
-	empire.DeploysService
 	empire.JobsService
 	empire.JobStatesService
 	empire.Manager
+
+	DeployImage(empire.Image) (*empire.Deploy, error)
+	DeployCommit(empire.Commit) (*empire.Deploy, error)
 }
