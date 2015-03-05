@@ -1,8 +1,10 @@
+.PHONY: docker
+
+build/etcd_peers: cmd/etcd_peers/main.go etcd_peers.go
+	go build -o build/etcd_peers ./cmd/etcd_peers
+
 docker: Dockerfile
 	docker build --no-cache -t quay.io/remind/etcd_peers .
 
-etcd_peers: etcd_peers.go
-	go build
-
 clean:
-	rm -rf etcd_peers
+	rm -rf build
