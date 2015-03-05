@@ -1,15 +1,7 @@
-// Given a discoveryURL, this is meant to continually query that till it gets
-// a valid set of etcd peers.  Once it has a set (at least one) it will then
-// output, either to a file or stdout, with an environment variable.
-//
-// Meant to be used in a systemd unit that will block the launching of fleet
-// on worker/minion servers until it can join the cluster.
-
-package main
+package etcd_peers
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -23,6 +15,17 @@ import (
 // Generated from here: http://mervine.net/json2struct
 // Matches data structure from here:
 //    https://discovery.etcd.io/026dd048e41a3dbb484bd02bd0b3055a
+type Node struct {
+	CreatedIndex  float64 `json:"createdIndex"`
+	Expiration    string  `json:"expiration"`
+	Key           string  `json:"key"`
+	ModifiedIndex float64 `json:"modifiedIndex"`
+	Ttl           int32   `json:"ttl"`
+	Value         string  `json:"value"`
+}
+
+type Nodes []Node
+
 type DiscoveryData struct {
 	Action string `json:"action"`
 	Node   struct {
@@ -30,14 +33,7 @@ type DiscoveryData struct {
 		Dir           bool    `json:"dir"`
 		Key           string  `json:"key"`
 		ModifiedIndex float64 `json:"modifiedIndex"`
-		Nodes         []struct {
-			CreatedIndex  float64 `json:"createdIndex"`
-			Expiration    string  `json:"expiration"`
-			Key           string  `json:"key"`
-			ModifiedIndex float64 `json:"modifiedIndex"`
-			Ttl           float64 `json:"ttl"`
-			Value         string  `json:"value"`
-		} `json:"nodes"`
+		Nodes         Nodes   `json:"nodes"`
 	} `json:"node"`
 }
 
@@ -51,8 +47,43 @@ func LogErr(err error, msg string) {
 	}
 }
 
-func FindPeers(discoveryURL string) (*[]string, error) {
-	peers := make([]string, 0, 5)
+// Takes a node list from the discoveryURL, which includes the server peer
+// address and turns them into client URLs.
+func NodesToClientUrls(nodes Nodes) ([]string, error) {
+	peers := make([]string, len(nodes))
+	for i, n := range nodes {
+		parsed, err := url.Parse(n.Value)
+		if err != nil {
+			return nil, err
+		}
+		hostParts := strings.Split(parsed.Host, ":")
+		peers[i] = fmt.Sprintf("http://%s:4001/", hostParts[0])
+	}
+	return peers, nil
+
+}
+
+// Given a list of client URLs, connect to each to and return a slice of which
+// is actually serving.
+func FindLivePeers(urls []string, count int) ([]string, error) {
+	peers := make([]string, 0, len(urls))
+	c := http.Client{Timeout: time.Second}
+	for _, u := range urls {
+		url := u + "v2/machines"
+		_, err := c.Get(url)
+		if err != nil {
+			continue
+		}
+		peers = append(peers, u)
+		if count > 0 && len(peers) >= count {
+			break
+		}
+	}
+	return peers, nil
+}
+
+// Connects to an etcd discoveryURL and grabs the list of nodes registered
+func DiscoverEtcdNodes(discoveryURL string) (Nodes, error) {
 	client := http.Client{}
 	resp, err := client.Get(discoveryURL)
 	if err != nil {
@@ -76,72 +107,20 @@ func FindPeers(discoveryURL string) (*[]string, error) {
 		return nil, err
 	}
 
-	var hostParts []string
-	for _, nodeData := range d.Node.Nodes {
-		peerUrl, err := url.Parse(nodeData.Value)
-		if err != nil {
-			continue
-		}
-		hostParts = strings.Split(peerUrl.Host, ":")
-		host := fmt.Sprintf("http://%s:4001/", hostParts[0])
-		peers = append(peers, host)
-	}
-	return &peers, nil
+	return d.Node.Nodes, nil
 }
 
-func main() {
-	flag.Usage = func() {
-		fmt.Printf("syntax: %s [OPTIONS] discoveryURL\n\n", os.Args[0])
-		flag.PrintDefaults()
-	}
-	var envVar = flag.String("envVar", "FLEET_ETCD_SERVERS", "The environment variable to write.")
-	var outputFile = flag.String("output", "-", "The file to dump the variable to. Setting to - dumps to stdout.")
-	flag.Parse()
-
-	discoveryURL := flag.Arg(0)
-	if discoveryURL == "" {
-		fmt.Printf("Error: Missing discoveryURL arg.\n\n")
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	sleepTime := time.Duration(5) * time.Second
-
-	for {
-		peers, err := FindPeers(discoveryURL)
+// Creates/opens a file to write to it, or uses stdin if '-' is given.
+func GetOutput(oFile string) (*os.File, error) {
+	var fd *os.File
+	if oFile == "-" {
+		fd = os.Stdout
+		return fd, nil
+	} else {
+		fd, err := os.Create(oFile)
 		if err != nil {
-			time.Sleep(sleepTime)
-			continue
+			return nil, err
 		}
-		if len(*peers) < 1 {
-			log.Printf("Got no peers from %s. Retrying.", discoveryURL)
-			time.Sleep(sleepTime)
-			continue
-		}
-
-		var fd *os.File
-		if *outputFile == "-" {
-			fd = os.Stdout
-		} else {
-			fd, err = os.Create(*outputFile)
-			if err != nil {
-				LogErr(err, "")
-				time.Sleep(sleepTime)
-				continue
-			}
-			defer fd.Close()
-		}
-
-		// XXX: Not sure if it's worth allowing someone to use a template here
-		//      but for now this should be fine.
-		_, err = fd.WriteString(fmt.Sprintf("%s=\"%s\"\n", *envVar, strings.Join(*peers, ",")))
-		if err != nil {
-			msg := fmt.Sprintf("Unable to write to %s", *outputFile)
-			LogErr(err, msg)
-			time.Sleep(sleepTime)
-			continue
-		}
-		break
+		return fd, nil
 	}
 }
