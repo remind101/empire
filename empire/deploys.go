@@ -1,10 +1,6 @@
 package empire
 
-import (
-	"fmt"
-
-	"github.com/fsouza/go-dockerclient"
-)
+import "fmt"
 
 // DeployID represents the unique identifier for a Deploy.
 type DeployID string
@@ -19,7 +15,7 @@ type Deploy struct {
 // DeploysService is an interface that can be implemented to deploy images.
 type DeploysService interface {
 	// Deploy deploys a container image to the cluster.
-	Deploy(Image, *docker.AuthConfigurations) (*Deploy, error)
+	Deploy(Image) (*Deploy, error)
 }
 
 // deploysService is a base implementation of the DeploysService
@@ -31,7 +27,7 @@ type deploysService struct {
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deploysService) Deploy(image Image, auth *docker.AuthConfigurations) (*Deploy, error) {
+func (s *deploysService) Deploy(image Image) (*Deploy, error) {
 	app, err := s.AppsService.AppsFindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
@@ -48,7 +44,7 @@ func (s *deploysService) Deploy(image Image, auth *docker.AuthConfigurations) (*
 	// TODO This is actually going to be pretty slow, so
 	// we'll need to do
 	// some polling or events/webhooks here.
-	slug, err := s.SlugsService.SlugsCreateByImage(image, auth)
+	slug, err := s.SlugsService.SlugsCreateByImage(image)
 	if err != nil {
 		return nil, err
 	}

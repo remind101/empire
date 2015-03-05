@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-
-	"github.com/fsouza/go-dockerclient"
 )
 
 // SlugID represents the unique identifier of a Slug.
@@ -34,7 +32,7 @@ func (id SlugID) Value() (driver.Value, error) {
 
 type SlugsCreator interface {
 	SlugsCreate(*Slug) (*Slug, error)
-	SlugsCreateByImage(Image, *docker.AuthConfigurations) (*Slug, error)
+	SlugsCreateByImage(Image) (*Slug, error)
 }
 
 type SlugsFinder interface {
@@ -65,14 +63,14 @@ func (s *slugsService) SlugsFindByImage(image Image) (*Slug, error) {
 	return SlugsFindByImage(s.DB, image)
 }
 
-func (s *slugsService) SlugsCreateByImage(image Image, auth *docker.AuthConfigurations) (*Slug, error) {
-	return SlugsCreateByImage(s.DB, s.extractor, image, auth)
+func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
+	return SlugsCreateByImage(s.DB, s.extractor, image)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func SlugsCreateByImage(db DB, e Extractor, image Image, auth *docker.AuthConfigurations) (*Slug, error) {
+func SlugsCreateByImage(db DB, e Extractor, image Image) (*Slug, error) {
 	slug, err := SlugsFindByImage(db, image)
 	if err != nil {
 		return slug, err
@@ -82,7 +80,7 @@ func SlugsCreateByImage(db DB, e Extractor, image Image, auth *docker.AuthConfig
 		return slug, nil
 	}
 
-	slug, err = SlugsExtract(e, image, auth)
+	slug, err = SlugsExtract(e, image)
 	if err != nil {
 		return slug, err
 	}
@@ -92,12 +90,12 @@ func SlugsCreateByImage(db DB, e Extractor, image Image, auth *docker.AuthConfig
 
 // SlugsExtract extracts the process types from the image, then returns a new
 // Slug instance.
-func SlugsExtract(e Extractor, image Image, auth *docker.AuthConfigurations) (*Slug, error) {
+func SlugsExtract(e Extractor, image Image) (*Slug, error) {
 	slug := &Slug{
 		Image: image,
 	}
 
-	pt, err := e.Extract(image, auth)
+	pt, err := e.Extract(image)
 	if err != nil {
 		return slug, err
 	}

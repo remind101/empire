@@ -29,7 +29,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 		ID:   "1234",
 	}
 
-	if _, err := d.Deploy(image, nil); err != nil {
+	if _, err := d.Deploy(image); err != nil {
 		t.Fatal(err)
 	}
 
