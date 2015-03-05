@@ -49,6 +49,6 @@ func TestGetOutputFile(t *testing.T) {
 	}
 
 	if name != fname {
-		t.Errorf("getOutput(\"-\") did not return stdout, instead returned: %s", name)
+		t.Errorf("getOutput(%s) did not return %s, instead returned: %s", fname, fname, name)
 	}
 }
