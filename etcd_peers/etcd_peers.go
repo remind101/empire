@@ -47,7 +47,9 @@ func LogErr(err error, msg string) {
 	}
 }
 
-func NodesToPeerUrls(nodes *Nodes) (*[]string, error) {
+// Takes a node list from the discoveryURL, which includes the server peer
+// address and turns them into client URLs.
+func NodesToClientUrls(nodes *Nodes) (*[]string, error) {
 	peers := make([]string, len(*nodes))
 	for i, n := range *nodes {
 		parsed, err := url.Parse(n.Value)
@@ -61,6 +63,7 @@ func NodesToPeerUrls(nodes *Nodes) (*[]string, error) {
 
 }
 
+// Given a list of client URLs, connect and return the live cluster urls
 func FindLivePeers(urls *[]string) ([]string, error) {
 	c := etcd.NewClient(*urls)
 	if c.SyncCluster() {
@@ -70,6 +73,7 @@ func FindLivePeers(urls *[]string) ([]string, error) {
 	}
 }
 
+// Connects to an etcd discoveryURL and grabs the list of nodes registered
 func DiscoverEtcdNodes(discoveryURL string) (*Nodes, error) {
 	client := http.Client{}
 	resp, err := client.Get(discoveryURL)
@@ -97,6 +101,7 @@ func DiscoverEtcdNodes(discoveryURL string) (*Nodes, error) {
 	return &d.Node.Nodes, nil
 }
 
+// Creates/opens a file to write to it, or uses stdin if '-' is given.
 func GetOutput(oFile string) (*os.File, error) {
 	var fd *os.File
 	if oFile == "-" {

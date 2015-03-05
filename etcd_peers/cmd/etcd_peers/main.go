@@ -50,7 +50,7 @@ func main() {
 			time.Sleep(st)
 			continue
 		}
-		urls, err := etcd_peers.NodesToPeerUrls(nodes)
+		urls, err := etcd_peers.NodesToClientUrls(nodes)
 		if err != nil {
 			etcd_peers.LogErr(err, "Error transforming peers.")
 			time.Sleep(st)
