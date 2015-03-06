@@ -32,10 +32,10 @@ http {
 
   # healthcheck
   server {
-    listen 80 default_server;
+    listen 80;
     location /healthcheck {
       add_header Content-Type text/plain;
-      return 200 'I'm alive';
+      return 200 'I am alive';
     }
   }
 }
