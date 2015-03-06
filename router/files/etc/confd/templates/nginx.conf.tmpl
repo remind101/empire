@@ -29,4 +29,13 @@ http {
     }
   }
   {{end}}
+
+  # healthcheck
+  server {
+    listen 80 default_server;
+    location /healthcheck {
+      add_header Content-Type text/plain;
+      return 200 'I'm alive';
+    }
+  }
 }
