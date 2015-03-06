@@ -71,6 +71,30 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The location of the fleet api",
 		EnvVar: "FLEET_URL",
 	},
+	cli.StringFlag{
+		Name:   "github.secret",
+		Value:  "",
+		Usage:  "The shared secret for GitHub webhooks",
+		EnvVar: "GITHUB_SECRET",
+	},
+	cli.StringFlag{
+		Name:   "registry",
+		Value:  "",
+		Usage:  "The docker registry to use when resolving a git commit to an image id",
+		EnvVar: "DOCKER_REGISTRY",
+	},
+	cli.StringFlag{
+		Name:   "registry.username",
+		Value:  "",
+		Usage:  "The username of the user to authenticate against the docker registry",
+		EnvVar: "DOCKER_REGISTRY_USERNAME",
+	},
+	cli.StringFlag{
+		Name:   "registry.password",
+		Value:  "",
+		Usage:  "The password of the user to authenticate against the docker registry",
+		EnvVar: "DOCKER_REGISTRY_PASSWORD",
+	},
 }
 
 func main() {
@@ -90,6 +114,10 @@ func empireOptions(c *cli.Context) (empire.Options, error) {
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
+	opts.GitHub.Secret = c.String("github.secret")
+	opts.Registry.Domain = c.String("registry")
+	opts.Registry.Username = c.String("username")
+	opts.Registry.Password = c.String("password")
 
 	auth, err := dockerAuth(c.String("docker.auth"))
 	if err != nil {

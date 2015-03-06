@@ -197,6 +197,10 @@
 			"Rev": "3c37e99d21fd913bd81c35b3c2f661cd04f2b1e8"
 		},
 		{
+			"ImportPath": "github.com/ejholmes/hookshot",
+			"Rev": "81b90913cbb16228143c64df537f5725f616fbf5"
+		},
+		{
 			"ImportPath": "github.com/ernesto-jimenez/go-querystring/query",
 			"Rev": "a9b7f983e384616b2a317c8f345701fb1688d061"
 		},

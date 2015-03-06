@@ -17,7 +17,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 		},
 	}
 
-	d := &deploysService{
+	d := &DeploysService{
 		AppsService:     a,
 		ConfigsService:  c,
 		SlugsService:    s,
@@ -29,7 +29,7 @@ func TestDeploysServiceDeploy(t *testing.T) {
 		ID:   "1234",
 	}
 
-	if _, err := d.Deploy(image); err != nil {
+	if _, err := d.DeployImage(image); err != nil {
 		t.Fatal(err)
 	}
 

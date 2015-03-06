@@ -36,10 +36,24 @@ type FleetOptions struct {
 	API string
 }
 
+// GitHub options is a set of options to configure the GitHub integration.
+type GitHubOptions struct {
+	// Secret is the shared secret for GitHub webhooks.
+	Secret string
+}
+
+type RegistryOptions struct {
+	Domain   string
+	Username string
+	Password string
+}
+
 // Options is provided to New to configure the Empire services.
 type Options struct {
-	Docker DockerOptions
-	Fleet  FleetOptions
+	Docker   DockerOptions
+	Fleet    FleetOptions
+	GitHub   GitHubOptions
+	Registry RegistryOptions
 
 	// Database connection string.
 	DB string
@@ -47,17 +61,22 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
+	// Stored options
+	Options *Options
+
 	DB DB
 
 	AppsService
 	ConfigsService
-	DeploysService
 	JobsService
 	JobStatesService
 	Manager
 	ReleasesService
 	SlugsService
 	ProcessesService
+
+	*DeploysService
+	*GitHubDeploysService
 }
 
 // New returns a new Empire instance.
@@ -120,24 +139,36 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
-	deploys := &deploysService{
+	deploys := &DeploysService{
 		AppsService:     apps,
 		ConfigsService:  configs,
 		SlugsService:    slugs,
 		ReleasesService: releases,
 	}
 
+	ghDeploys := &GitHubDeploysService{
+		DeploysService: deploys,
+		resolver: &RegistryResolver{
+			Registry: options.Registry.Domain,
+			Username: options.Registry.Username,
+			Password: options.Registry.Password,
+		},
+	}
+
 	return &Empire{
+		Options:          &options,
 		DB:               db,
 		AppsService:      apps,
 		ConfigsService:   configs,
-		DeploysService:   deploys,
 		JobsService:      jobs,
 		JobStatesService: jobStates,
 		Manager:          manager,
 		SlugsService:     slugs,
 		ReleasesService:  releases,
 		ProcessesService: processes,
+
+		DeploysService:       deploys,
+		GitHubDeploysService: ghDeploys,
 	}, nil
 }
 
