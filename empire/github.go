@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
+	"strings"
 )
 
 // Commit represents a git commit on a repo. Commits can be deployed.
@@ -29,24 +31,34 @@ func (r *resolver) Resolve(Commit) (Image, error) {
 // the git sha.
 type RegistryResolver struct {
 	Registry string
-	client   *http.Client
+	Username string
+	Password string
+
+	client *http.Client
 }
 
 func (r *RegistryResolver) Resolve(commit Commit) (Image, error) {
 	image := Image{
-		Repo: commit.Repo,
+		Repo: Repo(path.Join(r.Registry, string(commit.Repo))),
 	}
 
+	dockerRepo := mapRepo(commit.Repo)
 	url := fmt.Sprintf(
 		"http://%s/v1/repositories/%s/tags/%s",
-		r.Registry, commit.Repo, commit.Sha,
+		r.Registry, dockerRepo, commit.Sha,
 	)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return image, err
+	}
+	req.SetBasicAuth(r.Username, r.Password)
 
 	if r.client == nil {
 		r.client = http.DefaultClient
 	}
 
-	resp, err := r.client.Get(url)
+	resp, err := r.client.Do(req)
 	if err != nil {
 		return image, err
 	}
@@ -59,7 +71,6 @@ func (r *RegistryResolver) Resolve(commit Commit) (Image, error) {
 
 	var id string
 	if err := json.Unmarshal(raw, &id); err != nil {
-		fmt.Println(err)
 		return image, err
 	}
 
@@ -80,4 +91,10 @@ func (s *GitHubDeploysService) DeployCommit(commit Commit) (*Deploy, error) {
 	}
 
 	return s.DeployImage(image)
+}
+
+// TODO This is really really horrible. Just temporary until apps can have a
+// linked github and docker repo.
+func mapRepo(repo Repo) Repo {
+	return Repo(strings.Replace(string(repo), "remind101", "remind", 1))
 }

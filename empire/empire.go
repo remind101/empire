@@ -39,17 +39,20 @@ type FleetOptions struct {
 type GitHubOptions struct {
 	// Secret is the shared secret for GitHub webhooks.
 	Secret string
+}
 
-	// Token is the GitHub OAuth token to use when creating
-	// DeploymentStatuses.
-	Token string
+type RegistryOptions struct {
+	Domain   string
+	Username string
+	Password string
 }
 
 // Options is provided to New to configure the Empire services.
 type Options struct {
-	Docker DockerOptions
-	Fleet  FleetOptions
-	GitHub GitHubOptions
+	Docker   DockerOptions
+	Fleet    FleetOptions
+	GitHub   GitHubOptions
+	Registry RegistryOptions
 
 	// Database connection string.
 	DB string
@@ -145,7 +148,9 @@ func New(options Options) (*Empire, error) {
 	ghDeploys := &GitHubDeploysService{
 		DeploysService: deploys,
 		resolver: &RegistryResolver{
-			Registry: "quay.io",
+			Registry: options.Registry.Domain,
+			Username: options.Registry.Username,
+			Password: options.Registry.Password,
 		},
 	}
 

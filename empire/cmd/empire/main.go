@@ -77,10 +77,22 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "GITHUB_SECRET",
 	},
 	cli.StringFlag{
-		Name:   "github.token",
+		Name:   "registry",
 		Value:  "",
-		Usage:  "The github oauth token to use to create deployment statuses.",
-		EnvVar: "GITHUB_TOKEN",
+		Usage:  "The docker registry to use when resolving a git commit to an image id",
+		EnvVar: "DOCKER_REGISTRY",
+	},
+	cli.StringFlag{
+		Name:   "registry.username",
+		Value:  "",
+		Usage:  "The username of the user to authenticate against the docker registry",
+		EnvVar: "DOCKER_REGISTRY_USERNAME",
+	},
+	cli.StringFlag{
+		Name:   "registry.password",
+		Value:  "",
+		Usage:  "The password of the user to authenticate against the docker registry",
+		EnvVar: "DOCKER_REGISTRY_PASSWORD",
 	},
 }
 
@@ -103,7 +115,9 @@ func empireOptions(c *cli.Context) empire.Options {
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
 	opts.GitHub.Secret = c.String("github.secret")
-	opts.GitHub.Token = c.String("github.token")
+	opts.Registry.Domain = c.String("registry")
+	opts.Registry.Username = c.String("username")
+	opts.Registry.Password = c.String("password")
 
 	return opts
 }
