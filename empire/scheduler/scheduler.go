@@ -215,12 +215,12 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		{
 			Section: "Service",
 			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker inspect %s &> /dev/null || /usr/bin/docker pull %s"`, img, img),
+			Value:   fmt.Sprintf(`-/bin/bash -c "/usr/bin/docker inspect %s &> /dev/null || /usr/bin/docker pull %s"`, img, img),
 		},
 		{
 			Section: "Service",
 			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker rm %s &> /dev/null; exit 0"`, j.Name),
+			Value:   fmt.Sprintf(`-/bin/bash -c "/usr/bin/docker rm %s &> /dev/null; exit 0"`, j.Name),
 		},
 		{
 			Section: "Service",
