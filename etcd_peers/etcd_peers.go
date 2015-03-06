@@ -1,4 +1,4 @@
-package etcd_peers
+package etcd_peers // import "github.com/remind101/empire/etcd_peers"
 
 import (
 	"encoding/json"
