@@ -19,7 +19,7 @@ http {
 
   server {
     listen 80 default_server;
-    server_name {{base $dir}}.remind.com;
+    server_name {{base $dir}}.n.classchirp.com;
     location / {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
