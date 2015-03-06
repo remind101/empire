@@ -27,6 +27,7 @@ func main() {
 	var outputFile = flag.String("output", "-", "The file to dump the variable to. Setting to - dumps to stdout.")
 	var onePeer = flag.Bool("1", false, "If set, only dump the peer with the longest TTL (the most recent).")
 	var sleep = flag.Duration("sleep", time.Duration(5)*time.Second, "Time to sleep between attempts to discover nodes.")
+	var schema = flag.String("schema", "", "Replace the schema of each peer with this string. Useful for things like registrator that use etcd instead of http to determine the schema.")
 	flag.Parse()
 
 	discoveryURL := flag.Arg(0)
@@ -61,7 +62,13 @@ func main() {
 			count = 1
 		}
 
-		livePeers, err := etcd_peers.FindLivePeers(urls, count)
+		livePeers, err := etcd_peers.FindLivePeers(urls, count, *schema)
+
+		if len(livePeers) < 1 {
+			log.Println("No live peers, continuing.")
+			time.Sleep(*sleep)
+			continue
+		}
 
 		fd, err := etcd_peers.GetOutput(*outputFile)
 		if err != nil {
