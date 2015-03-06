@@ -12,6 +12,7 @@ http {
 
   {{range $dir := lsdir "/services/web"}}
   upstream {{base $dir}} {
+    least_conn;
     {{$custdir := printf "/services/web/%s/*" $dir}}{{range gets $custdir}}
     server {{.Value}};
     {{end}}
