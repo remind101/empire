@@ -1,10 +1,10 @@
-.PHONY: docker
+.PHONY: cmd bootstrap build test
 
-build/etcd_peers: cmd/etcd_peers/main.go etcd_peers.go
-	go build -o build/etcd_peers ./cmd/etcd_peers
+cmd:
+	godep go build -o build/etcd_peers ./cmd/etcd_peers
 
-docker: Dockerfile
-	docker build --no-cache -t quay.io/remind/etcd_peers .
+build: Dockerfile
+	docker build --no-cache -t etcd_peers .
 
-clean:
-	rm -rf build
+test:
+	godep go test -race ./...

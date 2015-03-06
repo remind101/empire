@@ -1,7 +1,8 @@
-.PHONY: bootstrap build cmd user_data vagrant
+.PHONY: bootstrap build cmd test user_data vagrant
 
 cmd:
 	$(MAKE) -C empire cmd
+	$(MAKE) -C etcd_peers cmd
 
 bootstrap:
 	$(MAKE) -C empire bootstrap
@@ -9,6 +10,10 @@ bootstrap:
 build:
 	$(MAKE) -C empire build
 	$(MAKE) -C etcd_peers build
+
+test:
+	$(MAKE) -C empire test
+	$(MAKE) -C etcd_peers test
 
 user_data:
 	$(eval URL := $(shell curl -s -w '\n' https://discovery.etcd.io/new))
