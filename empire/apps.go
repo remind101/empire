@@ -98,6 +98,7 @@ type AppsService interface {
 
 type appsService struct {
 	DB
+	JobsService
 }
 
 func (s *appsService) AppsCreate(app *App) (*App, error) {
@@ -105,7 +106,20 @@ func (s *appsService) AppsCreate(app *App) (*App, error) {
 }
 
 func (s *appsService) AppsDestroy(app *App) error {
-	return AppsDestroy(s.DB, app)
+	if err := AppsDestroy(s.DB, app); err != nil {
+		return err
+	}
+
+	jobs, err := s.JobsList(JobsListQuery{App: app.Name})
+	if err != nil {
+		return err
+	}
+
+	if err := s.Unschedule(jobs...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *appsService) AppsAll() ([]*App, error) {
