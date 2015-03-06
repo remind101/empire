@@ -35,6 +35,15 @@ func (h *DeleteApp) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	jobs, err := h.JobsList(empire.JobsListQuery{App: a.Name})
+	if err != nil {
+		return err
+	}
+
+	if err := h.Unschedule(jobs...); err != nil {
+		return err
+	}
+
 	return NoContent(w)
 }
 
