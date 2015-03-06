@@ -54,8 +54,14 @@ func (h *PostApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	app, err := empire.NewApp(empire.AppName(form.Name), empire.Repo(form.Repo))
-	if err != nil {
+	dockerRepo := empire.Repo(form.Repo)
+	app := &empire.App{
+		Name: empire.AppName(form.Name),
+		Repos: empire.Repos{
+			Docker: &dockerRepo,
+		},
+	}
+	if err := app.IsValid(); err != nil {
 		return ErrBadRequest
 	}
 
