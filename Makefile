@@ -22,3 +22,4 @@ install:
 	mkdir -p /usr/local/lib/hk/plugin
 	cp hk-plugins/* /usr/local/lib/hk/plugin
 	cat emp > /usr/local/bin/emp
+	chmod +x /usr/local/bin/emp
