@@ -204,6 +204,11 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		},
 		{
 			Section: "Service",
+			Name:    "User",
+			Value:   "core",
+		},
+		{
+			Section: "Service",
 			Name:    "Restart",
 			Value:   "on-failure",
 		},
