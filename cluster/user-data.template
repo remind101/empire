@@ -73,11 +73,11 @@ coreos:
         Restart=on-failure
 
         ExecStartPre=-/bin/bash -c "cd /home/core/share/router && docker build -t quay.io/remind/empire_router ."
-        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire-router &> /dev/null; exit 0"
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire_router &> /dev/null; exit 0"
 
-        ExecStart=/usr/bin/docker run --name empire-router --rm -h %H -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/empire_router
+        ExecStart=/usr/bin/docker run --name empire_router --rm -h %H -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/empire_router
 
-        ExecStop=/usr/bin/docker stop empire-router
+        ExecStop=/usr/bin/docker stop empire_router
 
         [Install]
         WantedBy=multi-user.target
