@@ -3,6 +3,7 @@ package empire // import "github.com/remind101/empire/empire"
 import (
 	"time"
 
+	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/scheduler"
 )
@@ -25,8 +26,8 @@ type DockerOptions struct {
 	// Path to a certificate to use for TLS connections.
 	CertPath string
 
-	// Path to a docker registry auth file. Typically ~/.dockercfg
-	AuthPath string
+	// A set of docker registry credentials.
+	Auth *docker.AuthConfigurations
 }
 
 // FleetOptions is a set of options to configure a fleet api client.
@@ -74,7 +75,7 @@ func New(options Options) (*Empire, error) {
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
 		options.Docker.CertPath,
-		options.Docker.AuthPath,
+		options.Docker.Auth,
 	)
 	if err != nil {
 		return nil, err

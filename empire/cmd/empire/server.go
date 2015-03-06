@@ -11,7 +11,10 @@ import (
 
 func runServer(c *cli.Context) {
 	port := c.String("port")
-	opts := empireOptions(c)
+	opts, err := empireOptions(c)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	e, err := empire.New(opts)
 	if err != nil {

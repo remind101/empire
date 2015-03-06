@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/codegangsta/cli"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire"
 )
 
@@ -82,14 +83,30 @@ func main() {
 }
 
 // Returns a new empire.Options based on provided flags.
-func empireOptions(c *cli.Context) empire.Options {
+func empireOptions(c *cli.Context) (empire.Options, error) {
 	opts := empire.Options{}
 
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
-	opts.Docker.AuthPath = c.String("docker.auth")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
 
-	return opts
+	auth, err := dockerAuth(c.String("docker.auth"))
+	if err != nil {
+		return opts, err
+	}
+
+	opts.Docker.Auth = auth
+
+	return opts, nil
+}
+
+func dockerAuth(path string) (*docker.AuthConfigurations, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return docker.NewAuthConfigurations(f)
 }

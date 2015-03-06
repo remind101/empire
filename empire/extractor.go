@@ -27,23 +27,12 @@ type Extractor interface {
 }
 
 // NewExtractor returns a new Extractor instance.
-func NewExtractor(socket, certPath string, authPath string) (Extractor, error) {
+func NewExtractor(socket, certPath string, auth *docker.AuthConfigurations) (Extractor, error) {
 	if socket == "" {
 		return newExtractor(), nil
 	}
 
 	c, err := newDockerClient(socket, certPath)
-	if err != nil {
-		return nil, err
-	}
-
-	f, err := os.Open(authPath)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	auth, err := docker.NewAuthConfigurations(f)
 	if err != nil {
 		return nil, err
 	}
