@@ -65,16 +65,28 @@ func NodesToClientUrls(nodes Nodes) ([]string, error) {
 
 // Given a list of client URLs, connect to each to and return a slice of which
 // is actually serving.
-func FindLivePeers(urls []string, count int) ([]string, error) {
+func FindLivePeers(urls []string, count int, schema string) ([]string, error) {
 	peers := make([]string, 0, len(urls))
 	c := http.Client{Timeout: time.Second}
 	for _, u := range urls {
-		url := u + "v2/machines"
-		_, err := c.Get(url)
+		parsed, err := url.Parse(u)
 		if err != nil {
 			continue
 		}
-		peers = append(peers, u)
+		// Easiest path to ping and see if the etcd daemon is responsive
+		parsed.Path = "/v2/machines"
+		_, err = c.Get(parsed.String())
+		if err != nil {
+			continue
+		}
+
+		if schema != "" {
+			parsed.Scheme = schema
+		}
+		// Need to return back to the root for the actual output
+		parsed.Path = "/"
+
+		peers = append(peers, parsed.String())
 		if count > 0 && len(peers) >= count {
 			break
 		}
