@@ -78,7 +78,6 @@ coreos:
         ExecStart=/usr/bin/docker run --name empire_router --rm -h %H -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/empire_router
 
         ExecStop=/usr/bin/docker stop empire_router
-
         [Install]
         WantedBy=multi-user.target
     - name: postgres.service

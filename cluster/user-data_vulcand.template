@@ -36,13 +36,37 @@ coreos:
         [Unit]
         Description=Core service discovery services
         Wants=registrator.service
+    - name: router.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Empire routing layer powered by vulcand and registrator.
+        After=docker.service etcd.service
+
+        [Service]
+        TimeoutStartSec=30m
+        KillMode=none
+        EnvironmentFile=/etc/environment
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/usr/bin/docker kill empire-router
+        ExecStartPre=-/usr/bin/docker rm empire-router
+
+        ExecStart=/usr/bin/docker run --name empire-router -p 8182:8182 -p 80:8181 mailgun/vulcand:v0.8.0-beta.2 /go/bin/vulcand -apiInterface=0.0.0.0 --etcd=http://${COREOS_PRIVATE_IPV4}:4001
+
+        ExecStop=/usr/bin/docker stop empire-router
+
+        [Install]
+        WantedBy=multi-user.target
     - name: registrator.service
       command: start
       enable: true
       content: |
         [Unit]
         Description=Registrator
-        After=docker.service etcd.service
+        After=router.service
 
         [Service]
         TimeoutStartSec=30m
@@ -51,8 +75,8 @@ coreos:
         Restart=on-failure
 
         ExecStartPre=-/bin/bash -c "/usr/bin/docker rm registrator &> /dev/null; exit 0"
-        ExecStartPre=-/bin/bash -c "cd /home/core/share/empire/router/vulcand && docker load -i registrator_v6.tgz"
-        ExecStart=/usr/bin/docker run --name registrator --rm -h %H -v /var/run/docker.sock:/tmp/docker.sock gliderlabs/registrator:v6 -ip=${COREOS_PRIVATE_IPV4} -hostname=remind.com vulcand://${COREOS_PRIVATE_IPV4}:4001/vulcand
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/router/vulcand && docker load -i registrator_v6.tgz"
+        ExecStart=/usr/bin/docker run --name registrator --rm -h %H -v /var/run/docker.sock:/tmp/docker.sock registrator:v6 -ip=${COREOS_PRIVATE_IPV4} -hostname=remind.com vulcand://${COREOS_PRIVATE_IPV4}:4001/vulcand
         ExecStop=/usr/bin/docker stop registrator
 
         [Install]
@@ -99,30 +123,6 @@ coreos:
         ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -v /var/run/docker.sock:/tmp/docker.sock quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
         ExecStop=/usr/bin/docker stop empire
-
-        [Install]
-        WantedBy=multi-user.target
-    - name: router.service
-      command: start
-      enable: true
-      content: |
-        [Unit]
-        Description=Empire routing layer powered by vulcand and registrator.
-        After=registrator.service
-
-        [Service]
-        TimeoutStartSec=30m
-        KillMode=none
-        EnvironmentFile=/etc/environment
-        User=core
-        Restart=on-failure
-
-        ExecStartPre=-/usr/bin/docker kill empire-router
-        ExecStartPre=-/usr/bin/docker rm empire-router
-
-        ExecStart=/usr/bin/docker run --name empire-router -p 8182:8182 -p 80:8181 mailgun/vulcand:v0.8.0-beta.2 /go/bin/vulcand -apiInterface=0.0.0.0 --etcd=http://${COREOS_PRIVATE_IPV4}:4001
-
-        ExecStop=/usr/bin/docker stop empire-router
 
         [Install]
         WantedBy=multi-user.target
