@@ -179,8 +179,8 @@ func jobNameFromUnitName(un string) JobName {
 // [Service]
 // TimeoutStartSec=30m
 //
-// ExecStartPre=/bin/bash -c "/usr/bin/docker inspect remind101/app &> /dev/null || /usr/bin/docker pull remind101/app"
-// ExecStartPre=/bin/bash -c "/usr/bin/docker rm app.v1.web.1 &> /dev/null; exit 0"
+// ExecStartPre=-/bin/bash -c "/usr/bin/docker inspect remind101/app &> /dev/null || /usr/bin/docker pull remind101/app"
+// ExecStartPre=-/bin/bash -c "/usr/bin/docker rm app.v1.web.1 &> /dev/null; exit 0"
 // ExecStart=/usr/bin/docker run --name app.v1.web.1 --rm -h %H remind101/app
 // ExecStop=/usr/bin/docker stop app.v1.web.1
 
@@ -220,12 +220,12 @@ func (s *FleetScheduler) buildUnit(j *Job) *schema.Unit {
 		{
 			Section: "Service",
 			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker inspect %s &> /dev/null || /usr/bin/docker pull %s"`, img, img),
+			Value:   fmt.Sprintf(`-/usr/bin/docker pull %s`, img),
 		},
 		{
 			Section: "Service",
 			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf(`/bin/bash -c "/usr/bin/docker rm %s &> /dev/null; exit 0"`, j.Name),
+			Value:   fmt.Sprintf(`-/usr/bin/docker rm %s &> /dev/null`, j.Name),
 		},
 		{
 			Section: "Service",
