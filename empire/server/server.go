@@ -102,6 +102,8 @@ type handler struct {
 // ServeHTTP calls the Hander. If an error is returned, the error will be
 // encoded into the response.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	if err := h.Handler.ServeHTTP(w, r); err != nil {
 		Error(w, err, http.StatusInternalServerError)
 	}
@@ -114,7 +116,6 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 		v = map[string]interface{}{}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(v)
 }
 
