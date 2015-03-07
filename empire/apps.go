@@ -61,7 +61,7 @@ type Repos struct {
 type App struct {
 	Name AppName `json:"name" db:"name"`
 
-	Repos // Any repos that this app is linked to.
+	Repos `json:"repos"` // Any repos that this app is linked to.
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
