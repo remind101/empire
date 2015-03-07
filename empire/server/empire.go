@@ -12,4 +12,5 @@ type Empire interface {
 	empire.JobsService
 	empire.JobStatesService
 	empire.Manager
+	empire.AccessTokensService
 }

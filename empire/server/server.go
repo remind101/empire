@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -18,12 +20,37 @@ var (
 		ID:      "bad_request",
 		Message: "Request invalid, validate usage and try again",
 	}
+	ErrUnauthorized = &ErrorResource{
+		Status:  http.StatusUnauthorized,
+		ID:      "unauthorized",
+		Message: "Request not authenticated, API token is missing, invalid or expired",
+	}
+	ErrForbidden = &ErrorResource{
+		Status:  http.StatusForbidden,
+		ID:      "forbidden",
+		Message: "Request not authorized, provided credentials do not provide access to specified resource",
+	}
 	ErrNotFound = &ErrorResource{
 		Status:  http.StatusNotFound,
 		ID:      "not_found",
 		Message: "Request failed, the specified resource does not exist",
 	}
+	ErrTwoFactor = &ErrorResource{
+		Status:  http.StatusUnauthorized,
+		ID:      "two_factor",
+		Message: "Two factor code is required.",
+	}
 )
+
+var DefaultOptions = Options{}
+
+type Options struct {
+	GitHub struct {
+		ClientID     string
+		ClientSecret string
+		Organization string
+	}
+}
 
 // Server represents the API.
 type Server struct {
@@ -31,7 +58,7 @@ type Server struct {
 }
 
 // New creates the API routes and returns a new Server instance.
-func New(e *empire.Empire) *Server {
+func New(e *empire.Empire, options Options) *Server {
 	r := newRouter()
 
 	// Apps
@@ -56,6 +83,10 @@ func New(e *empire.Empire) *Server {
 
 	// Formations
 	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e}) // hk scale
+
+	// OAuth
+	auth := NewAuthorizer(options.GitHub.ClientID, options.GitHub.ClientSecret, options.GitHub.Organization)
+	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -116,7 +147,8 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 		v = map[string]interface{}{}
 	}
 
-	return json.NewEncoder(w).Encode(v)
+	mw := io.MultiWriter(os.Stdout, w)
+	return json.NewEncoder(mw).Encode(v)
 }
 
 // Decode json decodes the request body into v.
