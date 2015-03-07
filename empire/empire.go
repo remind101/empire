@@ -150,3 +150,12 @@ func (e *Empire) Reset() error {
 func Migrate(db, path string) ([]error, bool) {
 	return migrate.UpSync(db, path)
 }
+
+// ValidationError is returned when a model is not valid.
+type ValidationError struct {
+	Err error
+}
+
+func (e *ValidationError) Error() string {
+	return e.Err.Error()
+}

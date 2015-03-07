@@ -12,7 +12,12 @@ import (
 	"gopkg.in/gorp.v1"
 )
 
-var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
+var (
+	// ErrInvalidName is used to indicate that the app name is not valid.
+	ErrInvalidName = &ValidationError{
+		errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length."),
+	}
+)
 
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 

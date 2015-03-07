@@ -61,10 +61,6 @@ func (h *PostApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 			Docker: &dockerRepo,
 		},
 	}
-	if err := app.IsValid(); err != nil {
-		return ErrBadRequest
-	}
-
 	a, err := h.AppsCreate(app)
 	if err != nil {
 		return err
