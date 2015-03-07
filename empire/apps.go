@@ -115,11 +115,7 @@ func (s *appsService) AppsDestroy(app *App) error {
 		return err
 	}
 
-	if err := s.Unschedule(jobs...); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Unschedule(jobs...)
 }
 
 func (s *appsService) AppsAll() ([]*App, error) {
