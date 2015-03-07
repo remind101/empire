@@ -3,7 +3,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE apps (
   name varchar(30) NOT NULL primary key,
-  repo text NOT NULL,
+  github_repo text,
+  docker_repo text,
   created_at timestamp without time zone default (now() at time zone 'utc')
 );
 

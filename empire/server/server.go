@@ -138,6 +138,8 @@ func Error(w http.ResponseWriter, err error, status int) error {
 		}
 
 		v = err
+	case *empire.ValidationError:
+		v = ErrBadRequest
 	default:
 		v = &ErrorResource{
 			Message: err.Error(),

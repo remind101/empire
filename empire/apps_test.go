@@ -4,32 +4,32 @@ import (
 	"testing"
 )
 
-func TestNewApp(t *testing.T) {
-	_, err := NewApp("", "")
-	if err != ErrInvalidName {
-		t.Error("An empty name should be invalid")
+func TestIsValid(t *testing.T) {
+	tests := []struct {
+		app App
+		err error
+	}{
+		{App{}, ErrInvalidName},
+		{App{Name: "api"}, nil},
+		{App{Name: "r101-api"}, nil},
 	}
 
-	a, err := NewApp("api", "remind101/r101-api")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want, got := AppName("api"), a.Name; want != got {
-		t.Errorf("a.Name => %s; want %s", got, want)
-
+	for _, tt := range tests {
+		if err := tt.app.IsValid(); err != tt.err {
+			t.Fatal("%v.IsValid() => %v; want %v", tt.app, err, tt.err)
+		}
 	}
 }
 
 type mockAppsService struct {
 	AppsService
 
-	AppsFindOrCreateByRepoFunc func(repo Repo) (*App, error)
+	AppsFindOrCreateByRepoFunc func(repoType string, repo Repo) (*App, error)
 }
 
-func (s *mockAppsService) AppsFindOrCreateByRepo(repo Repo) (*App, error) {
+func (s *mockAppsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
 	if s.AppsFindOrCreateByRepoFunc != nil {
-		return s.AppsFindOrCreateByRepoFunc(repo)
+		return s.AppsFindOrCreateByRepoFunc(repoType, repo)
 	}
 
 	return nil, nil

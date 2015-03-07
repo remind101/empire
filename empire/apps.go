@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -11,7 +12,12 @@ import (
 	"gopkg.in/gorp.v1"
 )
 
-var ErrInvalidName = errors.New("An app name must alphanumeric and dashes only, 3-30 chars in length.")
+var (
+	// ErrInvalidName is used to indicate that the app name is not valid.
+	ErrInvalidName = &ValidationError{
+		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
+	}
+)
 
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
@@ -40,39 +46,39 @@ func NewAppNameFromRepo(repo Repo) AppName {
 	return AppName(p[len(p)-1])
 }
 
+var (
+	DockerRepo string = "docker"
+	GitHubRepo string = "github"
+)
+
+// Repos represents the configured repos for an app.
+type Repos struct {
+	GitHub *Repo `json:"github" db:"github_repo"`
+	Docker *Repo `json:"docker" db:"docker_repo"`
+}
+
 // App represents an app.
 type App struct {
 	Name AppName `json:"name" db:"name"`
 
-	// The associated Docker repo.
-	Repo Repo `json:"repo" db:"repo"`
+	Repos `json:"repos"` // Any repos that this app is linked to.
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
-// NewApp validates the name of the new App then returns a new App instance. If the
-// name is invalid, an error is retuend.
-func NewApp(name AppName, repo Repo) (*App, error) {
-	if !NamePattern.Match([]byte(name)) {
-		return nil, ErrInvalidName
+// Returns an error if the app isn't valid.
+func (a *App) IsValid() error {
+	if !NamePattern.Match([]byte(a.Name)) {
+		return ErrInvalidName
 	}
 
-	return &App{
-		Name: name,
-		Repo: repo,
-	}, nil
-}
-
-// NewAppFromRepo returns a new App initialized from the name of a Repo.
-func NewAppFromRepo(repo Repo) (*App, error) {
-	name := NewAppNameFromRepo(repo)
-	return NewApp(name, repo)
+	return nil
 }
 
 // PreInsert implements a pre insert hook for the db interface
 func (a *App) PreInsert(s gorp.SqlExecutor) error {
 	a.CreatedAt = Now()
-	return nil
+	return a.IsValid()
 }
 
 type AppsCreator interface {
@@ -86,8 +92,8 @@ type AppsDestroyer interface {
 type AppsFinder interface {
 	AppsAll() ([]*App, error)
 	AppsFind(AppName) (*App, error)
-	AppsFindByRepo(Repo) (*App, error)
-	AppsFindOrCreateByRepo(Repo) (*App, error)
+	AppsFindByRepo(string, Repo) (*App, error)
+	AppsFindOrCreateByRepo(string, Repo) (*App, error)
 }
 
 type AppsService interface {
@@ -116,12 +122,12 @@ func (s *appsService) AppsFind(name AppName) (*App, error) {
 	return AppsFind(s.DB, name)
 }
 
-func (s *appsService) AppsFindByRepo(repo Repo) (*App, error) {
-	return AppsFindByRepo(s.DB, repo)
+func (s *appsService) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
+	return AppsFindByRepo(s.DB, repoType, repo)
 }
 
-func (s *appsService) AppsFindOrCreateByRepo(repo Repo) (*App, error) {
-	return AppsFindOrCreateByRepo(s.DB, repo)
+func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
+	return AppsFindOrCreateByRepo(s.DB, repoType, repo)
 }
 
 // AppsCreate inserts the app into the database.
@@ -147,8 +153,8 @@ func AppsFind(db Queryier, name AppName) (*App, error) {
 }
 
 // Finds an app by it's Repo field.
-func AppsFindByRepo(db Queryier, repo Repo) (*App, error) {
-	return AppsFindBy(db, "repo", string(repo))
+func AppsFindByRepo(db Queryier, repoType string, repo Repo) (*App, error) {
+	return AppsFindBy(db, fmt.Sprintf("%s_repo", repoType), string(repo))
 }
 
 // AppsFindBy finds an app by a field.
@@ -168,19 +174,21 @@ func AppsFindBy(db Queryier, field string, value interface{}) (*App, error) {
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
-func AppsFindOrCreateByRepo(db DB, repo Repo) (*App, error) {
-	a, err := AppsFindByRepo(db, repo)
+func AppsFindOrCreateByRepo(db DB, repoType string, repo Repo) (*App, error) {
+	a, err := AppsFindByRepo(db, repoType, repo)
 	if err != nil {
 		return a, err
 	}
 
 	// If the app wasn't found, create a new up linked to this repo.
 	if a == nil {
-		a, err := NewAppFromRepo(repo)
-		if err != nil {
-			return a, err
-		}
-		return AppsCreate(db, a)
+		n := NewAppNameFromRepo(repo)
+		return AppsCreate(db, &App{
+			Name: n,
+			Repos: Repos{
+				Docker: &repo,
+			},
+		})
 	}
 
 	return a, nil

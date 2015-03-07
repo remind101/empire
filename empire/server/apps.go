@@ -39,8 +39,11 @@ func (h *DeleteApp) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 }
 
 type PostAppsForm struct {
-	Name string `json:"name"`
-	Repo string `json:"repo"`
+	Name  string `json:"name"`
+	Repos struct {
+		Docker *empire.Repo `json:"docker"`
+		GitHub *empire.Repo `json:"github"`
+	} `json:"repos"`
 }
 
 type PostApps struct {
@@ -54,11 +57,13 @@ func (h *PostApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	app, err := empire.NewApp(empire.AppName(form.Name), empire.Repo(form.Repo))
-	if err != nil {
-		return ErrBadRequest
+	app := &empire.App{
+		Name: empire.AppName(form.Name),
+		Repos: empire.Repos{
+			Docker: form.Repos.Docker,
+			GitHub: form.Repos.GitHub,
+		},
 	}
-
 	a, err := h.AppsCreate(app)
 	if err != nil {
 		return err

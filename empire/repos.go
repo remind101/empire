@@ -14,6 +14,10 @@ func (r *Repo) Scan(src interface{}) error {
 }
 
 // Value implements the driver.Value interface.
-func (r Repo) Value() (driver.Value, error) {
-	return driver.Value(string(r)), nil
+func (r *Repo) Value() (driver.Value, error) {
+	if r == nil {
+		return driver.Value(nil), nil
+	}
+
+	return driver.Value(string(*r)), nil
 }
