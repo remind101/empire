@@ -2,9 +2,7 @@ package empire
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/coreos/fleet/log"
 	"github.com/remind101/empire/empire/scheduler"
 )
 
@@ -28,9 +26,7 @@ type manager struct {
 // schedules them onto the cluster.
 func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this app.
-	existing, err := m.JobsService.JobsList(JobsListQuery{
-		App: release.AppName,
-	})
+	existing, err := m.JobsService.JobsList(JobsListQuery{App: release.AppName})
 	if err != nil {
 		return err
 	}
@@ -43,18 +39,13 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 		formation,
 	)
 
-	err = m.JobsService.Schedule(jobs...)
-	if err != nil {
+	if err := m.JobsService.Schedule(jobs...); err != nil {
 		return err
 	}
 
-	go func() {
-		time.Sleep(time.Second * 60)
-		if err := m.JobsService.Unschedule(existing...); err != nil {
-			// TODO What to do here?
-			log.Errorf("Error unscheduling stale jobs: %s", err)
-		}
-	}()
+	if err := m.JobsService.Unschedule(existing...); err != nil {
+		return err
+	}
 
 	return nil
 }

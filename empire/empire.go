@@ -81,10 +81,6 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	apps := &appsService{
-		DB: db,
-	}
-
 	configs := &configsService{
 		DB: db,
 	}
@@ -102,6 +98,11 @@ func New(options Options) (*Empire, error) {
 
 	processes := &processesService{
 		DB: db,
+	}
+
+	apps := &appsService{
+		DB:          db,
+		JobsService: jobs,
 	}
 
 	manager := &manager{

@@ -95,9 +95,7 @@ acme-inc.1.web.2    unknown   5d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    unknown   5d  "./bin/web"
-acme-inc.1.web.2    unknown   5d  "./bin/web"
-acme-inc.2.web.1    unknown   5d  "./bin/web"
+			`acme-inc.2.web.1    unknown   5d  "./bin/web"
 acme-inc.2.web.2    unknown   5d  "./bin/web"`,
 		},
 	})
