@@ -44,8 +44,9 @@ func New(e *empire.Empire) *Server {
 	r.Handle("POST", "/deploys", &PostDeploys{e}) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})   // hk releases
-	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e}) // hk rollback
+	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})          // hk releases
+	r.Handle("GET", "/apps/{app}/releases/{version}", &GetRelease{e}) // hk release-info
+	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e})        // hk rollback
 
 	// Configs
 	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e})     // hk env, hk get

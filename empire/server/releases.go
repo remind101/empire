@@ -5,8 +5,53 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/bgentry/heroku-go"
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 )
+
+type Release heroku.Release
+
+// newRelease decorates an empire.Release as a heroku.Release.
+func newRelease(r *empire.Release) *Release {
+	return &Release{
+		Id:      string(r.ID),
+		Version: int(r.Ver),
+		Slug: &struct {
+			Id string `json:"id"`
+		}{
+			Id: string(r.SlugID),
+		},
+		Description: r.Description,
+		CreatedAt:   r.CreatedAt,
+	}
+}
+
+type GetRelease struct {
+	Empire
+}
+
+func (h *GetRelease) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(r, h)
+	if err != nil {
+		return err
+	}
+
+	vars := mux.Vars(r)
+	i, err := strconv.Atoi(vars["version"])
+	if err != nil {
+		return err
+	}
+
+	vers := empire.ReleaseVersion(i)
+	rel, err := h.ReleasesFindByAppAndVersion(a, vers)
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(200)
+	return Encode(w, newRelease(rel))
+}
 
 type GetReleases struct {
 	Empire
