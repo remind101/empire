@@ -2,10 +2,8 @@ package server
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -148,8 +146,7 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 		v = map[string]interface{}{}
 	}
 
-	mw := io.MultiWriter(os.Stdout, w)
-	return json.NewEncoder(mw).Encode(v)
+	return json.NewEncoder(w).Encode(v)
 }
 
 // Decode json decodes the request body into v.
