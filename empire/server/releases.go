@@ -10,7 +10,8 @@ import (
 	"github.com/remind101/empire/empire"
 )
 
-func newRelease(r *empire.Release) *heroku.Release {
+// newHkRelease converts an empire Release to a heroku Release.
+func newHkRelease(r *empire.Release) *heroku.Release {
 	return &heroku.Release{
 		Id:      string(r.ID),
 		Version: int(r.Ver),
@@ -47,7 +48,7 @@ func (h *GetRelease) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, newRelease(rel))
+	return Encode(w, newHkRelease(rel))
 }
 
 type GetReleases struct {
