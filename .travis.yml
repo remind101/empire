@@ -1,3 +1,6 @@
+# Enable container based Travis stack
+sudo: false
+
 language: go
 
 addons:
@@ -19,8 +22,7 @@ before_install:
   - make bootstrap
 
 before_script:
-  - echo 'America/Los_Angeles' | sudo tee /etc/timezone
-  - sudo dpkg-reconfigure --frontend noninteractive tzdata
+  - export TZ=America/Los_Angeles
 
 script:
   - cd empire && godep go test -race ./...
