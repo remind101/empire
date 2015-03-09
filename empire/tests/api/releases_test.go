@@ -23,6 +23,19 @@ func TestReleaseList(t *testing.T) {
 	}
 }
 
+func TestReleaseInfo(t *testing.T) {
+	c, s := NewTestClient(t)
+	defer s.Close()
+
+	mustDeploy(t, c, DefaultImage)
+
+	release := mustReleaseInfo(t, c, "acme-inc", "1")
+
+	if got, want := release.Version, 1; got != want {
+		t.Fatalf("Version => %v; want %v", got, want)
+	}
+}
+
 func TestReleaseRollback(t *testing.T) {
 	t.Skip("TODO: Not implemented yet")
 
@@ -44,6 +57,15 @@ func mustReleaseList(t testing.TB, c *heroku.Client, appName string) []heroku.Re
 	}
 
 	return releases
+}
+
+func mustReleaseInfo(t testing.TB, c *heroku.Client, appName string, version string) *heroku.Release {
+	release, err := c.ReleaseInfo(appName, version)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return release
 }
 
 func mustReleaseRollback(t testing.TB, c *heroku.Client, appName string, version string) *heroku.Release {
