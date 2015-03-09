@@ -21,6 +21,24 @@ var Commands = []cli.Command{
 				Value: "8080",
 				Usage: "The port to run the server on",
 			},
+			cli.StringFlag{
+				Name:   "github.client.id",
+				Value:  "",
+				Usage:  "The client id for the GitHub OAuth application",
+				EnvVar: "GITHUB_CLIENT_ID",
+			},
+			cli.StringFlag{
+				Name:   "github.client.secret",
+				Value:  "",
+				Usage:  "The client secret for the GitHub OAuth application",
+				EnvVar: "GITHUB_CLIENT_SECRET",
+			},
+			cli.StringFlag{
+				Name:   "github.organization",
+				Value:  "",
+				Usage:  "The organization to allow access to",
+				EnvVar: "GITHUB_ORGANIZATION",
+			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
 	},
@@ -71,6 +89,11 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The location of the fleet api",
 		EnvVar: "FLEET_URL",
 	},
+	cli.StringFlag{
+		Name:  "secret",
+		Value: "<change this>",
+		Usage: "The secret used to sign access tokens",
+	},
 }
 
 func main() {
@@ -90,6 +113,7 @@ func empireOptions(c *cli.Context) (empire.Options, error) {
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
+	opts.Secret = c.String("secret")
 
 	auth, err := dockerAuth(c.String("docker.auth"))
 	if err != nil {

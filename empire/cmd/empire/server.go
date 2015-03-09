@@ -21,7 +21,11 @@ func runServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	s := server.New(e)
+	sopts := server.Options{}
+	sopts.GitHub.ClientID = c.String("github.client.id")
+	sopts.GitHub.ClientSecret = c.String("github.client.secret")
+	sopts.GitHub.Organization = c.String("github.organization")
+	s := server.New(e, sopts)
 
 	log.Printf("Starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, s))

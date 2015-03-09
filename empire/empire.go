@@ -41,6 +41,8 @@ type Options struct {
 	Docker DockerOptions
 	Fleet  FleetOptions
 
+	Secret string
+
 	// Database connection string.
 	DB string
 }
@@ -49,6 +51,7 @@ type Options struct {
 type Empire struct {
 	DB DB
 
+	AccessTokensService
 	AppsService
 	ConfigsService
 	DeploysService
@@ -79,6 +82,10 @@ func New(options Options) (*Empire, error) {
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	accessTokens := &accessTokensService{
+		Secret: []byte(options.Secret),
 	}
 
 	configs := &configsService{
@@ -129,16 +136,17 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		DB:               db,
-		AppsService:      apps,
-		ConfigsService:   configs,
-		DeploysService:   deploys,
-		JobsService:      jobs,
-		JobStatesService: jobStates,
-		Manager:          manager,
-		SlugsService:     slugs,
-		ReleasesService:  releases,
-		ProcessesService: processes,
+		DB:                  db,
+		AccessTokensService: accessTokens,
+		AppsService:         apps,
+		ConfigsService:      configs,
+		DeploysService:      deploys,
+		JobsService:         jobs,
+		JobStatesService:    jobStates,
+		Manager:             manager,
+		SlugsService:        slugs,
+		ReleasesService:     releases,
+		ProcessesService:    processes,
 	}, nil
 }
 
