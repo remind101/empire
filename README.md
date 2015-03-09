@@ -17,10 +17,14 @@ USAGE:
 
 OPTIONS:
    --port '8080'                                        The port to run the server on
+   --github.client.id                                   The client id for the GitHub OAuth application [$GITHUB_CLIENT_ID]
+   --github.client.secret                               The client secret for the GitHub OAuth application [$GITHUB_CLIENT_SECRET]
+   --github.organization                                The organization to allow access to [$GITHUB_ORGANIZATION]
    --docker.socket 'unix:///var/run/docker.sock'        The location of the docker api [$DOCKER_HOST]
-   --docker.registry                                    The docker registry to pull container images from [$DOCKER_REGISTRY]
    --docker.cert                                        If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
+   --docker.auth '/Users/$HOME/.dockercfg'              Path to a docker registry auth file (~/.dockercfg) [$DOCKER_AUTH_PATH]
    --fleet.api                                          The location of the fleet api [$FLEET_URL]
+   --secret '<change this>'                             The secret used to sign access tokens
    --db 'postgres://localhost/empire?sslmode=disable'   SQL connection string for the database
 
 ```
@@ -100,6 +104,16 @@ To run the tests:
 ```console
 $ godep go test ./...
 ```
+
+**Caveats**
+
+1. `emp login` won't work by default if you're running on a non-standard port.
+   Once you emp login, you'll need to change the appropriate `machine` entry in
+   your `~/.netrc` to include to port.
+
+   ```
+   machine 0.0.0.0:8080
+   ```
 
 ## Tests
 

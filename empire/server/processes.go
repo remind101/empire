@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 // dyno is a heroku compatible response struct to the hk dynos command.
@@ -17,7 +19,7 @@ type GetProcesses struct {
 	Empire
 }
 
-func (h *GetProcesses) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(r, h)
 	if err != nil {
 		return err

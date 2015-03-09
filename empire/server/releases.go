@@ -8,6 +8,7 @@ import (
 	"github.com/bgentry/heroku-go"
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 type Release heroku.Release
@@ -31,7 +32,7 @@ type GetRelease struct {
 	Empire
 }
 
-func (h *GetRelease) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(r, h)
 	if err != nil {
 		return err
@@ -57,7 +58,7 @@ type GetReleases struct {
 	Empire
 }
 
-func (h *GetReleases) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(r, h)
 	if err != nil {
 		return err
@@ -90,7 +91,7 @@ func (p *PostReleasesForm) ReleaseVersion() (empire.ReleaseVersion, error) {
 	return empire.ReleaseVersion(i), nil
 }
 
-func (h *PostReleases) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PostReleasesForm
 
 	if err := Decode(r, &form); err != nil {

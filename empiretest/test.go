@@ -35,8 +35,11 @@ func NewEmpire(t testing.TB) *empire.Empire {
 
 // NewServer builds a new empire.Empire instance and returns an httptest.Server
 // running the empire API.
-func NewServer(t testing.TB) *httptest.Server {
-	e := NewEmpire(t)
+func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
+	if e == nil {
+		e = NewEmpire(t)
+	}
+
 	return httptest.NewServer(server.New(e, server.DefaultOptions))
 }
 

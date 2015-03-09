@@ -6,13 +6,14 @@ import (
 	"strings"
 
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 type GetConfigs struct {
 	Empire
 }
 
-func (h *GetConfigs) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *GetConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(r, h)
 	if err != nil {
 		return err
@@ -31,7 +32,7 @@ type PatchConfigs struct {
 	Empire
 }
 
-func (h *PatchConfigs) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *PatchConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var configVars empire.Vars
 
 	if err := Decode(r, &configVars); err != nil {

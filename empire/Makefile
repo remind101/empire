@@ -4,6 +4,8 @@ cmd:
 	godep go build -o build/empire ./cmd/empire
 
 bootstrap: cmd
+	go get github.com/heroku/hk
+	go build -o build/hk github.com/heroku/hk # The current stable release doesn't have a bugfix we need for plugins.
 	createdb empire
 	./build/empire migrate
 

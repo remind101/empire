@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -31,19 +32,19 @@ type PostAuthorizations struct {
 	Authorizer
 }
 
-func (h *PostAuthorizations) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *PostAuthorizations) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	user, pass, ok := r.BasicAuth()
 	if !ok {
 		return ErrBadRequest
 	}
 
-	token, err := h.Authorize(user, pass, r.Header.Get(HeaderTwoFactor))
+	u, err := h.Authorize(user, pass, r.Header.Get(HeaderTwoFactor))
 	if err != nil {
 		return err
 	}
 
 	at, err := h.Empire.AccessTokensCreate(&empire.AccessToken{
-		GitHubToken: token,
+		User: u,
 	})
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (h *PostAuthorizations) ServeHTTP(w http.ResponseWriter, r *http.Request) e
 
 // Authorizer is an interface for obtaining an authorization.
 type Authorizer interface {
-	Authorize(username, password, twofactor string) (token string, err error)
+	Authorize(username, password, twofactor string) (*empire.User, error)
 }
 
 // NewAuthorizer returns a new Authorizer. If the client id is present, it will
@@ -95,7 +96,7 @@ type GitHubAuthorizer struct {
 	url string
 }
 
-func (a *GitHubAuthorizer) Authorize(username, password, twofactor string) (string, error) {
+func (a *GitHubAuthorizer) Authorize(username, password, twofactor string) (*empire.User, error) {
 	f := struct {
 		Scopes       []string `json:"scopes"`
 		ClientSecret string   `json:"client_secret"`
@@ -106,7 +107,7 @@ func (a *GitHubAuthorizer) Authorize(username, password, twofactor string) (stri
 
 	raw, err := json.Marshal(f)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if a.url == "" {
@@ -125,43 +126,68 @@ func (a *GitHubAuthorizer) Authorize(username, password, twofactor string) (stri
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if resp.StatusCode/100 != 2 {
-		return "", ErrTwoFactor
+		return nil, ErrTwoFactor
 	}
 
 	// When the `X-GitHub-OTP` header is present in the response, it means
 	// a two factor auth code needs to be provided.
 	if resp.Header.Get(HeaderGitHubTwoFactor) != "" {
-		return "", ErrTwoFactor
+		return nil, ErrTwoFactor
 	}
 
 	var ga struct {
 		Token string `json:"token"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&ga); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	token := ga.Token
 
+	req, err = http.NewRequest("GET", a.url+"/user", nil)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.SetBasicAuth(token, "x-oauth-basic")
+
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode/100 != 2 {
+		return nil, ErrUnauthorized
+	}
+
+	var gu struct {
+		Login string `json:"login"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&gu); err != nil {
+		return nil, err
+	}
+
+	user := &empire.User{
+		Name:        gu.Login,
+		GitHubToken: token,
+	}
+
 	if a.Organization != "" {
 		req, err = http.NewRequest("HEAD", a.url+"/user/memberships/orgs/"+a.Organization, nil)
 		if err != nil {
-			return token, err
+			return user, err
 		}
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
 		req.SetBasicAuth(token, "x-oauth-basic")
 
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
-			return token, err
+			return user, err
 		}
 
 		if resp.StatusCode/100 != 2 {
-			return token, &ErrorResource{
+			return user, &ErrorResource{
 				Status:  http.StatusForbidden,
 				ID:      "forbidden",
 				Message: fmt.Sprintf("You are not a member of %s", a.Organization),
@@ -169,7 +195,7 @@ func (a *GitHubAuthorizer) Authorize(username, password, twofactor string) (stri
 		}
 	}
 
-	return token, nil
+	return user, nil
 }
 
 // authorizer is a fake implementation of the Authorizer interface that let's
@@ -177,6 +203,6 @@ func (a *GitHubAuthorizer) Authorize(username, password, twofactor string) (stri
 type authorizer struct{}
 
 // Authorizer implements Authorizer Authorize.
-func (a *authorizer) Authorize(username, password, twofactor string) (string, error) {
-	return "token", nil
+func (a *authorizer) Authorize(username, password, twofactor string) (*empire.User, error) {
+	return &empire.User{Name: "fake", GitHubToken: "token"}, nil
 }

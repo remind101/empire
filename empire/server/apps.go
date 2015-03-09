@@ -5,13 +5,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 type GetApps struct {
 	Empire
 }
 
-func (h *GetApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	apps, err := h.AppsAll()
 	if err != nil {
 		return err
@@ -25,7 +26,7 @@ type DeleteApp struct {
 	Empire
 }
 
-func (h *DeleteApp) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(r, h)
 	if err != nil {
 		return err
@@ -50,7 +51,7 @@ type PostApps struct {
 	Empire
 }
 
-func (h *PostApps) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PostAppsForm
 
 	if err := Decode(r, &form); err != nil {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
@@ -20,7 +21,7 @@ type PostDeployForm struct {
 }
 
 // Serve implements the Handler interface.
-func (h *PostDeploys) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PostDeployForm
 
 	if err := Decode(r, &form); err != nil {
