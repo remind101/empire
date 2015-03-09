@@ -14,6 +14,13 @@ const (
 	HeaderGitHubTwoFactor = "X-GitHub-OTP"
 )
 
+// DefaultGitHubScopes is the default oauth scopes to obtain when getting an
+// authorization from GitHub.
+var DefaultGitHubScopes = []string{
+	"repo_deployment", // For creating deployment statuses.
+	"read:org",        // For reading organization memberships.
+}
+
 // Authorization represents a response to create an access token.
 type Authorization struct {
 	AccessToken empire.AccessToken `json:"access_token"`
@@ -61,7 +68,7 @@ func NewAuthorizer(clientID, clientSecret, organization string) Authorizer {
 	}
 
 	return &GitHubAuthorizer{
-		Scopes:       []string{"repo_deployment", "read:org"},
+		Scopes:       DefaultGitHubScopes,
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Organization: organization,
