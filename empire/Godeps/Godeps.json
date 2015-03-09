@@ -148,6 +148,11 @@
 			"Rev": "cf3cdf77462baaad163ad2d5d1984b9c1b493701"
 		},
 		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Comment": "v2.0.0-3-gc0da491",
+			"Rev": "c0da49162251c81124e34f3e7885527a091dacd5"
+		},
+		{
 			"ImportPath": "github.com/docker/docker/pkg/archive",
 			"Comment": "v1.4.1-889-gabdfb21",
 			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
