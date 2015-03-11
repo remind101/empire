@@ -1,0 +1,135 @@
+#cloud-config
+
+coreos:
+  etcd:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new
+    # WARNING: replace each time you 'vagrant destroy'
+    # discovery: https://discovery.etcd.io/12345693838asdfasfadf13939923
+    addr: $public_ipv4:4001
+    peer-addr: $public_ipv4:7001
+  fleet:
+    public-ip: $public_ipv4
+    metadata: role=empire_minion
+  units:
+    - name: etcd.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: docker-tcp.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Docker Socket for the API
+
+        [Socket]
+        ListenStream=2375
+        Service=docker.service
+        BindIPv6Only=both
+
+        [Install]
+        WantedBy=sockets.target
+    - name: discovery.target
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Core service discovery services
+        Wants=registrator.service
+    - name: registrator.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Registrator
+        After=docker.service etcd.service
+
+        [Service]
+        TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker inspect gliderlabs/registrator &> /dev/null || /usr/bin/docker pull gliderlabs/registrator"
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm registrator &> /dev/null; exit 0"
+        ExecStart=/usr/bin/docker run --name registrator --rm -h %H -v /var/run/docker.sock:/tmp/docker.sock gliderlabs/registrator -ip=${COREOS_PRIVATE_IPV4} etcd://${COREOS_PRIVATE_IPV4}:4001/services
+        ExecStop=/usr/bin/docker stop registrator
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: router.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Empire routing layer powered by nginx and registrator.
+        After=registrator.service
+
+        [Service]
+        TimeoutStartSec=30m
+        KillMode=none
+        EnvironmentFile=/etc/environment
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/router/nginx && docker build -t quay.io/remind/empire_router ."
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire_router &> /dev/null; exit 0"
+
+        ExecStart=/usr/bin/docker run --name empire_router --rm -h %H -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/empire_router
+
+        ExecStop=/usr/bin/docker stop empire_router
+        [Install]
+        WantedBy=multi-user.target
+    - name: postgres.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Postgres
+        After=discovery.service
+
+        [Service]
+        TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker inspect postgres &> /dev/null || /usr/bin/docker pull postgres"
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm postgres &> /dev/null; exit 0"
+        ExecStart=/usr/bin/docker run --name postgres --rm -h %H -p 5432:5432 postgres
+        ExecStop=/usr/bin/docker stop postgres
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: empire.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Empire
+        After=discovery.service postgres.service
+
+        [Service]
+        TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
+        Environment=DOCKER_AUTH_PATH=/tmp/.dockercfg
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/empire && docker build -t quay.io/remind/empire ."
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
+        ExecStartPre=/usr/bin/docker run quay.io/remind/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+
+        ExecStop=/usr/bin/docker stop empire
+
+        [Install]
+        WantedBy=multi-user.target
+write_files:
+  - path: /etc/systemd/system/fleet.socket.d/30-ListenStream.conf
+    permissions: 0644
+    owner: root
+    content: |
+      [Socket]
+      ListenStream=$public_ipv4:49153
