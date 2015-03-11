@@ -4,25 +4,26 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
 // Middleware for handling authentication.
 type Authentication struct {
 	finder  empire.AccessTokensFinder
-	handler Handler
+	handler httpx.Handler
 }
 
-// Authenticat wraps a Handler in the Authentication middleware to authenticate
+// Authenticat wraps an httpx.Handler in the Authentication middleware to authenticate
 // the request.
-func Authenticate(f empire.AccessTokensFinder, h Handler) Handler {
+func Authenticate(f empire.AccessTokensFinder, h httpx.Handler) httpx.Handler {
 	return &Authentication{
 		finder:  f,
 		handler: h,
 	}
 }
 
-// ServeHTTPContext implements the Handler interface. It will ensure that
+// ServeHTTPContext implements the httpx.Handler interface. It will ensure that
 // there is a Bearer token present and that it is valid.
 func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	token, ok := extractToken(r)

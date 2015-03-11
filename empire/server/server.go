@@ -8,6 +8,7 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -117,26 +118,14 @@ func newRouter() *router {
 	return &router{Router: mux.NewRouter()}
 }
 
-func (r *router) Handle(method, path string, h Handler) {
+func (r *router) Handle(method, path string, h httpx.Handler) {
 	r.Router.Handle(path, &handler{h}).Methods(method)
 }
 
-// Handler is represents a Handler that can take a context.Context as the
-// first argument.
-type Handler interface {
-	ServeHTTPContext(context.Context, http.ResponseWriter, *http.Request) error
-}
-
-type HandlerFunc func(context.Context, http.ResponseWriter, *http.Request) error
-
-func (fn HandlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	return fn(ctx, w, r)
-}
-
-// handler adapts a Handler to an http.Handler. It's the entrypoint from the
+// handler adapts an httpx.Handler to an http.Handler. It's the entrypoint from the
 // http.Handler router to Handlers within package server.
 type handler struct {
-	Handler
+	httpx.Handler
 }
 
 // ServeHTTP calls the Handler. If an error is returned, the error will be
