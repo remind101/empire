@@ -6,10 +6,8 @@ import (
 	"net/http"
 
 	"github.com/codegangsta/negroni"
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/pkg/httpx"
-	"golang.org/x/net/context"
 )
 
 // Named matching heroku's error codes. See
@@ -59,7 +57,10 @@ type Server struct {
 
 // New creates the API routes and returns a new Server instance.
 func New(e *empire.Empire, options Options) *Server {
-	r := newRouter()
+	r := httpx.NewRouter()
+	r.ErrorHandler = func(err error, w http.ResponseWriter, r *http.Request) {
+		Error(w, err, http.StatusInternalServerError)
+	}
 
 	// Apps
 	r.Handle("GET", "/apps", Authenticate(e, &GetApps{e}))                 // hk apps
@@ -106,38 +107,6 @@ type ErrorResource struct {
 // Error implements error interface.
 func (e *ErrorResource) Error() string {
 	return e.Message
-}
-
-// router is an http router for Handlers.
-type router struct {
-	*mux.Router
-}
-
-// newRouter returns a new router instance.
-func newRouter() *router {
-	return &router{Router: mux.NewRouter()}
-}
-
-func (r *router) Handle(method, path string, h httpx.Handler) {
-	r.Router.Handle(path, &handler{h}).Methods(method)
-}
-
-// handler adapts an httpx.Handler to an http.Handler. It's the entrypoint from the
-// http.Handler router to Handlers within package server.
-type handler struct {
-	httpx.Handler
-}
-
-// ServeHTTP calls the Handler. If an error is returned, the error will be
-// encoded into the response.
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	ctx := context.Background()
-
-	if err := h.Handler.ServeHTTPContext(ctx, w, r); err != nil {
-		Error(w, err, http.StatusInternalServerError)
-	}
 }
 
 // Encode json ecnodes v into w.
