@@ -1,10 +1,6 @@
 package empire
 
-import (
-	"fmt"
-
-	"github.com/remind101/empire/empire/scheduler"
-)
+import "fmt"
 
 // Manager is responsible for talking to the scheduler to schedule jobs onto the
 // cluster.
@@ -127,16 +123,16 @@ func ScaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) []
 // ScaleDown returns Jobs to unschedule when scaling down.
 func ScaleDown(existing []*Job, release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
 	// Create a map for easy lookup
-	jm := make(map[scheduler.JobName]*Job, len(existing))
+	jm := make(map[string]*Job, len(existing))
 	for _, j := range existing {
-		jm[j.JobName()] = j
+		jm[j.ContainerName()] = j
 	}
 
 	var jobs []*Job
 
 	// Unschedule jobs
 	for i := p.Quantity; i > q; i-- {
-		jobName := newJobName(release.AppName, release.Ver, p.Type, i)
+		jobName := newContainerName(release.AppName, release.Ver, p.Type, i)
 		if j, ok := jm[jobName]; ok {
 			jobs = append(jobs, j)
 		}
@@ -145,9 +141,9 @@ func ScaleDown(existing []*Job, release *Release, config *Config, slug *Slug, p 
 	return jobs
 }
 
-// newJobName returns a new Name with the proper format.
-func newJobName(name AppName, v ReleaseVersion, t ProcessType, i int) scheduler.JobName {
-	return scheduler.JobName(fmt.Sprintf("%s.%d.%s.%d", name, v, t, i))
+// newContainerName returns a new Name with the proper format.
+func newContainerName(name AppName, v ReleaseVersion, t ProcessType, i int) string {
+	return fmt.Sprintf("%s.%d.%s.%d", name, v, t, i)
 }
 
 func buildJobs(name AppName, version ReleaseVersion, image Image, vars Vars, f Formation) []*Job {

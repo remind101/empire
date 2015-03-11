@@ -19,7 +19,12 @@ var (
 // NewEmpire returns a new Empire instance suitable for testing. It ensures that
 // the database is clean before returning.
 func NewEmpire(t testing.TB) *empire.Empire {
-	opts := empire.Options{DB: DatabaseURL}
+	opts := empire.Options{
+		DB: DatabaseURL,
+		Fleet: empire.FleetOptions{
+			API: "fake",
+		},
+	}
 
 	e, err := empire.New(opts)
 	if err != nil {

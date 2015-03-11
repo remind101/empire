@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/remind101/empire/empire/scheduler"
+	"github.com/remind101/empire/empire/pkg/container"
 	"gopkg.in/gorp.v1"
 )
 
@@ -49,8 +49,8 @@ func (j *Job) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
-func (j *Job) JobName() scheduler.JobName {
-	return newJobName(
+func (j *Job) ContainerName() string {
+	return newContainerName(
 		j.AppName,
 		j.ReleaseVersion,
 		j.ProcessType,
@@ -62,7 +62,7 @@ func (j *Job) JobName() scheduler.JobName {
 type JobState struct {
 	Job       *Job
 	MachineID string
-	Name      scheduler.JobName
+	Name      string
 	State     string
 }
 
@@ -84,7 +84,7 @@ type JobsService interface {
 
 type jobsService struct {
 	DB
-	scheduler scheduler.Scheduler
+	scheduler container.Scheduler
 }
 
 func (s *jobsService) JobsList(q JobsListQuery) ([]*Job, error) {
@@ -136,32 +136,30 @@ func JobsList(db Queryier, q JobsListQuery) ([]*Job, error) {
 }
 
 // Schedule schedules to job onto the cluster, then persists it to the database.
-func Schedule(db Inserter, s scheduler.Scheduler, j *Job) (*Job, error) {
-	name := j.JobName()
+func Schedule(db Inserter, s container.Scheduler, j *Job) (*Job, error) {
 	env := environment(j.Environment)
-	exec := scheduler.Execute{
+	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", j.ProcessType, j.AppName)
+
+	container := &container.Container{
+		Name:    j.ContainerName(),
+		Env:     env,
 		Command: string(j.Command),
-		Image: scheduler.Image{
+		Image: container.Image{
 			Repo: string(j.Image.Repo),
 			ID:   j.Image.ID,
 		},
 	}
 
-	// Schedule the job onto the cluster.
-	if err := s.Schedule(&scheduler.Job{
-		Name:        name,
-		Service:     fmt.Sprintf("%s/%s", j.ProcessType, j.AppName), // Used for registrator integration
-		Environment: env,
-		Execute:     exec,
-	}); err != nil {
+	// Schedule the container onto the cluster.
+	if err := s.Schedule(container); err != nil {
 		return nil, err
 	}
 
 	return JobsCreate(db, j)
 }
 
-func Unschedule(db Deleter, s scheduler.Scheduler, j *Job) error {
-	if err := s.Unschedule(j.JobName()); err != nil {
+func Unschedule(db Deleter, s container.Scheduler, j *Job) error {
+	if err := s.Unschedule(j.ContainerName()); err != nil {
 		return err
 	}
 
@@ -179,7 +177,7 @@ type JobStatesService interface {
 type jobStatesService struct {
 	DB
 	JobsService
-	scheduler scheduler.Scheduler
+	scheduler container.Scheduler
 }
 
 func (s *jobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
@@ -192,21 +190,21 @@ func (s *jobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
 	}
 
 	// Job states for all existing jobs
-	sjs, err := s.scheduler.JobStates()
+	sjs, err := s.scheduler.ContainerStates()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a map for easy lookups
-	jsm := make(map[scheduler.JobName]*scheduler.JobState, len(sjs))
+	jsm := make(map[string]*container.ContainerState, len(sjs))
 	for _, js := range sjs {
 		jsm[js.Name] = js
 	}
 
-	// Create JobState based on Jobs and scheduler.JobStates
+	// Create JobState based on Jobs and container.ContainerStates
 	js := make([]*JobState, len(jobs))
 	for i, j := range jobs {
-		s, ok := jsm[j.JobName()]
+		s, ok := jsm[j.ContainerName()]
 
 		machineID := "unknown"
 		state := "unknown"
@@ -217,7 +215,7 @@ func (s *jobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
 
 		js[i] = &JobState{
 			Job:       j,
-			Name:      j.JobName(),
+			Name:      j.ContainerName(),
 			MachineID: machineID,
 			State:     state,
 		}
