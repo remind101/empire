@@ -9,11 +9,6 @@ import (
 	"github.com/remind101/empire/empire/server/heroku"
 )
 
-// Server implements the http.Handler interface for serving the empire HTTP API.
-type Server struct {
-	http.Handler
-}
-
 var DefaultOptions = Options{
 	Heroku: heroku.DefaultOptions,
 }
@@ -22,7 +17,7 @@ type Options struct {
 	Heroku heroku.Options
 }
 
-func New(e *empire.Empire, options Options) *Server {
+func New(e *empire.Empire, options Options) http.Handler {
 	r := mux.NewRouter()
 
 	h := heroku.New(e, options.Heroku)
@@ -31,5 +26,5 @@ func New(e *empire.Empire, options Options) *Server {
 	n := negroni.Classic()
 	n.UseHandler(r)
 
-	return &Server{n}
+	return n
 }

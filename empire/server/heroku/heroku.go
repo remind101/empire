@@ -9,36 +9,6 @@ import (
 	"github.com/remind101/empire/pkg/httpx"
 )
 
-// Named matching heroku's error codes. See
-// https://devcenter.heroku.com/articles/platform-api-reference#error-responses
-var (
-	ErrBadRequest = &ErrorResource{
-		Status:  http.StatusBadRequest,
-		ID:      "bad_request",
-		Message: "Request invalid, validate usage and try again",
-	}
-	ErrUnauthorized = &ErrorResource{
-		Status:  http.StatusUnauthorized,
-		ID:      "unauthorized",
-		Message: "Request not authenticated, API token is missing, invalid or expired",
-	}
-	ErrForbidden = &ErrorResource{
-		Status:  http.StatusForbidden,
-		ID:      "forbidden",
-		Message: "Request not authorized, provided credentials do not provide access to specified resource",
-	}
-	ErrNotFound = &ErrorResource{
-		Status:  http.StatusNotFound,
-		ID:      "not_found",
-		Message: "Request failed, the specified resource does not exist",
-	}
-	ErrTwoFactor = &ErrorResource{
-		Status:  http.StatusUnauthorized,
-		ID:      "two_factor",
-		Message: "Two factor code is required.",
-	}
-)
-
 var DefaultOptions = Options{}
 
 type Options struct {
@@ -49,13 +19,8 @@ type Options struct {
 	}
 }
 
-// Server represents the API.
-type Server struct {
-	http.Handler
-}
-
-// New creates the API routes and returns a new Server instance.
-func New(e *empire.Empire, options Options) *Server {
+// New creates the API routes and returns a new http.Handler to serve them.
+func New(e *empire.Empire, options Options) http.Handler {
 	r := httpx.NewRouter()
 	r.ErrorHandler = func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)
@@ -89,20 +54,7 @@ func New(e *empire.Empire, options Options) *Server {
 	auth := NewAuthorizer(options.GitHub.ClientID, options.GitHub.ClientSecret, options.GitHub.Organization)
 	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
-	return &Server{r}
-}
-
-// ErrorResource represents the error response format that we return.
-type ErrorResource struct {
-	Status  int    `json:"-"`
-	ID      string `json:"id"`
-	Message string `json:"message"`
-	URL     string `json:"url"`
-}
-
-// Error implements error interface.
-func (e *ErrorResource) Error() string {
-	return e.Message
+	return r
 }
 
 // Encode json ecnodes v into w.
