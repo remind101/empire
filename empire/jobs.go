@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/remind101/empire/pkg/container"
@@ -136,9 +137,12 @@ func JobsList(db Queryier, q JobsListQuery) ([]*Job, error) {
 
 // Schedule schedules to job onto the cluster, then persists it to the database.
 func Schedule(db Inserter, s container.Scheduler, j *Job) (*Job, error) {
+	env := environment(j.Environment)
+	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", j.ProcessType, j.AppName)
+
 	container := &container.Container{
 		Name:    j.ContainerName(),
-		Env:     environment(j.Environment),
+		Env:     env,
 		Command: string(j.Command),
 		Image: container.Image{
 			Repo: string(j.Image.Repo),
