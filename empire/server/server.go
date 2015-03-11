@@ -8,6 +8,7 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 // Named matching heroku's error codes. See
@@ -60,28 +61,28 @@ func New(e *empire.Empire, options Options) *Server {
 	r := newRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", &GetApps{e})                 // hk apps
-	r.Handle("DELETE", "/apps/{app}", &DeleteApp{e})      // hk destroy
-	r.Handle("POST", "/apps", &PostApps{e})               // hk create
-	r.Handle("POST", "/organizations/apps", &PostApps{e}) // hk create
+	r.Handle("GET", "/apps", Authenticate(e, &GetApps{e}))                 // hk apps
+	r.Handle("DELETE", "/apps/{app}", Authenticate(e, &DeleteApp{e}))      // hk destroy
+	r.Handle("POST", "/apps", Authenticate(e, &PostApps{e}))               // hk create
+	r.Handle("POST", "/organizations/apps", Authenticate(e, &PostApps{e})) // hk create
 
 	// Deploys
-	r.Handle("POST", "/deploys", &PostDeploys{e}) // Deploy an app
+	r.Handle("POST", "/deploys", Authenticate(e, &PostDeploys{e})) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", &GetReleases{e})          // hk releases
-	r.Handle("GET", "/apps/{app}/releases/{version}", &GetRelease{e}) // hk release-info
-	r.Handle("POST", "/apps/{app}/releases", &PostReleases{e})        // hk rollback
+	r.Handle("GET", "/apps/{app}/releases", Authenticate(e, &GetReleases{e}))          // hk releases
+	r.Handle("GET", "/apps/{app}/releases/{version}", Authenticate(e, &GetRelease{e})) // hk release-info
+	r.Handle("POST", "/apps/{app}/releases", Authenticate(e, &PostReleases{e}))        // hk rollback
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", &GetConfigs{e})     // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", &PatchConfigs{e}) // hk set
+	r.Handle("GET", "/apps/{app}/config-vars", Authenticate(e, &GetConfigs{e}))     // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})) // hk set
 
 	// Processes
-	r.Handle("GET", "/apps/{app}/dynos", &GetProcesses{e}) // hk dynos
+	r.Handle("GET", "/apps/{app}/dynos", Authenticate(e, &GetProcesses{e})) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", &PatchFormation{e}) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", Authenticate(e, &PatchFormation{e})) // hk scale
 
 	// OAuth
 	auth := NewAuthorizer(options.GitHub.ClientID, options.GitHub.ClientSecret, options.GitHub.Organization)
@@ -116,25 +117,36 @@ func newRouter() *router {
 	return &router{Router: mux.NewRouter()}
 }
 
-type Handler interface {
-	ServeHTTP(w http.ResponseWriter, r *http.Request) error
-}
-
 func (r *router) Handle(method, path string, h Handler) {
 	r.Router.Handle(path, &handler{h}).Methods(method)
 }
 
-// handler adapts a Handler to an http.Handler.
+// Handler is represents a Handler that can take a context.Context as the
+// first argument.
+type Handler interface {
+	ServeHTTPContext(context.Context, http.ResponseWriter, *http.Request) error
+}
+
+type HandlerFunc func(context.Context, http.ResponseWriter, *http.Request) error
+
+func (fn HandlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	return fn(ctx, w, r)
+}
+
+// handler adapts a Handler to an http.Handler. It's the entrypoint from the
+// http.Handler router to Handlers within package server.
 type handler struct {
 	Handler
 }
 
-// ServeHTTP calls the Hander. If an error is returned, the error will be
+// ServeHTTP calls the Handler. If an error is returned, the error will be
 // encoded into the response.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := h.Handler.ServeHTTP(w, r); err != nil {
+	ctx := context.Background()
+
+	if err := h.Handler.ServeHTTPContext(ctx, w, r); err != nil {
 		Error(w, err, http.StatusInternalServerError)
 	}
 }

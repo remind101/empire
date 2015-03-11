@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/remind101/empire/empire"
+	"golang.org/x/net/context"
 )
 
 // formation is a heroku compatible response struct to the hk scale command.
@@ -30,7 +31,7 @@ type PatchFormationForm struct {
 	} `json:"updates"`
 }
 
-func (h *PatchFormation) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PatchFormationForm
 
 	if err := Decode(r, &form); err != nil {

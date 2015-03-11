@@ -2,8 +2,12 @@ package hk_test
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -200,11 +204,23 @@ func resetNow() {
 }
 
 // hk runs an hk command against a server.
-func hk(t testing.TB, url, command string) string {
+func hk(t testing.TB, token, url, command string) string {
 	args := strings.Split(command, " ")
 
-	cmd := exec.Command("hk", args...)
+	netrc, err := writeNetrc(token, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(netrc.Name())
+
+	p, err := filepath.Abs("../../build/hk")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(p, args...)
 	cmd.Env = []string{
+		fmt.Sprintf("NETRC_PATH=%s", netrc.Name()),
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 		"HKPATH=../../../hk-plugins",
 		fmt.Sprintf("HEROKU_API_URL=%s", url),
@@ -219,6 +235,27 @@ func hk(t testing.TB, url, command string) string {
 	return string(b)
 }
 
+func writeNetrc(token, uri string) (*os.File, error) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		return f, err
+	}
+	defer f.Close()
+
+	u, err := url.Parse(uri)
+	if err != nil {
+		return f, err
+	}
+
+	if _, err := io.WriteString(f, `machine `+u.Host+`
+  login foo@example.com
+  password `+token); err != nil {
+		return f, err
+	}
+
+	return f, nil
+}
+
 type Command struct {
 	// Command represents an hk command to run.
 	Command string
@@ -228,11 +265,19 @@ type Command struct {
 }
 
 func run(t testing.TB, commands []Command) {
-	s := empiretest.NewServer(t)
+	e := empiretest.NewEmpire(t)
+	s := empiretest.NewServer(t, e)
 	defer s.Close()
 
+	token, err := e.AccessTokensCreate(&empire.AccessToken{
+		User: &empire.User{Name: "fake", GitHubToken: "token"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for _, cmd := range commands {
-		got := hk(t, s.URL, cmd.Command)
+		got := hk(t, token.Token, s.URL, cmd.Command)
 
 		want := cmd.Output
 		if want != "" {

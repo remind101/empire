@@ -27,8 +27,20 @@ func TestMain(m *testing.M) {
 // NewTestClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
 func NewTestClient(t testing.TB) (*heroku.Client, *httptest.Server) {
-	s := empiretest.NewServer(t)
-	c := &heroku.Client{}
+	e := empiretest.NewEmpire(t)
+	s := empiretest.NewServer(t, e)
+
+	token, err := e.AccessTokensCreate(&empire.AccessToken{
+		User: &empire.User{Name: "fake", GitHubToken: "token"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := &heroku.Client{
+		Username: "",
+		Password: token.Token,
+	}
 	c.URL = s.URL
 
 	return c, s

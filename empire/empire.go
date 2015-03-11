@@ -168,3 +168,10 @@ type ValidationError struct {
 func (e *ValidationError) Error() string {
 	return e.Err.Error()
 }
+
+// key used to store context values from within this package.
+type key int
+
+const (
+	UserKey key = 0
+)

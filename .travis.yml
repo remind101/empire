@@ -11,8 +11,6 @@ go:
 
 before_install:
   - mkdir -p $HOME/gopath/bin
-  - L=$HOME/gopath/bin/hk && curl -sL -A "`uname -sp`" https://hk.heroku.com/hk.gz | zcat >$L && chmod +x $L
-  - hk version
   - go install -a -race std
   - go get github.com/tools/godep
   - export PATH=$HOME/gopath/bin:$PATH

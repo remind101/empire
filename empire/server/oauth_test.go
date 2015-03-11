@@ -17,25 +17,30 @@ func TestGitHubAuthorizer(t *testing.T) {
 	}{
 		{
 			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				user, pass, ok := r.BasicAuth()
+				switch r.URL.Path {
+				case "/authorizations/clients/":
+					user, pass, ok := r.BasicAuth()
 
-				if !ok {
-					t.Fatal("Expected basic auth to be set")
+					if !ok {
+						t.Fatal("Expected basic auth to be set")
+					}
+
+					if got, want := user, "user"; got != want {
+						t.Fatalf("User => %q; want %q", got, want)
+					}
+
+					if got, want := pass, "pass"; got != want {
+						t.Fatalf("Password => %q; want %q", got, want)
+					}
+
+					if len(r.Header["X-Github-Otp"]) > 0 {
+						t.Fatal("Expected X-GitHub-OTP to not be set")
+					}
+
+					io.WriteString(w, `{"token":"token"}`)
+				case "/user":
+					io.WriteString(w, `{"login":"foobar"}`)
 				}
-
-				if got, want := user, "user"; got != want {
-					t.Fatalf("User => %q; want %q", got, want)
-				}
-
-				if got, want := pass, "pass"; got != want {
-					t.Fatalf("Password => %q; want %q", got, want)
-				}
-
-				if len(r.Header["X-Github-Otp"]) > 0 {
-					t.Fatal("Expected X-GitHub-OTP to not be set")
-				}
-
-				io.WriteString(w, `{"token":"token"}`)
 			}),
 			twofactor: "",
 			token:     "token",
@@ -43,11 +48,16 @@ func TestGitHubAuthorizer(t *testing.T) {
 		},
 		{
 			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if got, want := r.Header.Get("X-Github-Otp"), "abc"; got != want {
-					t.Fatalf("X-GitHub-OTP Header => %q; want %q", got, want)
-				}
+				switch r.URL.Path {
+				case "/authorizations/clients/":
+					if got, want := r.Header.Get("X-Github-Otp"), "abc"; got != want {
+						t.Fatalf("X-GitHub-OTP Header => %q; want %q", got, want)
+					}
 
-				io.WriteString(w, `{"token":"token"}`)
+					io.WriteString(w, `{"token":"token"}`)
+				case "/user":
+					io.WriteString(w, `{"login":"foobar"}`)
+				}
 			}),
 			twofactor: "abc",
 			token:     "token",
@@ -70,13 +80,16 @@ func TestGitHubAuthorizer(t *testing.T) {
 
 		auth := &GitHubAuthorizer{url: s.URL}
 
-		token, err := auth.Authorize("user", "pass", tt.twofactor)
+		user, err := auth.Authorize("user", "pass", tt.twofactor)
 		if err != tt.err {
 			t.Fatalf("Error => %v; want %v", err, tt.err)
+			continue
 		}
 
-		if got, want := token, tt.token; got != want {
-			t.Fatalf("Token => %q; want %q", got, want)
+		if user != nil {
+			if got, want := user.GitHubToken, tt.token; got != want {
+				t.Fatalf("Token => %q; want %q", got, want)
+			}
 		}
 	}
 }
