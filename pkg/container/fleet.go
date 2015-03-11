@@ -43,7 +43,7 @@ func (s *FleetScheduler) Unschedule(names ...string) error {
 }
 
 func (s *FleetScheduler) schedule(container *Container) error {
-	u, err := newUnit(s.UnitTemplate, container)
+	u, err := newUnit(s.unitTemplate(), container)
 	if err != nil {
 		return err
 	}
@@ -55,6 +55,14 @@ func (s *FleetScheduler) schedule(container *Container) error {
 
 func (s *FleetScheduler) unschedule(name string) error {
 	return s.client.DestroyUnit(name)
+}
+
+func (s *FleetScheduler) unitTemplate() *template.Template {
+	if s.UnitTemplate == nil {
+		return DefaultTemplate
+	}
+
+	return s.UnitTemplate
 }
 
 // newUnit takes a systemd unit file template, and a container and:
@@ -91,7 +99,7 @@ func newUnit(t *template.Template, container *Container) (*schema.Unit, error) {
 
 // DefaultTemplate is the default systemd unit file template to use when
 // scheduling units using fleet.
-const DefaultTemplate = `[Unit]
+var DefaultTemplate = template.Must(template.New("").Parse(`[Unit]
 Description={{.Name}}
 After=discovery.service
 
@@ -108,4 +116,4 @@ ExecStop=/usr/bin/docker stop {{.Name}}
 
 [X-Fleet]
 MachineMetadata=role=empire_minion
-`
+`))

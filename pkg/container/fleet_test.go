@@ -24,10 +24,7 @@ var testContainer = Container{
 }
 
 func TestDefaultTemplate(t *testing.T) {
-	tmpl, err := template.New("").Parse(DefaultTemplate)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tmpl := DefaultTemplate
 
 	buf := new(bytes.Buffer)
 	if err := tmpl.Execute(buf, testContainer); err != nil {
