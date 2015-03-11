@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/pkg/httpx"
 )
 
 // The Accept header that controls the api version. See
