@@ -6,7 +6,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
-	"github.com/remind101/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/container"
 )
 
 // A function to return the current time. It can be useful to stub this out in

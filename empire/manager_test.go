@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/remind101/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/container"
 )
 
 func TestNewContainerName(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/remind101/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/container"
 	"gopkg.in/gorp.v1"
 )
 
