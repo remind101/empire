@@ -3,12 +3,18 @@ package container
 import (
 	"bytes"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 	"text/template"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/go-systemd/unit"
 )
+
+// Ensure that FleetScheduler conforms to the Scheduler interface.
+var _ Scheduler = &FleetScheduler{}
 
 // FleetScheduler implements a scheduler that can schedule containers onto a
 // comput cluster by using the fleet API.
@@ -20,6 +26,19 @@ type FleetScheduler struct {
 	UnitTemplate *template.Template
 
 	client client.API
+}
+
+// NewFleetScheduler returns a new FleetScheduler instance with the fleet client
+// pointed at api.
+func NewFleetScheduler(api *url.URL) (*FleetScheduler, error) {
+	c, err := client.NewHTTPClient(http.DefaultClient, *api)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FleetScheduler{
+		client: c,
+	}, nil
 }
 
 func (s *FleetScheduler) Schedule(containers ...*Container) error {
@@ -42,6 +61,26 @@ func (s *FleetScheduler) Unschedule(names ...string) error {
 	return nil
 }
 
+func (s *FleetScheduler) ContainerStates() ([]*ContainerState, error) {
+	states, err := s.client.UnitStates()
+	if err != nil {
+		return nil, err
+	}
+
+	cs := make([]*ContainerState, len(states))
+	for i, state := range states {
+		cs[i] = &ContainerState{
+			Container: &Container{
+				Name: containerNameFromUnitName(state.Name),
+			},
+			MachineID: state.MachineID,
+			State:     state.SystemdActiveState,
+		}
+	}
+
+	return cs, nil
+}
+
 func (s *FleetScheduler) schedule(container *Container) error {
 	u, err := newUnit(s.unitTemplate(), container)
 	if err != nil {
@@ -54,7 +93,7 @@ func (s *FleetScheduler) schedule(container *Container) error {
 }
 
 func (s *FleetScheduler) unschedule(name string) error {
-	return s.client.DestroyUnit(name)
+	return s.client.DestroyUnit(unitNameFromContainerName(name))
 }
 
 func (s *FleetScheduler) unitTemplate() *template.Template {
@@ -65,6 +104,14 @@ func (s *FleetScheduler) unitTemplate() *template.Template {
 	return s.UnitTemplate
 }
 
+func unitNameFromContainerName(name string) string {
+	return fmt.Sprintf("%s.service", name)
+}
+
+func containerNameFromUnitName(name string) string {
+	return strings.TrimSuffix(name, ".service")
+}
+
 // newUnit takes a systemd unit file template, and a container and:
 //
 //	* Parses the template, passing the container in as data.
@@ -72,7 +119,7 @@ func (s *FleetScheduler) unitTemplate() *template.Template {
 //	* Generates a schema.Unit.
 func newUnit(t *template.Template, container *Container) (*schema.Unit, error) {
 	u := &schema.Unit{
-		Name: fmt.Sprintf("%s.service", container.Name),
+		Name: unitNameFromContainerName(container.Name),
 	}
 
 	buf := new(bytes.Buffer)

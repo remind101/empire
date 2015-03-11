@@ -30,3 +30,15 @@ type Container struct {
 	// The image to create the container from.
 	Image Image
 }
+
+// ContainerState represents the state of a scheduled container.
+type ContainerState struct {
+	*Container
+
+	// State represents the current state of this container.
+	State string
+
+	// MachineID represents the machine that the container is scheduled
+	// onto.
+	MachineID string
+}
