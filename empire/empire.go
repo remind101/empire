@@ -1,11 +1,12 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
-	"github.com/remind101/empire/empire/scheduler"
+	"github.com/remind101/empire/pkg/container"
 )
 
 // A function to return the current time. It can be useful to stub this out in
@@ -70,7 +71,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	scheduler, err := scheduler.NewScheduler(options.Fleet.API)
+	scheduler, err := newScheduler(options.Fleet.API)
 	if err != nil {
 		return nil, err
 	}
@@ -175,3 +176,16 @@ type key int
 const (
 	UserKey key = 0
 )
+
+func newScheduler(fleetURL string) (container.Scheduler, error) {
+	if fleetURL == "" {
+		return container.NewFakeScheduler(), nil
+	}
+
+	u, err := url.Parse(fleetURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return container.NewFleetScheduler(u)
+}
