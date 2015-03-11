@@ -20,8 +20,9 @@ type Options struct {
 func New(e *empire.Empire, options Options) http.Handler {
 	r := mux.NewRouter()
 
+	// Mount the heroku api
 	h := heroku.New(e, options.Heroku)
-	r.Headers("Accept", "application/vnd.heroku+json; version=3").Handler(h)
+	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
 
 	n := negroni.Classic()
 	n.UseHandler(r)

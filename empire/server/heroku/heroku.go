@@ -9,6 +9,10 @@ import (
 	"github.com/remind101/empire/pkg/httpx"
 )
 
+// The Accept header that controls the api version. See
+// https://devcenter.heroku.com/articles/platform-api-reference#clients
+const AcceptHeader = "application/vnd.heroku+json; version=3"
+
 var DefaultOptions = Options{}
 
 type Options struct {
