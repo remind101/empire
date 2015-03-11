@@ -1,4 +1,4 @@
-package server
+package heroku
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -20,7 +21,7 @@ func TestAuthentication(t *testing.T) {
 				}, nil
 			},
 		},
-		handler: HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			_, ok := empire.UserFromContext(ctx)
 			if !ok {
 				t.Fatal("Expected a user to be present in the context")

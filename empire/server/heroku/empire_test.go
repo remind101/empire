@@ -1,4 +1,4 @@
-package server
+package heroku
 
 import "github.com/remind101/empire/empire"
 
