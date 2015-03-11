@@ -7,6 +7,7 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/registry"
 )
 
 // A function to return the current time. It can be useful to stub this out in
@@ -21,6 +22,9 @@ var DefaultOptions = Options{}
 
 // DockerOptions is a set of options to configure a docker api client.
 type DockerOptions struct {
+	// The default docker registry to use.
+	Registry string
+
 	// The unix socket to connect to the docker api.
 	Socket string
 
@@ -129,11 +133,19 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
-	deploys := &deploysService{
+	imageDeployer := &imageDeployer{
 		AppsService:     apps,
 		ConfigsService:  configs,
 		SlugsService:    slugs,
 		ReleasesService: releases,
+	}
+
+	commitDeployer := &commitDeployer{
+		Registry:      options.Docker.Registry,
+		Organization:  "ejholmes",
+		ImageDeployer: imageDeployer,
+		registry:      registry.NewMultiClient(options.Docker.Auth),
+		appsService:   apps,
 	}
 
 	return &Empire{
@@ -141,7 +153,7 @@ func New(options Options) (*Empire, error) {
 		AccessTokensService: accessTokens,
 		AppsService:         apps,
 		ConfigsService:      configs,
-		DeploysService:      deploys,
+		DeploysService:      commitDeployer,
 		JobsService:         jobs,
 		JobStatesService:    jobStates,
 		Manager:             manager,

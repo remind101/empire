@@ -53,6 +53,8 @@ CREATE TABLE jobs (
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
+CREATE UNIQUE INDEX index_apps_on_github_repo ON apps USING btree (github_repo);
+CREATE UNIQUE INDEX index_apps_on_docker_repo ON apps USING btree (docker_repo);
 CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type");
 CREATE UNIQUE INDEX index_slugs_on_image ON slugs USING btree (image);
 CREATE UNIQUE INDEX index_releases_on_app_id_and_version ON releases USING btree (app_id, version);

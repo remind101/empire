@@ -1,10 +1,8 @@
 package empire
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestDeploysServiceDeploy(t *testing.T) {
+func TestDeploysServiceDeployToApp(t *testing.T) {
 	var released bool
 
 	a := &mockAppsService{}
@@ -17,19 +15,20 @@ func TestDeploysServiceDeploy(t *testing.T) {
 		},
 	}
 
-	d := &deploysService{
+	d := &imageDeployer{
 		AppsService:     a,
 		ConfigsService:  c,
 		SlugsService:    s,
 		ReleasesService: r,
 	}
 
+	app := &App{}
 	image := Image{
 		Repo: "remind101/r101-api",
 		ID:   "1234",
 	}
 
-	if _, err := d.Deploy(image); err != nil {
+	if _, err := d.DeployImageToApp(app, image); err != nil {
 		t.Fatal(err)
 	}
 

@@ -28,7 +28,7 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	d, err := h.Deploy(empire.Image{
+	d, err := h.DeployImage(empire.Image{
 		Repo: empire.Repo(form.Image.Repo),
 		ID:   form.Image.ID,
 	})

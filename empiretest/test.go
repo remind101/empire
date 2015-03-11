@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ejholmes/flock"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/server"
 )
@@ -23,6 +24,21 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		DB: DatabaseURL,
 		Fleet: empire.FleetOptions{
 			API: "fake",
+		},
+		Docker: empire.DockerOptions{
+			Registry: "quay.io",
+			Auth: &docker.AuthConfigurations{
+				Configs: map[string]docker.AuthConfiguration{
+					"quay.io": docker.AuthConfiguration{
+						Username: "",
+						Password: "",
+					},
+					"https://index.docker.io/v1/": docker.AuthConfiguration{
+						Username: "",
+						Password: "",
+					},
+				},
+			},
 		},
 	}
 

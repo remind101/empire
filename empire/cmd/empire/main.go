@@ -39,6 +39,12 @@ var Commands = []cli.Command{
 				Usage:  "The organization to allow access to",
 				EnvVar: "GITHUB_ORGANIZATION",
 			},
+			cli.StringFlag{
+				Name:   "github.secret",
+				Value:  "",
+				Usage:  "The shared secret between GitHub and Empire. GitHub will use this secret to sign webhook requests.",
+				EnvVar: "GITHUB_SECRET",
+			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
 	},
@@ -65,6 +71,12 @@ var DBFlags = []cli.Flag{
 }
 
 var EmpireFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   "docker.registry",
+		Value:  "",
+		Usage:  "The hostname of the default docker registry to use, when it is not known.",
+		EnvVar: "DOCKER_REGISTRY",
+	},
 	cli.StringFlag{
 		Name:   "docker.socket",
 		Value:  "unix:///var/run/docker.sock",
@@ -109,6 +121,7 @@ func main() {
 func empireOptions(c *cli.Context) (empire.Options, error) {
 	opts := empire.Options{}
 
+	opts.Docker.Registry = c.String("docker.registry")
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Fleet.API = c.String("fleet.api")

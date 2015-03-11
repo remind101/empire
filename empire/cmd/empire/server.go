@@ -22,9 +22,10 @@ func runServer(c *cli.Context) {
 	}
 
 	sopts := server.Options{}
-	sopts.Heroku.GitHub.ClientID = c.String("github.client.id")
-	sopts.Heroku.GitHub.ClientSecret = c.String("github.client.secret")
-	sopts.Heroku.GitHub.Organization = c.String("github.organization")
+	sopts.GitHub.ClientID = c.String("github.client.id")
+	sopts.GitHub.ClientSecret = c.String("github.client.secret")
+	sopts.GitHub.Organization = c.String("github.organization")
+	sopts.GitHub.Secret = c.String("github.secret")
 	s := server.New(e, sopts)
 
 	log.Printf("Starting on port %s", port)
