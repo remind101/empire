@@ -178,7 +178,7 @@ const (
 )
 
 func newScheduler(fleetURL string) (container.Scheduler, error) {
-	if fleetURL == "" {
+	if fleetURL == "fake" {
 		return container.NewFakeScheduler(), nil
 	}
 
