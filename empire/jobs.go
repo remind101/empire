@@ -150,7 +150,7 @@ func Schedule(db Inserter, s container.Scheduler, j *Job) (*Job, error) {
 		},
 	}
 
-	// Schedule the job onto the cluster.
+	// Schedule the container onto the cluster.
 	if err := s.Schedule(container); err != nil {
 		return nil, err
 	}
