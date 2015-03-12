@@ -8,7 +8,6 @@ bootstrap:
 
 build:
 	$(MAKE) -C empire build
-	$(MAKE) -C etcd_peers build
 
 user_data:
 	$(eval URL := $(shell curl -s -w '\n' https://discovery.etcd.io/new))
