@@ -21,7 +21,7 @@ var (
 )
 
 func TestDeployment(t *testing.T) {
-	c, _, s := NewTestClient(t)
+	c, e, s := NewTestClient(t)
 	defer s.Close()
 
 	var p github.Deployment
@@ -31,6 +31,19 @@ func TestDeployment(t *testing.T) {
 	_, err := c.Trigger("deployment", &p)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	app, err := e.AppsFind("acme-inc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := *app.Repos.Docker, empire.Repo("quay.io/ejholmes/acme-inc"); got != want {
+		t.Fatalf("Repos.Docker => %s; want %s", got, want)
+	}
+
+	if got, want := *app.Repos.GitHub, empire.Repo("ejholmes/acme-inc"); got != want {
+		t.Fatalf("Repos.GitHub => %s; want %s", got, want)
 	}
 }
 
@@ -62,7 +75,11 @@ func TestDeploymentAppExists(t *testing.T) {
 	}
 
 	if got, want := *app.Repos.Docker, empire.Repo("quay.io/ejholmes/acme-inc"); got != want {
-		t.Fatalf("App.Repos.Docker => %s; want %s", got, want)
+		t.Fatalf("Repos.Docker => %s; want %s", got, want)
+	}
+
+	if got, want := *app.Repos.GitHub, empire.Repo("ejholmes/acme-inc"); got != want {
+		t.Fatalf("Repos.GitHub => %s; want %s", got, want)
 	}
 }
 
