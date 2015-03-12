@@ -1,7 +1,7 @@
 .PHONY: cmd docker
 
 cmd:
-	go build -o build/syslog ./...
+	go build -o build/syslog ./cmd/syslog/main.go
 
 docker: Dockerfile
 	docker build --no-cache -t quay.io/remind/syslog .

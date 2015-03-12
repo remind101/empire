@@ -138,10 +138,10 @@ coreos:
         TimeoutStartSec=30m
         KillMode=none
 
-        ExecStartPre=-/usr/bin/docker build -t quay.io/remind/syslog /home/core/share/syslog"
-        ExecStart=/usr/bin/docker run --name empire-syslog --rm -h %H -p 10514:10514 -e SHUTTLE_URLS=https://collectors.sumologic.com/receiver/v1/http/ZaVnC4dhaV1O9qoFMisVh3fVBJyEQG48sJrjB-hVWnsOR5nLiLa3ZPhRa6PzMOk3GRJdnUZJ9w4jVmImREMwI6ZQwgyti6rbEfx5pCtC0B8OjKifYFlIxA== quay.io/remind/syslog
+        ExecStartPre=-/usr/bin/docker build -t quay.io/remind/syslog /home/core/share/syslog
+        ExecStart=/usr/bin/docker run --name empire-syslog --rm -h %H -p 10514:10514/udp -e SHUTTLE_URLS=https://collectors.sumologic.com/receiver/v1/http/ZaVnC4dhaV1O9qoFMisVh3fVBJyEQG48sJrjB-hVWnsOR5nLiLa3ZPhRa6PzMOk3GRJdnUZJ9w4jVmImREMwI6ZQwgyti6rbEfx5pCtC0B8OjKifYFlIxA== quay.io/remind/syslog
 
-        ExecStop=/usr/bin/docker stop empire-syslog
+        ExecStop=-/usr/bin/docker stop empire-syslog
 
         [Install]
         WantedBy=multi-user.target
@@ -164,9 +164,9 @@ coreos:
         ExecStartPre=-/usr/bin/docker pull gliderlabs/logspout:latest
         ExecStartPre=-/usr/bin/docker rm --force logspout
 
-        ExecStart=/usr/bin/docker run --name logspout --rm -h %H -p 8000:8000 -v /var/run/docker.sock:/tmp/docker.sock progrium/logspout syslog://${COREOS_PRIVATE_IPV4}:10514
+        ExecStart=/usr/bin/docker run --name logspout --rm -h %H -p 8000:8000 -v /var/run/docker.sock:/tmp/docker.sock progrium/logspout syslog://172.20.20.10:10514
 
-        ExecStop=/usr/bin/docker stop logspout
+        ExecStop=-/usr/bin/docker stop logspout
 
         [Install]
         WantedBy=multi-user.target
