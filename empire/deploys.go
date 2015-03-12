@@ -103,10 +103,6 @@ func (s *imageDeployer) DeployImage(image Image) (*Deploy, error) {
 type commitDeployer struct {
 	ImageDeployer
 
-	// Registry is a docker registry to fallback to if the app doesn't
-	// specify a docker repo.
-	Registry string
-
 	// Organization is a docker repo organization to fallback to if the app
 	// doesn't specify a docker repo.
 	Organization string
@@ -149,5 +145,5 @@ func (s *commitDeployer) DeployCommit(commit Commit) (*Deploy, error) {
 }
 
 func (s *commitDeployer) fallbackRepo(appName AppName) Repo {
-	return Repo(fmt.Sprintf("%s/%s/%s", s.Registry, s.Organization, string(appName)))
+	return Repo(fmt.Sprintf("%s/%s", s.Organization, string(appName)))
 }

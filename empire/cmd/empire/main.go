@@ -72,10 +72,10 @@ var DBFlags = []cli.Flag{
 
 var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
-		Name:   "docker.registry",
+		Name:   "docker.organization",
 		Value:  "",
-		Usage:  "The hostname of the default docker registry to use, when it is not known.",
-		EnvVar: "DOCKER_REGISTRY",
+		Usage:  "The fallback docker registry organization to use when an app is not linked to a docker repo. (e.g. quay.io/remind101)",
+		EnvVar: "DOCKER_ORGANIZATION",
 	},
 	cli.StringFlag{
 		Name:   "docker.socket",
@@ -121,7 +121,7 @@ func main() {
 func empireOptions(c *cli.Context) (empire.Options, error) {
 	opts := empire.Options{}
 
-	opts.Docker.Registry = c.String("docker.registry")
+	opts.Docker.Organization = c.String("docker.organization")
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Fleet.API = c.String("fleet.api")

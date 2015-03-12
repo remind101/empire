@@ -26,7 +26,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 			API: "fake",
 		},
 		Docker: empire.DockerOptions{
-			Registry: "quay.io",
+			Organization: "quay.io/ejholmes",
 			Auth: &docker.AuthConfigurations{
 				Configs: map[string]docker.AuthConfiguration{
 					"quay.io": docker.AuthConfiguration{
