@@ -10,7 +10,7 @@ bootstrap: cmd
 	./build/empire migrate
 
 build: Dockerfile
-	docker build --no-cache -t empire .
+	docker build --no-cache -t remind101/empire .
 
 test:
 	godep go test ./...
