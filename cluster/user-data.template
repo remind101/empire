@@ -72,12 +72,12 @@ coreos:
         User=core
         Restart=on-failure
 
-        ExecStartPre=-/bin/bash -c "cd /home/core/share/router && docker build -t quay.io/remind/empire_router ."
-        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire_router &> /dev/null; exit 0"
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/router && docker build -t remind101/empire-router ."
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire-router &> /dev/null; exit 0"
 
-        ExecStart=/usr/bin/docker run --name empire_router --rm -h %H -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 quay.io/remind/empire_router
+        ExecStart=/usr/bin/docker run --name empire-router --rm -h %H -e "ETCD=${COREOS_PRIVATE_IPV4}:4001" -p ${COREOS_PUBLIC_IPV4}:80:80 remind101/empire-router
 
-        ExecStop=/usr/bin/docker stop empire_router
+        ExecStop=/usr/bin/docker stop empire-router
 
         [Install]
         WantedBy=multi-user.target
@@ -117,11 +117,11 @@ coreos:
         User=core
         Restart=on-failure
 
-        ExecStartPre=-/bin/bash -c "cd /home/core/share/empire && docker build -t quay.io/remind/empire ."
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/empire && docker build -t remind101/empire ."
         ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
-        ExecStartPre=/usr/bin/docker run quay.io/remind/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+        ExecStartPre=/usr/bin/docker run remind101/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
-        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} quay.io/remind/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
         ExecStop=/usr/bin/docker stop empire
 
