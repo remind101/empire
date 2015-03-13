@@ -1,10 +1,10 @@
 #!/bin/bash
 
 repo=$(echo $1 | cut -d : -f 1)
-id=$(echo $1 | cut -d : -f 2)
+tag=$(echo $1 | cut -d : -f 2)
 
 function deploy() {
-  curl --user "${HKUSER}:${HKPASS}" -X POST "${HEROKU_API_URL}/deploys" -d "{\"image\":{\"repo\":\"${repo}\",\"id\":\"${id}\"}}" -H "Accept: application/vnd.heroku+json; version=3" > /dev/null 2>&1
+  curl --user "${HKUSER}:${HKPASS}" -X POST "${HEROKU_API_URL}/deploys" -d "{\"image\":{\"repo\":\"${repo}\",\"tag\":\"${tag}\"}}" -H "Accept: application/vnd.heroku+json; version=3" > /dev/null 2>&1
 }
 
 if deploy; then

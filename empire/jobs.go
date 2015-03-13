@@ -146,7 +146,7 @@ func Schedule(db Inserter, s container.Scheduler, j *Job) (*Job, error) {
 		Command: string(j.Command),
 		Image: container.Image{
 			Repo: string(j.Image.Repo),
-			ID:   j.Image.ID,
+			Tag:  j.Image.Tag,
 		},
 	}
 

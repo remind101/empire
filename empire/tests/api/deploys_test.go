@@ -10,7 +10,7 @@ import (
 type DeployForm struct {
 	Image struct {
 		Repo string `json:"repo"`
-		ID   string `json:"id"`
+		Tag  string `json:"tag"`
 	} `json:"image"`
 }
 
@@ -44,7 +44,7 @@ func mustDeploy(t testing.TB, c *heroku.Client, image empire.Image) Deploy {
 	)
 
 	f.Image.Repo = string(image.Repo)
-	f.Image.ID = string(image.ID)
+	f.Image.Tag = string(image.Tag)
 
 	if err := c.Post(&d, "/deploys", &f); err != nil {
 		t.Fatal(err)

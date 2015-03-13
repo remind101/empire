@@ -8,12 +8,12 @@ import "fmt"
 // rocket image, etc.
 type Image struct {
 	Repo string
-	ID   string
+	Tag  string
 }
 
 // String implements the fmt.Stringer interface.
 func (i Image) String() string {
-	return fmt.Sprintf("%s:%s", i.Repo, i.ID)
+	return fmt.Sprintf("%s:%s", i.Repo, i.Tag)
 }
 
 // Container represents a container.

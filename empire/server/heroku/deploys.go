@@ -15,7 +15,7 @@ type PostDeploys struct {
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
 	Image struct {
-		ID   string `json:"id"`
+		Tag  string `json:"tag"`
 		Repo string `json:"repo"`
 	} `json:"image"`
 }
@@ -30,7 +30,7 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 	d, err := h.DeployImage(empire.Image{
 		Repo: empire.Repo(form.Image.Repo),
-		ID:   form.Image.ID,
+		Tag:  form.Image.Tag,
 	})
 	if err != nil {
 		return err

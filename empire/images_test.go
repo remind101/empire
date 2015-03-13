@@ -5,7 +5,7 @@ import "testing"
 func TestEncodeImage(t *testing.T) {
 	i := Image{
 		Repo: "remind101/r101-api",
-		ID:   "1234",
+		Tag:  "1234",
 	}
 
 	if got, want := encodeImage(i), "remind101/r101-api:1234"; got != want {
@@ -17,7 +17,7 @@ func TestDecodeImage(t *testing.T) {
 	s := "remind101/r101-api:1234"
 	expected := Image{
 		Repo: "remind101/r101-api",
-		ID:   "1234",
+		Tag:  "1234",
 	}
 
 	if got, want := decodeImage(s), expected; got != want {

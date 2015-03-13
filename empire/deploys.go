@@ -118,7 +118,7 @@ func (s *commitDeployer) DeployCommitToApp(app *App, commit Commit) (*Deploy, er
 
 	return s.DeployImageToApp(app, Image{
 		Repo: docker,
-		ID:   commit.Sha,
+		Tag:  commit.Sha,
 	})
 }
 

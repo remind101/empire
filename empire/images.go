@@ -8,7 +8,7 @@ import (
 
 // Image represents a container image, which is tied to a repository.
 type Image struct {
-	ID   string `json:"id"`
+	Tag  string `json:"id"`
 	Repo Repo   `json:"repo"`
 }
 
@@ -31,13 +31,13 @@ func (i Image) Value() (driver.Value, error) {
 }
 
 func encodeImage(i Image) string {
-	return fmt.Sprintf("%s:%s", i.Repo, i.ID)
+	return fmt.Sprintf("%s:%s", i.Repo, i.Tag)
 }
 
 func decodeImage(s string) Image {
 	c := strings.Split(s, ":")
 	return Image{
 		Repo: Repo(c[0]),
-		ID:   c[1],
+		Tag:  c[1],
 	}
 }
