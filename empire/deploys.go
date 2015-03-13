@@ -2,8 +2,6 @@ package empire
 
 import (
 	"fmt"
-
-	"github.com/remind101/empire/empire/pkg/registry"
 )
 
 // DeployID represents the unique identifier for a Deploy.
@@ -101,9 +99,6 @@ type commitDeployer struct {
 	// doesn't specify a docker repo.
 	Organization string
 
-	// resolver is used to resolve a git sha to a docker image.
-	registry *registry.MultiClient
-
 	appsService AppsService
 }
 
@@ -121,14 +116,9 @@ func (s *commitDeployer) DeployCommitToApp(app *App, commit Commit) (*Deploy, er
 		docker = s.fallbackRepo(app.Name)
 	}
 
-	imageID, err := s.registry.ResolveTag(string(docker), commit.Sha)
-	if err != nil {
-		return nil, err
-	}
-
 	return s.DeployImageToApp(app, Image{
 		Repo: docker,
-		ID:   imageID,
+		ID:   commit.Sha,
 	})
 }
 

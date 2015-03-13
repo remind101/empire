@@ -7,7 +7,6 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/container"
-	"github.com/remind101/empire/empire/pkg/registry"
 )
 
 // A function to return the current time. It can be useful to stub this out in
@@ -143,7 +142,6 @@ func New(options Options) (*Empire, error) {
 	commitDeployer := &commitDeployer{
 		Organization:  options.Docker.Organization,
 		ImageDeployer: imageDeployer,
-		registry:      registry.NewMultiClient(options.Docker.Auth),
 		appsService:   apps,
 	}
 

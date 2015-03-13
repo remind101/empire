@@ -114,6 +114,8 @@ coreos:
         TimeoutStartSec=30m
         EnvironmentFile=/etc/environment
         Environment=DOCKER_AUTH_PATH=/tmp/.dockercfg
+        Environment=GITHUB_SECRET=secret
+        Environment=DOCKER_ORGANIZATION=remind101
         User=core
         Restart=on-failure
 
@@ -121,7 +123,7 @@ coreos:
         ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
         ExecStartPre=/usr/bin/docker run remind101/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
-        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -e GITHUB_SECRET=${GITHUB_SECRET} -e DOCKER_ORGANIZATION=${DOCKER_ORGANIZATION} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind/empire server -docker.socket=unix:///tmp/docker.sock -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
         ExecStop=/usr/bin/docker stop empire
 

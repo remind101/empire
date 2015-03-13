@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/empire/pkg/registry"
 	"gopkg.in/yaml.v2"
 )
 
@@ -128,8 +128,16 @@ func (e *ProcfileExtractor) procfile(id string) (string, error) {
 func (e *ProcfileExtractor) pullImage(i Image) error {
 	var a docker.AuthConfiguration
 
-	registry := strings.Split(string(i.Repo), "/")[0]
-	if c, ok := e.Configs[registry]; ok {
+	reg, _, err := registry.Split(string(i.Repo))
+	if err != nil {
+		return err
+	}
+
+	if reg == "" {
+		reg = "https://index.docker.io/v1/"
+	}
+
+	if c, ok := e.Configs[reg]; ok {
 		a = c
 	}
 
