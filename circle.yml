@@ -23,3 +23,6 @@ deployment:
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push remind101/empire
+      - docker push remind101/empire-router
+      - docker push remind101/empire-syslog
+      - docker push remind101/etcd_peers
