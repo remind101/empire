@@ -1,5 +1,8 @@
 # -*- mode: ruby -*-
 # # vi: set ft=ruby :
+#
+# Reloading user-data:
+# sudo coreos-cloudinit --from-file /var/lib/coreos-vagrant/vagrantfile-user-data
 
 # Adds a user-data file to the machine.
 def cloud_config(config)
