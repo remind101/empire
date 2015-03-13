@@ -46,14 +46,8 @@ type imageDeployer struct {
 }
 
 func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error) {
-	if app.Repos.Docker == nil {
-		if err := app.Repos.Set(DockerRepo, image.Repo); err != nil {
-			return nil, err
-		}
-
-		if _, err := s.AppsService.AppsUpdate(app); err != nil {
-			return nil, err
-		}
+	if err := s.AppsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
+		return nil, err
 	}
 
 	// Grab the latest config.
@@ -116,6 +110,10 @@ type commitDeployer struct {
 // Deploy commit deploys the commit to a specific app.
 func (s *commitDeployer) DeployCommitToApp(app *App, commit Commit) (*Deploy, error) {
 	var docker Repo
+
+	if err := s.appsService.AppsEnsureRepo(app, GitHubRepo, commit.Repo); err != nil {
+		return nil, err
+	}
 
 	if app.Repos.Docker != nil {
 		docker = *app.Repos.Docker
