@@ -57,6 +57,19 @@ type Repos struct {
 	Docker *Repo `json:"docker" db:"docker_repo"`
 }
 
+func (r *Repos) Set(repoType string, value Repo) error {
+	switch repoType {
+	case GitHubRepo:
+		r.GitHub = &value
+	case DockerRepo:
+		r.Docker = &value
+	default:
+		return fmt.Errorf("repo type not defined: %s", repoType)
+	}
+
+	return nil
+}
+
 // App represents an app.
 type App struct {
 	Name AppName `json:"name" db:"name"`
@@ -85,6 +98,11 @@ type AppsCreator interface {
 	AppsCreate(*App) (*App, error)
 }
 
+type AppsUpdater interface {
+	AppsUpdate(*App) (int64, error)
+	AppsEnsureRepo(*App, string, Repo) error
+}
+
 type AppsDestroyer interface {
 	AppsDestroy(*App) error
 }
@@ -98,6 +116,7 @@ type AppsFinder interface {
 
 type AppsService interface {
 	AppsCreator
+	AppsUpdater
 	AppsDestroyer
 	AppsFinder
 }
@@ -109,6 +128,14 @@ type appsService struct {
 
 func (s *appsService) AppsCreate(app *App) (*App, error) {
 	return AppsCreate(s.DB, app)
+}
+
+func (s *appsService) AppsUpdate(app *App) (int64, error) {
+	return AppsUpdate(s.DB, app)
+}
+
+func (s *appsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
+	return AppsEnsureRepo(s.DB, app, repoType, repo)
 }
 
 func (s *appsService) AppsDestroy(app *App) error {
@@ -143,6 +170,32 @@ func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, 
 // AppsCreate inserts the app into the database.
 func AppsCreate(db Inserter, app *App) (*App, error) {
 	return app, db.Insert(app)
+}
+
+// AppsUpdate updates an app.
+func AppsUpdate(db Updater, app *App) (int64, error) {
+	return db.Update(app)
+}
+
+// AppsEnsureRepo will set the repo if it's not set.
+func AppsEnsureRepo(db Updater, app *App, repoType string, repo Repo) error {
+	switch repoType {
+	case DockerRepo:
+		if app.Repos.Docker != nil {
+			return nil
+		}
+	case GitHubRepo:
+		if app.Repos.GitHub != nil {
+			return nil
+		}
+	}
+
+	if err := app.Repos.Set(repoType, repo); err != nil {
+		return err
+	}
+
+	_, err := AppsUpdate(db, app)
+	return err
 }
 
 // AppsDestroy destroys an app.
@@ -190,16 +243,27 @@ func AppsFindOrCreateByRepo(db DB, repoType string, repo Repo) (*App, error) {
 		return a, err
 	}
 
-	// If the app wasn't found, create a new up linked to this repo.
-	if a == nil {
-		n := NewAppNameFromRepo(repo)
-		return AppsCreate(db, &App{
-			Name: n,
-			Repos: Repos{
-				Docker: &repo,
-			},
-		})
+	// If the app wasn't found, create a new app linked to this repo.
+	if a != nil {
+		return a, nil
 	}
 
-	return a, nil
+	n := NewAppNameFromRepo(repo)
+
+	a, err = AppsFind(db, n)
+	if err != nil {
+		return a, err
+	}
+
+	// If the app exists, update the repo value.
+	if a != nil {
+		return a, AppsEnsureRepo(db, a, repoType, repo)
+	}
+
+	a = &App{Name: n}
+	if err := a.Repos.Set(repoType, repo); err != nil {
+		return a, err
+	}
+
+	return AppsCreate(db, a)
 }

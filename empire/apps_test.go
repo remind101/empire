@@ -27,6 +27,10 @@ type mockAppsService struct {
 	AppsFindOrCreateByRepoFunc func(repoType string, repo Repo) (*App, error)
 }
 
+func (s *mockAppsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
+	return nil
+}
+
 func (s *mockAppsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
 	if s.AppsFindOrCreateByRepoFunc != nil {
 		return s.AppsFindOrCreateByRepoFunc(repoType, repo)

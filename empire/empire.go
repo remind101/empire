@@ -21,6 +21,9 @@ var DefaultOptions = Options{}
 
 // DockerOptions is a set of options to configure a docker api client.
 type DockerOptions struct {
+	// The default docker organization to use.
+	Organization string
+
 	// The unix socket to connect to the docker api.
 	Socket string
 
@@ -129,11 +132,17 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
-	deploys := &deploysService{
+	imageDeployer := &imageDeployer{
 		AppsService:     apps,
 		ConfigsService:  configs,
 		SlugsService:    slugs,
 		ReleasesService: releases,
+	}
+
+	commitDeployer := &commitDeployer{
+		Organization:  options.Docker.Organization,
+		ImageDeployer: imageDeployer,
+		appsService:   apps,
 	}
 
 	return &Empire{
@@ -141,7 +150,7 @@ func New(options Options) (*Empire, error) {
 		AccessTokensService: accessTokens,
 		AppsService:         apps,
 		ConfigsService:      configs,
-		DeploysService:      deploys,
+		DeploysService:      commitDeployer,
 		JobsService:         jobs,
 		JobStatesService:    jobStates,
 		Manager:             manager,

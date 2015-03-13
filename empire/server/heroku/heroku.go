@@ -13,18 +13,8 @@ import (
 // https://devcenter.heroku.com/articles/platform-api-reference#clients
 const AcceptHeader = "application/vnd.heroku+json; version=3"
 
-var DefaultOptions = Options{}
-
-type Options struct {
-	GitHub struct {
-		ClientID     string
-		ClientSecret string
-		Organization string
-	}
-}
-
 // New creates the API routes and returns a new http.Handler to serve them.
-func New(e *empire.Empire, options Options) http.Handler {
+func New(e *empire.Empire, auth Authorizer) http.Handler {
 	r := httpx.NewRouter()
 	r.ErrorHandler = func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)
@@ -55,7 +45,6 @@ func New(e *empire.Empire, options Options) http.Handler {
 	r.Handle("PATCH", "/apps/{app}/formation", Authenticate(e, &PatchFormation{e})) // hk scale
 
 	// OAuth
-	auth := NewAuthorizer(options.GitHub.ClientID, options.GitHub.ClientSecret, options.GitHub.Organization)
 	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
 	return r
