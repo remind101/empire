@@ -257,7 +257,7 @@ func AppsFindOrCreateByRepo(db DB, repoType string, repo Repo) (*App, error) {
 
 	// If the app exists, update the repo value.
 	if a != nil {
-		return a, nil
+		return a, AppsEnsureRepo(db, a, repoType, repo)
 	}
 
 	a = &App{Name: n}
