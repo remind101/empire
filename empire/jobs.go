@@ -13,7 +13,7 @@ type Job struct {
 	ID string `db:"id"`
 
 	AppName        string `db:"app_id"`
-	ReleaseVersion `db:"release_version"`
+	ReleaseVersion int    `db:"release_version"`
 	ProcessType    `db:"process_type"`
 	Instance       int `db:"instance"`
 
@@ -107,7 +107,7 @@ func JobsDestroy(db Deleter, job *Job) error {
 // JobsListQuery is a query object to filter results from JobsRepository List.
 type JobsListQuery struct {
 	App     string
-	Release ReleaseVersion
+	Release int
 }
 
 // JobsList returns a filtered list of Jobs.

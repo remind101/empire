@@ -142,11 +142,11 @@ func ScaleDown(existing []*Job, release *Release, config *Config, slug *Slug, p 
 }
 
 // newContainerName returns a new Name with the proper format.
-func newContainerName(name string, v ReleaseVersion, t ProcessType, i int) string {
+func newContainerName(name string, v int, t ProcessType, i int) string {
 	return fmt.Sprintf("%s.%d.%s.%d", name, v, t, i)
 }
 
-func buildJobs(name string, version ReleaseVersion, image Image, vars Vars, f Formation) []*Job {
+func buildJobs(name string, version int, image Image, vars Vars, f Formation) []*Job {
 	var jobs []*Job
 
 	// Build jobs for each process type
