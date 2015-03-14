@@ -136,7 +136,7 @@ func ConfigsFind(db Queryier, id string) (*Config, error) {
 
 // ConfigsFindByApp finds the current config for the given App.
 func ConfigsFindByApp(db Queryier, app *App) (*Config, error) {
-	return ConfigsFindBy(db, "app_id", string(app.Name))
+	return ConfigsFindBy(db, "app_id", app.Name)
 }
 
 // ConfigsApply gets the current config for the given app, copies it, merges the

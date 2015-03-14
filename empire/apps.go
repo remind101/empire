@@ -194,7 +194,7 @@ func AppsAll(db Queryier) ([]*App, error) {
 
 // Finds an app by name.
 func AppsFind(db Queryier, name string) (*App, error) {
-	return AppsFindBy(db, "name", string(name))
+	return AppsFindBy(db, "name", name)
 }
 
 // Finds an app by it's Repo field.

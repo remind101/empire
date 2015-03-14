@@ -2,34 +2,16 @@ package empire
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"time"
 
 	"gopkg.in/gorp.v1"
 )
 
-// ReleaseID represents the unique identifier for a Release.
-type ReleaseID string
-
-// Scan implements the sql.Scanner interface.
-func (r *ReleaseID) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*r = ReleaseID(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (r ReleaseID) Value() (driver.Value, error) {
-	return driver.Value(string(r)), nil
-}
-
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID  ReleaseID `json:"id" db:"id"`
-	Ver int       `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
+	ID  string `json:"id" db:"id"`
+	Ver int    `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
 
 	AppName  string `json:"-" db:"app_id"`
 	ConfigID string `json:"-" db:"config_id"`
