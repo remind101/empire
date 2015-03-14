@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"database/sql/driver"
 	"fmt"
 	"time"
 
@@ -9,26 +8,9 @@ import (
 	"gopkg.in/gorp.v1"
 )
 
-// JobID represents a unique identifier for a Job.
-type JobID string
-
-// Scan implements the sql.Scanner interface.
-func (id *JobID) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*id = JobID(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (id JobID) Value() (driver.Value, error) {
-	return driver.Value(string(id)), nil
-}
-
 // Job represents a Job that was submitted to the scheduler.
 type Job struct {
-	ID JobID `db:"id"`
+	ID string `db:"id"`
 
 	AppName        string `db:"app_id"`
 	ReleaseVersion `db:"release_version"`
