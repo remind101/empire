@@ -104,24 +104,24 @@ type AppsService interface {
 }
 
 type appsService struct {
-	DB
+	*db
 	JobsService
 }
 
 func (s *appsService) AppsCreate(app *App) (*App, error) {
-	return AppsCreate(s.DB, app)
+	return AppsCreate(s.db, app)
 }
 
 func (s *appsService) AppsUpdate(app *App) (int64, error) {
-	return AppsUpdate(s.DB, app)
+	return AppsUpdate(s.db, app)
 }
 
 func (s *appsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
-	return AppsEnsureRepo(s.DB, app, repoType, repo)
+	return AppsEnsureRepo(s.db, app, repoType, repo)
 }
 
 func (s *appsService) AppsDestroy(app *App) error {
-	if err := AppsDestroy(s.DB, app); err != nil {
+	if err := AppsDestroy(s.db, app); err != nil {
 		return err
 	}
 
@@ -134,33 +134,33 @@ func (s *appsService) AppsDestroy(app *App) error {
 }
 
 func (s *appsService) AppsAll() ([]*App, error) {
-	return AppsAll(s.DB)
+	return AppsAll(s.db)
 }
 
 func (s *appsService) AppsFind(name string) (*App, error) {
-	return AppsFind(s.DB, name)
+	return AppsFind(s.db, name)
 }
 
 func (s *appsService) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
-	return AppsFindByRepo(s.DB, repoType, repo)
+	return AppsFindByRepo(s.db, repoType, repo)
 }
 
 func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
-	return AppsFindOrCreateByRepo(s.DB, repoType, repo)
+	return AppsFindOrCreateByRepo(s.db, repoType, repo)
 }
 
 // AppsCreate inserts the app into the database.
-func AppsCreate(db Inserter, app *App) (*App, error) {
+func AppsCreate(db *db, app *App) (*App, error) {
 	return app, db.Insert(app)
 }
 
 // AppsUpdate updates an app.
-func AppsUpdate(db Updater, app *App) (int64, error) {
+func AppsUpdate(db *db, app *App) (int64, error) {
 	return db.Update(app)
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
-func AppsEnsureRepo(db Updater, app *App, repoType string, repo Repo) error {
+func AppsEnsureRepo(db *db, app *App, repoType string, repo Repo) error {
 	switch repoType {
 	case DockerRepo:
 		if app.Repos.Docker != nil {
@@ -181,29 +181,29 @@ func AppsEnsureRepo(db Updater, app *App, repoType string, repo Repo) error {
 }
 
 // AppsDestroy destroys an app.
-func AppsDestroy(db Deleter, app *App) error {
+func AppsDestroy(db *db, app *App) error {
 	_, err := db.Delete(app)
 	return err
 }
 
 // AppsAll returns all Apps.
-func AppsAll(db Queryier) ([]*App, error) {
+func AppsAll(db *db) ([]*App, error) {
 	var apps []*App
 	return apps, db.Select(&apps, `select * from apps order by name`)
 }
 
 // Finds an app by name.
-func AppsFind(db Queryier, name string) (*App, error) {
+func AppsFind(db *db, name string) (*App, error) {
 	return AppsFindBy(db, "name", name)
 }
 
 // Finds an app by it's Repo field.
-func AppsFindByRepo(db Queryier, repoType string, repo Repo) (*App, error) {
+func AppsFindByRepo(db *db, repoType string, repo Repo) (*App, error) {
 	return AppsFindBy(db, fmt.Sprintf("%s_repo", repoType), string(repo))
 }
 
 // AppsFindBy finds an app by a field.
-func AppsFindBy(db Queryier, field string, value interface{}) (*App, error) {
+func AppsFindBy(db *db, field string, value interface{}) (*App, error) {
 	var app App
 
 	if err := findBy(db, &app, "apps", field, value); err != nil {
@@ -219,7 +219,7 @@ func AppsFindBy(db Queryier, field string, value interface{}) (*App, error) {
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
-func AppsFindOrCreateByRepo(db DB, repoType string, repo Repo) (*App, error) {
+func AppsFindOrCreateByRepo(db *db, repoType string, repo Repo) (*App, error) {
 	a, err := AppsFindByRepo(db, repoType, repo)
 	if err != nil {
 		return a, err

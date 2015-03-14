@@ -65,17 +65,17 @@ type JobsService interface {
 }
 
 type jobsService struct {
-	DB
+	*db
 	scheduler container.Scheduler
 }
 
 func (s *jobsService) JobsList(q JobsListQuery) ([]*Job, error) {
-	return JobsList(s.DB, q)
+	return JobsList(s.db, q)
 }
 
 func (s *jobsService) Schedule(jobs ...*Job) error {
 	for _, j := range jobs {
-		if _, err := Schedule(s.DB, s.scheduler, j); err != nil {
+		if _, err := Schedule(s.db, s.scheduler, j); err != nil {
 			return err
 		}
 	}
@@ -85,7 +85,7 @@ func (s *jobsService) Schedule(jobs ...*Job) error {
 
 func (s *jobsService) Unschedule(jobs ...*Job) error {
 	for _, j := range jobs {
-		if err := Unschedule(s.DB, s.scheduler, j); err != nil {
+		if err := Unschedule(s.db, s.scheduler, j); err != nil {
 			return err
 		}
 	}
@@ -94,12 +94,12 @@ func (s *jobsService) Unschedule(jobs ...*Job) error {
 }
 
 // JobsCreate inserts the Job into the database.
-func JobsCreate(db Inserter, job *Job) (*Job, error) {
+func JobsCreate(db *db, job *Job) (*Job, error) {
 	return job, db.Insert(job)
 }
 
 // JobsDestroy removes a Job from the database.
-func JobsDestroy(db Deleter, job *Job) error {
+func JobsDestroy(db *db, job *Job) error {
 	_, err := db.Delete(job)
 	return err
 }
@@ -111,14 +111,14 @@ type JobsListQuery struct {
 }
 
 // JobsList returns a filtered list of Jobs.
-func JobsList(db Queryier, q JobsListQuery) ([]*Job, error) {
+func JobsList(db *db, q JobsListQuery) ([]*Job, error) {
 	var jobs []*Job
 	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
 	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
 }
 
 // Schedule schedules to job onto the cluster, then persists it to the database.
-func Schedule(db Inserter, s container.Scheduler, j *Job) (*Job, error) {
+func Schedule(db *db, s container.Scheduler, j *Job) (*Job, error) {
 	env := environment(j.Environment)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", j.ProcessType, j.AppName)
 
@@ -140,7 +140,7 @@ func Schedule(db Inserter, s container.Scheduler, j *Job) (*Job, error) {
 	return JobsCreate(db, j)
 }
 
-func Unschedule(db Deleter, s container.Scheduler, j *Job) error {
+func Unschedule(db *db, s container.Scheduler, j *Job) error {
 	if err := s.Unschedule(j.ContainerName()); err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ type JobStatesService interface {
 }
 
 type jobStatesService struct {
-	DB
+	*db
 	JobsService
 	scheduler container.Scheduler
 }

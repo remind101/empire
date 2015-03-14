@@ -29,30 +29,30 @@ type SlugsService interface {
 
 // slugsService is a fake implementation of the Repository interface.
 type slugsService struct {
-	DB
+	*db
 	extractor Extractor
 }
 
 func (s *slugsService) SlugsCreate(slug *Slug) (*Slug, error) {
-	return SlugsCreate(s.DB, slug)
+	return SlugsCreate(s.db, slug)
 }
 
 func (s *slugsService) SlugsFind(id string) (*Slug, error) {
-	return SlugsFind(s.DB, id)
+	return SlugsFind(s.db, id)
 }
 
 func (s *slugsService) SlugsFindByImage(image Image) (*Slug, error) {
-	return SlugsFindByImage(s.DB, image)
+	return SlugsFindByImage(s.db, image)
 }
 
 func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
-	return SlugsCreateByImage(s.DB, s.extractor, image)
+	return SlugsCreateByImage(s.db, s.extractor, image)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func SlugsCreateByImage(db DB, e Extractor, image Image) (*Slug, error) {
+func SlugsCreateByImage(db *db, e Extractor, image Image) (*Slug, error) {
 	slug, err := SlugsFindByImage(db, image)
 	if err != nil {
 		return slug, err
@@ -88,22 +88,22 @@ func SlugsExtract(e Extractor, image Image) (*Slug, error) {
 }
 
 // SlugsCreate inserts a Slug into the database.
-func SlugsCreate(db Inserter, slug *Slug) (*Slug, error) {
+func SlugsCreate(db *db, slug *Slug) (*Slug, error) {
 	return slug, db.Insert(slug)
 }
 
 // SlugsFind finds a slug by id.
-func SlugsFind(db Queryier, id string) (*Slug, error) {
+func SlugsFind(db *db, id string) (*Slug, error) {
 	return SlugsFindBy(db, "id", id)
 }
 
 // SlugsFindByImage finds a slug by image.
-func SlugsFindByImage(db Queryier, image Image) (*Slug, error) {
+func SlugsFindByImage(db *db, image Image) (*Slug, error) {
 	return SlugsFindBy(db, "image", image.String())
 }
 
 // SlugsFindBy finds a slug by a field.
-func SlugsFindBy(db Queryier, field string, value interface{}) (*Slug, error) {
+func SlugsFindBy(db *db, field string, value interface{}) (*Slug, error) {
 	var slug Slug
 
 	q := fmt.Sprintf(`select * from slugs where %s = $1`, field)
