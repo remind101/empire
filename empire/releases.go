@@ -52,15 +52,15 @@ type releasesService struct {
 }
 
 func (s *releasesService) ReleasesLast(app *App) (*Release, error) {
-	return ReleasesLast(s.db, app.Name)
+	return releasesLast(s.db, app.Name)
 }
 
 func (s *releasesService) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return ReleasesAllByAppName(s.db, app.Name)
+	return releasesAllByAppName(s.db, app.Name)
 }
 
 func (s *releasesService) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
-	return ReleasesFindByAppNameAndVersion(s.db, app.Name, v)
+	return releasesFindByAppNameAndVersion(s.db, app.Name, v)
 }
 
 // Create creates the release, then sets the current process formation on the release.
@@ -72,7 +72,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 		Description: desc,
 	}
 
-	r, err := ReleasesCreate(s.db, r)
+	r, err := releasesCreate(s.db, r)
 	if err != nil {
 		return r, err
 	}
@@ -94,7 +94,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
 	prev := release.Ver - 1
-	last, err := ReleasesFindByAppNameAndVersion(s.db, release.AppName, prev)
+	last, err := releasesFindByAppNameAndVersion(s.db, release.AppName, prev)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 
 // ReleasesFindByAppNameAndVersion finds a specific version of a release for a
 // given app.
-func ReleasesFindByAppNameAndVersion(db *db, appName string, v int) (*Release, error) {
+func releasesFindByAppNameAndVersion(db *db, appName string, v int) (*Release, error) {
 	var release Release
 
 	if err := db.SelectOne(&release, `select * from releases where app_id = $1 and version = $2 limit 1`, appName, v); err != nil {
@@ -137,14 +137,14 @@ func ReleasesFindByAppNameAndVersion(db *db, appName string, v int) (*Release, e
 }
 
 // ReleasesCreate creates a new Release and inserts it into the database.
-func ReleasesCreate(db *db, release *Release) (*Release, error) {
+func releasesCreate(db *db, release *Release) (*Release, error) {
 	t, err := db.Begin()
 	if err != nil {
 		return release, err
 	}
 
 	// Get the last release version for this app.
-	v, err := ReleasesLastVersion(t, release.AppName)
+	v, err := releasesLastVersion(t, release.AppName)
 	if err != nil {
 		return release, err
 	}
@@ -162,7 +162,7 @@ func ReleasesCreate(db *db, release *Release) (*Release, error) {
 // ReleasesLastVersion returns the last ReleaseVersion for the given App. This
 // function also ensures that the last release is locked until the transaction
 // is commited, so the release version can be incremented atomically.
-func ReleasesLastVersion(db interface {
+func releasesLastVersion(db interface {
 	SelectOne(interface{}, string, ...interface{}) error
 }, appName string) (version int, err error) {
 	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
@@ -175,7 +175,7 @@ func ReleasesLastVersion(db interface {
 }
 
 // ReleasesLast returns the last Release for the given App.
-func ReleasesLast(db *db, appName string) (*Release, error) {
+func releasesLast(db *db, appName string) (*Release, error) {
 	var release Release
 
 	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, appName); err != nil {
@@ -190,7 +190,7 @@ func ReleasesLast(db *db, appName string) (*Release, error) {
 }
 
 // ReleasesFindByAppName finds the latest release for the given app.
-func ReleasesAllByAppName(db *db, appName string) ([]*Release, error) {
+func releasesAllByAppName(db *db, appName string) ([]*Release, error) {
 	var rs []*Release
 	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, appName)
 }

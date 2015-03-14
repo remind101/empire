@@ -70,7 +70,7 @@ type jobsService struct {
 }
 
 func (s *jobsService) JobsList(q JobsListQuery) ([]*Job, error) {
-	return JobsList(s.db, q)
+	return jobsList(s.db, q)
 }
 
 func (s *jobsService) Schedule(jobs ...*Job) error {
@@ -85,7 +85,7 @@ func (s *jobsService) Schedule(jobs ...*Job) error {
 
 func (s *jobsService) Unschedule(jobs ...*Job) error {
 	for _, j := range jobs {
-		if err := Unschedule(s.db, s.scheduler, j); err != nil {
+		if err := unschedule(s.db, s.scheduler, j); err != nil {
 			return err
 		}
 	}
@@ -94,12 +94,12 @@ func (s *jobsService) Unschedule(jobs ...*Job) error {
 }
 
 // JobsCreate inserts the Job into the database.
-func JobsCreate(db *db, job *Job) (*Job, error) {
+func jobsCreate(db *db, job *Job) (*Job, error) {
 	return job, db.Insert(job)
 }
 
 // JobsDestroy removes a Job from the database.
-func JobsDestroy(db *db, job *Job) error {
+func jobsDestroy(db *db, job *Job) error {
 	_, err := db.Delete(job)
 	return err
 }
@@ -111,7 +111,7 @@ type JobsListQuery struct {
 }
 
 // JobsList returns a filtered list of Jobs.
-func JobsList(db *db, q JobsListQuery) ([]*Job, error) {
+func jobsList(db *db, q JobsListQuery) ([]*Job, error) {
 	var jobs []*Job
 	query := `select * from jobs where (app_id = $1 OR $1 = '') and (release_version = $2 OR $2 = 0)`
 	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
@@ -137,15 +137,15 @@ func Schedule(db *db, s container.Scheduler, j *Job) (*Job, error) {
 		return nil, err
 	}
 
-	return JobsCreate(db, j)
+	return jobsCreate(db, j)
 }
 
-func Unschedule(db *db, s container.Scheduler, j *Job) error {
+func unschedule(db *db, s container.Scheduler, j *Job) error {
 	if err := s.Unschedule(j.ContainerName()); err != nil {
 		return err
 	}
 
-	return JobsDestroy(db, j)
+	return jobsDestroy(db, j)
 }
 
 type JobStatesFinder interface {

@@ -83,7 +83,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 }
 
 func (m *manager) scaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) error {
-	jobs := ScaleUp(release, config, slug, p, q)
+	jobs := scaleUp(release, config, slug, p, q)
 	return m.JobsService.Schedule(jobs...)
 }
 
@@ -96,13 +96,13 @@ func (m *manager) scaleDown(release *Release, config *Config, slug *Slug, p *Pro
 		return err
 	}
 
-	jobs := ScaleDown(existing, release, config, slug, p, q)
+	jobs := scaleDown(existing, release, config, slug, p, q)
 
 	return m.JobsService.Unschedule(jobs...)
 }
 
-// ScaleUp returns new Jobs to schedule when scaling up.
-func ScaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
+// scaleUp returns new Jobs to schedule when scaling up.
+func scaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
 	var jobs []*Job
 
 	for i := p.Quantity + 1; i <= q; i++ {
@@ -120,8 +120,8 @@ func ScaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) []
 	return jobs
 }
 
-// ScaleDown returns Jobs to unschedule when scaling down.
-func ScaleDown(existing []*Job, release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
+// scaleDown returns Jobs to unschedule when scaling down.
+func scaleDown(existing []*Job, release *Release, config *Config, slug *Slug, p *Process, q int) []*Job {
 	// Create a map for easy lookup
 	jm := make(map[string]*Job, len(existing))
 	for _, j := range existing {

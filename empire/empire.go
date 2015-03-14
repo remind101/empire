@@ -69,7 +69,7 @@ type Empire struct {
 
 // New returns a new Empire instance.
 func New(options Options) (*Empire, error) {
-	db, err := NewDB(options.DB)
+	db, err := newDB(options.DB)
 	if err != nil {
 		return nil, err
 	}

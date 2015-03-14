@@ -109,19 +109,19 @@ type appsService struct {
 }
 
 func (s *appsService) AppsCreate(app *App) (*App, error) {
-	return AppsCreate(s.db, app)
+	return appsCreate(s.db, app)
 }
 
 func (s *appsService) AppsUpdate(app *App) (int64, error) {
-	return AppsUpdate(s.db, app)
+	return appsUpdate(s.db, app)
 }
 
 func (s *appsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
-	return AppsEnsureRepo(s.db, app, repoType, repo)
+	return appsEnsureRepo(s.db, app, repoType, repo)
 }
 
 func (s *appsService) AppsDestroy(app *App) error {
-	if err := AppsDestroy(s.db, app); err != nil {
+	if err := appsDestroy(s.db, app); err != nil {
 		return err
 	}
 
@@ -134,33 +134,33 @@ func (s *appsService) AppsDestroy(app *App) error {
 }
 
 func (s *appsService) AppsAll() ([]*App, error) {
-	return AppsAll(s.db)
+	return appsAll(s.db)
 }
 
 func (s *appsService) AppsFind(name string) (*App, error) {
-	return AppsFind(s.db, name)
+	return appsFind(s.db, name)
 }
 
 func (s *appsService) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
-	return AppsFindByRepo(s.db, repoType, repo)
+	return appsFindByRepo(s.db, repoType, repo)
 }
 
 func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
-	return AppsFindOrCreateByRepo(s.db, repoType, repo)
+	return appsFindOrCreateByRepo(s.db, repoType, repo)
 }
 
 // AppsCreate inserts the app into the database.
-func AppsCreate(db *db, app *App) (*App, error) {
+func appsCreate(db *db, app *App) (*App, error) {
 	return app, db.Insert(app)
 }
 
 // AppsUpdate updates an app.
-func AppsUpdate(db *db, app *App) (int64, error) {
+func appsUpdate(db *db, app *App) (int64, error) {
 	return db.Update(app)
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
-func AppsEnsureRepo(db *db, app *App, repoType string, repo Repo) error {
+func appsEnsureRepo(db *db, app *App, repoType string, repo Repo) error {
 	switch repoType {
 	case DockerRepo:
 		if app.Repos.Docker != nil {
@@ -176,34 +176,34 @@ func AppsEnsureRepo(db *db, app *App, repoType string, repo Repo) error {
 		return err
 	}
 
-	_, err := AppsUpdate(db, app)
+	_, err := appsUpdate(db, app)
 	return err
 }
 
 // AppsDestroy destroys an app.
-func AppsDestroy(db *db, app *App) error {
+func appsDestroy(db *db, app *App) error {
 	_, err := db.Delete(app)
 	return err
 }
 
 // AppsAll returns all Apps.
-func AppsAll(db *db) ([]*App, error) {
+func appsAll(db *db) ([]*App, error) {
 	var apps []*App
 	return apps, db.Select(&apps, `select * from apps order by name`)
 }
 
 // Finds an app by name.
-func AppsFind(db *db, name string) (*App, error) {
-	return AppsFindBy(db, "name", name)
+func appsFind(db *db, name string) (*App, error) {
+	return appsFindBy(db, "name", name)
 }
 
 // Finds an app by it's Repo field.
-func AppsFindByRepo(db *db, repoType string, repo Repo) (*App, error) {
-	return AppsFindBy(db, fmt.Sprintf("%s_repo", repoType), string(repo))
+func appsFindByRepo(db *db, repoType string, repo Repo) (*App, error) {
+	return appsFindBy(db, fmt.Sprintf("%s_repo", repoType), string(repo))
 }
 
 // AppsFindBy finds an app by a field.
-func AppsFindBy(db *db, field string, value interface{}) (*App, error) {
+func appsFindBy(db *db, field string, value interface{}) (*App, error) {
 	var app App
 
 	if err := findBy(db, &app, "apps", field, value); err != nil {
@@ -219,8 +219,8 @@ func AppsFindBy(db *db, field string, value interface{}) (*App, error) {
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
-func AppsFindOrCreateByRepo(db *db, repoType string, repo Repo) (*App, error) {
-	a, err := AppsFindByRepo(db, repoType, repo)
+func appsFindOrCreateByRepo(db *db, repoType string, repo Repo) (*App, error) {
+	a, err := appsFindByRepo(db, repoType, repo)
 	if err != nil {
 		return a, err
 	}
@@ -232,14 +232,14 @@ func AppsFindOrCreateByRepo(db *db, repoType string, repo Repo) (*App, error) {
 
 	n := NewAppNameFromRepo(repo)
 
-	a, err = AppsFind(db, n)
+	a, err = appsFind(db, n)
 	if err != nil {
 		return a, err
 	}
 
 	// If the app exists, update the repo value.
 	if a != nil {
-		return a, AppsEnsureRepo(db, a, repoType, repo)
+		return a, appsEnsureRepo(db, a, repoType, repo)
 	}
 
 	a = &App{Name: n}
@@ -247,5 +247,5 @@ func AppsFindOrCreateByRepo(db *db, repoType string, repo Repo) (*App, error) {
 		return a, err
 	}
 
-	return AppsCreate(db, a)
+	return appsCreate(db, a)
 }

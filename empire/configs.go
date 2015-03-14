@@ -91,30 +91,30 @@ type configsService struct {
 }
 
 func (s *configsService) ConfigsCreate(config *Config) (*Config, error) {
-	return ConfigsCreate(s.db, config)
+	return configsCreate(s.db, config)
 }
 
 func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
-	return ConfigsCurrent(s.db, app)
+	return configsCurrent(s.db, app)
 }
 
 func (s *configsService) ConfigsFind(id string) (*Config, error) {
-	return ConfigsFind(s.db, id)
+	return configsFind(s.db, id)
 }
 
 func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
-	return ConfigsApply(s.db, app, vars)
+	return configsApply(s.db, app, vars)
 }
 
 // ConfigsCreate inserts a Config in the database.
-func ConfigsCreate(db *db, config *Config) (*Config, error) {
+func configsCreate(db *db, config *Config) (*Config, error) {
 	return config, db.Insert(config)
 }
 
 // ConfigsCurrent returns the current Config for the given app, creating it if
 // it does not already exist.
-func ConfigsCurrent(db *db, app *App) (*Config, error) {
-	c, err := ConfigsFindByApp(db, app)
+func configsCurrent(db *db, app *App) (*Config, error) {
+	c, err := configsFindByApp(db, app)
 	if err != nil {
 		return nil, err
 	}
@@ -123,26 +123,25 @@ func ConfigsCurrent(db *db, app *App) (*Config, error) {
 		return c, nil
 	}
 
-	return ConfigsCreate(db, &Config{
+	return configsCreate(db, &Config{
 		AppName: app.Name,
 		Vars:    make(Vars),
 	})
 }
 
-// ConfigsFind finds a Config by id.
-func ConfigsFind(db *db, id string) (*Config, error) {
-	return ConfigsFindBy(db, "id", id)
+func configsFind(db *db, id string) (*Config, error) {
+	return configsFindBy(db, "id", id)
 }
 
 // ConfigsFindByApp finds the current config for the given App.
-func ConfigsFindByApp(db *db, app *App) (*Config, error) {
-	return ConfigsFindBy(db, "app_id", app.Name)
+func configsFindByApp(db *db, app *App) (*Config, error) {
+	return configsFindBy(db, "app_id", app.Name)
 }
 
 // ConfigsApply gets the current config for the given app, copies it, merges the
 // new Vars in, then inserts it.
-func ConfigsApply(db *db, app *App, vars Vars) (*Config, error) {
-	c, err := ConfigsCurrent(db, app)
+func configsApply(db *db, app *App, vars Vars) (*Config, error) {
+	c, err := configsCurrent(db, app)
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +153,11 @@ func ConfigsApply(db *db, app *App, vars Vars) (*Config, error) {
 		}
 	}
 
-	return ConfigsCreate(db, NewConfig(c, vars))
+	return configsCreate(db, NewConfig(c, vars))
 }
 
 // ConfigsFindBy finds a Config by a field.
-func ConfigsFindBy(db *db, field string, value interface{}) (*Config, error) {
+func configsFindBy(db *db, field string, value interface{}) (*Config, error) {
 	var config Config
 
 	if err := db.SelectOne(&config, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, value); err != nil {

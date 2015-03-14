@@ -13,8 +13,8 @@ type db struct {
 	dbmap *gorp.DbMap
 }
 
-// NewDB returns a new db instance with table mappings configured.
-func NewDB(uri string) (*db, error) {
+// newDB returns a new db instance with table mappings configured.
+func newDB(uri string) (*db, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
 		return nil, err
