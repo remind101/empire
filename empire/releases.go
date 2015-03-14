@@ -36,7 +36,7 @@ type Release struct {
 	Ver ReleaseVersion `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
 
 	AppName  string `json:"-" db:"app_id"`
-	ConfigID `json:"-" db:"config_id"`
+	ConfigID string `json:"-" db:"config_id"`
 	SlugID   `json:"-" db:"slug_id"`
 
 	Description string    `json:"description" db:"description"`
