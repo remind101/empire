@@ -33,7 +33,7 @@ type Release struct {
 
 	AppName  string `json:"-" db:"app_id"`
 	ConfigID string `json:"-" db:"config_id"`
-	SlugID   `json:"-" db:"slug_id"`
+	SlugID   string `json:"-" db:"slug_id"`
 
 	Description string    `json:"description" db:"description"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
