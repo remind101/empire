@@ -132,6 +132,6 @@ func (s *commitDeployer) DeployCommit(commit Commit) (*Deploy, error) {
 	return s.DeployCommitToApp(app, commit)
 }
 
-func (s *commitDeployer) fallbackRepo(appName AppName) Repo {
-	return Repo(fmt.Sprintf("%s/%s", s.Organization, string(appName)))
+func (s *commitDeployer) fallbackRepo(appName string) Repo {
+	return Repo(fmt.Sprintf("%s/%s", s.Organization, appName))
 }

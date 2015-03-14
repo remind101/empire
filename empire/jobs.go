@@ -30,7 +30,7 @@ func (id JobID) Value() (driver.Value, error) {
 type Job struct {
 	ID JobID `db:"id"`
 
-	AppName        `db:"app_id"`
+	AppName        string `db:"app_id"`
 	ReleaseVersion `db:"release_version"`
 	ProcessType    `db:"process_type"`
 	Instance       int `db:"instance"`
@@ -124,7 +124,7 @@ func JobsDestroy(db Deleter, job *Job) error {
 
 // JobsListQuery is a query object to filter results from JobsRepository List.
 type JobsListQuery struct {
-	App     AppName
+	App     string
 	Release ReleaseVersion
 }
 

@@ -28,7 +28,7 @@ func (id ConfigID) Value() (driver.Value, error) {
 type Config struct {
 	ID      ConfigID `json:"id" db:"id"`
 	Vars    Vars     `json:"vars" db:"vars"`
-	AppName AppName  `json:"-" db:"app_id"`
+	AppName string   `json:"-" db:"app_id"`
 }
 
 // NewConfig initializes a new config based on the old config, with the new

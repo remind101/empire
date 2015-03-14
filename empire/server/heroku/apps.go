@@ -59,7 +59,7 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	app := &empire.App{
-		Name: empire.AppName(form.Name),
+		Name: form.Name,
 		Repos: empire.Repos{
 			Docker: form.Repos.Docker,
 			GitHub: form.Repos.GitHub,
@@ -78,7 +78,7 @@ func findApp(r *http.Request, e empire.AppsFinder) (*empire.App, error) {
 	vars := mux.Vars(r)
 	name := vars["app"]
 
-	a, err := e.AppsFind(empire.AppName(name))
+	a, err := e.AppsFind(name)
 	if a == nil {
 		return a, ErrNotFound
 	}
