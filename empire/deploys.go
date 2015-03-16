@@ -19,31 +19,18 @@ type Commit struct {
 	Sha  string
 }
 
-type ImageDeployer interface {
-	DeployImage(Image) (*Deploy, error)
-	DeployImageToApp(*App, Image) (*Deploy, error)
-}
+type deployer struct {
+	// Organization is a docker repo organization to fallback to if the app
+	// doesn't specify a docker repo.
+	Organization string
 
-type CommitDeployer interface {
-	DeployCommit(Commit) (*Deploy, error)
-	DeployCommitToApp(*App, Commit) (*Deploy, error)
-}
-
-// DeploysService is an interface that can be implemented to deploy images.
-type DeploysService interface {
-	ImageDeployer
-	CommitDeployer
-}
-
-// imageDeployer is a base implementation of the DeploysService
-type imageDeployer struct {
 	*appsService
 	*configsService
 	*slugsService
 	*releasesService
 }
 
-func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error) {
+func (s *deployer) DeployImageToApp(app *App, image Image) (*Deploy, error) {
 	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
 		return nil, err
 	}
@@ -81,7 +68,7 @@ func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error)
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *imageDeployer) DeployImage(image Image) (*Deploy, error) {
+func (s *deployer) DeployImage(image Image) (*Deploy, error) {
 	app, err := s.appsService.AppsFindOrCreateByRepo(DockerRepo, image.Repo)
 	if err != nil {
 		return nil, err
@@ -90,20 +77,8 @@ func (s *imageDeployer) DeployImage(image Image) (*Deploy, error) {
 	return s.DeployImageToApp(app, image)
 }
 
-// commitDeployer is an implementation of the CommitDeployer interface that uses
-// a TagResolver to resolve the Commit to an Image before deploying.
-type commitDeployer struct {
-	ImageDeployer
-
-	// Organization is a docker repo organization to fallback to if the app
-	// doesn't specify a docker repo.
-	Organization string
-
-	appsService *appsService
-}
-
 // Deploy commit deploys the commit to a specific app.
-func (s *commitDeployer) DeployCommitToApp(app *App, commit Commit) (*Deploy, error) {
+func (s *deployer) DeployCommitToApp(app *App, commit Commit) (*Deploy, error) {
 	var docker Repo
 
 	if err := s.appsService.AppsEnsureRepo(app, GitHubRepo, commit.Repo); err != nil {
@@ -123,7 +98,7 @@ func (s *commitDeployer) DeployCommitToApp(app *App, commit Commit) (*Deploy, er
 }
 
 // DeployCommit resolves the Commit to an Image then deploys the Image.
-func (s *commitDeployer) DeployCommit(commit Commit) (*Deploy, error) {
+func (s *deployer) DeployCommit(commit Commit) (*Deploy, error) {
 	app, err := s.appsService.AppsFindOrCreateByRepo(GitHubRepo, commit.Repo)
 	if err != nil {
 		return nil, err
@@ -132,6 +107,6 @@ func (s *commitDeployer) DeployCommit(commit Commit) (*Deploy, error) {
 	return s.DeployCommitToApp(app, commit)
 }
 
-func (s *commitDeployer) fallbackRepo(appName string) Repo {
+func (s *deployer) fallbackRepo(appName string) Repo {
 	return Repo(fmt.Sprintf("%s/%s", s.Organization, appName))
 }

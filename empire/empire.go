@@ -60,8 +60,7 @@ type Empire struct {
 	Manager      *manager
 	Releases     *releasesService
 	Slugs        *slugsService
-
-	DeploysService
+	Deployer     *deployer
 
 	store *store
 }
@@ -127,29 +126,24 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
-	imageDeployer := &imageDeployer{
+	deployer := &deployer{
+		Organization:    options.Docker.Organization,
 		appsService:     apps,
 		configsService:  configs,
 		slugsService:    slugs,
 		releasesService: releases,
 	}
 
-	commitDeployer := &commitDeployer{
-		Organization:  options.Docker.Organization,
-		ImageDeployer: imageDeployer,
-		appsService:   apps,
-	}
-
 	return &Empire{
-		store:          store,
-		AccessTokens:   accessTokens,
-		Apps:           apps,
-		Configs:        configs,
-		DeploysService: commitDeployer,
-		JobStates:      jobStates,
-		Manager:        manager,
-		Slugs:          slugs,
-		Releases:       releases,
+		store:        store,
+		AccessTokens: accessTokens,
+		Apps:         apps,
+		Configs:      configs,
+		Deployer:     deployer,
+		JobStates:    jobStates,
+		Manager:      manager,
+		Slugs:        slugs,
+		Releases:     releases,
 	}, nil
 }
 
@@ -237,6 +231,16 @@ func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, form
 // SlugsFind finds a slug by id.
 func (e *Empire) SlugsFind(id string) (*Slug, error) {
 	return e.store.SlugsFind(id)
+}
+
+// DeployImage deploys an image to Empire.
+func (e *Empire) DeployImage(image Image) (*Deploy, error) {
+	return e.Deployer.DeployImage(image)
+}
+
+// DeployCommit deploys a Commit to Empire.
+func (e *Empire) DeployCommit(commit Commit) (*Deploy, error) {
+	return e.Deployer.DeployCommit(commit)
 }
 
 // Reset resets empire.
