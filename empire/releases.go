@@ -27,44 +27,36 @@ func (r *Release) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
-type ReleasesCreator interface {
-	ReleasesCreate(*App, *Config, *Slug, string) (*Release, error)
+func (s *Store) ReleasesLast(app *App) (*Release, error) {
+	return releasesLast(s.db, app.Name)
 }
 
-type ReleasesFinder interface {
-	ReleasesFindByApp(*App) ([]*Release, error)
-	ReleasesFindByAppAndVersion(*App, int) (*Release, error)
-	ReleasesLast(*App) (*Release, error)
+func (s *Store) ReleasesFindByApp(app *App) ([]*Release, error) {
+	return releasesAllByAppName(s.db, app.Name)
 }
 
-// ReleaseesService represents a service for interacting with Releases.
-type ReleasesService interface {
-	ReleasesCreator
-	ReleasesFinder
+func (s *Store) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
+	return releasesFindByAppNameAndVersion(s.db, app.Name, v)
 }
 
-// releasesService is an implementation of the ReleasesRepository interface backed by
+func (s *Store) ReleasesFindByAppNameAndVersion(appName string, v int) (*Release, error) {
+	return releasesFindByAppNameAndVersion(s.db, appName, v)
+}
+
+// TODO Rename to ReleasesCreate.
+func (s *Store) ReleasesCreateRaw(release *Release) (*Release, error) {
+	return releasesCreate(s.db, release)
+}
+
+// ReleasesService is an implementation of the ReleasesRepository interface backed by
 // a DB.
-type releasesService struct {
-	*db
+type ReleasesService struct {
 	store *Store
 	Manager
 }
 
-func (s *releasesService) ReleasesLast(app *App) (*Release, error) {
-	return releasesLast(s.db, app.Name)
-}
-
-func (s *releasesService) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return releasesAllByAppName(s.db, app.Name)
-}
-
-func (s *releasesService) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
-	return releasesFindByAppNameAndVersion(s.db, app.Name, v)
-}
-
 // Create creates the release, then sets the current process formation on the release.
-func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
+func (s *ReleasesService) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
 	r := &Release{
 		AppName:     app.Name,
 		ConfigID:    config.ID,
@@ -72,7 +64,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 		Description: desc,
 	}
 
-	r, err := releasesCreate(s.db, r)
+	r, err := s.store.ReleasesCreateRaw(r)
 	if err != nil {
 		return r, err
 	}
@@ -91,10 +83,10 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 	return r, nil
 }
 
-func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
+func (s *ReleasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
 	prev := release.Ver - 1
-	last, err := releasesFindByAppNameAndVersion(s.db, release.AppName, prev)
+	last, err := s.store.ReleasesFindByAppNameAndVersion(release.AppName, prev)
 	if err != nil {
 		return nil, err
 	}

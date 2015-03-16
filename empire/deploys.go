@@ -40,7 +40,7 @@ type imageDeployer struct {
 	AppsService
 	ConfigsService
 	*SlugsService
-	ReleasesService
+	*ReleasesService
 }
 
 func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error) {
