@@ -12,20 +12,6 @@ type AccessToken struct {
 	User  *User  `json:"-"`
 }
 
-type AccessTokensCreator interface {
-	AccessTokensCreate(*AccessToken) (*AccessToken, error)
-}
-
-type AccessTokensFinder interface {
-	AccessTokensFind(string) (*AccessToken, error)
-}
-
-type AccessTokensService interface {
-	AccessTokensCreator
-	AccessTokensFinder
-}
-
-// an implementation of the accessTokensService backed by JWT signed tokens.
 type accessTokensService struct {
 	Secret []byte // Secret used to sign jwt tokens.
 }

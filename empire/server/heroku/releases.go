@@ -29,7 +29,7 @@ func newRelease(r *empire.Release) *Release {
 }
 
 type GetRelease struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -54,7 +54,7 @@ func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 }
 
 type GetReleases struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -73,7 +73,7 @@ func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 }
 
 type PostReleases struct {
-	Empire
+	*empire.Empire
 }
 
 type PostReleasesForm struct {

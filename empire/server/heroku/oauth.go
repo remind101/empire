@@ -28,7 +28,7 @@ type Authorization struct {
 }
 
 type PostAuthorizations struct {
-	Empire
+	*empire.Empire
 	Authorizer
 }
 

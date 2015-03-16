@@ -53,18 +53,15 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	db *db
+	store *store
 
-	AccessTokensService
-	AppsService
-	ConfigsService
-	DeploysService
-	JobsService
-	JobStatesService
-	Manager
-	ReleasesService
-	SlugsService
-	ProcessesService
+	accessTokens *accessTokensService
+	apps         *appsService
+	configs      *configsService
+	jobStates    *jobStatesService
+	manager      *manager
+	releases     *releasesService
+	deployer     *deployer
 }
 
 // New returns a new Empire instance.
@@ -73,6 +70,8 @@ func New(options Options) (*Empire, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	store := &store{db: db}
 
 	scheduler, err := newScheduler(options.Fleet.API)
 	if err != nil {
@@ -93,76 +92,158 @@ func New(options Options) (*Empire, error) {
 	}
 
 	configs := &configsService{
-		db: db,
+		store: store,
 	}
 
 	jobs := &jobsService{
-		db:        db,
+		store:     store,
 		scheduler: scheduler,
 	}
 
 	jobStates := &jobStatesService{
-		db:          db,
-		JobsService: jobs,
-		scheduler:   scheduler,
-	}
-
-	processes := &processesService{
-		db: db,
+		store:     store,
+		scheduler: scheduler,
 	}
 
 	apps := &appsService{
-		db:          db,
-		JobsService: jobs,
+		store:       store,
+		jobsService: jobs,
 	}
 
 	manager := &manager{
-		JobsService:      jobs,
-		ProcessesService: processes,
+		jobsService: jobs,
+		store:       store,
 	}
 
 	releases := &releasesService{
-		db:               db,
-		ProcessesService: processes,
-		Manager:          manager,
+		store:   store,
+		manager: manager,
 	}
 
 	slugs := &slugsService{
-		db:        db,
+		store:     store,
 		extractor: extractor,
 	}
 
-	imageDeployer := &imageDeployer{
-		AppsService:     apps,
-		ConfigsService:  configs,
-		SlugsService:    slugs,
-		ReleasesService: releases,
-	}
-
-	commitDeployer := &commitDeployer{
-		Organization:  options.Docker.Organization,
-		ImageDeployer: imageDeployer,
-		appsService:   apps,
+	deployer := &deployer{
+		Organization:    options.Docker.Organization,
+		appsService:     apps,
+		configsService:  configs,
+		slugsService:    slugs,
+		releasesService: releases,
 	}
 
 	return &Empire{
-		db:                  db,
-		AccessTokensService: accessTokens,
-		AppsService:         apps,
-		ConfigsService:      configs,
-		DeploysService:      commitDeployer,
-		JobsService:         jobs,
-		JobStatesService:    jobStates,
-		Manager:             manager,
-		SlugsService:        slugs,
-		ReleasesService:     releases,
-		ProcessesService:    processes,
+		store:        store,
+		accessTokens: accessTokens,
+		apps:         apps,
+		configs:      configs,
+		deployer:     deployer,
+		jobStates:    jobStates,
+		manager:      manager,
+		releases:     releases,
 	}, nil
 }
 
+// AccessTokensFind finds an access token.
+func (e *Empire) AccessTokensFind(token string) (*AccessToken, error) {
+	return e.accessTokens.AccessTokensFind(token)
+}
+
+// AccessTokensCreate creates a new AccessToken.
+func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, error) {
+	return e.accessTokens.AccessTokensCreate(accessToken)
+}
+
+// AppsAll returns all Apps.
+func (e *Empire) AppsAll() ([]*App, error) {
+	return e.store.AppsAll()
+}
+
+// AppsCreate creates a new app.
+func (e *Empire) AppsCreate(app *App) (*App, error) {
+	return e.store.AppsCreate(app)
+}
+
+// AppsFind finds an app by name.
+func (e *Empire) AppsFind(name string) (*App, error) {
+	return e.store.AppsFind(name)
+}
+
+// AppsDestroy destroys the app.
+func (e *Empire) AppsDestroy(app *App) error {
+	return e.apps.AppsDestroy(app)
+}
+
+// ConfigsCurrent returns the current Config for a given app.
+func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
+	return e.configs.ConfigsCurrent(app)
+}
+
+// ConfigsApply applies the new config vars to the apps current Config,
+// returning a new Config.
+func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
+	return e.configs.ConfigsApply(app, vars)
+}
+
+// ConfigsFind finds a Config by id.
+func (e *Empire) ConfigsFind(id string) (*Config, error) {
+	return e.store.ConfigsFind(id)
+}
+
+// JobStatesByApp returns the JobStates for the given app.
+func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
+	return e.jobStates.JobStatesByApp(app)
+}
+
+// ProcessesAll returns all processes for a given Release.
+func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
+	return e.store.ProcessesAll(release)
+}
+
+// ReleasesCreate creates a new release for an app.
+func (e *Empire) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
+	return e.releases.ReleasesCreate(app, config, slug, desc)
+}
+
+// ReleasesFindByApp returns all Releases for a given App.
+func (e *Empire) ReleasesFindByApp(app *App) ([]*Release, error) {
+	return e.store.ReleasesFindByApp(app)
+}
+
+// ReleasesFindByAppAndVersion finds a specific Release for a given App.
+func (e *Empire) ReleasesFindByAppAndVersion(app *App, version int) (*Release, error) {
+	return e.store.ReleasesFindByAppAndVersion(app, version)
+}
+
+// ReleasesLast returns the last release for an App.
+func (e *Empire) ReleasesLast(app *App) (*Release, error) {
+	return e.store.ReleasesLast(app)
+}
+
+// ScaleRelease scales the processes in a release.
+func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
+	return e.manager.ScaleRelease(release, config, slug, formation, qm)
+}
+
+// SlugsFind finds a slug by id.
+func (e *Empire) SlugsFind(id string) (*Slug, error) {
+	return e.store.SlugsFind(id)
+}
+
+// DeployImage deploys an image to Empire.
+func (e *Empire) DeployImage(image Image) (*Deploy, error) {
+	return e.deployer.DeployImage(image)
+}
+
+// DeployCommit deploys a Commit to Empire.
+func (e *Empire) DeployCommit(commit Commit) (*Deploy, error) {
+	return e.deployer.DeployCommit(commit)
+}
+
+// Reset resets empire.
 func (e *Empire) Reset() error {
-	_, err := e.db.Exec(`TRUNCATE TABLE apps CASCADE`)
-	return err
+	return e.store.Reset()
 }
 
 func (e *Empire) IsHealthy() bool {

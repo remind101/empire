@@ -9,7 +9,7 @@ import (
 )
 
 type GetApps struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -23,7 +23,7 @@ func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 }
 
 type DeleteApp struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -48,7 +48,7 @@ type PostAppsForm struct {
 }
 
 type PostApps struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -74,7 +74,9 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	return Encode(w, a)
 }
 
-func findApp(r *http.Request, e empire.AppsFinder) (*empire.App, error) {
+func findApp(r *http.Request, e interface {
+	AppsFind(name string) (*empire.App, error)
+}) (*empire.App, error) {
 	vars := mux.Vars(r)
 	name := vars["app"]
 

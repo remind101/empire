@@ -27,40 +27,32 @@ func (r *Release) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
-type ReleasesCreator interface {
-	ReleasesCreate(*App, *Config, *Slug, string) (*Release, error)
+func (s *store) ReleasesLast(app *App) (*Release, error) {
+	return releasesLast(s.db, app.Name)
 }
 
-type ReleasesFinder interface {
-	ReleasesFindByApp(*App) ([]*Release, error)
-	ReleasesFindByAppAndVersion(*App, int) (*Release, error)
-	ReleasesLast(*App) (*Release, error)
+func (s *store) ReleasesFindByApp(app *App) ([]*Release, error) {
+	return releasesAllByAppName(s.db, app.Name)
 }
 
-// ReleaseesService represents a service for interacting with Releases.
-type ReleasesService interface {
-	ReleasesCreator
-	ReleasesFinder
+func (s *store) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
+	return releasesFindByAppNameAndVersion(s.db, app.Name, v)
+}
+
+func (s *store) ReleasesFindByAppNameAndVersion(appName string, v int) (*Release, error) {
+	return releasesFindByAppNameAndVersion(s.db, appName, v)
+}
+
+// TODO Rename to ReleasesCreate.
+func (s *store) ReleasesCreateRaw(release *Release) (*Release, error) {
+	return releasesCreate(s.db, release)
 }
 
 // releasesService is an implementation of the ReleasesRepository interface backed by
 // a DB.
 type releasesService struct {
-	*db
-	ProcessesService
-	Manager
-}
-
-func (s *releasesService) ReleasesLast(app *App) (*Release, error) {
-	return releasesLast(s.db, app.Name)
-}
-
-func (s *releasesService) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return releasesAllByAppName(s.db, app.Name)
-}
-
-func (s *releasesService) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
-	return releasesFindByAppNameAndVersion(s.db, app.Name, v)
+	store   *store
+	manager *manager
 }
 
 // Create creates the release, then sets the current process formation on the release.
@@ -72,7 +64,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 		Description: desc,
 	}
 
-	r, err := releasesCreate(s.db, r)
+	r, err := s.store.ReleasesCreateRaw(r)
 	if err != nil {
 		return r, err
 	}
@@ -84,7 +76,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.Manager.ScheduleRelease(r, config, slug, formation); err != nil {
+	if err := s.manager.ScheduleRelease(r, config, slug, formation); err != nil {
 		return r, err
 	}
 
@@ -94,7 +86,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
 	prev := release.Ver - 1
-	last, err := releasesFindByAppNameAndVersion(s.db, release.AppName, prev)
+	last, err := s.store.ReleasesFindByAppNameAndVersion(release.AppName, prev)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +94,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	var existing Formation
 
 	if last != nil {
-		existing, err = s.ProcessesService.ProcessesAll(last)
+		existing, err = s.store.ProcessesAll(last)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +105,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	for _, p := range f {
 		p.ReleaseID = release.ID
 
-		if _, err := s.ProcessesService.ProcessesCreate(p); err != nil {
+		if _, err := s.store.ProcessesCreate(p); err != nil {
 			return f, err
 		}
 	}

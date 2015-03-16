@@ -9,7 +9,7 @@ import (
 
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
 type PostDeploys struct {
-	Empire
+	*empire.Empire
 }
 
 // PostDeployForm is the form object that represents the POST body.

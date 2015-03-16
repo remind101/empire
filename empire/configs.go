@@ -67,66 +67,21 @@ func (v Vars) Value() (driver.Value, error) {
 	return h.Value()
 }
 
-type ConfigsCreator interface {
-	ConfigsCreate(*Config) (*Config, error)
-}
-
-type ConfigsFinder interface {
-	ConfigsFind(id string) (*Config, error)
-	ConfigsCurrent(*App) (*Config, error)
-}
-
-type ConfigsApplier interface {
-	ConfigsApply(*App, Vars) (*Config, error)
-}
-
-type ConfigsService interface {
-	ConfigsCreator
-	ConfigsFinder
-	ConfigsApplier
-}
-
-type configsService struct {
-	*db
-}
-
-func (s *configsService) ConfigsCreate(config *Config) (*Config, error) {
+func (s *store) ConfigsCreate(config *Config) (*Config, error) {
 	return configsCreate(s.db, config)
 }
 
-func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
-	return configsCurrent(s.db, app)
-}
-
-func (s *configsService) ConfigsFind(id string) (*Config, error) {
+func (s *store) ConfigsFind(id string) (*Config, error) {
 	return configsFind(s.db, id)
 }
 
-func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
-	return configsApply(s.db, app, vars)
+func (s *store) ConfigsFindByApp(app *App) (*Config, error) {
+	return configsFindByApp(s.db, app)
 }
 
 // ConfigsCreate inserts a Config in the database.
 func configsCreate(db *db, config *Config) (*Config, error) {
 	return config, db.Insert(config)
-}
-
-// ConfigsCurrent returns the current Config for the given app, creating it if
-// it does not already exist.
-func configsCurrent(db *db, app *App) (*Config, error) {
-	c, err := configsFindByApp(db, app)
-	if err != nil {
-		return nil, err
-	}
-
-	if c != nil {
-		return c, nil
-	}
-
-	return configsCreate(db, &Config{
-		AppName: app.Name,
-		Vars:    make(Vars),
-	})
 }
 
 func configsFind(db *db, id string) (*Config, error) {
@@ -138,10 +93,12 @@ func configsFindByApp(db *db, app *App) (*Config, error) {
 	return configsFindBy(db, "app_id", app.Name)
 }
 
-// ConfigsApply gets the current config for the given app, copies it, merges the
-// new Vars in, then inserts it.
-func configsApply(db *db, app *App, vars Vars) (*Config, error) {
-	c, err := configsCurrent(db, app)
+type configsService struct {
+	store *store
+}
+
+func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
+	c, err := s.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +110,23 @@ func configsApply(db *db, app *App, vars Vars) (*Config, error) {
 		}
 	}
 
-	return configsCreate(db, NewConfig(c, vars))
+	return s.store.ConfigsCreate(NewConfig(c, vars))
+}
+
+func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
+	c, err := s.store.ConfigsFindByApp(app)
+	if err != nil {
+		return nil, err
+	}
+
+	if c != nil {
+		return c, nil
+	}
+
+	return s.store.ConfigsCreate(&Config{
+		AppName: app.Name,
+		Vars:    make(Vars),
+	})
 }
 
 // ConfigsFindBy finds a Config by a field.

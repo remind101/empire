@@ -10,7 +10,7 @@ import (
 )
 
 type GetConfigs struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *GetConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -29,7 +29,7 @@ func (h *GetConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 }
 
 type PatchConfigs struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *PatchConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

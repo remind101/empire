@@ -3,8 +3,6 @@ package empire
 import (
 	"reflect"
 	"testing"
-
-	"github.com/remind101/empire/empire/pkg/container"
 )
 
 func TestNewContainerName(t *testing.T) {
@@ -60,48 +58,4 @@ func TestBuildJobs(t *testing.T) {
 	if got, want := jobs, expected; !reflect.DeepEqual(got, want) {
 		t.Fatalf("buildJobs => %v; want %v", got, want)
 	}
-}
-
-type mockScheduler struct {
-	ScheduleFunc        func(...*container.Container) error
-	UnscheduleFunc      func(...string) error
-	ContainerStatesFunc func() ([]*container.ContainerState, error)
-}
-
-func (s *mockScheduler) Schedule(containers ...*container.Container) error {
-	if s.ScheduleFunc != nil {
-		return s.ScheduleFunc(containers...)
-	}
-
-	return nil
-}
-
-func (s *mockScheduler) Unschedule(names ...string) error {
-	if s.UnscheduleFunc != nil {
-		s.UnscheduleFunc(names...)
-	}
-
-	return nil
-}
-
-func (s *mockScheduler) ContainerStates() ([]*container.ContainerState, error) {
-	if s.ContainerStatesFunc != nil {
-		return s.ContainerStatesFunc()
-	}
-
-	return nil, nil
-}
-
-type mockManager struct {
-	Manager // Just to satisfy the interface.
-
-	ScheduleReleaseFunc func(*Release, *Config, *Slug, Formation) error
-}
-
-func (m *mockManager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
-	if m.ScheduleReleaseFunc != nil {
-		return m.ScheduleReleaseFunc(release, config, slug, formation)
-	}
-
-	return nil
 }

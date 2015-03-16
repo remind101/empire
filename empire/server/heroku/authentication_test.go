@@ -12,14 +12,12 @@ import (
 
 func TestAuthentication(t *testing.T) {
 	m := &Authentication{
-		finder: &mockEmpire{
-			AccessTokensFindFunc: func(token string) (*empire.AccessToken, error) {
-				return &empire.AccessToken{
-					User: &empire.User{
-						Name: "ehjolmes",
-					},
-				}, nil
-			},
+		findAccessToken: func(token string) (*empire.AccessToken, error) {
+			return &empire.AccessToken{
+				User: &empire.User{
+					Name: "ehjolmes",
+				},
+			}, nil
 		},
 		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			_, ok := empire.UserFromContext(ctx)

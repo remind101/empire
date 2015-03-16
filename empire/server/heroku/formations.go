@@ -20,7 +20,7 @@ type formation struct {
 }
 
 type PatchFormation struct {
-	Empire
+	*empire.Empire
 }
 
 type PatchFormationForm struct {
