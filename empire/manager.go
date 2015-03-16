@@ -2,25 +2,15 @@ package empire
 
 import "fmt"
 
-// Manager is responsible for talking to the scheduler to schedule jobs onto the
-// cluster.
-type Manager interface {
-	// ScheduleRelease schedules a release onto the cluster.
-	ScheduleRelease(*Release, *Config, *Slug, Formation) error
-
-	// ScaleRelease scales a release based on a process quantity map.
-	ScaleRelease(*Release, *Config, *Slug, Formation, ProcessQuantityMap) error
-}
-
 // manager is a base implementation of the Manager interface.
-type manager struct {
+type Manager struct {
 	*JobsService
 	store *Store
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
+func (m *Manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this app.
 	existing, err := m.store.JobsList(JobsListQuery{App: release.AppName})
 	if err != nil {
@@ -48,7 +38,7 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 
 // ScaleRelease takes a release and process quantity map, and
 // schedules/unschedules jobs to make the formation match the quantity map
-func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
+func (m *Manager) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
 	for t, q := range qm {
 		if p, ok := formation[t]; ok {
 			if err := m.scaleProcess(release, config, slug, p, q); err != nil {
@@ -60,7 +50,7 @@ func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, for
 	return nil
 }
 
-func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+func (m *Manager) scaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	var scale func(*Release, *Config, *Slug, *Process, int) error
 
 	switch {
@@ -82,12 +72,12 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 	return err
 }
 
-func (m *manager) scaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+func (m *Manager) scaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	jobs := scaleUp(release, config, slug, p, q)
 	return m.JobsService.Schedule(jobs...)
 }
 
-func (m *manager) scaleDown(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+func (m *Manager) scaleDown(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	// Find existing jobs for this app
 	existing, err := m.store.JobsList(JobsListQuery{
 		App: release.AppName,

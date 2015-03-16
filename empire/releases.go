@@ -51,8 +51,8 @@ func (s *Store) ReleasesCreateRaw(release *Release) (*Release, error) {
 // ReleasesService is an implementation of the ReleasesRepository interface backed by
 // a DB.
 type ReleasesService struct {
-	store *Store
-	Manager
+	store   *Store
+	manager *Manager
 }
 
 // Create creates the release, then sets the current process formation on the release.
@@ -76,7 +76,7 @@ func (s *ReleasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.Manager.ScheduleRelease(r, config, slug, formation); err != nil {
+	if err := s.manager.ScheduleRelease(r, config, slug, formation); err != nil {
 		return r, err
 	}
 

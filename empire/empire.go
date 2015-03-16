@@ -61,7 +61,7 @@ type Empire struct {
 	DeploysService
 	*JobsService
 	*JobStatesService
-	Manager
+	*Manager
 	*ReleasesService
 	*SlugsService
 }
@@ -112,14 +112,14 @@ func New(options Options) (*Empire, error) {
 		JobsService: jobs,
 	}
 
-	manager := &manager{
+	manager := &Manager{
 		JobsService: jobs,
 		store:       store,
 	}
 
 	releases := &ReleasesService{
 		store:   store,
-		Manager: manager,
+		manager: manager,
 	}
 
 	slugs := &SlugsService{
