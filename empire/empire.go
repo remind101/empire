@@ -55,7 +55,7 @@ type Options struct {
 type Empire struct {
 	*Store
 
-	AccessTokensService
+	*AccessTokensService
 	*AppsService
 	ConfigsService
 	DeploysService
@@ -89,7 +89,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	accessTokens := &accessTokensService{
+	accessTokens := &AccessTokensService{
 		Secret: []byte(options.Secret),
 	}
 

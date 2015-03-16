@@ -8,15 +8,19 @@ import (
 	"golang.org/x/net/context"
 )
 
+type TokenFinder interface {
+	AccessTokensFind(string) (*empire.AccessToken, error)
+}
+
 // Middleware for handling authentication.
 type Authentication struct {
-	finder  empire.AccessTokensFinder
+	finder  TokenFinder
 	handler httpx.Handler
 }
 
 // Authenticat wraps an httpx.Handler in the Authentication middleware to authenticate
 // the request.
-func Authenticate(f empire.AccessTokensFinder, h httpx.Handler) httpx.Handler {
+func Authenticate(f TokenFinder, h httpx.Handler) httpx.Handler {
 	return &Authentication{
 		finder:  f,
 		handler: h,

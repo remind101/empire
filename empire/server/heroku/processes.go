@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
 )
 
@@ -16,7 +17,7 @@ type dyno struct {
 }
 
 type GetProcesses struct {
-	Empire
+	*empire.Empire
 }
 
 func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

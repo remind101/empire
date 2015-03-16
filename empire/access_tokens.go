@@ -12,27 +12,13 @@ type AccessToken struct {
 	User  *User  `json:"-"`
 }
 
-type AccessTokensCreator interface {
-	AccessTokensCreate(*AccessToken) (*AccessToken, error)
-}
-
-type AccessTokensFinder interface {
-	AccessTokensFind(string) (*AccessToken, error)
-}
-
-type AccessTokensService interface {
-	AccessTokensCreator
-	AccessTokensFinder
-}
-
-// an implementation of the accessTokensService backed by JWT signed tokens.
-type accessTokensService struct {
+type AccessTokensService struct {
 	Secret []byte // Secret used to sign jwt tokens.
 }
 
 // AccessTokensCreate "creates" the token by jwt signing it and setting the
 // Token value.
-func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessToken, error) {
+func (s *AccessTokensService) AccessTokensCreate(token *AccessToken) (*AccessToken, error) {
 	signed, err := SignToken(s.Secret, token)
 	if err != nil {
 		return token, err
@@ -43,7 +29,7 @@ func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessTok
 	return token, nil
 }
 
-func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
+func (s *AccessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
 	at, err := ParseToken(s.Secret, token)
 
 	if at != nil {
