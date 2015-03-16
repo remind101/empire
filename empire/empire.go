@@ -59,8 +59,8 @@ type Empire struct {
 	AppsService
 	ConfigsService
 	DeploysService
-	JobsService
-	JobStatesService
+	*JobsService
+	*JobStatesService
 	Manager
 	*ReleasesService
 	*SlugsService
@@ -97,19 +97,19 @@ func New(options Options) (*Empire, error) {
 		db: db,
 	}
 
-	jobs := &jobsService{
-		db:        db,
+	jobs := &JobsService{
+		store:     store,
 		scheduler: scheduler,
 	}
 
-	jobStates := &jobStatesService{
-		db:          db,
-		JobsService: jobs,
-		scheduler:   scheduler,
+	jobStates := &JobStatesService{
+		store:     store,
+		scheduler: scheduler,
 	}
 
 	apps := &appsService{
 		db:          db,
+		store:       store,
 		JobsService: jobs,
 	}
 

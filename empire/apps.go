@@ -108,7 +108,8 @@ type AppsService interface {
 
 type appsService struct {
 	*db
-	JobsService
+	*JobsService
+	store *Store
 }
 
 func (s *appsService) AppsCreate(app *App) (*App, error) {
@@ -128,7 +129,7 @@ func (s *appsService) AppsDestroy(app *App) error {
 		return err
 	}
 
-	jobs, err := s.JobsList(JobsListQuery{App: app.Name})
+	jobs, err := s.store.JobsList(JobsListQuery{App: app.Name})
 	if err != nil {
 		return err
 	}
