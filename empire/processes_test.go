@@ -89,33 +89,3 @@ func TestNewFormation(t *testing.T) {
 		}
 	}
 }
-
-type mockProcessesService struct {
-	ProcessesCreateFunc func(*Process) (*Process, error)
-	ProcessesUpdateFunc func(*Process) (int64, error)
-	ProcessesAllFunc    func(*Release) (Formation, error)
-}
-
-func (r *mockProcessesService) ProcessesCreate(p *Process) (*Process, error) {
-	if r.ProcessesCreateFunc != nil {
-		return r.ProcessesCreateFunc(p)
-	}
-
-	return nil, nil
-}
-
-func (r *mockProcessesService) ProcessesUpdate(p *Process) (int64, error) {
-	if r.ProcessesUpdateFunc != nil {
-		return r.ProcessesUpdateFunc(p)
-	}
-
-	return 0, nil
-}
-
-func (r *mockProcessesService) ProcessesAll(release *Release) (Formation, error) {
-	if r.ProcessesAllFunc != nil {
-		return r.ProcessesAll(release)
-	}
-
-	return nil, nil
-}
