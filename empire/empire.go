@@ -165,6 +165,14 @@ func (e *Empire) Reset() error {
 	return err
 }
 
+func (e *Empire) IsHealthy() bool {
+	if _, err := e.db.Exec(`SELECT 1`); err != nil {
+		return false
+	}
+
+	return true
+}
+
 // Migrate runs the migrations.
 func Migrate(db, path string) ([]error, bool) {
 	return migrate.UpSync(db, path)
