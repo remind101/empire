@@ -40,7 +40,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 	r.MatcherFunc(githubWebhook).Handler(g)
 
 	// Mount health endpoint
-	r.Handle("/health", &HealthHandler{IsHealthy: e.IsHealthy})
+	r.Handle("/health", NewHealthHandler(e))
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -59,6 +59,14 @@ func githubWebhook(r *http.Request, rm *mux.RouteMatch) bool {
 type HealthHandler struct {
 	// A function that returns true if empire is healthy.
 	IsHealthy func() bool
+}
+
+// NewHealthHandler returns a new HealthHandler using the IsHealthy method from
+// an Empire instance.
+func NewHealthHandler(e *empire.Empire) *HealthHandler {
+	return &HealthHandler{
+		IsHealthy: e.IsHealthy,
+	}
 }
 
 func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
