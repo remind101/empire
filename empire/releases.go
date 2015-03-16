@@ -2,42 +2,20 @@ package empire
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"time"
 
 	"gopkg.in/gorp.v1"
 )
 
-// ReleaseID represents the unique identifier for a Release.
-type ReleaseID string
-
-// Scan implements the sql.Scanner interface.
-func (r *ReleaseID) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*r = ReleaseID(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (r ReleaseID) Value() (driver.Value, error) {
-	return driver.Value(string(r)), nil
-}
-
-// ReleaseVersion represents the auto incremented human friendly version number of the
-// release.
-type ReleaseVersion int
-
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID  ReleaseID      `json:"id" db:"id"`
-	Ver ReleaseVersion `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
+	ID  string `json:"id" db:"id"`
+	Ver int    `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
 
-	AppName  `json:"-" db:"app_id"`
-	ConfigID `json:"-" db:"config_id"`
-	SlugID   `json:"-" db:"slug_id"`
+	AppName  string `json:"-" db:"app_id"`
+	ConfigID string `json:"-" db:"config_id"`
+	SlugID   string `json:"-" db:"slug_id"`
 
 	Description string    `json:"description" db:"description"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
@@ -55,7 +33,7 @@ type ReleasesCreator interface {
 
 type ReleasesFinder interface {
 	ReleasesFindByApp(*App) ([]*Release, error)
-	ReleasesFindByAppAndVersion(*App, ReleaseVersion) (*Release, error)
+	ReleasesFindByAppAndVersion(*App, int) (*Release, error)
 	ReleasesLast(*App) (*Release, error)
 }
 
@@ -81,7 +59,7 @@ func (s *releasesService) ReleasesFindByApp(app *App) ([]*Release, error) {
 	return ReleasesAllByAppName(s.DB, app.Name)
 }
 
-func (s *releasesService) ReleasesFindByAppAndVersion(app *App, v ReleaseVersion) (*Release, error) {
+func (s *releasesService) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
 	return ReleasesFindByAppNameAndVersion(s.DB, app.Name, v)
 }
 
@@ -115,8 +93,8 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 
 func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
-	prev := int(release.Ver) - 1
-	last, err := ReleasesFindByAppNameAndVersion(s.DB, release.AppName, ReleaseVersion(prev))
+	prev := release.Ver - 1
+	last, err := ReleasesFindByAppNameAndVersion(s.DB, release.AppName, prev)
 	if err != nil {
 		return nil, err
 	}
@@ -145,10 +123,10 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 
 // ReleasesFindByAppNameAndVersion finds a specific version of a release for a
 // given app.
-func ReleasesFindByAppNameAndVersion(db Queryier, a AppName, v ReleaseVersion) (*Release, error) {
+func ReleasesFindByAppNameAndVersion(db Queryier, appName string, v int) (*Release, error) {
 	var release Release
 
-	if err := db.SelectOne(&release, `select * from releases where app_id = $1 and version = $2 limit 1`, string(a), int(v)); err != nil {
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 and version = $2 limit 1`, appName, v); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -184,8 +162,8 @@ func ReleasesCreate(db DB, release *Release) (*Release, error) {
 // ReleasesLastVersion returns the last ReleaseVersion for the given App. This
 // function also ensures that the last release is locked until the transaction
 // is commited, so the release version can be incremented atomically.
-func ReleasesLastVersion(db Queryier, appName AppName) (version ReleaseVersion, err error) {
-	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
+func ReleasesLastVersion(db Queryier, appName string) (version int, err error) {
+	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, appName)
 
 	if err == sql.ErrNoRows {
 		return 0, nil
@@ -195,10 +173,10 @@ func ReleasesLastVersion(db Queryier, appName AppName) (version ReleaseVersion, 
 }
 
 // ReleasesLast returns the last Release for the given App.
-func ReleasesLast(db Queryier, appName AppName) (*Release, error) {
+func ReleasesLast(db Queryier, appName string) (*Release, error) {
 	var release Release
 
-	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, string(appName)); err != nil {
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, appName); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -210,7 +188,7 @@ func ReleasesLast(db Queryier, appName AppName) (*Release, error) {
 }
 
 // ReleasesFindByAppName finds the latest release for the given app.
-func ReleasesAllByAppName(db Queryier, appName AppName) ([]*Release, error) {
+func ReleasesAllByAppName(db Queryier, appName string) ([]*Release, error) {
 	var rs []*Release
-	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, string(appName))
+	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, appName)
 }

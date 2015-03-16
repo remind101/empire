@@ -2,32 +2,14 @@ package empire
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 )
 
-// SlugID represents the unique identifier of a Slug.
-type SlugID string
-
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
-	ID           SlugID     `json:"id" db:"id"`
+	ID           string     `json:"id" db:"id"`
 	Image        Image      `json:"image"`
 	ProcessTypes CommandMap `json:"process_types" db:"process_types"`
-}
-
-// Scan implements the sql.Scanner interface.
-func (id *SlugID) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*id = SlugID(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (id SlugID) Value() (driver.Value, error) {
-	return driver.Value(string(id)), nil
 }
 
 type SlugsCreator interface {
@@ -36,7 +18,7 @@ type SlugsCreator interface {
 }
 
 type SlugsFinder interface {
-	SlugsFind(SlugID) (*Slug, error)
+	SlugsFind(id string) (*Slug, error)
 	SlugsFindByImage(Image) (*Slug, error)
 }
 
@@ -55,7 +37,7 @@ func (s *slugsService) SlugsCreate(slug *Slug) (*Slug, error) {
 	return SlugsCreate(s.DB, slug)
 }
 
-func (s *slugsService) SlugsFind(id SlugID) (*Slug, error) {
+func (s *slugsService) SlugsFind(id string) (*Slug, error) {
 	return SlugsFind(s.DB, id)
 }
 
@@ -111,8 +93,8 @@ func SlugsCreate(db Inserter, slug *Slug) (*Slug, error) {
 }
 
 // SlugsFind finds a slug by id.
-func SlugsFind(db Queryier, id SlugID) (*Slug, error) {
-	return SlugsFindBy(db, "id", string(id))
+func SlugsFind(db Queryier, id string) (*Slug, error) {
+	return SlugsFindBy(db, "id", id)
 }
 
 // SlugsFindByImage finds a slug by image.

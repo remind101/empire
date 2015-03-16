@@ -39,12 +39,11 @@ func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 	}
 
 	vars := mux.Vars(r)
-	i, err := strconv.Atoi(vars["version"])
+	vers, err := strconv.Atoi(vars["version"])
 	if err != nil {
 		return err
 	}
 
-	vers := empire.ReleaseVersion(i)
 	rel, err := h.ReleasesFindByAppAndVersion(a, vers)
 	if err != nil {
 		return err
@@ -81,14 +80,13 @@ type PostReleasesForm struct {
 	Version string `json:"release"`
 }
 
-func (p *PostReleasesForm) ReleaseVersion() (empire.ReleaseVersion, error) {
-	var r empire.ReleaseVersion
-	i, err := strconv.Atoi(p.Version)
+func (p *PostReleasesForm) ReleaseVersion() (int, error) {
+	vers, err := strconv.Atoi(p.Version)
 	if err != nil {
-		return r, err
+		return vers, err
 	}
 
-	return empire.ReleaseVersion(i), nil
+	return vers, nil
 }
 
 func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

@@ -7,28 +7,11 @@ import (
 	"github.com/lib/pq/hstore"
 )
 
-// ConfigID represents a unique identifier for a Config.
-type ConfigID string
-
-// Scan implements the sql.Scanner interface.
-func (id *ConfigID) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*id = ConfigID(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (id ConfigID) Value() (driver.Value, error) {
-	return driver.Value(string(id)), nil
-}
-
 // Config represents a collection of environment variables.
 type Config struct {
-	ID      ConfigID `json:"id" db:"id"`
-	Vars    Vars     `json:"vars" db:"vars"`
-	AppName AppName  `json:"-" db:"app_id"`
+	ID      string `json:"id" db:"id"`
+	Vars    Vars   `json:"vars" db:"vars"`
+	AppName string `json:"-" db:"app_id"`
 }
 
 // NewConfig initializes a new config based on the old config, with the new
@@ -89,7 +72,7 @@ type ConfigsCreator interface {
 }
 
 type ConfigsFinder interface {
-	ConfigsFind(ConfigID) (*Config, error)
+	ConfigsFind(id string) (*Config, error)
 	ConfigsCurrent(*App) (*Config, error)
 }
 
@@ -115,7 +98,7 @@ func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
 	return ConfigsCurrent(s.DB, app)
 }
 
-func (s *configsService) ConfigsFind(id ConfigID) (*Config, error) {
+func (s *configsService) ConfigsFind(id string) (*Config, error) {
 	return ConfigsFind(s.DB, id)
 }
 
@@ -147,13 +130,13 @@ func ConfigsCurrent(db DB, app *App) (*Config, error) {
 }
 
 // ConfigsFind finds a Config by id.
-func ConfigsFind(db Queryier, id ConfigID) (*Config, error) {
-	return ConfigsFindBy(db, "id", string(id))
+func ConfigsFind(db Queryier, id string) (*Config, error) {
+	return ConfigsFindBy(db, "id", id)
 }
 
 // ConfigsFindByApp finds the current config for the given App.
 func ConfigsFindByApp(db Queryier, app *App) (*Config, error) {
-	return ConfigsFindBy(db, "app_id", string(app.Name))
+	return ConfigsFindBy(db, "app_id", app.Name)
 }
 
 // ConfigsApply gets the current config for the given app, copies it, merges the

@@ -2,7 +2,6 @@ package empire
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"regexp"
@@ -21,29 +20,12 @@ var (
 
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
-// AppName represents the unique name for an App.
-type AppName string
-
-// Scan implements the sql.Scanner interface.
-func (n *AppName) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*n = AppName(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (n AppName) Value() (driver.Value, error) {
-	return driver.Value(string(n)), nil
-}
-
 // NewNameFromRepo generates a new name from a Repo
 //
 //	remind101/r101-api => r101-api
-func NewAppNameFromRepo(repo Repo) AppName {
+func NewAppNameFromRepo(repo Repo) string {
 	p := strings.Split(string(repo), "/")
-	return AppName(p[len(p)-1])
+	return p[len(p)-1]
 }
 
 var (
@@ -72,7 +54,7 @@ func (r *Repos) Set(repoType string, value Repo) error {
 
 // App represents an app.
 type App struct {
-	Name AppName `json:"name" db:"name"`
+	Name string `json:"name" db:"name"`
 
 	Repos `json:"repos"` // Any repos that this app is linked to.
 
@@ -109,7 +91,7 @@ type AppsDestroyer interface {
 
 type AppsFinder interface {
 	AppsAll() ([]*App, error)
-	AppsFind(AppName) (*App, error)
+	AppsFind(name string) (*App, error)
 	AppsFindByRepo(string, Repo) (*App, error)
 	AppsFindOrCreateByRepo(string, Repo) (*App, error)
 }
@@ -155,7 +137,7 @@ func (s *appsService) AppsAll() ([]*App, error) {
 	return AppsAll(s.DB)
 }
 
-func (s *appsService) AppsFind(name AppName) (*App, error) {
+func (s *appsService) AppsFind(name string) (*App, error) {
 	return AppsFind(s.DB, name)
 }
 
@@ -211,8 +193,8 @@ func AppsAll(db Queryier) ([]*App, error) {
 }
 
 // Finds an app by name.
-func AppsFind(db Queryier, name AppName) (*App, error) {
-	return AppsFindBy(db, "name", string(name))
+func AppsFind(db Queryier, name string) (*App, error) {
+	return AppsFindBy(db, "name", name)
 }
 
 // Finds an app by it's Repo field.

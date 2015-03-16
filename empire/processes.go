@@ -58,7 +58,7 @@ type Process struct {
 	Quantity int         `json:"quantity" db:"quantity"`
 	Command  Command     `json:"command" db:"command"`
 
-	ReleaseID ReleaseID `json:"-" db:"release_id"`
+	ReleaseID string `json:"-" db:"release_id"`
 }
 
 // CommandMap maps a process ProcessType to a Command.
