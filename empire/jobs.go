@@ -67,7 +67,7 @@ type jobsService struct {
 
 func (s *jobsService) Schedule(jobs ...*Job) error {
 	for _, j := range jobs {
-		if _, err := Schedule(s.store, s.scheduler, j); err != nil {
+		if _, err := schedule(s.store, s.scheduler, j); err != nil {
 			return err
 		}
 	}
@@ -109,8 +109,8 @@ func jobsList(db *db, q JobsListQuery) ([]*Job, error) {
 	return jobs, db.Select(&jobs, query, string(q.App), int(q.Release))
 }
 
-// Schedule schedules to job onto the cluster, then persists it to the database.
-func Schedule(store *store, s container.Scheduler, j *Job) (*Job, error) {
+// schedule schedules to job onto the cluster, then persists it to the database.
+func schedule(store *store, s container.Scheduler, j *Job) (*Job, error) {
 	env := environment(j.Environment)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", j.ProcessType, j.AppName)
 
