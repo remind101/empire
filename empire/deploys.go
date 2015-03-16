@@ -39,7 +39,7 @@ type DeploysService interface {
 type imageDeployer struct {
 	AppsService
 	ConfigsService
-	SlugsService
+	*SlugsService
 	ReleasesService
 }
 

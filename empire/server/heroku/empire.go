@@ -3,9 +3,10 @@ package heroku
 import "github.com/remind101/empire/empire"
 
 type Empire interface {
+	SlugsFind(id string) (*empire.Slug, error)
+
 	empire.AppsService
 	empire.ConfigsService
-	empire.SlugsService
 	empire.ReleasesService
 	empire.ProcessesService
 	empire.DeploysService

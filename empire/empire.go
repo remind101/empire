@@ -53,7 +53,7 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	db *db
+	*Store
 
 	AccessTokensService
 	AppsService
@@ -63,7 +63,7 @@ type Empire struct {
 	JobStatesService
 	Manager
 	ReleasesService
-	SlugsService
+	*SlugsService
 	ProcessesService
 }
 
@@ -73,6 +73,8 @@ func New(options Options) (*Empire, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	store := &Store{db: db}
 
 	scheduler, err := newScheduler(options.Fleet.API)
 	if err != nil {
@@ -127,8 +129,8 @@ func New(options Options) (*Empire, error) {
 		Manager:          manager,
 	}
 
-	slugs := &slugsService{
-		db:        db,
+	slugs := &SlugsService{
+		store:     store,
 		extractor: extractor,
 	}
 
@@ -146,7 +148,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		db:                  db,
+		Store:               store,
 		AccessTokensService: accessTokens,
 		AppsService:         apps,
 		ConfigsService:      configs,
@@ -158,11 +160,6 @@ func New(options Options) (*Empire, error) {
 		ReleasesService:     releases,
 		ProcessesService:    processes,
 	}, nil
-}
-
-func (e *Empire) Reset() error {
-	_, err := e.db.Exec(`TRUNCATE TABLE apps CASCADE`)
-	return err
 }
 
 // Migrate runs the migrations.
