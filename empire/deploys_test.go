@@ -25,7 +25,7 @@ func TestDeploysServiceDeployToApp(t *testing.T) {
 	app := &App{}
 	image := Image{
 		Repo: "remind101/r101-api",
-		ID:   "1234",
+		Tag:  "1234",
 	}
 
 	if _, err := d.DeployImageToApp(app, image); err != nil {

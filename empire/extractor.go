@@ -143,7 +143,7 @@ func (e *ProcfileExtractor) pullImage(i Image) error {
 
 	return e.Client.PullImage(docker.PullImageOptions{
 		Repository:   string(i.Repo),
-		Tag:          i.ID,
+		Tag:          i.Tag,
 		OutputStream: os.Stdout,
 	}, a)
 }

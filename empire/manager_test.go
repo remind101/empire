@@ -18,7 +18,7 @@ func TestNewContainerName(t *testing.T) {
 func TestBuildJobs(t *testing.T) {
 	image := Image{
 		Repo: "remind101/r101-api",
-		ID:   "1234",
+		Tag:  "1234",
 	}
 
 	vars := Vars{"RAILS_ENV": "production"}
