@@ -53,16 +53,15 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	AccessTokens *accessTokensService
-	Apps         *appsService
-	Configs      *configsService
-	JobStates    *jobStatesService
-	Manager      *manager
-	Releases     *releasesService
-	Slugs        *slugsService
-	Deployer     *deployer
-
 	store *store
+
+	accessTokens *accessTokensService
+	apps         *appsService
+	configs      *configsService
+	jobStates    *jobStatesService
+	manager      *manager
+	releases     *releasesService
+	deployer     *deployer
 }
 
 // New returns a new Empire instance.
@@ -136,25 +135,24 @@ func New(options Options) (*Empire, error) {
 
 	return &Empire{
 		store:        store,
-		AccessTokens: accessTokens,
-		Apps:         apps,
-		Configs:      configs,
-		Deployer:     deployer,
-		JobStates:    jobStates,
-		Manager:      manager,
-		Slugs:        slugs,
-		Releases:     releases,
+		accessTokens: accessTokens,
+		apps:         apps,
+		configs:      configs,
+		deployer:     deployer,
+		jobStates:    jobStates,
+		manager:      manager,
+		releases:     releases,
 	}, nil
 }
 
 // AccessTokensFind finds an access token.
 func (e *Empire) AccessTokensFind(token string) (*AccessToken, error) {
-	return e.AccessTokens.AccessTokensFind(token)
+	return e.accessTokens.AccessTokensFind(token)
 }
 
 // AccessTokensCreate creates a new AccessToken.
 func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, error) {
-	return e.AccessTokens.AccessTokensCreate(accessToken)
+	return e.accessTokens.AccessTokensCreate(accessToken)
 }
 
 // AppsAll returns all Apps.
@@ -174,18 +172,18 @@ func (e *Empire) AppsFind(name string) (*App, error) {
 
 // AppsDestroy destroys the app.
 func (e *Empire) AppsDestroy(app *App) error {
-	return e.Apps.AppsDestroy(app)
+	return e.apps.AppsDestroy(app)
 }
 
 // ConfigsCurrent returns the current Config for a given app.
 func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
-	return e.Configs.ConfigsCurrent(app)
+	return e.configs.ConfigsCurrent(app)
 }
 
 // ConfigsApply applies the new config vars to the apps current Config,
 // returning a new Config.
 func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
-	return e.Configs.ConfigsApply(app, vars)
+	return e.configs.ConfigsApply(app, vars)
 }
 
 // ConfigsFind finds a Config by id.
@@ -195,7 +193,7 @@ func (e *Empire) ConfigsFind(id string) (*Config, error) {
 
 // JobStatesByApp returns the JobStates for the given app.
 func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
-	return e.JobStates.JobStatesByApp(app)
+	return e.jobStates.JobStatesByApp(app)
 }
 
 // ProcessesAll returns all processes for a given Release.
@@ -205,7 +203,7 @@ func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
 
 // ReleasesCreate creates a new release for an app.
 func (e *Empire) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
-	return e.Releases.ReleasesCreate(app, config, slug, desc)
+	return e.releases.ReleasesCreate(app, config, slug, desc)
 }
 
 // ReleasesFindByApp returns all Releases for a given App.
@@ -225,7 +223,7 @@ func (e *Empire) ReleasesLast(app *App) (*Release, error) {
 
 // ScaleRelease scales the processes in a release.
 func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
-	return e.Manager.ScaleRelease(release, config, slug, formation, qm)
+	return e.manager.ScaleRelease(release, config, slug, formation, qm)
 }
 
 // SlugsFind finds a slug by id.
@@ -235,12 +233,12 @@ func (e *Empire) SlugsFind(id string) (*Slug, error) {
 
 // DeployImage deploys an image to Empire.
 func (e *Empire) DeployImage(image Image) (*Deploy, error) {
-	return e.Deployer.DeployImage(image)
+	return e.deployer.DeployImage(image)
 }
 
 // DeployCommit deploys a Commit to Empire.
 func (e *Empire) DeployCommit(commit Commit) (*Deploy, error) {
-	return e.Deployer.DeployCommit(commit)
+	return e.deployer.DeployCommit(commit)
 }
 
 // Reset resets empire.
