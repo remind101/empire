@@ -53,17 +53,17 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	Store *Store
-
-	AccessTokens *AccessTokensService
-	Apps         *AppsService
-	Configs      *ConfigsService
-	JobStates    *JobStatesService
-	Manager      *Manager
-	Releases     *ReleasesService
-	Slugs        *SlugsService
+	AccessTokens *accessTokensService
+	Apps         *appsService
+	Configs      *configsService
+	JobStates    *jobStatesService
+	Manager      *manager
+	Releases     *releasesService
+	Slugs        *slugsService
 
 	DeploysService
+
+	store *store
 }
 
 // New returns a new Empire instance.
@@ -73,7 +73,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	store := &Store{db: db}
+	store := &store{db: db}
 
 	scheduler, err := newScheduler(options.Fleet.API)
 	if err != nil {
@@ -89,49 +89,49 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	accessTokens := &AccessTokensService{
+	accessTokens := &accessTokensService{
 		Secret: []byte(options.Secret),
 	}
 
-	configs := &ConfigsService{
+	configs := &configsService{
 		store: store,
 	}
 
-	jobs := &JobsService{
+	jobs := &jobsService{
 		store:     store,
 		scheduler: scheduler,
 	}
 
-	jobStates := &JobStatesService{
+	jobStates := &jobStatesService{
 		store:     store,
 		scheduler: scheduler,
 	}
 
-	apps := &AppsService{
+	apps := &appsService{
 		store:       store,
-		JobsService: jobs,
+		jobsService: jobs,
 	}
 
-	manager := &Manager{
-		JobsService: jobs,
+	manager := &manager{
+		jobsService: jobs,
 		store:       store,
 	}
 
-	releases := &ReleasesService{
+	releases := &releasesService{
 		store:   store,
 		manager: manager,
 	}
 
-	slugs := &SlugsService{
+	slugs := &slugsService{
 		store:     store,
 		extractor: extractor,
 	}
 
 	imageDeployer := &imageDeployer{
-		AppsService:     apps,
-		ConfigsService:  configs,
-		SlugsService:    slugs,
-		ReleasesService: releases,
+		appsService:     apps,
+		configsService:  configs,
+		slugsService:    slugs,
+		releasesService: releases,
 	}
 
 	commitDeployer := &commitDeployer{
@@ -141,7 +141,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		Store:          store,
+		store:          store,
 		AccessTokens:   accessTokens,
 		Apps:           apps,
 		Configs:        configs,
@@ -165,17 +165,17 @@ func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, err
 
 // AppsAll returns all Apps.
 func (e *Empire) AppsAll() ([]*App, error) {
-	return e.Store.AppsAll()
+	return e.store.AppsAll()
 }
 
 // AppsCreate creates a new app.
 func (e *Empire) AppsCreate(app *App) (*App, error) {
-	return e.Store.AppsCreate(app)
+	return e.store.AppsCreate(app)
 }
 
 // AppsFind finds an app by name.
 func (e *Empire) AppsFind(name string) (*App, error) {
-	return e.Store.AppsFind(name)
+	return e.store.AppsFind(name)
 }
 
 // AppsDestroy destroys the app.
@@ -196,7 +196,7 @@ func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
 
 // ConfigsFind finds a Config by id.
 func (e *Empire) ConfigsFind(id string) (*Config, error) {
-	return e.Store.ConfigsFind(id)
+	return e.store.ConfigsFind(id)
 }
 
 // JobStatesByApp returns the JobStates for the given app.
@@ -206,7 +206,7 @@ func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
 
 // ProcessesAll returns all processes for a given Release.
 func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
-	return e.Store.ProcessesAll(release)
+	return e.store.ProcessesAll(release)
 }
 
 // ReleasesCreate creates a new release for an app.
@@ -216,17 +216,17 @@ func (e *Empire) ReleasesCreate(app *App, config *Config, slug *Slug, desc strin
 
 // ReleasesFindByApp returns all Releases for a given App.
 func (e *Empire) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return e.Store.ReleasesFindByApp(app)
+	return e.store.ReleasesFindByApp(app)
 }
 
 // ReleasesFindByAppAndVersion finds a specific Release for a given App.
 func (e *Empire) ReleasesFindByAppAndVersion(app *App, version int) (*Release, error) {
-	return e.Store.ReleasesFindByAppAndVersion(app, version)
+	return e.store.ReleasesFindByAppAndVersion(app, version)
 }
 
 // ReleasesLast returns the last release for an App.
 func (e *Empire) ReleasesLast(app *App) (*Release, error) {
-	return e.Store.ReleasesLast(app)
+	return e.store.ReleasesLast(app)
 }
 
 // ScaleRelease scales the processes in a release.
@@ -236,12 +236,12 @@ func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, form
 
 // SlugsFind finds a slug by id.
 func (e *Empire) SlugsFind(id string) (*Slug, error) {
-	return e.Store.SlugsFind(id)
+	return e.store.SlugsFind(id)
 }
 
 // Reset resets empire.
 func (e *Empire) Reset() error {
-	return e.Store.Reset()
+	return e.store.Reset()
 }
 
 // Migrate runs the migrations.

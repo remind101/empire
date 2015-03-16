@@ -12,13 +12,13 @@ type AccessToken struct {
 	User  *User  `json:"-"`
 }
 
-type AccessTokensService struct {
+type accessTokensService struct {
 	Secret []byte // Secret used to sign jwt tokens.
 }
 
 // AccessTokensCreate "creates" the token by jwt signing it and setting the
 // Token value.
-func (s *AccessTokensService) AccessTokensCreate(token *AccessToken) (*AccessToken, error) {
+func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessToken, error) {
 	signed, err := SignToken(s.Secret, token)
 	if err != nil {
 		return token, err
@@ -29,7 +29,7 @@ func (s *AccessTokensService) AccessTokensCreate(token *AccessToken) (*AccessTok
 	return token, nil
 }
 
-func (s *AccessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
+func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
 	at, err := ParseToken(s.Secret, token)
 
 	if at != nil {

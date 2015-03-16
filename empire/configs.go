@@ -67,15 +67,15 @@ func (v Vars) Value() (driver.Value, error) {
 	return h.Value()
 }
 
-func (s *Store) ConfigsCreate(config *Config) (*Config, error) {
+func (s *store) ConfigsCreate(config *Config) (*Config, error) {
 	return configsCreate(s.db, config)
 }
 
-func (s *Store) ConfigsFind(id string) (*Config, error) {
+func (s *store) ConfigsFind(id string) (*Config, error) {
 	return configsFind(s.db, id)
 }
 
-func (s *Store) ConfigsFindByApp(app *App) (*Config, error) {
+func (s *store) ConfigsFindByApp(app *App) (*Config, error) {
 	return configsFindByApp(s.db, app)
 }
 
@@ -93,11 +93,11 @@ func configsFindByApp(db *db, app *App) (*Config, error) {
 	return configsFindBy(db, "app_id", app.Name)
 }
 
-type ConfigsService struct {
-	store *Store
+type configsService struct {
+	store *store
 }
 
-func (s *ConfigsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
+func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
 	c, err := s.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (s *ConfigsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
 	return s.store.ConfigsCreate(NewConfig(c, vars))
 }
 
-func (s *ConfigsService) ConfigsCurrent(app *App) (*Config, error) {
+func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
 	c, err := s.store.ConfigsFindByApp(app)
 	if err != nil {
 		return nil, err

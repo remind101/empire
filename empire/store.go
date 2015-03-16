@@ -1,11 +1,11 @@
 package empire
 
-// Store provides methods for CRUD'ing things.
-type Store struct {
+// store provides methods for CRUD'ing things.
+type store struct {
 	db *db
 }
 
-func (s *Store) Reset() error {
+func (s *store) Reset() error {
 	_, err := s.db.Exec(`TRUNCATE TABLE apps CASCADE`)
 	return err
 }

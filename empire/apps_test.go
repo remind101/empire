@@ -21,17 +21,17 @@ func TestIsValid(t *testing.T) {
 	}
 }
 
-type mockAppsService struct {
-	AppsService
+type mockappsService struct {
+	appsService
 
 	AppsFindOrCreateByRepoFunc func(repoType string, repo Repo) (*App, error)
 }
 
-func (s *mockAppsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
+func (s *mockappsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
 	return nil
 }
 
-func (s *mockAppsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
+func (s *mockappsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
 	if s.AppsFindOrCreateByRepoFunc != nil {
 		return s.AppsFindOrCreateByRepoFunc(repoType, repo)
 	}

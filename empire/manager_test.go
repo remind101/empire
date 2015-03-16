@@ -93,7 +93,7 @@ func (s *mockScheduler) ContainerStates() ([]*container.ContainerState, error) {
 }
 
 type mockManager struct {
-	Manager // Just to satisfy the interface.
+	manager // Just to satisfy the interface.
 
 	ScheduleReleaseFunc func(*Release, *Config, *Slug, Formation) error
 }

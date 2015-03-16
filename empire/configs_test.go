@@ -47,13 +47,13 @@ func TestMergeVars(t *testing.T) {
 	}
 }
 
-type mockConfigsService struct {
-	ConfigsService // Just to satisfy the interface.
+type mockconfigsService struct {
+	configsService // Just to satisfy the interface.
 
 	ConfigsCurrentFunc func(*App) (*Config, error)
 }
 
-func (s *mockConfigsService) ConfigsCurrent(app *App) (*Config, error) {
+func (s *mockconfigsService) ConfigsCurrent(app *App) (*Config, error) {
 	if s.ConfigsCurrentFunc != nil {
 		return s.ConfigsCurrentFunc(app)
 	}

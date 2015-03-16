@@ -134,15 +134,15 @@ func NewFormation(f Formation, cm CommandMap) Formation {
 	return processes
 }
 
-func (s *Store) ProcessesCreate(process *Process) (*Process, error) {
+func (s *store) ProcessesCreate(process *Process) (*Process, error) {
 	return processesCreate(s.db, process)
 }
 
-func (s *Store) ProcessesUpdate(process *Process) (int64, error) {
+func (s *store) ProcessesUpdate(process *Process) (int64, error) {
 	return processesUpdate(s.db, process)
 }
 
-func (s *Store) ProcessesAll(release *Release) (Formation, error) {
+func (s *store) ProcessesAll(release *Release) (Formation, error) {
 	return processesAll(s.db, release)
 }
 

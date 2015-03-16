@@ -79,36 +79,36 @@ func (a *App) PreInsert(s gorp.SqlExecutor) error {
 	return a.IsValid()
 }
 
-func (s *Store) AppsCreate(app *App) (*App, error) {
+func (s *store) AppsCreate(app *App) (*App, error) {
 	return appsCreate(s.db, app)
 }
 
-func (s *Store) AppsUpdate(app *App) (int64, error) {
+func (s *store) AppsUpdate(app *App) (int64, error) {
 	return appsUpdate(s.db, app)
 }
 
-func (s *Store) AppsDestroy(app *App) error {
+func (s *store) AppsDestroy(app *App) error {
 	return appsDestroy(s.db, app)
 }
 
-func (s *Store) AppsAll() ([]*App, error) {
+func (s *store) AppsAll() ([]*App, error) {
 	return appsAll(s.db)
 }
 
-func (s *Store) AppsFind(name string) (*App, error) {
+func (s *store) AppsFind(name string) (*App, error) {
 	return appsFind(s.db, name)
 }
 
-func (s *Store) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
+func (s *store) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
 	return appsFindByRepo(s.db, repoType, repo)
 }
 
-type AppsService struct {
-	*JobsService
-	store *Store
+type appsService struct {
+	*jobsService
+	store *store
 }
 
-func (s *AppsService) AppsDestroy(app *App) error {
+func (s *appsService) AppsDestroy(app *App) error {
 	if err := s.store.AppsDestroy(app); err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (s *AppsService) AppsDestroy(app *App) error {
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
-func (s *AppsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
+func (s *appsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
 	switch repoType {
 	case DockerRepo:
 		if app.Repos.Docker != nil {
@@ -144,7 +144,7 @@ func (s *AppsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
-func (s *AppsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
+func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
 	a, err := s.store.AppsFindByRepo(repoType, repo)
 	if err != nil {
 		return a, err

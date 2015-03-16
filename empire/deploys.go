@@ -37,19 +37,19 @@ type DeploysService interface {
 
 // imageDeployer is a base implementation of the DeploysService
 type imageDeployer struct {
-	*AppsService
-	*ConfigsService
-	*SlugsService
-	*ReleasesService
+	*appsService
+	*configsService
+	*slugsService
+	*releasesService
 }
 
 func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error) {
-	if err := s.AppsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
+	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
 		return nil, err
 	}
 
 	// Grab the latest config.
-	config, err := s.ConfigsService.ConfigsCurrent(app)
+	config, err := s.configsService.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error)
 	// TODO This is actually going to be pretty slow, so
 	// we'll need to do
 	// some polling or events/webhooks here.
-	slug, err := s.SlugsService.SlugsCreateByImage(image)
+	slug, err := s.slugsService.SlugsCreateByImage(image)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error)
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	release, err := s.ReleasesService.ReleasesCreate(app, config, slug, desc)
+	release, err := s.releasesService.ReleasesCreate(app, config, slug, desc)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (s *imageDeployer) DeployImageToApp(app *App, image Image) (*Deploy, error)
 
 // Deploy deploys an Image to the cluster.
 func (s *imageDeployer) DeployImage(image Image) (*Deploy, error) {
-	app, err := s.AppsService.AppsFindOrCreateByRepo(DockerRepo, image.Repo)
+	app, err := s.appsService.AppsFindOrCreateByRepo(DockerRepo, image.Repo)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ type commitDeployer struct {
 	// doesn't specify a docker repo.
 	Organization string
 
-	appsService *AppsService
+	appsService *appsService
 }
 
 // Deploy commit deploys the commit to a specific app.

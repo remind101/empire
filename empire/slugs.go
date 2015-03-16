@@ -12,15 +12,15 @@ type Slug struct {
 	ProcessTypes CommandMap `json:"process_types" db:"process_types"`
 }
 
-func (s *Store) SlugsCreate(slug *Slug) (*Slug, error) {
+func (s *store) SlugsCreate(slug *Slug) (*Slug, error) {
 	return slugsCreate(s.db, slug)
 }
 
-func (s *Store) SlugsFind(id string) (*Slug, error) {
+func (s *store) SlugsFind(id string) (*Slug, error) {
 	return slugsFind(s.db, id)
 }
 
-func (s *Store) SlugsFindByImage(image Image) (*Slug, error) {
+func (s *store) SlugsFindByImage(image Image) (*Slug, error) {
 	return slugsFindByImage(s.db, image)
 }
 
@@ -55,21 +55,21 @@ func slugsFindBy(db *db, field string, value interface{}) (*Slug, error) {
 	return &slug, nil
 }
 
-// SlugsService provides convenience methods for creating slugs.
-type SlugsService struct {
-	store     *Store
+// slugsService provides convenience methods for creating slugs.
+type slugsService struct {
+	store     *store
 	extractor Extractor
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *SlugsService) SlugsCreateByImage(image Image) (*Slug, error) {
+func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
 	return slugsCreateByImage(s.store, s.extractor, image)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(store *Store, e Extractor, image Image) (*Slug, error) {
+func slugsCreateByImage(store *store, e Extractor, image Image) (*Slug, error) {
 	slug, err := store.SlugsFindByImage(image)
 	if err != nil {
 		return slug, err

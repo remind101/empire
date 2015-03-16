@@ -12,13 +12,13 @@ func (e *mockExtractor) Extract(image Image) (CommandMap, error) {
 	return CommandMap{}, nil
 }
 
-type mockSlugsService struct {
-	SlugsService // Just to satisfy the interface.
+type mockslugsService struct {
+	slugsService // Just to satisfy the interface.
 
 	SlugsCreateByImageFunc func(Image) (*Slug, error)
 }
 
-func (s *mockSlugsService) SlugsCreateByImage(image Image) (*Slug, error) {
+func (s *mockslugsService) SlugsCreateByImage(image Image) (*Slug, error) {
 	if s.SlugsCreateByImageFunc != nil {
 		return s.SlugsCreateByImageFunc(image)
 	}

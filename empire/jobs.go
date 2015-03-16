@@ -48,24 +48,24 @@ type JobState struct {
 	State     string
 }
 
-func (s *Store) JobsList(q JobsListQuery) ([]*Job, error) {
+func (s *store) JobsList(q JobsListQuery) ([]*Job, error) {
 	return jobsList(s.db, q)
 }
 
-func (s *Store) JobsCreate(job *Job) (*Job, error) {
+func (s *store) JobsCreate(job *Job) (*Job, error) {
 	return jobsCreate(s.db, job)
 }
 
-func (s *Store) JobsDestroy(job *Job) error {
+func (s *store) JobsDestroy(job *Job) error {
 	return jobsDestroy(s.db, job)
 }
 
-type JobsService struct {
-	store     *Store
+type jobsService struct {
+	store     *store
 	scheduler container.Scheduler
 }
 
-func (s *JobsService) Schedule(jobs ...*Job) error {
+func (s *jobsService) Schedule(jobs ...*Job) error {
 	for _, j := range jobs {
 		if _, err := Schedule(s.store, s.scheduler, j); err != nil {
 			return err
@@ -75,7 +75,7 @@ func (s *JobsService) Schedule(jobs ...*Job) error {
 	return nil
 }
 
-func (s *JobsService) Unschedule(jobs ...*Job) error {
+func (s *jobsService) Unschedule(jobs ...*Job) error {
 	for _, j := range jobs {
 		if err := unschedule(s.store, s.scheduler, j); err != nil {
 			return err
@@ -110,7 +110,7 @@ func jobsList(db *db, q JobsListQuery) ([]*Job, error) {
 }
 
 // Schedule schedules to job onto the cluster, then persists it to the database.
-func Schedule(store *Store, s container.Scheduler, j *Job) (*Job, error) {
+func Schedule(store *store, s container.Scheduler, j *Job) (*Job, error) {
 	env := environment(j.Environment)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", j.ProcessType, j.AppName)
 
@@ -132,7 +132,7 @@ func Schedule(store *Store, s container.Scheduler, j *Job) (*Job, error) {
 	return store.JobsCreate(j)
 }
 
-func unschedule(store *Store, s container.Scheduler, j *Job) error {
+func unschedule(store *store, s container.Scheduler, j *Job) error {
 	if err := s.Unschedule(j.ContainerName()); err != nil {
 		return err
 	}
@@ -140,12 +140,12 @@ func unschedule(store *Store, s container.Scheduler, j *Job) error {
 	return store.JobsDestroy(j)
 }
 
-type JobStatesService struct {
-	store     *Store
+type jobStatesService struct {
+	store     *store
 	scheduler container.Scheduler
 }
 
-func (s *JobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
+func (s *jobStatesService) JobStatesByApp(app *App) ([]*JobState, error) {
 	// Jobs expected to be running
 	jobs, err := s.store.JobsList(JobsListQuery{
 		App: app.Name,
