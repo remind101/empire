@@ -155,33 +155,33 @@ type ProcessesService interface {
 // processesService is an implementation of the AppsRepository interface backed by
 // a DB.
 type processesService struct {
-	DB
+	*db
 }
 
 func (s *processesService) ProcessesCreate(process *Process) (*Process, error) {
-	return ProcessesCreate(s.DB, process)
+	return processesCreate(s.db, process)
 }
 
 func (s *processesService) ProcessesUpdate(process *Process) (int64, error) {
-	return ProcessesUpdate(s.DB, process)
+	return processesUpdate(s.db, process)
 }
 
 func (s *processesService) ProcessesAll(release *Release) (Formation, error) {
-	return ProcessesAll(s.DB, release)
+	return processesAll(s.db, release)
 }
 
 // ProcessesCreate inserts a process into the database.
-func ProcessesCreate(db Inserter, process *Process) (*Process, error) {
+func processesCreate(db *db, process *Process) (*Process, error) {
 	return process, db.Insert(process)
 }
 
 // ProcessesUpdate updates an existing process into the database.
-func ProcessesUpdate(db Updater, process *Process) (int64, error) {
+func processesUpdate(db *db, process *Process) (int64, error) {
 	return db.Update(process)
 }
 
 // ProcessesAll returns all Processes for a Release as a Formation.
-func ProcessesAll(db Queryier, release *Release) (Formation, error) {
+func processesAll(db *db, release *Release) (Formation, error) {
 	var ps []*Process
 
 	if err := db.Select(&ps, `select * from processes where release_id = $1`, string(release.ID)); err != nil {

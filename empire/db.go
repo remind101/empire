@@ -3,61 +3,38 @@ package empire
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 
-	"github.com/remind101/empire/empire/db"
+	gorp "gopkg.in/gorp.v1"
 )
 
-type Inserter interface {
-	// Insert inserts a record.
-	Insert(...interface{}) error
+type db struct {
+	db    *sql.DB
+	dbmap *gorp.DbMap
 }
 
-type Updater interface {
-	// Update updates an existing record.
-	Update(...interface{}) (int64, error)
-}
-
-type Deleter interface {
-	// Delete deletes one or more records
-	Delete(...interface{}) (int64, error)
-}
-
-type Execer interface {
-	// Exec executes an arbitrary SQL query.
-	Exec(query string, args ...interface{}) (sql.Result, error)
-}
-
-type Queryier interface {
-	// Select performs a query and populates the interface with the
-	// returned records. interface must be a pointer to a slice
-	Select(interface{}, string, ...interface{}) error
-
-	// SelectOne performs a query and populates the interface with the
-	// returned record.
-	SelectOne(interface{}, string, ...interface{}) error
-}
-
-// DB represents an interface for performing queries against a SQL db.
-type DB interface {
-	Inserter
-	Updater
-	Deleter
-	Execer
-	Queryier
-
-	// Begin opens a transaction.
-	Begin() (*db.Transaction, error)
-
-	// Close closes the db.
-	Close() error
-}
-
-// NewDB returns a new DB instance with table mappings configured.
-func NewDB(uri string) (DB, error) {
-	db, err := db.NewDB(uri)
+// newDB returns a new db instance with table mappings configured.
+func newDB(uri string) (*db, error) {
+	u, err := url.Parse(uri)
 	if err != nil {
-		return db, err
+		return nil, err
 	}
+
+	conn, err := sql.Open(u.Scheme, uri)
+	if err != nil {
+		return nil, err
+	}
+
+	var dialect gorp.Dialect
+	switch u.Scheme {
+	case "postgres":
+		dialect = gorp.PostgresDialect{}
+	default:
+		dialect = gorp.SqliteDialect{}
+	}
+
+	dbmap := &gorp.DbMap{Db: conn, Dialect: dialect}
+	db := &db{dbmap: dbmap, db: conn}
 
 	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name")
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
@@ -69,7 +46,58 @@ func NewDB(uri string) (DB, error) {
 	return db, nil
 }
 
-func findBy(db Queryier, v interface{}, table, field string, value interface{}) error {
+func (db *db) AddTableWithName(v interface{}, name string) *gorp.TableMap {
+	return db.dbmap.AddTableWithName(v, name)
+}
+
+func (db *db) Insert(v ...interface{}) error {
+	return db.dbmap.Insert(v...)
+}
+
+func (db *db) Update(v ...interface{}) (int64, error) {
+	return db.dbmap.Update(v...)
+}
+
+func (db *db) Delete(list ...interface{}) (int64, error) {
+	return db.dbmap.Delete(list...)
+}
+
+func (db *db) Select(v interface{}, query string, args ...interface{}) error {
+	_, err := db.dbmap.Select(v, query, args...)
+	return err
+}
+
+func (db *db) SelectOne(v interface{}, query string, args ...interface{}) error {
+	return db.dbmap.SelectOne(v, query, args...)
+}
+
+func (db *db) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return db.dbmap.Exec(query, args...)
+}
+
+func (db *db) Begin() (*Transaction, error) {
+	t, err := db.dbmap.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{t}, nil
+}
+
+func (db *db) Close() error {
+	return db.db.Close()
+}
+
+type Transaction struct {
+	*gorp.Transaction
+}
+
+func (t *Transaction) Select(v interface{}, query string, args ...interface{}) error {
+	_, err := t.Transaction.Select(v, query, args...)
+	return err
+}
+
+func findBy(db *db, v interface{}, table, field string, value interface{}) error {
 	q := fmt.Sprintf(`select * from %s where %s = $1 limit 1`, table, field)
 
 	return db.SelectOne(v, q, value)

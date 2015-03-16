@@ -53,7 +53,7 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	DB DB
+	db *db
 
 	AccessTokensService
 	AppsService
@@ -69,7 +69,7 @@ type Empire struct {
 
 // New returns a new Empire instance.
 func New(options Options) (*Empire, error) {
-	db, err := NewDB(options.DB)
+	db, err := newDB(options.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -93,26 +93,26 @@ func New(options Options) (*Empire, error) {
 	}
 
 	configs := &configsService{
-		DB: db,
+		db: db,
 	}
 
 	jobs := &jobsService{
-		DB:        db,
+		db:        db,
 		scheduler: scheduler,
 	}
 
 	jobStates := &jobStatesService{
-		DB:          db,
+		db:          db,
 		JobsService: jobs,
 		scheduler:   scheduler,
 	}
 
 	processes := &processesService{
-		DB: db,
+		db: db,
 	}
 
 	apps := &appsService{
-		DB:          db,
+		db:          db,
 		JobsService: jobs,
 	}
 
@@ -122,13 +122,13 @@ func New(options Options) (*Empire, error) {
 	}
 
 	releases := &releasesService{
-		DB:               db,
+		db:               db,
 		ProcessesService: processes,
 		Manager:          manager,
 	}
 
 	slugs := &slugsService{
-		DB:        db,
+		db:        db,
 		extractor: extractor,
 	}
 
@@ -146,7 +146,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		DB:                  db,
+		db:                  db,
 		AccessTokensService: accessTokens,
 		AppsService:         apps,
 		ConfigsService:      configs,
@@ -161,7 +161,7 @@ func New(options Options) (*Empire, error) {
 }
 
 func (e *Empire) Reset() error {
-	_, err := e.DB.Exec(`TRUNCATE TABLE apps CASCADE`)
+	_, err := e.db.Exec(`TRUNCATE TABLE apps CASCADE`)
 	return err
 }
 
