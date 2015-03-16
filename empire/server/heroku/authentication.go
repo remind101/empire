@@ -8,22 +8,23 @@ import (
 	"golang.org/x/net/context"
 )
 
-type TokenFinder interface {
-	AccessTokensFind(string) (*empire.AccessToken, error)
-}
-
 // Middleware for handling authentication.
 type Authentication struct {
-	finder  TokenFinder
+	// findAccessToken is a function that, given a string token, will return
+	// an empire.AccessToken
+	findAccessToken func(string) (*empire.AccessToken, error)
+
+	// handler is the wrapped httpx.Handler. This handler is called when the
+	// user is authenticated.
 	handler httpx.Handler
 }
 
 // Authenticat wraps an httpx.Handler in the Authentication middleware to authenticate
 // the request.
-func Authenticate(f TokenFinder, h httpx.Handler) httpx.Handler {
+func Authenticate(e *empire.Empire, h httpx.Handler) httpx.Handler {
 	return &Authentication{
-		finder:  f,
-		handler: h,
+		findAccessToken: e.AccessTokensFind,
+		handler:         h,
 	}
 }
 
@@ -35,7 +36,7 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return ErrUnauthorized
 	}
 
-	at, err := h.finder.AccessTokensFind(token)
+	at, err := h.findAccessToken(token)
 	if err != nil {
 		return err
 	}
