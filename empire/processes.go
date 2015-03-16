@@ -134,39 +134,15 @@ func NewFormation(f Formation, cm CommandMap) Formation {
 	return processes
 }
 
-type ProcessesCreator interface {
-	ProcessesCreate(*Process) (*Process, error)
-}
-
-type ProcessesUpdater interface {
-	ProcessesUpdate(*Process) (int64, error)
-}
-
-type ProcessesFinder interface {
-	ProcessesAll(*Release) (Formation, error)
-}
-
-type ProcessesService interface {
-	ProcessesCreator
-	ProcessesUpdater
-	ProcessesFinder
-}
-
-// processesService is an implementation of the AppsRepository interface backed by
-// a DB.
-type processesService struct {
-	*db
-}
-
-func (s *processesService) ProcessesCreate(process *Process) (*Process, error) {
+func (s *Store) ProcessesCreate(process *Process) (*Process, error) {
 	return processesCreate(s.db, process)
 }
 
-func (s *processesService) ProcessesUpdate(process *Process) (int64, error) {
+func (s *Store) ProcessesUpdate(process *Process) (int64, error) {
 	return processesUpdate(s.db, process)
 }
 
-func (s *processesService) ProcessesAll(release *Release) (Formation, error) {
+func (s *Store) ProcessesAll(release *Release) (Formation, error) {
 	return processesAll(s.db, release)
 }
 

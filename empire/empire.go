@@ -64,7 +64,6 @@ type Empire struct {
 	Manager
 	ReleasesService
 	*SlugsService
-	ProcessesService
 }
 
 // New returns a new Empire instance.
@@ -109,24 +108,20 @@ func New(options Options) (*Empire, error) {
 		scheduler:   scheduler,
 	}
 
-	processes := &processesService{
-		db: db,
-	}
-
 	apps := &appsService{
 		db:          db,
 		JobsService: jobs,
 	}
 
 	manager := &manager{
-		JobsService:      jobs,
-		ProcessesService: processes,
+		JobsService: jobs,
+		store:       store,
 	}
 
 	releases := &releasesService{
-		db:               db,
-		ProcessesService: processes,
-		Manager:          manager,
+		db:      db,
+		store:   store,
+		Manager: manager,
 	}
 
 	slugs := &SlugsService{
@@ -158,7 +153,6 @@ func New(options Options) (*Empire, error) {
 		Manager:             manager,
 		SlugsService:        slugs,
 		ReleasesService:     releases,
-		ProcessesService:    processes,
 	}, nil
 }
 

@@ -47,7 +47,7 @@ type ReleasesService interface {
 // a DB.
 type releasesService struct {
 	*db
-	ProcessesService
+	store *Store
 	Manager
 }
 
@@ -102,7 +102,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	var existing Formation
 
 	if last != nil {
-		existing, err = s.ProcessesService.ProcessesAll(last)
+		existing, err = s.store.ProcessesAll(last)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	for _, p := range f {
 		p.ReleaseID = release.ID
 
-		if _, err := s.ProcessesService.ProcessesCreate(p); err != nil {
+		if _, err := s.store.ProcessesCreate(p); err != nil {
 			return f, err
 		}
 	}

@@ -15,7 +15,7 @@ type Manager interface {
 // manager is a base implementation of the Manager interface.
 type manager struct {
 	JobsService
-	ProcessesService
+	store *Store
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
@@ -78,7 +78,7 @@ func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *
 
 	// Update quantity for this process in the formation
 	p.Quantity = q
-	_, err := m.ProcessesService.ProcessesUpdate(p)
+	_, err := m.store.ProcessesUpdate(p)
 	return err
 }
 
