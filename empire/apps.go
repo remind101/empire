@@ -18,9 +18,10 @@ var (
 	}
 )
 
+// NamePattern is a regex pattern that app names must conform to.
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
-// NewNameFromRepo generates a new name from a Repo
+// NewAppNameFromRepo generates a new name from a Repo
 //
 //	remind101/r101-api => r101-api
 func NewAppNameFromRepo(repo Repo) string {
@@ -28,9 +29,10 @@ func NewAppNameFromRepo(repo Repo) string {
 	return p[len(p)-1]
 }
 
+// Repo types.
 var (
-	DockerRepo string = "docker"
-	GitHubRepo string = "github"
+	DockerRepo = "docker"
+	GitHubRepo = "github"
 )
 
 // Repos represents the configured repos for an app.
@@ -39,6 +41,7 @@ type Repos struct {
 	Docker *Repo `json:"docker" db:"docker_repo"`
 }
 
+// Set sets the given repo type with the value.
 func (r *Repos) Set(repoType string, value Repo) error {
 	switch repoType {
 	case GitHubRepo:
@@ -61,7 +64,7 @@ type App struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
-// Returns an error if the app isn't valid.
+// IsValid returns an error if the app isn't valid.
 func (a *App) IsValid() error {
 	if !NamePattern.Match([]byte(a.Name)) {
 		return ErrInvalidName
