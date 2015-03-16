@@ -53,17 +53,17 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	*Store
+	Store *Store
 
-	*AccessTokensService
-	*AppsService
-	*ConfigsService
+	AccessTokens *AccessTokensService
+	Apps         *AppsService
+	Configs      *ConfigsService
+	JobStates    *JobStatesService
+	Manager      *Manager
+	Releases     *ReleasesService
+	Slugs        *SlugsService
+
 	DeploysService
-	*JobsService
-	*JobStatesService
-	*Manager
-	*ReleasesService
-	*SlugsService
 }
 
 // New returns a new Empire instance.
@@ -141,21 +141,107 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		Store:               store,
-		AccessTokensService: accessTokens,
-		AppsService:         apps,
-		ConfigsService:      configs,
-		DeploysService:      commitDeployer,
-		JobsService:         jobs,
-		JobStatesService:    jobStates,
-		Manager:             manager,
-		SlugsService:        slugs,
-		ReleasesService:     releases,
+		Store:          store,
+		AccessTokens:   accessTokens,
+		Apps:           apps,
+		Configs:        configs,
+		DeploysService: commitDeployer,
+		JobStates:      jobStates,
+		Manager:        manager,
+		Slugs:          slugs,
+		Releases:       releases,
 	}, nil
 }
 
+// AccessTokensFind finds an access token.
+func (e *Empire) AccessTokensFind(token string) (*AccessToken, error) {
+	return e.AccessTokens.AccessTokensFind(token)
+}
+
+// AccessTokensCreate creates a new AccessToken.
+func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, error) {
+	return e.AccessTokens.AccessTokensCreate(accessToken)
+}
+
+// AppsAll returns all Apps.
+func (e *Empire) AppsAll() ([]*App, error) {
+	return e.Store.AppsAll()
+}
+
+// AppsCreate creates a new app.
+func (e *Empire) AppsCreate(app *App) (*App, error) {
+	return e.Store.AppsCreate(app)
+}
+
+// AppsFind finds an app by name.
+func (e *Empire) AppsFind(name string) (*App, error) {
+	return e.Store.AppsFind(name)
+}
+
+// AppsDestroy destroys the app.
 func (e *Empire) AppsDestroy(app *App) error {
-	return e.AppsService.AppsDestroy(app)
+	return e.Apps.AppsDestroy(app)
+}
+
+// ConfigsCurrent returns the current Config for a given app.
+func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
+	return e.Configs.ConfigsCurrent(app)
+}
+
+// ConfigsApply applies the new config vars to the apps current Config,
+// returning a new Config.
+func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
+	return e.Configs.ConfigsApply(app, vars)
+}
+
+// ConfigsFind finds a Config by id.
+func (e *Empire) ConfigsFind(id string) (*Config, error) {
+	return e.Store.ConfigsFind(id)
+}
+
+// JobStatesByApp returns the JobStates for the given app.
+func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
+	return e.JobStates.JobStatesByApp(app)
+}
+
+// ProcessesAll returns all processes for a given Release.
+func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
+	return e.Store.ProcessesAll(release)
+}
+
+// ReleasesCreate creates a new release for an app.
+func (e *Empire) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
+	return e.Releases.ReleasesCreate(app, config, slug, desc)
+}
+
+// ReleasesFindByApp returns all Releases for a given App.
+func (e *Empire) ReleasesFindByApp(app *App) ([]*Release, error) {
+	return e.Store.ReleasesFindByApp(app)
+}
+
+// ReleasesFindByAppAndVersion finds a specific Release for a given App.
+func (e *Empire) ReleasesFindByAppAndVersion(app *App, version int) (*Release, error) {
+	return e.Store.ReleasesFindByAppAndVersion(app, version)
+}
+
+// ReleasesLast returns the last release for an App.
+func (e *Empire) ReleasesLast(app *App) (*Release, error) {
+	return e.Store.ReleasesLast(app)
+}
+
+// ScaleRelease scales the processes in a release.
+func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
+	return e.Manager.ScaleRelease(release, config, slug, formation, qm)
+}
+
+// SlugsFind finds a slug by id.
+func (e *Empire) SlugsFind(id string) (*Slug, error) {
+	return e.Store.SlugsFind(id)
+}
+
+// Reset resets empire.
+func (e *Empire) Reset() error {
+	return e.Store.Reset()
 }
 
 // Migrate runs the migrations.
