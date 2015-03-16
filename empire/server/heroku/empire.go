@@ -8,13 +8,17 @@ type Empire interface {
 
 	JobStatesByApp(*empire.App) ([]*empire.JobState, error)
 
+	AppsAll() ([]*empire.App, error)
+	AppsDestroy(*empire.App) error
+	AppsCreate(*empire.App) (*empire.App, error)
+	AppsFind(name string) (*empire.App, error)
+
 	// TODO Remove these
 	ReleasesCreate(*empire.App, *empire.Config, *empire.Slug, string) (*empire.Release, error)
 	ReleasesLast(*empire.App) (*empire.Release, error)
 	ReleasesFindByAppAndVersion(*empire.App, int) (*empire.Release, error)
 	ReleasesFindByApp(*empire.App) ([]*empire.Release, error)
 
-	empire.AppsService
 	empire.ConfigsService
 	empire.DeploysService
 	empire.Manager

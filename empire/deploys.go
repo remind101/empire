@@ -37,7 +37,7 @@ type DeploysService interface {
 
 // imageDeployer is a base implementation of the DeploysService
 type imageDeployer struct {
-	AppsService
+	*AppsService
 	ConfigsService
 	*SlugsService
 	*ReleasesService
@@ -99,7 +99,7 @@ type commitDeployer struct {
 	// doesn't specify a docker repo.
 	Organization string
 
-	appsService AppsService
+	appsService *AppsService
 }
 
 // Deploy commit deploys the commit to a specific app.

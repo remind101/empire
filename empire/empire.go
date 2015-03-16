@@ -56,7 +56,7 @@ type Empire struct {
 	*Store
 
 	AccessTokensService
-	AppsService
+	*AppsService
 	ConfigsService
 	DeploysService
 	*JobsService
@@ -107,8 +107,7 @@ func New(options Options) (*Empire, error) {
 		scheduler: scheduler,
 	}
 
-	apps := &appsService{
-		db:          db,
+	apps := &AppsService{
 		store:       store,
 		JobsService: jobs,
 	}
@@ -153,6 +152,10 @@ func New(options Options) (*Empire, error) {
 		SlugsService:        slugs,
 		ReleasesService:     releases,
 	}, nil
+}
+
+func (e *Empire) AppsDestroy(app *App) error {
+	return e.AppsService.AppsDestroy(app)
 }
 
 // Migrate runs the migrations.
