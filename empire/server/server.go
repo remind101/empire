@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/codegangsta/negroni"
@@ -41,7 +40,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 	r.MatcherFunc(githubWebhook).Handler(g)
 
 	// Mount health endpoint
-	r.Handle("/health", &HealthHandler{Empire: e})
+	r.Handle("/health", &HealthHandler{IsHealthy: e.IsHealthy})
 
 	n := negroni.Classic()
 	n.UseHandler(r)
@@ -58,18 +57,16 @@ func githubWebhook(r *http.Request, rm *mux.RouteMatch) bool {
 
 // HealthHandler is an http.Handler that returns the health of empire.
 type HealthHandler struct {
-	*empire.Empire
+	// A function that returns true if empire is healthy.
+	IsHealthy func() bool
 }
 
 func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var healthy bool
+	var status = http.StatusOK
 
-	if h.Empire.IsHealthy() {
-		healthy = true
+	if !h.IsHealthy() {
+		status = http.StatusServiceUnavailable
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]bool{
-		"healthy": healthy,
-	})
+	w.WriteHeader(status)
 }
