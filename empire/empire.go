@@ -57,7 +57,7 @@ type Empire struct {
 
 	*AccessTokensService
 	*AppsService
-	ConfigsService
+	*ConfigsService
 	DeploysService
 	*JobsService
 	*JobStatesService
@@ -93,8 +93,8 @@ func New(options Options) (*Empire, error) {
 		Secret: []byte(options.Secret),
 	}
 
-	configs := &configsService{
-		db: db,
+	configs := &ConfigsService{
+		store: store,
 	}
 
 	jobs := &JobsService{

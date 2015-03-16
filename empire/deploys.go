@@ -38,7 +38,7 @@ type DeploysService interface {
 // imageDeployer is a base implementation of the DeploysService
 type imageDeployer struct {
 	*AppsService
-	ConfigsService
+	*ConfigsService
 	*SlugsService
 	*ReleasesService
 }
