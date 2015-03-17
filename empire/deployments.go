@@ -20,15 +20,28 @@ type Deployment struct {
 
 	ReleaseID *string `db:"release_id"`
 
+	App *App `db:"-"`
+
 	// Used to store the old status when changing statuses.
 	prevStatus string `db:"-"`
+}
+
+func (d *Deployment) changeStatus(status string) {
+	d.prevStatus, d.Status = d.Status, status
 }
 
 // Success marks the deployment as successful. The release provided will be
 // associated with this deployment.
 func (d *Deployment) Success(release *Release) *Deployment {
 	d.ReleaseID = &release.ID
-	d.prevStatus, d.Status = d.Status, StatusSuccess
+	d.changeStatus(StatusSuccess)
+	return d
+}
+
+// Failed marks the deployment as failed. An error can be provided, which should
+// indicate what went wrong.
+func (d *Deployment) Failed(err error) *Deployment {
+	d.changeStatus(StatusFailed)
 	return d
 }
 
@@ -70,23 +83,32 @@ type deployer struct {
 	*releasesService
 }
 
-func (s *deployer) DeployImageToApp(app *App, image Image) (*Deployment, error) {
-	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
-		return nil, err
-	}
+// DeploymentsDo performs the Deployment.
+func (s *deployer) DeploymentsDo(d *Deployment) (err error) {
+	app, image := d.App, d.Image
 
-	d, err := s.DeploymentsCreate(&Deployment{
-		AppName: app.Name,
-		Image:   image,
-	})
-	if err != nil {
-		return d, err
-	}
+	var (
+		config  *Config
+		slug    *Slug
+		release *Release
+	)
+
+	defer func() {
+		if err == nil {
+			d.Success(release)
+		} else {
+			d.Failed(err)
+		}
+
+		err = s.DeploymentsUpdate(d)
+
+		return
+	}()
 
 	// Grab the latest config.
-	config, err := s.ConfigsCurrent(app)
+	config, err = s.ConfigsCurrent(app)
 	if err != nil {
-		return d, err
+		return
 	}
 
 	// Create a new slug for the docker image.
@@ -94,25 +116,37 @@ func (s *deployer) DeployImageToApp(app *App, image Image) (*Deployment, error) 
 	// TODO This is actually going to be pretty slow, so
 	// we'll need to do
 	// some polling or events/webhooks here.
-	slug, err := s.SlugsCreateByImage(image)
+	slug, err = s.SlugsCreateByImage(image)
 	if err != nil {
-		return d, err
+		return
 	}
 
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	release, err := s.ReleasesCreate(app, config, slug, desc)
+	release, err = s.ReleasesCreate(app, config, slug, desc)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *deployer) DeployImageToApp(app *App, image Image) (*Deployment, error) {
+	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
+		return nil, err
+	}
+
+	d, err := s.DeploymentsCreate(&Deployment{
+		App:     app,
+		AppName: app.Name,
+		Image:   image,
+	})
 	if err != nil {
 		return d, err
 	}
 
-	// Mark the deployment as successful.
-	if err := s.DeploymentsUpdate(d.Success(release)); err != nil {
-		return d, err
-	}
-
-	return d, nil
+	return d, s.DeploymentsDo(d)
 }
 
 // Deploy deploys an Image to the cluster.
