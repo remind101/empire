@@ -28,6 +28,15 @@ func (r *Release) PreInsert(s gorp.SqlExecutor) error {
 	return nil
 }
 
+// ReleasesCreateOpts represents options that can be passed when creating a
+// new Release.
+type ReleasesCreateOpts struct {
+	App         *App
+	Config      *Config
+	Slug        *Slug
+	Description string
+}
+
 func (s *store) ReleasesLast(app *App) (*Release, error) {
 	return releasesLast(s.db, app.Name)
 }
@@ -44,8 +53,13 @@ func (s *store) ReleasesFindByAppNameAndVersion(appName string, v int) (*Release
 	return releasesFindByAppNameAndVersion(s.db, appName, v)
 }
 
-// TODO Rename to ReleasesCreate.
-func (s *store) ReleasesCreate(release *Release) (*Release, error) {
+func (s *store) ReleasesCreate(opts ReleasesCreateOpts) (*Release, error) {
+	release := &Release{
+		AppName:     opts.App.Name,
+		ConfigID:    opts.Config.ID,
+		SlugID:      opts.Slug.ID,
+		Description: opts.Description,
+	}
 	return releasesCreate(s.db, release)
 }
 
@@ -57,15 +71,10 @@ type releasesService struct {
 }
 
 // Create creates the release, then sets the current process formation on the release.
-func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
-	r := &Release{
-		AppName:     app.Name,
-		ConfigID:    config.ID,
-		SlugID:      slug.ID,
-		Description: desc,
-	}
+func (s *releasesService) ReleasesCreate(opts ReleasesCreateOpts) (*Release, error) {
+	config, slug := opts.Config, opts.Slug
 
-	r, err := s.store.ReleasesCreate(r)
+	r, err := s.store.ReleasesCreate(opts)
 	if err != nil {
 		return r, err
 	}
@@ -121,7 +130,6 @@ func (s *releasesService) ReleasesRollback(app *App, version int) (*Release, err
 		return nil, err
 	}
 
-	// TODO Returns a better error here?
 	if prevRelease == nil {
 		return nil, &ValidationError{Err: fmt.Errorf("release %d not found", version)}
 	}
@@ -146,7 +154,12 @@ func (s *releasesService) ReleasesRollback(app *App, version int) (*Release, err
 	}
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
-	release, err := s.ReleasesCreate(app, config, slug, desc)
+	release, err := s.ReleasesCreate(ReleasesCreateOpts{
+		App:         app,
+		Config:      config,
+		Slug:        slug,
+		Description: desc,
+	})
 	if err != nil {
 		return release, err
 	}

@@ -150,7 +150,12 @@ func (s *deployer) DeploymentsDo(opts DeploymentsCreateOpts) (d *Deployment, err
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	release, err = s.ReleasesCreate(app, config, slug, desc)
+	release, err = s.ReleasesCreate(ReleasesCreateOpts{
+		App:         app,
+		Config:      config,
+		Slug:        slug,
+		Description: desc,
+	})
 	if err != nil {
 		return
 	}

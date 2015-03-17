@@ -130,7 +130,12 @@ func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
 		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
 
 		// Create new release based on new config and old slug
-		_, err = s.releases.ReleasesCreate(app, c, slug, desc)
+		_, err = s.releases.ReleasesCreate(ReleasesCreateOpts{
+			App:         app,
+			Config:      c,
+			Slug:        slug,
+			Description: desc,
+		})
 		if err != nil {
 			return c, err
 		}
