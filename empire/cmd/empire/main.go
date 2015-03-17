@@ -20,31 +20,31 @@ var Commands = []cli.Command{
 				Name:   "port",
 				Value:  "8080",
 				Usage:  "The port to run the server on",
-				EnvVar: "PORT",
+				EnvVar: "EMPIRE_PORT",
 			},
 			cli.StringFlag{
 				Name:   "github.client.id",
 				Value:  "",
 				Usage:  "The client id for the GitHub OAuth application",
-				EnvVar: "GITHUB_CLIENT_ID",
+				EnvVar: "EMPIRE_GITHUB_CLIENT_ID",
 			},
 			cli.StringFlag{
 				Name:   "github.client.secret",
 				Value:  "",
 				Usage:  "The client secret for the GitHub OAuth application",
-				EnvVar: "GITHUB_CLIENT_SECRET",
+				EnvVar: "EMPIRE_GITHUB_CLIENT_SECRET",
 			},
 			cli.StringFlag{
 				Name:   "github.organization",
 				Value:  "",
 				Usage:  "The organization to allow access to",
-				EnvVar: "GITHUB_ORGANIZATION",
+				EnvVar: "EMPIRE_GITHUB_ORGANIZATION",
 			},
 			cli.StringFlag{
 				Name:   "github.secret",
 				Value:  "",
 				Usage:  "The shared secret between GitHub and Empire. GitHub will use this secret to sign webhook requests.",
-				EnvVar: "GITHUB_SECRET",
+				EnvVar: "EMPIRE_GITHUB_SECRET",
 			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
@@ -68,7 +68,7 @@ var DBFlags = []cli.Flag{
 		Name:   "db",
 		Value:  "postgres://localhost/empire?sslmode=disable",
 		Usage:  "SQL connection string for the database",
-		EnvVar: "DATABASE_URL",
+		EnvVar: "EMPIRE_DATABASE_URL",
 	},
 }
 
@@ -101,13 +101,13 @@ var EmpireFlags = []cli.Flag{
 		Name:   "fleet.api",
 		Value:  "",
 		Usage:  "The location of the fleet api",
-		EnvVar: "FLEET_URL",
+		EnvVar: "EMPIRE_FLEET_URL",
 	},
 	cli.StringFlag{
 		Name:   "secret",
 		Value:  "<change this>",
 		Usage:  "The secret used to sign access tokens",
-		EnvVar: "TOKEN_SECRET",
+		EnvVar: "EMPIRE_TOKEN_SECRET",
 	},
 }
 
