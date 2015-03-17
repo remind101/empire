@@ -58,7 +58,9 @@ CREATE TABLE deployments (
   release_id uuid references releases(id),
   image text NOT NULL,
   status text NOT NULL,
-  error text
+  error text,
+  created_at timestamp without time zone default (now() at time zone 'utc'),
+  finished_at timestamp without time zone
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);

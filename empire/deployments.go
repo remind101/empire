@@ -2,6 +2,9 @@ package empire
 
 import (
 	"fmt"
+	"time"
+
+	"gopkg.in/gorp.v1"
 )
 
 // Deployment statuses.
@@ -13,13 +16,14 @@ const (
 
 // Deployment represents a deployment to the platform.
 type Deployment struct {
-	ID      string  `db:"id"`
-	AppName string  `db:"app_id"`
-	Status  string  `db:"status"`
-	Image   Image   `db:"image"`
-	Error   *string `db:"error"`
-
-	ReleaseID *string `db:"release_id"`
+	ID         string    `db:"id"`
+	AppName    string    `db:"app_id"`
+	Status     string    `db:"status"`
+	Image      Image     `db:"image"`
+	Error      *string   `db:"error"`
+	ReleaseID  *string   `db:"release_id"`
+	CreatedAt  time.Time `db:"created_at"`
+	FinishedAt time.Time `db:"finished_at"`
 
 	App *App `db:"-"`
 
@@ -27,15 +31,17 @@ type Deployment struct {
 	prevStatus string `db:"-"`
 }
 
-func (d *Deployment) changeStatus(status string) {
-	d.prevStatus, d.Status = d.Status, status
+// PreInsert implements a pre insert hook for the db interface
+func (d *Deployment) PreInsert(s gorp.SqlExecutor) error {
+	d.CreatedAt = Now()
+	return nil
 }
 
 // Success marks the deployment as successful. The release provided will be
 // associated with this deployment.
 func (d *Deployment) Success(release *Release) *Deployment {
 	d.ReleaseID = &release.ID
-	d.changeStatus(StatusSuccess)
+	d.finished(StatusSuccess)
 	return d
 }
 
@@ -44,8 +50,17 @@ func (d *Deployment) Success(release *Release) *Deployment {
 func (d *Deployment) Failed(err error) *Deployment {
 	e := err.Error()
 	d.Error = &e
-	d.changeStatus(StatusFailed)
+	d.finished(StatusFailed)
 	return d
+}
+
+func (d *Deployment) finished(status string) {
+	d.FinishedAt = Now()
+	d.changeStatus(status)
+}
+
+func (d *Deployment) changeStatus(status string) {
+	d.prevStatus, d.Status = d.Status, status
 }
 
 type Commit struct {
