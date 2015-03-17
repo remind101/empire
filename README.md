@@ -16,17 +16,19 @@ USAGE:
    command server [command options] [arguments...]
 
 OPTIONS:
-   --port '8080'                                        The port to run the server on
-   --github.client.id                                   The client id for the GitHub OAuth application [$GITHUB_CLIENT_ID]
-   --github.client.secret                               The client secret for the GitHub OAuth application [$GITHUB_CLIENT_SECRET]
-   --github.organization                                The organization to allow access to [$GITHUB_ORGANIZATION]
-   --docker.socket 'unix:///var/run/docker.sock'        The location of the docker api [$DOCKER_HOST]
-   --docker.cert                                        If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
-   --docker.auth '/Users/$HOME/.dockercfg'              Path to a docker registry auth file (~/.dockercfg) [$DOCKER_AUTH_PATH]
-   --fleet.api                                          The location of the fleet api [$FLEET_URL]
-   --secret '<change this>'                             The secret used to sign access tokens
-   --db 'postgres://localhost/empire?sslmode=disable'   SQL connection string for the database
-
+   --port '8080'          The port to run the server on [$EMPIRE_PORT]
+   --github.client.id           The client id for the GitHub OAuth application [$EMPIRE_GITHUB_CLIENT_ID]
+   --github.client.secret         The client secret for the GitHub OAuth application [$EMPIRE_GITHUB_CLIENT_SECRET]
+   --github.organization        The organization to allow access to [$EMPIRE_GITHUB_ORGANIZATION]
+   --github.secret          The shared secret between GitHub and Empire. GitHub will use this secret to sign webhook requests. [$EMPIRE_GITHUB_SECRET]
+   --docker.organization        The fallback docker registry organization to use when an app is not linked to a docker repo. (e.g. quay.io/remind101) [$EMPIRE_DOCKER_ORGANIZATION]
+   --docker.socket 'unix:///var/run/docker.sock'  The location of the docker api [$DOCKER_HOST]
+   --docker.cert          If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
+   --docker.auth '/Users/ejholmes/.dockercfg'   Path to a docker registry auth file (~/.dockercfg) [$DOCKER_AUTH_PATH]
+   --fleet.api            The location of the fleet api [$FLEET_URL]
+   --secret '<change this>'       The secret used to sign access tokens [$EMPIRE_TOKEN_SECRET]
+   --db 'postgres://localhost/empire?sslmode=disable' SQL connection string for the database [$EMPIRE_DATABASE_URL]
+   
 ```
 
 ## Heroku API compatibility
