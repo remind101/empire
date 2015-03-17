@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"gopkg.in/gorp.v1"
@@ -44,7 +45,7 @@ func (s *store) ReleasesFindByAppNameAndVersion(appName string, v int) (*Release
 }
 
 // TODO Rename to ReleasesCreate.
-func (s *store) ReleasesCreateRaw(release *Release) (*Release, error) {
+func (s *store) ReleasesCreate(release *Release) (*Release, error) {
 	return releasesCreate(s.db, release)
 }
 
@@ -64,7 +65,7 @@ func (s *releasesService) ReleasesCreate(app *App, config *Config, slug *Slug, d
 		Description: desc,
 	}
 
-	r, err := s.store.ReleasesCreateRaw(r)
+	r, err := s.store.ReleasesCreate(r)
 	if err != nil {
 		return r, err
 	}
@@ -111,6 +112,46 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	}
 
 	return f, nil
+}
+
+// Rolls back to a specific release version.
+func (s *releasesService) ReleasesRollback(app *App, version int) (*Release, error) {
+	prevRelease, err := s.store.ReleasesFindByAppAndVersion(app, version)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO Returns a better error here?
+	if prevRelease == nil {
+		return nil, &ValidationError{Err: fmt.Errorf("release %d not found", version)}
+	}
+
+	config, err := s.store.ConfigsFind(prevRelease.ConfigID)
+	if err != nil {
+		return nil, err
+	}
+
+	if config == nil {
+		return nil, &ValidationError{Err: fmt.Errorf("config %d not found", prevRelease.ConfigID)}
+	}
+
+	// Find slug
+	slug, err := s.store.SlugsFind(prevRelease.SlugID)
+	if err != nil {
+		return nil, err
+	}
+
+	if slug == nil {
+		return nil, &ValidationError{Err: fmt.Errorf("slug %d not found", prevRelease.SlugID)}
+	}
+
+	desc := fmt.Sprintf("Rollback to v%d", version)
+	release, err := s.ReleasesCreate(app, config, slug, desc)
+	if err != nil {
+		return release, err
+	}
+
+	return release, nil
 }
 
 // ReleasesFindByAppNameAndVersion finds a specific version of a release for a
