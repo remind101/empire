@@ -221,6 +221,12 @@ func (e *Empire) ReleasesLast(app *App) (*Release, error) {
 	return e.store.ReleasesLast(app)
 }
 
+// ReleasesRollback rolls an app back to a specific release version. Returns a
+// new release.
+func (e *Empire) ReleasesRollback(app *App, version int) (*Release, error) {
+	return e.releases.ReleasesRollback(app, version)
+}
+
 // ScaleRelease scales the processes in a release.
 func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
 	return e.manager.ScaleRelease(release, config, slug, formation, qm)

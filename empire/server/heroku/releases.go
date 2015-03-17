@@ -1,7 +1,6 @@
 package heroku
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -106,39 +105,7 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	// Find previous release
-	rel, err := h.ReleasesFindByAppAndVersion(app, version)
-	if err != nil {
-		return err
-	}
-
-	if rel == nil {
-		return ErrNotFound
-	}
-
-	// Find config
-	config, err := h.ConfigsFind(rel.ConfigID)
-	if err != nil {
-		return err
-	}
-
-	if config == nil {
-		return ErrNotFound
-	}
-
-	// Find slug
-	slug, err := h.SlugsFind(rel.SlugID)
-	if err != nil {
-		return err
-	}
-
-	if slug == nil {
-		return ErrNotFound
-	}
-
-	// Create new release
-	desc := fmt.Sprintf("Rollback to v%d", version)
-	release, err := h.ReleasesCreate(app, config, slug, desc)
+	release, err := h.ReleasesRollback(app, version)
 	if err != nil {
 		return err
 	}
