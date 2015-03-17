@@ -37,8 +37,8 @@ var (
 
 // Repos represents the configured repos for an app.
 type Repos struct {
-	GitHub *Repo `json:"github" db:"github_repo"`
-	Docker *Repo `json:"docker" db:"docker_repo"`
+	GitHub *Repo `db:"github_repo"`
+	Docker *Repo `db:"docker_repo"`
 }
 
 // Set sets the given repo type with the value.
@@ -57,11 +57,11 @@ func (r *Repos) Set(repoType string, value Repo) error {
 
 // App represents an app.
 type App struct {
-	Name string `json:"name" db:"name"`
+	Name string `db:"name"`
 
-	Repos `json:"repos"` // Any repos that this app is linked to.
+	Repos // Any repos that this app is linked to.
 
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 // IsValid returns an error if the app isn't valid.

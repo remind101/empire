@@ -3,10 +3,31 @@ package heroku
 import (
 	"net/http"
 
+	"github.com/bgentry/heroku-go"
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
 )
+
+type App heroku.App
+
+func newApp(a *empire.App) *App {
+	return &App{
+		Id:        a.Name,
+		Name:      a.Name,
+		CreatedAt: a.CreatedAt,
+	}
+}
+
+func newApps(as []*empire.App) []*App {
+	apps := make([]*App, len(as))
+
+	for i := 0; i < len(as); i++ {
+		apps[i] = newApp(as[i])
+	}
+
+	return apps
+}
 
 type GetApps struct {
 	*empire.Empire
@@ -19,7 +40,7 @@ func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, apps)
+	return Encode(w, newApps(apps))
 }
 
 type DeleteApp struct {
@@ -71,7 +92,7 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	w.WriteHeader(201)
-	return Encode(w, a)
+	return Encode(w, newApp(a))
 }
 
 func findApp(r *http.Request, e interface {

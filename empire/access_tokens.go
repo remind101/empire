@@ -8,8 +8,8 @@ import (
 
 // AccessToken represents a token that allow access to the api.
 type AccessToken struct {
-	Token string `json:"token"`
-	User  *User  `json:"-"`
+	Token string
+	User  *User
 }
 
 type accessTokensService struct {

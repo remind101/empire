@@ -7,6 +7,18 @@ import (
 	"golang.org/x/net/context"
 )
 
+type Deploy struct {
+	ID      string   `json:"id"`
+	Release *Release `json:"release"`
+}
+
+func newDeploy(d *empire.Deploy) *Deploy {
+	return &Deploy{
+		ID:      string(d.ID),
+		Release: newRelease(d.Release),
+	}
+}
+
 // PostDeploys is a Handler for the POST /v1/deploys endpoint.
 type PostDeploys struct {
 	*empire.Empire
@@ -37,5 +49,5 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	w.WriteHeader(201)
-	return Encode(w, d)
+	return Encode(w, newDeploy(d))
 }

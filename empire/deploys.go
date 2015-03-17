@@ -9,9 +9,9 @@ type DeployID string
 
 // Deploy represents a deployment to the platform.
 type Deploy struct {
-	ID      DeployID `json:"id"`
-	Status  string   `json:"status"`
-	Release *Release `json:"release"`
+	ID      DeployID
+	Status  string
+	Release *Release
 }
 
 type Commit struct {

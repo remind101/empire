@@ -2,18 +2,31 @@ package heroku
 
 import (
 	"net/http"
-	"time"
 
+	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
 )
 
-// dyno is a heroku compatible response struct to the hk dynos command.
-type dyno struct {
-	Command   string    `json:"command"`
-	Name      string    `json:"name"`
-	State     string    `json:"state"`
-	UpdatedAt time.Time `json:"updated_at"`
+type Dyno heroku.Dyno
+
+func newDyno(j *empire.JobState) *Dyno {
+	return &Dyno{
+		Command:   string(j.Job.Command),
+		Name:      string(j.Name),
+		State:     j.State,
+		UpdatedAt: j.Job.UpdatedAt,
+	}
+}
+
+func newDynos(js []*empire.JobState) []*Dyno {
+	dynos := make([]*Dyno, len(js))
+
+	for i := 0; i < len(js); i++ {
+		dynos[i] = newDyno(js[i])
+	}
+
+	return dynos
 }
 
 type GetProcesses struct {
@@ -32,17 +45,6 @@ func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	// Convert to hk compatible format
-	dynos := make([]dyno, len(js))
-	for i, j := range js {
-		dynos[i] = dyno{
-			Command:   string(j.Job.Command),
-			Name:      string(j.Name),
-			State:     j.State,
-			UpdatedAt: j.Job.UpdatedAt,
-		}
-	}
-
 	w.WriteHeader(200)
-	return Encode(w, dynos)
+	return Encode(w, newDynos(js))
 }

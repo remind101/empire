@@ -53,12 +53,11 @@ func (c Command) Value() (driver.Value, error) {
 
 // Process holds configuration information about a Process Type.
 type Process struct {
-	ID       string      `json:"id" db:"id"`
-	Type     ProcessType `json:"type" db:"type"`
-	Quantity int         `json:"quantity" db:"quantity"`
-	Command  Command     `json:"command" db:"command"`
-
-	ReleaseID string `json:"-" db:"release_id"`
+	ID        string      `db:"id"`
+	Type      ProcessType `db:"type"`
+	Quantity  int         `db:"quantity"`
+	Command   Command     `db:"command"`
+	ReleaseID string      `db:"release_id"`
 }
 
 // CommandMap maps a process ProcessType to a Command.

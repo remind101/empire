@@ -12,19 +12,28 @@ import (
 
 type Release heroku.Release
 
-// newRelease decorates an empire.Release as a heroku.Release.
 func newRelease(r *empire.Release) *Release {
 	return &Release{
-		Id:      string(r.ID),
-		Version: int(r.Ver),
+		Id:      r.ID,
+		Version: r.Ver,
 		Slug: &struct {
 			Id string `json:"id"`
 		}{
-			Id: string(r.SlugID),
+			Id: r.SlugID,
 		},
 		Description: r.Description,
 		CreatedAt:   r.CreatedAt,
 	}
+}
+
+func newReleases(rs []*empire.Release) []*Release {
+	releases := make([]*Release, len(rs))
+
+	for i := 0; i < len(rs); i++ {
+		releases[i] = newRelease(rs[i])
+	}
+
+	return releases
 }
 
 type GetRelease struct {
@@ -68,7 +77,7 @@ func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, rels)
+	return Encode(w, newReleases(rels))
 }
 
 type PostReleases struct {
@@ -111,5 +120,5 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, release)
+	return Encode(w, newRelease(release))
 }
