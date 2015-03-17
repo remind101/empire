@@ -91,10 +91,6 @@ func New(options Options) (*Empire, error) {
 		Secret: []byte(options.Secret),
 	}
 
-	configs := &configsService{
-		store: store,
-	}
-
 	jobs := &jobsService{
 		store:     store,
 		scheduler: scheduler,
@@ -118,6 +114,11 @@ func New(options Options) (*Empire, error) {
 	releases := &releasesService{
 		store:   store,
 		manager: manager,
+	}
+
+	configs := &configsService{
+		store:    store,
+		releases: releases,
 	}
 
 	slugs := &slugsService{
@@ -181,7 +182,8 @@ func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
 }
 
 // ConfigsApply applies the new config vars to the apps current Config,
-// returning a new Config.
+// returning a new Config. If the app has a running release, a new release will
+// be created and run.
 func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
 	return e.configs.ConfigsApply(app, vars)
 }

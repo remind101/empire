@@ -3,6 +3,8 @@ package empire
 import (
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
+	"strings"
 
 	"github.com/lib/pq/hstore"
 )
@@ -94,23 +96,47 @@ func configsFindByApp(db *db, app *App) (*Config, error) {
 }
 
 type configsService struct {
-	store *store
+	store    *store
+	releases *releasesService
 }
 
 func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
-	c, err := s.ConfigsCurrent(app)
+	old, err := s.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
 	}
 
-	// If the app doesn't have a config, just build a new one.
-	if c == nil {
-		c = &Config{
-			AppName: app.Name,
+	c, err := s.store.ConfigsCreate(NewConfig(old, vars))
+	if err != nil {
+		return c, err
+	}
+
+	release, err := s.store.ReleasesLast(app)
+	if err != nil {
+		return c, err
+	}
+
+	if release != nil {
+		slug, err := s.store.SlugsFind(release.SlugID)
+		if err != nil {
+			return c, err
+		}
+
+		keys := make([]string, 0, len(vars))
+		for k, _ := range vars {
+			keys = append(keys, string(k))
+		}
+
+		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
+
+		// Create new release based on new config and old slug
+		_, err = s.releases.ReleasesCreate(app, c, slug, desc)
+		if err != nil {
+			return c, err
 		}
 	}
 
-	return s.store.ConfigsCreate(NewConfig(c, vars))
+	return c, nil
 }
 
 func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
