@@ -203,11 +203,6 @@ func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
 	return e.store.ProcessesAll(release)
 }
 
-// ReleasesCreate creates a new release for an app.
-func (e *Empire) ReleasesCreate(app *App, config *Config, slug *Slug, desc string) (*Release, error) {
-	return e.releases.ReleasesCreate(app, config, slug, desc)
-}
-
 // ReleasesFindByApp returns all Releases for a given App.
 func (e *Empire) ReleasesFindByApp(app *App) ([]*Release, error) {
 	return e.store.ReleasesFindByApp(app)
