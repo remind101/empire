@@ -14,12 +14,12 @@ type Release heroku.Release
 
 func newRelease(r *empire.Release) *Release {
 	return &Release{
-		Id:      string(r.ID),
-		Version: int(r.Ver),
+		Id:      r.ID,
+		Version: r.Ver,
 		Slug: &struct {
 			Id string `json:"id"`
 		}{
-			Id: string(r.SlugID),
+			Id: r.SlugID,
 		},
 		Description: r.Description,
 		CreatedAt:   r.CreatedAt,
