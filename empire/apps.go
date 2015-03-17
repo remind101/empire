@@ -175,6 +175,45 @@ func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, 
 	return s.store.AppsCreate(a)
 }
 
+// scaler is a small service for scaling an apps process.
+type scaler struct {
+	store   *store
+	manager *manager
+}
+
+func (s *scaler) Scale(app *App, t ProcessType, count int) error {
+	release, err := s.store.ReleasesLast(app)
+	if err != nil {
+		return err
+	}
+
+	if release == nil {
+		return &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
+	}
+
+	config, err := s.store.ConfigsFind(release.ConfigID)
+	if err != nil {
+		return err
+	}
+
+	slug, err := s.store.SlugsFind(release.SlugID)
+	if err != nil {
+		return err
+	}
+
+	f, err := s.store.ProcessesAll(release)
+	if err != nil {
+		return err
+	}
+
+	p, ok := f[t]
+	if !ok {
+		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
+	}
+
+	return s.manager.ScaleProcess(release, config, slug, p, count)
+}
+
 // AppsCreate inserts the app into the database.
 func appsCreate(db *db, app *App) (*App, error) {
 	return app, db.Insert(app)

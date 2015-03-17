@@ -35,21 +35,7 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 	return nil
 }
 
-// ScaleRelease takes a release and process quantity map, and
-// schedules/unschedules jobs to make the formation match the quantity map
-func (m *manager) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
-	for t, q := range qm {
-		if p, ok := formation[t]; ok {
-			if err := m.scaleProcess(release, config, slug, p, q); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func (m *manager) scaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+func (m *manager) ScaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	var scale func(*Release, *Config, *Slug, *Process, int) error
 
 	switch {
