@@ -127,17 +127,13 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
-	deployments := &deploymentsService{
-		store: store,
-	}
-
 	deployer := &deployer{
-		Organization:       options.Docker.Organization,
-		deploymentsService: deployments,
-		appsService:        apps,
-		configsService:     configs,
-		slugsService:       slugs,
-		releasesService:    releases,
+		Organization:    options.Docker.Organization,
+		store:           store,
+		appsService:     apps,
+		configsService:  configs,
+		slugsService:    slugs,
+		releasesService: releases,
 	}
 
 	scaler := &scaler{
