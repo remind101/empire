@@ -17,9 +17,10 @@ var Commands = []cli.Command{
 		Usage:     "Run the empire HTTP api",
 		Flags: append([]cli.Flag{
 			cli.StringFlag{
-				Name:  "port",
-				Value: "8080",
-				Usage: "The port to run the server on",
+				Name:   "port",
+				Value:  "8080",
+				Usage:  "The port to run the server on",
+				EnvVar: "PORT",
 			},
 			cli.StringFlag{
 				Name:   "github.client.id",
@@ -64,9 +65,10 @@ var Commands = []cli.Command{
 
 var DBFlags = []cli.Flag{
 	cli.StringFlag{
-		Name:  "db",
-		Value: "postgres://localhost/empire?sslmode=disable",
-		Usage: "SQL connection string for the database",
+		Name:   "db",
+		Value:  "postgres://localhost/empire?sslmode=disable",
+		Usage:  "SQL connection string for the database",
+		EnvVar: "DATABASE_URL",
 	},
 }
 
@@ -102,9 +104,10 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "FLEET_URL",
 	},
 	cli.StringFlag{
-		Name:  "secret",
-		Value: "<change this>",
-		Usage: "The secret used to sign access tokens",
+		Name:   "secret",
+		Value:  "<change this>",
+		Usage:  "The secret used to sign access tokens",
+		EnvVar: "TOKEN_SECRET",
 	},
 }
 
