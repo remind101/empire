@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
 )
@@ -22,9 +23,18 @@ var DefaultGitHubScopes = []string{
 	"read:org",        // For reading organization memberships.
 }
 
-// Authorization represents a response to create an access token.
-type Authorization struct {
-	AccessToken empire.AccessToken `json:"access_token"`
+type Authorization heroku.OAuthAuthorization
+
+func newAuthorization(token *empire.AccessToken) *Authorization {
+	return &Authorization{
+		AccessToken: &struct {
+			ExpiresIn *int   `json:"expires_in"`
+			Id        string `json:"id"`
+			Token     string `json:"token"`
+		}{
+			Token: token.Token,
+		},
+	}
 }
 
 type PostAuthorizations struct {
@@ -50,9 +60,7 @@ func (h *PostAuthorizations) ServeHTTPContext(ctx context.Context, w http.Respon
 		return err
 	}
 
-	auth := Authorization{AccessToken: *at}
-
-	return Encode(w, auth)
+	return Encode(w, newAuthorization(at))
 }
 
 // Authorizer is an interface for obtaining an authorization.
