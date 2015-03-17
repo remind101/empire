@@ -16,9 +16,7 @@ type DeployForm struct {
 
 type Deploy struct {
 	Release struct {
-		ID          string `json:"id"`
-		Version     int    `json:"version"`
-		Description string `json:"description"`
+		ID string `json:"id"`
 	} `json:"release"`
 }
 
@@ -26,15 +24,7 @@ func TestDeploy(t *testing.T) {
 	c, s := NewTestClient(t)
 	defer s.Close()
 
-	d := mustDeploy(t, c, DefaultImage)
-
-	if got, want := d.Release.Version, 1; got != want {
-		t.Fatalf("Version => %v; want %v", got, want)
-	}
-
-	if got, want := d.Release.Description, "Deploy "+DefaultImage.String(); got != want {
-		t.Fatalf("Description => %v; want %v", got, want)
-	}
+	mustDeploy(t, c, DefaultImage)
 }
 
 func mustDeploy(t testing.TB, c *heroku.Client, image empire.Image) Deploy {

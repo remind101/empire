@@ -127,12 +127,17 @@ func New(options Options) (*Empire, error) {
 		extractor: extractor,
 	}
 
+	deployments := &deploymentsService{
+		store: store,
+	}
+
 	deployer := &deployer{
-		Organization:    options.Docker.Organization,
-		appsService:     apps,
-		configsService:  configs,
-		slugsService:    slugs,
-		releasesService: releases,
+		Organization:       options.Docker.Organization,
+		deploymentsService: deployments,
+		appsService:        apps,
+		configsService:     configs,
+		slugsService:       slugs,
+		releasesService:    releases,
 	}
 
 	scaler := &scaler{
@@ -227,12 +232,12 @@ func (e *Empire) ReleasesRollback(app *App, version int) (*Release, error) {
 }
 
 // DeployImage deploys an image to Empire.
-func (e *Empire) DeployImage(image Image) (*Deploy, error) {
+func (e *Empire) DeployImage(image Image) (*Deployment, error) {
 	return e.deployer.DeployImage(image)
 }
 
 // DeployCommit deploys a Commit to Empire.
-func (e *Empire) DeployCommit(commit Commit) (*Deploy, error) {
+func (e *Empire) DeployCommit(commit Commit) (*Deployment, error) {
 	return e.deployer.DeployCommit(commit)
 }
 
