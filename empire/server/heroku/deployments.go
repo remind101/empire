@@ -12,7 +12,7 @@ type Deployment struct {
 	Release *Release `json:"release"`
 }
 
-func newDeploy(d *empire.Deployment) *Deployment {
+func newDeployment(d *empire.Deployment) *Deployment {
 	return &Deployment{
 		ID: d.ID,
 	}
@@ -48,5 +48,5 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	w.WriteHeader(201)
-	return Encode(w, newDeploy(d))
+	return Encode(w, newDeployment(d))
 }
