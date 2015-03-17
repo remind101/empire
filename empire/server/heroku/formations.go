@@ -2,22 +2,13 @@ package heroku
 
 import (
 	"net/http"
-	"time"
 
+	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
 )
 
-// formation is a heroku compatible response struct to the hk scale command.
-type formation struct {
-	Command   string    `json:"command"`
-	CreatedAt time.Time `json:"created_at"`
-	Id        string    `json:"id"`
-	Quantity  int       `json:"quantity"`
-	Size      string    `json:"size"`
-	Type      string    `json:"type"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
+type Formation heroku.Formation
 
 type PatchFormation struct {
 	*empire.Empire
@@ -78,9 +69,13 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	}
 
 	// Create the response object
-	resp := make([]formation, len(form.Updates))
+	resp := make([]*Formation, len(form.Updates))
 	for i, up := range form.Updates {
-		resp[i] = formation{Type: up.Process, Quantity: up.Quantity, Size: "1X"}
+		resp[i] = &Formation{
+			Type:     up.Process,
+			Quantity: up.Quantity,
+			Size:     "1X",
+		}
 	}
 
 	w.WriteHeader(200)
