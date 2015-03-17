@@ -62,6 +62,7 @@ type Empire struct {
 	manager      *manager
 	releases     *releasesService
 	deployer     *deployer
+	scaler       *scaler
 }
 
 // New returns a new Empire instance.
@@ -134,6 +135,11 @@ func New(options Options) (*Empire, error) {
 		releasesService: releases,
 	}
 
+	scaler := &scaler{
+		store:   store,
+		manager: manager,
+	}
+
 	return &Empire{
 		store:        store,
 		accessTokens: accessTokens,
@@ -142,6 +148,7 @@ func New(options Options) (*Empire, error) {
 		deployer:     deployer,
 		jobStates:    jobStates,
 		manager:      manager,
+		scaler:       scaler,
 		releases:     releases,
 	}, nil
 }
@@ -188,11 +195,6 @@ func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
 	return e.configs.ConfigsApply(app, vars)
 }
 
-// ConfigsFind finds a Config by id.
-func (e *Empire) ConfigsFind(id string) (*Config, error) {
-	return e.store.ConfigsFind(id)
-}
-
 // JobStatesByApp returns the JobStates for the given app.
 func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
 	return e.jobStates.JobStatesByApp(app)
@@ -224,16 +226,6 @@ func (e *Empire) ReleasesRollback(app *App, version int) (*Release, error) {
 	return e.releases.ReleasesRollback(app, version)
 }
 
-// ScaleRelease scales the processes in a release.
-func (e *Empire) ScaleRelease(release *Release, config *Config, slug *Slug, formation Formation, qm ProcessQuantityMap) error {
-	return e.manager.ScaleRelease(release, config, slug, formation, qm)
-}
-
-// SlugsFind finds a slug by id.
-func (e *Empire) SlugsFind(id string) (*Slug, error) {
-	return e.store.SlugsFind(id)
-}
-
 // DeployImage deploys an image to Empire.
 func (e *Empire) DeployImage(image Image) (*Deploy, error) {
 	return e.deployer.DeployImage(image)
@@ -242,6 +234,11 @@ func (e *Empire) DeployImage(image Image) (*Deploy, error) {
 // DeployCommit deploys a Commit to Empire.
 func (e *Empire) DeployCommit(commit Commit) (*Deploy, error) {
 	return e.deployer.DeployCommit(commit)
+}
+
+// AppsScale scales an apps process.
+func (e *Empire) AppsScale(app *App, t ProcessType, count int) error {
+	return e.scaler.Scale(app, t, count)
 }
 
 // Reset resets empire.
