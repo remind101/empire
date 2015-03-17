@@ -57,7 +57,8 @@ CREATE TABLE deployments (
   app_id text NOT NULL references apps(name) ON DELETE CASCADE,
   release_id uuid references releases(id),
   image text NOT NULL,
-  status text NOT NULL
+  status text NOT NULL,
+  error text
 );
 
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);

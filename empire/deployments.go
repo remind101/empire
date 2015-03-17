@@ -13,10 +13,11 @@ const (
 
 // Deployment represents a deployment to the platform.
 type Deployment struct {
-	ID      string `db:"id"`
-	AppName string `db:"app_id"`
-	Status  string `db:"status"`
-	Image   Image  `db:"image"`
+	ID      string  `db:"id"`
+	AppName string  `db:"app_id"`
+	Status  string  `db:"status"`
+	Image   Image   `db:"image"`
+	Error   *string `db:"error"`
 
 	ReleaseID *string `db:"release_id"`
 
@@ -41,6 +42,8 @@ func (d *Deployment) Success(release *Release) *Deployment {
 // Failed marks the deployment as failed. An error can be provided, which should
 // indicate what went wrong.
 func (d *Deployment) Failed(err error) *Deployment {
+	e := err.Error()
+	d.Error = &e
 	d.changeStatus(StatusFailed)
 	return d
 }
