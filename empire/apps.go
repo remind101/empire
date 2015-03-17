@@ -37,8 +37,8 @@ var (
 
 // Repos represents the configured repos for an app.
 type Repos struct {
-	GitHub *Repo `json:"github" db:"github_repo"`
-	Docker *Repo `json:"docker" db:"docker_repo"`
+	GitHub *Repo `db:"github_repo"`
+	Docker *Repo `db:"docker_repo"`
 }
 
 // Set sets the given repo type with the value.

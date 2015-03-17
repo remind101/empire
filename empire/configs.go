@@ -9,9 +9,9 @@ import (
 
 // Config represents a collection of environment variables.
 type Config struct {
-	ID      string `json:"id" db:"id"`
-	Vars    Vars   `json:"vars" db:"vars"`
-	AppName string `json:"-" db:"app_id"`
+	ID      string `db:"id"`
+	Vars    Vars   `db:"vars"`
+	AppName string `db:"app_id"`
 }
 
 // NewConfig initializes a new config based on the old config, with the new

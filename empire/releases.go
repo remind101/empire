@@ -11,15 +11,15 @@ import (
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
 type Release struct {
-	ID  string `json:"id" db:"id"`
-	Ver int    `json:"version" db:"version"` // Version conflicts with gorps optimistic locking.
+	ID  string `db:"id"`
+	Ver int    `db:"version"` // Version conflicts with gorps optimistic locking.
 
-	AppName  string `json:"-" db:"app_id"`
-	ConfigID string `json:"-" db:"config_id"`
-	SlugID   string `json:"-" db:"slug_id"`
+	AppName  string `db:"app_id"`
+	ConfigID string `db:"config_id"`
+	SlugID   string `db:"slug_id"`
 
-	Description string    `json:"description" db:"description"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	Description string    `db:"description"`
+	CreatedAt   time.Time `db:"created_at"`
 }
 
 // PreInsert implements a pre insert hook for the db interface

@@ -8,8 +8,8 @@ import (
 
 // Image represents a container image, which is tied to a repository.
 type Image struct {
-	ID   string `json:"id"`
-	Repo Repo   `json:"repo"`
+	ID   string
+	Repo Repo
 }
 
 func (i Image) String() string {

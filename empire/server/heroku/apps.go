@@ -11,22 +11,22 @@ import (
 
 type App heroku.App
 
-func newApp(app *empire.App) *App {
+func newApp(a *empire.App) *App {
 	return &App{
-		Id:        app.Name,
-		Name:      app.Name,
-		CreatedAt: app.CreatedAt,
+		Id:        a.Name,
+		Name:      a.Name,
+		CreatedAt: a.CreatedAt,
 	}
 }
 
-func newApps(apps []*empire.App) []*App {
-	happs := make([]*App, len(apps))
+func newApps(as []*empire.App) []*App {
+	apps := make([]*App, len(as))
 
-	for i := 0; i < len(apps); i++ {
-		happs[i] = newApp(apps[i])
+	for i := 0; i < len(as); i++ {
+		apps[i] = newApp(as[i])
 	}
 
-	return happs
+	return apps
 }
 
 type GetApps struct {
