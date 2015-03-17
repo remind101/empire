@@ -25,8 +25,6 @@ type Deployment struct {
 	CreatedAt  time.Time `db:"created_at"`
 	FinishedAt time.Time `db:"finished_at"`
 
-	App *App `db:"-"`
-
 	// Used to store the old status when changing statuses.
 	prevStatus string `db:"-"`
 }
@@ -68,7 +66,22 @@ type Commit struct {
 	Sha  string
 }
 
-func (s *store) DeploymentsCreate(d *Deployment) (*Deployment, error) {
+// DeploymentsCreateOpts represents options that can be passed when creating a
+// new Deployment.
+type DeploymentsCreateOpts struct {
+	// App is the app that is being deployed to.
+	App *App
+
+	// Image is the image that's being deployed.
+	Image Image
+}
+
+func (s *store) DeploymentsCreate(opts DeploymentsCreateOpts) (*Deployment, error) {
+	d := &Deployment{
+		AppName: opts.App.Name,
+		Image:   opts.Image,
+		Status:  StatusPending,
+	}
 	return deploymentsCreate(s.db, d)
 }
 
@@ -76,25 +89,13 @@ func (s *store) DeploymentsUpdate(d *Deployment) error {
 	return deploymentsUpdate(s.db, d)
 }
 
-type deploymentsService struct {
-	store *store
-}
-
-func (s *deploymentsService) DeploymentsCreate(d *Deployment) (*Deployment, error) {
-	d.Status = StatusPending
-	return s.store.DeploymentsCreate(d)
-}
-
-func (s *deploymentsService) DeploymentsUpdate(d *Deployment) error {
-	return s.store.DeploymentsUpdate(d)
-}
-
 type deployer struct {
 	// Organization is a docker repo organization to fallback to if the app
 	// doesn't specify a docker repo.
 	Organization string
 
-	*deploymentsService
+	store *store
+
 	*appsService
 	*configsService
 	*slugsService
@@ -102,8 +103,13 @@ type deployer struct {
 }
 
 // DeploymentsDo performs the Deployment.
-func (s *deployer) DeploymentsDo(d *Deployment) (err error) {
-	app, image := d.App, d.Image
+func (s *deployer) DeploymentsDo(opts DeploymentsCreateOpts) (d *Deployment, err error) {
+	app, image := opts.App, opts.Image
+
+	d, err = s.store.DeploymentsCreate(opts)
+	if err != nil {
+		return
+	}
 
 	var (
 		config  *Config
@@ -118,7 +124,9 @@ func (s *deployer) DeploymentsDo(d *Deployment) (err error) {
 			d.Failed(err)
 		}
 
-		err = s.DeploymentsUpdate(d)
+		if err2 := s.store.DeploymentsUpdate(d); err2 != nil {
+			err = err2
+		}
 
 		return
 	}()
@@ -155,16 +163,10 @@ func (s *deployer) DeployImageToApp(app *App, image Image) (*Deployment, error) 
 		return nil, err
 	}
 
-	d, err := s.DeploymentsCreate(&Deployment{
-		App:     app,
-		AppName: app.Name,
-		Image:   image,
+	return s.DeploymentsDo(DeploymentsCreateOpts{
+		App:   app,
+		Image: image,
 	})
-	if err != nil {
-		return d, err
-	}
-
-	return d, s.DeploymentsDo(d)
 }
 
 // Deploy deploys an Image to the cluster.
