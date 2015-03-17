@@ -52,6 +52,14 @@ CREATE TABLE jobs (
   updated_at timestamp without time zone default (now() at time zone 'utc')
 );
 
+CREATE TABLE deployments (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
+  release_id uuid references releases(id),
+  image text NOT NULL,
+  status text NOT NULL
+);
+
 CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
 CREATE UNIQUE INDEX index_apps_on_github_repo ON apps USING btree (github_repo);
 CREATE UNIQUE INDEX index_apps_on_docker_repo ON apps USING btree (docker_repo);

@@ -7,15 +7,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Deploy struct {
+type Deployment struct {
 	ID      string   `json:"id"`
 	Release *Release `json:"release"`
 }
 
-func newDeploy(d *empire.Deploy) *Deploy {
-	return &Deploy{
-		ID:      string(d.ID),
-		Release: newRelease(d.Release),
+func newDeploy(d *empire.Deployment) *Deployment {
+	return &Deployment{
+		ID: d.ID,
 	}
 }
 
