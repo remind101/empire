@@ -246,12 +246,10 @@ func (e *Empire) Reset() error {
 	return e.store.Reset()
 }
 
+// IsHealthy returns true if Empire is healthy, which means it can connect to
+// the services it depends on.
 func (e *Empire) IsHealthy() bool {
-	if _, err := e.db.Exec(`SELECT 1`); err != nil {
-		return false
-	}
-
-	return true
+	return e.store.IsHealthy()
 }
 
 // Migrate runs the migrations.
