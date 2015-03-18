@@ -246,6 +246,10 @@
 			"Rev": "ad484dc62579dba7aef41bba1b2c32cc8cd1b84d"
 		},
 		{
+			"ImportPath": "github.com/jcoene/honeybadger",
+			"Rev": "3b3b55a9c3ace1d03cf71a52f833fe27cb885430"
+		},
+		{
 			"ImportPath": "github.com/jonboulle/clockwork",
 			"Rev": "b473f398c464f1988327f67c9e6aa7fba62f80d2"
 		},
