@@ -7,16 +7,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-// ErrorHandler represents a function that can handle the error returned from a
-// Handler.
-type ErrorHandler func(error, http.ResponseWriter, *http.Request)
-
 // Router is an httpx.Handler router.
 type Router struct {
-	// ErrorHandler is a function that will be called when a handler returns
-	// an error.
-	ErrorHandler ErrorHandler
-
 	// NotFoundHandler is a Handler that will be called when a route is not
 	// found.
 	NotFoundHandler Handler
