@@ -24,7 +24,7 @@ var (
 	DefaultOptions = Options{}
 
 	// defaultReporter is the default reporter.Reporter to use.
-	defaultReporter = reporter.NewLogReporter(log.New(os.Stderr, "", 0))
+	defaultReporter = reporter.NewLogReporter(log.New(os.Stderr, "[error] ", 0))
 )
 
 // DockerOptions is a set of options to configure a docker api client.

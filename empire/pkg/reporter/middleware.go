@@ -1,7 +1,6 @@
 package reporter
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/remind101/empire/empire/pkg/httpx"
@@ -14,10 +13,6 @@ type Middleware struct {
 	// Reporter is a Reporter that will be inserted into the context. It
 	// will also be used to report panics.
 	Reporter
-
-	// ErrorHandler is an httpx.Handler that will be called when a panic
-	// occurs.
-	ErrorHandler httpx.Handler
 
 	// Handler is the wrapped httpx.Handler to call.
 	handler httpx.Handler
@@ -38,22 +33,6 @@ func (h *Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // ServeHTTPContext implements the httpx.Handler interface.
 func (h *Middleware) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	ctx = WithReporter(ctx, h.Reporter)
-
-	defer func() {
-		if v := recover(); v != nil {
-			err := fmt.Errorf("%v", v)
-
-			if v, ok := v.(error); ok {
-				err = v
-			}
-
-			h.Report(ctx, err)
-
-			if h.ErrorHandler != nil {
-				h.ErrorHandler.ServeHTTPContext(ctx, w, r)
-			}
-		}
-	}()
 
 	err := h.handler.ServeHTTPContext(ctx, w, r)
 	if err != nil {

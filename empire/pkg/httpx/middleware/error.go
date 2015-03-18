@@ -49,6 +49,5 @@ func (h *Error) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *
 		f(err, w, r)
 	}
 
-	// Bubble up the error to any upstream middleware.
-	return err
+	return nil
 }
