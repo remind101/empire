@@ -136,7 +136,6 @@ coreos:
         [Unit]
         Description=Logspout
         Requires=docker.service
-        Requires=syslog.service
 
         [Service]
         TimeoutStartSec=30m

@@ -156,9 +156,15 @@ User=core
 Restart=on-failure
 KillMode=none
 
+ExecStartPre=/bin/sh -c "> /tmp/{{.Name}}.env"
+{{$name := .Name}}
+{{range $key, $val := .Env}}
+ExecStartPre=/bin/sh -c "echo {{$key}}={{$val}} >> /tmp/{{$name}}.env"
+{{end}}
+
 ExecStartPre=-/usr/bin/docker pull {{.Image}}
 ExecStartPre=-/usr/bin/docker rm {{.Name}}
-ExecStart=/usr/bin/docker run --name {{.Name}}{{range $key, $val := .Env}} -e {{$key}}={{$val}}{{end}} --rm -h %H -P {{.Image}} {{.Command}}
+ExecStart=/usr/bin/docker run --name {{.Name}} --env-file /tmp/{{.Name}}.env -e PORT=80 -h %H -p 80 {{.Image}} sh -c '{{.Command}}'
 ExecStop=/usr/bin/docker stop {{.Name}}
 
 [X-Fleet]

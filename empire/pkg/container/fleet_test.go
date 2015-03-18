@@ -41,9 +41,17 @@ User=core
 Restart=on-failure
 KillMode=none
 
+ExecStartPre=/bin/sh -c "> /tmp/acme-inc.v1.web.1.env"
+
+
+ExecStartPre=/bin/sh -c "echo GOENV=production >> /tmp/acme-inc.v1.web.1.env"
+
+ExecStartPre=/bin/sh -c "echo PORT=8080 >> /tmp/acme-inc.v1.web.1.env"
+
+
 ExecStartPre=-/usr/bin/docker pull quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
 ExecStartPre=-/usr/bin/docker rm acme-inc.v1.web.1
-ExecStart=/usr/bin/docker run --name acme-inc.v1.web.1 -e GOENV=production -e PORT=8080 --rm -h %H -P quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02 acme-inc
+ExecStart=/usr/bin/docker run --name acme-inc.v1.web.1 --env-file /tmp/acme-inc.v1.web.1.env -e PORT=80 -h %H -p 80 quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02 sh -c 'acme-inc'
 ExecStop=/usr/bin/docker stop acme-inc.v1.web.1
 
 [X-Fleet]
