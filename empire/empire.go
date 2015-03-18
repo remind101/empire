@@ -2,20 +2,14 @@ package empire // import "github.com/remind101/empire/empire"
 
 import (
 	"net/url"
-	"time"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/pod"
 	"github.com/remind101/empire/empire/pkg/reporter"
 	"golang.org/x/net/context"
 )
-
-// A function to return the current time. It can be useful to stub this out in
-// tests.
-var Now = func() time.Time {
-	return time.Now().UTC()
-}
 
 var (
 	// DefaultOptions is a default Options instance that can be passed when
@@ -77,11 +71,11 @@ type Empire struct {
 	apps         *appsService
 	configs      *configsService
 	domains      *domainsService
-	jobStates    *jobStatesService
-	manager      *manager
+	jobStates    *processStatesService
 	releases     *releasesService
 	deployer     *deployer
 	scaler       *scaler
+	releaser     *releaser
 }
 
 // New returns a new Empire instance.
@@ -121,29 +115,30 @@ func New(options Options) (*Empire, error) {
 		Secret: []byte(options.Secret),
 	}
 
-	jobs := &jobsService{
-		store:     store,
-		scheduler: scheduler,
-	}
-
-	jobStates := &jobStatesService{
-		store:     store,
-		scheduler: scheduler,
-	}
-
 	apps := &appsService{
-		store:       store,
-		jobsService: jobs,
+		store: store,
 	}
 
 	manager := &manager{
-		jobsService: jobs,
-		store:       store,
+		Manager: pod.NewContainerManager(scheduler, nil),
+	}
+
+	jobStates := &processStatesService{
+		manager: manager,
+	}
+
+	scaler := &scaler{
+		store:   store,
+		manager: manager,
+	}
+
+	releaser := &releaser{
+		manager: manager,
 	}
 
 	releases := &releasesService{
-		store:   store,
-		manager: manager,
+		store:    store,
+		releaser: releaser,
 	}
 
 	configs := &configsService{
@@ -171,11 +166,6 @@ func New(options Options) (*Empire, error) {
 		releasesService: releases,
 	}
 
-	scaler := &scaler{
-		store:   store,
-		manager: manager,
-	}
-
 	return &Empire{
 		store:        store,
 		accessTokens: accessTokens,
@@ -184,7 +174,7 @@ func New(options Options) (*Empire, error) {
 		deployer:     deployer,
 		domains:      domains,
 		jobStates:    jobStates,
-		manager:      manager,
+		releaser:     releaser,
 		scaler:       scaler,
 		releases:     releases,
 	}, nil
@@ -253,7 +243,7 @@ func (e *Empire) DomainsDestroy(domain *Domain) error {
 }
 
 // JobStatesByApp returns the JobStates for the given app.
-func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
+func (e *Empire) JobStatesByApp(app *App) ([]*ProcessState, error) {
 	return e.jobStates.JobStatesByApp(app)
 }
 

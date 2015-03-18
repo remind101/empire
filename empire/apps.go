@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
@@ -76,7 +77,7 @@ func (a *App) IsValid() error {
 
 // PreInsert implements a pre insert hook for the db interface
 func (a *App) PreInsert(s gorp.SqlExecutor) error {
-	a.CreatedAt = Now()
+	a.CreatedAt = timex.Now()
 	return a.IsValid()
 }
 
@@ -105,7 +106,6 @@ func (s *store) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
 }
 
 type appsService struct {
-	*jobsService
 	store *store
 }
 
@@ -114,12 +114,9 @@ func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
 		return err
 	}
 
-	jobs, err := s.store.JobsList(JobsListQuery{App: app.Name})
-	if err != nil {
-		return err
-	}
+	// TODO Destroy all templates for this app.
 
-	return s.Unschedule(ctx, jobs...)
+	return nil
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
@@ -176,45 +173,6 @@ func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, 
 	return s.store.AppsCreate(a)
 }
 
-// scaler is a small service for scaling an apps process.
-type scaler struct {
-	store   *store
-	manager *manager
-}
-
-func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int) error {
-	release, err := s.store.ReleasesLast(app)
-	if err != nil {
-		return err
-	}
-
-	if release == nil {
-		return &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
-	}
-
-	config, err := s.store.ConfigsFind(release.ConfigID)
-	if err != nil {
-		return err
-	}
-
-	slug, err := s.store.SlugsFind(release.SlugID)
-	if err != nil {
-		return err
-	}
-
-	f, err := s.store.ProcessesAll(release)
-	if err != nil {
-		return err
-	}
-
-	p, ok := f[t]
-	if !ok {
-		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
-	}
-
-	return s.manager.ScaleProcess(ctx, release, config, slug, p, quantity)
-}
-
 // AppsCreate inserts the app into the database.
 func appsCreate(db *db, app *App) (*App, error) {
 	return app, db.Insert(app)
@@ -260,4 +218,41 @@ func appsFindBy(db *db, field string, value interface{}) (*App, error) {
 	}
 
 	return &app, nil
+}
+
+// scaler is a small service for scaling an apps process.
+type scaler struct {
+	store   *store
+	manager *manager
+}
+
+func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int) error {
+	release, err := s.store.ReleasesLast(app)
+	if err != nil {
+		return err
+	}
+
+	if release == nil {
+		return &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
+	}
+
+	f, err := s.store.ProcessesAll(release)
+	if err != nil {
+		return err
+	}
+
+	p, ok := f[t]
+	if !ok {
+		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
+	}
+
+	id := templateID(release.AppName, release.Ver, p.Type)
+	if err := s.manager.Scale(id, uint(quantity)); err != nil {
+		return err
+	}
+
+	// Update quantity for this process in the formation
+	p.Quantity = quantity
+	_, err = s.store.ProcessesUpdate(p)
+	return err
 }

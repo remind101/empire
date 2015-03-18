@@ -3,6 +3,8 @@ package empire
 import (
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
+	"time"
 
 	"github.com/lib/pq/hstore"
 )
@@ -170,4 +172,45 @@ func processesAll(db *db, release *Release) (Formation, error) {
 	}
 
 	return f, nil
+}
+
+// ProcessState represents the state of a Process.
+type ProcessState struct {
+	Name      string
+	Command   string
+	State     string
+	UpdatedAt time.Time
+}
+
+type processStatesService struct {
+	manager *manager
+}
+
+func (s *processStatesService) JobStatesByApp(app *App) ([]*ProcessState, error) {
+	var states []*ProcessState
+
+	templates, err := s.manager.Templates(map[string]string{
+		"app": app.Name,
+	})
+	if err != nil {
+		return states, err
+	}
+
+	for _, t := range templates {
+		instanceStates, err := s.manager.InstanceStates(t.ID)
+		if err != nil {
+			return states, err
+		}
+
+		for _, state := range instanceStates {
+			states = append(states, &ProcessState{
+				Name:      fmt.Sprintf("%s.%d", state.Instance.Template.ID, state.Instance.Instance),
+				Command:   state.Instance.Template.Command,
+				State:     state.State,
+				UpdatedAt: state.UpdatedAt,
+			})
+		}
+	}
+
+	return states, nil
 }

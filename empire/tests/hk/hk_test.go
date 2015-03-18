@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/timex"
 	"github.com/remind101/empire/empiretest"
 )
 
@@ -142,7 +143,7 @@ func TestUpdateConfigNewReleaseSameFormation(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			"acme-inc.1.web.1    unknown   5d  \"./bin/web\"",
+			"acme-inc.1.web.1    running   5d  \"./bin/web\"",
 		},
 		{
 			"scale web=2 -a acme-inc",
@@ -150,8 +151,8 @@ func TestUpdateConfigNewReleaseSameFormation(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    unknown   5d  "./bin/web"
-acme-inc.1.web.2    unknown   5d  "./bin/web"`,
+			`acme-inc.1.web.1    running   5d  "./bin/web"
+acme-inc.1.web.2    running   5d  "./bin/web"`,
 		},
 		{
 			"set DATABASE_URL=postgres://localhost AUTH=foo -a acme-inc",
@@ -159,8 +160,8 @@ acme-inc.1.web.2    unknown   5d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.2.web.1    unknown   5d  "./bin/web"
-acme-inc.2.web.2    unknown   5d  "./bin/web"`,
+			`acme-inc.2.web.1    running   5d  "./bin/web"
+acme-inc.2.web.2    running   5d  "./bin/web"`,
 		},
 	})
 }
@@ -231,8 +232,8 @@ func TestScale(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    unknown   5d  "./bin/web"
-acme-inc.1.web.2    unknown   5d  "./bin/web"`,
+			`acme-inc.1.web.1    running   5d  "./bin/web"
+acme-inc.1.web.2    running   5d  "./bin/web"`,
 		},
 
 		{
@@ -241,7 +242,7 @@ acme-inc.1.web.2    unknown   5d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			"acme-inc.1.web.1    unknown   5d  \"./bin/web\"",
+			"acme-inc.1.web.1    running   5d  \"./bin/web\"",
 		},
 	})
 }
@@ -284,7 +285,7 @@ func init() {
 
 // now stubs out empire.Now.
 func now(t time.Time) {
-	empire.Now = func() time.Time {
+	timex.Now = func() time.Time {
 		return t
 	}
 }
