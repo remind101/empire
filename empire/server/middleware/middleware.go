@@ -27,7 +27,7 @@ func Common(h httpx.Handler, opts CommonOpts) http.Handler {
 	h2 := middleware.Recover(h1)
 
 	// Report the panics to the reporter.
-	h3 := reporter.NewMiddleware(h2, opts.Reporter)
+	h3 := middleware.Report(h2, opts.Reporter)
 
 	// The recovered panic should be pretty too.
 	h4 := middleware.HandleError(h3, errorHandler)
