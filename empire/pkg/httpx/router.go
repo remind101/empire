@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -85,7 +86,7 @@ type handler struct {
 // actually called by this package, it's only used as a means to pass a Handler
 // in and out of mux.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.ServeHTTPContext(context.Background(), w, r)
+	panic(fmt.Sprintf("httpx: ServeHTTP called on %v", h))
 }
 
 // NotFound is a HandlerFunc that just delegates off to http.NotFound.
