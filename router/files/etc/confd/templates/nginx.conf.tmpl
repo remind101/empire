@@ -17,26 +17,23 @@ http {
     server {{.Value}};
     {{end}}
   }
+  {{end}}
 
   server {
-    listen 80;
-    server_name {{base $dir}}.n.classchirp.com;
+    listen 80 default_server;
+    server_name ~^(?<app_name>[^\.]+)\.(.+)$;
+
+    # Respond with a 200 for Amazon ELB's health check
+    if ($http_user_agent ~* ELB-HealthChecker) {
+      return 200;
+    }
+
     location / {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header Client-IP $remote_addr;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_pass http://{{base $dir}};
-    }
-  }
-  {{end}}
-
-  # healthcheck
-  server {
-    listen 80 default_server;
-    location /healthcheck {
-      add_header Content-Type text/plain;
-      return 200 'I am alive';
+        proxy_pass http://$app_name;
     }
   }
 }

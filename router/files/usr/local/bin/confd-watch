@@ -4,21 +4,25 @@
 # Return value of the last command to fail or run
 set -eo pipefail
 
-echo "$(date --utc +%FT%TZ) [nginx] booting container. ETCD: $ETCD"
+log_msg() {
+  echo "$(date --utc +%FT%TZ) $HOSTNAME confd-watch[$$] $1"
+}
+
+log_msg "booting container. ETCD: $ETCD"
 
 # Try to make initial configuration every 5 seconds until successful
 until confd -onetime -node $ETCD -config-file /etc/confd/conf.d/nginx.toml; do
-    echo "$(date --utc +%FT%TZ) [nginx] waiting for confd to create initial nginx configuration"
+    log_msg "waiting for confd to create initial nginx configuration"
     sleep 5
 done
 
 # Put a continual polling `confd` process into the background to watch
 # for changes every second
 confd -interval 1 -node $ETCD -config-file /etc/confd/conf.d/nginx.toml &
-echo "$(date --utc +%FT%TZ) [nginx] confd is now monitoring etcd for changes..."
+log_msg "confd is now monitoring etcd for changes..."
 
 # Start the Nginx service using the generated config
-echo "$(date --utc +%FT%TZ) [nginx] starting nginx service..."
+log_msg "starting nginx service..."
 service nginx start
 
 # Follow the logs to allow the script to continue running
