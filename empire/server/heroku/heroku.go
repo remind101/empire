@@ -6,6 +6,7 @@ import (
 
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/server/authorization"
 	"github.com/remind101/empire/empire/server/middleware"
 )
 
@@ -14,7 +15,7 @@ import (
 const AcceptHeader = "application/vnd.heroku+json; version=3"
 
 // New creates the API routes and returns a new http.Handler to serve them.
-func New(e *empire.Empire, auth Authorizer) http.Handler {
+func New(e *empire.Empire, auth authorization.Authorizer) http.Handler {
 	r := httpx.NewRouter()
 
 	// Apps

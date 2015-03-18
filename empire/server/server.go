@@ -6,11 +6,22 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/server/authorization"
+	githubauth "github.com/remind101/empire/empire/server/authorization/github"
 	"github.com/remind101/empire/empire/server/github"
 	"github.com/remind101/empire/empire/server/heroku"
 )
 
-var DefaultOptions = Options{}
+var (
+	DefaultOptions = Options{}
+
+	// DefaultGitHubScopes is the default oauth scopes to obtain when getting an
+	// authorization from GitHub.
+	DefaultGitHubScopes = []string{
+		"repo_deployment", // For creating deployment statuses.
+		"read:org",        // For reading organization memberships.
+	}
+)
 
 type Options struct {
 	GitHub struct {
@@ -24,8 +35,7 @@ type Options struct {
 func New(e *empire.Empire, options Options) http.Handler {
 	r := mux.NewRouter()
 
-	// TODO move authorizer out of package heroku.
-	auth := heroku.NewAuthorizer(
+	auth := NewAuthorizer(
 		options.GitHub.ClientID,
 		options.GitHub.ClientSecret,
 		options.GitHub.Organization,
@@ -77,4 +87,20 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(status)
+}
+
+// NewAuthorizer returns a new Authorizer. If the client id is present, it will
+// return a real Authorizer that talks to GitHub. If an empty string is
+// provided, then it will just return a fake authorizer.
+func NewAuthorizer(clientID, clientSecret, organization string) authorization.Authorizer {
+	if clientID == "" {
+		return &authorization.Fake{}
+	}
+
+	return &githubauth.Authorizer{
+		Scopes:       DefaultGitHubScopes,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Organization: organization,
+	}
 }
