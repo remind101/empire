@@ -55,11 +55,6 @@ func (r *Router) Handler(req *http.Request) (h Handler, vars map[string]string) 
 	return
 }
 
-// ServeHTTP implements the http.Handler interface.
-func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	r.ServeHTTPContext(context.Background(), w, req)
-}
-
 // ServeHTTPContext implements the Handler interface.
 func (r *Router) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
 	h, vars := r.Handler(req)
