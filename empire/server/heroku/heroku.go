@@ -2,7 +2,6 @@ package heroku
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/remind101/empire/empire"
@@ -19,31 +18,31 @@ func New(e *empire.Empire, auth Authorizer) http.Handler {
 	r := httpx.NewRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", Authenticate(e, &GetApps{e}))                 // hk apps
-	r.Handle("DELETE", "/apps/{app}", Authenticate(e, &DeleteApp{e}))      // hk destroy
-	r.Handle("POST", "/apps", Authenticate(e, &PostApps{e}))               // hk create
-	r.Handle("POST", "/organizations/apps", Authenticate(e, &PostApps{e})) // hk create
+	r.Handle("GET", "/apps", Middleware(e, &GetApps{e}, nil))                 // hk apps
+	r.Handle("DELETE", "/apps/{app}", Middleware(e, &DeleteApp{e}, nil))      // hk destroy
+	r.Handle("POST", "/apps", Middleware(e, &PostApps{e}, nil))               // hk create
+	r.Handle("POST", "/organizations/apps", Middleware(e, &PostApps{e}, nil)) // hk create
 
 	// Deploys
-	r.Handle("POST", "/deploys", Authenticate(e, &PostDeploys{e})) // Deploy an app
+	r.Handle("POST", "/deploys", Middleware(e, &PostDeploys{e}, nil)) // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", Authenticate(e, &GetReleases{e}))          // hk releases
-	r.Handle("GET", "/apps/{app}/releases/{version}", Authenticate(e, &GetRelease{e})) // hk release-info
-	r.Handle("POST", "/apps/{app}/releases", Authenticate(e, &PostReleases{e}))        // hk rollback
+	r.Handle("GET", "/apps/{app}/releases", Middleware(e, &GetReleases{e}, nil))          // hk releases
+	r.Handle("GET", "/apps/{app}/releases/{version}", Middleware(e, &GetRelease{e}, nil)) // hk release-info
+	r.Handle("POST", "/apps/{app}/releases", Middleware(e, &PostReleases{e}, nil))        // hk rollback
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", Authenticate(e, &GetConfigs{e}))     // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})) // hk set
+	r.Handle("GET", "/apps/{app}/config-vars", Middleware(e, &GetConfigs{e}, nil))     // hk env, hk get
+	r.Handle("PATCH", "/apps/{app}/config-vars", Middleware(e, &PatchConfigs{e}, nil)) // hk set
 
 	// Processes
-	r.Handle("GET", "/apps/{app}/dynos", Authenticate(e, &GetProcesses{e})) // hk dynos
+	r.Handle("GET", "/apps/{app}/dynos", Middleware(e, &GetProcesses{e}, nil)) // hk dynos
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", Authenticate(e, &PatchFormation{e})) // hk scale
+	r.Handle("PATCH", "/apps/{app}/formation", Middleware(e, &PatchFormation{e}, nil)) // hk scale
 
 	// OAuth
-	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
+	r.Handle("POST", "/oauth/authorizations", Middleware(e, &PostAuthorizations{e, auth}, &MiddlewareOpts{DisableAuthenticate: true}))
 
 	// Wrap the router in middleware to handle errors.
 	h := middleware.HandleError(r, func(err error, w http.ResponseWriter, r *http.Request) {
@@ -94,7 +93,6 @@ func Error(w http.ResponseWriter, err error, status int) error {
 		}
 	}
 
-	log.Printf("error=%+v\n", v)
 	w.WriteHeader(status)
 	return Encode(w, v)
 }
