@@ -29,7 +29,7 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return err
 	}
 
-	app, err := findApp(r, h)
+	app, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
