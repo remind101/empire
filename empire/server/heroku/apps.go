@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -48,7 +48,7 @@ type DeleteApp struct {
 }
 
 func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(r, h)
+	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
@@ -95,10 +95,10 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	return Encode(w, newApp(a))
 }
 
-func findApp(r *http.Request, e interface {
+func findApp(ctx context.Context, e interface {
 	AppsFind(name string) (*empire.App, error)
 }) (*empire.App, error) {
-	vars := mux.Vars(r)
+	vars := httpx.Vars(ctx)
 	name := vars["app"]
 
 	a, err := e.AppsFind(name)

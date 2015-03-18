@@ -34,7 +34,7 @@ type GetProcesses struct {
 }
 
 func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(r, h)
+	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}

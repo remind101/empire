@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/bgentry/heroku-go"
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -41,12 +41,12 @@ type GetRelease struct {
 }
 
 func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(r, h)
+	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
 
-	vars := mux.Vars(r)
+	vars := httpx.Vars(ctx)
 	vers, err := strconv.Atoi(vars["version"])
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ type GetReleases struct {
 }
 
 func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(r, h)
+	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	app, err := findApp(r, h)
+	app, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}

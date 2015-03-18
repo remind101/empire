@@ -22,3 +22,10 @@ type HandlerFunc func(context.Context, http.ResponseWriter, *http.Request) error
 func (f HandlerFunc) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	return f(ctx, w, r)
 }
+
+// key used to store context values from within this package.
+type key int
+
+const (
+	varsKey key = iota
+)
