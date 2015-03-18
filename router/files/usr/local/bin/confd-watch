@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ash
 
 # Exit immediately if anything goes wrong.
 # Return value of the last command to fail or run
