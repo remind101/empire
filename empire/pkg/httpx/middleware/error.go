@@ -29,6 +29,13 @@ func NewError(h httpx.Handler) *Error {
 	}
 }
 
+// HandleError returns a new Error middleware that uses f as the ErrorHandler.
+func HandleError(h httpx.Handler, f func(error, http.ResponseWriter, *http.Request)) *Error {
+	e := NewError(h)
+	e.ErrorHandler = f
+	return e
+}
+
 // ServeHTTPContext implements the httpx.Handler interface.
 func (h *Error) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	err := h.handler.ServeHTTPContext(ctx, w, r)

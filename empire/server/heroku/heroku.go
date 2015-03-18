@@ -46,10 +46,9 @@ func New(e *empire.Empire, auth Authorizer) http.Handler {
 	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
 	// Wrap the router in middleware to handle errors.
-	h := middleware.NewError(r)
-	h.ErrorHandler = func(err error, w http.ResponseWriter, r *http.Request) {
+	h := middleware.HandleError(r, func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)
-	}
+	})
 
 	// Wrap the route in middleware to add a context.Context.
 	b := middleware.NewBackground(h)
