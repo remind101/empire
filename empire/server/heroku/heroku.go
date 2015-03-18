@@ -2,12 +2,11 @@ package heroku
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/pkg/httpx"
-	"github.com/remind101/empire/empire/pkg/httpx/middleware"
+	"github.com/remind101/empire/empire/server/middleware"
 )
 
 // The Accept header that controls the api version. See
@@ -45,15 +44,14 @@ func New(e *empire.Empire, auth Authorizer) http.Handler {
 	// OAuth
 	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
-	// Wrap the router in middleware to handle errors.
-	h := middleware.HandleError(r, func(err error, w http.ResponseWriter, r *http.Request) {
+	handleError := func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)
+	}
+
+	return middleware.Common(r, middleware.CommonOpts{
+		Reporter:     e.Reporter,
+		ErrorHandler: handleError,
 	})
-
-	// Wrap the route in middleware to add a context.Context.
-	b := middleware.BackgroundContext(h)
-
-	return b
 }
 
 // Encode json ecnodes v into w.
@@ -94,7 +92,6 @@ func Error(w http.ResponseWriter, err error, status int) error {
 		}
 	}
 
-	log.Printf("error=%+v\n", v)
 	w.WriteHeader(status)
 	return Encode(w, v)
 }

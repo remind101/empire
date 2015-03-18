@@ -1,12 +1,15 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
+	"log"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/reporter"
 )
 
 // A function to return the current time. It can be useful to stub this out in
@@ -15,9 +18,14 @@ var Now = func() time.Time {
 	return time.Now().UTC()
 }
 
-// DefaultOptions is a default Options instance that can be passed when
-// intializing a new Empire.
-var DefaultOptions = Options{}
+var (
+	// DefaultOptions is a default Options instance that can be passed when
+	// intializing a new Empire.
+	DefaultOptions = Options{}
+
+	// defaultReporter is the default reporter.Reporter to use.
+	defaultReporter = reporter.NewLogReporter(log.New(os.Stderr, "[error] ", 0))
+)
 
 // DockerOptions is a set of options to configure a docker api client.
 type DockerOptions struct {
@@ -53,6 +61,10 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
+	// Reporter is an reporter.Reporter that will be used to report errors to
+	// an external system.
+	reporter.Reporter
+
 	store *store
 
 	accessTokens *accessTokensService
@@ -142,6 +154,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
+		Reporter:     defaultReporter,
 		store:        store,
 		accessTokens: accessTokens,
 		apps:         apps,

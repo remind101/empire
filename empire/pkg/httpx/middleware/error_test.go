@@ -23,8 +23,8 @@ func TestError(t *testing.T) {
 
 	err := h.ServeHTTPContext(ctx, resp, req)
 
-	if err == nil {
-		t.Fatal("Expected an error")
+	if err != nil {
+		t.Fatal("Expected no error to be returned because it was handled")
 	}
 
 	if got, want := resp.Body.String(), "boom\n"; got != want {
