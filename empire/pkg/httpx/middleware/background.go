@@ -23,7 +23,7 @@ type Background struct {
 	handler httpx.Handler
 }
 
-func NewBackground(h httpx.Handler) *Background {
+func BackgroundContext(h httpx.Handler) *Background {
 	return &Background{
 		handler: h,
 	}

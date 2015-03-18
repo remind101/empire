@@ -51,7 +51,7 @@ func New(e *empire.Empire, auth Authorizer) http.Handler {
 	})
 
 	// Wrap the route in middleware to add a context.Context.
-	b := middleware.NewBackground(h)
+	b := middleware.BackgroundContext(h)
 
 	return b
 }
