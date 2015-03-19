@@ -46,7 +46,7 @@ func (h *PostAuthorizations) ServeHTTPContext(ctx context.Context, w http.Respon
 		case authorization.ErrTwoFactor:
 			return ErrTwoFactor
 		case authorization.ErrUnauthorized:
-			return ErrForbidden
+			return ErrUnauthorized
 		}
 
 		msg := err.Error()
