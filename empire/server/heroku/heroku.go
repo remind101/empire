@@ -80,16 +80,18 @@ func Error(w http.ResponseWriter, err error, status int) error {
 	var v interface{}
 	switch err := err.(type) {
 	case *ErrorResource:
-		if err.Status != 0 {
-			status = err.Status
-		}
-
 		v = err
 	case *empire.ValidationError:
 		v = ErrBadRequest
 	default:
 		v = &ErrorResource{
 			Message: err.Error(),
+		}
+	}
+
+	if err, ok := v.(*ErrorResource); ok {
+		if err.Status != 0 {
+			status = err.Status
 		}
 	}
 
