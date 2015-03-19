@@ -12,9 +12,9 @@ import (
 func TestRequestID(t *testing.T) {
 	m := &RequestID{
 		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-			requestID := httpx.RequestIDFromContext(ctx)
+			requestID := httpx.RequestID(ctx)
 
-			if got, want := requestID, httpx.RequestID("1234"); got != want {
+			if got, want := requestID, "1234"; got != want {
 				t.Fatalf("RequestID => %s; want %s", got, want)
 			}
 

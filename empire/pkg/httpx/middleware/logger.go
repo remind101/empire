@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/remind101/empire/empire/pkg/httpx"
@@ -27,7 +28,7 @@ func NewLogger(h httpx.Handler, d io.Writer) *Logger {
 }
 
 func (h *Logger) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	l := logger.New(h.Device, httpx.RequestIDFromContext(ctx))
+	l := logger.New(log.New(h.Device, fmt.Sprintf("request_id=%s ", httpx.RequestID(ctx)), 0))
 	ctx = logger.WithLogger(ctx, l)
 
 	l.Log(

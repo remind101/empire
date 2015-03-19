@@ -37,10 +37,10 @@ func (h *RequestID) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 	return h.handler.ServeHTTPContext(ctx, w, r)
 }
 
-func extractRequestID(r *http.Request, header string) httpx.RequestID {
+func extractRequestID(r *http.Request, header string) string {
 	if header == "" {
 		header = HeaderRequestID
 	}
 
-	return httpx.RequestID(r.Header.Get(header))
+	return r.Header.Get(header)
 }

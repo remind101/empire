@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"bytes"
+	"log"
 	"testing"
 
 	"github.com/remind101/empire/empire/pkg/logger"
@@ -10,7 +11,7 @@ import (
 
 func TestLogReporter(t *testing.T) {
 	b := new(bytes.Buffer)
-	l := logger.New(b, "1234")
+	l := logger.New(log.New(b, "request_id=1234 ", 0))
 	h := &LogReporter{}
 
 	ctx := logger.WithLogger(context.Background(), l)

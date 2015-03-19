@@ -4,12 +4,9 @@ package logger
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"sort"
 	"strings"
 
-	"github.com/remind101/empire/empire/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -21,35 +18,20 @@ type Logger interface {
 // logger is an implementation of the Logger interface.
 type logger struct {
 	*log.Logger
-	prefix map[string]interface{}
+}
+
+// New wraps the log.Logger to implement the Logger interface.
+func New(l *log.Logger) Logger {
+	return &logger{
+		Logger: l,
+	}
 }
 
 // Log logs the pairs in logfmt. It will treat consecutive arguments as a key
 // value pair. Given the input:
 func (l *logger) Log(pairs ...interface{}) {
-	p := l.prefixMessage()
 	m := l.message(pairs...)
-
-	// No message, so we just print the prefix to avoid printing an extra
-	// space at the end.
-	if m == "" {
-		l.Println(p)
-		return
-	}
-
-	l.Println(fmt.Sprintf("%s %s", p, m))
-}
-
-func (l *logger) prefixMessage() string {
-	var parts []string
-
-	for k, v := range l.prefix {
-		parts = append(parts, fmt.Sprintf("%s=%v", k, v))
-	}
-
-	sort.Strings(parts)
-
-	return strings.Join(parts, " ")
+	l.Println(m)
 }
 
 func (l *logger) message(pairs ...interface{}) string {
@@ -77,16 +59,6 @@ func (l *logger) message(pairs ...interface{}) string {
 	}
 
 	return strings.Join(parts, " ")
-}
-
-// New returns a new log.Logger with the request id as the log prefix.
-func New(r io.Writer, requestID httpx.RequestID) Logger {
-	return &logger{
-		Logger: log.New(r, "", 0),
-		prefix: map[string]interface{}{
-			"request_id": requestID,
-		},
-	}
 }
 
 // WithLogger inserts a log.Logger into the provided context.

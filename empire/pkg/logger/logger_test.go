@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"log"
 	"testing"
 )
 
@@ -10,12 +11,12 @@ func TestLogger(t *testing.T) {
 		in  []interface{}
 		out string
 	}{
-		{[]interface{}{"key", "value"}, "request_id=1234 key=value\n"},
-		{[]interface{}{"this is a message"}, "request_id=1234 this is a message\n"},
-		{[]interface{}{"key", "value", "message"}, "request_id=1234 key=value message\n"},
-		{[]interface{}{"count", 1}, "request_id=1234 count=1\n"},
-		{[]interface{}{"b", 1, "a", 1}, "request_id=1234 b=1 a=1\n"},
-		{[]interface{}{}, "request_id=1234\n"},
+		{[]interface{}{"key", "value"}, "key=value\n"},
+		{[]interface{}{"this is a message"}, "this is a message\n"},
+		{[]interface{}{"key", "value", "message"}, "key=value message\n"},
+		{[]interface{}{"count", 1}, "count=1\n"},
+		{[]interface{}{"b", 1, "a", 1}, "b=1 a=1\n"},
+		{[]interface{}{}, "\n"},
 	}
 
 	for _, tt := range tests {
@@ -28,7 +29,7 @@ func TestLogger(t *testing.T) {
 
 func testLog(pairs ...interface{}) string {
 	b := new(bytes.Buffer)
-	l := New(b, "1234")
+	l := New(log.New(b, "", 0))
 	l.Log(pairs...)
 	return b.String()
 }

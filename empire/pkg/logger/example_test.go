@@ -1,9 +1,12 @@
 package logger
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 func ExampleLogger_Log() {
-	l := New(os.Stdout, "1234")
+	l := New(log.New(os.Stdout, "", 0))
 
 	// Consecutive arguments are treated as key value pairs.
 	l.Log("key", "value")
@@ -13,6 +16,6 @@ func ExampleLogger_Log() {
 	l.Log("key", "value", "message")
 
 	// Output:
-	// request_id=1234 key=value
-	// request_id=1234 key=value message
+	// key=value
+	// key=value message
 }
