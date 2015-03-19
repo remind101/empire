@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
 
@@ -181,7 +182,7 @@ type scaler struct {
 	manager *manager
 }
 
-func (s *scaler) Scale(app *App, t ProcessType, count int) error {
+func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int) error {
 	release, err := s.store.ReleasesLast(app)
 	if err != nil {
 		return err
@@ -211,7 +212,7 @@ func (s *scaler) Scale(app *App, t ProcessType, count int) error {
 		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	return s.manager.ScaleProcess(release, config, slug, p, count)
+	return s.manager.ScaleProcess(ctx, release, config, slug, p, quantity)
 }
 
 // AppsCreate inserts the app into the database.

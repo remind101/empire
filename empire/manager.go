@@ -1,6 +1,11 @@
 package empire
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/remind101/empire/empire/pkg/logger"
+	"golang.org/x/net/context"
+)
 
 type manager struct {
 	*jobsService
@@ -35,8 +40,8 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 	return nil
 }
 
-func (m *manager) ScaleProcess(release *Release, config *Config, slug *Slug, p *Process, q int) error {
-	var scale func(*Release, *Config, *Slug, *Process, int) error
+func (m *manager) ScaleProcess(ctx context.Context, release *Release, config *Config, slug *Slug, p *Process, q int) error {
+	var scale func(context.Context, *Release, *Config, *Slug, *Process, int) error
 
 	switch {
 	case p.Quantity < q:
@@ -47,7 +52,7 @@ func (m *manager) ScaleProcess(release *Release, config *Config, slug *Slug, p *
 		return nil
 	}
 
-	if err := scale(release, config, slug, p, q); err != nil {
+	if err := scale(ctx, release, config, slug, p, q); err != nil {
 		return err
 	}
 
@@ -57,12 +62,22 @@ func (m *manager) ScaleProcess(release *Release, config *Config, slug *Slug, p *
 	return err
 }
 
-func (m *manager) scaleUp(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+func (m *manager) scaleUp(ctx context.Context, release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	jobs := scaleUp(release, config, slug, p, q)
+
+	logger.Log(ctx,
+		"at", "scale.up",
+		"app", release.AppName,
+		"process", p.Type,
+		"old", p.Quantity,
+		"new", q,
+		"diff", fmt.Sprintf("+%d", len(jobs)),
+	)
+
 	return m.jobsService.Schedule(jobs...)
 }
 
-func (m *manager) scaleDown(release *Release, config *Config, slug *Slug, p *Process, q int) error {
+func (m *manager) scaleDown(ctx context.Context, release *Release, config *Config, slug *Slug, p *Process, q int) error {
 	// Find existing jobs for this app
 	existing, err := m.store.JobsList(JobsListQuery{
 		App: release.AppName,
@@ -72,6 +87,15 @@ func (m *manager) scaleDown(release *Release, config *Config, slug *Slug, p *Pro
 	}
 
 	jobs := scaleDown(existing, release, config, slug, p, q)
+
+	logger.Log(ctx,
+		"at", "scale.down",
+		"app", release.AppName,
+		"process", p.Type,
+		"old", p.Quantity,
+		"new", q,
+		"diff", fmt.Sprintf("-%d", len(jobs)),
+	)
 
 	return m.jobsService.Unschedule(jobs...)
 }

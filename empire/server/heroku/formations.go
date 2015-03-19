@@ -35,7 +35,7 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	}
 
 	for _, up := range form.Updates {
-		if err := h.AppsScale(app, up.Process, up.Quantity); err != nil {
+		if err := h.AppsScale(ctx, app, up.Process, up.Quantity); err != nil {
 			return err
 		}
 	}
