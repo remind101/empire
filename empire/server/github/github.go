@@ -56,7 +56,7 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 		return err
 	}
 
-	_, err := h.DeployCommit(empire.Commit{
+	_, err := h.DeployCommit(ctx, empire.Commit{
 		Repo: empire.Repo(p.Repository.FullName),
 		Sha:  p.Deployment.Sha,
 	})

@@ -192,8 +192,8 @@ func (e *Empire) AppsFind(name string) (*App, error) {
 }
 
 // AppsDestroy destroys the app.
-func (e *Empire) AppsDestroy(app *App) error {
-	return e.apps.AppsDestroy(app)
+func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
+	return e.apps.AppsDestroy(ctx, app)
 }
 
 // ConfigsCurrent returns the current Config for a given app.
@@ -204,8 +204,8 @@ func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
 // ConfigsApply applies the new config vars to the apps current Config,
 // returning a new Config. If the app has a running release, a new release will
 // be created and run.
-func (e *Empire) ConfigsApply(app *App, vars Vars) (*Config, error) {
-	return e.configs.ConfigsApply(app, vars)
+func (e *Empire) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
+	return e.configs.ConfigsApply(ctx, app, vars)
 }
 
 // JobStatesByApp returns the JobStates for the given app.
@@ -235,18 +235,18 @@ func (e *Empire) ReleasesLast(app *App) (*Release, error) {
 
 // ReleasesRollback rolls an app back to a specific release version. Returns a
 // new release.
-func (e *Empire) ReleasesRollback(app *App, version int) (*Release, error) {
-	return e.releases.ReleasesRollback(app, version)
+func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*Release, error) {
+	return e.releases.ReleasesRollback(ctx, app, version)
 }
 
 // DeployImage deploys an image to Empire.
-func (e *Empire) DeployImage(image Image) (*Deployment, error) {
-	return e.deployer.DeployImage(image)
+func (e *Empire) DeployImage(ctx context.Context, image Image) (*Deployment, error) {
+	return e.deployer.DeployImage(ctx, image)
 }
 
 // DeployCommit deploys a Commit to Empire.
-func (e *Empire) DeployCommit(commit Commit) (*Deployment, error) {
-	return e.deployer.DeployCommit(commit)
+func (e *Empire) DeployCommit(ctx context.Context, commit Commit) (*Deployment, error) {
+	return e.deployer.DeployCommit(ctx, commit)
 }
 
 // AppsScale scales an apps process.

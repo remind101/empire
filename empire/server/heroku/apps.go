@@ -53,7 +53,7 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	if err := h.AppsDestroy(a); err != nil {
+	if err := h.AppsDestroy(ctx, a); err != nil {
 		return err
 	}
 

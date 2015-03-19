@@ -114,7 +114,7 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	release, err := h.ReleasesRollback(app, version)
+	release, err := h.ReleasesRollback(ctx, app, version)
 	if err != nil {
 		return err
 	}

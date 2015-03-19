@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
 
@@ -103,7 +104,7 @@ type deployer struct {
 }
 
 // DeploymentsDo performs the Deployment.
-func (s *deployer) DeploymentsDo(opts DeploymentsCreateOpts) (d *Deployment, err error) {
+func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts) (d *Deployment, err error) {
 	app, image := opts.App, opts.Image
 
 	d, err = s.store.DeploymentsCreate(opts)
@@ -150,7 +151,7 @@ func (s *deployer) DeploymentsDo(opts DeploymentsCreateOpts) (d *Deployment, err
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	release, err = s.ReleasesCreate(ReleasesCreateOpts{
+	release, err = s.ReleasesCreate(ctx, ReleasesCreateOpts{
 		App:         app,
 		Config:      config,
 		Slug:        slug,
@@ -163,29 +164,29 @@ func (s *deployer) DeploymentsDo(opts DeploymentsCreateOpts) (d *Deployment, err
 	return
 }
 
-func (s *deployer) DeployImageToApp(app *App, image Image) (*Deployment, error) {
+func (s *deployer) DeployImageToApp(ctx context.Context, app *App, image Image) (*Deployment, error) {
 	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
 		return nil, err
 	}
 
-	return s.DeploymentsDo(DeploymentsCreateOpts{
+	return s.DeploymentsDo(ctx, DeploymentsCreateOpts{
 		App:   app,
 		Image: image,
 	})
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deployer) DeployImage(image Image) (*Deployment, error) {
+func (s *deployer) DeployImage(ctx context.Context, image Image) (*Deployment, error) {
 	app, err := s.appsService.AppsFindOrCreateByRepo(DockerRepo, image.Repo)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DeployImageToApp(app, image)
+	return s.DeployImageToApp(ctx, app, image)
 }
 
 // Deploy commit deploys the commit to a specific app.
-func (s *deployer) DeployCommitToApp(app *App, commit Commit) (*Deployment, error) {
+func (s *deployer) DeployCommitToApp(ctx context.Context, app *App, commit Commit) (*Deployment, error) {
 	var docker Repo
 
 	if err := s.appsService.AppsEnsureRepo(app, GitHubRepo, commit.Repo); err != nil {
@@ -198,20 +199,20 @@ func (s *deployer) DeployCommitToApp(app *App, commit Commit) (*Deployment, erro
 		docker = s.fallbackRepo(app.Name)
 	}
 
-	return s.DeployImageToApp(app, Image{
+	return s.DeployImageToApp(ctx, app, Image{
 		Repo: docker,
 		ID:   commit.Sha,
 	})
 }
 
 // DeployCommit resolves the Commit to an Image then deploys the Image.
-func (s *deployer) DeployCommit(commit Commit) (*Deployment, error) {
+func (s *deployer) DeployCommit(ctx context.Context, commit Commit) (*Deployment, error) {
 	app, err := s.appsService.AppsFindOrCreateByRepo(GitHubRepo, commit.Repo)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DeployCommitToApp(app, commit)
+	return s.DeployCommitToApp(ctx, app, commit)
 }
 
 func (s *deployer) fallbackRepo(appName string) Repo {

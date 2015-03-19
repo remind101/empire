@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
 
@@ -71,7 +72,7 @@ type releasesService struct {
 }
 
 // Create creates the release, then sets the current process formation on the release.
-func (s *releasesService) ReleasesCreate(opts ReleasesCreateOpts) (*Release, error) {
+func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreateOpts) (*Release, error) {
 	config, slug := opts.Config, opts.Slug
 
 	r, err := s.store.ReleasesCreate(opts)
@@ -86,7 +87,7 @@ func (s *releasesService) ReleasesCreate(opts ReleasesCreateOpts) (*Release, err
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.manager.ScheduleRelease(r, config, slug, formation); err != nil {
+	if err := s.manager.ScheduleRelease(ctx, r, config, slug, formation); err != nil {
 		return r, err
 	}
 
@@ -124,7 +125,7 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 }
 
 // Rolls back to a specific release version.
-func (s *releasesService) ReleasesRollback(app *App, version int) (*Release, error) {
+func (s *releasesService) ReleasesRollback(ctx context.Context, app *App, version int) (*Release, error) {
 	prevRelease, err := s.store.ReleasesFindByAppAndVersion(app, version)
 	if err != nil {
 		return nil, err
@@ -154,7 +155,7 @@ func (s *releasesService) ReleasesRollback(app *App, version int) (*Release, err
 	}
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
-	release, err := s.ReleasesCreate(ReleasesCreateOpts{
+	release, err := s.ReleasesCreate(ctx, ReleasesCreateOpts{
 		App:         app,
 		Config:      config,
 		Slug:        slug,

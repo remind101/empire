@@ -109,7 +109,7 @@ type appsService struct {
 	store *store
 }
 
-func (s *appsService) AppsDestroy(app *App) error {
+func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
 	if err := s.store.AppsDestroy(app); err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (s *appsService) AppsDestroy(app *App) error {
 		return err
 	}
 
-	return s.Unschedule(jobs...)
+	return s.Unschedule(ctx, jobs...)
 }
 
 // AppsEnsureRepo will set the repo if it's not set.

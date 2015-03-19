@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/remind101/empire/empire/pkg/container"
+	"github.com/remind101/empire/empire/pkg/logger"
+	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
 
@@ -65,8 +67,15 @@ type jobsService struct {
 	scheduler container.Scheduler
 }
 
-func (s *jobsService) Schedule(jobs ...*Job) error {
+func (s *jobsService) Schedule(ctx context.Context, jobs ...*Job) error {
 	for _, j := range jobs {
+		logger.Log(ctx,
+			"at", "job.schedule",
+			"app", j.AppName,
+			"release", j.ReleaseVersion,
+			"process", j.ProcessType,
+			"instance", j.Instance,
+		)
 		if _, err := schedule(s.store, s.scheduler, j); err != nil {
 			return err
 		}
@@ -75,8 +84,15 @@ func (s *jobsService) Schedule(jobs ...*Job) error {
 	return nil
 }
 
-func (s *jobsService) Unschedule(jobs ...*Job) error {
+func (s *jobsService) Unschedule(ctx context.Context, jobs ...*Job) error {
 	for _, j := range jobs {
+		logger.Log(ctx,
+			"at", "job.unschedule",
+			"app", j.AppName,
+			"release", j.ReleaseVersion,
+			"process", j.ProcessType,
+			"instance", j.Instance,
+		)
 		if err := unschedule(s.store, s.scheduler, j); err != nil {
 			return err
 		}
