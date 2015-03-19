@@ -8,6 +8,7 @@ import (
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/container"
 	"github.com/remind101/empire/empire/pkg/reporter"
+	"golang.org/x/net/context"
 )
 
 // A function to return the current time. It can be useful to stub this out in
@@ -249,8 +250,8 @@ func (e *Empire) DeployCommit(commit Commit) (*Deployment, error) {
 }
 
 // AppsScale scales an apps process.
-func (e *Empire) AppsScale(app *App, t ProcessType, count int) error {
-	return e.scaler.Scale(app, t, count)
+func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantity int) error {
+	return e.scaler.Scale(ctx, app, t, quantity)
 }
 
 // Reset resets empire.
