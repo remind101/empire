@@ -58,26 +58,31 @@ func (r *Router) HandleFunc(event string, fn func(http.ResponseWriter, *http.Req
 	r.Handle(event, http.HandlerFunc(fn))
 }
 
+// Handler returns the http.Handler to use for the given request. It will
+// always return a non nill Handler.
+func (r *Router) Handler(req *http.Request) http.Handler {
+	event := req.Header.Get(HeaderEvent)
+
+	if h, ok := r.routes[event]; ok {
+		return h
+	}
+
+	return r.notFoundHandler()
+}
+
 // ServeHTTP implements the http.Handler interface to route a request to an
 // appropriate http.Handler, based on the value of the X-GitHub-Event header.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	event := req.Header.Get(HeaderEvent)
-
-	route := r.routes[event]
-	if route == nil {
-		r.notFound(w, req)
-		return
-	}
-
-	route.ServeHTTP(w, req)
+	h := r.Handler(req)
+	h.ServeHTTP(w, req)
 }
 
-func (r *Router) notFound(w http.ResponseWriter, req *http.Request) {
+func (r *Router) notFoundHandler() http.Handler {
 	if r.NotFoundHandler == nil {
-		r.NotFoundHandler = DefaultNotFoundHandler
+		return DefaultNotFoundHandler
 	}
 
-	r.NotFoundHandler.ServeHTTP(w, req)
+	return r.NotFoundHandler
 }
 
 // routes maps a github event to an http.Handler.

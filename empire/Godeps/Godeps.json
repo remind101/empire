@@ -203,7 +203,7 @@
 		},
 		{
 			"ImportPath": "github.com/ejholmes/hookshot",
-			"Rev": "81b90913cbb16228143c64df537f5725f616fbf5"
+			"Rev": "a37e081f0c1182305786466ecfa4df2317bc3903"
 		},
 		{
 			"ImportPath": "github.com/ernesto-jimenez/go-querystring/query",
