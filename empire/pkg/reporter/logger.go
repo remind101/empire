@@ -16,8 +16,6 @@ func NewLogReporter() *LogReporter {
 
 // Report logs the error to the Logger.
 func (h *LogReporter) Report(ctx context.Context, err error) error {
-	logger.Log(ctx, map[string]interface{}{
-		"error": fmt.Sprintf(`"%v"`, err),
-	})
+	logger.Log(ctx, "error", fmt.Sprintf(`"%v"`, err))
 	return nil
 }

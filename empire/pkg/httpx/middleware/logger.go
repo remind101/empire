@@ -30,11 +30,11 @@ func (h *Logger) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r 
 	l := logger.New(h.Device, httpx.RequestIDFromContext(ctx))
 	ctx = logger.WithLogger(ctx, l)
 
-	l.Log(map[string]interface{}{
-		"at":     "request",
-		"method": r.Method,
-		"path":   fmt.Sprintf(`"%s"`, r.URL.Path),
-	})
+	l.Log(
+		"at", "request",
+		"method", r.Method,
+		"path", fmt.Sprintf(`"%s"`, r.URL.Path),
+	)
 
 	return h.handler.ServeHTTPContext(ctx, w, r)
 }
