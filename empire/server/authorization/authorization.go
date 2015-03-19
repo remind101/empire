@@ -23,12 +23,26 @@ type Authorizer interface {
 }
 
 // Fake is a fake implementation of the Authorizer interface that let's
-// anyone in. Used in development.
+// anyone in. Used in development and tests.
 type Fake struct{}
 
 // Authorizer implements Authorizer Authorize.
 func (a *Fake) Authorize(username, password, twofactor string) (*empire.User, error) {
-	return &empire.User{Name: "fake", GitHubToken: "token"}, nil
+	user := &empire.User{Name: "fake", GitHubToken: "token"}
+
+	if username == "fake" {
+		return user, nil
+	}
+
+	if username == "twofactor" {
+		if twofactor == "code" {
+			return user, nil
+		}
+
+		return nil, ErrTwoFactor
+	}
+
+	return nil, ErrUnauthorized
 }
 
 type MembershipError struct {
