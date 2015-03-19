@@ -16,6 +16,66 @@ import (
 	"github.com/remind101/empire/empiretest"
 )
 
+func TestLogin(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+	s := empiretest.NewServer(t, e)
+	defer s.Close()
+
+	input := "fake\nbar\n"
+
+	cmd := NewHKCmd(s.URL, "login")
+	cmd.Stdin = strings.NewReader(input)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := string(out), "Enter email: Logged in.\n"; got != want {
+		t.Fatalf("%q", got)
+	}
+}
+
+func TestLoginUnauthorized(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+	s := empiretest.NewServer(t, e)
+	defer s.Close()
+
+	input := "foo\nbar\n"
+
+	cmd := NewHKCmd(s.URL, "login")
+	cmd.Stdin = strings.NewReader(input)
+
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+
+	if got, want := string(out), "Enter email: error: Request not authenticated, API token is missing, invalid or expired Log in with `hk login`.\n"; got != want {
+		t.Fatalf("%q", got)
+	}
+}
+
+func TestLoginTwoFactor(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+	s := empiretest.NewServer(t, e)
+	defer s.Close()
+
+	input := "twofactor\nbar\ncode\n"
+
+	cmd := NewHKCmd(s.URL, "login")
+	cmd.Stdin = strings.NewReader(input)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := string(out), "Enter email: Enter two-factor auth code: Logged in.\n"; got != want {
+		t.Fatalf("%q", got)
+	}
+}
+
 func TestCreate(t *testing.T) {
 	run(t, []Command{
 		{
@@ -205,26 +265,8 @@ func resetNow() {
 
 // hk runs an hk command against a server.
 func hk(t testing.TB, token, url, command string) string {
-	args := strings.Split(command, " ")
-
-	netrc, err := writeNetrc(token, url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(netrc.Name())
-
-	p, err := filepath.Abs("../../build/hk")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmd := exec.Command(p, args...)
-	cmd.Env = []string{
-		fmt.Sprintf("NETRC_PATH=%s", netrc.Name()),
-		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
-		"HKPATH=../../../hk-plugins",
-		fmt.Sprintf("HEROKU_API_URL=%s", url),
-	}
+	cmd := NewHKCmd(url, command)
+	cmd.Authorize(token)
 
 	b, err := cmd.CombinedOutput()
 	t.Log(fmt.Sprintf("\n$ %s\n%s", command, string(b)))
@@ -233,6 +275,44 @@ func hk(t testing.TB, token, url, command string) string {
 	}
 
 	return string(b)
+}
+
+// HKCmd represents an hk command.
+type HKCmd struct {
+	*exec.Cmd
+
+	// The Heroku API URL.
+	URL string
+}
+
+func NewHKCmd(url, command string) *HKCmd {
+	args := strings.Split(command, " ")
+
+	p, err := filepath.Abs("../../build/hk")
+	if err != nil {
+		return nil
+	}
+
+	cmd := exec.Command(p, args...)
+	cmd.Env = []string{
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		"HKPATH=../../../hk-plugins",
+		fmt.Sprintf("HEROKU_API_URL=%s", url),
+	}
+
+	return &HKCmd{
+		Cmd: cmd,
+		URL: url,
+	}
+}
+
+func (c *HKCmd) Authorize(token string) {
+	netrc, err := writeNetrc(token, c.URL)
+	if err != nil {
+		panic(err)
+	}
+
+	c.Cmd.Env = append(c.Cmd.Env, fmt.Sprintf("NETRC_PATH=%s", netrc.Name()))
 }
 
 func writeNetrc(token, uri string) (*os.File, error) {
