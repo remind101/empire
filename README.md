@@ -1,4 +1,4 @@
-# Empire [![Build Status](https://magnum.travis-ci.com/remind101/empire.svg?token=Uca1q7og621AjpUDJUEC&branch=master)](https://magnum.travis-ci.com/remind101/empire) [![Docker Repository on Quay.io](https://quay.io/repository/remind/empire/status?token=8ea56dcf-fc6f-405c-a281-1896994ef8c2 "Docker Repository on Quay.io")](https://quay.io/repository/remind/empire)
+# Empire
 
 Empire is Remind's next generation PaaS, which we will eventually use to migrate
 away from Heroku.
