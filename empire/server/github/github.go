@@ -7,13 +7,26 @@ import (
 
 	"github.com/ejholmes/hookshot"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/server/middleware"
+	"golang.org/x/net/context"
 )
 
 func New(e *empire.Empire, secret string) http.Handler {
 	r := hookshot.NewRouter()
 
-	r.Handle("deployment", hookshot.Authorize(&DeploymentHandler{e}, secret))
-	r.Handle("ping", hookshot.Authorize(http.HandlerFunc(Ping), secret))
+	opts := middleware.CommonOpts{
+		Reporter: e.Reporter,
+		ErrorHandler: func(err error, w http.ResponseWriter, r *http.Request) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		},
+	}
+
+	d := middleware.Common(&DeploymentHandler{e}, opts)
+	p := middleware.Common(httpx.HandlerFunc(Ping), opts)
+
+	r.Handle("deployment", hookshot.Authorize(d, secret))
+	r.Handle("ping", hookshot.Authorize(p, secret))
 
 	return r
 }
@@ -36,12 +49,11 @@ type DeploymentHandler struct {
 	*empire.Empire
 }
 
-func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var p Deployment
 
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return err
 	}
 
 	_, err := h.DeployCommit(empire.Commit{
@@ -49,13 +61,14 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Sha:  p.Deployment.Sha,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return err
 	}
 
 	io.WriteString(w, "Ok\n")
+	return nil
 }
 
-func Ping(w http.ResponseWriter, r *http.Request) {
+func Ping(_ context.Context, w http.ResponseWriter, r *http.Request) error {
 	io.WriteString(w, "Ok\n")
+	return nil
 }
