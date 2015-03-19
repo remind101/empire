@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/server/authorization"
@@ -52,10 +51,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 	// Mount health endpoint
 	r.Handle("/health", NewHealthHandler(e))
 
-	n := negroni.Classic()
-	n.UseHandler(r)
-
-	return n
+	return r
 }
 
 // githubWebhook is a mux.MatcherFunc that matches requests that have an

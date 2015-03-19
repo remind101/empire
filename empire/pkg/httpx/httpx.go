@@ -28,4 +28,5 @@ type key int
 
 const (
 	varsKey key = iota
+	requestIDKey
 )

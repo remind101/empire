@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/remind101/empire/empire/pkg/httpx"
 	"github.com/remind101/empire/empire/pkg/httpx/middleware"
@@ -32,6 +33,12 @@ func Common(h httpx.Handler, opts CommonOpts) http.Handler {
 	// The recovered panic should be pretty too.
 	h4 := middleware.HandleError(h3, errorHandler)
 
+	// Add a logger to the context.
+	h5 := middleware.NewLogger(h4, os.Stdout)
+
+	// Add the request id to the context.
+	h6 := middleware.ExtractRequestID(h5)
+
 	// Wrap the route in middleware to add a context.Context.
-	return middleware.BackgroundContext(h4)
+	return middleware.BackgroundContext(h6)
 }

@@ -1,9 +1,7 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
-	"log"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
@@ -24,7 +22,7 @@ var (
 	DefaultOptions = Options{}
 
 	// defaultReporter is the default reporter.Reporter to use.
-	defaultReporter = reporter.NewLogReporter(log.New(os.Stderr, "[error] ", 0))
+	defaultReporter = reporter.NewLogReporter()
 )
 
 // DockerOptions is a set of options to configure a docker api client.

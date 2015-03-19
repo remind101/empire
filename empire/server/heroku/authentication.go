@@ -5,6 +5,7 @@ import (
 
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -46,8 +47,15 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return ErrUnauthorized
 	}
 
+	user := at.User
+
 	// Embed the associated user into the context.
-	ctx = empire.WithUser(ctx, at.User)
+	ctx = empire.WithUser(ctx, user)
+
+	logger.Log(ctx,
+		"at", "authenticated",
+		"user", user.Name,
+	)
 
 	return h.handler.ServeHTTPContext(ctx, w, r)
 }

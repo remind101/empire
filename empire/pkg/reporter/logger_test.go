@@ -2,22 +2,23 @@ package reporter
 
 import (
 	"bytes"
-	"log"
 	"testing"
 
+	"github.com/remind101/empire/empire/pkg/logger"
 	"golang.org/x/net/context"
 )
 
 func TestLogReporter(t *testing.T) {
 	b := new(bytes.Buffer)
-	l := log.New(b, "", 0)
-	h := &LogReporter{Logger: l}
+	l := logger.New(b, "1234")
+	h := &LogReporter{}
 
-	if err := h.Report(context.Background(), ErrFake); err != nil {
+	ctx := logger.WithLogger(context.Background(), l)
+	if err := h.Report(ctx, ErrFake); err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := b.String(), "boom\n"; got != want {
+	if got, want := b.String(), "request_id=1234 error=\"boom\"\n"; got != want {
 		t.Fatalf("Output => %s; want %s", got, want)
 	}
 }
