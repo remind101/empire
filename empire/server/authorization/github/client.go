@@ -16,7 +16,11 @@ var (
 var (
 	// errTwoFactor is returned when two factor authentication is required
 	// to create an authorization for the user.
-	errTwoFactor = errors.New("two factor required")
+	errTwoFactor = errors.New("github: two factor required")
+
+	// errUnauthorized is returned if the request to create an authorization
+	// results in a 401.
+	errUnauthorized = errors.New("github: unauthorized")
 )
 
 const (
@@ -94,6 +98,10 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOpts) (*Authorizati
 	// a two factor auth code needs to be provided.
 	if resp.Header.Get(HeaderTwoFactor) != "" {
 		return nil, errTwoFactor
+	}
+
+	if resp.StatusCode == 401 {
+		return nil, errUnauthorized
 	}
 
 	if err := checkResponse(resp); err != nil {

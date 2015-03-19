@@ -44,11 +44,14 @@ func (a *Authorizer) Authorize(username, password, twofactor string) (*empire.Us
 		TwoFactor:    twofactor,
 	})
 	if err != nil {
-		if err == errTwoFactor {
+		switch err {
+		case errTwoFactor:
 			return nil, authorization.ErrTwoFactor
+		case errUnauthorized:
+			return nil, authorization.ErrUnauthorized
+		default:
+			return nil, err
 		}
-
-		return nil, authorization.ErrUnauthorized
 	}
 
 	u, err := c.GetUser(auth.Token)

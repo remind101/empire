@@ -106,13 +106,26 @@ func TestClientCreateAuthorizationTwoFactorRequired(t *testing.T) {
 func TestClientCreateAuthorizationUnauthorized(t *testing.T) {
 	c, s := newFakeClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
-		io.WriteString(w, `{"message":"Requires authentication"}`)
 	}))
 	defer s.Close()
 
 	_, err := c.CreateAuthorization(CreateAuthorizationOpts{})
 
-	if got, want := err.Error(), "github: Requires authentication"; got != want {
+	if err != errUnauthorized {
+		t.Fatalf("err => %s; want %s", err, errUnauthorized)
+	}
+}
+
+func TestClientCreateAuthorizationError(t *testing.T) {
+	c, s := newFakeClient(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		io.WriteString(w, `{"message":"our SMS provider doesn't deliver to your area"}`)
+	}))
+	defer s.Close()
+
+	_, err := c.CreateAuthorization(CreateAuthorizationOpts{})
+
+	if got, want := err.Error(), "github: our SMS provider doesn't deliver to your area"; got != want {
 		t.Fatalf("err => %s; want %s", got, want)
 	}
 }
