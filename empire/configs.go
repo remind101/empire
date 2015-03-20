@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq/hstore"
+	"golang.org/x/net/context"
 )
 
 // Config represents a collection of environment variables.
@@ -100,7 +101,7 @@ type configsService struct {
 	releases *releasesService
 }
 
-func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
+func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
 	old, err := s.ConfigsCurrent(app)
 	if err != nil {
 		return nil, err
@@ -130,7 +131,7 @@ func (s *configsService) ConfigsApply(app *App, vars Vars) (*Config, error) {
 		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
 
 		// Create new release based on new config and old slug
-		_, err = s.releases.ReleasesCreate(ReleasesCreateOpts{
+		_, err = s.releases.ReleasesCreate(ctx, ReleasesCreateOpts{
 			App:         app,
 			Config:      c,
 			Slug:        slug,

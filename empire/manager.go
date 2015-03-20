@@ -14,7 +14,7 @@ type manager struct {
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, formation Formation) error {
+func (m *manager) ScheduleRelease(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation) error {
 	// Find any existing jobs that have been scheduled for this app.
 	existing, err := m.store.JobsList(JobsListQuery{App: release.AppName})
 	if err != nil {
@@ -29,11 +29,18 @@ func (m *manager) ScheduleRelease(release *Release, config *Config, slug *Slug, 
 		formation,
 	)
 
-	if err := m.jobsService.Schedule(jobs...); err != nil {
+	logger.Log(ctx,
+		"at", "release.schedule",
+		"app", release.AppName,
+		"version", release.Ver,
+		"image", slug.Image,
+	)
+
+	if err := m.jobsService.Schedule(ctx, jobs...); err != nil {
 		return err
 	}
 
-	if err := m.jobsService.Unschedule(existing...); err != nil {
+	if err := m.jobsService.Unschedule(ctx, existing...); err != nil {
 		return err
 	}
 
@@ -74,7 +81,7 @@ func (m *manager) scaleUp(ctx context.Context, release *Release, config *Config,
 		"diff", fmt.Sprintf("+%d", len(jobs)),
 	)
 
-	return m.jobsService.Schedule(jobs...)
+	return m.jobsService.Schedule(ctx, jobs...)
 }
 
 func (m *manager) scaleDown(ctx context.Context, release *Release, config *Config, slug *Slug, p *Process, q int) error {
@@ -97,7 +104,7 @@ func (m *manager) scaleDown(ctx context.Context, release *Release, config *Confi
 		"diff", fmt.Sprintf("-%d", len(jobs)),
 	)
 
-	return m.jobsService.Unschedule(jobs...)
+	return m.jobsService.Unschedule(ctx, jobs...)
 }
 
 // scaleUp returns new Jobs to schedule when scaling up.

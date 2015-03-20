@@ -43,7 +43,7 @@ func (h *PatchConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 
 	// Update the config
-	c, err := h.ConfigsApply(a, configVars)
+	c, err := h.ConfigsApply(ctx, a, configVars)
 	if err != nil {
 		return err
 	}
