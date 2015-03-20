@@ -6,6 +6,7 @@ import (
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/pkg/reporter"
 	"golang.org/x/net/context"
 )
 
@@ -37,6 +38,10 @@ func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 	apps, err := h.AppsAll()
 	if err != nil {
 		return err
+	}
+
+	if r, ok := reporter.FromContext(ctx); ok {
+		r.Report(ctx, ErrBadRequest)
 	}
 
 	w.WriteHeader(200)
