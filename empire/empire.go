@@ -22,8 +22,8 @@ var (
 	// intializing a new Empire.
 	DefaultOptions = Options{}
 
-	// defaultReporter is the default reporter.Reporter to use.
-	defaultReporter = reporter.NewLogReporter()
+	// DefaultReporter is the default reporter.Reporter to use.
+	DefaultReporter = reporter.NewLogReporter()
 )
 
 // DockerOptions is a set of options to configure a docker api client.
@@ -153,7 +153,6 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
-		Reporter:     defaultReporter,
 		store:        store,
 		accessTokens: accessTokens,
 		apps:         apps,

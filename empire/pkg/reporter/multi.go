@@ -9,6 +9,12 @@ type MultiReporter struct {
 	reporters []Reporter
 }
 
+func NewMultiReporter(reporters ...Reporter) *MultiReporter {
+	return &MultiReporter{
+		reporters: reporters,
+	}
+}
+
 func (r *MultiReporter) Report(ctx context.Context, err error) error {
 	var errors []error
 
