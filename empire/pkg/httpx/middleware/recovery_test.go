@@ -7,13 +7,26 @@ import (
 	"testing"
 
 	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/pkg/reporter"
 	"golang.org/x/net/context"
 )
 
 func TestRecovery(t *testing.T) {
-	errBoom := errors.New("boom")
+	var (
+		called  bool
+		errBoom = errors.New("boom")
+	)
 
 	h := &Recovery{
+		Reporter: reporter.ReporterFunc(func(ctx context.Context, err error) error {
+			called = true
+
+			if err != errBoom {
+				t.Fatalf("err => %v; want %v", err, errBoom)
+			}
+
+			return nil
+		}),
 		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			panic(errBoom)
 			return nil
@@ -39,6 +52,9 @@ func TestRecovery(t *testing.T) {
 
 func TestRecoveryPanicString(t *testing.T) {
 	h := &Recovery{
+		Reporter: reporter.ReporterFunc(func(ctx context.Context, err error) error {
+			return nil
+		}),
 		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			panic("boom")
 			return nil
