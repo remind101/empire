@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"path"
 
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/jcoene/honeybadger"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/reporter"
 )
 
 // Commands are the subcommands that are available.
@@ -109,6 +113,12 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The secret used to sign access tokens",
 		EnvVar: "EMPIRE_TOKEN_SECRET",
 	},
+	cli.StringFlag{
+		Name:   "reporter",
+		Value:  "",
+		Usage:  "The error reporter to use. (e.g. hb://api.honeybadger.io?key=<apikey>&environment=production)",
+		EnvVar: "EMPIRE_REPORTER",
+	},
 }
 
 func main() {
@@ -120,8 +130,7 @@ func main() {
 	app.Run(os.Args)
 }
 
-// Returns a new empire.Options based on provided flags.
-func empireOptions(c *cli.Context) (empire.Options, error) {
+func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts := empire.Options{}
 
 	opts.Docker.Organization = c.String("docker.organization")
@@ -133,12 +142,58 @@ func empireOptions(c *cli.Context) (empire.Options, error) {
 
 	auth, err := dockerAuth(c.String("docker.auth"))
 	if err != nil {
-		return opts, err
+		return nil, err
 	}
 
 	opts.Docker.Auth = auth
 
-	return opts, nil
+	e, err := empire.New(opts)
+	if err != nil {
+		return e, err
+	}
+
+	reporter, err := newReporter(c.String("reporter"))
+	if err != nil {
+		return e, err
+	}
+
+	e.Reporter = reporter
+
+	return e, nil
+}
+
+func newReporter(u string) (reporter.Reporter, error) {
+	if u == "" {
+		return empire.DefaultReporter, nil
+	}
+
+	uri, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	switch uri.Scheme {
+	case "hb":
+		q := uri.Query()
+		return newHBReporter(q.Get("key"), q.Get("environment"))
+	default:
+		panic(fmt.Errorf("unknown reporter: %s", u))
+	}
+}
+
+func newHBReporter(key, env string) (reporter.Reporter, error) {
+	honeybadger.ApiKey = key
+	honeybadger.Environment = env
+
+	hb := &reporter.FallbackReporter{
+		Reporter: &reporter.HoneybadgerReporter{},
+		Fallback: empire.DefaultReporter,
+	}
+
+	return reporter.NewMultiReporter(
+		empire.DefaultReporter,
+		reporter.Async(hb),
+	), nil
 }
 
 func dockerAuth(path string) (*docker.AuthConfigurations, error) {
