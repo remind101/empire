@@ -77,24 +77,27 @@ func Decode(r *http.Request, v interface{}) error {
 // If an ErrorResource is provided as the error, and it provides a non-zero
 // status, that will be used as the response status code.
 func Error(w http.ResponseWriter, err error, status int) error {
-	var v interface{}
+	var res *ErrorResource
+
 	switch err := err.(type) {
 	case *ErrorResource:
-		if err.Status != 0 {
-			status = err.Status
-		}
-
-		v = err
+		res = err
 	case *empire.ValidationError:
-		v = ErrBadRequest
+		res = ErrBadRequest
 	default:
-		v = &ErrorResource{
+		res = &ErrorResource{
 			Message: err.Error(),
 		}
 	}
 
+	// If the ErrorResource provides and exit status, we'll use that
+	// instead.
+	if res.Status != 0 {
+		status = res.Status
+	}
+
 	w.WriteHeader(status)
-	return Encode(w, v)
+	return Encode(w, res)
 }
 
 // NoContent responds with a 404 and an empty body.

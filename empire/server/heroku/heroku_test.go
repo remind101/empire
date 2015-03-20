@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/remind101/empire/empire"
 )
 
 func TestEncode(t *testing.T) {
@@ -39,6 +41,7 @@ func TestError(t *testing.T) {
 		{errors.New("fuck"), 400, `{"id":"","message":"fuck","url":""}` + "\n", 400},
 		{ErrNotFound, 400, `{"id":"not_found","message":"Request failed, the specified resource does not exist","url":""}` + "\n", 404},
 		{&ErrorResource{Message: "custom"}, 400, `{"id":"","message":"custom","url":""}` + "\n", 400},
+		{&empire.ValidationError{Err: errors.New("boom")}, 500, `{"id":"bad_request","message":"Request invalid, validate usage and try again","url":""}` + "\n", 400},
 	}
 
 	for _, tt := range tests {
