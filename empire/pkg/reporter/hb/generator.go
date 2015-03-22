@@ -3,6 +3,7 @@ package hb
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"runtime"
 
 	"github.com/remind101/empire/empire/pkg/httpx"
@@ -42,9 +43,6 @@ func NewReportGenerator(env string) *ReportGenerator {
 }
 
 func (g *ReportGenerator) Generate(ctx context.Context, err error) (*Report, error) {
-	fullMessage := fullMessage(err)
-	exceptionClass := exceptionClass(fullMessage)
-
 	r := &Report{
 		Notifier: &Notifier{
 			Name:     "Honeybadger (Go)",
@@ -53,8 +51,8 @@ func (g *ReportGenerator) Generate(ctx context.Context, err error) (*Report, err
 			Language: "Go",
 		},
 		Error: &Error{
-			Class:     exceptionClass,
-			Message:   fullMessage,
+			Class:     reflect.TypeOf(err).String(),
+			Message:   err.Error(),
 			Backtrace: make([]*BacktraceLine, 0),
 			Source:    make(map[string]interface{}),
 		},

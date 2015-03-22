@@ -2,9 +2,7 @@
 package hb
 
 import (
-	"fmt"
 	"runtime"
-	"strings"
 
 	"golang.org/x/net/context"
 )
@@ -45,21 +43,6 @@ func (r *Reporter) Report(ctx context.Context, err error) error {
 	}
 
 	return r.client.Send(report)
-}
-
-func fullMessage(msg interface{}) string {
-	return fmt.Sprintf("%s", msg)
-}
-
-func exceptionClass(message string) string {
-	pieces := strings.Split(message, ":")
-	for i := len(pieces) - 1; i >= 0; i-- {
-		err := strings.TrimSpace(pieces[i])
-		if len(err) > 0 {
-			return err
-		}
-	}
-	return ""
 }
 
 func functionName(pc uintptr) string {
