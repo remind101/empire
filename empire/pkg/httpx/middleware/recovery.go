@@ -29,6 +29,8 @@ func Recover(h httpx.Handler, r reporter.Reporter) *Recovery {
 // ServeHTTPContext implements the httpx.Handler interface. It recovers from
 // panics and returns an error for upstream middleware to handle.
 func (h *Recovery) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
+	ctx = reporter.WithReporter(ctx, h.Reporter)
+
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%v", v)
