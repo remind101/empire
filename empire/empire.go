@@ -41,6 +41,12 @@ type DockerOptions struct {
 	Auth *docker.AuthConfigurations
 }
 
+// EtcdOptions is a set of options to configure an etcd api client.
+type EtcdOptions struct {
+	// The etcd hosts to connect to.
+	API string
+}
+
 // FleetOptions is a set of options to configure a fleet api client.
 type FleetOptions struct {
 	// The location of the fleet api.
@@ -51,6 +57,7 @@ type FleetOptions struct {
 type Options struct {
 	Docker DockerOptions
 	Fleet  FleetOptions
+	Etcd   EtcdOptions
 
 	Secret string
 
@@ -69,6 +76,7 @@ type Empire struct {
 	accessTokens *accessTokensService
 	apps         *appsService
 	configs      *configsService
+	domains      *domainsService
 	jobStates    *jobStatesService
 	manager      *manager
 	releases     *releasesService
@@ -84,6 +92,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	store := &store{db: db}
+
+	domainReg := newDomainRegistry(options.Etcd.API)
 
 	scheduler, err := newScheduler(options.Fleet.API)
 	if err != nil {
@@ -133,6 +143,11 @@ func New(options Options) (*Empire, error) {
 		releases: releases,
 	}
 
+	domains := &domainsService{
+		store:    store,
+		registry: domainReg,
+	}
+
 	slugs := &slugsService{
 		store:     store,
 		extractor: extractor,
@@ -158,6 +173,7 @@ func New(options Options) (*Empire, error) {
 		apps:         apps,
 		configs:      configs,
 		deployer:     deployer,
+		domains:      domains,
 		jobStates:    jobStates,
 		manager:      manager,
 		scaler:       scaler,
@@ -219,12 +235,12 @@ func (e *Empire) DomainsFindByHostname(hostname string) (*Domain, error) {
 
 // DomainsCreate adds a new Domain for an App.
 func (e *Empire) DomainsCreate(domain *Domain) (*Domain, error) {
-	return e.store.DomainsCreate(domain)
+	return e.domains.DomainsCreate(domain)
 }
 
 // DomainsDestroy removes a Domain for an App.
 func (e *Empire) DomainsDestroy(domain *Domain) error {
-	return e.store.DomainsDestroy(domain)
+	return e.domains.DomainsDestroy(domain)
 }
 
 // JobStatesByApp returns the JobStates for the given app.

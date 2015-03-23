@@ -108,6 +108,12 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_FLEET_URL",
 	},
 	cli.StringFlag{
+		Name:   "etcd.api",
+		Value:  "http://localhost:4001",
+		Usage:  "The location of the etcd api",
+		EnvVar: "EMPIRE_ETCD_URLS",
+	},
+	cli.StringFlag{
 		Name:   "secret",
 		Value:  "<change this>",
 		Usage:  "The secret used to sign access tokens",
