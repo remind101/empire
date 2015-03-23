@@ -38,11 +38,12 @@ func newDB(uri string) (*db, error) {
 
 	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name")
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
-	db.AddTableWithName(Slug{}, "slugs").SetKeys(true, "ID")
+	db.AddTableWithName(Deployment{}, "deployments").SetKeys(true, "ID")
+	db.AddTableWithName(Domain{}, "domains").SetKeys(true, "ID")
+	db.AddTableWithName(Job{}, "jobs").SetKeys(true, "ID")
 	db.AddTableWithName(Process{}, "processes").SetKeys(true, "ID")
 	db.AddTableWithName(Release{}, "releases").SetKeys(true, "ID")
-	db.AddTableWithName(Job{}, "jobs").SetKeys(true, "ID")
-	db.AddTableWithName(Deployment{}, "deployments").SetKeys(true, "ID")
+	db.AddTableWithName(Slug{}, "slugs").SetKeys(true, "ID")
 
 	return db, nil
 }

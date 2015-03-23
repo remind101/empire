@@ -207,6 +207,26 @@ func (e *Empire) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config
 	return e.configs.ConfigsApply(ctx, app, vars)
 }
 
+// DomainsByApp returns the domains for a given App.
+func (e *Empire) DomainsFindByApp(app *App) ([]*Domain, error) {
+	return e.store.DomainsFindByApp(app)
+}
+
+// DomainsByHostname returns the domain for a given hostname.
+func (e *Empire) DomainsFindByHostname(hostname string) (*Domain, error) {
+	return e.store.DomainsFindByHostname(hostname)
+}
+
+// DomainsCreate adds a new Domain for an App.
+func (e *Empire) DomainsCreate(domain *Domain) (*Domain, error) {
+	return e.store.DomainsCreate(domain)
+}
+
+// DomainsDestroy removes a Domain for an App.
+func (e *Empire) DomainsDestroy(domain *Domain) error {
+	return e.store.DomainsDestroy(domain)
+}
+
 // JobStatesByApp returns the JobStates for the given app.
 func (e *Empire) JobStatesByApp(app *App) ([]*JobState, error) {
 	return e.jobStates.JobStatesByApp(app)

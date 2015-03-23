@@ -24,6 +24,11 @@ func New(e *empire.Empire, auth authorization.Authorizer) http.Handler {
 	r.Handle("POST", "/apps", Authenticate(e, &PostApps{e}))               // hk create
 	r.Handle("POST", "/organizations/apps", Authenticate(e, &PostApps{e})) // hk create
 
+	// Domains
+	r.Handle("GET", "/apps/{app}/domains", Authenticate(e, &GetDomains{e}))                 // hk domains
+	r.Handle("POST", "/apps/{app}/domains", Authenticate(e, &PostDomains{e}))               // hk domain-add
+	r.Handle("DELETE", "/apps/{app}/domains/{hostname}", Authenticate(e, &DeleteDomain{e})) // hk domain-remove
+
 	// Deploys
 	r.Handle("POST", "/deploys", Authenticate(e, &PostDeploys{e})) // Deploy an app
 
