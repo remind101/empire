@@ -16,7 +16,7 @@ func TestAppCreate(t *testing.T) {
 	})
 
 	if got, want := app.Name, "acme-inc"; got != want {
-		t.Fatal("Name => %s; want %s", got, want)
+		t.Fatalf("Name => %s; want %s", got, want)
 	}
 }
 
@@ -35,7 +35,7 @@ func TestAppList(t *testing.T) {
 	}
 
 	if got, want := apps[0].Name, "acme-inc"; got != want {
-		t.Fatal("Name => %s; want %s", got, want)
+		t.Fatalf("Name => %s; want %s", got, want)
 	}
 }
 
@@ -59,7 +59,7 @@ func TestOrganizationAppCreate(t *testing.T) {
 	})
 
 	if got, want := app.Name, "acme-inc"; got != want {
-		t.Fatal("Name => %s; want %s", got, want)
+		t.Fatalf("Name => %s; want %s", got, want)
 	}
 }
 

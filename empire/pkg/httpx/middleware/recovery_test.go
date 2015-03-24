@@ -16,7 +16,6 @@ func TestRecovery(t *testing.T) {
 	h := &Recovery{
 		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			panic(errBoom)
-			return nil
 		}),
 	}
 
@@ -41,7 +40,6 @@ func TestRecoveryPanicString(t *testing.T) {
 	h := &Recovery{
 		handler: httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 			panic("boom")
-			return nil
 		}),
 	}
 

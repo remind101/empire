@@ -17,7 +17,7 @@ func TestAuthorizeTwoFactorRequired(t *testing.T) {
 	_, err := a.Authorize("", "", "")
 
 	if err != authorization.ErrTwoFactor {
-		t.Fatal("err => %v; want %v", err, authorization.ErrTwoFactor)
+		t.Fatalf("err => %v; want %v", err, authorization.ErrTwoFactor)
 	}
 }
 
@@ -33,7 +33,7 @@ func TestAuthorizeOrganization(t *testing.T) {
 		},
 		IsMemberFunc: func(organization, token string) (bool, error) {
 			if got, want := organization, org; got != want {
-				t.Fatal("Organization => %s; want %s", got, want)
+				t.Fatalf("Organization => %s; want %s", got, want)
 			}
 
 			return false, nil

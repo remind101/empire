@@ -59,7 +59,7 @@ MachineMetadata=role=empire_minion
 `
 
 	if got, want := buf.String(), expected; got != want {
-		t.Fatal("Unit => %s\n====\n%s", got, want)
+		t.Fatalf("Unit => %s\n====\n%s", got, want)
 	}
 }
 
