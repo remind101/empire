@@ -2,8 +2,11 @@ package empire
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/coreos/go-etcd/etcd"
 	"gopkg.in/gorp.v1"
 )
 
@@ -18,6 +21,69 @@ type Domain struct {
 func (d *Domain) PreInsert(s gorp.SqlExecutor) error {
 	d.CreatedAt = Now()
 	return nil
+}
+
+type domainRegistry interface {
+	Register(*Domain) error
+	Unregister(*Domain) error
+}
+
+func newDomainRegistry(urls string) domainRegistry {
+	if urls == "fake" {
+		return &fakeDomainRegistry{}
+	}
+
+	return &etcdDomainRegistry{client: etcd.NewClient(strings.Split(urls, ","))}
+}
+
+type fakeDomainRegistry struct{}
+
+func (r *fakeDomainRegistry) Register(domain *Domain) error {
+	return nil
+}
+
+func (r *fakeDomainRegistry) Unregister(domain *Domain) error {
+	return nil
+}
+
+type etcdDomainRegistry struct {
+	client *etcd.Client
+}
+
+func (r *etcdDomainRegistry) Register(domain *Domain) error {
+	_, err := r.client.Set(r.key(domain.AppName, domain.Hostname), domain.Hostname, 0)
+	return err
+}
+
+func (r *etcdDomainRegistry) Unregister(domain *Domain) error {
+	_, err := r.client.Delete(r.key(domain.AppName, domain.Hostname), false)
+	return err
+}
+
+func (r *etcdDomainRegistry) key(app, host string) string {
+	return fmt.Sprintf("/empire/domains/%s/%s", app, host)
+}
+
+type domainsService struct {
+	store    *store
+	registry domainRegistry
+}
+
+func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
+	if err := s.registry.Register(domain); err != nil {
+		return domain, err
+	}
+
+	_, err := s.store.DomainsCreate(domain)
+	return domain, err
+}
+
+func (s *domainsService) DomainsDestroy(domain *Domain) error {
+	if err := s.registry.Unregister(domain); err != nil {
+		return err
+	}
+
+	return s.store.DomainsDestroy(domain)
 }
 
 func (s *store) DomainsFindByApp(app *App) ([]*Domain, error) {

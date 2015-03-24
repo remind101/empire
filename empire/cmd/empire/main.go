@@ -108,6 +108,12 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_FLEET_URL",
 	},
 	cli.StringFlag{
+		Name:   "etcd.api",
+		Value:  "http://localhost:4001",
+		Usage:  "The location of the etcd api",
+		EnvVar: "EMPIRE_ETCD_URLS",
+	},
+	cli.StringFlag{
 		Name:   "secret",
 		Value:  "<change this>",
 		Usage:  "The secret used to sign access tokens",
@@ -136,6 +142,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Docker.Organization = c.String("docker.organization")
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
+	opts.Etcd.API = c.String("etcd.api")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
