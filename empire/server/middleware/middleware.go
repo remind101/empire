@@ -22,23 +22,20 @@ func Common(h httpx.Handler, opts CommonOpts) http.Handler {
 	errorHandler := opts.ErrorHandler
 
 	// Wrap the router in middleware to handle errors.
-	h1 := middleware.HandleError(h, errorHandler)
+	h = middleware.HandleError(h, errorHandler)
 
 	// Recover from panics.
-	h2 := middleware.Recover(h1)
-
-	// Report the panics to the reporter.
-	h3 := middleware.Report(h2, opts.Reporter)
+	h = middleware.Recover(h, opts.Reporter)
 
 	// The recovered panic should be pretty too.
-	h4 := middleware.HandleError(h3, errorHandler)
+	h = middleware.HandleError(h, errorHandler)
 
 	// Add a logger to the context.
-	h5 := middleware.NewLogger(h4, os.Stdout)
+	h = middleware.NewLogger(h, os.Stdout)
 
 	// Add the request id to the context.
-	h6 := middleware.ExtractRequestID(h5)
+	h = middleware.ExtractRequestID(h)
 
 	// Wrap the route in middleware to add a context.Context.
-	return middleware.BackgroundContext(h6)
+	return middleware.BackgroundContext(h)
 }

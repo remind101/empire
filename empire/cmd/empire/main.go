@@ -8,9 +8,9 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/jcoene/honeybadger"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/pkg/reporter"
+	"github.com/remind101/empire/empire/pkg/reporter/hb"
 )
 
 // Commands are the subcommands that are available.
@@ -182,17 +182,19 @@ func newReporter(u string) (reporter.Reporter, error) {
 }
 
 func newHBReporter(key, env string) (reporter.Reporter, error) {
-	honeybadger.ApiKey = key
-	honeybadger.Environment = env
+	g := hb.NewReportGenerator(env)
+	// This needs to be changed if the nesting of the hb.Reporter below
+	// changes.
+	g.Skip = 4
 
 	hb := &reporter.FallbackReporter{
-		Reporter: &reporter.HoneybadgerReporter{},
+		Reporter: hb.NewReporter(key, hb.AddRequestID(g)),
 		Fallback: empire.DefaultReporter,
 	}
 
 	return reporter.NewMultiReporter(
 		empire.DefaultReporter,
-		reporter.Async(hb),
+		hb,
 	), nil
 }
 

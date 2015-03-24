@@ -5,24 +5,32 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/pkg/reporter"
 	"golang.org/x/net/context"
 )
 
 // Recovery is a middleware that will recover from panics and return the error.
 type Recovery struct {
+	// Reporter is a Reporter that will be inserted into the context. It
+	// will also be used to report panics.
+	reporter.Reporter
+
 	// handler is the wrapped httpx.Handler.
 	handler httpx.Handler
 }
 
-func Recover(h httpx.Handler) *Recovery {
+func Recover(h httpx.Handler, r reporter.Reporter) *Recovery {
 	return &Recovery{
-		handler: h,
+		Reporter: r,
+		handler:  h,
 	}
 }
 
 // ServeHTTPContext implements the httpx.Handler interface. It recovers from
 // panics and returns an error for upstream middleware to handle.
 func (h *Recovery) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
+	ctx = reporter.WithReporter(ctx, h.Reporter)
+
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%v", v)
@@ -30,6 +38,8 @@ func (h *Recovery) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 			if v, ok := v.(error); ok {
 				err = v
 			}
+
+			h.Report(ctx, err)
 
 			return
 		}
