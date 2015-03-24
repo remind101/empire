@@ -61,7 +61,7 @@ func (r *etcdDomainRegistry) Unregister(domain *Domain) error {
 }
 
 func (r *etcdDomainRegistry) key(app, host string) string {
-	return fmt.Sprintf("/services/__domains__/%s/%s", app, host)
+	return fmt.Sprintf("/empire/domains/%s/%s", app, host)
 }
 
 type domainsService struct {

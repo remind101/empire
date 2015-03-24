@@ -142,6 +142,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Docker.Organization = c.String("docker.organization")
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
+	opts.Etcd.API = c.String("etcd.api")
 	opts.Fleet.API = c.String("fleet.api")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
