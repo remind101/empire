@@ -31,12 +31,20 @@ func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessTok
 
 func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
 	at, err := ParseToken(s.Secret, token)
+	if err != nil {
+		switch err.(type) {
+		case *jwt.ValidationError:
+			return nil, nil
+		default:
+			return at, err
+		}
+	}
 
 	if at != nil {
 		at.Token = token
 	}
 
-	return at, err
+	return at, nil
 }
 
 // SignToken jwt signs the token and adds the signature to the Token field.
