@@ -24,11 +24,11 @@ func TestClientCreateAuthorization(t *testing.T) {
 		}
 
 		if got, want := user, "foo"; got != want {
-			t.Fatal("User => %s; want %s", got, want)
+			t.Fatalf("User => %s; want %s", got, want)
 		}
 
 		if got, want := pass, "bar"; got != want {
-			t.Fatal("Pass => %s; want %s", got, want)
+			t.Fatalf("Pass => %s; want %s", got, want)
 		}
 
 		if got, want := r.URL.Path, "/authorizations/clients/1234"; got != want {

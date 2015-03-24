@@ -15,7 +15,8 @@ dependencies:
 
 test:
   override:
-    - cd empire && make test
+    - cd empire
+    - go vet ./...
 
 deployment:
   hub: 

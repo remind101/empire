@@ -16,7 +16,7 @@ func TestIsValid(t *testing.T) {
 
 	for _, tt := range tests {
 		if err := tt.app.IsValid(); err != tt.err {
-			t.Fatal("%v.IsValid() => %v; want %v", tt.app, err, tt.err)
+			t.Fatalf("%v.IsValid() => %v; want %v", tt.app, err, tt.err)
 		}
 	}
 }

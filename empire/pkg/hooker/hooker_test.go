@@ -46,6 +46,6 @@ func TestHooker(t *testing.T) {
 	}
 
 	if got, want := string(raw), "ok\n"; got != want {
-		t.Fatal("Response => %s; want %s", got, want)
+		t.Fatalf("Response => %s; want %s", got, want)
 	}
 }

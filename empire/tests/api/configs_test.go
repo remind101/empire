@@ -26,7 +26,7 @@ func TestConfigVarUpdate(t *testing.T) {
 	}
 
 	if got, want := v, expected; !reflect.DeepEqual(got, want) {
-		t.Fatal("Config => %v; want %v", got, want)
+		t.Fatalf("Config => %v; want %v", got, want)
 	}
 }
 
@@ -50,7 +50,7 @@ func TestConfigVarUpdateDelete(t *testing.T) {
 	expected := map[string]string{}
 
 	if got, want := v, expected; !reflect.DeepEqual(got, want) {
-		t.Fatal("Config => %v; want %v", got, want)
+		t.Fatalf("Config => %v; want %v", got, want)
 	}
 }
 
@@ -74,7 +74,7 @@ func TestConfigVarInfo(t *testing.T) {
 	}
 
 	if got, want := v, expected; !reflect.DeepEqual(got, want) {
-		t.Fatal("Config => %v; want %v", got, want)
+		t.Fatalf("Config => %v; want %v", got, want)
 	}
 }
 

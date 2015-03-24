@@ -141,7 +141,7 @@ func (s *releasesService) ReleasesRollback(ctx context.Context, app *App, versio
 	}
 
 	if config == nil {
-		return nil, &ValidationError{Err: fmt.Errorf("config %d not found", prevRelease.ConfigID)}
+		return nil, &ValidationError{Err: fmt.Errorf("config %s not found", prevRelease.ConfigID)}
 	}
 
 	// Find slug
@@ -151,7 +151,7 @@ func (s *releasesService) ReleasesRollback(ctx context.Context, app *App, versio
 	}
 
 	if slug == nil {
-		return nil, &ValidationError{Err: fmt.Errorf("slug %d not found", prevRelease.SlugID)}
+		return nil, &ValidationError{Err: fmt.Errorf("slug %s not found", prevRelease.SlugID)}
 	}
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
