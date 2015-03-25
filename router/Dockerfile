@@ -9,10 +9,6 @@ RUN curl -LSs https://github.com/kelseyhightower/confd/releases/download/v0.8.0/
   && chmod +x /usr/local/bin/confd
 
 # Add template files
-ADD nginx.toml      /etc/confd/conf.d/nginx.toml
-ADD nginx.conf.tmpl /etc/confd/templates/nginx.conf.tmpl
+ADD ./files /
 
-# Add wrapper script
-ADD confd-watch     /usr/local/bin/confd-watch
-
-CMD /usr/local/bin/confd-watch
+CMD ["/sbin/my_init"]
