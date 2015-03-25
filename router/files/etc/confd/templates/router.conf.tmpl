@@ -1,5 +1,4 @@
 # Generated from /etc/confd/templates/router.conf.tmpl
-# upstreams
 {{range $dir := lsdir "/services/web"}} {{with $app := base $dir}}
 # App {{$app}}
 upstream {{$app}} {
@@ -27,4 +26,5 @@ server {
         proxy_pass http://{{$app}};
     }
 }
+## End {{$app}}
 {{end}} {{end}}
