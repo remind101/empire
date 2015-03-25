@@ -9,7 +9,7 @@ bootstrap:
 build:
 	$(MAKE) -C empire build
 	$(MAKE) -C etcd_peers build
-	$(MAKE) -C syslog build
+	$(MAKE) -C logger build
 	$(MAKE) -C router build
 
 user_data:

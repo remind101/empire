@@ -1,0 +1,46 @@
+# General configuration
+[hekad]
+maxprocs = 4
+
+# Dashboard
+[dashboard]
+type = "DashboardOutput"
+address = ":4352"
+ticker_interval = 15
+
+# Docker input plugin, takes all logs from docker socket as input
+[docker]
+type = "DockerLogInput"
+
+[docker_syslog_encoder]
+type = "SandboxEncoder"
+filename = "lua_encoders/docker_syslog.lua"
+preserve_data = true
+
+# Sumologic output
+[sumologic]
+message_matcher = "TRUE"
+type = "HttpOutput"
+address = "%ENV[SUMOLOGIC_URL]"
+encoder = "docker_syslog_encoder"
+
+[cbuf_librato_encoder]
+type = "SandboxEncoder"
+filename = "lua_encoders/cbuf_librato.lua"
+preserve_data = true
+
+[librato]
+type = "HttpOutput"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'cbuf'"
+encoder = "cbuf_librato_encoder"
+address = "https://metrics-api.librato.com/v1/metrics"
+username = "%ENV[LIBRATO_USER]"
+password = "%ENV[LIBRATO_PASS]"
+
+[librato.headers]
+Content-Type = ["application/json"]
+
+# Log out docker container logs to stdout
+[LogOutput]
+message_matcher = "Fields[ContainerName] != 'empire-logger'"
+encoder = "docker_syslog_encoder"
