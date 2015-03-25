@@ -1,26 +1,30 @@
-{{range $dir := lsdir "/services/web"}}
-upstream {{base $dir}} {
+# Generated from /etc/confd/templates/router.conf.tmpl
+# upstreams
+{{range $dir := lsdir "/services/web"}} {{with $app := base $dir}}
+# App {{$app}}
+upstream {{$app}} {
     least_conn;
-    {{$custdir := printf "/services/web/%s/*" $dir}}{{range gets $custdir}}
+    {{$webdir := printf "/services/web/%s/*" $dir}}{{range gets $webdir}}
     server {{.Value}};
     {{end}}
 }
-{{end}}
 
-# servers
-
-{{range $dom := lsdir "/empire/domains"}}
 server {
     listen 80;
-    {{$custdir := printf "/empire/domains/%s/*" $dom}}{{$doms := getvs $custdir}}
-    server_name {{join $doms " "}};
+    {{$serverNames := print $app ".*"}}
+    {{$domaindir := printf "/empire/domains/%s" $app}}
+    # domaindir: {{$domaindir}}
+    {{ $doms := ls $domaindir }}
+    {{ $domString := join $doms " " }}
+    {{ $serverNames := print $serverNames " " $domString }}
+    server_name {{$serverNames}};
   
     location / {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header Client-IP $remote_addr;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_pass http://{{$dom}};
+        proxy_pass http://{{$app}};
     }
 }
-{{end}}
+{{end}} {{end}}

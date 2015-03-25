@@ -6,4 +6,9 @@ server {
     if ($http_user_agent ~* ELB-HealthChecker) {
         return 200;
     }
+
+    # Always return a 404 if hitting the default server
+    location / {
+        return 404;
+    }
 }
