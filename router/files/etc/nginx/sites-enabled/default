@@ -1,0 +1,14 @@
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server ipv6only=on;
+
+    # Respond with a 200 for Amazon ELB's health check
+    if ($http_user_agent ~* ELB-HealthChecker) {
+        return 200;
+    }
+
+    # Always return a 404 if hitting the default server
+    location / {
+        return 404;
+    }
+}

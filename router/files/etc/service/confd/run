@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec 2>&1
+exec /usr/local/bin/confd -interval 5 -node $ETCD -config-file /etc/confd/conf.d/nginx.toml
