@@ -1,7 +1,7 @@
 FROM remind101/base
 MAINTAINER Benjamin Guillet <beng@remind101.com>
 
-RUN apt-get update && apt-get install -y nginx curl \
+RUN apt-get update && apt-get install -y haproxy curl socat \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
