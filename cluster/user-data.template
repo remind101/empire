@@ -129,30 +129,6 @@ coreos:
 
         [Install]
         WantedBy=multi-user.target
-    - name: logspout.service
-      command: start
-      enable: true
-      content: |
-        [Unit]
-        Description=Logspout
-        Requires=docker.service
-
-        [Service]
-        TimeoutStartSec=30m
-        KillMode=none
-
-        ExecStartPre=-/usr/bin/docker pull gliderlabs/logspout:latest
-        ExecStartPre=-/usr/bin/docker rm --force logspout
-
-        ExecStart=/usr/bin/docker run --name logspout --rm -h %H -p 8000:8000 -v /var/run/docker.sock:/tmp/docker.sock progrium/logspout
-
-        ExecStop=-/usr/bin/docker stop logspout
-
-        [Install]
-        WantedBy=multi-user.target
-
-        [X-Fleet]
-        Global=true
 write_files:
   - path: /etc/systemd/system/fleet.socket.d/30-ListenStream.conf
     permissions: 0644

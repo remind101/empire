@@ -1,0 +1,57 @@
+# -------
+# General
+# -------
+
+[hekad]
+maxprocs = 4
+
+[DashboardOutput]
+address = ":4352"
+ticker_interval = 15
+
+# ------
+# Inputs
+# ------
+
+[docker]
+type = "DockerLogInput"
+
+# --------
+# Decoders
+# --------
+
+# -------
+# Filters
+# -------
+
+# --------
+# Encoders
+# --------
+
+[docker_syslog_encoder]
+type = "SandboxEncoder"
+filename = "lua_encoders/docker_syslog.lua"
+preserve_data = true
+
+# -------
+# Outputs
+# -------
+
+# Log docker container logs to stdout. Useful for debugging.
+[LogOutput]
+message_matcher = "Fields[ContainerName] != 'empire-logger'"
+encoder = "docker_syslog_encoder"
+
+# Sumologic output
+[sumologic]
+type = "HttpOutput"
+message_matcher = "TRUE"
+address = "%ENV[SUMOLOGIC_URL]"
+encoder = "docker_syslog_encoder"
+
+# Librato l2met output
+[librato_l2met]
+type = "HttpOutput"
+message_matcher = "TRUE"
+address = "%ENV[LIBRATO_URL]"
+encoder = "docker_syslog_encoder"

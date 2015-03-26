@@ -52,6 +52,8 @@ hk set
 hk scale
 hk dynos
 hk rollback
+hk releases
+hk domains
 ```
 
 ## Quickstart
@@ -77,15 +79,13 @@ Empire is a distributed system for deploying and running
 [12factor][12factor] [Docker][docker] based
 applications in a compute cluster. The following components are employed:
 
-**[Quay][quay]** Quay is used to automatically build docker images when we push commits to GitHub.
-
-**[Quayd][quayd]** Quayd is used to handle webhook events from Quay and create GitHub Commit Statuses as well as tag the resulting images with the git sha.
-
 **[Etcd][etcd]** Used for service discovery and a general key/val store.
 
 **[Fleet][fleet]** Used for process scheduling.
 
 **[Postgres][postgres]** Used as a backend for empire app data.
+
+**[Heka][heka]** Used for log processing.
 
 **[Registrator][registrator]** Used to automatically register services with consul.
 
@@ -161,17 +161,16 @@ There are three phases during deployment:
 2. **Release**: This phase happens when a developer triggers a deploy for a git sha via marvin. The git sha is resolved to a docker image, empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
 3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
 
-[legion]: https://github.com/remind101/legion
-[quay]: https://quay.io
-[quayd]: https://github.com/remind101/quayd
+[12factor]: http://12factor.net/
 [consul]: https://github.com/hashicorp/consul
+[deis]: http://deis.io/
+[docker]: https://www.docker.com/
+[etcd]: https://github.com/coreos/etcd
+[heka]: http://hekad.readthedocs.org/en/v0.9.0/
+[fleet]: https://github.com/coreos/fleet
+[flynn]: https://flynn.io/
+[hubotdeploy]: https://github.com/remidn101/hubot-deploy
+[legion]: https://github.com/remind101/legion
+[postgres]: http://www.postgresql.org/
 [registrator]: https://github.com/progrium/registrator
 [shipr]: https://github.com/remidn101/shipr
-[hubotdeploy]: https://github.com/remidn101/hubot-deploy
-[12factor]: http://12factor.net/
-[docker]: https://www.docker.com/
-[flynn]: https://flynn.io/
-[deis]: http://deis.io/
-[fleet]: https://github.com/coreos/fleet
-[postgres]: http://www.postgresql.org/
-[etcd]: https://github.com/coreos/etcd
