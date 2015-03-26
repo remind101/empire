@@ -2,10 +2,10 @@
 
 # The name of the template that will be used to render the application's configuration file
 # Confd will look in `/etc/conf.d/templates` for these files by default
-src = "router.conf.tmpl"
+src = "haproxy.cfg.tmpl"
 
 # The location to place the rendered configuration file
-dest = "/etc/nginx/sites-enabled/router.conf"
+dest = "/etc/haproxy/haproxy.cfg"
 
 # The etcd keys or directory to watch. This is where the information to fill in
 # the template will come from.
@@ -17,5 +17,5 @@ mode = "0644"
 
 # These are the commands that will be used to check whether the rendered config is
 # valid and to reload the actual service once the new config is in place
-check_cmd = "/usr/sbin/nginx -t"
-reload_cmd = "/usr/bin/sv reload nginx"
+check_cmd = "/usr/sbin/haproxy -c -f {{.src}}"
+reload_cmd = "/usr/sbin/haproxy -f {{.src}} -p /run/haproxy.pid -st /run/haproxy.pid"
