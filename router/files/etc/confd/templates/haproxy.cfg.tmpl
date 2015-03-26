@@ -1,5 +1,3 @@
-# TODO: ELB healthcheck
-
 global
     log /dev/log    local0 debug
     user haproxy
@@ -30,10 +28,11 @@ listen stats :1936
 
 frontend router
     mode http
-    log global
     bind *:80
     monitor-uri /router_health
     default_backend nobackend
+    unique-id-format %{+X}o\ %ci:%cp_%fi:%fp_%Ts_%rt:%pid
+    unique-id-header X-Request-Id
     {{range $dir := lsdir "/services/web"}} {{$app := base $dir}} {{$domainDir := printf "/empire/domains/%s" $app}} {{$aclName := printf "%s_default" $app}}
     # Default for {{$app}}
     acl {{$aclName}} hdr_beg(host) -i {{$app}}.
@@ -47,12 +46,10 @@ frontend router
 backend {{$app}}
     mode http
     option log-health-checks
-    log global
     {{range gets $webdir}}server {{base .Key}} {{.Value}} check
     {{end}}
 {{end}}
     
 
 backend nobackend
-    log global
     errorfile 503 /etc/haproxy/errors/nobackend.http
