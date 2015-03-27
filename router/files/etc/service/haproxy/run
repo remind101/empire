@@ -1,4 +1,4 @@
 #!/bin/sh
 
 exec 2>&1
-exec /usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid
+exec /usr/sbin/haproxy-systemd-wrapper -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid
