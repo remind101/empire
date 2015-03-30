@@ -13,8 +13,7 @@ ticker_interval = 15
 # Inputs
 # ------
 
-[docker]
-type = "DockerLogInput"
+[DockerLogInput]
 
 # --------
 # Decoders
@@ -24,34 +23,43 @@ type = "DockerLogInput"
 # Filters
 # -------
 
+[docker_syslog_filter]
+type = "SandboxFilter"
+message_matcher = "Fields[ContainerName] != 'empire-logger'"
+filename = "lua_filters/docker_syslog.lua"
+ticker_interval = 60
+preserve_data = true
+
+[docker_syslog_filter.config]
+max_buffer_size = 100
+
 # --------
 # Encoders
 # --------
 
-[docker_syslog_encoder]
-type = "SandboxEncoder"
-filename = "lua_encoders/docker_syslog.lua"
-preserve_data = true
+[PayloadEncoder]
+append_newlines = false
 
 # -------
 # Outputs
 # -------
 
 # Log docker container logs to stdout. Useful for debugging.
-[LogOutput]
-message_matcher = "Fields[ContainerName] != 'empire-logger'"
-encoder = "docker_syslog_encoder"
+[output_buffered_syslog]
+type = "LogOutput"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
+encoder = "PayloadEncoder"
 
 # Sumologic output
 [sumologic]
 type = "HttpOutput"
-message_matcher = "TRUE"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 address = "%ENV[SUMOLOGIC_URL]"
-encoder = "docker_syslog_encoder"
+encoder = "PayloadEncoder"
 
 # Librato l2met output
 [librato_l2met]
 type = "HttpOutput"
-message_matcher = "TRUE"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 address = "%ENV[LIBRATO_URL]"
-encoder = "docker_syslog_encoder"
+encoder = "PayloadEncoder"
