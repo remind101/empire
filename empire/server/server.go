@@ -3,12 +3,13 @@ package server
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/pkg/httpx"
 	"github.com/remind101/empire/empire/server/authorization"
 	githubauth "github.com/remind101/empire/empire/server/authorization/github"
-	"github.com/remind101/empire/empire/server/github"
 	"github.com/remind101/empire/empire/server/heroku"
+	"github.com/remind101/empire/empire/server/middleware"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -27,12 +28,11 @@ type Options struct {
 		ClientID     string
 		ClientSecret string
 		Organization string
-		Secret       string
 	}
 }
 
 func New(e *empire.Empire, options Options) http.Handler {
-	r := mux.NewRouter()
+	r := httpx.NewRouter()
 
 	auth := NewAuthorizer(
 		options.GitHub.ClientID,
@@ -42,23 +42,14 @@ func New(e *empire.Empire, options Options) http.Handler {
 
 	// Mount the heroku api
 	h := heroku.New(e, auth)
-	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
-
-	// Mount GitHub webhooks
-	g := github.New(e, options.GitHub.Secret)
-	r.MatcherFunc(githubWebhook).Handler(g)
+	r.Header("Accept", heroku.AcceptHeader, h)
 
 	// Mount health endpoint
-	r.Handle("/health", NewHealthHandler(e))
+	r.Handle("GET", "/health", NewHealthHandler(e))
 
-	return r
-}
-
-// githubWebhook is a mux.MatcherFunc that matches requests that have an
-// `X-GitHub-Event` header present.
-func githubWebhook(r *http.Request, rm *mux.RouteMatch) bool {
-	h := r.Header[http.CanonicalHeaderKey("X-GitHub-Event")]
-	return len(h) > 0
+	return middleware.Common(r, middleware.CommonOpts{
+		Reporter: e.Reporter,
+	})
 }
 
 // HealthHandler is an http.Handler that returns the health of empire.
@@ -75,7 +66,7 @@ func NewHealthHandler(e *empire.Empire) *HealthHandler {
 	}
 }
 
-func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWriter, r *http.Request) error {
 	var status = http.StatusOK
 
 	if !h.IsHealthy() {
@@ -83,6 +74,8 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(status)
+
+	return nil
 }
 
 // NewAuthorizer returns a new Authorizer. If the client id is present, it will

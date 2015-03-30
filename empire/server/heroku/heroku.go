@@ -6,8 +6,8 @@ import (
 
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/empire/empire/pkg/httpx/middleware"
 	"github.com/remind101/empire/empire/server/authorization"
-	"github.com/remind101/empire/empire/server/middleware"
 )
 
 // The Accept header that controls the api version. See
@@ -15,7 +15,7 @@ import (
 const AcceptHeader = "application/vnd.heroku+json; version=3"
 
 // New creates the API routes and returns a new http.Handler to serve them.
-func New(e *empire.Empire, auth authorization.Authorizer) http.Handler {
+func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 	r := httpx.NewRouter()
 
 	// Apps
@@ -50,14 +50,11 @@ func New(e *empire.Empire, auth authorization.Authorizer) http.Handler {
 	// OAuth
 	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
-	handleError := func(err error, w http.ResponseWriter, r *http.Request) {
+	errorHandler := func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)
 	}
 
-	return middleware.Common(r, middleware.CommonOpts{
-		Reporter:     e.Reporter,
-		ErrorHandler: handleError,
-	})
+	return middleware.HandleError(r, errorHandler)
 }
 
 // Encode json ecnodes v into w.
