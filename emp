@@ -2,30 +2,24 @@
 # This script requires bash > 4.
 # You can install it on OS X via `brew install bash`.
 
-# Exit when script tries to use undeclared variables. 
-set -o nounset
+source "cli/apis.sh"
 
-# Our associative array of configs.
-declare -A config
-
-# List apis.
-function list_apis() {
-  for key in "${!config[@]}"; do
-    if [ "${key}" = "current" ]; then continue; fi
-    if [ "${key}" = "${config[current]}" ]; then printf "* "; fi
-    printf "%s \t%s\n" "${key}" "${config[$key]}"
-  done 
-}
-
-# Read config file.
-while IFS='=' read -ra ADDR; do
-  config[$ADDR]=${ADDR[1]}
-done < "$HOME/.emprc"
-
-if [ "$1" = "apis" ]; then
+case "$1" in 
+  "apis")
     list_apis
     exit 0
-fi
+    ;;
+  "api-add")
+    if [ -z $2 ]; then
+      printf "%s\n" "Usage: emp api-add target1=url target2=url"
+      exit 1
+    else
+      shift
+      api_add "$@"
+      exit 0
+    fi
+    ;;
+esac
 
 LOCAL_EMPIRE_URL=${config[${config[current]}]}
 EMPIRE_URL=${EMPIRE_URL:-$LOCAL_EMPIRE_URL}
