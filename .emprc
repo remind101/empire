@@ -1,4 +1,4 @@
 default=http://0.0.0.0:8080
+current=staging
 staging=http://empire.classchirp.com
 production=http://empire.remind.com
-current=default

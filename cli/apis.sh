@@ -5,6 +5,9 @@
 # Config file path.
 CONFIG_FILE="$HOME/.emprc"
 
+# Current API target.
+TARGET_KEY="current"
+
 # Associative array of configs.
 declare -A config
 
@@ -14,12 +17,10 @@ declare -a order
 # List apis.
 function list_apis() {
   for i in "${!order[@]}"; do
-    if [ "${order[$i]}" = "current" ]; then continue; fi
-    if [ "${order[$i]}" = "${config[current]}" ]; then printf "* "; fi
+    if [ "${order[$i]}" = "$TARGET_KEY" ]; then continue; fi
+    if [ "${order[$i]}" = "${config[$TARGET_KEY]}" ]; then printf "* "; fi
     printf "%s \t %s\n" "${order[$i]}" "${config[${order[$i]}]}"
   done 
-
-  return 0
 }
 
 # Add API targets.
@@ -29,6 +30,12 @@ function api_add() {
     printf "%s\n" "$target" >> $CONFIG_FILE
   done
   printf "Added api targets\n"
+}
+
+# Set the current API target.
+function api_set() {
+  sed --follow-symlinks -i "s/\($TARGET_KEY *= *\).*/\1$1/" $CONFIG_FILE
+  printf "emp now pointed at %s (%s)\n" "$1" "${config[$1]}"
 }
 
 # Read config file.

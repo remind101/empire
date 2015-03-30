@@ -1,9 +1,3 @@
-#!/usr/bin/env bash
-# This script requires bash > 4.
-# You can install it on OS X via `brew install bash`.
-
-source "cli/apis.sh"
-
 case "$1" in 
   "apis")
     list_apis
@@ -19,6 +13,16 @@ case "$1" in
       exit 0
     fi
     ;;
+  "api-set")
+    if [ -z $2 ]; then
+      printf "%s\n" "Usage: emp api-set target"
+      exit 1
+    else
+      shift
+      api_set "$@"
+      exit 0
+    fi
+  ;;
 esac
 
 LOCAL_EMPIRE_URL=${config[${config[current]}]}

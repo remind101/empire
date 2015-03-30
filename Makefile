@@ -21,7 +21,12 @@ vagrant: user_data
 	vagrant up
 
 install:
+	# TODO: do this only for OS X
+	brew install bash
+	brew install gnu-sed --with-default-names
+
 	mkdir -p /usr/local/lib/hk/plugin
 	cp hk-plugins/* /usr/local/lib/hk/plugin
-	cat emp > /usr/local/bin/emp
+	cp .emprc $(HOME)/.emprc
+	cat cli/apis.sh cli/main.sh > /usr/local/bin/emp
 	chmod +x /usr/local/bin/emp
