@@ -36,7 +36,7 @@ type Template struct {
 
 // Instance represents a running instance of a Template.
 type Instance struct {
-	Template *Template
+	Template *Template `json:"-"`
 
 	// The instance number for this Instance.
 	Instance uint

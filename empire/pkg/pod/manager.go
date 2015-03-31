@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/remind101/empire/empire/pkg/container"
-	"github.com/remind101/empire/empire/pkg/timex"
 )
 
 var (
 	// ErrNoTemplate is returned when a template is not found.
-	ErrNoTemplate = errors.New("cluster: template does not exist")
+	ErrNoTemplate = errors.New("template does not exist")
 )
 
 // Manager is an interface for interacting with Templates and
@@ -53,10 +52,10 @@ type ContainerManager struct {
 
 // NewContainerManager returns a new ContainerManager backed by the scheduler
 // and store.
-func NewContainerManager(scheduler container.Scheduler, _ Store) *ContainerManager {
+func NewContainerManager(scheduler container.Scheduler, store Store) *ContainerManager {
 	return &ContainerManager{
 		scheduler: scheduler,
-		store:     &store{},
+		store:     store,
 	}
 }
 
@@ -227,133 +226,6 @@ func (m *ContainerManager) removeInstance(instance *Instance) error {
 	}
 
 	return m.store.RemoveInstance(instance)
-}
-
-// Store is used by the ContainerManager implementation to store Templates,
-// and Instances. This package does not define an implementation of
-// this interface, so this is something that consumers should implement if they
-// wish to use the ContainerManager.
-type Store interface {
-	// CreateTemplate persists the Template.
-	CreateTemplate(*Template) error
-
-	// RemoveTemplate removes a Template from the store.
-	RemoveTemplate(*Template) error
-
-	// UpdateTemplate updates the Template.
-	UpdateTemplate(*Template) error
-
-	// CreateInstance persists an Instance.
-	CreateInstance(*Instance) error
-
-	// RemoveInstance removes an Instance from the store.
-	RemoveInstance(*Instance) error
-
-	// Templates returns a slice of Templates. A map of tags can be provided to filter
-	// by.
-	Templates(map[string]string) ([]*Template, error)
-
-	// Template finds a Template by its id.
-	Template(string) (*Template, error)
-
-	// Instances returns a slice of Instances for the Template.
-	Instances(templateID string) ([]*Instance, error)
-}
-
-// store is an implementation of the Store interface that stores everything
-// in memory.
-type store struct {
-	templates []*Template
-	instances []*Instance
-}
-
-func newFakeStore() *store {
-	return &store{}
-}
-
-func (s *store) CreateInstance(instance *Instance) error {
-	instance.CreatedAt = timex.Now()
-	s.instances = append(s.instances, instance)
-	return nil
-}
-
-func (s *store) RemoveInstance(instance *Instance) error {
-	for i, in := range s.instances {
-		if in.Template.ID == instance.Template.ID && in.Instance == instance.Instance {
-			s.instances = append(s.instances[:i], s.instances[i+1:]...)
-			return nil
-		}
-	}
-
-	return fmt.Errorf("no instance: %d", instance.Instance)
-}
-
-func (s *store) Instances(templateID string) ([]*Instance, error) {
-	var instances []*Instance
-
-	for _, instance := range s.instances {
-		if instance.Template.ID == templateID {
-			instances = append(instances, instance)
-		}
-	}
-
-	return instances, nil
-}
-
-func (s *store) CreateTemplate(template *Template) error {
-	s.templates = append(s.templates, template)
-	return nil
-}
-
-func (s *store) Template(templateID string) (*Template, error) {
-	for _, template := range s.templates {
-		if template.ID == templateID {
-			return template, nil
-		}
-	}
-
-	return nil, nil
-}
-
-func (s *store) Templates(tags map[string]string) ([]*Template, error) {
-	var templates []*Template
-
-	for _, template := range s.templates {
-		ok := true
-
-		for tag, val := range tags {
-			if template.Tags[tag] != val {
-				ok = false
-				break
-			}
-		}
-
-		if ok {
-			templates = append(templates, template)
-		}
-	}
-
-	return templates, nil
-}
-
-func (s *store) RemoveTemplate(template *Template) error {
-	for i, tmpl := range s.templates {
-		if tmpl.ID == template.ID {
-			s.templates = append(s.templates[:i], s.templates[i+1:]...)
-		}
-	}
-
-	return nil
-}
-
-func (s *store) UpdateTemplate(template *Template) error {
-	for _, tmpl := range s.templates {
-		if tmpl.ID == template.ID {
-			tmpl.Instances = template.Instances
-		}
-	}
-
-	return nil
 }
 
 // containerName returns a container.Container name for an Instance. The

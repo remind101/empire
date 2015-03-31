@@ -2,6 +2,7 @@ package empire // import "github.com/remind101/empire/empire"
 
 import (
 	"net/url"
+	"strings"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
@@ -89,11 +90,6 @@ func New(options Options) (*Empire, error) {
 
 	domainReg := newDomainRegistry(options.Etcd.API)
 
-	scheduler, err := newScheduler(options.Fleet.API)
-	if err != nil {
-		return nil, err
-	}
-
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
 		options.Docker.CertPath,
@@ -111,16 +107,17 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	manager, err := newManager(options)
+	if err != nil {
+		return nil, err
+	}
+
 	accessTokens := &accessTokensService{
 		Secret: []byte(options.Secret),
 	}
 
 	apps := &appsService{
 		store: store,
-	}
-
-	manager := &manager{
-		Manager: pod.NewContainerManager(scheduler, nil),
 	}
 
 	jobStates := &processStatesService{
@@ -331,4 +328,20 @@ func newScheduler(fleetURL string) (container.Scheduler, error) {
 	}
 
 	return container.NewFleetScheduler(u)
+}
+
+func newManager(options Options) (*manager, error) {
+	scheduler, err := newScheduler(options.Fleet.API)
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := pod.NewStore(strings.Split(options.Etcd.API, ","))
+	if err != nil {
+		return nil, err
+	}
+
+	return &manager{
+		Manager: pod.NewContainerManager(scheduler, store),
+	}, nil
 }
