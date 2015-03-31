@@ -28,12 +28,28 @@ func NewRouter() *Router {
 // Handle adds a new router that routes requests using the method verb against
 // path to the given Handler.
 func (r *Router) Handle(method, path string, h Handler) {
-	// mux.Handler expects an http.Handler. We wrap the Hander in a handler,
-	// which satisfies the http.Handler interface. When this route is
-	// eventually used, it's type asserted back to a Handler.
-	hh := &handler{h}
+	r.mux.Handle(path, r.handler(h)).Methods(method)
+}
 
-	r.mux.Handle(path, hh).Methods(method)
+// Header adds a route that will be used if the header value matches.
+func (r *Router) Header(key, value string, h Handler) {
+	r.mux.Headers(key, value).Handler(r.handler(h))
+}
+
+// Match adds a route that will be matched if f returns true.
+func (r *Router) Match(f func(*http.Request) bool, h Handler) {
+	matcher := func(r *http.Request, rm *mux.RouteMatch) bool {
+		return f(r)
+	}
+
+	r.mux.MatcherFunc(matcher).Handler(r.handler(h))
+}
+
+// mux.Handler expects an http.Handler. We wrap the Hander in a handler,
+// which satisfies the http.Handler interface. When this route is
+// eventually used, it's type asserted back to a Handler.
+func (r *Router) handler(h Handler) http.Handler {
+	return &handler{h}
 }
 
 // Handler returns a Handler that can be used to serve the request. Most of this
