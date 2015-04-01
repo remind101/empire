@@ -95,8 +95,12 @@ func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	if d.AppName != a.Name {
-		return ErrNotFound
+	if d == nil || d.AppName != a.Name {
+		return &ErrorResource{
+			Status:  http.StatusNotFound,
+			ID:      "not_found",
+			Message: "Couldn't find that domain name.",
+		}
 	}
 
 	if err = h.DomainsDestroy(d); err != nil {
