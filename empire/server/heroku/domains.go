@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
@@ -64,6 +65,11 @@ func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 	d, err := h.DomainsCreate(domain)
 	if err != nil {
+		if err == empire.ErrDomainInUse {
+			return fmt.Errorf("%s is currently in use by another app.", domain.Hostname)
+		} else if err == empire.ErrDomainAlreadyAdded {
+			return fmt.Errorf("%s is already added to this app.", domain.Hostname)
+		}
 		return err
 	}
 
@@ -89,8 +95,12 @@ func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	if d.AppName != a.Name {
-		return ErrNotFound
+	if d == nil || d.AppName != a.Name {
+		return &ErrorResource{
+			Status:  http.StatusNotFound,
+			ID:      "not_found",
+			Message: "Couldn't find that domain name.",
+		}
 	}
 
 	if err = h.DomainsDestroy(d); err != nil {
