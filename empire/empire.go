@@ -103,6 +103,14 @@ func New(options Options) (*Empire, error) {
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
 		options.Docker.CertPath,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	resolver, err := newResolver(
+		options.Docker.Socket,
+		options.Docker.CertPath,
 		options.Docker.Auth,
 	)
 	if err != nil {
@@ -151,6 +159,7 @@ func New(options Options) (*Empire, error) {
 	slugs := &slugsService{
 		store:     store,
 		extractor: extractor,
+		resolver:  resolver,
 	}
 
 	deployer := &deployer{

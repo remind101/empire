@@ -59,17 +59,23 @@ func slugsFindBy(db *db, field string, value interface{}) (*Slug, error) {
 type slugsService struct {
 	store     *store
 	extractor Extractor
+	resolver  Resolver
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
 func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
-	return slugsCreateByImage(s.store, s.extractor, image)
+	return slugsCreateByImage(s.store, s.extractor, s.resolver, image)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(store *store, e Extractor, image Image) (*Slug, error) {
+func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image) (*Slug, error) {
+	image, err := r.Resolve(image)
+	if err != nil {
+		return nil, err
+	}
+
 	slug, err := store.SlugsFindByImage(image)
 	if err != nil {
 		return slug, err
