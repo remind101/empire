@@ -5,6 +5,10 @@ machine:
 
 dependencies:
   pre:
+    - curl -L  https://github.com/coreos/etcd/releases/download/v0.4.9/etcd-v0.4.9-linux-amd64.tar.gz -o etcd-v0.4.9-linux-amd64.tar.gz
+    - tar xzvf etcd-v0.4.9-linux-amd64.tar.gz
+    - ./etcd-v0.4.9-linux-amd64/etcd:
+        background: true
     - go install -a -race std
     - go get github.com/tools/godep
     - mkdir -p empire/Godeps/_workspace/src/github.com/remind101
