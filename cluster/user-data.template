@@ -129,6 +129,25 @@ coreos:
 
         [Install]
         WantedBy=multi-user.target
+    - name: cadvisor.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=cAdvisor
+        Requires=docker.service
+        After=docker.service
+
+        [Service]
+        TimeoutStartSec=30m
+        Restart=on-failure
+
+        ExecStartPre=/usr/bin/docker pull google/cadvisor:latest
+        ExecStartPre=-/usr/bin/docker rm cadvisor
+
+        ExecStart=/usr/bin/docker run --volume=/:/rootfs:ro --volume=/var/run:/var/run:rw --volume=/sys:/sys:ro --volume=/var/lib/docker/:/var/lib/docker:ro --publish=8080:8080 --detach=true --name=cadvisor google/cadvisor:latest
+
+        ExecStop=/usr/bin/docker stop cadvisor
 write_files:
   - path: /etc/systemd/system/fleet.socket.d/30-ListenStream.conf
     permissions: 0644
