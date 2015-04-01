@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
@@ -64,6 +65,9 @@ func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 	d, err := h.DomainsCreate(domain)
 	if err != nil {
+		if err == empire.ErrDomainInUse {
+			return fmt.Errorf("%s is currently in use by another app.", domain.Hostname)
+		}
 		return err
 	}
 

@@ -2,12 +2,19 @@ package empire
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/coreos/go-etcd/etcd"
 	"gopkg.in/gorp.v1"
+)
+
+var (
+	ErrDomainInUse        = errors.New("Domain is currently in use by another app.")
+	ErrDomainAlreadyAdded = errors.New("Domain is already added to this app.")
+	ErrDomainNotFound     = errors.New("Domain could not be found.")
 )
 
 type Domain struct {
@@ -70,11 +77,28 @@ type domainsService struct {
 }
 
 func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
+	d, err := s.store.DomainsFindByHostname(domain.Hostname)
+	if err != nil {
+		return domain, err
+	}
+
+	if d != nil {
+		if d.AppName == domain.AppName {
+			return domain, ErrDomainAlreadyAdded
+		} else {
+			return domain, ErrDomainInUse
+		}
+	}
+
+	_, err = s.store.DomainsCreate(domain)
+	if err != nil {
+		return domain, err
+	}
+
 	if err := s.registry.Register(domain); err != nil {
 		return domain, err
 	}
 
-	_, err := s.store.DomainsCreate(domain)
 	return domain, err
 }
 
