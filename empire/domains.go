@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrDomainInUse        = errors.New("Domain is currently in use by another app.")
-	ErrDomainAlreadyAdded = errors.New("Domain is already added to this app.")
+	ErrDomainInUse        = errors.New("Domain currently in use by another app.")
+	ErrDomainAlreadyAdded = errors.New("Domain already added to this app.")
 	ErrDomainNotFound     = errors.New("Domain could not be found.")
 )
 

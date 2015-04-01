@@ -67,6 +67,8 @@ func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	if err != nil {
 		if err == empire.ErrDomainInUse {
 			return fmt.Errorf("%s is currently in use by another app.", domain.Hostname)
+		} else if err == empire.ErrDomainAlreadyAdded {
+			return fmt.Errorf("%s is already added to this app.", domain.Hostname)
 		}
 		return err
 	}
