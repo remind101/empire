@@ -3,6 +3,7 @@ package empire
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -52,16 +53,23 @@ type etcdDomainRegistry struct {
 
 func (r *etcdDomainRegistry) Register(domain *Domain) error {
 	_, err := r.client.Set(r.key(domain.AppName, domain.Hostname), domain.Hostname, 0)
-	return err
+	return r.handleError(err)
 }
 
 func (r *etcdDomainRegistry) Unregister(domain *Domain) error {
 	_, err := r.client.Delete(r.key(domain.AppName, domain.Hostname), false)
-	return err
+	return r.handleError(err)
 }
 
 func (r *etcdDomainRegistry) key(app, host string) string {
 	return fmt.Sprintf("/empire/domains/%s/%s", app, host)
+}
+
+func (r *etcdDomainRegistry) handleError(err error) error {
+	if e, ok := err.(etcd.EtcdError); ok && e.ErrorCode == etcd.ErrCodeEtcdNotReachable {
+		log.Printf("Unable to connect to etcd. Cluster: %s", strings.Join(r.client.GetCluster(), ","))
+	}
+	return err
 }
 
 type domainsService struct {
