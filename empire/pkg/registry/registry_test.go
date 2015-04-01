@@ -11,8 +11,8 @@ func TestSplitRepo(t *testing.T) {
 
 		err error
 	}{
-		{"ejholmes/acme-inc", "", "ejholmes/acme-inc", nil},
-		{"quay.io/ejholmes/acme-inc", "quay.io", "ejholmes/acme-inc", nil},
+		{"remind101/acme-inc", "", "remind101/acme-inc", nil},
+		{"quay.io/remind101/acme-inc", "quay.io", "remind101/acme-inc", nil},
 		{"ejholmes", "", "", ErrInvalidRepo},
 	}
 
