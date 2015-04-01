@@ -40,15 +40,15 @@ type Store interface {
 	Instances(templateID string) ([]*Instance, error)
 }
 
-// NewStore returns a new etcd backed Store.
-func NewStore(machines []string) (Store, error) {
+// NewEtcdStore returns a new etcd backed Store.
+func NewEtcdStore(machines []string) Store {
 	prefix := "/empire/pods"
 	c := etcd.NewClient(machines)
 
 	return &etcdStore{
 		Prefix: prefix,
 		client: c,
-	}, nil
+	}
 }
 
 // etcdStore is an implementation of the Store interface backed by etcd.
@@ -218,6 +218,11 @@ func (s *etcdStore) instanceKey(i *Instance) string {
 // prefix returns the key prefixed with Prefix.
 func (s *etcdStore) prefix(key string) string {
 	return fmt.Sprintf("%s%s", s.Prefix, key)
+}
+
+// NewMemStore returns a new in memory Store.
+func NewMemStore() Store {
+	return &store{}
 }
 
 // store is an implementation of the Store interface that stores everything

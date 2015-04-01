@@ -336,9 +336,13 @@ func newManager(options Options) (*manager, error) {
 		return nil, err
 	}
 
-	store, err := pod.NewStore(strings.Split(options.Etcd.API, ","))
-	if err != nil {
-		return nil, err
+	var store pod.Store
+	switch options.Etcd.API {
+	case "fake":
+		store = pod.NewMemStore()
+	default:
+		machines := strings.Split(options.Etcd.API, ",")
+		store = pod.NewEtcdStore(machines)
 	}
 
 	return &manager{
