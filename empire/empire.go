@@ -117,7 +117,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	apps := &appsService{
-		store: store,
+		store:   store,
+		manager: manager,
 	}
 
 	jobStates := &processStatesService{

@@ -19,7 +19,7 @@ type Manager interface {
 	Submit(...*Template) error
 
 	// Destroy destroys a Template.
-	Destroy(templates ...*Template) error
+	Destroy(...*Template) error
 
 	// Scale scales a Template.
 	Scale(templateID string, instances uint) error

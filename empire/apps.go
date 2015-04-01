@@ -106,7 +106,8 @@ func (s *store) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
 }
 
 type appsService struct {
-	store *store
+	store   *store
+	manager *manager
 }
 
 func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
@@ -114,7 +115,16 @@ func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
 		return err
 	}
 
-	// TODO Destroy all templates for this app.
+	templates, err := s.manager.Templates(map[string]string{
+		"app": app.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := s.manager.Destroy(templates...); err != nil {
+		return err
+	}
 
 	return nil
 }
