@@ -18,8 +18,8 @@ var testContainer = Container{
 	},
 	Command: "acme-inc",
 	Image: Image{
-		Repo: "quay.io/ejholmes/acme-inc",
-		ID:   "ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+		Repo: "remind101/acme-inc",
+		ID:   "9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 	},
 }
 
@@ -49,9 +49,9 @@ ExecStartPre=/bin/sh -c "echo GOENV=production >> /tmp/acme-inc.v1.web.1.env"
 ExecStartPre=/bin/sh -c "echo PORT=8080 >> /tmp/acme-inc.v1.web.1.env"
 
 
-ExecStartPre=-/usr/bin/docker pull quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+ExecStartPre=-/usr/bin/docker pull remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2
 ExecStartPre=-/usr/bin/docker rm acme-inc.v1.web.1
-ExecStart=/usr/bin/docker run --name acme-inc.v1.web.1 --env-file /tmp/acme-inc.v1.web.1.env -e PORT=80 -h %H -p 80 quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02 sh -c 'acme-inc'
+ExecStart=/usr/bin/docker run --name acme-inc.v1.web.1 --env-file /tmp/acme-inc.v1.web.1.env -e PORT=80 -h %H -p 80 remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 sh -c 'acme-inc'
 ExecStop=/usr/bin/docker stop acme-inc.v1.web.1
 
 [X-Fleet]

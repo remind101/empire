@@ -13,8 +13,8 @@ var (
 
 	// An test docker image that can be deployed.
 	DefaultImage = empire.Image{
-		Repo: "quay.io/ejholmes/acme-inc",
-		ID:   "ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02",
+		Repo: "remind101/acme-inc",
+		ID:   "9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 	}
 )
 
