@@ -18,6 +18,83 @@ var (
 	Procfile = "Procfile"
 )
 
+type Resolver interface {
+	Resolve(Image) (Image, error)
+}
+
+func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Resolver, error) {
+	if socket == "" {
+		return &resolver{}, nil
+	}
+
+	c, err := newDockerClient(socket, certPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dockerResolver{
+		client: c,
+		auth:   auth,
+	}, nil
+}
+
+// resolver is a fake resolver that will just return the provided image.
+type resolver struct{}
+
+func (r *resolver) Resolve(image Image) (Image, error) {
+	return image, nil
+}
+
+// dockerResolver is a resolver that pulls the docker image, then inspects it to
+// get the canonical image id.
+type dockerResolver struct {
+	client *docker.Client
+	auth   *docker.AuthConfigurations
+}
+
+func (r *dockerResolver) Resolve(image Image) (Image, error) {
+	if err := r.pullImage(image); err != nil {
+		return image, err
+	}
+
+	i, err := r.client.InspectImage(image.String())
+	if err != nil {
+		return image, err
+	}
+
+	return Image{
+		Repo: image.Repo,
+		ID:   i.ID,
+	}, nil
+}
+
+// pullImage can pull a docker image from a repo, by it's imageID.
+//
+// Because docker does not support pulling an image by ID, we're assuming that
+// the docker image has been tagged with it's own ID beforehand.
+func (r *dockerResolver) pullImage(i Image) error {
+	var a docker.AuthConfiguration
+
+	reg, _, err := registry.Split(string(i.Repo))
+	if err != nil {
+		return err
+	}
+
+	if reg == "" {
+		reg = "https://index.docker.io/v1/"
+	}
+
+	if c, ok := r.auth.Configs[reg]; ok {
+		a = c
+	}
+
+	return r.client.PullImage(docker.PullImageOptions{
+		Repository:   string(i.Repo),
+		Tag:          i.ID,
+		OutputStream: os.Stdout,
+	}, a)
+}
+
 // Extractor represents an object that can extract the process types from an
 // image.
 type Extractor interface {
@@ -27,9 +104,9 @@ type Extractor interface {
 }
 
 // NewExtractor returns a new Extractor instance.
-func NewExtractor(socket, certPath string, auth *docker.AuthConfigurations) (Extractor, error) {
+func NewExtractor(socket, certPath string) (Extractor, error) {
 	if socket == "" {
-		return newExtractor(), nil
+		return &extractor{}, nil
 	}
 
 	c, err := newDockerClient(socket, certPath)
@@ -37,18 +114,13 @@ func NewExtractor(socket, certPath string, auth *docker.AuthConfigurations) (Ext
 		return nil, err
 	}
 
-	return &ProcfileExtractor{
-		Client:             c,
-		AuthConfigurations: auth,
+	return &procfileExtractor{
+		client: c,
 	}, nil
 }
 
 // extractor is a fake implementation of the Extractor interface.
 type extractor struct{}
-
-func newExtractor() *extractor {
-	return &extractor{}
-}
 
 // Extract implements Extractor Extract.
 func (e *extractor) Extract(image Image) (CommandMap, error) {
@@ -60,29 +132,19 @@ func (e *extractor) Extract(image Image) (CommandMap, error) {
 	return pm, nil
 }
 
-// ProcfileExtractor is an implementation of the Extractor interface that can
+// procfileExtractor is an implementation of the Extractor interface that can
 // pull a docker image and extract it's Procfile into a process.CommandMap.
-type ProcfileExtractor struct {
+type procfileExtractor struct {
 	// Client is the docker client to use to pull the container image.
-	Client interface {
-		PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
-		InspectContainer(string) (*docker.Container, error)
-		CreateContainer(docker.CreateContainerOptions) (*docker.Container, error)
-		RemoveContainer(docker.RemoveContainerOptions) error
-		CopyFromContainer(docker.CopyFromContainerOptions) error
-	}
+	client *docker.Client
 
 	// AuthConfiguration contains the docker AuthConfiguration.
-	*docker.AuthConfigurations
+	auth *docker.AuthConfigurations
 }
 
 // Extract implements Extractor Extract.
-func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
+func (e *procfileExtractor) Extract(image Image) (CommandMap, error) {
 	pm := make(CommandMap)
-
-	if err := e.pullImage(image); err != nil {
-		return pm, err
-	}
 
 	c, err := e.createContainer(image)
 	if err != nil {
@@ -106,10 +168,10 @@ func (e *ProcfileExtractor) Extract(image Image) (CommandMap, error) {
 
 // procfile returns the path to the Procfile. If the container has a WORKDIR
 // set, then this will return a path to the Procfile within that directory.
-func (e *ProcfileExtractor) procfile(id string) (string, error) {
+func (e *procfileExtractor) procfile(id string) (string, error) {
 	p := ""
 
-	c, err := e.Client.InspectContainer(id)
+	c, err := e.client.InspectContainer(id)
 	if err != nil {
 		return "", err
 	}
@@ -121,36 +183,9 @@ func (e *ProcfileExtractor) procfile(id string) (string, error) {
 	return path.Join(p, Procfile), nil
 }
 
-// pullImage can pull a docker image from a repo, by it's imageID.
-//
-// Because docker does not support pulling an image by ID, we're assuming that
-// the docker image has been tagged with it's own ID beforehand.
-func (e *ProcfileExtractor) pullImage(i Image) error {
-	var a docker.AuthConfiguration
-
-	reg, _, err := registry.Split(string(i.Repo))
-	if err != nil {
-		return err
-	}
-
-	if reg == "" {
-		reg = "https://index.docker.io/v1/"
-	}
-
-	if c, ok := e.Configs[reg]; ok {
-		a = c
-	}
-
-	return e.Client.PullImage(docker.PullImageOptions{
-		Repository:   string(i.Repo),
-		Tag:          i.ID,
-		OutputStream: os.Stdout,
-	}, a)
-}
-
 // createContainer creates a new docker container for the given docker image.
-func (e *ProcfileExtractor) createContainer(i Image) (*docker.Container, error) {
-	return e.Client.CreateContainer(docker.CreateContainerOptions{
+func (e *procfileExtractor) createContainer(i Image) (*docker.Container, error) {
+	return e.client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
 			Image: i.String(),
 		},
@@ -158,16 +193,16 @@ func (e *ProcfileExtractor) createContainer(i Image) (*docker.Container, error) 
 }
 
 // removeContainer removes a container by it's ID.
-func (e *ProcfileExtractor) removeContainer(containerID string) error {
-	return e.Client.RemoveContainer(docker.RemoveContainerOptions{
+func (e *procfileExtractor) removeContainer(containerID string) error {
+	return e.client.RemoveContainer(docker.RemoveContainerOptions{
 		ID: containerID,
 	})
 }
 
 // copyFile copies a file from a container.
-func (e *ProcfileExtractor) copyFile(containerID, path string) ([]byte, error) {
+func (e *procfileExtractor) copyFile(containerID, path string) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := e.Client.CopyFromContainer(docker.CopyFromContainerOptions{
+	if err := e.client.CopyFromContainer(docker.CopyFromContainerOptions{
 		Container:    containerID,
 		Resource:     path,
 		OutputStream: &buf,
