@@ -8,7 +8,7 @@ import (
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/container"
 	"github.com/remind101/empire/empire/pkg/pod"
-	"github.com/remind101/empire/empire/pkg/reporter"
+	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
 

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/remind101/empire/empire/pkg/httpx"
-	"github.com/remind101/empire/empire/pkg/httpx/middleware"
-	"github.com/remind101/empire/empire/pkg/reporter"
+	"github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/httpx/middleware"
+	"github.com/remind101/pkg/reporter"
 )
 
 type CommonOpts struct {

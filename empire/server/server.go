@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/pkg/httpx"
+	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/empire/empire/server/authorization"
 	githubauth "github.com/remind101/empire/empire/server/authorization/github"
 	"github.com/remind101/empire/empire/server/heroku"

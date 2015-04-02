@@ -283,6 +283,18 @@
 			"Rev": "907cca0f578a5316fb864ec6992dc3d9730ec58c"
 		},
 		{
+			"ImportPath": "github.com/remind101/pkg/httpx",
+			"Rev": "c350829a2f6d617fb47449bd1a3a3a3e3609b0ef"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/logger",
+			"Rev": "c350829a2f6d617fb47449bd1a3a3a3e3609b0ef"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/reporter",
+			"Rev": "c350829a2f6d617fb47449bd1a3a3a3e3609b0ef"
+		},
+		{
 			"ImportPath": "github.com/stretchr/testify/assert",
 			"Rev": "e4ec8152c15fc46bd5056ce65997a07c7d415325"
 		},

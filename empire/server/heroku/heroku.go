@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/pkg/httpx"
-	"github.com/remind101/empire/empire/pkg/httpx/middleware"
+	"github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/httpx/middleware"
 	"github.com/remind101/empire/empire/server/authorization"
 )
 

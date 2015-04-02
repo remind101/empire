@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/pkg/httpx"
-	"github.com/remind101/empire/empire/pkg/logger"
+	"github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 

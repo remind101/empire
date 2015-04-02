@@ -3,7 +3,7 @@ package reporter
 import (
 	"fmt"
 
-	"github.com/remind101/empire/empire/pkg/logger"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
