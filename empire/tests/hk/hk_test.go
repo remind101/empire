@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/pkg/timex"
+	"github.com/remind101/pkg/timex"
 	"github.com/remind101/empire/empiretest"
 )
 

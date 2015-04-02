@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-etcd/etcd"
-	"github.com/remind101/empire/empire/pkg/timex"
+	"github.com/remind101/pkg/timex"
 	"gopkg.in/gorp.v1"
 )
 

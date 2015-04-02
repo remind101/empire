@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/remind101/empire/empire/pkg/timex"
+	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
