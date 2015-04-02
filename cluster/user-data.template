@@ -145,7 +145,7 @@ coreos:
         ExecStartPre=/usr/bin/docker pull google/cadvisor:canary
         ExecStartPre=-/usr/bin/docker rm cadvisor
 
-        ExecStart=/usr/bin/docker run -v /:/rootfs:ro -v /var/run:/var/run:rw -v /sys:/sys:ro -v /var/lib/docker/:/var/lib/docker:ro -p 9090:9090 --name=cadvisor google/cadvisor:canary -port=9090
+        ExecStart=/usr/bin/docker run -v /:/rootfs:ro -v /var/run:/var/run:rw -v /sys:/sys:ro -v /var/lib/docker/:/var/lib/docker:ro -p 9090:8080 --name=cadvisor google/cadvisor:canary
 
         ExecStop=/usr/bin/docker stop cadvisor
 write_files:
