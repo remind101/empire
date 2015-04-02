@@ -1,4 +1,4 @@
 .PHONY: build
 
 build:
-	go build -o build/emp emp.go
+	go build -o build/emp .
