@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/remind101/empire/empire/pkg/httpx"
-	"github.com/remind101/empire/empire/pkg/reporter"
+	"github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
 

@@ -9,8 +9,8 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/pkg/reporter"
-	"github.com/remind101/empire/empire/pkg/reporter/hb"
+	"github.com/remind101/pkg/reporter"
+	"github.com/remind101/pkg/reporter/hb"
 )
 
 // Commands are the subcommands that are available.
