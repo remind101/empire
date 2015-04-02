@@ -142,10 +142,10 @@ coreos:
         TimeoutStartSec=30m
         Restart=on-failure
 
-        ExecStartPre=/usr/bin/docker pull google/cadvisor:latest
+        ExecStartPre=/usr/bin/docker pull google/cadvisor:canary
         ExecStartPre=-/usr/bin/docker rm cadvisor
 
-        ExecStart=/usr/bin/docker run --volume=/:/rootfs:ro --volume=/var/run:/var/run:rw --volume=/sys:/sys:ro --volume=/var/lib/docker/:/var/lib/docker:ro --publish=8080:8080 --detach=true --name=cadvisor google/cadvisor:latest
+        ExecStart=/usr/bin/docker run -v /:/rootfs:ro -v /var/run:/var/run:rw -v /sys:/sys:ro -v /var/lib/docker/:/var/lib/docker:ro -p 9090:9090 --name=cadvisor google/cadvisor:canary -port=9090
 
         ExecStop=/usr/bin/docker stop cadvisor
 write_files:
