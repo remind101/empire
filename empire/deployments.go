@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
@@ -32,7 +33,7 @@ type Deployment struct {
 
 // PreInsert implements a pre insert hook for the db interface
 func (d *Deployment) PreInsert(s gorp.SqlExecutor) error {
-	d.CreatedAt = Now()
+	d.CreatedAt = timex.Now()
 	return nil
 }
 
@@ -54,7 +55,7 @@ func (d *Deployment) Failed(err error) *Deployment {
 }
 
 func (d *Deployment) finished(status string) {
-	d.FinishedAt = Now()
+	d.FinishedAt = timex.Now()
 	d.changeStatus(status)
 }
 

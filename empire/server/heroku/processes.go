@@ -10,16 +10,16 @@ import (
 
 type Dyno heroku.Dyno
 
-func newDyno(j *empire.JobState) *Dyno {
+func newDyno(j *empire.ProcessState) *Dyno {
 	return &Dyno{
-		Command:   string(j.Job.Command),
+		Command:   string(j.Command),
 		Name:      string(j.Name),
 		State:     j.State,
-		UpdatedAt: j.Job.UpdatedAt,
+		UpdatedAt: j.UpdatedAt,
 	}
 }
 
-func newDynos(js []*empire.JobState) []*Dyno {
+func newDynos(js []*empire.ProcessState) []*Dyno {
 	dynos := make([]*Dyno, len(js))
 
 	for i := 0; i < len(js); i++ {

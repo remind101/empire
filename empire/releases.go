@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/pod"
+	"github.com/remind101/empire/empire/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
 )
@@ -25,7 +27,7 @@ type Release struct {
 
 // PreInsert implements a pre insert hook for the db interface
 func (r *Release) PreInsert(s gorp.SqlExecutor) error {
-	r.CreatedAt = Now()
+	r.CreatedAt = timex.Now()
 	return nil
 }
 
@@ -67,8 +69,8 @@ func (s *store) ReleasesCreate(opts ReleasesCreateOpts) (*Release, error) {
 // releasesService is an implementation of the ReleasesRepository interface backed by
 // a DB.
 type releasesService struct {
-	store   *store
-	manager *manager
+	store    *store
+	releaser *releaser
 }
 
 // Create creates the release, then sets the current process formation on the release.
@@ -87,7 +89,7 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreat
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.manager.ScheduleRelease(ctx, r, config, slug, formation); err != nil {
+	if err := s.releaser.Release(ctx, r, config, slug, formation); err != nil {
 		return r, err
 	}
 
@@ -240,4 +242,72 @@ func releasesLast(db *db, appName string) (*Release, error) {
 func releasesAllByAppName(db *db, appName string) ([]*Release, error) {
 	var rs []*Release
 	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, appName)
+}
+
+type releaser struct {
+	manager *manager
+}
+
+// ScheduleRelease creates jobs for every process and instance count and
+// schedules them onto the cluster.
+func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation) error {
+	old, err := r.manager.Templates(map[string]string{
+		"app": release.AppName,
+	})
+	if err != nil {
+		return err
+	}
+
+	templates := newTemplates(release, config, slug, formation)
+	if err := r.manager.Submit(templates...); err != nil {
+		return err
+	}
+
+	return r.manager.Destroy(old...)
+}
+
+func newTemplates(release *Release, config *Config, slug *Slug, formation Formation) []*pod.Template {
+	var templates []*pod.Template
+
+	for _, p := range formation {
+		templates = append(templates, newTemplate(release, config, slug, p))
+	}
+
+	return templates
+}
+
+func newTemplate(release *Release, config *Config, slug *Slug, p *Process) *pod.Template {
+	env := environment(config.Vars)
+	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
+
+	return &pod.Template{
+		ID:      templateID(release.AppName, release.Ver, p.Type),
+		Env:     env,
+		Command: string(p.Command),
+		Image: pod.Image{
+			Repo: string(slug.Image.Repo),
+			ID:   slug.Image.ID,
+		},
+		Instances: uint(p.Quantity),
+		Tags: map[string]string{
+			"app":          release.AppName,
+			"version":      fmt.Sprintf("%d", release.Ver),
+			"process_type": string(p.Type),
+		},
+	}
+}
+
+func templateID(appName string, version int, t ProcessType) string {
+	return fmt.Sprintf("%s.%d.%s", appName, version, t)
+}
+
+// environment coerces a Vars into a map[string]string.
+func environment(vars Vars) map[string]string {
+	env := make(map[string]string)
+
+	for k, v := range vars {
+		env[string(k)] = string(v)
+	}
+
+	return env
 }

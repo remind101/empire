@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-etcd/etcd"
+	"github.com/remind101/empire/empire/pkg/timex"
 	"gopkg.in/gorp.v1"
 )
 
@@ -27,7 +28,7 @@ type Domain struct {
 
 // PreInsert implements a pre insert hook for the db interface
 func (d *Domain) PreInsert(s gorp.SqlExecutor) error {
-	d.CreatedAt = Now()
+	d.CreatedAt = timex.Now()
 	return nil
 }
 
