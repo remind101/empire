@@ -31,8 +31,7 @@ type Manager interface {
 	// Template returns a single Template by it's ID.
 	Template(templateID string) (*Template, error)
 
-	// Instances returns Instances of a Template. A map of tags can be provided
-	// to filter only instances
+	// Instances returns Instances of a Template.
 	Instances(templateID string) ([]*Instance, error)
 
 	// InstanceStates returns a slice of InstanceStates for the templateID.
