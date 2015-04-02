@@ -62,7 +62,8 @@ hk domains
 $ make install
 $ vagrant up
 # Wait for vagrant image to boot...
-$ emp deploy quay.io/ejholmes/acme-inc:ec238137726b58285f8951802aed0184f915323668487b4919aff2671c0f9a02
+$ emp deploy remind101/acme-inc:latest
+$ open http://acme-inc.172.20.20.10.xip.io
 $ emp apps
 $ emp releases -a acme-inc
 $ emp env -a acme-inc
