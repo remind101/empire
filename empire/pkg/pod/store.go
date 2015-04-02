@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/coreos/go-etcd/etcd"
-	"github.com/remind101/empire/empire/pkg/timex"
+	"github.com/remind101/pkg/timex"
 )
 
 // Store is used by the ContainerManager implementation to store Templates,

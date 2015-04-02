@@ -284,15 +284,19 @@
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/httpx",
-			"Rev": "c350829a2f6d617fb47449bd1a3a3a3e3609b0ef"
+			"Rev": "2a014476d99549671044613923a7e8c7b369587e"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/logger",
-			"Rev": "c350829a2f6d617fb47449bd1a3a3a3e3609b0ef"
+			"Rev": "2a014476d99549671044613923a7e8c7b369587e"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/reporter",
-			"Rev": "c350829a2f6d617fb47449bd1a3a3a3e3609b0ef"
+			"Rev": "2a014476d99549671044613923a7e8c7b369587e"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/timex",
+			"Rev": "2a014476d99549671044613923a7e8c7b369587e"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
