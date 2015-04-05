@@ -10,6 +10,7 @@ import (
 
 var commands = []cli.Command{
 	cmdListAPIs,
+	cmdAddAPI,
 }
 
 func hk(args ...string) {

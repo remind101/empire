@@ -30,3 +30,21 @@ func readFile(path string) map[string]string {
 	}
 	return config
 }
+
+func writeFile(path string) {
+	file, err := os.Create(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+	for _, key := range configOrder {
+		_, err := w.WriteString(key + "=" + config[key] + "\n")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	w.Flush()
+}

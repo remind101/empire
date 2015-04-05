@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/codegangsta/cli"
 )
@@ -34,4 +35,21 @@ func listAPIs(c *cli.Context) {
 		}
 		fmt.Printf("%s \t %s\n", key, config[key])
 	}
+}
+
+var cmdAddAPI = cli.Command{
+	Name:      "api-add",
+	ShortName: "api-add",
+	Usage:     "Add one or several API targets.",
+	Action:    addAPI,
+}
+
+func addAPI(c *cli.Context) {
+	for _, arg := range c.Args() {
+		api := strings.Split(arg, "=")
+		config[api[0]] = api[1]
+		configOrder = append(configOrder, api[0])
+	}
+	writeFile(configFile)
+	fmt.Println("Added api target(s)")
 }
