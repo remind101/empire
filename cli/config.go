@@ -11,11 +11,11 @@ import (
 var (
 	configOrder []string
 	configFile  = fmt.Sprintf("%s/.emprc", os.Getenv("HOME"))
-	config      = readFile(configFile)
+	config      = readConfig()
 )
 
-func readFile(path string) map[string]string {
-	file, err := os.Open(path)
+func readConfig() map[string]string {
+	file, err := os.Open(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,8 +31,8 @@ func readFile(path string) map[string]string {
 	return config
 }
 
-func writeFile(path string) {
-	file, err := os.Create(path)
+func saveConfig() {
+	file, err := os.Create(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}

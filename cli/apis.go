@@ -10,7 +10,7 @@ import (
 
 const target = "current"
 
-func setAPI() {
+func setEnv() {
 	EMPIRE_URL := os.Getenv("EMPIRE_URL")
 	if EMPIRE_URL == "" {
 		EMPIRE_URL = config[config[target]]
@@ -50,6 +50,24 @@ func addAPI(c *cli.Context) {
 		config[api[0]] = api[1]
 		configOrder = append(configOrder, api[0])
 	}
-	writeFile(configFile)
+	saveConfig()
 	fmt.Println("Added api target(s)")
+}
+
+var cmdSetAPI = cli.Command{
+	Name:      "api-set",
+	ShortName: "api-set",
+	Usage:     "Set the API target.",
+	Action:    setAPI,
+}
+
+func setAPI(c *cli.Context) {
+	config[target] = c.Args()[0]
+	if newTarget, ok := config[config[target]]; ok {
+		setEnv()
+		saveConfig()
+		fmt.Printf("emp now pointed at %s (%s)\n", config[target], newTarget)
+	} else {
+		fmt.Println("You need to add this API first with `emp api-add <target>`")
+	}
 }

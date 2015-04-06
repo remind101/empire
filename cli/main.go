@@ -11,6 +11,7 @@ import (
 var commands = []cli.Command{
 	cmdListAPIs,
 	cmdAddAPI,
+	cmdSetAPI,
 }
 
 func hk(args ...string) {
@@ -30,7 +31,7 @@ func emp() {
 
 func main() {
 	args := os.Args[1:]
-	setAPI()
+	setEnv()
 
 	if len(args) == 0 {
 		hk(args...)
