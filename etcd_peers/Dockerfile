@@ -1,4 +1,8 @@
-FROM remind101/go:1.4-onbuild
+FROM gliderlabs/alpine:3.1
 MAINTAINER Michael Barrett <mike@remind101.com>
 
-WORKDIR /go/bin
+RUN apk-install jq curl
+
+ADD etcd_peers.ash /bin/etcd_peers
+
+CMD ["/bin/etcd_peers"]
