@@ -1,5 +1,5 @@
 Godeps/_workspace/src/github.com/fsouza/go-dockerclient/testing/data/symlink
-Godeps/pkg
+Godeps/_workspace/pkg
 tests
 .git
 build
