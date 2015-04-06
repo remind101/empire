@@ -20,7 +20,7 @@ func setEnv() {
 
 var cmdListAPIs = cli.Command{
 	Name:   "apis",
-	Usage:  "List the Empire APIs",
+	Usage:  "List the Empire apis",
 	Action: listAPIs,
 }
 
@@ -38,7 +38,7 @@ func listAPIs(c *cli.Context) {
 
 var cmdAddAPI = cli.Command{
 	Name:   "api-add",
-	Usage:  "Add one or several API targets.",
+	Usage:  "Add one or several api targets",
 	Action: addAPI,
 }
 
@@ -46,17 +46,23 @@ func addAPI(c *cli.Context) {
 	if len(c.Args()) > 0 {
 		for _, arg := range c.Args() {
 			api := strings.Split(arg, "=")
-			config[api[0]] = api[1]
-			configOrder = append(configOrder, api[0])
+
+			if _, present := config[api[0]]; !present {
+				config[api[0]] = api[1]
+				configOrder = append(configOrder, api[0])
+				saveConfig()
+				fmt.Println("Added api target(s)")
+			} else {
+				fmt.Printf("Can't add api target %s, already present in config\n", api[0])
+				continue
+			}
 		}
-		saveConfig()
-		fmt.Println("Added api target(s)")
 	}
 }
 
 var cmdSetAPI = cli.Command{
 	Name:   "api-set",
-	Usage:  "Set the API target.",
+	Usage:  "Set the api target",
 	Action: setAPI,
 }
 
@@ -83,7 +89,7 @@ func deleteAPI(c *cli.Context) {
 	if len(c.Args()) > 0 {
 		api := c.Args()[0]
 		if api == config[target] {
-			fmt.Println("You can't delete the current api target.")
+			fmt.Println("You can't delete the current api target")
 			return
 		}
 
