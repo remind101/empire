@@ -19,10 +19,9 @@ func setEnv() {
 }
 
 var cmdListAPIs = cli.Command{
-	Name:      "apis",
-	ShortName: "apis",
-	Usage:     "List the Empire APIs",
-	Action:    listAPIs,
+	Name:   "apis",
+	Usage:  "List the Empire APIs",
+	Action: listAPIs,
 }
 
 func listAPIs(c *cli.Context) {
@@ -38,36 +37,38 @@ func listAPIs(c *cli.Context) {
 }
 
 var cmdAddAPI = cli.Command{
-	Name:      "api-add",
-	ShortName: "api-add",
-	Usage:     "Add one or several API targets.",
-	Action:    addAPI,
+	Name:   "api-add",
+	Usage:  "Add one or several API targets.",
+	Action: addAPI,
 }
 
 func addAPI(c *cli.Context) {
-	for _, arg := range c.Args() {
-		api := strings.Split(arg, "=")
-		config[api[0]] = api[1]
-		configOrder = append(configOrder, api[0])
+	if len(c.Args()) > 0 {
+		for _, arg := range c.Args() {
+			api := strings.Split(arg, "=")
+			config[api[0]] = api[1]
+			configOrder = append(configOrder, api[0])
+		}
+		saveConfig()
+		fmt.Println("Added api target(s)")
 	}
-	saveConfig()
-	fmt.Println("Added api target(s)")
 }
 
 var cmdSetAPI = cli.Command{
-	Name:      "api-set",
-	ShortName: "api-set",
-	Usage:     "Set the API target.",
-	Action:    setAPI,
+	Name:   "api-set",
+	Usage:  "Set the API target.",
+	Action: setAPI,
 }
 
 func setAPI(c *cli.Context) {
-	config[target] = c.Args()[0]
-	if newTarget, ok := config[config[target]]; ok {
-		setEnv()
-		saveConfig()
-		fmt.Printf("emp now pointed at %s (%s)\n", config[target], newTarget)
-	} else {
-		fmt.Println("You need to add this API first with `emp api-add <target>`")
+	if len(c.Args()) > 0 {
+		config[target] = c.Args()[0]
+		if newTarget, ok := config[config[target]]; ok {
+			setEnv()
+			saveConfig()
+			fmt.Printf("emp now pointed at %s (%s)\n", config[target], newTarget)
+		} else {
+			fmt.Println("You need to add this API first with `emp api-add <target>`")
+		}
 	}
 }

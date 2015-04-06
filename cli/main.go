@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 
 	"github.com/codegangsta/cli"
 )
@@ -31,11 +32,12 @@ func emp() {
 
 func main() {
 	args := os.Args[1:]
+	empCmd, _ := regexp.Compile("^api.+")
 	setEnv()
 
 	if len(args) == 0 {
 		hk(args...)
-	} else if args[0] == "apis" || args[0] == "api-add" || args[0] == "api-set" {
+	} else if empCmd.MatchString(args[0]) {
 		emp()
 	} else {
 		hk(args...)
