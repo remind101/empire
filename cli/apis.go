@@ -68,7 +68,28 @@ func setAPI(c *cli.Context) {
 			saveConfig()
 			fmt.Printf("emp now pointed at %s (%s)\n", config[target], newTarget)
 		} else {
-			fmt.Println("You need to add this API first with `emp api-add <target>`")
+			fmt.Println("You need to add this api target first with `emp api-add <target>`")
 		}
+	}
+}
+
+var cmdDeleteAPI = cli.Command{
+	Name:   "api-delete",
+	Usage:  "Delete the API target.",
+	Action: deleteAPI,
+}
+
+func deleteAPI(c *cli.Context) {
+	if len(c.Args()) > 0 {
+		api := c.Args()[0]
+		if api == config[target] {
+			fmt.Println("You can't delete the current api target.")
+			return
+		}
+
+		delete(config, api)
+		deleteOrder(api)
+		saveConfig()
+		fmt.Printf("Deleted api %s\n", api)
 	}
 }

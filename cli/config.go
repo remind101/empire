@@ -48,3 +48,11 @@ func saveConfig() {
 
 	w.Flush()
 }
+
+func deleteOrder(key string) {
+	for i, v := range configOrder {
+		if v == key {
+			configOrder = append(configOrder[:i], configOrder[i+1:]...)
+		}
+	}
+}

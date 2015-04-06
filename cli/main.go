@@ -13,6 +13,7 @@ var commands = []cli.Command{
 	cmdListAPIs,
 	cmdAddAPI,
 	cmdSetAPI,
+	cmdDeleteAPI,
 }
 
 func hk(args ...string) {
