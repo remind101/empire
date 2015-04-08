@@ -1,4 +1,4 @@
-.PHONY: bootstrap build cmd user_data vagrant
+.PHONY: bootstrap build cmd user_data vagrant plugins
 
 cmd:
 	$(MAKE) -C empire cmd
@@ -20,8 +20,12 @@ vagrant: user_data
 	vagrant destroy
 	vagrant up
 
-install:
+plugins:
+	$(MAKE) -C hk-plugins all
+
+install: plugins
 	mkdir -p /usr/local/lib/hk/plugin
-	cp hk-plugins/* /usr/local/lib/hk/plugin
+	cp hk-plugins/build/* /usr/local/lib/hk/plugin
+	chmod +x /usr/local/lib/hk/plugin/*
 	cat emp > /usr/local/bin/emp
 	chmod +x /usr/local/bin/emp
