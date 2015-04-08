@@ -266,3 +266,45 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 	_, err = s.store.ProcessesUpdate(p)
 	return err
 }
+
+// restarter is a small service for restarting an apps processes.
+type restarter struct {
+	manager *manager
+}
+
+func (s *restarter) Restart(ctx context.Context, app *App, t ProcessType, n int) error {
+	tags := map[string]string{
+		"app": app.Name,
+	}
+
+	// If a process type was given, select templates tagged
+	// with the correct process type.
+	if pt := string(t); pt != "" {
+		tags["process_type"] = pt
+	}
+
+	templates, err := s.manager.Templates(tags)
+	if err != nil {
+		return err
+	}
+
+	for _, template := range templates {
+		instances, err := s.manager.Instances(template.ID)
+		if err != nil {
+			return err
+		}
+
+		for _, instance := range instances {
+			// If an instance number was given, select only the instance
+			// that matches.
+			if n == 0 || instance.Instance == uint(n) {
+				err := s.manager.Restart(instance)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return err
+}

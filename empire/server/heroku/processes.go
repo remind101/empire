@@ -2,9 +2,11 @@ package heroku
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -47,4 +49,26 @@ func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 
 	w.WriteHeader(200)
 	return Encode(w, newDynos(js))
+}
+
+type DeleteProcesses struct {
+	*empire.Empire
+}
+
+func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	vars := httpx.Vars(ctx)
+	ptype := empire.ProcessType(vars["ptype"])
+	pnum, _ := strconv.Atoi(vars["pnum"])
+
+	a, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	err = h.ProcessesRestart(ctx, a, ptype, pnum)
+	if err != nil {
+		return err
+	}
+
+	return NoContent(w)
 }
