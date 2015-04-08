@@ -1,4 +1,4 @@
 .PHONY: cmd
 
 cmd:
-	godep go build -o build/empire ./cmd/empire
+	godep go build -o build/empire-plugins ./cmd/empire
