@@ -66,6 +66,9 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 
 	err = h.ProcessesRestart(ctx, a, ptype, pnum)
+	if err != nil {
+		return err
+	}
 
 	return NoContent(w)
 }
