@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire/empire/server/authorization"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
-	"github.com/remind101/empire/empire/server/authorization"
 )
 
 // The Accept header that controls the api version. See
@@ -42,7 +42,10 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 	r.Handle("PATCH", "/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})) // hk set
 
 	// Processes
-	r.Handle("GET", "/apps/{app}/dynos", Authenticate(e, &GetProcesses{e})) // hk dynos
+	r.Handle("GET", "/apps/{app}/dynos", Authenticate(e, &GetProcesses{e}))                      // hk dynos
+	r.Handle("DELETE", "/apps/{app}/dynos", Authenticate(e, &DeleteProcesses{e}))                // hk restart
+	r.Handle("DELETE", "/apps/{app}/dynos/{ptype}", Authenticate(e, &DeleteProcesses{e}))        // hk restart web
+	r.Handle("DELETE", "/apps/{app}/dynos/{ptype}.{pnum}", Authenticate(e, &DeleteProcesses{e})) // hk restart web.1
 
 	// Formations
 	r.Handle("PATCH", "/apps/{app}/formation", Authenticate(e, &PatchFormation{e})) // hk scale

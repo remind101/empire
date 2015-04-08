@@ -76,6 +76,7 @@ type Empire struct {
 	releases     *releasesService
 	deployer     *deployer
 	scaler       *scaler
+	restarter    *restarter
 	releaser     *releaser
 }
 
@@ -130,6 +131,10 @@ func New(options Options) (*Empire, error) {
 		manager: manager,
 	}
 
+	restarter := &restarter{
+		manager: manager,
+	}
+
 	releaser := &releaser{
 		manager: manager,
 	}
@@ -174,6 +179,7 @@ func New(options Options) (*Empire, error) {
 		jobStates:    jobStates,
 		releaser:     releaser,
 		scaler:       scaler,
+		restarter:    restarter,
 		releases:     releases,
 	}, nil
 }
@@ -248,6 +254,12 @@ func (e *Empire) JobStatesByApp(app *App) ([]*ProcessState, error) {
 // ProcessesAll returns all processes for a given Release.
 func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
 	return e.store.ProcessesAll(release)
+}
+
+// ProcessesRestart restarts processes matching the given prefix for the given Release.
+// If the prefix is empty, it will match all processes for the release.
+func (e *Empire) ProcessesRestart(ctx context.Context, app *App, ptype ProcessType, pnum int) error {
+	return e.restarter.Restart(ctx, app, ptype, pnum)
 }
 
 // ReleasesFindByApp returns all Releases for a given App.

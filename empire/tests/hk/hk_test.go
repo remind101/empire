@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/pkg/timex"
 	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/pkg/timex"
 )
 
 func TestLogin(t *testing.T) {
@@ -243,6 +243,39 @@ acme-inc.1.web.2    running   5d  "./bin/web"`,
 		{
 			"dynos -a acme-inc",
 			"acme-inc.1.web.1    running   5d  \"./bin/web\"",
+		},
+	})
+}
+
+func TestRestart(t *testing.T) {
+	now(time.Now().AddDate(0, 0, -5))
+	defer resetNow()
+
+	run(t, []Command{
+		{
+			"deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"Deployed remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+		},
+		{
+			"scale web=2 -a acme-inc",
+			"Scaled acme-inc to web=2:1X.",
+		},
+		{
+			"dynos -a acme-inc",
+			`acme-inc.1.web.1    running   5d  "./bin/web"
+acme-inc.1.web.2    running   5d  "./bin/web"`,
+		},
+		{
+			"restart -a acme-inc",
+			"Restarted all dynos for acme-inc.",
+		},
+		{
+			"restart web -a acme-inc",
+			"Restarted web dynos for acme-inc.",
+		},
+		{
+			"restart web.1 -a acme-inc",
+			"Restarted web.1 dyno for acme-inc.",
 		},
 	})
 }

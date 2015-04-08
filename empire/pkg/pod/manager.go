@@ -36,6 +36,9 @@ type Manager interface {
 
 	// InstanceStates returns a slice of InstanceStates for the templateID.
 	InstanceStates(templateID string) ([]*InstanceState, error)
+
+	// Restart removes and reschedules an Instance.
+	Restart(*Instance) error
 }
 
 // ContainerManager is a Manager implementation backed by a
@@ -116,6 +119,18 @@ func (m *ContainerManager) Scale(templateID string, instances uint) error {
 	template.Instances = instances
 
 	return m.store.UpdateTemplate(template)
+}
+
+// Restart removes and reschedules an Instance.
+func (m *ContainerManager) Restart(instance *Instance) error {
+	if err := m.removeInstance(instance); err != nil {
+		return err
+	}
+	if err := m.createInstance(instance); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *ContainerManager) Templates(tags map[string]string) ([]*Template, error) {
