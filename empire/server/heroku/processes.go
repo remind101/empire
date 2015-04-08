@@ -6,7 +6,7 @@ import (
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/Godeps/_workspace/src/github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
