@@ -29,6 +29,9 @@ type Container struct {
 
 	// The image to create the container from.
 	Image Image
+
+	// Memory limit in bytes
+	MemoryLimit uint
 }
 
 // ContainerState represents the state of a scheduled container.
