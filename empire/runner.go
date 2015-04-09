@@ -30,7 +30,7 @@ type fakeRelayer struct{}
 func (f *fakeRelayer) Relay(c *container.Container) (*ContainerRelay, error) {
 	return &ContainerRelay{
 		Name:      "run.123",
-		AttachURL: "fake://example.com/abc",
+		AttachURL: "fake://example.com:5000/abc",
 		Command:   c.Command,
 		State:     "starting",
 		Type:      "run",

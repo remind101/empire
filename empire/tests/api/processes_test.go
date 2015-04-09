@@ -26,7 +26,7 @@ func TestProcessesPost(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := *d.AttachURL, "fake://example.com/abc"; got != want {
+	if got, want := *d.AttachURL, "fake://example.com:5000/abc"; got != want {
 		t.Fatalf("AttachURL => %v; want %v", got, want)
 	}
 }
