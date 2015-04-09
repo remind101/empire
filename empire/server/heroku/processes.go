@@ -51,6 +51,49 @@ func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	return Encode(w, newDynos(js))
 }
 
+type PostProcessForm struct {
+	Command string            `json:"command"`
+	Attach  bool              `json:"attach"`
+	Env     map[string]string `json:"env"`
+	Size    string            `json:"size"`
+}
+
+type PostProcess struct {
+	*empire.Empire
+}
+
+func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var form PostProcessForm
+
+	a, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	if err := Decode(r, &form); err != nil {
+		return err
+	}
+
+	relay, err := h.ProcessesRun(ctx, a, form.Command, empire.ProcessesRunOpts{
+		Attach: form.Attach,
+		Env:    form.Env,
+		Size:   form.Size,
+	})
+
+	dyno := &heroku.Dyno{
+		Name:      relay.Name,
+		AttachURL: &relay.AttachURL,
+		Command:   relay.Command,
+		State:     relay.State,
+		Type:      relay.Type,
+		Size:      relay.Size,
+		CreatedAt: relay.CreatedAt,
+	}
+
+	w.WriteHeader(201)
+	return Encode(w, dyno)
+}
+
 type DeleteProcesses struct {
 	*empire.Empire
 }

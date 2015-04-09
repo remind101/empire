@@ -43,6 +43,7 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 
 	// Processes
 	r.Handle("GET", "/apps/{app}/dynos", Authenticate(e, &GetProcesses{e}))                      // hk dynos
+	r.Handle("POST", "/apps/{app}/dynos", Authenticate(e, &PostProcess{e}))                      // hk run
 	r.Handle("DELETE", "/apps/{app}/dynos", Authenticate(e, &DeleteProcesses{e}))                // hk restart
 	r.Handle("DELETE", "/apps/{app}/dynos/{ptype}", Authenticate(e, &DeleteProcesses{e}))        // hk restart web
 	r.Handle("DELETE", "/apps/{app}/dynos/{ptype}.{pnum}", Authenticate(e, &DeleteProcesses{e})) // hk restart web.1

@@ -169,7 +169,7 @@ func TestNewContainer(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		out := newContainer(&tt.in)
+		out := NewContainer(&tt.in)
 
 		if got, want := out, &tt.out; !reflect.DeepEqual(got, want) {
 			t.Errorf("Container => %v; want %v", got, want)

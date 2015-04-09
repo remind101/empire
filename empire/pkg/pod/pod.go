@@ -45,8 +45,8 @@ type Instance struct {
 	CreatedAt time.Time
 }
 
-// newInstance returns a new Instance for the given Template.
-func newInstance(template *Template, instance uint) *Instance {
+// NewInstance returns a new Instance for the given Template.
+func NewInstance(template *Template, instance uint) *Instance {
 	return &Instance{
 		Template: template,
 		Instance: instance,

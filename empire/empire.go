@@ -78,6 +78,7 @@ type Empire struct {
 	scaler       *scaler
 	restarter    *restarter
 	releaser     *releaser
+	runner       *runner
 }
 
 // New returns a new Empire instance.
@@ -135,6 +136,11 @@ func New(options Options) (*Empire, error) {
 		manager: manager,
 	}
 
+	runner := &runner{
+		store:   store,
+		relayer: &fakeRelayer{},
+	}
+
 	releaser := &releaser{
 		manager: manager,
 	}
@@ -180,6 +186,7 @@ func New(options Options) (*Empire, error) {
 		releaser:     releaser,
 		scaler:       scaler,
 		restarter:    restarter,
+		runner:       runner,
 		releases:     releases,
 	}, nil
 }
@@ -260,6 +267,17 @@ func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) ProcessesRestart(ctx context.Context, app *App, ptype ProcessType, pnum int) error {
 	return e.restarter.Restart(ctx, app, ptype, pnum)
+}
+
+type ProcessesRunOpts struct {
+	Attach bool
+	Env    map[string]string
+	Size   string
+}
+
+// ProcessesRun runs a one-off process for a given App and command.
+func (e *Empire) ProcessesRun(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {
+	return e.runner.Run(ctx, app, command, opts)
 }
 
 // ReleasesFindByApp returns all Releases for a given App.
