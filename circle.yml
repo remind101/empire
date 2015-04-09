@@ -15,6 +15,7 @@ dependencies:
     - go get github.com/tools/godep
     - go version
     - make bootstrap
+    - make plugins
   override:
 
 test:
