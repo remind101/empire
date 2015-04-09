@@ -21,7 +21,7 @@ var testContainer = Container{
 		Repo: "remind101/acme-inc",
 		ID:   "9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 	},
-	MemoryLimit: "1g",
+	MemoryLimit: 1048576,
 }
 
 func TestDefaultTemplate(t *testing.T) {
@@ -52,7 +52,7 @@ ExecStartPre=/bin/sh -c "echo PORT=8080 >> /tmp/acme-inc.v1.web.1.env"
 
 ExecStartPre=-/usr/bin/docker pull remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2
 ExecStartPre=-/usr/bin/docker rm acme-inc.v1.web.1
-ExecStart=/usr/bin/docker run --name acme-inc.v1.web.1 -m 1g --env-file /tmp/acme-inc.v1.web.1.env -e PORT=80 -h %H -p 80 remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 sh -c 'acme-inc'
+ExecStart=/usr/bin/docker run --name acme-inc.v1.web.1 -m 1048576b --env-file /tmp/acme-inc.v1.web.1.env -e PORT=80 -h %H -p 80 remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 sh -c 'acme-inc'
 ExecStop=/usr/bin/docker stop acme-inc.v1.web.1
 
 [X-Fleet]

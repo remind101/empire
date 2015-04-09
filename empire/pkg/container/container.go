@@ -30,8 +30,8 @@ type Container struct {
 	// The image to create the container from.
 	Image Image
 
-	// Memory limit in docker run fmt: <number><optional unit>, where unit = b, k, m or g
-	MemoryLimit string
+	// Memory limit in bytes
+	MemoryLimit uint
 }
 
 // ContainerState represents the state of a scheduled container.
