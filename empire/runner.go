@@ -22,12 +22,12 @@ type ContainerRelay struct {
 // ContainerRelayer defines an interface for running a container
 // remotely.
 type ContainerRelayer interface {
-	Relay(*container.Container) (*ContainerRelay, error)
+	Relay(context.Context, *container.Container) (*ContainerRelay, error)
 }
 
 type fakeRelayer struct{}
 
-func (f *fakeRelayer) Relay(c *container.Container) (*ContainerRelay, error) {
+func (f *fakeRelayer) Relay(ctx context.Context, c *container.Container) (*ContainerRelay, error) {
 	return &ContainerRelay{
 		Name:      "run.123",
 		AttachURL: "fake://example.com:5000/abc",
@@ -45,15 +45,15 @@ type runner struct {
 }
 
 func (r *runner) Run(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {
-	c, err := r.newContainer(app, command, opts)
+	c, err := r.newContainer(ctx, app, command, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.relayer.Relay(c)
+	return r.relayer.Relay(ctx, c)
 }
 
-func (r *runner) newContainer(app *App, command string, opts ProcessesRunOpts) (*container.Container, error) {
+func (r *runner) newContainer(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*container.Container, error) {
 	release, err := r.store.ReleasesLast(app)
 	if err != nil {
 		return nil, err
