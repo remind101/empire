@@ -269,5 +269,6 @@ func newContainer(instance *Instance) *container.Container {
 			Repo: t.Image.Repo,
 			ID:   t.Image.ID,
 		},
+		MemoryLimit: t.MemoryLimit,
 	}
 }

@@ -294,6 +294,8 @@ func newTemplate(release *Release, config *Config, slug *Slug, p *Process) *pod.
 			"version":      fmt.Sprintf("%d", release.Ver),
 			"process_type": string(p.Type),
 		},
+		// TODO: allow this to be configured eventually
+		MemoryLimit: "1g",
 	}
 }
 

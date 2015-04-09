@@ -32,6 +32,9 @@ type Template struct {
 
 	// Instances controls how many instances of the Template to maintain.
 	Instances uint
+
+	// Memory limit in docker run fmt: <number><optional unit>, where unit = b, k, m or g
+	MemoryLimit string
 }
 
 // Instance represents a running instance of a Template.
