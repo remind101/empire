@@ -14,12 +14,16 @@ type Context struct {
 
 	// A pre-configured heroku client.
 	Client *heroku.Client
+
+	// The command-line arguments, minus the program name and plugin name.
+	Args []string
 }
 
-func NewContext() *Context {
+func NewContext(args []string) *Context {
 	return &Context{
 		App:    os.Getenv("HKAPP"),
 		Client: NewClient(),
+		Args:   args[1:],
 	}
 }
 
