@@ -12,20 +12,20 @@ var pluginDeploy = plugin.Plugin{
 	Action: runDeploy,
 }
 
-type ImageParts struct {
+type Image struct {
 	Repo string `json:"repo"`
 	ID   string `json:"id"`
 }
 
-type Image struct {
-	Image *ImageParts `json:"image"`
+type PostDeployForm struct {
+	Image *Image `json:"image"`
 }
 
 func runDeploy(c *plugin.Context) {
 	repo, id := strings.Split(c.Args[0], ":")[0], strings.Split(c.Args[0], ":")[1]
-	image := &Image{&ImageParts{repo, id}}
+	form := &PostDeployForm{&Image{repo, id}}
 
-	err := c.Client.Post(nil, "/deploys", image)
+	err := c.Client.Post(nil, "/deploys", form)
 	if err != nil {
 		fmt.Printf("Failed to deploy %s:%s\n", repo, id)
 		plugin.Must(err)
