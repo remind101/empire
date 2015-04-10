@@ -13,6 +13,10 @@
 		{
 			"ImportPath": "github.com/bgentry/heroku-go",
 			"Rev": "b891b4c66c7a330c5da052a0789f66c4e83c1bed"
+		},
+		{
+			"ImportPath": "github.com/mgutz/ansi",
+			"Rev": "22ddafb24adc4786c83841aa3021349818c898e4"
 		}
 	]
 }
