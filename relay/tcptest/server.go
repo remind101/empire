@@ -16,16 +16,16 @@ type Server struct {
 	Config   *tcp.Server
 }
 
-func NewServer(h tcp.Handler) *tcp.Server {
+func NewServer(h tcp.Handler) *Server {
 	s := NewUnstartedTCPServer(h)
 	s.Start()
 	return s
 }
 
-func NewUnstartedTCPServer(h tcp.Handler) *TCPServer {
-	return &TCPServer{
+func NewUnstartedTCPServer(h tcp.Handler) *Server {
+	return &Server{
 		Listener: newLocalListener(),
-		Config:   &tcp.Server{Handler: handler},
+		Config:   &tcp.Server{Handler: h},
 	}
 }
 

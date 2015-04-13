@@ -15,7 +15,7 @@ import (
 func NewHTTPHandler(r *Relay) http.Handler {
 	m := httpx.NewRouter()
 
-	m.Handle("GET", "/containers", &PostContainers{r})
+	m.Handle("POST", "/containers", &PostContainers{r})
 
 	var h httpx.Handler
 
