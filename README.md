@@ -59,9 +59,12 @@ hk domains
 ## Quickstart
 
 ```console
+$ go get -u github.com/heroku/hk # The latest version of the heroku CLI is required
 $ make install
 $ vagrant up
 # Wait for vagrant image to boot...
+$ emp login # Use `fake` as the username, with a blank password
+$ perl -pi -e 's/machine 0\.0\.0\.0/machine 0\.0\.0\.0:8080/g' ~/.netrc # See caveats below
 $ emp deploy remind101/acme-inc:latest
 $ open http://acme-inc.172.20.20.10.xip.io
 $ emp apps
