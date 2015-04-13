@@ -1,16 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire/relay"
-	"github.com/remind101/pkg/httpx"
-	"github.com/remind101/pkg/httpx/middleware"
-	"github.com/remind101/pkg/reporter"
+
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -33,7 +31,7 @@ var Commands = []cli.Command{
 				EnvVar: "RELAY_TCP_PORT",
 			},
 		},
-		Action: runServer,
+		Action: runServers,
 	},
 }
 
@@ -46,55 +44,23 @@ func main() {
 	app.Run(os.Args)
 }
 
-func runServer(c *cli.Context) {
+func runServers(c *cli.Context) {
+	r := newRelay(c)
+	l := logger.New(log.New(os.Stdout, "", 0))
+	ctx := context.Background()
+	ctx = logger.WithLogger(ctx, l)
+
 	httpPort := c.String("http.port")
 	tcpPort := c.String("tcp.port")
 
-	r := newRelay(c)
-	s := newServer(r)
+	go relay.ListenAndServeTCP(ctx, r, tcpPort)
 
-	log.Printf("Starting on ports http:%s tcp:%s", httpPort, tcpPort)
+	s := relay.NewHTTPServer(ctx, r)
+	log.Printf("Starting http server on port %s\n", httpPort)
 	log.Fatal(http.ListenAndServe(":"+httpPort, s))
 }
 
 func newRelay(c *cli.Context) *relay.Relay {
 	o := relay.Options{}
 	return relay.New(o)
-}
-
-func newServer(r *relay.Relay) http.Handler {
-	m := httpx.NewRouter()
-
-	m.Handle("GET", "/containers", &PostContainers{r})
-
-	var h httpx.Handler
-
-	// Recover from panics.
-	h = middleware.Recover(m, reporter.NewLogReporter())
-
-	// Add a logger to the context.
-	h = middleware.NewLogger(h, os.Stdout)
-
-	// Add the request id to the context.
-	h = middleware.ExtractRequestID(h)
-
-	// Wrap the route in middleware to add a context.Context.
-	return middleware.BackgroundContext(h)
-}
-
-type PostContainers struct {
-	*relay.Relay
-}
-
-func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	return Encode(w, nil)
-}
-
-func Encode(w http.ResponseWriter, v interface{}) error {
-	if v == nil {
-		// Empty JSON body "{}"
-		v = map[string]interface{}{}
-	}
-
-	return json.NewEncoder(w).Encode(v)
 }
