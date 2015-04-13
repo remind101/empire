@@ -7,9 +7,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire/relay"
-
-	"github.com/remind101/pkg/logger"
-	"golang.org/x/net/context"
+	"github.com/remind101/empire/relay/tcp"
 )
 
 var Commands = []cli.Command{
@@ -46,18 +44,18 @@ func main() {
 
 func runServers(c *cli.Context) {
 	r := newRelay(c)
-	l := logger.New(log.New(os.Stdout, "", 0))
-	ctx := context.Background()
-	ctx = logger.WithLogger(ctx, l)
 
-	httpPort := c.String("http.port")
+	// Start TCP Server in a go routine
+	th := relay.NewTCPHandler(r)
 	tcpPort := c.String("tcp.port")
+	log.Printf("Starting tcp server on port %s\n", tcpPort)
+	go tcp.ListenAndServe(":"+tcpPort, th)
 
-	go relay.ListenAndServeTCP(ctx, r, tcpPort)
-
-	s := relay.NewHTTPServer(ctx, r)
+	// Start HTTP Server
+	hh := relay.NewHTTPHandler(r)
+	httpPort := c.String("http.port")
 	log.Printf("Starting http server on port %s\n", httpPort)
-	log.Fatal(http.ListenAndServe(":"+httpPort, s))
+	log.Fatal(http.ListenAndServe(":"+httpPort, hh))
 }
 
 func newRelay(c *cli.Context) *relay.Relay {

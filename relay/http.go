@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func NewHTTPServer(ctx context.Context, r *Relay) http.Handler {
+func NewHTTPHandler(r *Relay) http.Handler {
 	m := httpx.NewRouter()
 
 	m.Handle("GET", "/containers", &PostContainers{r})
@@ -29,12 +29,7 @@ func NewHTTPServer(ctx context.Context, r *Relay) http.Handler {
 	h = middleware.ExtractRequestID(h)
 
 	// Wrap the route in middleware to add a context.Context.
-	b := middleware.BackgroundContext(h)
-	b.Generate = func() context.Context {
-		return ctx
-	}
-
-	return http.Handler(b)
+	return middleware.BackgroundContext(h)
 }
 
 type Container struct {
