@@ -295,7 +295,7 @@ func newTemplate(release *Release, config *Config, slug *Slug, p *Process) *pod.
 			"process_type": string(p.Type),
 		},
 		// TODO: allow this to be configured eventually - 1 gig for now
-		MemoryLimit: 1048576,
+		MemoryLimit: 1073741824,
 	}
 }
 
