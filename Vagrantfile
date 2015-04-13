@@ -21,7 +21,7 @@ Vagrant.configure('2') do |config|
   config.ssh.insert_key = false
 
   config.vm.box = 'coreos-stable'
-  config.vm.box_version = '>= 308.0.1'
+  config.vm.box_version = '>= 607.0.0'
   config.vm.box_url = 'http://stable.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json'
 
   config.vm.provider :virtualbox do |v|
