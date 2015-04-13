@@ -23,6 +23,12 @@ var Commands = []cli.Command{
 				EnvVar: "RELAY_HTTP_PORT",
 			},
 			cli.StringFlag{
+				Name:   "tcp.host",
+				Value:  "",
+				Usage:  "The hostname the tcp server is running on.",
+				EnvVar: "RELAY_TCP_HOST",
+			},
+			cli.StringFlag{
 				Name:   "tcp.port",
 				Value:  "5000",
 				Usage:  "The port to run the tcp server on",
@@ -59,6 +65,5 @@ func runServers(c *cli.Context) {
 }
 
 func newRelay(c *cli.Context) *relay.Relay {
-	o := relay.Options{}
-	return relay.New(o)
+	return relay.New(relay.DefaultOptions)
 }

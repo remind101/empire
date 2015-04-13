@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
@@ -45,7 +46,7 @@ func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	logger.Log(ctx, "at", "PostContainers", "session", id, "starting new container session")
 
 	w.WriteHeader(201)
-	return Encode(w, Container{AttachURL: id})
+	return Encode(w, Container{AttachURL: strings.Join([]string{h.Host, id}, "/")})
 }
 
 func Encode(w http.ResponseWriter, v interface{}) error {

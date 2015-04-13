@@ -7,29 +7,46 @@ import (
 )
 
 var (
+	DefaultSessionGenerator = func() string { return uuid.New() }
+
 	// DefaultOptions is a default Options instance that can be passed when
 	// intializing a new Relay.
-	DefaultOptions = Options{}
+	DefaultOptions = Options{SessionGenerator: DefaultSessionGenerator}
 )
 
-type Options struct{}
+type Options struct {
+	Host             string
+	SessionGenerator func() string
+}
 
 type Relay struct {
 	sync.Mutex
-	sessions map[string]bool
+
+	// The rendezvous host
+	Host string
+
+	genSessionId func() string
+	sessions     map[string]bool
 }
 
 // New returns a new Relay instance.
 func New(options Options) *Relay {
+	sg := options.SessionGenerator
+	if sg == nil {
+		sg = DefaultSessionGenerator
+	}
+
 	return &Relay{
-		sessions: map[string]bool{},
+		Host:         options.Host,
+		genSessionId: sg,
+		sessions:     map[string]bool{},
 	}
 }
 
 func (r *Relay) NewSession() string {
 	r.Lock()
 	defer r.Unlock()
-	id := uuid.New()
+	id := r.genSessionId()
 	r.sessions[id] = true
 	return id
 }
