@@ -10,7 +10,7 @@ Running the server:
 ```console
 $ empire server -h
 NAME:
-   server - Run the empire HTTP api
+   server - Run the Empire HTTP API
 
 USAGE:
    command server [command options] [arguments...]
@@ -21,21 +21,21 @@ OPTIONS:
    --github.client.secret         The client secret for the GitHub OAuth application [$EMPIRE_GITHUB_CLIENT_SECRET]
    --github.organization        The organization to allow access to [$EMPIRE_GITHUB_ORGANIZATION]
    --github.secret          The shared secret between GitHub and Empire. GitHub will use this secret to sign webhook requests. [$EMPIRE_GITHUB_SECRET]
-   --docker.organization        The fallback docker registry organization to use when an app is not linked to a docker repo. (e.g. quay.io/remind101) [$EMPIRE_DOCKER_ORGANIZATION]
-   --docker.socket 'unix:///var/run/docker.sock'  The location of the docker api [$DOCKER_HOST]
+   --docker.organization        The fallback Docker registry organization to use when an app is not linked to a Docker repo. (e.g. quay.io/remind101) [$EMPIRE_DOCKER_ORGANIZATION]
+   --docker.socket 'unix:///var/run/docker.sock'  The location of the Docker API [$DOCKER_HOST]
    --docker.cert          If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
-   --docker.auth '/Users/ejholmes/.dockercfg'   Path to a docker registry auth file (~/.dockercfg) [$DOCKER_AUTH_PATH]
-   --fleet.api            The location of the fleet api [$FLEET_URL]
+   --docker.auth '/Users/ejholmes/.dockercfg'   Path to a Docker registry auth file (~/.dockercfg) [$DOCKER_AUTH_PATH]
+   --fleet.api            The location of the fleet API [$FLEET_URL]
    --secret '<change this>'       The secret used to sign access tokens [$EMPIRE_TOKEN_SECRET]
    --db 'postgres://localhost/empire?sslmode=disable' SQL connection string for the database [$EMPIRE_DATABASE_URL]
-   
+
 ```
 
 ## Heroku API compatibility
 
-We are aiming to be compatible with heroku's API
+We are aiming to be compatible with Heroku's API.
 
-You can use the `hk` cli with empire like this:
+You can use the `hk` CLI with Empire like this:
 
 ```console
 HEROKU_API_URL=<empire_url> hk ...
@@ -59,7 +59,7 @@ hk domains
 ## Quickstart
 
 ```console
-$ go get -u github.com/heroku/hk # The latest version of the heroku CLI is required
+$ go get -u github.com/heroku/hk # The latest version of the Heroku CLI is required
 $ make install
 $ vagrant up
 # Wait for vagrant image to boot...
@@ -87,7 +87,7 @@ applications in a compute cluster. The following components are employed:
 
 **[Fleet][fleet]** Used for process scheduling.
 
-**[Postgres][postgres]** Used as a backend for empire app data.
+**[Postgres][postgres]** Used as a backend for Empire app data.
 
 **[Heka][heka]** Used for log processing.
 
@@ -136,7 +136,7 @@ command](https://github.com/heroku/hk)**.
 
 The same way you would with Heroku, but easier:
 
-1. Create a github repo.
+1. Create a GitHub repo.
 2. Add a [Dockerfile](https://docs.docker.com/reference/builder/) to run your app. Include a line to copy the Procfile to the root of the container:
 
    ```
@@ -155,14 +155,14 @@ No.
 
 ## Architecture
 
-Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor], as well as similar projects such as [flynn][flynn] and [deis][deis]
+Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor], as well as similar projects such as [flynn][flynn] and [deis][deis].
 
 ### Phases
 
 There are three phases during deployment:
 
-1. **Build**: This phase happens after a git push to GitHub, which triggers a docker build. Once the image is built, it gets tagged with the git sha that triggered the build. This is in contrast to systems like heroku, where the build phase always happens during the deployment process. The primary advantage behind Empire's philosophy, is that once a git sha has been built, deployment is nearly instant.
-2. **Release**: This phase happens when a developer triggers a deploy for a git sha via marvin. The git sha is resolved to a docker image, empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
+1. **Build**: This phase happens after a git push to GitHub, which triggers a Docker build. Once the image is built, it gets tagged with the git sha that triggered the build. This is in contrast to systems like Heroku, where the build phase always happens during the deployment process. The primary advantage behind Empire's philosophy, is that once a git sha has been built, deployment is nearly instant.
+2. **Release**: This phase happens when a developer triggers a deploy for a git sha via marvin. The git sha is resolved to a Docker image, Empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
 3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
 
 [12factor]: http://12factor.net/
