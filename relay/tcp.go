@@ -46,6 +46,7 @@ func (h *containerSession) ServeTCP(ctx context.Context, conn net.Conn) {
 	session := scanner.Text()
 	if ok := h.relay.sessions[session]; ok {
 		logger.Log(ctx, "at", "HandleConn", "session", session, "session exists.")
+		fmt.Fprintf(conn, "Connection accepted for session %s\r\n", session)
 	} else {
 		logger.Log(ctx, "at", "HandleConn", "session", session, "session does not exist.")
 	}
