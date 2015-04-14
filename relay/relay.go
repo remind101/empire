@@ -24,7 +24,7 @@ type Container struct {
 	Image     string            `json:"image"`
 	Name      string            `json:"name"`
 	Command   string            `json:"command"`
-	Status    string            `json:"status"`
+	State     string            `json:"state"`
 	Env       map[string]string `json:"env"`
 	Attach    bool              `json:"attach"`
 	AttachURL string            `json:"attach_url"`

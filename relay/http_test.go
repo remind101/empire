@@ -27,7 +27,7 @@ func TestPostContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	bs := string(bb)
-	ex := "{\"image\":\"phusion/baseimage\",\"name\":\"run.1\",\"command\":\"/bin/bash\",\"status\":\"\",\"env\":{\"TERM\":\"x-term\"},\"attach\":true,\"attach_url\":\"rendezvous://rendez.empire.example.com/1\"}\n"
+	ex := "{\"image\":\"phusion/baseimage\",\"name\":\"run.1\",\"command\":\"/bin/bash\",\"state\":\"starting\",\"env\":{\"TERM\":\"x-term\"},\"attach\":true,\"attach_url\":\"rendezvous://rendez.empire.example.com/1\"}\n"
 	if got, want := bs, ex; got != want {
 		t.Fatalf("res.Body => %q; want %q", got, want)
 	}

@@ -58,6 +58,7 @@ func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		Image:     form.Image,
 		Name:      strings.Join([]string{"run", id}, "."),
 		Command:   form.Command,
+		State:     "starting",
 		Env:       form.Env,
 		Attach:    form.Attach,
 		AttachURL: strings.Join([]string{h.Host, id}, "/"),
