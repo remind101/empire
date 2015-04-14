@@ -17,6 +17,7 @@ user_data:
 	sed -e "s,# discovery:,discovery:," -e "s,discovery: https://discovery.etcd.io/.*,discovery: $(URL)," cluster/user-data.template > cluster/user-data
 
 vagrant: user_data
+	touch ~/.dockercfg
 	vagrant destroy
 	vagrant up
 
