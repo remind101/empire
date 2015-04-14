@@ -89,7 +89,7 @@ applications in a compute cluster. The following components are employed:
 * **[Heka][heka]**: Used for log processing.
 * **[Registrator][registrator]**: Used to automatically register services with consul.
 * **[Shipr][shipr]**: Used to handle GitHub Deployments and forward them to Empire.
-* **[hubot-deploy][hubotdeploy]**: Hubot and the hubot-deploy script is used as our abstraction around deploying.
+* **[Hubot Deploy][hubot-deploy]**: Hubot and the Hubot Deploy script is used as our abstraction around deploying.
 
 ## Development
 
@@ -109,7 +109,7 @@ $ godep go test ./...
 
 1. `emp login` won't work by default if you're running on a non-standard port.
    Once you `emp login`, you'll need to change the appropriate `machine` entry in
-   your `~/.netrc` to include to port.
+   your `~/.netrc` to include to port:
 
    ```
    machine 0.0.0.0:8080
@@ -169,7 +169,7 @@ There are three phases during deployment:
 [heka]: http://hekad.readthedocs.org/en/v0.9.0/
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
-[hubotdeploy]: https://github.com/remidn101/hubot-deploy
+[hubot-deploy]: https://github.com/remind101/hubot-deploy
 [legion]: https://github.com/remind101/legion
 [postgres]: http://www.postgresql.org/
 [registrator]: https://github.com/progrium/registrator
