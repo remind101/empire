@@ -109,7 +109,7 @@ $ godep go test ./...
 
 1. `emp login` won't work by default if you're running on a non-standard port.
    Once you `emp login`, you'll need to change the appropriate `machine` entry in
-   your `~/.netrc` to include to port:
+   your `~/.netrc` to include the port:
 
    ```
    machine 0.0.0.0:8080
