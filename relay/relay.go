@@ -19,6 +19,17 @@ type Options struct {
 	SessionGenerator func() string
 }
 
+// Container represents a docker container to run.
+type Container struct {
+	Image     string            `json:"image"`
+	Name      string            `json:"name"`
+	Command   string            `json:"command"`
+	Status    string            `json:"status"`
+	Env       map[string]string `json:"env"`
+	Attach    bool              `json:"attach"`
+	AttachURL string            `json:"attach_url"`
+}
+
 type Relay struct {
 	sync.Mutex
 
@@ -49,4 +60,10 @@ func (r *Relay) NewSession() string {
 	id := r.genSessionId()
 	r.sessions[id] = true
 	return id
+}
+
+func (r *Relay) CreateContainer(c *Container) error {
+	// docker pull
+	// docker run
+	return nil
 }

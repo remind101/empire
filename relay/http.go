@@ -33,8 +33,11 @@ func NewHTTPHandler(r *Relay) http.Handler {
 	return middleware.BackgroundContext(h)
 }
 
-type Container struct {
-	AttachURL string `json:"attach_url"`
+type PostContainersForm struct {
+	Image   string            `json:"image"`
+	Command string            `json:"command"`
+	Env     map[string]string `json:"env"`
+	Attach  bool              `json:"attach"`
 }
 
 type PostContainers struct {
@@ -42,11 +45,30 @@ type PostContainers struct {
 }
 
 func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var form PostContainersForm
+
+	if err := Decode(r, &form); err != nil {
+		return err
+	}
+
 	id := h.NewSession()
 	logger.Log(ctx, "at", "PostContainers", "session", id, "starting new container session")
 
+	c := &Container{
+		Image:     form.Image,
+		Name:      strings.Join([]string{"run", id}, "."),
+		Command:   form.Command,
+		Env:       form.Env,
+		Attach:    form.Attach,
+		AttachURL: strings.Join([]string{h.Host, id}, "/"),
+	}
+
+	if err := h.CreateContainer(c); err != nil {
+		return err
+	}
+
 	w.WriteHeader(201)
-	return Encode(w, Container{AttachURL: strings.Join([]string{h.Host, id}, "/")})
+	return Encode(w, c)
 }
 
 func Encode(w http.ResponseWriter, v interface{}) error {
@@ -56,4 +78,8 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 	}
 
 	return json.NewEncoder(w).Encode(v)
+}
+
+func Decode(r *http.Request, v interface{}) error {
+	return json.NewDecoder(r.Body).Decode(v)
 }
