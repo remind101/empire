@@ -83,19 +83,13 @@ Empire is a distributed system for deploying and running
 [12factor][12factor] [Docker][docker] based
 applications in a compute cluster. The following components are employed:
 
-**[Etcd][etcd]** Used for service discovery and a general key/val store.
-
-**[Fleet][fleet]** Used for process scheduling.
-
-**[Postgres][postgres]** Used as a backend for Empire app data.
-
-**[Heka][heka]** Used for log processing.
-
-**[Registrator][registrator]** Used to automatically register services with consul.
-
-**[Shipr][shipr]** Shipr is used to handle GitHub Deployments and forward them to Empire.
-
-**[hubot-deploy][hubotdeploy]** Hubot and the hubot-deploy script is used as our abstraction around deploying.
+* **[Etcd][etcd]**: Used for service discovery and a general key/val store.
+* **[Fleet][fleet]**: Used for process scheduling.
+* **[Postgres][postgres]**: Used as a backend for Empire app data.
+* **[Heka][heka]**: Used for log processing.
+* **[Registrator][registrator]**: Used to automatically register services with consul.
+* **[Shipr][shipr]**: Used to handle GitHub Deployments and forward them to Empire.
+* **[hubot-deploy][hubotdeploy]**: Hubot and the hubot-deploy script is used as our abstraction around deploying.
 
 ## Development
 
@@ -114,7 +108,7 @@ $ godep go test ./...
 **Caveats**
 
 1. `emp login` won't work by default if you're running on a non-standard port.
-   Once you emp login, you'll need to change the appropriate `machine` entry in
+   Once you `emp login`, you'll need to change the appropriate `machine` entry in
    your `~/.netrc` to include to port.
 
    ```
@@ -128,16 +122,15 @@ Unit tests live alongside each go file as `_test.go`.
 There is also a `tests` directory that contains
 integration and functional tests that tests the system
 using the
-**[heroku-go](https://github.com/bgentry/heroku-go)**
-client and the **[hk
-command](https://github.com/heroku/hk)**.
+**[heroku-go][heroku-go]**
+client and the **[hk][hk]** command.
 
 ## How do I deploy to Empire?
 
 The same way you would with Heroku, but easier:
 
 1. Create a GitHub repo.
-2. Add a [Dockerfile](https://docs.docker.com/reference/builder/) to run your app. Include a line to copy the Procfile to the root of the container:
+2. Add a [Dockerfile][dockerfile] to run your app. Include a line to copy the Procfile to the root of the container:
 
    ```
    ADD ./Procfile /
@@ -161,18 +154,21 @@ Empire is heavily influenced by Heroku and the philosophies described in [The Tw
 
 There are three phases during deployment:
 
-1. **Build**: This phase happens after a git push to GitHub, which triggers a Docker build. Once the image is built, it gets tagged with the git sha that triggered the build. This is in contrast to systems like Heroku, where the build phase always happens during the deployment process. The primary advantage behind Empire's philosophy, is that once a git sha has been built, deployment is nearly instant.
-2. **Release**: This phase happens when a developer triggers a deploy for a git sha via marvin. The git sha is resolved to a Docker image, Empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
+1. **Build**: This phase happens after a Git push to GitHub, which triggers a Docker build. Once the image is built, it gets tagged with the Git SHA that triggered the build. This is in contrast to systems like Heroku, where the build phase always happens during the deployment process. The primary advantage behind Empire's philosophy, is that once a Git SHA has been built, deployment is nearly instant.
+2. **Release**: This phase happens when a developer triggers a deploy for a Git SHA via marvin. The Git SHA is resolved to a Docker image, Empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
 3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
 
 [12factor]: http://12factor.net/
 [consul]: https://github.com/hashicorp/consul
 [deis]: http://deis.io/
 [docker]: https://www.docker.com/
+[dockerfile]: https://docs.docker.com/reference/builder/
 [etcd]: https://github.com/coreos/etcd
-[heka]: http://hekad.readthedocs.org/en/v0.9.0/
 [fleet]: https://github.com/coreos/fleet
 [flynn]: https://flynn.io/
+[heka]: http://hekad.readthedocs.org/en/v0.9.0/
+[heroku-go]: https://github.com/bgentry/heroku-go
+[hk]: https://github.com/heroku/hk
 [hubotdeploy]: https://github.com/remidn101/hubot-deploy
 [legion]: https://github.com/remind101/legion
 [postgres]: http://www.postgresql.org/
