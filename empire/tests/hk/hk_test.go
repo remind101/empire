@@ -291,14 +291,23 @@ func TestRollback(t *testing.T) {
 			"Deployed remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 		},
 		{
+			"set FOO=bar -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
 			"rollback v1 -a acme-inc",
-			"Rolled back acme-inc to v1 as v3.",
+			"Rolled back acme-inc to v1 as v4.",
 		},
 		{
 			"releases -a acme-inc",
 			`v1    Dec 31 17:01  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2
 v2    Dec 31 17:01  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2
-v3    Dec 31 17:01  Rollback to v1`,
+v3    Dec 31 17:01  Set FOO config vars
+v4    Dec 31 17:01  Rollback to v1`,
+		},
+		{
+			"env -a acme-inc",
+			"",
 		},
 	})
 }
