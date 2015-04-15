@@ -3,6 +3,7 @@ package relay
 import (
 	"errors"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
@@ -38,8 +39,8 @@ func newDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (
 
 	switch {
 	case certPath != "":
-		cert := certPath + "/cert.pem"
-		key := certPath + "/key.pem"
+		cert := path.Join(certPath, "cert.pem")
+		key := path.Join(certPath, "key.pem")
 		ca := ""
 		dc, err = docker.NewTLSClient(socket, cert, key, ca)
 	case socket != "":
@@ -57,7 +58,7 @@ func newDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (
 }
 
 func (d *dockerRunner) Pull(c *Container) error {
-	return nil
+	return d.pullImage(c.Image, "latest")
 }
 
 func (d *dockerRunner) Run(c *Container) error {
@@ -67,7 +68,7 @@ func (d *dockerRunner) Run(c *Container) error {
 func (d *dockerRunner) pullImage(image string, tag string) error {
 	var a docker.AuthConfiguration
 
-	reg, _, err := d.splitRepo(image)
+	reg, _, err := splitRepo(image)
 	if err != nil {
 		return err
 	}
@@ -88,7 +89,7 @@ func (d *dockerRunner) pullImage(image string, tag string) error {
 }
 
 // Split splits a full docker repo into registry and path segments.
-func (d *dockerRunner) splitRepo(fullRepo string) (registry string, path string, err error) {
+func splitRepo(fullRepo string) (registry string, path string, err error) {
 	parts := strings.Split(fullRepo, "/")
 
 	if len(parts) < 2 {
