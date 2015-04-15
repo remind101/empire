@@ -125,6 +125,12 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The error reporter to use. (e.g. hb://api.honeybadger.io?key=<apikey>&environment=production)",
 		EnvVar: "EMPIRE_REPORTER",
 	},
+	cli.StringFlag{
+		Name:   "runner.api",
+		Value:  "",
+		Usage:  "The location of the container runner api",
+		EnvVar: "EMPIRE_RUNNER",
+	},
 }
 
 func main() {
@@ -144,6 +150,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Etcd.API = c.String("etcd.api")
 	opts.Fleet.API = c.String("fleet.api")
+	opts.Runner.API = c.String("runner.api")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
 

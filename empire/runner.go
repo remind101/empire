@@ -1,6 +1,11 @@
 package empire
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/remind101/empire/empire/pkg/container"
@@ -10,13 +15,13 @@ import (
 )
 
 type ContainerRelay struct {
-	Name      string
-	AttachURL string
-	Command   string
-	State     string
+	Name      string `json:"name"`
+	AttachURL string `json:"attach_url"`
+	Command   string `json:"command"`
+	State     string `json:"state"`
 	Type      string
 	Size      string
-	CreatedAt time.Time
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // ContainerRelayer defines an interface for running a container
@@ -37,6 +42,56 @@ func (f *fakeRelayer) Relay(ctx context.Context, c *container.Container) (*Conta
 		Size:      "1X",
 		CreatedAt: timex.Now(),
 	}, nil
+}
+
+type relayer struct {
+	API string // Location of the relay http api.
+}
+
+type postContainersForm struct {
+	Image   string            `json:"image"`
+	Command string            `json:"command"`
+	Env     map[string]string `json:"env"`
+	Attach  bool              `json:"attach"`
+}
+
+func (r *relayer) Relay(ctx context.Context, c *container.Container) (*ContainerRelay, error) {
+	f := &postContainersForm{
+		Image:   c.Image.String(),
+		Command: c.Command,
+		Env:     c.Env,
+		Attach:  true,
+	}
+
+	b, err := json.Marshal(f)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/containers", r.API)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	cr := &ContainerRelay{}
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, cr)
+	if err != nil {
+		return nil, err
+	}
+	return cr, nil
 }
 
 type runner struct {

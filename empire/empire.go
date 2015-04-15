@@ -48,11 +48,17 @@ type FleetOptions struct {
 	API string
 }
 
+// RunnerOptions is a set of options to configure the one off process runner service.
+type RunnerOptions struct {
+	API string
+}
+
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
 	Fleet  FleetOptions
 	Etcd   EtcdOptions
+	Runner RunnerOptions
 
 	Secret string
 
@@ -136,10 +142,7 @@ func New(options Options) (*Empire, error) {
 		manager: manager,
 	}
 
-	runner := &runner{
-		store:   store,
-		relayer: &fakeRelayer{},
-	}
+	runner := newRunner(options.Runner, store)
 
 	releaser := &releaser{
 		manager: manager,
@@ -379,4 +382,18 @@ func newManager(options Options) (*manager, error) {
 	return &manager{
 		Manager: pod.NewContainerManager(scheduler, store),
 	}, nil
+}
+
+func newRunner(options RunnerOptions, s *store) *runner {
+	var r ContainerRelayer
+	if options.API == "fake" {
+		r = &fakeRelayer{}
+	} else {
+		r = &relayer{API: options.API}
+	}
+
+	return &runner{
+		store:   s,
+		relayer: r,
+	}
 }
