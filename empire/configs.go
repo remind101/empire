@@ -145,10 +145,26 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 	return c, nil
 }
 
+// Returns configs for latest release or the latest configs if there are no releases.
 func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
-	c, err := s.store.ConfigsFindByApp(app)
+	r, err := s.store.ReleasesLast(app)
 	if err != nil {
 		return nil, err
+	}
+
+	var c *Config
+
+	if r != nil {
+		c, err = s.store.ConfigsFind(r.ConfigID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// It's possible to have config without releases, this handles that.
+		c, err = s.store.ConfigsFindByApp(app)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c != nil {
