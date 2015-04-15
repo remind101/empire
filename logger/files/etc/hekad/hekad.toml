@@ -15,7 +15,7 @@ ticker_interval = 15
 
 [DockerLogInput]
 
-[MemStats]
+[MemStatsInput]
 type = "FilePollingInput"
 ticker_interval = 20
 file_path = "/proc/meminfo"
@@ -43,7 +43,7 @@ preserve_data = true
   [DockerSyslogFilter.config]
   max_buffer_size = 100
 
-[MemoryStatsFilter]
+[MemStatsFilter]
 type = "SandboxFilter"
 message_matcher = "Type == 'stats.memstats'"
 filename = "lua_filters/memstats.lua"
@@ -67,33 +67,32 @@ preserve_data = true
 # -------
 
 # Log docker container logs to stdout. Useful for debugging.
-[OutputBufferedSyslog]
+[BufferedSyslogOutput]
 type = "LogOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 encoder = "PayloadEncoder"
 
 # Sumologic output
-[Sumologic]
+[SumologicOutput]
 type = "HttpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 address = "%ENV[SUMOLOGIC_URL]"
 encoder = "PayloadEncoder"
 
-
 # Librato l2met output
-[LibratoL2met]
+[LibratoL2metOutput]
 type = "HttpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 address = "%ENV[LIBRATO_L2MET_URL]"
 encoder = "PayloadEncoder"
 
 # Librato Circular Buffer output
-[Librato]
+[LibratoOutput]
 type = "HttpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'cbuf'"
 encoder = "CbufLibratoEncoder"
 address = "https://metrics-api.librato.com/v1/metrics"
 username = "%ENV[LIBRATO_USER]"
 password = "%ENV[LIBRATO_TOKEN]"
-  [Librato.headers]
+  [LibratoOutput.headers]
   Content-Type = ["application/json"]
