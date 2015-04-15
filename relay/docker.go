@@ -2,6 +2,8 @@ package relay
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -15,6 +17,7 @@ var ErrInvalidRepo = errors.New("registry: not a valid docker repo")
 type ContainerRunner interface {
 	Pull(*Container) error
 	Run(*Container) error
+	Attach(string, io.Reader, io.Writer) error
 }
 
 type fakeRunner struct {
@@ -25,6 +28,9 @@ func (f *fakeRunner) Pull(c *Container) error {
 }
 
 func (f *fakeRunner) Run(c *Container) error {
+	return nil
+}
+func (f *fakeRunner) Attach(name string, input io.Reader, output io.Writer) error {
 	return nil
 }
 
@@ -45,6 +51,8 @@ func newDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (
 		dc, err = docker.NewTLSClient(socket, cert, key, ca)
 	case socket != "":
 		dc, err = docker.NewClient(socket)
+	default:
+		return nil, errors.New("newDockerRunner needs a socket or a certPath")
 	}
 
 	if err != nil {
@@ -62,7 +70,38 @@ func (d *dockerRunner) Pull(c *Container) error {
 }
 
 func (d *dockerRunner) Run(c *Container) error {
+	env := []string{}
+	for k, v := range c.Env {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	opts := docker.CreateContainerOptions{
+		Name: c.Name,
+		Config: &docker.Config{
+			Tty:   c.Attach,
+			Image: c.Image,
+			Cmd:   []string{c.Command},
+			Env:   env,
+		},
+		HostConfig: &docker.HostConfig{},
+	}
+	d.client.CreateContainer(opts)
 	return nil
+}
+
+func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) error {
+	opts := docker.AttachToContainerOptions{
+		Container:    name,
+		InputStream:  input,
+		OutputStream: output,
+		ErrorStream:  output,
+		Stdin:        true,
+		Stdout:       true,
+		Stderr:       true,
+		RawTerminal:  true,
+	}
+
+	return d.client.AttachToContainer(opts)
 }
 
 func (d *dockerRunner) pullImage(image string, tag string) error {

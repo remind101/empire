@@ -44,7 +44,7 @@ func TestHandshakeValidSession(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := scanner.Text(), "Connection accepted for session 1"; got != want {
+	if got, want := scanner.Text(), "Attaching to container..."; got != want {
 		t.Errorf("Response from TCP Server => %q; want %q", got, want)
 	}
 }

@@ -23,6 +23,7 @@ func NewTestTCPServer(r *Relay) *tcptest.Server {
 
 func NewTestRelay() *Relay {
 	o := DefaultOptions
+	o.Docker.Socket = "fake"
 	o.Host = "rendezvous://rendez.empire.example.com"
 	sid := 0
 	o.SessionGenerator = func() string {

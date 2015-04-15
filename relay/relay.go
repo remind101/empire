@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"net"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
@@ -99,4 +100,8 @@ func (r *Relay) CreateContainer(c *Container) error {
 		return err
 	}
 	return r.runner.Run(c)
+}
+
+func (r *Relay) AttachToContainer(name string, conn net.Conn) error {
+	return r.runner.Attach(name, conn, conn)
 }

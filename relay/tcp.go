@@ -45,13 +45,12 @@ func (h *containerSession) ServeTCP(ctx context.Context, conn net.Conn) {
 	}
 	session := scanner.Text()
 	if ok := h.relay.sessions[session]; ok {
-		logger.Log(ctx, "at", "HandleConn", "session", session, "session exists.")
-		fmt.Fprintf(conn, "Connection accepted for session %s\r\n", session)
+		logger.Log(ctx, "at", "HandleConn", "session", session, "session exists, attaching.")
+		fmt.Fprintln(conn, "Attaching to container...")
+		if err := h.relay.AttachToContainer(session, conn); err != nil {
+			panic(err)
+		}
 	} else {
 		logger.Log(ctx, "at", "HandleConn", "session", session, "session does not exist.")
 	}
-
-	// w := io.MultiWriter(os.Stdout, conn)
-	// go io.Copy(w, conn)
-	// go io.Copy(conn, os.Stdin)
 }
