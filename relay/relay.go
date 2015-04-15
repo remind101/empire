@@ -3,6 +3,8 @@ package relay
 import (
 	"sync"
 
+	"github.com/fsouza/go-dockerclient"
+
 	"code.google.com/p/go-uuid/uuid"
 )
 
@@ -14,9 +16,25 @@ var (
 	DefaultOptions = Options{SessionGenerator: DefaultSessionGenerator}
 )
 
+// DockerOptions is a set of options to configure a docker api client.
+type DockerOptions struct {
+	// The default docker organization to use.
+	Organization string
+
+	// The unix socket to connect to the docker api.
+	Socket string
+
+	// Path to a certificate to use for TLS connections.
+	CertPath string
+
+	// A set of docker registry credentials.
+	Auth *docker.AuthConfigurations
+}
+
 type Options struct {
 	Host             string
 	SessionGenerator func() string
+	Docker           DockerOptions
 }
 
 // Container represents a docker container to run.
@@ -36,6 +54,8 @@ type Relay struct {
 	// The rendezvous host
 	Host string
 
+	runner ContainerRunner
+
 	genSessionId func() string
 	sessions     map[string]bool
 }
@@ -47,8 +67,20 @@ func New(options Options) *Relay {
 		sg = DefaultSessionGenerator
 	}
 
+	var runner ContainerRunner
+	var err error
+	if options.Docker.Socket == "fake" {
+		runner = &fakeRunner{}
+	} else {
+		runner, err = newDockerRunner(options.Docker.Socket, options.Docker.CertPath, options.Docker.Auth)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return &Relay{
 		Host:         options.Host,
+		runner:       runner,
 		genSessionId: sg,
 		sessions:     map[string]bool{},
 	}
@@ -63,7 +95,8 @@ func (r *Relay) NewSession() string {
 }
 
 func (r *Relay) CreateContainer(c *Container) error {
-	// docker pull
-	// docker run
-	return nil
+	if err := r.runner.Pull(c); err != nil {
+		return err
+	}
+	return r.runner.Run(c)
 }
