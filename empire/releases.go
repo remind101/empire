@@ -263,7 +263,11 @@ func (r *releaser) Release(ctx context.Context, release *Release, config *Config
 		return err
 	}
 
-	return r.manager.Destroy(old...)
+	if m, ok := r.manager.Manager.(pod.Destroyable); ok {
+		return m.Destroy(old...)
+	}
+
+	return nil
 }
 
 func newTemplates(release *Release, config *Config, slug *Slug, formation Formation) []*pod.Template {

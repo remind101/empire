@@ -12,14 +12,16 @@ var (
 	ErrNoTemplate = errors.New("template does not exist")
 )
 
+type Destroyable interface {
+	// Destroy destroys a Template.
+	Destroy(...*Template) error
+}
+
 // Manager is an interface for interacting with Templates and
 // Instances.
 type Manager interface {
 	// Submit submits Templates.
 	Submit(...*Template) error
-
-	// Destroy destroys a Template.
-	Destroy(...*Template) error
 
 	// Scale scales a Template.
 	Scale(templateID string, instances uint) error
