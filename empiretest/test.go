@@ -25,12 +25,10 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		Etcd: empire.EtcdOptions{
 			API: "fake",
 		},
-		Fleet: empire.FleetOptions{
-			API: "fake",
-		},
 		Runner: empire.RunnerOptions{
 			API: "fake",
 		},
+		AWSConfig: nil,
 		Docker: empire.DockerOptions{
 			Organization: "quay.io/ejholmes",
 			Auth: &docker.AuthConfigurations{

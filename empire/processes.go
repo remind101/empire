@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/lib/pq/hstore"
+	"github.com/remind101/empire/empire/pkg/service"
+	"golang.org/x/net/context"
 )
 
 // ProcessQuantityMap represents a map of process types to quantities
@@ -183,33 +185,24 @@ type ProcessState struct {
 }
 
 type processStatesService struct {
-	manager *manager
+	manager service.Manager
 }
 
-func (s *processStatesService) JobStatesByApp(app *App) ([]*ProcessState, error) {
+func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
 	var states []*ProcessState
 
-	templates, err := s.manager.Templates(map[string]string{
-		"app": app.Name,
-	})
+	instances, err := s.manager.Instances(ctx, app.Name)
 	if err != nil {
 		return states, err
 	}
 
-	for _, t := range templates {
-		instanceStates, err := s.manager.InstanceStates(t.ID)
-		if err != nil {
-			return states, err
-		}
-
-		for _, state := range instanceStates {
-			states = append(states, &ProcessState{
-				Name:      fmt.Sprintf("%s.%d", state.Instance.Template.ID, state.Instance.Instance),
-				Command:   state.Instance.Template.Command,
-				State:     state.State,
-				UpdatedAt: state.UpdatedAt,
-			})
-		}
+	for _, i := range instances {
+		states = append(states, &ProcessState{
+			Name:      fmt.Sprintf("%s.%s", i.Process.Type, i.ID),
+			Command:   i.Process.Command,
+			State:     i.State,
+			UpdatedAt: i.UpdatedAt,
+		})
 	}
 
 	return states, nil

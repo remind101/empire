@@ -1,0 +1,79 @@
+{
+  "family": "empire",
+  "containerDefinitions": [
+    {
+      "name": "postgres",
+      "image": "postgres",
+      "cpu": 512,
+      "memory": 256,
+      "entryPoint": [],
+      "environment": [],
+      "command": [],
+      "portMappings": [
+        {
+          "hostPort": 5432,
+          "containerPort": 5432
+        }
+      ],
+      "volumesFrom": [],
+      "links": [],
+      "mountPoints": [],
+      "essential": true
+    },
+    {
+      "name": "empire",
+      "image": "remind101/empire:ecs",
+      "cpu": 512,
+      "memory": 256,
+      "entryPoint": [],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "EMPIRE_DATABASE_URL",
+          "value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
+        }
+      ],
+      "command": ["server", "-automigrate=true"],
+      "portMappings": [
+        {
+          "hostPort": 8080,
+          "containerPort": 8080
+        }
+      ],
+      "volumesFrom": [],
+      "links": [
+        "postgres:postgres"
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "dockerSocket",
+          "containerPath": "/var/run/docker.sock",
+          "readOnly": null
+        },
+        {
+          "sourceVolume": "dockerCfg",
+          "containerPath": "/root/.dockercfg",
+          "readOnly": null
+        }
+      ],
+      "essential": true
+    }
+  ],
+  "volumes": [
+    {
+      "name": "dockerSocket",
+      "host": {
+        "sourcePath": "/var/run/docker.sock"
+      }
+    },
+    {
+      "name": "dockerCfg",
+      "host": {
+        "sourcePath": "/home/ec2-user/.dockercfg"
+      }
+    }
+  ]
+}

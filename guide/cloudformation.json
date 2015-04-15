@@ -1,0 +1,265 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Example ECS cluster for Empire",
+
+  "Parameters": {
+    "InstanceType": {
+      "Type": "String",
+      "Default": "t2.small",
+      "AllowedValues": [ "t2.micro","t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    },
+    "AmiId" : {
+      "Type": "String",
+      "Description": "AMI Id",
+      "Default": "ami-ae6559c6"
+    },
+    "KeyName": {
+      "Type": "String",
+      "Description": "The name of the key pair to use to allow SSH access."
+    },
+    "DockerUser": {
+      "Type": "String",
+      "Description": "Docker username for private registry"
+    },
+    "DockerPass": {
+      "Type": "String",
+      "Description": "Docker password for private registry"
+    },
+    "DockerEmail": {
+      "Type": "String",
+      "Description": "Docker registry email"
+    },
+    "MaxCapacity": {
+      "Type": "String",
+      "Description": "Maximum number of EC2 instances in the auto scaling group",
+      "Default": "2"
+    },
+    "DesiredCapacity": {
+      "Type": "String",
+      "Description": "Desired number of EC2 instances in the auto scaling group",
+      "Default": "1"
+    },
+    "AvailabilityZones": {
+      "Type": "CommaDelimitedList",
+      "Description": "Comma delimited list of availability zones. MAX 2",
+      "Default": "us-east-1a,us-east-1b"
+    }
+  },
+
+  "Resources": {
+ 
+    "Vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true"
+      }
+    },
+
+    "PubSubnetAz1" : {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref" : "Vpc" },
+        "CidrBlock": "10.0.0.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": ["0", { "Ref": "AvailabilityZones" }]
+        }
+      }
+    },
+
+    "PubSubnetAz2" : {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref" : "Vpc" },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": ["1", { "Ref": "AvailabilityZones" }]
+        }
+      }
+    },
+
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway"
+    },
+
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": { "Ref": "Vpc" },
+        "InternetGatewayId": { "Ref": "InternetGateway" }
+      }
+    },
+
+    "RouteViaIgw" : {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "Vpc" }
+      }
+    },
+
+    "PublicRouteViaIgw": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "RouteViaIgw" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": { "Ref": "InternetGateway" }
+      }
+    },
+
+    "PubSubnet1RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PubSubnetAz1" },
+        "RouteTableId": { "Ref": "RouteViaIgw" }
+      }
+    },
+ 
+    "PubSubnet2RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PubSubnetAz2" },
+        "RouteTableId": { "Ref": "RouteViaIgw" }
+      }
+    },
+
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Container Instance Allowed Ports",
+        "VpcId": { "Ref": "Vpc" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp", "FromPort": "1", "ToPort": "65535",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+
+    "LoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "SecurityGroups": [
+          { "Ref": "InstanceSecurityGroup" }
+        ],
+        "Subnets": [
+          { "Ref": "PubSubnetAz1" },
+          { "Ref": "PubSubnetAz2" }
+        ],
+        "CrossZone": "true",
+        "Listeners": [
+          {
+            "LoadBalancerPort": "80",
+            "InstancePort": "8080",
+            "Protocol": "HTTP"
+          }
+        ],
+        "HealthCheck": {
+          "Target": "HTTP:8080/health",
+          "HealthyThreshold": "2",
+          "UnhealthyThreshold": "10",
+          "Interval": "30",
+          "Timeout": "5"
+        }
+      }
+    },
+
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ec2.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        }
+      }
+    },
+
+    "InstancePolicies": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "ecs",
+        "Roles": [ { "Ref": "InstanceRole" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ecs:*"
+              ],
+              "Resource": [
+                "*"
+              ]
+            }
+          ]
+        }
+      }
+    },
+
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [ { "Ref": "InstanceRole" } ]
+      }
+    },
+
+    "LaunchConfiguration": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": { "Ref": "AmiId" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "AssociatePublicIpAddress": true,
+        "IamInstanceProfile": { "Ref": "InstanceProfile" },
+        "KeyName": { "Ref": "KeyName" },
+        "SecurityGroups": [
+          { "Ref": "InstanceSecurityGroup" }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\n",
+                "echo ECS_CLUSTER=default >> /etc/ecs/ecs.config\n",
+                "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
+                "echo ECS_ENGINE_AUTH_DATA=\"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
+                "echo \"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+    "AutoScalingGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "AvailabilityZones": { "Ref": "AvailabilityZones" },
+        "VPCZoneIdentifier": [{ "Fn::Join" : [",", [ { "Ref" : "PubSubnetAz1" }, { "Ref" : "PubSubnetAz2" } ] ] }],
+        "LaunchConfigurationName": { "Ref": "LaunchConfiguration" },
+        "MinSize": "0",
+        "MaxSize": { "Ref": "MaxCapacity" },
+        "DesiredCapacity": { "Ref": "DesiredCapacity" }
+      }
+    }
+  },
+
+  "Outputs": {
+    "ELB": {
+      "Description": "The DNS name of the ELB for the Empire controller",
+      "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] }
+    }
+  }
+}

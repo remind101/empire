@@ -132,7 +132,9 @@ func TestConfig(t *testing.T) {
 	})
 }
 
-func TestUpdateConfigNewReleaseSameFormation(t *testing.T) {
+// TODO(ejholmes): This was disabled when switching to the ECS backend, since we
+// no longer encode the release version in the process name.
+func testUpdateConfigNewReleaseSameFormation(t *testing.T) {
 	now(time.Now().AddDate(0, 0, -5))
 	defer resetNow()
 
@@ -143,7 +145,7 @@ func TestUpdateConfigNewReleaseSameFormation(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			"acme-inc.1.web.1    running   5d  \"./bin/web\"",
+			"web.1    running   5d  \"./bin/web\"",
 		},
 		{
 			"scale web=2 -a acme-inc",
@@ -151,8 +153,8 @@ func TestUpdateConfigNewReleaseSameFormation(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    running   5d  "./bin/web"
-acme-inc.1.web.2    running   5d  "./bin/web"`,
+			`web.1    running   5d  "./bin/web"
+web.2    running   5d  "./bin/web"`,
 		},
 		{
 			"set DATABASE_URL=postgres://localhost AUTH=foo -a acme-inc",
@@ -232,8 +234,8 @@ func TestScale(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    running   5d  "./bin/web"
-acme-inc.1.web.2    running   5d  "./bin/web"`,
+			`web.1    running   5d  "./bin/web"
+web.2    running   5d  "./bin/web"`,
 		},
 
 		{
@@ -242,7 +244,7 @@ acme-inc.1.web.2    running   5d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			"acme-inc.1.web.1    running   5d  \"./bin/web\"",
+			"web.1    running   5d  \"./bin/web\"",
 		},
 	})
 }
@@ -262,8 +264,8 @@ func TestRestart(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`acme-inc.1.web.1    running   5d  "./bin/web"
-acme-inc.1.web.2    running   5d  "./bin/web"`,
+			`web.1    running   5d  "./bin/web"
+web.2    running   5d  "./bin/web"`,
 		},
 		{
 			"restart -a acme-inc",
