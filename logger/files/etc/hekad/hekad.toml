@@ -15,23 +15,40 @@ ticker_interval = 15
 
 [DockerLogInput]
 
+[MemStats]
+type = "FilePollingInput"
+ticker_interval = 20
+file_path = "/proc/meminfo"
+decoder = "MemStatsDecoder"
+
 # --------
 # Decoders
 # --------
+
+[MemStatsDecoder]
+type = "SandboxDecoder"
+filename = "lua_decoders/linux_memstats.lua"
 
 # -------
 # Filters
 # -------
 
-[docker_syslog_filter]
+[DockerSyslogFilter]
 type = "SandboxFilter"
 message_matcher = "Fields[ContainerName] != 'empire-logger'"
 filename = "lua_filters/docker_syslog.lua"
 ticker_interval = 60
 preserve_data = true
 
-[docker_syslog_filter.config]
-max_buffer_size = 100
+  [DockerSyslogFilter.config]
+  max_buffer_size = 100
+
+[MemoryStatsFilter]
+type = "SandboxFilter"
+message_matcher = "Type == 'stats.memstats'"
+filename = "lua_filters/memstats.lua"
+ticker_interval = 20
+preserve_data = true
 
 # --------
 # Encoders
@@ -40,26 +57,43 @@ max_buffer_size = 100
 [PayloadEncoder]
 append_newlines = false
 
+[CbufLibratoEncoder]
+type = "SandboxEncoder"
+filename = "lua_encoders/cbuf_librato.lua"
+preserve_data = true
+
 # -------
 # Outputs
 # -------
 
 # Log docker container logs to stdout. Useful for debugging.
-[output_buffered_syslog]
+[OutputBufferedSyslog]
 type = "LogOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 encoder = "PayloadEncoder"
 
 # Sumologic output
-[sumologic]
+[Sumologic]
 type = "HttpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 address = "%ENV[SUMOLOGIC_URL]"
 encoder = "PayloadEncoder"
 
+
 # Librato l2met output
-[librato_l2met]
+[LibratoL2met]
 type = "HttpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
-address = "%ENV[LIBRATO_URL]"
+address = "%ENV[LIBRATO_L2MET_URL]"
 encoder = "PayloadEncoder"
+
+# Librato Circular Buffer output
+[Librato]
+type = "HttpOutput"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'cbuf'"
+encoder = "CbufLibratoEncoder"
+address = "https://metrics-api.librato.com/v1/metrics"
+username = "%ENV[LIBRATO_USER]"
+password = "%ENV[LIBRATO_TOKEN]"
+  [Librato.headers]
+  Content-Type = ["application/json"]
