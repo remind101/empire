@@ -69,28 +69,23 @@ func (r *relayer) Relay(ctx context.Context, c *container.Container) (*Container
 	}
 
 	url := fmt.Sprintf("%s/containers", r.API)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.Post(url, "application/json", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	cr := &ContainerRelay{}
-	b, err = ioutil.ReadAll(resp.Body)
+	rb, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, cr)
+
+	err = json.Unmarshal(rb, cr)
 	if err != nil {
 		return nil, err
 	}
+
 	return cr, nil
 }
 
@@ -112,6 +107,10 @@ func (r *runner) newContainer(ctx context.Context, app *App, command string, opt
 	release, err := r.store.ReleasesLast(app)
 	if err != nil {
 		return nil, err
+	}
+
+	if release == nil {
+		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
 	config, err := r.store.ConfigsFind(release.ConfigID)

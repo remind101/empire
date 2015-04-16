@@ -2,9 +2,11 @@ package relay // import "github.com/remind101/empire/relay"
 
 import (
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
+	"golang.org/x/net/context"
 
 	"code.google.com/p/go-uuid/uuid"
 )
@@ -32,9 +34,14 @@ type DockerOptions struct {
 	Auth *docker.AuthConfigurations
 }
 
+type TcpOptions struct {
+	Host string // Host that the tcp server is running on.
+	Port string // Port that the tcp server is running on.
+}
+
 type Options struct {
-	Host             string
 	SessionGenerator func() string
+	Tcp              TcpOptions
 	Docker           DockerOptions
 }
 
@@ -80,7 +87,7 @@ func New(options Options) *Relay {
 	}
 
 	return &Relay{
-		Host:         options.Host,
+		Host:         strings.Join([]string{options.Tcp.Host, options.Tcp.Port}, ":"),
 		runner:       runner,
 		genSessionId: sg,
 		sessions:     map[string]bool{},
@@ -95,13 +102,13 @@ func (r *Relay) NewSession() string {
 	return id
 }
 
-func (r *Relay) CreateContainer(c *Container) error {
+func (r *Relay) CreateContainer(ctx context.Context, c *Container) error {
 	if err := r.runner.Pull(c); err != nil {
 		return err
 	}
 	return r.runner.Run(c)
 }
 
-func (r *Relay) AttachToContainer(name string, conn net.Conn) error {
+func (r *Relay) AttachToContainer(ctx context.Context, name string, conn net.Conn) error {
 	return r.runner.Attach(name, conn, conn)
 }

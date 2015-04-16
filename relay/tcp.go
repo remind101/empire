@@ -47,7 +47,7 @@ func (h *containerSession) ServeTCP(ctx context.Context, conn net.Conn) {
 	if ok := h.relay.sessions[session]; ok {
 		logger.Log(ctx, "at", "HandleConn", "session", session, "session exists, attaching.")
 		fmt.Fprintln(conn, "Attaching to container...")
-		if err := h.relay.AttachToContainer(session, conn); err != nil {
+		if err := h.relay.AttachToContainer(ctx, session, conn); err != nil {
 			panic(err)
 		}
 	} else {

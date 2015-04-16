@@ -6,13 +6,15 @@ import (
 	"io"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
 )
 
-// ErrInvalidRepo is returned by Split when the repo is not a valid repo.
+// ErrInvalidRepo is returned by parseRepo when the repo is not a valid repo.
 var ErrInvalidRepo = errors.New("registry: not a valid docker repo")
+var RepoPattern = regexp.MustCompile(`(\S+\/)?(\S+\/\S+):(\S+)`)
 
 type ContainerRunner interface {
 	Pull(*Container) error
@@ -66,7 +68,7 @@ func newDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (
 }
 
 func (d *dockerRunner) Pull(c *Container) error {
-	return d.pullImage(c.Image, "latest")
+	return d.pullImage(c.Image)
 }
 
 func (d *dockerRunner) Run(c *Container) error {
@@ -104,10 +106,10 @@ func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) er
 	return d.client.AttachToContainer(opts)
 }
 
-func (d *dockerRunner) pullImage(image string, tag string) error {
+func (d *dockerRunner) pullImage(image string) error {
 	var a docker.AuthConfiguration
 
-	reg, _, err := splitRepo(image)
+	reg, repo, tag, err := parseRepo(image)
 	if err != nil {
 		return err
 	}
@@ -121,23 +123,28 @@ func (d *dockerRunner) pullImage(image string, tag string) error {
 	}
 
 	return d.client.PullImage(docker.PullImageOptions{
-		Repository:   image,
+		Repository:   repo,
 		Tag:          tag,
 		OutputStream: os.Stdout,
 	}, a)
 }
 
-// Split splits a full docker repo into registry and path segments.
-func splitRepo(fullRepo string) (registry string, path string, err error) {
-	parts := strings.Split(fullRepo, "/")
-
-	if len(parts) < 2 {
-		return "", "", ErrInvalidRepo
+// Split splits a full docker repo into registry, repo and tag segments.
+//
+// Examples:
+//
+//     quay.io/remind101/acme-inc:latest # => registry: "quay.io", repo: "remind101/acme-inc", tag: "latest"
+//     remind101/acme-inc:latest         # => registry: "", repo: "remind101/acme-inc", tag: "latest"
+func parseRepo(fullRepo string) (registry string, repo string, tag string, err error) {
+	m := RepoPattern.FindStringSubmatch(fullRepo)
+	if len(m) == 0 {
+		return "", "", "", ErrInvalidRepo
 	}
 
-	if len(parts) == 2 {
-		return "", strings.Join(parts, "/"), nil
+	// Registy subpattern was matched.
+	if len(m) == 4 {
+		return strings.TrimRight(m[1], "/"), m[2], m[3], nil
 	}
 
-	return parts[0], strings.Join(parts[1:], "/"), nil
+	return "", m[1], m[2], nil
 }

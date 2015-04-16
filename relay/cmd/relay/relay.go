@@ -96,6 +96,9 @@ func newRelay(c *cli.Context) *relay.Relay {
 	}
 
 	opts.Docker.Auth = auth
+	opts.Tcp.Host = c.String("tcp.host")
+	opts.Tcp.Port = c.String("tcp.port")
+
 	return relay.New(opts)
 }
 
