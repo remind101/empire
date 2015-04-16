@@ -62,6 +62,13 @@ type = "SandboxEncoder"
 filename = "lua_encoders/cbuf_librato.lua"
 preserve_data = true
 
+[InfluxDBEncoder]
+type = "SandboxEncoder"
+filename = "lua_encoders/schema_influx.lua"
+  [InfluxDBEncoder.config]
+  series = "heka.%{Logger}"
+  skip_fields = "Type Pid Uuid Logger Payload EnvVersion Severity Hugepagesize Buffers Bounce SUnreclaim HugePages_Total Active(anon) Mlocked AnonPages Active(file) Committed_AS MemAvailable Inactive(file) CommitLimit Slab PageTables HugePages_Free Writeback NFS_Unstable HugePages_Surp VmallocChunk DirectMap2M DirectMap4k HugePages_Rsvd SReclaimable Mapped HardwareCorrupted FilePath WritebackTmp Dirty AnonHugePages Unevictable Inactive(anon) KernelStack MemTotal"
+
 # -------
 # Outputs
 # -------
@@ -96,3 +103,11 @@ username = "%ENV[LIBRATO_USER]"
 password = "%ENV[LIBRATO_TOKEN]"
   [LibratoOutput.headers]
   Content-Type = ["application/json"]
+
+[InfluxDBOutput]
+type = "HttpOutput"
+message_matcher = "Type == 'stats.memstats'"
+encoder = "InfluxDBEncoder"
+address = "%ENV[INFLUXDB_URL]"
+username = "%ENV[INFLUXDB_USER]"
+password = "%ENV[INFLUXDB_PASSWORD]"
