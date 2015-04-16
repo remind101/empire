@@ -1,4 +1,4 @@
-package relay
+package relay // import "github.com/remind101/empire/relay"
 
 import (
 	"net"
