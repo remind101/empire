@@ -1,6 +1,3 @@
-require "os"
-require "string"
-
 -- Useful for buffering syslog messages.
 
 buffer_length = 0
