@@ -42,7 +42,7 @@ preserve_data = true
 
 [BufferedFilter]
 type = "SandboxFilter"
-message_matcher = "Fields[ContainerName] != 'empire-logger'"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 filename = "lua_filters/buffered_syslog.lua"
 ticker_interval = 60
 preserve_data = true
@@ -76,7 +76,7 @@ preserve_data = true
 # Log docker container logs to stdout. Useful for debugging.
 [DockerSyslogOutput]
 type = "LogOutput"
-message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'docker_syslog'"
+message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_name] == 'docker_syslog'"
 encoder = "PayloadEncoder"
 
 # Sumologic output
