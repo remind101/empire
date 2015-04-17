@@ -74,7 +74,7 @@ encoder = "PayloadEncoder"
 
 # Sumologic output
 [SumologicOutput]
-type = "HttpOutput"
+type = "UdpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'syslog'"
 address = "%ENV[SUMOLOGIC_URL]"
 encoder = "PayloadEncoder"
