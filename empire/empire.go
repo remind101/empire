@@ -344,6 +344,10 @@ func newScheduler(fleetURL string) (container.Scheduler, error) {
 }
 
 func newManager(options Options) (*manager, error) {
+	return &manager{
+		pod.NewECSManager(),
+	}, nil
+
 	scheduler, err := newScheduler(options.Fleet.API)
 	if err != nil {
 		return nil, err

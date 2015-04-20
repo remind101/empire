@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/pod"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
@@ -122,8 +123,10 @@ func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
 		return err
 	}
 
-	if err := s.manager.Destroy(templates...); err != nil {
-		return err
+	if m, ok := s.manager.Manager.(pod.Destroyable); ok {
+		if err := m.Destroy(templates...); err != nil {
+			return err
+		}
 	}
 
 	return nil
