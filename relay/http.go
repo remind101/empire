@@ -58,7 +58,7 @@ func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return err
 	}
 
-	id := h.NewSession()
+	id := h.GenSessionID()
 	logger.Log(ctx, "at", "PostContainers", "session", id, "starting new container session")
 
 	c := &Container{
@@ -71,11 +71,7 @@ func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		AttachURL: strings.Join([]string{h.Host, id}, "/"),
 	}
 
-	if err := h.CreateContainer(ctx, c); err != nil {
-		return err
-	}
-
-	logger.Log(ctx, "at", "CreateContainer", "container", c)
+	h.SetContainerSession(id, c)
 
 	w.WriteHeader(201)
 	return Encode(w, c)

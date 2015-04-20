@@ -147,7 +147,7 @@ coreos:
         ExecStartPre=-/bin/bash -c "cd /home/core/share/relay && docker build -t remind101/relay ."
         ExecStartPre=-/bin/bash -c "/usr/bin/docker rm relay &> /dev/null; exit 0"
 
-        ExecStart=/usr/bin/docker run --name relay --rm -h %H -p 8081:8081 -p 5000:5000 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/relay server -docker.socket=unix:///tmp/docker.sock -http.port=8081 -tcp.port=5000 -tcp.host=rendezvous://${COREOS_PRIVATE_IPV4}
+        ExecStart=/usr/bin/docker run --name relay --rm -h %H -p 8081:8081 -p 5000:5000 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/relay server -docker.socket=unix:///tmp/docker.sock -http.port=8081 -tcp.port=5000 -tcp.host=rendezvous://rendezvous.${COREOS_PRIVATE_IPV4}.xip.io
 
         ExecStop=/usr/bin/docker stop relay
 

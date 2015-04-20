@@ -1,7 +1,7 @@
 package relay // import "github.com/remind101/empire/relay"
 
 import (
-	"net"
+	"io"
 	"strings"
 	"sync"
 
@@ -64,8 +64,8 @@ type Relay struct {
 
 	runner ContainerRunner
 
-	genSessionId func() string
-	sessions     map[string]bool
+	GenSessionID func() string
+	sessions     map[string]*Container
 }
 
 // New returns a new Relay instance.
@@ -80,7 +80,7 @@ func New(options Options) *Relay {
 	if options.Docker.Socket == "fake" {
 		runner = &fakeRunner{}
 	} else {
-		runner, err = newDockerRunner(options.Docker.Socket, options.Docker.CertPath, options.Docker.Auth)
+		runner, err = NewDockerRunner(options.Docker.Socket, options.Docker.CertPath, options.Docker.Auth)
 		if err != nil {
 			panic(err)
 		}
@@ -89,26 +89,32 @@ func New(options Options) *Relay {
 	return &Relay{
 		Host:         strings.Join([]string{options.Tcp.Host, options.Tcp.Port}, ":"),
 		runner:       runner,
-		genSessionId: sg,
-		sessions:     map[string]bool{},
+		GenSessionID: sg,
+		sessions:     map[string]*Container{},
 	}
 }
 
-func (r *Relay) NewSession() string {
+func (r *Relay) SetContainerSession(id string, c *Container) {
 	r.Lock()
 	defer r.Unlock()
-	id := r.genSessionId()
-	r.sessions[id] = true
-	return id
+	r.sessions[id] = c
 }
 
 func (r *Relay) CreateContainer(ctx context.Context, c *Container) error {
 	if err := r.runner.Pull(c); err != nil {
 		return err
 	}
-	return r.runner.Run(c)
+	return r.runner.Create(c)
 }
 
-func (r *Relay) AttachToContainer(ctx context.Context, name string, conn net.Conn) error {
-	return r.runner.Attach(name, conn, conn)
+func (r *Relay) AttachToContainer(ctx context.Context, name string, in io.Reader, out io.Writer) error {
+	return r.runner.Attach(name, in, out)
+}
+
+func (r *Relay) StartContainer(ctx context.Context, name string) error {
+	return r.runner.Start(name)
+}
+
+func (r *Relay) WaitContainer(ctx context.Context, name string) (int, error) {
+	return r.runner.Wait(name)
 }

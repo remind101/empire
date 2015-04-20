@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
@@ -71,11 +72,20 @@ func main() {
 func runServers(c *cli.Context) {
 	r := newRelay(c)
 
-	// Start TCP Server in a go routine
-	th := relay.NewTCPHandler(r)
+	cert, err := tls.LoadX509KeyPair("rendezvous.172.20.20.10.xip.io.crt", "rendezvous.172.20.20.10.xip.io.key")
+	if err != nil {
+		panic(err)
+	}
+
 	tcpPort := c.String("tcp.port")
 	log.Printf("Starting tcp server on port %s\n", tcpPort)
-	go tcp.ListenAndServe(":"+tcpPort, th)
+	l, err := tls.Listen("tcp", ":"+tcpPort, &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	})
+
+	// Start TCP Server in a go routine
+	th := relay.NewTCPHandler(r)
+	go tcp.Serve(l, th)
 
 	// Start HTTP Server
 	hh := relay.NewHTTPHandler(r)

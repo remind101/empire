@@ -1,0 +1,104 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4096 (0x1000)
+        Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=US, ST=California, L=San Francisco, O=Remind, Inc., CN=Remind CA/emailAddress=mike@remind101.com
+        Validity
+            Not Before: Apr 16 20:32:25 2015 GMT
+            Not After : Apr 11 20:32:25 2035 GMT
+        Subject: C=US, ST=California, L=San Francisco, O=Remind101 Inc., CN=rendezvous.172.20.20.10.xip.io
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:a2:29:4f:d5:2e:44:21:10:71:d6:2b:27:84:42:
+                    0d:50:2d:1b:fb:00:54:38:ba:c4:4a:a0:b1:49:e1:
+                    d2:0f:0d:98:51:76:0d:b8:3c:5a:ea:c7:68:e4:47:
+                    9e:e6:b2:5b:91:e2:dc:ec:0d:71:9e:04:7c:88:36:
+                    dc:62:5c:7e:a9:e2:09:b5:37:ce:78:1a:86:0b:98:
+                    09:23:92:4b:f6:16:54:82:4c:48:67:ff:16:a8:5e:
+                    99:41:9e:10:ba:82:31:b9:99:7b:6f:0d:79:d6:af:
+                    d4:f8:fa:cc:26:ae:c1:94:64:9e:57:d7:ad:77:38:
+                    db:a1:75:9a:35:e5:a4:b8:96:af:8c:a8:75:4c:1c:
+                    9a:d7:37:1f:42:97:39:89:ee:58:53:8d:cd:11:c6:
+                    f7:76:ce:f9:6e:85:9d:e4:7d:4e:db:99:0d:10:5e:
+                    9c:85:ec:a2:9f:db:f4:40:37:86:17:9a:bb:94:1f:
+                    c3:b4:01:28:c7:69:35:9c:71:51:9f:16:51:c3:37:
+                    58:64:f0:b9:4e:3e:2c:f1:9c:0d:ab:6f:45:c2:a3:
+                    bd:95:40:fc:04:dc:3b:a7:f0:1f:8c:11:36:0b:cf:
+                    95:ba:de:81:9e:31:1d:f2:e9:16:20:f0:ea:18:87:
+                    60:d9:0f:e6:39:5a:e9:65:05:61:56:24:7f:56:7b:
+                    ba:4b
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+            Netscape Comment: 
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                2D:BF:39:FD:8B:2F:26:A2:14:50:8B:D9:CB:92:F8:03:CA:AE:1A:5A
+            X509v3 Authority Key Identifier: 
+                keyid:57:D4:36:8C:4D:46:4E:37:3D:9F:4A:19:21:DD:13:26:B6:F7:A3:26
+
+    Signature Algorithm: sha1WithRSAEncryption
+        e0:25:4c:d3:17:20:e9:73:c6:47:d8:af:28:79:5e:a1:4c:b0:
+        5b:61:57:bd:52:ab:fe:f0:9e:f8:ba:74:54:3b:8d:28:b9:c1:
+        a7:33:9b:90:84:be:40:fe:73:07:aa:ef:db:93:77:af:21:89:
+        5d:11:5c:39:00:e0:66:c0:3e:6f:22:5c:fa:28:aa:2c:f8:f8:
+        e9:ab:5c:ba:3a:95:82:3b:c1:c7:56:11:cc:e9:6b:19:59:c3:
+        1d:2f:3e:e7:9a:58:f2:98:da:4b:9b:60:42:1d:1a:c4:9f:35:
+        c9:77:d0:cb:7d:c2:78:b2:22:f5:e3:34:81:e6:29:7c:c6:af:
+        04:8f:18:ec:07:76:4a:f6:47:57:1b:06:e2:cf:ff:3f:38:9a:
+        c0:7d:af:40:f1:2a:2c:3e:7d:53:25:c4:59:07:07:f0:5e:ec:
+        9a:ef:1c:71:6a:f1:1b:52:e8:0d:94:b1:92:a9:b7:b5:9f:55:
+        d3:e0:96:78:2b:36:23:0e:d9:24:90:2f:1f:13:44:1b:f1:21:
+        ee:1f:15:00:00:09:a8:81:fc:b3:52:db:70:4a:0a:55:0b:5e:
+        9c:ed:9e:06:eb:23:06:92:39:c6:5e:84:d0:09:fe:6e:87:3f:
+        43:71:14:11:5a:5c:80:fe:a8:0e:da:c9:ad:11:18:7d:eb:38:
+        0b:6f:81:99:96:b0:e4:da:30:7c:60:fd:70:b4:15:0e:14:ec:
+        25:43:38:6c:9b:16:8d:e5:d6:a9:dc:50:9b:2c:0f:98:7b:2d:
+        b8:46:a0:78:c1:e6:80:06:f6:b8:45:49:57:a4:e0:48:81:5f:
+        1e:3e:02:6c:be:e0:28:ae:90:8f:c0:f2:f0:fa:b8:50:1f:ca:
+        83:81:7c:a5:76:0f:fb:3a:60:0d:5e:c9:63:30:1a:a8:31:8c:
+        07:dd:a2:e1:6d:ba:7b:56:f2:82:c0:eb:59:42:15:9d:54:10:
+        7f:5b:96:d6:91:8e:1a:87:0f:eb:37:b8:27:ef:ae:e9:8c:3b:
+        29:b5:0f:7d:ad:22:3e:89:db:87:b5:d6:8b:0b:63:73:61:08:
+        05:59:ba:af:e1:29:c1:ee:f6:fb:b4:8c:16:8a:5c:78:fd:3a:
+        3e:8c:23:62:59:04:0c:aa:2e:31:10:94:b6:14:12:73:31:48:
+        ac:95:ca:a8:22:c5:d7:96:e7:da:53:39:1d:31:c9:17:99:43:
+        f0:11:bc:9f:9c:fe:c7:85:38:bc:b6:43:ef:d5:01:54:94:63:
+        07:bd:bc:58:ab:6f:b5:16:b6:81:95:30:9c:0c:ca:20:c8:0c:
+        b5:54:e2:12:99:c2:76:4b:a7:37:62:42:48:de:71:e5:28:0a:
+        d4:ea:47:42:10:ec:83:25
+-----BEGIN CERTIFICATE-----
+MIIFCzCCAvOgAwIBAgICEAAwDQYJKoZIhvcNAQEFBQAwgYgxCzAJBgNVBAYTAlVT
+MRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRUw
+EwYDVQQKEwxSZW1pbmQsIEluYy4xEjAQBgNVBAMTCVJlbWluZCBDQTEhMB8GCSqG
+SIb3DQEJARYSbWlrZUByZW1pbmQxMDEuY29tMB4XDTE1MDQxNjIwMzIyNVoXDTM1
+MDQxMTIwMzIyNVowfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWEx
+FjAUBgNVBAcTDVNhbiBGcmFuY2lzY28xFzAVBgNVBAoTDlJlbWluZDEwMSBJbmMu
+MScwJQYDVQQDEx5yZW5kZXp2b3VzLjE3Mi4yMC4yMC4xMC54aXAuaW8wggEiMA0G
+CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCiKU/VLkQhEHHWKyeEQg1QLRv7AFQ4
+usRKoLFJ4dIPDZhRdg24PFrqx2jkR57msluR4tzsDXGeBHyINtxiXH6p4gm1N854
+GoYLmAkjkkv2FlSCTEhn/xaoXplBnhC6gjG5mXtvDXnWr9T4+swmrsGUZJ5X1613
+ONuhdZo15aS4lq+MqHVMHJrXNx9ClzmJ7lhTjc0Rxvd2zvluhZ3kfU7bmQ0QXpyF
+7KKf2/RAN4YXmruUH8O0ASjHaTWccVGfFlHDN1hk8LlOPizxnA2rb0XCo72VQPwE
+3Dun8B+METYLz5W63oGeMR3y6RYg8OoYh2DZD+Y5WullBWFWJH9We7pLAgMBAAGj
+gYkwgYYwCQYDVR0TBAIwADALBgNVHQ8EBAMCBeAwLAYJYIZIAYb4QgENBB8WHU9w
+ZW5TU0wgR2VuZXJhdGVkIENlcnRpZmljYXRlMB0GA1UdDgQWBBQtvzn9iy8mohRQ
+i9nLkvgDyq4aWjAfBgNVHSMEGDAWgBRX1DaMTUZONz2fShkh3RMmtvejJjANBgkq
+hkiG9w0BAQUFAAOCAgEA4CVM0xcg6XPGR9ivKHleoUywW2FXvVKr/vCe+Lp0VDuN
+KLnBpzObkIS+QP5zB6rv25N3ryGJXRFcOQDgZsA+byJc+iiqLPj46atcujqVgjvB
+x1YRzOlrGVnDHS8+55pY8pjaS5tgQh0axJ81yXfQy33CeLIi9eM0geYpfMavBI8Y
+7Ad2SvZHVxsG4s//PziawH2vQPEqLD59UyXEWQcH8F7smu8ccWrxG1LoDZSxkqm3
+tZ9V0+CWeCs2Iw7ZJJAvHxNEG/Eh7h8VAAAJqIH8s1LbcEoKVQtenO2eBusjBpI5
+xl6E0An+boc/Q3EUEVpcgP6oDtrJrREYfes4C2+BmZaw5NowfGD9cLQVDhTsJUM4
+bJsWjeXWqdxQmywPmHstuEageMHmgAb2uEVJV6TgSIFfHj4CbL7gKK6Qj8Dy8Pq4
+UB/Kg4F8pXYP+zpgDV7JYzAaqDGMB92i4W26e1bygsDrWUIVnVQQf1uW1pGOGocP
+6ze4J++u6Yw7KbUPfa0iPonbh7XWiwtjc2EIBVm6r+Epwe72+7SMFopceP06Powj
+YlkEDKouMRCUthQSczFIrJXKqCLF15bn2lM5HTHJF5lD8BG8n5z+x4U4vLZD79UB
+VJRjB728WKtvtRa2gZUwnAzKIMgMtVTiEpnCdkunN2JCSN5x5SgK1OpHQhDsgyU=
+-----END CERTIFICATE-----

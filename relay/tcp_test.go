@@ -26,7 +26,7 @@ func TestHandshakeSessionNotFound(t *testing.T) {
 
 func TestHandshakeValidSession(t *testing.T) {
 	r := NewTestRelay()
-	r.NewSession() // The test session generator will generate a 1
+	r.sessions["1"] = &Container{}
 
 	ts := NewTestTCPServer(r)
 	defer ts.Close()
@@ -44,7 +44,7 @@ func TestHandshakeValidSession(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := scanner.Text(), "Attaching to container..."; got != want {
+	if got, want := scanner.Text(), "Creating container..."; got != want {
 		t.Errorf("Response from TCP Server => %q; want %q", got, want)
 	}
 }

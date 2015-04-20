@@ -18,8 +18,10 @@ var RepoPattern = regexp.MustCompile(`(\S+\/)?(\S+\/\S+):(\S+)`)
 
 type ContainerRunner interface {
 	Pull(*Container) error
-	Run(*Container) error
+	Create(*Container) error
 	Attach(string, io.Reader, io.Writer) error
+	Start(string) error
+	Wait(string) (int, error)
 }
 
 type fakeRunner struct {
@@ -29,11 +31,20 @@ func (f *fakeRunner) Pull(c *Container) error {
 	return nil
 }
 
-func (f *fakeRunner) Run(c *Container) error {
+func (f *fakeRunner) Create(c *Container) error {
 	return nil
 }
+
 func (f *fakeRunner) Attach(name string, input io.Reader, output io.Writer) error {
 	return nil
+}
+
+func (f *fakeRunner) Start(name string) error {
+	return nil
+}
+
+func (f *fakeRunner) Wait(name string) (int, error) {
+	return 0, nil
 }
 
 type dockerRunner struct {
@@ -41,7 +52,7 @@ type dockerRunner struct {
 	auth   *docker.AuthConfigurations
 }
 
-func newDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (*dockerRunner, error) {
+func NewDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (*dockerRunner, error) {
 	var err error
 	var dc *docker.Client
 
@@ -54,7 +65,7 @@ func newDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (
 	case socket != "":
 		dc, err = docker.NewClient(socket)
 	default:
-		return nil, errors.New("newDockerRunner needs a socket or a certPath")
+		return nil, errors.New("NewDockerRunner needs a socket or a certPath")
 	}
 
 	if err != nil {
@@ -71,7 +82,7 @@ func (d *dockerRunner) Pull(c *Container) error {
 	return d.pullImage(c.Image)
 }
 
-func (d *dockerRunner) Run(c *Container) error {
+func (d *dockerRunner) Create(c *Container) error {
 	env := []string{}
 	for k, v := range c.Env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
@@ -80,15 +91,20 @@ func (d *dockerRunner) Run(c *Container) error {
 	opts := docker.CreateContainerOptions{
 		Name: c.Name,
 		Config: &docker.Config{
-			Tty:   c.Attach,
+			Tty:          c.Attach,
+			AttachStdin:  c.Attach,
+			AttachStdout: c.Attach,
+			AttachStderr: c.Attach,
+			OpenStdin:    c.Attach,
+
 			Image: c.Image,
 			Cmd:   []string{c.Command},
 			Env:   env,
 		},
 		HostConfig: &docker.HostConfig{},
 	}
-	d.client.CreateContainer(opts)
-	return nil
+	_, err := d.client.CreateContainer(opts)
+	return err
 }
 
 func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) error {
@@ -97,6 +113,8 @@ func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) er
 		InputStream:  input,
 		OutputStream: output,
 		ErrorStream:  output,
+		Logs:         true,
+		Stream:       true,
 		Stdin:        true,
 		Stdout:       true,
 		Stderr:       true,
@@ -104,6 +122,14 @@ func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) er
 	}
 
 	return d.client.AttachToContainer(opts)
+}
+
+func (d *dockerRunner) Start(name string) error {
+	return d.client.StartContainer(name, nil)
+}
+
+func (d *dockerRunner) Wait(name string) (int, error) {
+	return d.client.WaitContainer(name)
 }
 
 func (d *dockerRunner) pullImage(image string) error {
