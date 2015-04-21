@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/remind101/empire/empire/pkg/container"
-	"github.com/remind101/empire/empire/pkg/pod"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -24,15 +22,23 @@ type ContainerRelay struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type postContainersForm struct {
+	User    string            `json:"user"`
+	Image   string            `json:"image"`
+	Command string            `json:"command"`
+	Env     map[string]string `json:"env"`
+	Attach  bool              `json:"attach"`
+}
+
 // containerRelayer defines an interface for running a container
 // remotely.
 type containerRelayer interface {
-	Relay(context.Context, *container.Container) (*ContainerRelay, error)
+	Relay(context.Context, *postContainersForm) (*ContainerRelay, error)
 }
 
 type fakeRelayer struct{}
 
-func (f *fakeRelayer) Relay(ctx context.Context, c *container.Container) (*ContainerRelay, error) {
+func (f *fakeRelayer) Relay(ctx context.Context, c *postContainersForm) (*ContainerRelay, error) {
 	return &ContainerRelay{
 		Name:      "run.123",
 		AttachURL: "fake://example.com:5000/abc",
@@ -48,21 +54,7 @@ type relayer struct {
 	API string // Location of the relay http api.
 }
 
-type postContainersForm struct {
-	Image   string            `json:"image"`
-	Command string            `json:"command"`
-	Env     map[string]string `json:"env"`
-	Attach  bool              `json:"attach"`
-}
-
-func (r *relayer) Relay(ctx context.Context, c *container.Container) (*ContainerRelay, error) {
-	f := &postContainersForm{
-		Image:   c.Image.String(),
-		Command: c.Command,
-		Env:     c.Env,
-		Attach:  true,
-	}
-
+func (r *relayer) Relay(ctx context.Context, f *postContainersForm) (*ContainerRelay, error) {
 	b, err := json.Marshal(f)
 	if err != nil {
 		return nil, err
@@ -95,7 +87,7 @@ type runner struct {
 }
 
 func (r *runner) Run(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {
-	c, err := r.newContainer(ctx, app, command, opts)
+	c, err := r.newContainerForm(ctx, app, command, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +95,7 @@ func (r *runner) Run(ctx context.Context, app *App, command string, opts Process
 	return r.relayer.Relay(ctx, c)
 }
 
-func (r *runner) newContainer(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*container.Container, error) {
+func (r *runner) newContainerForm(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*postContainersForm, error) {
 	release, err := r.store.ReleasesLast(app)
 	if err != nil {
 		return nil, err
@@ -123,19 +115,25 @@ func (r *runner) newContainer(ctx context.Context, app *App, command string, opt
 		return nil, err
 	}
 
-	process := &Process{
-		Type:     "run",
-		Command:  Command(command),
-		Quantity: 1,
-	}
-
+	// Merge env vars with App env vars.
 	vars := Vars{}
 	for key, val := range opts.Env {
 		vars[Variable(key)] = val
 	}
+	env := environment(NewConfig(config, vars).Vars)
 
-	t := newTemplate(release, NewConfig(config, vars), slug, process)
-	i := pod.NewInstance(t, 1)
-	c := pod.NewContainer(i)
+	username := ""
+	if user, ok := UserFromContext(ctx); ok {
+		username = user.Name
+	}
+
+	c := &postContainersForm{
+		User:    username,
+		Image:   slug.Image.String(),
+		Command: command,
+		Env:     env,
+		Attach:  true,
+	}
+
 	return c, nil
 }
