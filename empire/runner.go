@@ -24,9 +24,9 @@ type ContainerRelay struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// ContainerRelayer defines an interface for running a container
+// containerRelayer defines an interface for running a container
 // remotely.
-type ContainerRelayer interface {
+type containerRelayer interface {
 	Relay(context.Context, *container.Container) (*ContainerRelay, error)
 }
 
@@ -91,7 +91,7 @@ func (r *relayer) Relay(ctx context.Context, c *container.Container) (*Container
 
 type runner struct {
 	store   *store
-	relayer ContainerRelayer
+	relayer containerRelayer
 }
 
 func (r *runner) Run(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {

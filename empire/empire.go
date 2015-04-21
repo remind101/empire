@@ -385,7 +385,7 @@ func newManager(options Options) (*manager, error) {
 }
 
 func newRunner(options RunnerOptions, s *store) *runner {
-	var r ContainerRelayer
+	var r containerRelayer
 	if options.API == "fake" {
 		r = &fakeRelayer{}
 	} else {
