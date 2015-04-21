@@ -38,6 +38,18 @@ var Commands = []cli.Command{
 				EnvVar: "RELAY_TCP_PORT",
 			},
 			cli.StringFlag{
+				Name:   "tcp.cert",
+				Value:  "rendezvous.172.20.20.10.xip.io.crt",
+				Usage:  "The path to the certificate to use for TLS",
+				EnvVar: "RELAY_TCP_CERT_PATH",
+			},
+			cli.StringFlag{
+				Name:   "tcp.key",
+				Value:  "rendezvous.172.20.20.10.xip.io.key",
+				Usage:  "The path to the key to use for TLS",
+				EnvVar: "RELAY_TCP_KEY_PATH",
+			},
+			cli.StringFlag{
 				Name:   "docker.socket",
 				Value:  "unix:///var/run/docker.sock",
 				Usage:  "The location of the docker api",
@@ -72,7 +84,10 @@ func main() {
 func runServers(c *cli.Context) {
 	r := newRelay(c)
 
-	cert, err := tls.LoadX509KeyPair("rendezvous.172.20.20.10.xip.io.crt", "rendezvous.172.20.20.10.xip.io.key")
+	tcpCert := c.String("tcp.cert")
+	tcpKey := c.String("tcp.key")
+
+	cert, err := tls.LoadX509KeyPair(tcpCert, tcpKey)
 	if err != nil {
 		panic(err)
 	}
