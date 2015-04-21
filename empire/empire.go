@@ -48,11 +48,17 @@ type FleetOptions struct {
 	API string
 }
 
+// RunnerOptions is a set of options to configure the one off process runner service.
+type RunnerOptions struct {
+	API string
+}
+
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
 	Fleet  FleetOptions
 	Etcd   EtcdOptions
+	Runner RunnerOptions
 
 	Secret string
 
@@ -78,6 +84,7 @@ type Empire struct {
 	scaler       *scaler
 	restarter    *restarter
 	releaser     *releaser
+	runner       *runner
 }
 
 // New returns a new Empire instance.
@@ -135,6 +142,8 @@ func New(options Options) (*Empire, error) {
 		manager: manager,
 	}
 
+	runner := newRunner(options.Runner, store)
+
 	releaser := &releaser{
 		manager: manager,
 	}
@@ -180,6 +189,7 @@ func New(options Options) (*Empire, error) {
 		releaser:     releaser,
 		scaler:       scaler,
 		restarter:    restarter,
+		runner:       runner,
 		releases:     releases,
 	}, nil
 }
@@ -260,6 +270,17 @@ func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) ProcessesRestart(ctx context.Context, app *App, ptype ProcessType, pnum int) error {
 	return e.restarter.Restart(ctx, app, ptype, pnum)
+}
+
+type ProcessesRunOpts struct {
+	Attach bool
+	Env    map[string]string
+	Size   string
+}
+
+// ProcessesRun runs a one-off process for a given App and command.
+func (e *Empire) ProcessesRun(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {
+	return e.runner.Run(ctx, app, command, opts)
 }
 
 // ReleasesFindByApp returns all Releases for a given App.
@@ -361,4 +382,18 @@ func newManager(options Options) (*manager, error) {
 	return &manager{
 		Manager: pod.NewContainerManager(scheduler, store),
 	}, nil
+}
+
+func newRunner(options RunnerOptions, s *store) *runner {
+	var r containerRelayer
+	if options.API == "fake" {
+		r = &fakeRelayer{}
+	} else {
+		r = &relayer{API: options.API}
+	}
+
+	return &runner{
+		store:   s,
+		relayer: r,
+	}
 }

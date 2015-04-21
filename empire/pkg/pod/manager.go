@@ -101,13 +101,13 @@ func (m *ContainerManager) Scale(templateID string, instances uint) error {
 	switch {
 	case instances < running: // scale down
 		for i := uint(running); i > instances; i-- {
-			if err := m.removeInstance(newInstance(template, i)); err != nil {
+			if err := m.removeInstance(NewInstance(template, i)); err != nil {
 				return err
 			}
 		}
 	case instances > running: // scale up
 		for i := uint(running + 1); i <= instances; i++ {
-			if err := m.createInstance(newInstance(template, i)); err != nil {
+			if err := m.createInstance(NewInstance(template, i)); err != nil {
 				return err
 			}
 		}
@@ -194,7 +194,7 @@ func (m *ContainerManager) submit(template *Template) error {
 	}
 
 	for i := uint(1); i <= template.Instances; i++ {
-		if err := m.createInstance(newInstance(template, i)); err != nil {
+		if err := m.createInstance(NewInstance(template, i)); err != nil {
 			return err
 		}
 	}
@@ -226,7 +226,7 @@ func (m *ContainerManager) createTemplate(template *Template) error {
 // createInstance schedules the container onto a host and creates an Instance in
 // the store.
 func (m *ContainerManager) createInstance(instance *Instance) error {
-	if err := m.scheduler.Schedule(newContainer(instance)); err != nil {
+	if err := m.scheduler.Schedule(NewContainer(instance)); err != nil {
 		return err
 	}
 
@@ -258,7 +258,7 @@ func containerName(instance *Instance) string {
 }
 
 // newContainer takes an Instance and converts it to a container.Container.
-func newContainer(instance *Instance) *container.Container {
+func NewContainer(instance *Instance) *container.Container {
 	t := instance.Template
 
 	return &container.Container{

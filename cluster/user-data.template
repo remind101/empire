@@ -125,12 +125,37 @@ coreos:
         ExecStartPre=-/bin/bash -c "/usr/bin/docker rm empire &> /dev/null; exit 0"
         ExecStartPre=/usr/bin/docker run remind101/empire migrate -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
 
-        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -e EMPIRE_GITHUB_SECRET=${EMPIRE_GITHUB_SECRET} -e DOCKER_ORGANIZATION=${DOCKER_ORGANIZATION} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/empire server -docker.socket=unix:///tmp/docker.sock -etcd.api=http://${COREOS_PRIVATE_IPV4}:4001 -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable
+        ExecStart=/usr/bin/docker run --name empire --rm -h %H -p 8080:8080 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -e EMPIRE_GITHUB_SECRET=${EMPIRE_GITHUB_SECRET} -e DOCKER_ORGANIZATION=${DOCKER_ORGANIZATION} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/empire server -docker.socket=unix:///tmp/docker.sock -etcd.api=http://${COREOS_PRIVATE_IPV4}:4001 -fleet.api=http://${COREOS_PRIVATE_IPV4}:49153 -db postgres://postgres:postgres@${COREOS_PRIVATE_IPV4}:5432/postgres?sslmode=disable -runner.api=http://${COREOS_PRIVATE_IPV4}:8081
 
         ExecStop=/usr/bin/docker stop empire
 
         [Install]
         WantedBy=multi-user.target
+    - name: relay.service
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Empire container runner and process io relay
+        After=empire.service postgres.service
+
+        [Service]
+        TimeoutStartSec=30m
+        EnvironmentFile=/etc/environment
+        Environment=DOCKER_AUTH_PATH=/tmp/.dockercfg
+        User=core
+        Restart=on-failure
+
+        ExecStartPre=-/bin/bash -c "cd /home/core/share/relay && docker build -t remind101/relay ."
+        ExecStartPre=-/bin/bash -c "/usr/bin/docker rm relay &> /dev/null; exit 0"
+
+        ExecStart=/usr/bin/docker run --name relay --rm -h %H -p 8081:8081 -p 5000:5000 -e DOCKER_AUTH_PATH=${DOCKER_AUTH_PATH} -v /var/run/docker.sock:/tmp/docker.sock -v /home/core/.dockercfg:${DOCKER_AUTH_PATH} remind101/relay server -docker.socket=unix:///tmp/docker.sock -http.port=8081 -tcp.port=5000 -tcp.host=rendezvous://rendezvous.${COREOS_PRIVATE_IPV4}.xip.io
+
+        ExecStop=/usr/bin/docker stop relay
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: cadvisor.service
       command: start
       enable: true

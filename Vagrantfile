@@ -39,6 +39,7 @@ Vagrant.configure('2') do |config|
   config.vm.define 'c1' do |c1|
     c1.vm.hostname = 'c1'
     c1.vm.network :private_network, ip: '172.20.20.10'
+    c1.vm.network :forwarded_port, guest: 5000, host: 5000
     c1.vm.network :forwarded_port, guest: 8080, host: 8080
     c1.vm.network :forwarded_port, guest: 9090, host: 9090
 

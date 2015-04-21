@@ -66,8 +66,7 @@ func (s *store) ReleasesCreate(opts ReleasesCreateOpts) (*Release, error) {
 	return releasesCreate(s.db, release)
 }
 
-// releasesService is an implementation of the ReleasesRepository interface backed by
-// a DB.
+// releasesService is a service for creating and rolling back a Release.
 type releasesService struct {
 	store    *store
 	releaser *releaser

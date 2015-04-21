@@ -1,0 +1,29 @@
+{
+  "notifier": {
+    "name": "Honeybadger (Go)",
+    "url": "https://github.com/remind101/pkg/reporter/hb",
+    "version": "0.1",
+    "language": "Go"
+  },
+  "error": {
+    "class": "*hb.typedError",
+    "message": "boom",
+    "backtrace": [],
+    "source": {},
+    "tags": null
+  },
+  "request": {
+    "url": "",
+    "component": "",
+    "action": "",
+    "params": {},
+    "session": {},
+    "cgi_data": {},
+    "context": {}
+  },
+  "server": {
+    "project_root": {},
+    "environment_name": "",
+    "hostname": ""
+  }
+}
