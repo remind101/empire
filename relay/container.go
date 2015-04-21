@@ -126,7 +126,7 @@ func (d *dockerManager) Create(c *Container) error {
 			OpenStdin:    c.Attach,
 
 			Image: c.Image,
-			Cmd:   []string{c.Command},
+			Cmd:   strings.Split(c.Command, " "),
 			Env:   env,
 		},
 		HostConfig: &docker.HostConfig{},
