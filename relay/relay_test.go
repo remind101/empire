@@ -22,14 +22,16 @@ func NewTestTCPServer(r *Relay) *tcptest.Server {
 }
 
 func NewTestRelay() *Relay {
-	o := DefaultOptions
+	o := Options{}
+
 	o.Docker.Socket = "fake"
 	o.Tcp.Host = "rendezvous://rendez.empire.example.com"
 	o.Tcp.Port = "5000"
+
 	sid := 0
-	o.SessionGenerator = func() string {
+	o.ContainerNameFunc = func(s string) string {
 		sid++
-		return fmt.Sprintf("%d", sid)
+		return fmt.Sprintf("%s.%d", s, sid)
 	}
 	return New(o)
 }

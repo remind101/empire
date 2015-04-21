@@ -2,9 +2,9 @@ package relay
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
@@ -41,6 +41,7 @@ func NewHTTPHandler(r *Relay) http.Handler {
 }
 
 type PostContainersForm struct {
+	User    string            `json:"user"`
 	Image   string            `json:"image"`
 	Command string            `json:"command"`
 	Env     map[string]string `json:"env"`
@@ -58,20 +59,24 @@ func (h *PostContainers) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return err
 	}
 
-	id := h.GenSessionID()
-	logger.Log(ctx, "at", "PostContainers", "session", id, "starting new container session")
+	if form.User == "" {
+		form.User = "unknown"
+	}
+
+	name := h.GenContainerName(fmt.Sprintf("run.%s", form.User))
+	logger.Log(ctx, "at", "PostContainers", "container-name", name, "starting new container session")
 
 	c := &Container{
 		Image:     form.Image,
-		Name:      strings.Join([]string{"run", id}, "."),
+		Name:      name,
 		Command:   form.Command,
 		State:     "starting",
 		Env:       form.Env,
 		Attach:    form.Attach,
-		AttachURL: strings.Join([]string{h.Host, id}, "/"),
+		AttachURL: fmt.Sprintf("%s/%s", h.Host, name),
 	}
 
-	h.SetContainerSession(id, c)
+	h.RegisterContainer(name, c)
 
 	w.WriteHeader(201)
 	return Encode(w, c)

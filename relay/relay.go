@@ -1,8 +1,8 @@
 package relay // import "github.com/remind101/empire/relay"
 
 import (
+	"fmt"
 	"io"
-	"strings"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
@@ -12,11 +12,8 @@ import (
 )
 
 var (
-	DefaultSessionGenerator = func() string { return uuid.New() }
-
-	// DefaultOptions is a default Options instance that can be passed when
-	// intializing a new Relay.
-	DefaultOptions = Options{SessionGenerator: DefaultSessionGenerator}
+	// DefaultContainerNameFunc is the default implementation for generating container names.
+	DefaultContainerNameFunc = func(s string) string { return fmt.Sprintf("%s.%s", s, uuid.New()) }
 )
 
 // DockerOptions is a set of options to configure a docker api client.
@@ -34,15 +31,20 @@ type DockerOptions struct {
 	Auth *docker.AuthConfigurations
 }
 
+// TcpOptions is a set of options to configure the tcp server.
 type TcpOptions struct {
-	Host string // Host that the tcp server is running on.
-	Port string // Port that the tcp server is running on.
+	// Host that the tcp server is running on.
+	Host string
+
+	// Port that the tcp server is running on.
+	Port string
 }
 
+// Options is the main set of options to configure relay.
 type Options struct {
-	SessionGenerator func() string
-	Tcp              TcpOptions
-	Docker           DockerOptions
+	ContainerNameFunc func(string) string
+	Tcp               TcpOptions
+	Docker            DockerOptions
 }
 
 // Container represents a docker container to run.
@@ -59,47 +61,52 @@ type Container struct {
 type Relay struct {
 	sync.Mutex
 
-	// The rendezvous host
+	// The rendezvous host.
 	Host string
 
+	// The container manager.
 	runner ContainerRunner
 
-	GenSessionID func() string
-	sessions     map[string]*Container
+	// The func to use to generate container names.
+	containerNameFunc func(string) string
+
+	// The map of container names to container structs.
+	sessions map[string]*Container
 }
 
-// New returns a new Relay instance.
+// New returns a new Relay instance with sensible defaults.
 func New(options Options) *Relay {
-	sg := options.SessionGenerator
-	if sg == nil {
-		sg = DefaultSessionGenerator
-	}
-
-	var runner ContainerRunner
-	var err error
-	if options.Docker.Socket == "fake" {
-		runner = &fakeRunner{}
-	} else {
-		runner, err = NewDockerRunner(options.Docker.Socket, options.Docker.CertPath, options.Docker.Auth)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	return &Relay{
-		Host:         strings.Join([]string{options.Tcp.Host, options.Tcp.Port}, ":"),
-		runner:       runner,
-		GenSessionID: sg,
-		sessions:     map[string]*Container{},
+		Host:              fmt.Sprintf("%s:%s", options.Tcp.Host, options.Tcp.Port),
+		runner:            newContainerRunner(options.Docker),
+		containerNameFunc: options.ContainerNameFunc,
+		sessions:          map[string]*Container{},
 	}
 }
 
-func (r *Relay) SetContainerSession(id string, c *Container) {
+// GenContainerName generates a new container name.
+func (r *Relay) GenContainerName(s string) string {
+	if r.containerNameFunc != nil {
+		return r.containerNameFunc(s)
+	}
+	return DefaultContainerNameFunc(s)
+}
+
+// RegisterContainer registers a new container, ready to be started over a TCP session.
+func (r *Relay) RegisterContainer(name string, c *Container) {
 	r.Lock()
 	defer r.Unlock()
-	r.sessions[id] = c
+	r.sessions[name] = c
 }
 
+// UnregisterContainer unregisters a container.
+func (r *Relay) UnregisterContainer(name string, c *Container) {
+	r.Lock()
+	defer r.Unlock()
+	delete(r.sessions, name)
+}
+
+// CreateContainer creates a new container instance, but doesn't start it.
 func (r *Relay) CreateContainer(ctx context.Context, c *Container) error {
 	if err := r.runner.Pull(c); err != nil {
 		return err
@@ -107,14 +114,32 @@ func (r *Relay) CreateContainer(ctx context.Context, c *Container) error {
 	return r.runner.Create(c)
 }
 
+// AttachToContainer attaches IO to an existing container.
 func (r *Relay) AttachToContainer(ctx context.Context, name string, in io.Reader, out io.Writer) error {
 	return r.runner.Attach(name, in, out)
 }
 
+// StartContainer starts a container. This should be called after creating and attaching to a container.
 func (r *Relay) StartContainer(ctx context.Context, name string) error {
 	return r.runner.Start(name)
 }
 
+// WaitContainer blocks until a container has finished runnning.
 func (r *Relay) WaitContainer(ctx context.Context, name string) (int, error) {
 	return r.runner.Wait(name)
+}
+
+// newContainerRunner returns a ContainerRunner based on the given options.
+func newContainerRunner(options DockerOptions) (runner ContainerRunner) {
+	var err error
+
+	if options.Socket == "fake" {
+		runner = &fakeRunner{}
+	} else {
+		runner, err = NewDockerRunner(options.Socket, options.CertPath, options.Auth)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return runner
 }
