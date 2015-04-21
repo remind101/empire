@@ -1,6 +1,16 @@
 # Relay
 
-Relay is a small go http server that knows how to run a remote command and proxy io to this command over a tcp connection.
+Relay is a small go HTTP server that knows how to run a remote command and proxy IO to this command over a TCP connection.
+
+## Getting Started
+
+Relay communicates over TLS, you'll need to add the included certificate `ca.cert.pem` and trust as root in order for the client to work properly:
+
+To add certificate to your keychain on OSX:
+
+```
+make cert
+```
 
 ## Overview
 
@@ -15,7 +25,7 @@ Relay is a small go http server that knows how to run a remote command and proxy
 ### 2. The relay service will run the equivalent of the following via the docker remote api:
 
     docker pull phusion/baseimage
-    docker run --name <token> -e TERM=x-term phusion/baseimage /bin/bash
+    docker run --name run.<token> -e TERM=x-term phusion/baseimage /bin/bash
 
 ### 3. Client connects to relay's tcp port
 
@@ -25,6 +35,7 @@ from the client, after which it tries to attach to the docker container named th
 If the container has already finished running, it will send any logged output to the client, and remove the container.
 
 ## Spec
+
 Clients connect over tls.
 
 * When the client connects, it sends a secret followed by a `\r\n` sequence. The

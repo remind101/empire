@@ -1,4 +1,4 @@
-.PHONY: cmd build test
+.PHONY: cmd build test cert
 
 cmd:
 	godep go build -o build/relay ./cmd/relay
@@ -8,3 +8,6 @@ build: Dockerfile
 
 test:
 	godep go test ./... && godep go vet ./...
+
+cert:
+	sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ca.cert.pem
