@@ -3,6 +3,12 @@ machine:
   services:
     - docker
 
+checkout:
+  post:
+    - rm -rf ~/.go_workspace/src/github.com/remind101
+    - mkdir -p ~/.go_workspace/src/github.com/remind101
+    - cp -R ~/empire ~/.go_workspace/src/github.com/remind101/empire
+
 dependencies:
   pre:
     - curl -L  https://github.com/coreos/etcd/releases/download/v0.4.9/etcd-v0.4.9-linux-amd64.tar.gz -o etcd-v0.4.9-linux-amd64.tar.gz
@@ -11,11 +17,8 @@ dependencies:
         background: true
     - go install -a -race std
     - go get github.com/tools/godep
-    - mkdir -p empire/Godeps/_workspace/src/github.com/remind101
-    - ln -s $HOME/empire empire/Godeps/_workspace/src/github.com/remind101/empire
     - make bootstrap
   override:
-    - make build
 
 test:
   override:
@@ -26,6 +29,7 @@ deployment:
   hub: 
     branch: master
     commands:
+      - make build
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push remind101/empire
       - docker push remind101/empire-router

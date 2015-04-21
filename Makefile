@@ -11,6 +11,7 @@ build:
 	$(MAKE) -C etcd_peers build
 	$(MAKE) -C logger build
 	$(MAKE) -C router build
+	$(MAKE) -C relay build
 
 user_data:
 	$(eval URL := $(shell curl -s -w '\n' https://discovery.etcd.io/new))
