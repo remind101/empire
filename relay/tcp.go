@@ -45,11 +45,10 @@ func (h *containerSession) ServeTCP(ctx context.Context, conn net.Conn) {
 		logger.Log(ctx, "at", "ServeTCP", "err", err)
 		return
 	}
-	session := strings.TrimRight(str, "\r\n")
+	name := strings.TrimRight(str, "\r\n")
 
-	if c, ok := h.relay.sessions[session]; ok {
-		name := fmt.Sprintf("run.%s", session)
-		logger.Log(ctx, "at", "HandleConn", "session", session, "session exists, attaching.")
+	if c, ok := h.relay.sessions[name]; ok {
+		logger.Log(ctx, "at", "HandleConn", "name", name, "container exists, attaching.")
 
 		fmt.Fprintln(conn, "Creating container...")
 		if err := h.relay.CreateContainer(ctx, c); err != nil {
@@ -59,7 +58,7 @@ func (h *containerSession) ServeTCP(ctx context.Context, conn net.Conn) {
 		}
 
 		fmt.Fprintln(conn, "Attaching to container...")
-		errCh := make(chan error, 0)
+		errCh := make(chan error, 2)
 		go func() {
 			err := h.relay.AttachToContainer(ctx, name, conn, conn)
 			if err != nil {
@@ -81,10 +80,14 @@ func (h *containerSession) ServeTCP(ctx context.Context, conn net.Conn) {
 			errCh <- err
 		}()
 
-		if err := <-errCh; err != nil {
-			logger.Log(ctx, "at", "finished-attach-or-wait", "err", err)
+		// Wait for Attach or Wait to finish.
+		err := <-errCh
+		logger.Log(ctx, "at", "finished-attach-or-wait", "err", err)
+
+		if err := h.relay.PurgeContainer(ctx, name); err != nil {
+			logger.Log(ctx, "at", "PurgeContainer", "err", err)
 		}
 	} else {
-		logger.Log(ctx, "at", "HandleConn", "session", session, "session does not exist.")
+		logger.Log(ctx, "at", "HandleConn", "container", name, "container does not exist.")
 	}
 }

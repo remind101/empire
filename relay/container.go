@@ -25,6 +25,8 @@ type ContainerManager interface {
 	Attach(string, io.Reader, io.Writer) error
 	Start(string) error
 	Wait(string) (int, error)
+	Stop(string) error
+	Remove(string) error
 }
 
 // newContainerManager returns a ContainerManager based on the given options.
@@ -63,6 +65,14 @@ func (f *fakeManager) Start(name string) error {
 
 func (f *fakeManager) Wait(name string) (int, error) {
 	return 0, nil
+}
+
+func (f *fakeManager) Stop(name string) error {
+	return nil
+}
+
+func (f *fakeManager) Remove(name string) error {
+	return nil
 }
 
 type dockerManager struct {
@@ -148,6 +158,17 @@ func (d *dockerManager) Start(name string) error {
 
 func (d *dockerManager) Wait(name string) (int, error) {
 	return d.client.WaitContainer(name)
+}
+
+func (d *dockerManager) Stop(name string) error {
+	return d.client.StopContainer(name, 10)
+}
+
+func (d *dockerManager) Remove(name string) error {
+	return d.client.RemoveContainer(docker.RemoveContainerOptions{
+		ID:    name,
+		Force: true,
+	})
 }
 
 func (d *dockerManager) pullImage(image string) error {

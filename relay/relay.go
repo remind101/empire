@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -100,7 +101,7 @@ func (r *Relay) RegisterContainer(name string, c *Container) {
 }
 
 // UnregisterContainer unregisters a container.
-func (r *Relay) UnregisterContainer(name string, c *Container) {
+func (r *Relay) UnregisterContainer(name string) {
 	r.Lock()
 	defer r.Unlock()
 	delete(r.sessions, name)
@@ -127,4 +128,18 @@ func (r *Relay) StartContainer(ctx context.Context, name string) error {
 // WaitContainer blocks until a container has finished runnning.
 func (r *Relay) WaitContainer(ctx context.Context, name string) (int, error) {
 	return r.manager.Wait(name)
+}
+
+// PurgeContainer stops, deletes and unregisters a container.
+func (r *Relay) PurgeContainer(ctx context.Context, name string) (err error) {
+	if err = r.manager.Stop(name); err != nil {
+		logger.Log(ctx, "at", "PurgeContainer", "err", err, "error stopping container")
+	}
+
+	if err = r.manager.Remove(name); err != nil {
+		logger.Log(ctx, "at", "PurgeContainer", "err", err, "error removing container")
+	}
+
+	r.UnregisterContainer(name)
+	return err
 }
