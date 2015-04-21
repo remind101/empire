@@ -20,6 +20,7 @@ dependencies:
 test:
   override:
     - cd empire && make test
+    - cd relay && make test
 
 deployment:
   hub: 
