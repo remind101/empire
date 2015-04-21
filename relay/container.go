@@ -14,9 +14,12 @@ import (
 
 // ErrInvalidRepo is returned by parseRepo when the repo is not a valid repo.
 var ErrInvalidRepo = errors.New("registry: not a valid docker repo")
+
+// RepoPattern matches strings like `quay.io/remind101/acme-inc:latest` or `remind101/acme-inc:latest`
 var RepoPattern = regexp.MustCompile(`(\S+\/)?(\S+\/\S+):(\S+)`)
 
-type ContainerRunner interface {
+// ContainerManager defines an interface for managing containers.
+type ContainerManager interface {
 	Pull(*Container) error
 	Create(*Container) error
 	Attach(string, io.Reader, io.Writer) error
@@ -24,35 +27,50 @@ type ContainerRunner interface {
 	Wait(string) (int, error)
 }
 
-type fakeRunner struct {
+// newContainerManager returns a ContainerManager based on the given options.
+func newContainerManager(options DockerOptions) (manager ContainerManager) {
+	var err error
+
+	if options.Socket == "fake" {
+		manager = &fakeManager{}
+	} else {
+		manager, err = NewDockerManager(options.Socket, options.CertPath, options.Auth)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return manager
 }
 
-func (f *fakeRunner) Pull(c *Container) error {
+type fakeManager struct {
+}
+
+func (f *fakeManager) Pull(c *Container) error {
 	return nil
 }
 
-func (f *fakeRunner) Create(c *Container) error {
+func (f *fakeManager) Create(c *Container) error {
 	return nil
 }
 
-func (f *fakeRunner) Attach(name string, input io.Reader, output io.Writer) error {
+func (f *fakeManager) Attach(name string, input io.Reader, output io.Writer) error {
 	return nil
 }
 
-func (f *fakeRunner) Start(name string) error {
+func (f *fakeManager) Start(name string) error {
 	return nil
 }
 
-func (f *fakeRunner) Wait(name string) (int, error) {
+func (f *fakeManager) Wait(name string) (int, error) {
 	return 0, nil
 }
 
-type dockerRunner struct {
+type dockerManager struct {
 	client *docker.Client
 	auth   *docker.AuthConfigurations
 }
 
-func NewDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (*dockerRunner, error) {
+func NewDockerManager(socket, certPath string, auth *docker.AuthConfigurations) (*dockerManager, error) {
 	var err error
 	var dc *docker.Client
 
@@ -65,24 +83,24 @@ func NewDockerRunner(socket, certPath string, auth *docker.AuthConfigurations) (
 	case socket != "":
 		dc, err = docker.NewClient(socket)
 	default:
-		return nil, errors.New("NewDockerRunner needs a socket or a certPath")
+		return nil, errors.New("NewDockerManager needs a socket or a certPath")
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &dockerRunner{
+	return &dockerManager{
 		client: dc,
 		auth:   auth,
 	}, nil
 }
 
-func (d *dockerRunner) Pull(c *Container) error {
+func (d *dockerManager) Pull(c *Container) error {
 	return d.pullImage(c.Image)
 }
 
-func (d *dockerRunner) Create(c *Container) error {
+func (d *dockerManager) Create(c *Container) error {
 	env := []string{}
 	for k, v := range c.Env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
@@ -107,7 +125,7 @@ func (d *dockerRunner) Create(c *Container) error {
 	return err
 }
 
-func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) error {
+func (d *dockerManager) Attach(name string, input io.Reader, output io.Writer) error {
 	opts := docker.AttachToContainerOptions{
 		Container:    name,
 		InputStream:  input,
@@ -124,15 +142,15 @@ func (d *dockerRunner) Attach(name string, input io.Reader, output io.Writer) er
 	return d.client.AttachToContainer(opts)
 }
 
-func (d *dockerRunner) Start(name string) error {
+func (d *dockerManager) Start(name string) error {
 	return d.client.StartContainer(name, nil)
 }
 
-func (d *dockerRunner) Wait(name string) (int, error) {
+func (d *dockerManager) Wait(name string) (int, error) {
 	return d.client.WaitContainer(name)
 }
 
-func (d *dockerRunner) pullImage(image string) error {
+func (d *dockerManager) pullImage(image string) error {
 	var a docker.AuthConfiguration
 
 	reg, repo, tag, err := parseRepo(image)
@@ -155,7 +173,7 @@ func (d *dockerRunner) pullImage(image string) error {
 	}, a)
 }
 
-// Split splits a full docker repo into registry, repo and tag segments.
+// parseRepo splits a full docker repo into registry, repo and tag segments.
 //
 // Examples:
 //

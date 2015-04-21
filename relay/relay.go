@@ -65,7 +65,7 @@ type Relay struct {
 	Host string
 
 	// The container manager.
-	runner ContainerRunner
+	manager ContainerManager
 
 	// The func to use to generate container names.
 	containerNameFunc func(string) string
@@ -78,7 +78,7 @@ type Relay struct {
 func New(options Options) *Relay {
 	return &Relay{
 		Host:              fmt.Sprintf("%s:%s", options.Tcp.Host, options.Tcp.Port),
-		runner:            newContainerRunner(options.Docker),
+		manager:           newContainerManager(options.Docker),
 		containerNameFunc: options.ContainerNameFunc,
 		sessions:          map[string]*Container{},
 	}
@@ -108,38 +108,23 @@ func (r *Relay) UnregisterContainer(name string, c *Container) {
 
 // CreateContainer creates a new container instance, but doesn't start it.
 func (r *Relay) CreateContainer(ctx context.Context, c *Container) error {
-	if err := r.runner.Pull(c); err != nil {
+	if err := r.manager.Pull(c); err != nil {
 		return err
 	}
-	return r.runner.Create(c)
+	return r.manager.Create(c)
 }
 
 // AttachToContainer attaches IO to an existing container.
 func (r *Relay) AttachToContainer(ctx context.Context, name string, in io.Reader, out io.Writer) error {
-	return r.runner.Attach(name, in, out)
+	return r.manager.Attach(name, in, out)
 }
 
 // StartContainer starts a container. This should be called after creating and attaching to a container.
 func (r *Relay) StartContainer(ctx context.Context, name string) error {
-	return r.runner.Start(name)
+	return r.manager.Start(name)
 }
 
 // WaitContainer blocks until a container has finished runnning.
 func (r *Relay) WaitContainer(ctx context.Context, name string) (int, error) {
-	return r.runner.Wait(name)
-}
-
-// newContainerRunner returns a ContainerRunner based on the given options.
-func newContainerRunner(options DockerOptions) (runner ContainerRunner) {
-	var err error
-
-	if options.Socket == "fake" {
-		runner = &fakeRunner{}
-	} else {
-		runner, err = NewDockerRunner(options.Socket, options.CertPath, options.Auth)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return runner
+	return r.manager.Wait(name)
 }
