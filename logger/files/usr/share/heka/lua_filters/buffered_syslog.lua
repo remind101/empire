@@ -1,16 +1,16 @@
-require "string"
-
 -- Useful for buffering syslog messages.
 
-buffer = ""
+buffer_length = 0
+local buffer = ""
 
 function process_message ()
     local max_buffer_size = read_config("max_buffer_size") or 1
     local payload = read_message("Payload")
 
+    buffer_length = buffer_length + 1
     buffer = buffer .. payload
 
-    if string.len(buffer) >= max_buffer_size then
+    if buffer_length >= max_buffer_size then
         flush_buffer()
     end
 
@@ -18,12 +18,13 @@ function process_message ()
 end
 
 function timer_event(ns)
-    if string.len(buffer) > 0 then
+    if buffer_length > 0 then
         flush_buffer()
     end
 end
 
 function flush_buffer()
     inject_payload("buffered_syslog", "docker_syslog", buffer)
+    buffer_length = 0
     buffer = ""
 end
