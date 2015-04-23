@@ -2,6 +2,7 @@ package empire
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/remind101/pkg/timex"
@@ -76,6 +77,9 @@ type DeploymentsCreateOpts struct {
 
 	// Image is the image that's being deployed.
 	Image Image
+
+	// OutputStream will receive a json stream of progress during the deploy.
+	OutputStream io.Writer
 }
 
 func (s *store) DeploymentsCreate(opts DeploymentsCreateOpts) (*Deployment, error) {
@@ -140,11 +144,7 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	}
 
 	// Create a new slug for the docker image.
-	//
-	// TODO This is actually going to be pretty slow, so
-	// we'll need to do
-	// some polling or events/webhooks here.
-	slug, err = s.SlugsCreateByImage(image)
+	slug, err = s.SlugsCreateByImage(image, opts.OutputStream)
 	if err != nil {
 		return
 	}
@@ -165,29 +165,30 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	return
 }
 
-func (s *deployer) DeployImageToApp(ctx context.Context, app *App, image Image) (*Deployment, error) {
+func (s *deployer) DeployImageToApp(ctx context.Context, app *App, image Image, output io.Writer) (*Deployment, error) {
 	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
 		return nil, err
 	}
 
 	return s.DeploymentsDo(ctx, DeploymentsCreateOpts{
-		App:   app,
-		Image: image,
+		App:          app,
+		Image:        image,
+		OutputStream: output,
 	})
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deployer) DeployImage(ctx context.Context, image Image) (*Deployment, error) {
+func (s *deployer) DeployImage(ctx context.Context, image Image, output io.Writer) (*Deployment, error) {
 	app, err := s.appsService.AppsFindOrCreateByRepo(DockerRepo, image.Repo)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DeployImageToApp(ctx, app, image)
+	return s.DeployImageToApp(ctx, app, image, output)
 }
 
 // Deploy commit deploys the commit to a specific app.
-func (s *deployer) DeployCommitToApp(ctx context.Context, app *App, commit Commit) (*Deployment, error) {
+func (s *deployer) DeployCommitToApp(ctx context.Context, app *App, commit Commit, output io.Writer) (*Deployment, error) {
 	var docker Repo
 
 	if err := s.appsService.AppsEnsureRepo(app, GitHubRepo, commit.Repo); err != nil {
@@ -200,20 +201,22 @@ func (s *deployer) DeployCommitToApp(ctx context.Context, app *App, commit Commi
 		docker = s.fallbackRepo(app.Name)
 	}
 
-	return s.DeployImageToApp(ctx, app, Image{
+	image := Image{
 		Repo: docker,
 		ID:   commit.Sha,
-	})
+	}
+
+	return s.DeployImageToApp(ctx, app, image, output)
 }
 
 // DeployCommit resolves the Commit to an Image then deploys the Image.
-func (s *deployer) DeployCommit(ctx context.Context, commit Commit) (*Deployment, error) {
+func (s *deployer) DeployCommit(ctx context.Context, commit Commit, output io.Writer) (*Deployment, error) {
 	app, err := s.appsService.AppsFindOrCreateByRepo(GitHubRepo, commit.Repo)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DeployCommitToApp(ctx, app, commit)
+	return s.DeployCommitToApp(ctx, app, commit, output)
 }
 
 func (s *deployer) fallbackRepo(appName string) Repo {

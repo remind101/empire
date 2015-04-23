@@ -3,6 +3,7 @@ package empire
 import (
 	"database/sql"
 	"fmt"
+	"io"
 )
 
 // Slug represents a container image with the extracted ProcessType.
@@ -63,15 +64,15 @@ type slugsService struct {
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
-	return slugsCreateByImage(s.store, s.extractor, s.resolver, image)
+func (s *slugsService) SlugsCreateByImage(image Image, output io.Writer) (*Slug, error) {
+	return slugsCreateByImage(s.store, s.extractor, s.resolver, image, output)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image) (*Slug, error) {
-	image, err := r.Resolve(image)
+func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image, output io.Writer) (*Slug, error) {
+	image, err := r.Resolve(image, output)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"path"
 
 	"github.com/fsouza/go-dockerclient"
@@ -19,7 +18,7 @@ var (
 )
 
 type Resolver interface {
-	Resolve(Image) (Image, error)
+	Resolve(Image, io.Writer) (Image, error)
 }
 
 func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Resolver, error) {
@@ -41,7 +40,10 @@ func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Reso
 // resolver is a fake resolver that will just return the provided image.
 type resolver struct{}
 
-func (r *resolver) Resolve(image Image) (Image, error) {
+func (r *resolver) Resolve(image Image, output io.Writer) (Image, error) {
+	if c, ok := output.(io.Closer); ok {
+		defer c.Close()
+	}
 	return image, nil
 }
 
@@ -52,8 +54,12 @@ type dockerResolver struct {
 	auth   *docker.AuthConfigurations
 }
 
-func (r *dockerResolver) Resolve(image Image) (Image, error) {
-	if err := r.pullImage(image); err != nil {
+func (r *dockerResolver) Resolve(image Image, output io.Writer) (Image, error) {
+	if c, ok := output.(io.Closer); ok {
+		defer c.Close()
+	}
+
+	if err := r.pullImage(image, output); err != nil {
 		return image, err
 	}
 
@@ -72,7 +78,7 @@ func (r *dockerResolver) Resolve(image Image) (Image, error) {
 //
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with it's own ID beforehand.
-func (r *dockerResolver) pullImage(i Image) error {
+func (r *dockerResolver) pullImage(i Image, output io.Writer) error {
 	var a docker.AuthConfiguration
 
 	reg, _, err := registry.Split(string(i.Repo))
@@ -89,9 +95,10 @@ func (r *dockerResolver) pullImage(i Image) error {
 	}
 
 	return r.client.PullImage(docker.PullImageOptions{
-		Repository:   string(i.Repo),
-		Tag:          i.ID,
-		OutputStream: os.Stdout,
+		Repository:    string(i.Repo),
+		Tag:           i.ID,
+		OutputStream:  output,
+		RawJSONStream: true,
 	}, a)
 }
 
