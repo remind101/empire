@@ -1,7 +1,6 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
-	"io"
 	"net/url"
 	"strings"
 
@@ -306,13 +305,13 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 }
 
 // DeployImage deploys an image to Empire.
-func (e *Empire) DeployImage(ctx context.Context, image Image, output io.Writer) (*Deployment, error) {
-	return e.deployer.DeployImage(ctx, image, output)
+func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (*Deployment, error) {
+	return e.deployer.DeployImage(ctx, image, out)
 }
 
 // DeployCommit deploys a Commit to Empire.
-func (e *Empire) DeployCommit(ctx context.Context, commit Commit, output io.Writer) (*Deployment, error) {
-	return e.deployer.DeployCommit(ctx, commit, output)
+func (e *Empire) DeployCommit(ctx context.Context, commit Commit, out chan Event) (*Deployment, error) {
+	return e.deployer.DeployCommit(ctx, commit, out)
 }
 
 // AppsScale scales an apps process.

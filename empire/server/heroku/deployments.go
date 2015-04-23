@@ -1,12 +1,9 @@
 package heroku
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -60,62 +57,32 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
 
-	pr, pw := io.Pipe()
-
 	var (
-		d     *empire.Deployment
-		err   error
-		errCh chan error
+		d   *empire.Deployment
+		err error
 	)
 
-	errCh = make(chan error, 1)
+	ch := make(chan empire.Event)
+	errCh := make(chan error)
 	go func() {
-		d, err = h.DeployImage(ctx, image, pw)
+		d, err = h.DeployImage(ctx, image, ch)
 		errCh <- err
 	}()
 
-	// Stream output from DeployImage, adding newlines after each json message.
-	if err := h.streamJSON(pr, w); err != nil {
-		logger.Log(ctx, "at", "streamJSON", "err", err)
-		h.streamErr(err, w)
-		return nil
-	}
-
-	// Wait for DeployImage to finish.
-	if err := <-errCh; err != nil {
-		h.streamErr(err, w)
-		return nil
-	}
-
-	return Encode(w, &jsonMessage{
-		Status:     "Deployed",
-		Deployment: newDeployment(d),
-	})
-}
-
-func (h *PostDeploys) streamJSON(r io.Reader, w io.Writer) error {
-	dec := json.NewDecoder(r)
-	enc := json.NewEncoder(w)
-	for {
-		var m jsonMessage
-		if err := dec.Decode(&m); err == io.EOF {
-			break
-		} else if err != nil {
-			return err
+	ok := true
+	for ok {
+		select {
+		case evt := <-ch:
+			if err := Encode(w, evt); err != nil {
+				return err
+			}
+		case err := <-errCh:
+			if err != nil {
+				return err
+			}
+			ok = false
 		}
-
-		if err := enc.Encode(&m); err != nil {
-			return err
-		}
-		w.Write([]byte("\n"))
 	}
-	return nil
-}
 
-func (h *PostDeploys) streamErr(err error, w io.Writer) error {
-	enc := json.NewEncoder(w)
-	return enc.Encode(&jsonMessage{
-		Status: "Errored during deploy",
-		Error:  err.Error(),
-	})
+	return Encode(w, newDeployment(d))
 }

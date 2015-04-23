@@ -3,6 +3,7 @@ package empire
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
@@ -18,7 +19,7 @@ var (
 )
 
 type Resolver interface {
-	Resolve(Image, io.Writer) (Image, error)
+	Resolve(Image, chan Event) (Image, error)
 }
 
 func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Resolver, error) {
@@ -40,10 +41,7 @@ func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Reso
 // resolver is a fake resolver that will just return the provided image.
 type resolver struct{}
 
-func (r *resolver) Resolve(image Image, output io.Writer) (Image, error) {
-	if c, ok := output.(io.Closer); ok {
-		defer c.Close()
-	}
+func (r *resolver) Resolve(image Image, out chan Event) (Image, error) {
 	return image, nil
 }
 
@@ -54,12 +52,27 @@ type dockerResolver struct {
 	auth   *docker.AuthConfigurations
 }
 
-func (r *dockerResolver) Resolve(image Image, output io.Writer) (Image, error) {
-	if c, ok := output.(io.Closer); ok {
-		defer c.Close()
+func (r *dockerResolver) Resolve(image Image, out chan Event) (Image, error) {
+	pr, pw := io.Pipe()
+	errCh := make(chan error)
+	go func() {
+		defer pw.Close()
+		errCh <- r.pullImage(image, pw)
+	}()
+
+	dec := json.NewDecoder(pr)
+	for {
+		var e DockerEvent
+		if err := dec.Decode(&e); err == io.EOF {
+			break
+		} else if err != nil {
+			return image, err
+		}
+		out <- &e
 	}
 
-	if err := r.pullImage(image, output); err != nil {
+	// Wait for pullImage to finish
+	if err := <-errCh; err != nil {
 		return image, err
 	}
 
