@@ -21,6 +21,10 @@ var (
 	// errUnauthorized is returned if the request to create an authorization
 	// results in a 401.
 	errUnauthorized = errors.New("github: unauthorized")
+
+	// errNoToken is returned if there was no access token in the github
+	// response.
+	errNoToken = errors.New("github: no token in response")
 )
 
 const (
@@ -69,13 +73,15 @@ type Client struct {
 func (c *Client) CreateAuthorization(opts CreateAuthorizationOpts) (*Authorization, error) {
 	f := struct {
 		Scopes       []string `json:"scopes"`
+		ClientID     string   `json:"client_id"`
 		ClientSecret string   `json:"client_secret"`
 	}{
 		Scopes:       opts.Scopes,
+		ClientID:     opts.ClientID,
 		ClientSecret: opts.ClientSecret,
 	}
 
-	req, err := c.NewRequest("PUT", fmt.Sprintf("/authorizations/clients/%s", opts.ClientID), f)
+	req, err := c.NewRequest("POST", "/authorizations", f)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +112,10 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOpts) (*Authorizati
 
 	if err := checkResponse(resp); err != nil {
 		return nil, err
+	}
+
+	if a.Token == "" {
+		return nil, errNoToken
 	}
 
 	return &a, nil

@@ -31,7 +31,7 @@ func TestClientCreateAuthorization(t *testing.T) {
 			t.Fatalf("Pass => %s; want %s", got, want)
 		}
 
-		if got, want := r.URL.Path, "/authorizations/clients/1234"; got != want {
+		if got, want := r.URL.Path, "/authorizations"; got != want {
 			t.Fatalf("Path => %s; want %s", got, want)
 		}
 
@@ -40,7 +40,7 @@ func TestClientCreateAuthorization(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if got, want := string(body), `{"scopes":["repo"],"client_secret":"shhh"}`+"\n"; got != want {
+		if got, want := string(body), `{"scopes":["repo"],"client_id":"1234","client_secret":"shhh"}`+"\n"; got != want {
 			t.Fatalf("Body => %s; want %s", got, want)
 		}
 
