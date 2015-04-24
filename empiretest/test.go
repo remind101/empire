@@ -22,9 +22,6 @@ var (
 func NewEmpire(t testing.TB) *empire.Empire {
 	opts := empire.Options{
 		DB: DatabaseURL,
-		Etcd: empire.EtcdOptions{
-			API: "fake",
-		},
 		Runner: empire.RunnerOptions{
 			API: "fake",
 		},

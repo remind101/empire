@@ -3,12 +3,9 @@ package empire
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"log"
-	"strings"
+
 	"time"
 
-	"github.com/coreos/go-etcd/etcd"
 	"github.com/remind101/pkg/timex"
 	"gopkg.in/gorp.v1"
 )
@@ -42,7 +39,8 @@ func newDomainRegistry(urls string) domainRegistry {
 		return &fakeDomainRegistry{}
 	}
 
-	return &etcdDomainRegistry{client: etcd.NewClient(strings.Split(urls, ","))}
+	// TODO: Add a Route53 Registry that will create a CNAME to the app's ELB.
+	return &fakeDomainRegistry{}
 }
 
 type fakeDomainRegistry struct{}
@@ -53,31 +51,6 @@ func (r *fakeDomainRegistry) Register(domain *Domain) error {
 
 func (r *fakeDomainRegistry) Unregister(domain *Domain) error {
 	return nil
-}
-
-type etcdDomainRegistry struct {
-	client *etcd.Client
-}
-
-func (r *etcdDomainRegistry) Register(domain *Domain) error {
-	_, err := r.client.Set(r.key(domain.AppName, domain.Hostname), domain.Hostname, 0)
-	return r.handleError(err)
-}
-
-func (r *etcdDomainRegistry) Unregister(domain *Domain) error {
-	_, err := r.client.Delete(r.key(domain.AppName, domain.Hostname), false)
-	return r.handleError(err)
-}
-
-func (r *etcdDomainRegistry) key(app, host string) string {
-	return fmt.Sprintf("/empire/domains/%s/%s", app, host)
-}
-
-func (r *etcdDomainRegistry) handleError(err error) error {
-	if e, ok := err.(etcd.EtcdError); ok && e.ErrorCode == etcd.ErrCodeEtcdNotReachable {
-		log.Printf("Unable to connect to etcd. Cluster: %s", strings.Join(r.client.GetCluster(), ","))
-	}
-	return err
 }
 
 type domainsService struct {

@@ -46,12 +46,6 @@ type DockerOptions struct {
 	Auth *docker.AuthConfigurations
 }
 
-// EtcdOptions is a set of options to configure an etcd api client.
-type EtcdOptions struct {
-	// The etcd hosts to connect to.
-	API string
-}
-
 // ECSOptions is a set of options to configure ECS.
 type ECSOptions struct {
 	Cluster string
@@ -65,7 +59,6 @@ type RunnerOptions struct {
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
-	Etcd   EtcdOptions
 	Runner RunnerOptions
 	ECS    ECSOptions
 
@@ -108,7 +101,7 @@ func New(options Options) (*Empire, error) {
 
 	store := &store{db: db}
 
-	domainReg := newDomainRegistry(options.Etcd.API)
+	domainReg := newDomainRegistry("")
 
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
