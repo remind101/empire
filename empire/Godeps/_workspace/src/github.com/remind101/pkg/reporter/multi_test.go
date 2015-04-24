@@ -23,11 +23,9 @@ func TestMultiReporter(t *testing.T) {
 		return nil
 	})
 
-	h := &MultiReporter{
-		reporters: []Reporter{r1, r2},
-	}
+	h := MultiReporter{r1, r2}
 
-	if err := h.Report(context.Background(), ErrFake); err != nil {
+	if err := h.Report(context.Background(), errBoom); err != nil {
 		t.Fatal(err)
 	}
 
@@ -50,11 +48,9 @@ func TestMultiReporterError(t *testing.T) {
 		return errors.New("boom 2")
 	})
 
-	h := &MultiReporter{
-		reporters: []Reporter{r1, r2},
-	}
+	h := MultiReporter{r1, r2}
 
-	err := h.Report(context.Background(), ErrFake)
+	err := h.Report(context.Background(), errBoom)
 
 	if _, ok := err.(*MultiError); !ok {
 		t.Fatal("Expected a MultiError to be returned")

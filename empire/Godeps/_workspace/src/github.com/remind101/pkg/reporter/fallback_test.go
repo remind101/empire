@@ -27,7 +27,7 @@ func TestFallback(t *testing.T) {
 		}),
 	}
 
-	r.Report(context.Background(), ErrFake)
+	r.Report(context.Background(), errBoom)
 
 	if !called {
 		t.Fatal("fallback not called")

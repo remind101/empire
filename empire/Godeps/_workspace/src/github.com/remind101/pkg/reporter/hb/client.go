@@ -30,6 +30,7 @@ type Error struct {
 	Message   string                 `json:"message"`
 	Backtrace []*BacktraceLine       `json:"backtrace"`
 	Source    map[string]interface{} `json:"source"`
+	Tags      []string               `json:"tags"`
 }
 
 type Request struct {
@@ -55,32 +56,30 @@ type Report struct {
 	Server   *Server   `json:"server"`
 }
 
-// Add a key and given value to the report as context
-func (r *Report) AddContext(k string, v interface{}) {
-	r.Request.Context[k] = v
-}
-
-// Add a key and given value to the report as parameters
-func (r *Report) AddParam(k string, v interface{}) {
-	r.Request.Params[k] = v
-}
-
-// Add a key and given value to the report as session
-func (r *Report) AddSession(k string, v interface{}) {
-	r.Request.Session[k] = v
-}
-
 type Client struct {
 	// URL is the location for the honeybadger api. The zero value is DefaultURL.
 	URL string
-
-	// Key is the api key to use when making requests.
-	Key string
 
 	// Version is the API version to use. The zero value is DefaultVersion.
 	Version string
 
 	client *http.Client
+}
+
+// NewClient returns a new Client instance.
+func NewClient(c *http.Client) *Client {
+	if c == nil {
+		c = http.DefaultClient
+	}
+
+	return &Client{client: c}
+}
+
+// NewClientFromKey returns a new Client with an http.Client configured to add
+// the key as the api token.
+func NewClientFromKey(key string) *Client {
+	t := &Transport{Key: key}
+	return NewClient(t.Client())
 }
 
 func (c *Client) Send(r *Report) error {
@@ -119,7 +118,6 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*http.Request, 
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-API-Key", c.Key)
 
 	return req, nil
 }
@@ -141,4 +139,28 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	return resp, nil
+}
+
+// Transport is an http.RoundTripper that adds the api key to the request
+// headers.
+type Transport struct {
+	Key string
+
+	Transport http.RoundTripper
+}
+
+func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
+	r.Header.Set("X-API-Key", t.Key)
+
+	if t.Transport == nil {
+		t.Transport = http.DefaultTransport
+	}
+
+	return t.Transport.RoundTrip(r)
+}
+
+func (t *Transport) Client() *http.Client {
+	return &http.Client{
+		Transport: t,
+	}
 }

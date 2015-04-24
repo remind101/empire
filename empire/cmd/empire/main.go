@@ -196,20 +196,13 @@ func newReporter(u string) (reporter.Reporter, error) {
 }
 
 func newHBReporter(key, env string) (reporter.Reporter, error) {
-	g := hb.NewReportGenerator(env)
-	// This needs to be changed if the nesting of the hb.Reporter below
-	// changes.
-	g.Skip = 4
+	r := hb.NewReporter(key)
+	r.Environment = env
 
-	hb := &reporter.FallbackReporter{
-		Reporter: hb.NewReporter(key, hb.AddRequestID(g)),
-		Fallback: empire.DefaultReporter,
-	}
-
-	return reporter.NewMultiReporter(
+	return reporter.MultiReporter{
 		empire.DefaultReporter,
-		hb,
-	), nil
+		r,
+	}, nil
 }
 
 func dockerAuth(path string) (*docker.AuthConfigurations, error) {
