@@ -6,6 +6,7 @@ import (
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
+	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
 
@@ -56,6 +57,8 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		"at", "authenticated",
 		"user", user.Name,
 	)
+
+	reporter.AddContext(ctx, "user", user.Name)
 
 	return h.handler.ServeHTTPContext(ctx, w, r)
 }
