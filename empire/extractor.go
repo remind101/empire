@@ -3,9 +3,9 @@ package empire
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"path"
 
 	"github.com/fsouza/go-dockerclient"
@@ -19,7 +19,7 @@ var (
 )
 
 type Resolver interface {
-	Resolve(Image) (Image, error)
+	Resolve(Image, chan Event) (Image, error)
 }
 
 func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Resolver, error) {
@@ -41,7 +41,7 @@ func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Reso
 // resolver is a fake resolver that will just return the provided image.
 type resolver struct{}
 
-func (r *resolver) Resolve(image Image) (Image, error) {
+func (r *resolver) Resolve(image Image, out chan Event) (Image, error) {
 	return image, nil
 }
 
@@ -52,8 +52,27 @@ type dockerResolver struct {
 	auth   *docker.AuthConfigurations
 }
 
-func (r *dockerResolver) Resolve(image Image) (Image, error) {
-	if err := r.pullImage(image); err != nil {
+func (r *dockerResolver) Resolve(image Image, out chan Event) (Image, error) {
+	pr, pw := io.Pipe()
+	errCh := make(chan error, 1)
+	go func() {
+		defer pw.Close()
+		errCh <- r.pullImage(image, pw)
+	}()
+
+	dec := json.NewDecoder(pr)
+	for {
+		var e DockerEvent
+		if err := dec.Decode(&e); err == io.EOF {
+			break
+		} else if err != nil {
+			return image, err
+		}
+		out <- &e
+	}
+
+	// Wait for pullImage to finish
+	if err := <-errCh; err != nil {
 		return image, err
 	}
 
@@ -72,7 +91,7 @@ func (r *dockerResolver) Resolve(image Image) (Image, error) {
 //
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with it's own ID beforehand.
-func (r *dockerResolver) pullImage(i Image) error {
+func (r *dockerResolver) pullImage(i Image, output io.Writer) error {
 	var a docker.AuthConfiguration
 
 	reg, _, err := registry.Split(string(i.Repo))
@@ -89,9 +108,10 @@ func (r *dockerResolver) pullImage(i Image) error {
 	}
 
 	return r.client.PullImage(docker.PullImageOptions{
-		Repository:   string(i.Repo),
-		Tag:          i.ID,
-		OutputStream: os.Stdout,
+		Repository:    string(i.Repo),
+		Tag:           i.ID,
+		OutputStream:  output,
+		RawJSONStream: true,
 	}, a)
 }
 

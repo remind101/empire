@@ -63,15 +63,15 @@ type slugsService struct {
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) SlugsCreateByImage(image Image) (*Slug, error) {
-	return slugsCreateByImage(s.store, s.extractor, s.resolver, image)
+func (s *slugsService) SlugsCreateByImage(image Image, out chan Event) (*Slug, error) {
+	return slugsCreateByImage(s.store, s.extractor, s.resolver, image, out)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image) (*Slug, error) {
-	image, err := r.Resolve(image)
+func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image, out chan Event) (*Slug, error) {
+	image, err := r.Resolve(image, out)
 	if err != nil {
 		return nil, err
 	}
