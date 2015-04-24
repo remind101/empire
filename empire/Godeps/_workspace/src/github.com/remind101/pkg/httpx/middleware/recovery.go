@@ -31,6 +31,12 @@ func Recover(h httpx.Handler, r reporter.Reporter) *Recovery {
 func (h *Recovery) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) (err error) {
 	ctx = reporter.WithReporter(ctx, h.Reporter)
 
+	// Add the request to the context.
+	reporter.AddRequest(ctx, r)
+
+	// Add the request id
+	reporter.AddContext(ctx, "request_id", httpx.RequestID(ctx))
+
 	defer func() {
 		if v := recover(); v != nil {
 			err = fmt.Errorf("%v", v)
@@ -39,7 +45,7 @@ func (h *Recovery) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 				err = v
 			}
 
-			h.Report(ctx, err)
+			reporter.Report(ctx, err)
 
 			return
 		}

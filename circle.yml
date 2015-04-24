@@ -17,6 +17,7 @@ dependencies:
         background: true
     - go install -a -race std
     - go get github.com/tools/godep
+    - go version
     - make bootstrap
   override:
 

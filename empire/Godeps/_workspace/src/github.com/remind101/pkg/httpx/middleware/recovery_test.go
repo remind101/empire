@@ -21,8 +21,14 @@ func TestRecovery(t *testing.T) {
 		Reporter: reporter.ReporterFunc(func(ctx context.Context, err error) error {
 			called = true
 
-			if err != errBoom {
+			e := err.(*reporter.Error)
+
+			if e.Err != errBoom {
 				t.Fatalf("err => %v; want %v", err, errBoom)
+			}
+
+			if got, want := e.Context["request_id"], "1234"; got != want {
+				t.Fatalf("RequestID => %s; want %s")
 			}
 
 			return nil
@@ -35,6 +41,8 @@ func TestRecovery(t *testing.T) {
 	ctx := context.Background()
 	req, _ := http.NewRequest("GET", "/", nil)
 	resp := httptest.NewRecorder()
+
+	ctx = httpx.WithRequestID(ctx, "1234")
 
 	defer func() {
 		if err := recover(); err != nil {
