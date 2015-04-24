@@ -8,6 +8,8 @@ import (
 	gorp "gopkg.in/gorp.v1"
 )
 
+type SqlExecutor gorp.SqlExecutor
+
 type db struct {
 	db    *sql.DB
 	dbmap *gorp.DbMap
@@ -40,6 +42,7 @@ func newDB(uri string) (*db, error) {
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
 	db.AddTableWithName(Deployment{}, "deployments").SetKeys(true, "ID")
 	db.AddTableWithName(Domain{}, "domains").SetKeys(true, "ID")
+	db.AddTableWithName(Port{}, "ports").SetKeys(true, "ID")
 	db.AddTableWithName(Process{}, "processes").SetKeys(true, "ID")
 	db.AddTableWithName(Release{}, "releases").SetKeys(true, "ID")
 	db.AddTableWithName(Slug{}, "slugs").SetKeys(true, "ID")
