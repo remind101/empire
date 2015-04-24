@@ -199,10 +199,9 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 	r := hb.NewReporter(key)
 	r.Environment = env
 
-	return reporter.MultiReporter{
-		empire.DefaultReporter,
-		r,
-	}, nil
+	// Append here because `go vet` will complain about unkeyed fields,
+	// since it thinks MultiReporter is a struct literal.
+	return append(reporter.MultiReporter{}, empire.DefaultReporter, r), nil
 }
 
 func dockerAuth(path string) (*docker.AuthConfigurations, error) {
