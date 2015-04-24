@@ -12,6 +12,10 @@ import (
 func runServer(c *cli.Context) {
 	port := c.String("port")
 
+	if c.Bool("automigrate") {
+		runMigrate(c)
+	}
+
 	e, err := newEmpire(c)
 	if err != nil {
 		log.Fatal(err)

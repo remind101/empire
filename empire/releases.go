@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/remind101/empire/empire/pkg/pod"
+	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
@@ -244,62 +244,52 @@ func releasesAllByAppName(db *db, appName string) ([]*Release, error) {
 }
 
 type releaser struct {
-	manager *manager
+	manager service.Manager
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation) error {
-	old, err := r.manager.Templates(map[string]string{
-		"app": release.AppName,
-	})
-	if err != nil {
-		return err
-	}
-
-	templates := newTemplates(release, config, slug, formation)
-	if err := r.manager.Submit(templates...); err != nil {
-		return err
-	}
-
-	return r.manager.Destroy(old...)
+	app := newServiceApp(release, config, slug, formation)
+	return r.manager.Submit(ctx, app)
 }
 
-func newTemplates(release *Release, config *Config, slug *Slug, formation Formation) []*pod.Template {
-	var templates []*pod.Template
+func newServiceApp(release *Release, config *Config, slug *Slug, formation Formation) *service.App {
+	var processes []*service.Process
 
 	for _, p := range formation {
-		templates = append(templates, newTemplate(release, config, slug, p))
+		processes = append(processes, newServiceProcess(release, config, slug, p))
 	}
 
-	return templates
+	return &service.App{
+		Name:      release.AppName,
+		Processes: processes,
+	}
 }
 
-func newTemplate(release *Release, config *Config, slug *Slug, p *Process) *pod.Template {
+func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process) *service.Process {
 	env := environment(config.Vars)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
 
-	return &pod.Template{
-		ID:      templateID(release.AppName, release.Ver, p.Type),
-		Env:     env,
-		Command: string(p.Command),
-		Image: pod.Image{
-			Repo: string(slug.Image.Repo),
-			ID:   slug.Image.ID,
-		},
-		Instances: uint(p.Quantity),
-		Tags: map[string]string{
-			"app":          release.AppName,
-			"version":      fmt.Sprintf("%d", release.Ver),
-			"process_type": string(p.Type),
-		},
-		// TODO: allow this to be configured eventually - 1 gig for now
-		MemoryLimit: 1073741824,
+	var ports []service.PortMap
+	if p.Type == "web" {
+		port := int64(WebPort)
+		ports = append(ports, service.PortMap{
+			Container: &port,
+		})
+		env["PORT"] = fmt.Sprintf("%d", port)
 	}
-}
 
-func templateID(appName string, version int, t ProcessType) string {
-	return fmt.Sprintf("%s.%d.%s", appName, version, t)
+	return &service.Process{
+		Type:        string(p.Type),
+		Env:         env,
+		Command:     string(p.Command),
+		Image:       fmt.Sprintf("%s:%s", slug.Image.Repo, slug.Image.ID),
+		Instances:   uint(p.Quantity),
+		MemoryLimit: MemoryLimit,
+		CPUShares:   CPUShare,
+		Ports:       ports,
+	}
 }
 
 // environment coerces a Vars into a map[string]string.

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
@@ -107,26 +108,15 @@ func (s *store) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
 
 type appsService struct {
 	store   *store
-	manager *manager
+	manager service.Manager
 }
 
 func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
-	if err := s.store.AppsDestroy(app); err != nil {
+	if err := s.manager.Remove(ctx, app.Name); err != nil {
 		return err
 	}
 
-	templates, err := s.manager.Templates(map[string]string{
-		"app": app.Name,
-	})
-	if err != nil {
-		return err
-	}
-
-	if err := s.manager.Destroy(templates...); err != nil {
-		return err
-	}
-
-	return nil
+	return s.store.AppsDestroy(app)
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
@@ -233,7 +223,7 @@ func appsFindBy(db *db, field string, value interface{}) (*App, error) {
 // scaler is a small service for scaling an apps process.
 type scaler struct {
 	store   *store
-	manager *manager
+	manager service.Manager
 }
 
 func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int) error {
@@ -256,8 +246,7 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	id := templateID(release.AppName, release.Ver, p.Type)
-	if err := s.manager.Scale(id, uint(quantity)); err != nil {
+	if err := s.manager.Scale(ctx, release.AppName, string(p.Type), uint(quantity)); err != nil {
 		return err
 	}
 
@@ -269,42 +258,36 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 
 // restarter is a small service for restarting an apps processes.
 type restarter struct {
-	manager *manager
+	manager service.Manager
 }
 
-func (s *restarter) Restart(ctx context.Context, app *App, t ProcessType, n int) error {
-	tags := map[string]string{
-		"app": app.Name,
-	}
-
-	// If a process type was given, select templates tagged
-	// with the correct process type.
-	if pt := string(t); pt != "" {
-		tags["process_type"] = pt
-	}
-
-	templates, err := s.manager.Templates(tags)
+func (s *restarter) Restart(ctx context.Context, app *App, t ProcessType, id string) error {
+	instances, err := s.manager.Instances(ctx, app.Name)
 	if err != nil {
 		return err
 	}
 
-	for _, template := range templates {
-		instances, err := s.manager.Instances(template.ID)
-		if err != nil {
-			return err
-		}
+	var selected []*service.Instance
 
-		for _, instance := range instances {
-			// If an instance number was given, select only the instance
-			// that matches.
-			if n == 0 || instance.Instance == uint(n) {
-				err := s.manager.Restart(instance)
-				if err != nil {
-					return err
-				}
+	if id != "" {
+		for _, i := range instances {
+			if i.ID == id {
+				selected = []*service.Instance{i}
+			}
+		}
+	} else if t != "" {
+		for _, i := range instances {
+			if i.Process.Type == string(t) {
+				selected = append(selected, i)
 			}
 		}
 	}
 
-	return err
+	for _, i := range selected {
+		if err := s.manager.Stop(ctx, i.ID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

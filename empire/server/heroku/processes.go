@@ -2,7 +2,6 @@ package heroku
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
@@ -42,7 +41,7 @@ func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 
 	// Retrieve job states
-	js, err := h.JobStatesByApp(a)
+	js, err := h.JobStatesByApp(ctx, a)
 	if err != nil {
 		return err
 	}
@@ -101,14 +100,14 @@ type DeleteProcesses struct {
 func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	vars := httpx.Vars(ctx)
 	ptype := empire.ProcessType(vars["ptype"])
-	pnum, _ := strconv.Atoi(vars["pnum"])
+	pid := vars["pid"]
 
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
 
-	err = h.ProcessesRestart(ctx, a, ptype, pnum)
+	err = h.ProcessesRestart(ctx, a, ptype, pid)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire"
@@ -25,6 +26,10 @@ var Commands = []cli.Command{
 				Value:  "8080",
 				Usage:  "The port to run the server on",
 				EnvVar: "EMPIRE_PORT",
+			},
+			cli.BoolFlag{
+				Name:  "automigrate",
+				Usage: "Whether to run the migrations at startup or not",
 			},
 			cli.StringFlag{
 				Name:   "github.client.id",
@@ -54,20 +59,19 @@ var Commands = []cli.Command{
 		Action: runServer,
 	},
 	{
-		Name:  "migrate",
-		Usage: "Migrate the database",
-		Flags: append([]cli.Flag{
-			cli.StringFlag{
-				Name:  "path",
-				Value: "./migrations",
-				Usage: "Path to database migrations",
-			},
-		}, DBFlags...),
+		Name:   "migrate",
+		Usage:  "Migrate the database",
+		Flags:  DBFlags,
 		Action: runMigrate,
 	},
 }
 
 var DBFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:  "path",
+		Value: "./migrations",
+		Usage: "Path to database migrations",
+	},
 	cli.StringFlag{
 		Name:   "db",
 		Value:  "postgres://localhost/empire?sslmode=disable",
@@ -102,10 +106,10 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "DOCKER_AUTH_PATH",
 	},
 	cli.StringFlag{
-		Name:   "fleet.api",
-		Value:  "",
-		Usage:  "The location of the fleet api",
-		EnvVar: "EMPIRE_FLEET_URL",
+		Name:   "ecs.cluster",
+		Value:  "default",
+		Usage:  "The ECS cluster to create services within",
+		EnvVar: "EMPIRE_ECS_CLUSTER",
 	},
 	cli.StringFlag{
 		Name:   "etcd.api",
@@ -149,8 +153,9 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Etcd.API = c.String("etcd.api")
-	opts.Fleet.API = c.String("fleet.api")
 	opts.Runner.API = c.String("runner.api")
+	opts.AWSConfig = aws.DefaultConfig
+	opts.ECS.Cluster = c.String("ecs.cluster")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
 

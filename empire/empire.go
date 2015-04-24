@@ -1,13 +1,11 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
-	"net/url"
-	"strings"
-
+	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/mattes/migrate/migrate"
-	"github.com/remind101/empire/empire/pkg/container"
-	"github.com/remind101/empire/empire/pkg/pod"
+	. "github.com/remind101/empire/empire/pkg/bytesize"
+	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -19,6 +17,18 @@ var (
 
 	// DefaultReporter is the default reporter.Reporter to use.
 	DefaultReporter = reporter.NewLogReporter()
+)
+
+const (
+	// CPUShare maps to the docker --cpu-shares flag.
+	CPUShare = 1024 / 4
+
+	// MemoryLimit is the number of bytes of memory to allocate to each
+	// process. Eventually this should be configurable.
+	MemoryLimit = 1 * GB
+
+	// WebPort is the default PORT to set on web processes.
+	WebPort = 8080
 )
 
 // DockerOptions is a set of options to configure a docker api client.
@@ -42,10 +52,9 @@ type EtcdOptions struct {
 	API string
 }
 
-// FleetOptions is a set of options to configure a fleet api client.
-type FleetOptions struct {
-	// The location of the fleet api.
-	API string
+// ECSOptions is a set of options to configure ECS.
+type ECSOptions struct {
+	Cluster string
 }
 
 // RunnerOptions is a set of options to configure the one off process runner service.
@@ -56,9 +65,12 @@ type RunnerOptions struct {
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
-	Fleet  FleetOptions
 	Etcd   EtcdOptions
 	Runner RunnerOptions
+	ECS    ECSOptions
+
+	// AWS Configuration
+	AWSConfig *aws.Config
 
 	Secret string
 
@@ -115,10 +127,10 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	manager, err := newManager(options)
-	if err != nil {
-		return nil, err
-	}
+	manager := newManager(
+		options.ECS.Cluster,
+		options.AWSConfig,
+	)
 
 	accessTokens := &accessTokensService{
 		Secret: []byte(options.Secret),
@@ -257,8 +269,8 @@ func (e *Empire) DomainsDestroy(domain *Domain) error {
 }
 
 // JobStatesByApp returns the JobStates for the given app.
-func (e *Empire) JobStatesByApp(app *App) ([]*ProcessState, error) {
-	return e.jobStates.JobStatesByApp(app)
+func (e *Empire) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
+	return e.jobStates.JobStatesByApp(ctx, app)
 }
 
 // ProcessesAll returns all processes for a given Release.
@@ -268,8 +280,8 @@ func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
 
 // ProcessesRestart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
-func (e *Empire) ProcessesRestart(ctx context.Context, app *App, ptype ProcessType, pnum int) error {
-	return e.restarter.Restart(ctx, app, ptype, pnum)
+func (e *Empire) ProcessesRestart(ctx context.Context, app *App, t ProcessType, id string) error {
+	return e.restarter.Restart(ctx, app, t, id)
 }
 
 type ProcessesRunOpts struct {
@@ -351,37 +363,14 @@ const (
 	UserKey key = 0
 )
 
-func newScheduler(fleetURL string) (container.Scheduler, error) {
-	if fleetURL == "fake" {
-		return container.NewFakeScheduler(), nil
+func newManager(cluster string, config *aws.Config) service.Manager {
+	if config == nil {
+		return service.NewFakeManager()
 	}
 
-	u, err := url.Parse(fleetURL)
-	if err != nil {
-		return nil, err
-	}
-
-	return container.NewFleetScheduler(u)
-}
-
-func newManager(options Options) (*manager, error) {
-	scheduler, err := newScheduler(options.Fleet.API)
-	if err != nil {
-		return nil, err
-	}
-
-	var store pod.Store
-	switch options.Etcd.API {
-	case "fake":
-		store = pod.NewMemStore()
-	default:
-		machines := strings.Split(options.Etcd.API, ",")
-		store = pod.NewEtcdStore(machines)
-	}
-
-	return &manager{
-		Manager: pod.NewContainerManager(scheduler, store),
-	}, nil
+	ecs := service.NewECSManager(config)
+	ecs.Cluster = cluster
+	return service.Log(ecs)
 }
 
 func newRunner(options RunnerOptions, s *store) *runner {

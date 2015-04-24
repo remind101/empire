@@ -25,6 +25,30 @@
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
 		},
 		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/aws",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/endpoints",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/json/jsonutil",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/jsonrpc",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/signer/v4",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/service/ecs",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
 			"ImportPath": "github.com/bgentry/heroku-go",
 			"Rev": "b891b4c66c7a330c5da052a0789f66c4e83c1bed"
 		},
@@ -301,6 +325,10 @@
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
 			"Rev": "e4ec8152c15fc46bd5056ce65997a07c7d415325"
+		},
+		{
+			"ImportPath": "github.com/vaughan0/go-ini",
+			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
