@@ -73,7 +73,7 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	for ok {
 		select {
 		case evt := <-ch:
-			if err := Encode(w, evt); err != nil {
+			if err := Stream(w, evt); err != nil {
 				return err
 			}
 		case err := <-errCh:

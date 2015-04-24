@@ -54,7 +54,7 @@ type dockerResolver struct {
 
 func (r *dockerResolver) Resolve(image Image, out chan Event) (Image, error) {
 	pr, pw := io.Pipe()
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 	go func() {
 		defer pw.Close()
 		errCh <- r.pullImage(image, pw)

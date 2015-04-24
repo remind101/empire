@@ -61,7 +61,7 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 	return middleware.HandleError(r, errorHandler)
 }
 
-// Encode json ecnodes v into w.
+// Encode json encodes v into w.
 func Encode(w http.ResponseWriter, v interface{}) error {
 	if v == nil {
 		// Empty JSON body "{}"
@@ -74,6 +74,19 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 // Decode json decodes the request body into v.
 func Decode(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
+}
+
+// Stream encodes and flushes data to the client.
+func Stream(w http.ResponseWriter, v interface{}) error {
+	if err := Encode(w, v); err != nil {
+		return err
+	}
+
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	return nil
 }
 
 // Error is used to respond with errors in the heroku error format, which is
