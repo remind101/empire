@@ -1,4 +1,4 @@
-.PHONY: bootstrap build cmd user_data vagrant
+.PHONY: bootstrap build cmd
 
 cmd:
 	$(MAKE) -C empire cmd
@@ -12,15 +12,6 @@ build:
 	$(MAKE) -C logger build
 	$(MAKE) -C router build
 	$(MAKE) -C relay build
-
-user_data:
-	$(eval URL := $(shell curl -s -w '\n' https://discovery.etcd.io/new))
-	sed -e "s,# discovery:,discovery:," -e "s,discovery: https://discovery.etcd.io/.*,discovery: $(URL)," cluster/user-data.template > cluster/user-data
-
-vagrant: user_data
-	touch ~/.dockercfg
-	vagrant destroy
-	vagrant up
 
 install:
 	mkdir -p /usr/local/lib/hk/plugin
