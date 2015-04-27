@@ -10,12 +10,19 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Logger represents a structured logger.
+// Logger represents a structured leveled logger.
 type Logger interface {
-	Log(pairs ...interface{})
+	Debug(msg string, pairs ...interface{})
+	Info(msg string, pairs ...interface{})
+	Warn(msg string, pairs ...interface{})
+	Error(msg string, pairs ...interface{})
+	Crit(msg string, pairs ...interface{})
 }
 
-// logger is an implementation of the Logger interface.
+// logger is an implementation of the Logger interface backed by the stdlib's
+// logging facility. This is a fairly naive implementation, and it's probably
+// better to use something like https://github.com/inconshreveable/log15 which
+// offers real structure logging.
 type logger struct {
 	*log.Logger
 }
@@ -29,10 +36,16 @@ func New(l *log.Logger) Logger {
 
 // Log logs the pairs in logfmt. It will treat consecutive arguments as a key
 // value pair. Given the input:
-func (l *logger) Log(pairs ...interface{}) {
+func (l *logger) Log(msg string, pairs ...interface{}) {
 	m := l.message(pairs...)
-	l.Println(m)
+	l.Println(msg, m)
 }
+
+func (l *logger) Debug(msg string, pairs ...interface{}) { l.Log(msg, pairs...) }
+func (l *logger) Info(msg string, pairs ...interface{})  { l.Log(msg, pairs...) }
+func (l *logger) Warn(msg string, pairs ...interface{})  { l.Log(msg, pairs...) }
+func (l *logger) Error(msg string, pairs ...interface{}) { l.Log(msg, pairs...) }
+func (l *logger) Crit(msg string, pairs ...interface{})  { l.Log(msg, pairs...) }
 
 func (l *logger) message(pairs ...interface{}) string {
 	if len(pairs) == 1 {
@@ -72,11 +85,39 @@ func FromContext(ctx context.Context) (Logger, bool) {
 	return l, ok
 }
 
-// Log is a convenience method, which extracts a logger from the context object,
-// then calls the Log method on it.
-func Log(ctx context.Context, pairs ...interface{}) {
+func Info(ctx context.Context, msg string, pairs ...interface{}) {
+	withLogger(ctx, func(l Logger) {
+		l.Info(msg, pairs...)
+	})
+}
+
+func Debug(ctx context.Context, msg string, pairs ...interface{}) {
+	withLogger(ctx, func(l Logger) {
+		l.Debug(msg, pairs...)
+	})
+}
+
+func Warn(ctx context.Context, msg string, pairs ...interface{}) {
+	withLogger(ctx, func(l Logger) {
+		l.Warn(msg, pairs...)
+	})
+}
+
+func Error(ctx context.Context, msg string, pairs ...interface{}) {
+	withLogger(ctx, func(l Logger) {
+		l.Error(msg, pairs...)
+	})
+}
+
+func Crit(ctx context.Context, msg string, pairs ...interface{}) {
+	withLogger(ctx, func(l Logger) {
+		l.Crit(msg, pairs...)
+	})
+}
+
+func withLogger(ctx context.Context, fn func(l Logger)) {
 	if l, ok := FromContext(ctx); ok {
-		l.Log(pairs...)
+		fn(l)
 	}
 }
 

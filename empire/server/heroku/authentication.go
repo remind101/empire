@@ -53,8 +53,8 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	// Embed the associated user into the context.
 	ctx = empire.WithUser(ctx, user)
 
-	logger.Log(ctx,
-		"at", "authenticated",
+	logger.Info(ctx,
+		"authenticated",
 		"user", user.Name,
 	)
 

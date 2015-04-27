@@ -270,6 +270,11 @@
 			"Rev": "ad484dc62579dba7aef41bba1b2c32cc8cd1b84d"
 		},
 		{
+			"ImportPath": "github.com/inconshreveable/log15",
+			"Comment": "v2.3-38-g352fceb",
+			"Rev": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
+		},
+		{
 			"ImportPath": "github.com/jonboulle/clockwork",
 			"Rev": "b473f398c464f1988327f67c9e6aa7fba62f80d2"
 		},
@@ -299,6 +304,10 @@
 			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
 		},
 		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
+		},
+		{
 			"ImportPath": "github.com/rakyll/globalconf",
 			"Rev": "fd9ff89130a682478a0c94e893ff4affe570b002"
 		},
@@ -308,19 +317,19 @@
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/httpx",
-			"Rev": "62135f2b54f9503172e94304195a000ca753bdb2"
+			"Rev": "3733adab07525482f0db2cc5eb167005c2d77040"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/logger",
-			"Rev": "62135f2b54f9503172e94304195a000ca753bdb2"
+			"Rev": "3733adab07525482f0db2cc5eb167005c2d77040"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/reporter",
-			"Rev": "62135f2b54f9503172e94304195a000ca753bdb2"
+			"Rev": "3733adab07525482f0db2cc5eb167005c2d77040"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/timex",
-			"Rev": "62135f2b54f9503172e94304195a000ca753bdb2"
+			"Rev": "3733adab07525482f0db2cc5eb167005c2d77040"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",

@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/empire/empire/server/authorization"
 	githubauth "github.com/remind101/empire/empire/server/authorization/github"
 	"github.com/remind101/empire/empire/server/heroku"
 	"github.com/remind101/empire/empire/server/middleware"
+	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -49,6 +49,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 
 	return middleware.Common(r, middleware.CommonOpts{
 		Reporter: e.Reporter,
+		Logger:   e.Logger,
 	})
 }
 
