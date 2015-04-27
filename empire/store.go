@@ -6,7 +6,17 @@ type store struct {
 }
 
 func (s *store) Reset() error {
-	_, err := s.db.Exec(`TRUNCATE TABLE apps CASCADE`)
+	var err error
+	exec := func(sql string) {
+		if err == nil {
+			_, err = s.db.Exec(sql)
+		}
+	}
+
+	exec(`TRUNCATE TABLE apps CASCADE`)
+	exec(`TRUNCATE TABLE ports CASCADE`)
+	exec(`INSERT INTO ports (port) (SELECT generate_series(49152,49252))`)
+
 	return err
 }
 
