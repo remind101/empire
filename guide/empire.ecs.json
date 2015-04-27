@@ -22,7 +22,7 @@
     },
     {
       "name": "empire",
-      "image": "remind101/empire:ecs",
+      "image": "remind101/empire:latest",
       "cpu": 512,
       "memory": 256,
       "entryPoint": [],
