@@ -8,14 +8,9 @@ import (
 func ExampleLogger_Log() {
 	l := New(log.New(os.Stdout, "", 0))
 
-	// Consecutive arguments are treated as key value pairs.
-	l.Log("key", "value")
-
-	// If the number of arguments is uneven, the last argument will be
-	// treated as a string message.
-	l.Log("key", "value", "message")
+	// Consecutive arguments after the message are treated as key value pairs.
+	l.Info("message", "key", "value")
 
 	// Output:
-	// key=value
-	// key=value message
+	// message key=value
 }

@@ -29,9 +29,9 @@ func (h *LogReporter) Report(ctx context.Context, err error) error {
 			}
 		}
 
-		logger.Log(ctx, "error", fmt.Sprintf(`"%v"`, err), "line", line.Line, "file", line.File)
+		logger.Error(ctx, "", "error", fmt.Sprintf(`"%v"`, err), "line", line.Line, "file", line.File)
 	default:
-		logger.Log(ctx, "error", fmt.Sprintf(`"%v"`, err))
+		logger.Error(ctx, "", "error", fmt.Sprintf(`"%v"`, err))
 	}
 
 	return nil

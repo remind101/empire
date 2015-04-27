@@ -15,6 +15,11 @@ import (
 // Ensure that Reporter implements the reporter.Reporter interface.
 var _ reporter.Reporter = &Reporter{}
 
+// Headers that won't be sent to honeybadger.
+var IgnoredHeaders = map[string]struct{}{
+	"Authorization": struct{}{},
+}
+
 // Reporter is used to report errors to honeybadger.
 type Reporter struct {
 	Environment string
@@ -96,6 +101,10 @@ func NewReport(err error) *Report {
 			r.Request.Url = e.Request.URL.String()
 
 			for header, values := range e.Request.Header {
+				if _, ok := IgnoredHeaders[header]; ok {
+					continue
+				}
+
 				h := strings.Replace(strings.ToUpper(header), "-", "_", -1)
 				r.Request.CgiData["HTTP_"+h] = values
 			}

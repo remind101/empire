@@ -1,8 +1,11 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
+	"os"
+
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
 	. "github.com/remind101/empire/empire/pkg/bytesize"
 	"github.com/remind101/empire/empire/pkg/service"
@@ -76,6 +79,9 @@ type Empire struct {
 	// Reporter is an reporter.Reporter that will be used to report errors to
 	// an external system.
 	reporter.Reporter
+
+	// Logger is a log15 logger that will be used for logging.
+	Logger log15.Logger
 
 	store *store
 
@@ -184,6 +190,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	return &Empire{
+		Logger:       newLogger(),
 		store:        store,
 		accessTokens: accessTokens,
 		apps:         apps,
@@ -363,7 +370,9 @@ func newManager(cluster string, config *aws.Config) service.Manager {
 
 	ecs := service.NewECSManager(config)
 	ecs.Cluster = cluster
-	return service.Log(ecs)
+	l := service.Log(ecs)
+	l.Prefix = "ecs"
+	return l
 }
 
 func newRunner(options RunnerOptions, s *store) *runner {
@@ -378,4 +387,12 @@ func newRunner(options RunnerOptions, s *store) *runner {
 		store:   s,
 		relayer: r,
 	}
+}
+
+func newLogger() log15.Logger {
+	l := log15.New()
+	h := log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
+	//h = log15.CallerStackHandler("%+n", h)
+	l.SetHandler(log15.LazyHandler(h))
+	return l
 }

@@ -44,9 +44,6 @@ func TestSend(t *testing.T) {
 }
 
 func TestNewReport(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/api/foo", nil)
-	req.Header.Set("Content-Type", "application/json")
-
 	tests := []struct {
 		err     error
 		fixture string
@@ -81,7 +78,13 @@ func TestNewReport(t *testing.T) {
 				Context: map[string]interface{}{
 					"request_id": "1234",
 				},
-				Request: req,
+				Request: func() *http.Request {
+					req, _ := http.NewRequest("GET", "/api/foo", nil)
+					req.Header.Set("Content-Type", "application/json")
+					req.Header.Set("X-Forwarded-For", "127.0.0.1")
+					req.SetBasicAuth("Foo", "bar")
+					return req
+				}(),
 			},
 			fixture: "boom-request.json",
 		},
