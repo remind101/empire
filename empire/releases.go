@@ -290,7 +290,7 @@ func newServiceApp(release *Release, config *Config, slug *Slug, formation Forma
 }
 
 func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process, port int64) *service.Process {
-	ports := newServicePorts(release, p, port)
+	ports := newServicePorts(port)
 	env := environment(config.Vars)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
 	if len(ports) > 0 {
@@ -309,7 +309,7 @@ func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process,
 	}
 }
 
-func newServicePorts(release *Release, p *Process, hostPort int64) []service.PortMap {
+func newServicePorts(hostPort int64) []service.PortMap {
 	var ports []service.PortMap
 	if hostPort != 0 {
 		// TODO: We can just map the same host port as the container port, as we make it
