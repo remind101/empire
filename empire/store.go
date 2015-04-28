@@ -15,7 +15,7 @@ func (s *store) Reset() error {
 
 	exec(`TRUNCATE TABLE apps CASCADE`)
 	exec(`TRUNCATE TABLE ports CASCADE`)
-	exec(`INSERT INTO ports (port) (SELECT generate_series(49152,49252))`)
+	exec(`INSERT INTO ports (port) (SELECT generate_series(9000,10000))`)
 
 	return err
 }
