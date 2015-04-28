@@ -8,6 +8,14 @@ import (
 	"golang.org/x/net/context"
 )
 
+type Exposure int
+
+const (
+	ExposeNone Exposure = iota
+	ExposePrivate
+	ExposePublic
+)
+
 type App struct {
 	// The name of the app.
 	Name string
@@ -39,6 +47,9 @@ type Process struct {
 
 	// Mapping of host -> container port mappings.
 	Ports []PortMap
+
+	// Exposure is the level of exposure for this process.
+	Exposure Exposure
 
 	// Instances is the desired instances of this service to run.
 	Instances uint

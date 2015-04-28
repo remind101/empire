@@ -290,11 +290,14 @@ func newServiceApp(release *Release, config *Config, slug *Slug, formation Forma
 }
 
 func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process, port int64) *service.Process {
+	var exposure service.Exposure
 	ports := newServicePorts(port)
 	env := environment(config.Vars)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
+
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", ports[0].Container)
+		exposure = service.ExposePrivate
 	}
 
 	return &service.Process{
@@ -306,6 +309,7 @@ func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process,
 		MemoryLimit: MemoryLimit,
 		CPUShares:   CPUShare,
 		Ports:       ports,
+		Exposure:    exposure,
 	}
 }
 
