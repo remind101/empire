@@ -2,6 +2,8 @@
 
 The following is meant to be used as a quick way to test empire. It is not secure and is not suitable for production use.
 
+This guide assumes that you have already installed and configured the AWS CLI. If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/.
+
 ## Step 1 - ECS AMI
 
 Before doing any of the following, log in to your AWS account and accept the terms and conditions for the official ECS AMI:
