@@ -37,8 +37,9 @@ $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/
 **Create the Service**
 
 ```console
-$ export ELB=$(aws cloudformation describe-stacks --stack-name empire | jq '.Stacks[0].Outputs | .[] | {(.OutputKey): .OutputValue} | .ELB')
-$ export SERVICE_ROLE=$(aws cloudformation describe-stacks --stack-name empire | jq '.Stacks[0].Outputs | .[] | {(.OutputKey): .OutputValue} | .ServiceRole')
+$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; } }
+$ export ELB=$(stack-output empire ELB)
+$ export SERVICE_ROLE=$(stack-output empire ServiceRole)
 $ aws ecs create-service --cluster default --service-name empire --task-definition empire \
   --desired-count 1 --role $SERVICE_ROLE \
   --load-balancers loadBalancerName=$ELB,containerName=empire,containerPort=8080
@@ -49,7 +50,7 @@ $ aws ecs create-service --cluster default --service-name empire --task-definiti
 Now once Empire is running and has registered itself with ELB, you can use the `emp` CLI to deploy apps:
 
 ```console
-$ export EMPIRE_URL=$(aws cloudformation describe-stacks --stack-name empire | jq '.Stacks[0].Outputs | .[] | {(.OutputKey): .OutputValue} | .ELBDNSName')
+$ export EMPIRE_URL=$(stack-output empire ELBDNSName)
 $ emp login # username is fake, password is blank
 $ emp deploy remind101/acme-inc:latest
 ```
