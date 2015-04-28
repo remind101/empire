@@ -4,5 +4,5 @@ CREATE TABLE ports (
   app_id text references apps(name) ON DELETE SET NULL
 );
 
--- Insert IANA suggested private port range.
-INSERT INTO ports (port) (SELECT generate_series(49152,65535));
+-- Insert 1000 ports
+INSERT INTO ports (port) (SELECT generate_series(9000,10000));

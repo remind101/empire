@@ -33,6 +33,7 @@ const (
 	// WebPort is the default PORT to set on web processes.
 	WebPort = 8080
 
+	// WebProcessType is the process type we assume are web server processes.
 	WebProcessType = "web"
 )
 
