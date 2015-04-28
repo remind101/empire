@@ -1,81 +1,50 @@
 # Empire
 
-Empire is Remind's next generation PaaS, which we will eventually use to migrate
-away from Heroku.
+Empire is a control layer on top of [Amazon Elastic Container Service (ECS)][ecs] that provides a Heroku like workflow. It conforms to a subset of the [Heroku Platform API][heroku-api], which means you can use the same tools and processes that you use with Heroku, but with all the power of EC2 and [Docker][docker].
 
-## Usage
-
-Running the server:
-
-```console
-$ empire server -h
-NAME:
-   server - Run the Empire HTTP API
-
-USAGE:
-   command server [command options] [arguments...]
-
-OPTIONS:
-   --port '8080'          The port to run the server on [$EMPIRE_PORT]
-   --github.client.id           The client id for the GitHub OAuth application [$EMPIRE_GITHUB_CLIENT_ID]
-   --github.client.secret         The client secret for the GitHub OAuth application [$EMPIRE_GITHUB_CLIENT_SECRET]
-   --github.organization        The organization to allow access to [$EMPIRE_GITHUB_ORGANIZATION]
-   --github.secret          The shared secret between GitHub and Empire. GitHub will use this secret to sign webhook requests. [$EMPIRE_GITHUB_SECRET]
-   --docker.organization        The fallback Docker registry organization to use when an app is not linked to a Docker repo. (e.g. quay.io/remind101) [$EMPIRE_DOCKER_ORGANIZATION]
-   --docker.socket 'unix:///var/run/docker.sock'  The location of the Docker API [$DOCKER_HOST]
-   --docker.cert          If using TLS, a path to a certificate to use [$DOCKER_CERT_PATH]
-   --docker.auth '/Users/ejholmes/.dockercfg'   Path to a Docker registry auth file (~/.dockercfg) [$DOCKER_AUTH_PATH]
-   --fleet.api            The location of the fleet API [$FLEET_URL]
-   --secret '<change this>'       The secret used to sign access tokens [$EMPIRE_TOKEN_SECRET]
-   --db 'postgres://localhost/empire?sslmode=disable' SQL connection string for the database [$EMPIRE_DATABASE_URL]
-
-```
-
-## Heroku API compatibility
-
-We are aiming to be compatible with Heroku's API.
-
-You can use the `hk` CLI with Empire like this:
-
-```console
-HEROKU_API_URL=<empire_url> hk ...
-```
-
-### Supported commands
-
-```console
-hk apps
-hk create <name>
-hk env
-hk get
-hk set
-hk scale
-hk dynos
-hk rollback
-hk releases
-hk domains
-```
+Empire is targeted at small to medium sized startups that are running a large number of microservices and need more flexibility than what Heroku provides.
 
 ## Quickstart
 
-See the [quickstart guide](./guide).
+To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide](./guide) for more information.
 
-## Components
+## Architecture
 
-**DISCLAIMER**: Empire is incredibly young and a lot of things will most likely
-change as we try to productionize it.
+Empire aims to make it trivially easy to deploy a container based microservices architecture, without all of the complexities of managing systems like Mesos or Kubernetes. ECS takes care of much of that work, but lacks a convenient interface for performing common administrative tasks like deploying new versions, scaling and updating configuration. This is where Empire comes in, allowing you to deploy Docker images as easily as:
 
-Empire is a distributed system for deploying and running
-[12factor][12factor] [Docker][docker] based
-applications in a compute cluster. The following components are employed:
+```console
+$ emp deploy remind101/acme-inc:latest
+```
 
-* **[Etcd][etcd]**: Used for service discovery and a general key/val store.
-* **[Fleet][fleet]**: Used for process scheduling.
-* **[Postgres][postgres]**: Used as a backend for Empire app data.
-* **[Heka][heka]**: Used for log processing.
-* **[Registrator][registrator]**: Used to automatically register services with consul.
-* **[Shipr][shipr]**: Used to handle GitHub Deployments and forward them to Empire.
-* **[Hubot Deploy][hubot-deploy]**: Hubot and the Hubot Deploy script is used as our abstraction around deploying.
+### Heroku API compatibility
+
+Empire supports a subset of the [Heroku Platform API][heroku-api], which means any tool that uses the Heroku API can probably be used with Empire, if the endpoint is supported.
+
+As an example, you can use the `hk` CLI with Empire like this:
+
+```console
+$ HEROKU_API_URL=<empire_url> hk ...
+```
+
+In fact, the Empire CLI itself (`emp`), is just a wrapper around `hk`.
+
+The following `hk` commands are supported: `apps`, `create`, `env`, `get`, `set`, `scale`, `dynos`, `rollback`, `releases`, `domains`.
+
+Currently, Empire doesn't support setting the size of the dyno (e.g. `hk scale web=1:PX`), but something that we're planning to add in the future.
+
+### Routing
+
+Empire's routing layer is backed by internal ELB's. Any application that specifies a web process will get an internal ELB attached to it's associated ECS Service. When a new version of the app is deployed, ECS manages spinning up the new versions of the process, waiting for old connections to drain, then killing the old release.
+
+When a new internal ELB is created, an associated CNAME record will be created in Route53 under the internal TLD, which means you can use DNS for service discovery. If we deploy an app named `feed` then it will be available at `http://feed` within the ECS cluster.
+
+Apps default to only being exposed internally, unless you add a custom domain to them. Adding a custom domain will create a new external ELB for the ECS service.
+
+### Deploying
+
+Any tagged Docker image can be deployed to Empire as an app. Empire doesn't enforce how you tag your Docker images, but we recommend tagging the image with the git sha that it was built from, and deploying that. We have a tool for performing deployments called [Tugboat][tugboat] that supports deploying Docker images to empire.
+
+When you deploy a Docker image to Empire, it will extract a `Procfile` from the WORKDIR. Like Heroku, you can specify different process types that compose your service (e.g. `web` and `worker`), and scale them individually. Each process type in the Procfile maps directly to an ECS Service.
 
 ## Development
 
@@ -93,9 +62,7 @@ $ godep go test ./...
 
 **Caveats**
 
-1. `emp login` won't work by default if you're running on a non-standard port.
-   Once you `emp login`, you'll need to change the appropriate `machine` entry in
-   your `~/.netrc` to include the port:
+1. `emp login` won't work by default if you're running on a non-standard port. Once you `emp login`, you'll need to change the appropriate `machine` entry in your `~/.netrc` to include the port:
 
    ```
    machine 0.0.0.0:8080
@@ -105,58 +72,11 @@ $ godep go test ./...
 
 Unit tests live alongside each go file as `_test.go`.
 
-There is also a `tests` directory that contains
-integration and functional tests that tests the system
-using the
-**[heroku-go][heroku-go]**
-client and the **[hk][hk]** command.
+There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
 
-## How do I deploy to Empire?
-
-The same way you would with Heroku, but easier:
-
-1. Create a GitHub repo.
-2. Add a [Dockerfile][dockerfile] to run your app. Include a line to copy the Procfile to the root of the container:
-
-   ```
-   ADD ./Procfile /
-   ```
-
-3. Deploy your service with marvin:
-
-   ```
-   marvin deploy my-service to staging
-   ```
-
-## Can I deploy with Git?
-
-No.
-
-## Architecture
-
-Empire is heavily influenced by Heroku and the philosophies described in [The Twelve-Factor App][12factor], as well as similar projects such as [flynn][flynn] and [deis][deis].
-
-### Phases
-
-There are three phases during deployment:
-
-1. **Build**: This phase happens after a Git push to GitHub, which triggers a Docker build. Once the image is built, it gets tagged with the Git SHA that triggered the build. This is in contrast to systems like Heroku, where the build phase always happens during the deployment process. The primary advantage behind Empire's philosophy, is that once a Git SHA has been built, deployment is nearly instant.
-2. **Release**: This phase happens when a developer triggers a deploy for a Git SHA via marvin. The Git SHA is resolved to a Docker image, Empire creates a "slug", then combines the slug and the latest config into a "release", which is then sent to the process manager to run on the cluster.
-3. **Run**: The run phase happens inside the compute cluster. The init system will bring up the desired instance count inside the cluster.
-
-[12factor]: http://12factor.net/
-[consul]: https://github.com/hashicorp/consul
-[deis]: http://deis.io/
-[docker]: https://www.docker.com/
-[dockerfile]: https://docs.docker.com/reference/builder/
-[etcd]: https://github.com/coreos/etcd
-[fleet]: https://github.com/coreos/fleet
-[flynn]: https://flynn.io/
-[heka]: http://hekad.readthedocs.org/en/v0.9.0/
+[ecs]: http://aws.amazon.com/ecs/
+[docker]: https://github.com/docker/docker
+[heroku-api]: https://devcenter.heroku.com/articles/platform-api-reference
+[tugboat]: https://github.com/remidn101/tugboat
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
-[hubot-deploy]: https://github.com/remind101/hubot-deploy
-[legion]: https://github.com/remind101/legion
-[postgres]: http://www.postgresql.org/
-[registrator]: https://github.com/progrium/registrator
-[shipr]: https://github.com/remidn101/shipr
