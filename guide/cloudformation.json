@@ -257,7 +257,7 @@
   },
 
   "Outputs": {
-    "ELB": {
+    "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",
       "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] }
     }
