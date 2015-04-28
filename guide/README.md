@@ -2,7 +2,7 @@
 
 The following is meant to be used as a quick way to test empire. It is not secure and is not suitable for production use.
 
-This guide assumes that you have already installed and configured the AWS CLI. If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/.
+This guide assumes that you have already installed and configured the AWS CLI. If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. It also assumes that you have the `jq` command, which can be downloaded from http://stedolan.github.io/jq/.
 
 ## Step 1 - ECS AMI
 
