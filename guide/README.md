@@ -37,7 +37,7 @@ $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/
 **Create the Service**
 
 ```console
-$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; } }
+$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; }
 $ aws ecs create-service --cluster default --service-name empire --task-definition empire \
   --desired-count 1 --role $(stack-output empire ServiceRole) \
   --load-balancers loadBalancerName=$(stack-output empire ELB),containerName=empire,containerPort=8080
