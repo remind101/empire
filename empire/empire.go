@@ -32,6 +32,8 @@ const (
 
 	// WebPort is the default PORT to set on web processes.
 	WebPort = 8080
+
+	WebProcessType = "web"
 )
 
 // DockerOptions is a set of options to configure a docker api client.
