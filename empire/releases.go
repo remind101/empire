@@ -135,13 +135,13 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 func (s *releasesService) newProcessPorts(release *Release, formation Formation) (ProcessPortMap, error) {
 	m := ProcessPortMap{}
 	for _, p := range formation {
-		if p.Type == "web" {
+		if p.Type == WebProcessType {
 			// TODO: Support a port per process, allowing more than one process to expose a port.
 			port, err := s.store.PortsFindOrCreateByApp(&App{Name: release.AppName})
 			if err != nil {
 				return m, err
 			}
-			m["web"] = int64(port.Port)
+			m[WebProcessType] = int64(port.Port)
 		}
 	}
 	return m, nil
