@@ -2,7 +2,9 @@
 
 The following is meant to be used as a quick way to test empire. It is not secure and is not suitable for production use.
 
-This guide assumes that you have already installed the following installed:
+### Prerequisites
+
+This guide assumes that you have the following installed:
 
 * **AWS CLI**: If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. You'll need a fairly recent version of the CLI, which has support for ECS.
 
