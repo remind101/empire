@@ -22,11 +22,18 @@ type PostDeployForm struct {
 }
 
 func runDeploy(c *plugin.Context) {
-	parts := strings.Split(c.Args[0], ":")
-	if len(parts) > 1 {
-		repo, id := parts[0], parts[1]
+	if len(c.Args) < 1 {
+		printUsage()
+		return
 	}
 
+	parts := strings.Split(c.Args[0], ":")
+	if len(parts) < 2 {
+		printUsage()
+		return
+	}
+
+	repo, id := parts[0], parts[1]
 	form := &PostDeployForm{&Image{repo, id}}
 
 	err := c.Client.Post(nil, "/deploys", form)
@@ -35,4 +42,8 @@ func runDeploy(c *plugin.Context) {
 	}
 
 	fmt.Printf("Deployed %s:%s\n", repo, id)
+}
+
+func printUsage() {
+	fmt.Println("Usage: emp deploy repo:id")
 }
