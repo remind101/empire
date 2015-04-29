@@ -8,6 +8,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+var ECSServiceRole = "ecsServiceRole"
+
 // ECSWithELBManager wraps ECSManager and manages load
 // balancing for the service with ELB.
 type ECSWithELBManager struct {
@@ -27,25 +29,26 @@ func NewECSWithELBManager(config *aws.Config) *ECSWithELBManager {
 //
 // If the app has domains associated with it, the load balancer and service
 // will be recreated, and the load balancer will be made public.
-func (s *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
+func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	for _, p := range app.Processes {
 		if p.Exposure > ExposeNone {
-			s.ensureLoadBalancer(ctx, app, p)
+			m.ensureLoadBalancer(ctx, app, p)
 		}
 	}
 
-	return s.ECSManager.Submit(ctx, app)
+	return m.ECSManager.Submit(ctx, app)
 }
 
-func (s *ECSWithELBManager) Remove(ctx context.Context, app string) error {
+func (m *ECSWithELBManager) Remove(ctx context.Context, app string) error {
 	return nil
 }
 
-func (s *ECSWithELBManager) ensureLoadBalancer(ctx context.Context, app *App, process *Process) error {
+func (m *ECSWithELBManager) ensureLoadBalancer(ctx context.Context, app *App, process *Process) error {
+	process.Attributes["Role"] = ECSServiceRole
 	return nil
 }
 
-func (s *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, process *Process) error {
+func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, process *Process) error {
 	// zones:= DescribeAvailabilityZones()
 	zones := []*string{
 		aws.String("AvailabilityZone"), // Required
@@ -72,7 +75,7 @@ func (s *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 				InstanceProtocol: aws.String("http"),
 			},
 		},
-		LoadBalancerName:  aws.String(app.Name + "-" + process.Type),
+		LoadBalancerName:  aws.String(app.Name + "--" + process.Type),
 		AvailabilityZones: zones,
 		Scheme:            aws.String(scheme),
 		SecurityGroups: []*string{
@@ -91,7 +94,7 @@ func (s *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 		},
 	}
 
-	_, err := s.elb.CreateLoadBalancer(params)
+	_, err := m.elb.CreateLoadBalancer(params)
 	if awserr := aws.Error(err); awserr != nil {
 		// A service error occurred.
 		fmt.Println("Error:", awserr.Code, awserr.Message)
@@ -102,4 +105,64 @@ func (s *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 	}
 
 	return nil
+}
+
+// findLoadBalancerForService(appname string, processtype string) *elb.LoadBalancerDescription
+// findLoadBalancersByTags([]elb.Tag) []*elb.LoadBalancerDescription
+
+func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.LoadBalancerDescription, error) {
+	lbs := make([]*elb.LoadBalancerDescription, 0)
+	nextMarker = ""
+
+	// Iterate through all the load balancers.
+	for i := 0; i == 0 || nextMarker != ""; i++ {
+		out, err := m.elb.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{})
+		if err != nil {
+			return lbs, err
+		}
+
+		// Create a names slice and descriptions map.
+		names := make([]*string, len(out.LoadBalancerDescriptions))
+		descs := map[*string]*elb.LoadBalancerDescription{}
+
+		for i, d := range out.LoadBalancerDescriptions {
+			names[i] = d.LoadBalancerName
+			descs[d.LoadBalancerName] = d
+		}
+
+		// Find all the tags for this batch of load balancers.
+		out2, err := m.elb.DescribeTags(elb.DescribeTagsInput{LoadBalancerNames: names})
+		if err != nil {
+			return lbs, err
+		}
+
+		// Append matching load balancers to our result set.
+		for _, d := range out2.TagDescriptions {
+			if containsTags(tags, d.Tags) {
+				lbs = append(lbs, descs[d.LoadBalancerName])
+			}
+		}
+
+		nextMarker = out.NextMarker
+	}
+
+	return lbs, nil
+}
+
+func containsTags(a []*elb.Tag, b []*elb.Tag) bool {
+	for t := range a {
+		if !containsTag(t, b) {
+			return false
+		}
+	}
+	return true
+}
+
+func containsTag(t elb.Tag, tags []*elb.Tag) bool {
+	for _, t2 := range tags {
+		if t.Key == t2.Key && t.Value == t2.Value {
+			return true
+		}
+	}
+	return false
 }

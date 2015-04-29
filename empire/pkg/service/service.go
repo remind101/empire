@@ -60,6 +60,9 @@ type Process struct {
 	// The amount of CPU to allocate to this process, out of 1024. Maps to
 	// the --cpu-shares flag for docker.
 	CPUShares uint
+
+	// Attributes is an arbitrary map of attributes that can be assigned.
+	Attributes map[string]interface{}
 }
 
 // Instance represents an Instance of a Process.
@@ -76,7 +79,7 @@ type Instance struct {
 	UpdatedAt time.Time
 }
 
-// Manager is an interface to interfacing with Services.
+// Manager is an interface for interfacing with Services.
 type Manager interface {
 	// Submit submits an app, creating it or updating it as necessary.
 	Submit(context.Context, *App) error
@@ -93,4 +96,14 @@ type Manager interface {
 	// Stop stops an instance. The scheduler will automatically start a new
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
+}
+
+type CertManager interface {
+	AddCertificate(ctx context.Context, app string, crt []byte, key []byte) error
+	UpdateCertificate(ctx context.Context, app string, crt []byte, key []byte) error
+	RemoveCertificate(ctx context.Context, app string) error
+}
+type DomainManager interface {
+	AddDomain(ctx context.Context, app string, domain string) error
+	RemoveDomain(ctx context.Context, app string, domain string) error
 }
