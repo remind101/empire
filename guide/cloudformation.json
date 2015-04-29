@@ -215,51 +215,6 @@
       }
     },
 
-    "ServiceRole": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "Path": "/",
-        "AssumeRolePolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [ "ec2.amazonaws.com" ]
-              },
-              "Action": [ "sts:AssumeRole" ]
-            }
-          ]
-        }
-      }
-    },
-
-    "ServicePolicies": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyName": "ecs",
-        "Roles": [ { "Ref": "ServiceRole" } ],
-        "PolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "elasticloadbalancing:Describe*",
-                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
-                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-                "ec2:Describe*",
-                "ec2:AuthorizeSecurityGroupIngress"
-              ],
-              "Resource": [
-                "*"
-              ]
-            }
-          ]
-        }
-      }
-    },
-
     "LaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
@@ -309,10 +264,6 @@
     "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",
       "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] }
-    },
-    "ServiceRole": {
-      "Description": "The name of the IAM Role for ECS Services",
-      "Value": { "Ref": "ServiceRole" }
     }
   }
 }

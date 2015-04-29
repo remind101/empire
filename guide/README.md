@@ -2,7 +2,20 @@
 
 The following is meant to be used as a quick way to test empire. It is not secure and is not suitable for production use.
 
-This guide assumes that you have already installed and configured the AWS CLI. If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. It also assumes that you have the `jq` command, which can be downloaded from http://stedolan.github.io/jq/.
+### Prerequisites
+
+This guide assumes that you have the following installed:
+
+* **AWS CLI**: If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. You'll need a fairly recent version of the CLI, which has support for ECS.
+
+  ```console
+  sudo pip install --upgrade awscli
+  ```
+* **jq**: Which can be downloaded from http://stedolan.github.io/jq/ or with Homebrew:
+
+  ```console
+  brew install jq
+  ```
 
 ## Step 1 - ECS AMI
 
@@ -38,13 +51,18 @@ The next step is to run Empire itself on ECS.
 $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/guide/empire.ecs.json
 ```
 
+**Create the ECS Service Role**
+
+Refer to the ECS documentation to create the `ecsServiceRole` role: http://docs.aws.amazon.com/AmazonECS/latest/developerguide/IAM_policies.html#service_IAM_role
+
 **Create the Service**
 
 ```console
+$ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
 $ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; }
 $ aws ecs create-service --cluster default --service-name empire --task-definition empire \
-  --desired-count 1 --role $(stack-output empire ServiceRole) \
-  --load-balancers loadBalancerName=$(stack-output empire ELB),containerName=empire,containerPort=8080
+  --desired-count 1 --role ecsServiceRole \
+  --load-balancers loadBalancerName=$(stack-output $STACK ELB),containerName=empire,containerPort=8080
 ```
 
 ## Step 5 - Deploy something
@@ -52,7 +70,7 @@ $ aws ecs create-service --cluster default --service-name empire --task-definiti
 Now once Empire is running and has registered itself with ELB, you can use the `emp` CLI to deploy apps:
 
 ```console
-$ export EMPIRE_URL=$(stack-output empire ELBDNSName)
+$ export EMPIRE_URL=http://$(stack-output $STACK ELBDNSName)
 $ emp login # username is fake, password is blank
 $ emp deploy remind101/acme-inc:latest
 ```
