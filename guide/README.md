@@ -51,13 +51,17 @@ The next step is to run Empire itself on ECS.
 $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/guide/empire.ecs.json
 ```
 
+**Create the ECS Service Role**
+
+Refer to the ECS documentation to create the `ecsServiceRole` role: http://docs.aws.amazon.com/AmazonECS/latest/developerguide/IAM_policies.html#service_IAM_role
+
 **Create the Service**
 
 ```console
 $ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
 $ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; }
 $ aws ecs create-service --cluster default --service-name empire --task-definition empire \
-  --desired-count 1 --role $(stack-output $STACK ServiceRole) \
+  --desired-count 1 --role ecsServiceRole \
   --load-balancers loadBalancerName=$(stack-output $STACK ELB),containerName=empire,containerPort=8080
 ```
 
