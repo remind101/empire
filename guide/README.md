@@ -70,7 +70,7 @@ $ aws ecs create-service --cluster default --service-name empire --task-definiti
 Now once Empire is running and has registered itself with ELB, you can use the `emp` CLI to deploy apps:
 
 ```console
-$ export EMPIRE_URL=$(stack-output $STACK ELBDNSName)
+$ export EMPIRE_URL=http://$(stack-output $STACK ELBDNSName)
 $ emp login # username is fake, password is blank
 $ emp deploy remind101/acme-inc:latest
 ```
