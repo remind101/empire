@@ -31,7 +31,6 @@ func runDeploy(c *plugin.Context) {
 
 	err := c.Client.Post(nil, "/deploys", form)
 	if err != nil {
-		fmt.Printf("Failed to deploy %s:%s\n", repo, id)
 		plugin.Must(err)
 	}
 
