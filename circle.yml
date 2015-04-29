@@ -3,6 +3,7 @@ machine:
   services:
     - docker
 
+
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/remind101
@@ -14,14 +15,15 @@ dependencies:
     - go install -a -race std
     - go get github.com/tools/godep
     - go version
-    - make bootstrap
-    - make plugins
+    - cd ~/.go_workspace/src/github.com/remind101/empire && make bootstrap
   override:
+    - cd ~/.go_workspace/src/github.com/remind101/empire && make build
 
 test:
   override:
-    - cd empire && make test
-    - cd relay && make test
+    - cd ~/.go_workspace/src/github.com/remind101/empire && make cmd
+    - cd ~/.go_workspace/src/github.com/remind101/empire && make test
+    - cd ~/.go_workspace/src/github.com/remind101/empire/relay && make test
 
 deployment:
   hub: 

@@ -1,0 +1,19 @@
+{
+	"ImportPath": "github.com/bgentry/heroku-go",
+	"GoVersion": "go1.2",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-10",
+			"Rev": "5fac954758f5aa282478dc07fbb8709fe9575184"
+		},
+		{
+			"ImportPath": "github.com/bgentry/testnet",
+			"Rev": "05450cdcf16c84d5b08dc9bb617250aa7b63c8ff"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Rev": "4c55a02a9da3f9b9daf583332a2a82c38a4521be"
+		}
+	]
+}
