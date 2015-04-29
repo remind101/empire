@@ -1,4 +1,4 @@
-.PHONY: bootstrap build cmd user_data vagrant plugins cli install
+.PHONY: bootstrap build cmd test install
 
 cmd:
 	$(MAKE) -C empire cmd
