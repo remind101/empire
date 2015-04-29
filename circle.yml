@@ -11,10 +11,6 @@ checkout:
 
 dependencies:
   pre:
-    - curl -L  https://github.com/coreos/etcd/releases/download/v0.4.9/etcd-v0.4.9-linux-amd64.tar.gz -o etcd-v0.4.9-linux-amd64.tar.gz
-    - tar xzvf etcd-v0.4.9-linux-amd64.tar.gz
-    - ./etcd-v0.4.9-linux-amd64/etcd:
-        background: true
     - go install -a -race std
     - go get github.com/tools/godep
     - go version
@@ -33,6 +29,4 @@ deployment:
       - make build
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push remind101/empire
-      - docker push remind101/empire-router
       - docker push remind101/empire-logger
-      - docker push remind101/etcd_peers
