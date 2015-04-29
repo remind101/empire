@@ -4,8 +4,16 @@ The following is meant to be used as a quick way to test empire. It is not secur
 
 This guide assumes that you have already installed the following installed:
 
-* **AWS CLI**: If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/.
-* **jq**: Which can be downloaded from http://stedolan.github.io/jq/.
+* **AWS CLI**: If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. You'll need a fairly recent version of the CLI, which has support for ECS.
+
+  ```console
+  sudo pip install --upgrade awscli
+  ```
+* **jq**: Which can be downloaded from http://stedolan.github.io/jq/ or with Homebrew:
+
+  ```console
+  brew install jq
+  ```
 
 ## Step 1 - ECS AMI
 
