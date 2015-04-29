@@ -26,6 +26,8 @@ $ aws ecs create-cluster --cluster-name default
 
 Create a new CloudFormation stack using the [cloudformation.json](./cloudformation.json) file within this directory.
 
+If you haven't already, you'll need to [create or import a keypair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) first. Also, have your docker registry credentials ready (email, username, password).
+
 ## Step 4 - Empire Service
 
 The next step is to run Empire itself on ECS.
