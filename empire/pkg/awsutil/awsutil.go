@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -17,7 +18,7 @@ type Request struct {
 func (r *Request) String() string {
 	body, err := formatJSON(strings.NewReader(r.Body))
 	if err != nil {
-		panic(err)
+		body = r.Body
 	}
 	return fmt.Sprintf("Operation: %s\nBody: %s", r.Operation, body)
 }
@@ -47,9 +48,14 @@ func NewHandler(m map[Request]Response) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	body, err := formatJSON(r.Body)
+	raw, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
+	}
+
+	body, err := formatJSON(r.Body)
+	if err != nil {
+		body = string(raw)
 	}
 
 	match := Request{
