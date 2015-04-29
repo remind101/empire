@@ -297,6 +297,7 @@ func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process,
 
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", ports[0].Container)
+		// TODO: If app has domains, we want to expose publicly
 		exposure = service.ExposePrivate
 	}
 

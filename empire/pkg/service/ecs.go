@@ -123,11 +123,23 @@ func (m *ECSManager) createTaskDefinition(app *App, process *Process) (*ecs.Task
 
 // createService creates a Service in ECS for the service.
 func (m *ECSManager) createService(app *App, p *Process) (*ecs.Service, error) {
+	var role *string
+	if v, ok := p.Attributes["Role"].(*string); ok {
+		role = v
+	}
+
+	var loadBalancers []*ecs.LoadBalancer
+	if v, ok := p.Attributes["LoadBalancers"].([]*ecs.LoadBalancer); ok {
+		loadBalancers = v
+	}
+
 	resp, err := m.ecs.CreateAppService(app.Name, &ecs.CreateServiceInput{
 		Cluster:        aws.String(m.Cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		ServiceName:    aws.String(p.Type),
 		TaskDefinition: aws.String(p.Type),
+		LoadBalancers:  loadBalancers,
+		Role:           role,
 	})
 	return resp.Service, err
 }
