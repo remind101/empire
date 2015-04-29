@@ -22,7 +22,11 @@ type PostDeployForm struct {
 }
 
 func runDeploy(c *plugin.Context) {
-	repo, id := strings.Split(c.Args[0], ":")[0], strings.Split(c.Args[0], ":")[1]
+	parts := strings.Split(c.Args[0], ":")
+	if len(parts) > 1 {
+		repo, id := parts[0], parts[1]
+	}
+
 	form := &PostDeployForm{&Image{repo, id}}
 
 	err := c.Client.Post(nil, "/deploys", form)
