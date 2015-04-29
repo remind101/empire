@@ -51,12 +51,12 @@
         {
           "sourceVolume": "dockerSocket",
           "containerPath": "/var/run/docker.sock",
-          "readOnly": null
+          "readOnly": false
         },
         {
           "sourceVolume": "dockerCfg",
           "containerPath": "/root/.dockercfg",
-          "readOnly": null
+          "readOnly": false
         }
       ],
       "essential": true

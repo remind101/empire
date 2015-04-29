@@ -2,6 +2,8 @@
 
 The following is meant to be used as a quick way to test empire. It is not secure and is not suitable for production use.
 
+This guide assumes that you have already installed and configured the AWS CLI. If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. It also assumes that you have the `jq` command, which can be downloaded from http://stedolan.github.io/jq/.
+
 ## Step 1 - ECS AMI
 
 Before doing any of the following, log in to your AWS account and accept the terms and conditions for the official ECS AMI:
@@ -14,9 +16,9 @@ If you don't do this, no EC2 instances will be started by the auto scaling group
 
 Before we provision resources with CloudFormation, let's create an ECS stack for Empire to schedule containers into.
 
-1. Within the AWS Console, go to `EC2 Container Service`.
-2. If you don't already have a cluster, then you'll be asked to go through the getting started guide. You can simply cancel out of this.
-3. Select `Create Cluster`. Name it `default`.
+```console
+$ aws ecs create-cluster --cluster-name default
+```
 
 **NOTE**: In a production setup, you would probably want to isolate the Empire controller within it's own VPC and ECS Cluster.
 
@@ -30,30 +32,25 @@ The next step is to run Empire itself on ECS.
 
 **Create the Task Definition**
 
-1. Within the AWS Console, go to `EC2 Container Service`.
-2. Click `Task Definitions`, then `Create new Task Definition`.
-3. Click the `JSON` tab and copy the contents of the [empire.ecs.json](./empire.ecs.json) file.
+```console
+$ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/guide/empire.ecs.json
+```
 
 **Create the Service**
 
-1. Click `Create Service`.
-2. Use the following parameters to create the service:
-
-   | Field           | Value    |
-   |-----------------|----------|
-   | Task Definition | empire:1 |
-   | Service name    | empire   |
-   | Number of tasks | 1        |
-
-3. Associate the service with the Empire ELB. When asked for the `Container Name : Host Port`, select `empire:8080`.
-4. Associate an IAM role with the service by selecting `Manage AIM Role` and `Allow`.
+```console
+$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; }
+$ aws ecs create-service --cluster default --service-name empire --task-definition empire \
+  --desired-count 1 --role $(stack-output empire ServiceRole) \
+  --load-balancers loadBalancerName=$(stack-output empire ELB),containerName=empire,containerPort=8080
+```
 
 ## Step 5 - Deploy something
 
 Now once Empire is running and has registered itself with ELB, you can use the `emp` CLI to deploy apps:
 
 ```console
-$ export EMPIRE_URL=<ELB DNS Name>
+$ export EMPIRE_URL=$(stack-output empire ELBDNSName)
 $ emp login # username is fake, password is blank
 $ emp deploy remind101/acme-inc:latest
 ```

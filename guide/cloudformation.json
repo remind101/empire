@@ -6,7 +6,7 @@
     "InstanceType": {
       "Type": "String",
       "Default": "t2.small",
-      "AllowedValues": [ "t2.micro","t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
+      "AllowedValues": [ "t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
     "AmiId" : {
@@ -215,6 +215,51 @@
       }
     },
 
+    "ServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ec2.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        }
+      }
+    },
+
+    "ServicePolicies": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "ecs",
+        "Roles": [ { "Ref": "ServiceRole" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "elasticloadbalancing:Describe*",
+                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                "ec2:Describe*",
+                "ec2:AuthorizeSecurityGroupIngress"
+              ],
+              "Resource": [
+                "*"
+              ]
+            }
+          ]
+        }
+      }
+    },
+
     "LaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
@@ -249,7 +294,7 @@
         "AvailabilityZones": { "Ref": "AvailabilityZones" },
         "VPCZoneIdentifier": [{ "Fn::Join" : [",", [ { "Ref" : "PubSubnetAz1" }, { "Ref" : "PubSubnetAz2" } ] ] }],
         "LaunchConfigurationName": { "Ref": "LaunchConfiguration" },
-        "MinSize": "0",
+        "MinSize": "1",
         "MaxSize": { "Ref": "MaxCapacity" },
         "DesiredCapacity": { "Ref": "DesiredCapacity" }
       }
@@ -258,8 +303,16 @@
 
   "Outputs": {
     "ELB": {
+      "Description": "The name of the ELB for the Empire controller",
+      "Value": { "Ref": "LoadBalancer" }
+    },
+    "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",
       "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] }
+    },
+    "ServiceRole": {
+      "Description": "The name of the IAM Role for ECS Services",
+      "Value": { "Ref": "ServiceRole" }
     }
   }
 }
