@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ec2"
+	"github.com/awslabs/aws-sdk-go/service/ecs"
 	"github.com/awslabs/aws-sdk-go/service/elb"
 	"golang.org/x/net/context"
 )
@@ -13,9 +14,13 @@ var ECSServiceRole = "ecsServiceRole"
 // balancing for the service with ELB.
 type ECSWithELBManager struct {
 	*ECSManager
-	elb *elb.ELB
-	ec2 *ec2.EC2
+	elb             *elb.ELB
+	ec2             *ec2.EC2
+	VPCID           string
+	SecurityGroupID string
+}
 
+type ELBConfig struct {
 	// The Amazon VPC ID.
 	VPCID string
 
@@ -23,13 +28,13 @@ type ECSWithELBManager struct {
 	SecurityGroupID string
 }
 
-func NewECSWithELBManager(config *aws.Config, vpc string, sg string) *ECSWithELBManager {
+func NewECSWithELBManager(c *aws.Config, ec *ELBConfig) *ECSWithELBManager {
 	return &ECSWithELBManager{
-		ECSManager:      NewECSManager(config),
-		elb:             elb.New(config),
-		ec2:             ec2.New(config),
-		VPCID:           vpc,
-		SecurityGroupID: sg,
+		ECSManager:      NewECSManager(c),
+		elb:             elb.New(c),
+		ec2:             ec2.New(c),
+		VPCID:           ec.VPCID,
+		SecurityGroupID: ec.SecurityGroupID,
 	}
 }
 
@@ -41,7 +46,10 @@ func NewECSWithELBManager(config *aws.Config, vpc string, sg string) *ECSWithELB
 func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	for _, p := range app.Processes {
 		if p.Exposure > ExposeNone {
-			m.ensureLoadBalancer(ctx, app, p)
+			err := m.ensureLoadBalancer(ctx, app, p)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -58,11 +66,14 @@ func (m *ECSWithELBManager) ensureLoadBalancer(ctx context.Context, app *App, pr
 		return err
 	}
 
+	if process.Attributes == nil {
+		process.Attributes = make(map[string]interface{})
+	}
 	process.Attributes["Role"] = ECSServiceRole
-	process.Attributes["LoadBalancers"] = []*ecs.LoadBalancers{
+	process.Attributes["LoadBalancers"] = []*ecs.LoadBalancer{
 		&ecs.LoadBalancer{
 			ContainerName:    aws.String(process.Type),
-			ContainerPort:    aws.String(process.Ports[0].Host),
+			ContainerPort:    process.Ports[0].Host,
 			LoadBalancerName: aws.String(name),
 		},
 	}
@@ -77,7 +88,7 @@ func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 
 	subnetout, err := m.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{Name: aws.String("vpc-id"), Values: []*string{aws.String(m.VPCID)}},
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(m.VPCID)}},
 		},
 	})
 	if err != nil {
@@ -96,7 +107,7 @@ func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 
 	params := &elb.CreateLoadBalancerInput{
 		Listeners: []*elb.Listener{
-			&elb.Listener{
+			{
 				InstancePort:     aws.Long(*process.Ports[0].Host),
 				LoadBalancerPort: aws.Long(80),
 				Protocol:         aws.String("http"),
@@ -111,15 +122,15 @@ func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 		},
 		Subnets: subnets,
 		Tags: []*elb.Tag{
-			&elb.Tag{
+			{
 				Key:   aws.String("AppName"),
 				Value: aws.String(app.Name),
 			},
-			&elb.Tag{
+			{
 				Key:   aws.String("ProcessType"),
 				Value: aws.String(process.Type),
 			},
-			&elb.Tag{
+			{
 				Key:   aws.String("ECSServiceName"),
 				Value: aws.String(name),
 			},

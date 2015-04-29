@@ -230,6 +230,7 @@ var fakeApp = &App{
 			Ports: []PortMap{
 				{aws.Long(8080), aws.Long(8080)},
 			},
+			Exposure: ExposePrivate,
 		},
 	},
 }
