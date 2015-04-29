@@ -25,10 +25,7 @@ type PostDeploys struct {
 
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
-	Image struct {
-		ID   string `json:"id"`
-		Repo string `json:"repo"`
-	} `json:"image"`
+	Image empire.Image
 }
 
 // jsonMessage represents a streamed status message from the docker remote api.
@@ -50,11 +47,6 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	image := empire.Image{
-		Repo: empire.Repo(form.Image.Repo),
-		ID:   form.Image.ID,
-	}
-
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
 
 	var (
@@ -65,7 +57,7 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	ch := make(chan empire.Event)
 	errCh := make(chan error)
 	go func() {
-		d, err = h.DeployImage(ctx, image, ch)
+		d, err = h.DeployImage(ctx, form.Image, ch)
 		errCh <- err
 	}()
 

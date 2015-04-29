@@ -2,6 +2,7 @@ package empire
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -28,6 +29,15 @@ func (i *Image) Scan(src interface{}) error {
 // Value implements the driver.Value interface.
 func (i Image) Value() (driver.Value, error) {
 	return driver.Value(i.String()), nil
+}
+
+func (i *Image) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	*i = decodeImage(s)
+	return nil
 }
 
 func encodeImage(i Image) string {
