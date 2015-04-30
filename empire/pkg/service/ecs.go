@@ -202,7 +202,9 @@ func (m *ECSManager) Remove(ctx context.Context, app string) error {
 }
 
 func (m *ECSManager) removeProcess(ctx context.Context, app, process string) error {
-	if err := m.Scale(ctx, app, process, 0); err != nil {
+	if err := m.Scale(ctx, app, process, 0); noService(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 

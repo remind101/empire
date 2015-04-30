@@ -97,13 +97,3 @@ type Manager interface {
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
 }
-
-type CertManager interface {
-	AddCertificate(ctx context.Context, app string, crt []byte, key []byte) error
-	UpdateCertificate(ctx context.Context, app string, crt []byte, key []byte) error
-	RemoveCertificate(ctx context.Context, app string) error
-}
-type DomainManager interface {
-	AddDomain(ctx context.Context, app string, domain string) error
-	RemoveDomain(ctx context.Context, app string, domain string) error
-}

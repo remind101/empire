@@ -1,6 +1,8 @@
 package service
 
 import (
+	"reflect"
+
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
@@ -60,58 +62,71 @@ func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 // the process with the load balancer information. If a previous load balancer exists, it will be
 // removed along with existing process.
 func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, process *Process) error {
-	// prev, err := m.findLoadBalancer(app, process)
-	name, err := m.createLoadbalancer(ctx, app, process)
+	recreate := true
+
+	// Build input for load balancer
+	input, err := m.loadBalancerInputFromApp(ctx, app, process)
 	if err != nil {
 		return err
+	}
+
+	// Look for existing load balancer
+	prev, err := m.findLoadBalancer(app, process)
+	if err != nil {
+		return err
+	}
+
+	// If one exists, build input from previous load balancer and compare to current input.
+	// If they differ, we need to recreate the load balancer and service.
+	if prev != nil {
+		prevInput := m.loadBalancerInputFromDesc(prev, m.loadBalancerTags(app, process))
+		if reflect.DeepEqual(input, prevInput) {
+			recreate = false
+		}
+	}
+
+	// If we need to recreate, first create the new load balancer, then destroy the old load balancer and process.
+	if recreate {
+		if _, err := m.elb.CreateLoadBalancer(input); err != nil {
+			return err
+		}
+
+		// Remove process
+		if err := m.removeProcess(ctx, app.Name, process.Type); err != nil {
+			return err
+		}
+
+		// Remove previous load balancer
+		if prev != nil {
+			if _, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{LoadBalancerName: prev.LoadBalancerName}); err != nil {
+				return err
+			}
+		}
 	}
 
 	if process.Attributes == nil {
 		process.Attributes = make(map[string]interface{})
 	}
+
 	process.Attributes["Role"] = ECSServiceRole
 	process.Attributes["LoadBalancers"] = []*ecs.LoadBalancer{
-		&ecs.LoadBalancer{
+		{
 			ContainerName:    aws.String(process.Type),
 			ContainerPort:    process.Ports[0].Host,
-			LoadBalancerName: aws.String(name),
+			LoadBalancerName: input.LoadBalancerName,
 		},
 	}
 
 	return nil
 }
 
-func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, process *Process) (string, error) {
-	input, err := m.loadBalancerInputFromApp(ctx, app, process)
-	if err != nil {
-		return "", err
-	}
-
-	if _, err := m.elb.CreateLoadBalancer(input); err != nil {
-		return "", err
-	}
-
-	return *input.LoadBalancerName, nil
-}
-
 // loadBalancerInputFromApp returns a CreateLoadBalanerInput based on an App and Process.
 func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *App, process *Process) (*elb.CreateLoadBalancerInput, error) {
 	name := app.Name + "--" + process.Type
-	subnets := []*string{}
-	zones := []*string{}
 
-	subnetout, err := m.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
-			{Name: aws.String("vpc-id"), Values: []*string{aws.String(m.VPCID)}},
-		},
-	})
+	subnets, zones, err := m.subnetsAndZones()
 	if err != nil {
 		return nil, err
-	}
-
-	for _, s := range subnetout.Subnets {
-		zones = append(zones, s.AvailabilityZone)
-		subnets = append(subnets, s.SubnetID)
 	}
 
 	scheme := ""
@@ -119,30 +134,43 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 		scheme = "internal"
 	}
 
-	input := &elb.CreateLoadBalancerInput{
-		Listeners: []*elb.Listener{
-			{
-				InstancePort:     aws.Long(*process.Ports[0].Host),
-				LoadBalancerPort: aws.Long(80),
-				Protocol:         aws.String("http"),
-				InstanceProtocol: aws.String("http"),
-			},
+	listeners := []*elb.Listener{
+		{
+			InstancePort:     aws.Long(*process.Ports[0].Host),
+			LoadBalancerPort: aws.Long(80),
+			Protocol:         aws.String("http"),
+			InstanceProtocol: aws.String("http"),
 		},
+	}
+
+	input := &elb.CreateLoadBalancerInput{
+		Listeners:         listeners,
 		LoadBalancerName:  aws.String(name),
 		AvailabilityZones: zones,
 		Scheme:            aws.String(scheme),
-		SecurityGroups: []*string{
-			aws.String(m.SecurityGroupID),
-		},
-		Subnets: subnets,
-		Tags:    m.loadBalancerTags(app, process),
+		SecurityGroups:    []*string{aws.String(m.SecurityGroupID)},
+		Subnets:           subnets,
+		Tags:              m.loadBalancerTags(app, process),
 	}
 
 	return input, nil
 }
 
-func (m *ECSWithELBManager) loadBalancerInputFromDesc(*elb.LoadBalancerDescription) (*elb.CreateLoadBalancerInput, error) {
-	return nil, nil
+func (m *ECSWithELBManager) loadBalancerInputFromDesc(desc *elb.LoadBalancerDescription, tags []*elb.Tag) *elb.CreateLoadBalancerInput {
+	listeners := make([]*elb.Listener, len(desc.ListenerDescriptions))
+	for i, l := range desc.ListenerDescriptions {
+		listeners[i] = l.Listener
+	}
+
+	return &elb.CreateLoadBalancerInput{
+		Listeners:         listeners,
+		LoadBalancerName:  desc.LoadBalancerName,
+		AvailabilityZones: desc.AvailabilityZones,
+		Scheme:            desc.Scheme,
+		SecurityGroups:    desc.SecurityGroups,
+		Subnets:           desc.Subnets,
+		Tags:              tags,
+	}
 }
 
 func (m *ECSWithELBManager) findLoadBalancer(app *App, process *Process) (*elb.LoadBalancerDescription, error) {
@@ -167,6 +195,10 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 		out, err := m.elb.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{})
 		if err != nil {
 			return lbs, err
+		}
+
+		if len(out.LoadBalancerDescriptions) == 0 {
+			continue
 		}
 
 		// Create a names slice and descriptions map.
@@ -195,6 +227,24 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 	}
 
 	return lbs, nil
+}
+
+func (m *ECSWithELBManager) subnetsAndZones() (subnets []*string, zones []*string, err error) {
+	subnetout, err := m.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("vpc-id"), Values: []*string{aws.String(m.VPCID)}},
+		},
+	})
+	if err != nil {
+		return
+	}
+
+	for _, s := range subnetout.Subnets {
+		zones = append(zones, s.AvailabilityZone)
+		subnets = append(subnets, s.SubnetID)
+	}
+
+	return
 }
 
 func (m *ECSWithELBManager) loadBalancerTags(app *App, process *Process) []*elb.Tag {
