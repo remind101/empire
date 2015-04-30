@@ -46,7 +46,7 @@ func NewECSWithELBManager(c *aws.Config, ec *ELBConfig) *ECSWithELBManager {
 func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	for _, p := range app.Processes {
 		if p.Exposure > ExposeNone {
-			err := m.ensureLoadBalancer(ctx, app, p)
+			err := m.updateLoadBalancer(ctx, app, p)
 			if err != nil {
 				return err
 			}
@@ -56,11 +56,11 @@ func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	return m.ECSManager.Submit(ctx, app)
 }
 
-func (m *ECSWithELBManager) Remove(ctx context.Context, app string) error {
-	return nil
-}
-
-func (m *ECSWithELBManager) ensureLoadBalancer(ctx context.Context, app *App, process *Process) error {
+// updateLoadBalancer determines if the app process needs a new load balancer, creates one, and decorates
+// the process with the load balancer information. If a previous load balancer exists, it will be
+// removed along with existing process.
+func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, process *Process) error {
+	// prev, err := m.findLoadBalancer(app, process)
 	name, err := m.createLoadbalancer(ctx, app, process)
 	if err != nil {
 		return err
@@ -82,6 +82,20 @@ func (m *ECSWithELBManager) ensureLoadBalancer(ctx context.Context, app *App, pr
 }
 
 func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, process *Process) (string, error) {
+	input, err := m.loadBalancerInputFromApp(ctx, app, process)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := m.elb.CreateLoadBalancer(input); err != nil {
+		return "", err
+	}
+
+	return *input.LoadBalancerName, nil
+}
+
+// loadBalancerInputFromApp returns a CreateLoadBalanerInput based on an App and Process.
+func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *App, process *Process) (*elb.CreateLoadBalancerInput, error) {
 	name := app.Name + "--" + process.Type
 	subnets := []*string{}
 	zones := []*string{}
@@ -92,7 +106,7 @@ func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 		},
 	})
 	if err != nil {
-		return name, err
+		return nil, err
 	}
 
 	for _, s := range subnetout.Subnets {
@@ -105,7 +119,7 @@ func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 		scheme = "internal"
 	}
 
-	params := &elb.CreateLoadBalancerInput{
+	input := &elb.CreateLoadBalancerInput{
 		Listeners: []*elb.Listener{
 			{
 				InstancePort:     aws.Long(*process.Ports[0].Host),
@@ -121,31 +135,27 @@ func (m *ECSWithELBManager) createLoadbalancer(ctx context.Context, app *App, pr
 			aws.String(m.SecurityGroupID),
 		},
 		Subnets: subnets,
-		Tags: []*elb.Tag{
-			{
-				Key:   aws.String("AppName"),
-				Value: aws.String(app.Name),
-			},
-			{
-				Key:   aws.String("ProcessType"),
-				Value: aws.String(process.Type),
-			},
-			{
-				Key:   aws.String("ECSServiceName"),
-				Value: aws.String(name),
-			},
-		},
+		Tags:    m.loadBalancerTags(app, process),
 	}
 
-	if _, err := m.elb.CreateLoadBalancer(params); err != nil {
-		return name, err
-	}
-
-	return name, nil
+	return input, nil
 }
 
-func (m *ECSWithELBManager) findLoadBalancer(app *App, process Process) (*elb.LoadBalancerDescription, error) {
+func (m *ECSWithELBManager) loadBalancerInputFromDesc(*elb.LoadBalancerDescription) (*elb.CreateLoadBalancerInput, error) {
 	return nil, nil
+}
+
+func (m *ECSWithELBManager) findLoadBalancer(app *App, process *Process) (*elb.LoadBalancerDescription, error) {
+	lbs, err := m.findLoadBalancersByTags(m.loadBalancerTags(app, process))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(lbs) == 0 {
+		return nil, nil
+	}
+
+	return lbs[0], nil
 }
 
 func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.LoadBalancerDescription, error) {
@@ -185,6 +195,19 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 	}
 
 	return lbs, nil
+}
+
+func (m *ECSWithELBManager) loadBalancerTags(app *App, process *Process) []*elb.Tag {
+	return []*elb.Tag{
+		{
+			Key:   aws.String("AppName"),
+			Value: aws.String(app.Name),
+		},
+		{
+			Key:   aws.String("ProcessType"),
+			Value: aws.String(process.Type),
+		},
+	}
 }
 
 func containsTags(a []*elb.Tag, b []*elb.Tag) bool {

@@ -35,7 +35,7 @@ func TestECSWithELBManager_Submit_Create(t *testing.T) {
 		},
 
 		awsutil.Request{
-			Body: `Action=CreateLoadBalancer&AvailabilityZones.member.1=us-east-1a&Listeners.member.1.InstancePort=8080&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=foo--web&Scheme=internal&SecurityGroups.member.1=ECSLoadBalancerSG&Subnets.member.1=subnet-a&Tags.member.1.Key=AppName&Tags.member.1.Value=foo&Tags.member.2.Key=ProcessType&Tags.member.2.Value=web&Tags.member.3.Key=ECSServiceName&Tags.member.3.Value=foo--web&Version=2012-06-01`,
+			Body: `Action=CreateLoadBalancer&AvailabilityZones.member.1=us-east-1a&Listeners.member.1.InstancePort=8080&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=foo--web&Scheme=internal&SecurityGroups.member.1=ECSLoadBalancerSG&Subnets.member.1=subnet-a&Tags.member.1.Key=AppName&Tags.member.1.Value=foo&Tags.member.2.Key=ProcessType&Tags.member.2.Value=web&Version=2012-06-01`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body:       `{"DNSName": "foo--web.us-east-1.elb.amazonaws.com"}`,
