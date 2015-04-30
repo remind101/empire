@@ -54,6 +54,18 @@ type ECSOptions struct {
 	Cluster string
 }
 
+// ELBOptions is a set of options to configure ELB.
+type ELBOptions struct {
+	// The Amazon VPC ID.
+	VPCID string
+
+	// The Security Group ID to assign when creating internal load balancers.
+	InternalSecurityGroupID string
+
+	// The Security Group ID to assign when creating external load balancers.
+	ExternalSecurityGroupID string
+}
+
 // RunnerOptions is a set of options to configure the one off process runner service.
 type RunnerOptions struct {
 	API string
@@ -64,6 +76,7 @@ type Options struct {
 	Docker DockerOptions
 	Runner RunnerOptions
 	ECS    ECSOptions
+	ELB    ELBOptions
 
 	// AWS Configuration
 	AWSConfig *aws.Config
@@ -127,7 +140,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	manager := newManager(
-		options.ECS.Cluster,
+		options.ECS,
+		options.ELB,
 		options.AWSConfig,
 	)
 
@@ -357,14 +371,27 @@ const (
 	UserKey key = 0
 )
 
-func newManager(cluster string, config *aws.Config) service.Manager {
+func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) service.Manager {
 	if config == nil {
 		return service.NewFakeManager()
 	}
 
-	ecs := service.NewECSManager(config)
-	ecs.Cluster = cluster
-	l := service.Log(ecs)
+	if elbOpts.VPCID != "" && elbOpts.InternalSecurityGroupID != "" && elbOpts.ExternalSecurityGroupID != "" {
+		m := service.NewECSWithELBManager(config)
+		m.Cluster = ecsOpts.Cluster
+		m.VPCID = elbOpts.VPCID
+		m.InternalSecurityGroupID = elbOpts.InternalSecurityGroupID
+		m.ExternalSecurityGroupID = elbOpts.ExternalSecurityGroupID
+
+		l := service.Log(m)
+		l.Prefix = "ecs-elb"
+		return l
+	}
+
+	m := service.NewECSManager(config)
+	m.Cluster = ecsOpts.Cluster
+
+	l := service.Log(m)
 	l.Prefix = "ecs"
 	return l
 }

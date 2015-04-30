@@ -13,7 +13,7 @@ import (
 func TestECSWithELBManager_Submit_Create(t *testing.T) {
 	h := awsutil.NewHandler(map[awsutil.Request]awsutil.Response{
 		awsutil.Request{
-			Body: `Action=DescribeSubnets&Filter.1.Name=vpc-id&Filter.1.Value.1=ECSVPC&Version=2014-10-01`,
+			Body: `Action=DescribeSubnets&Filter.1.Name=vpc-id&Filter.1.Value.1=vpc-1&Version=2014-10-01`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body: `<?xml version="1.0" encoding="UTF-8"?>
@@ -48,7 +48,7 @@ func TestECSWithELBManager_Submit_Create(t *testing.T) {
 
 		// Create new load balancer
 		awsutil.Request{
-			Body: `Action=CreateLoadBalancer&AvailabilityZones.member.1=us-east-1a&Listeners.member.1.InstancePort=8080&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=foo--web&Scheme=internal&SecurityGroups.member.1=ECSLoadBalancerSG&Subnets.member.1=subnet-a&Tags.member.1.Key=AppName&Tags.member.1.Value=foo&Tags.member.2.Key=ProcessType&Tags.member.2.Value=web&Version=2012-06-01`,
+			Body: `Action=CreateLoadBalancer&AvailabilityZones.member.1=us-east-1a&Listeners.member.1.InstancePort=8080&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=foo--web&Scheme=internal&SecurityGroups.member.1=internal-sg&Subnets.member.1=subnet-a&Tags.member.1.Key=AppName&Tags.member.1.Value=foo&Tags.member.2.Key=ProcessType&Tags.member.2.Value=web&Version=2012-06-01`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body:       `{"DNSName": "foo--web.us-east-1.elb.amazonaws.com"}`,
@@ -108,7 +108,7 @@ func TestECSWithELBManager_Submit_Create(t *testing.T) {
 func TestECSWithELBManager_Submit_Recreate(t *testing.T) {
 	h := awsutil.NewHandler(map[awsutil.Request]awsutil.Response{
 		awsutil.Request{
-			Body: `Action=DescribeSubnets&Filter.1.Name=vpc-id&Filter.1.Value.1=ECSVPC&Version=2014-10-01`,
+			Body: `Action=DescribeSubnets&Filter.1.Name=vpc-id&Filter.1.Value.1=vpc-1&Version=2014-10-01`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body: `<?xml version="1.0" encoding="UTF-8"?>
@@ -221,7 +221,7 @@ func TestECSWithELBManager_Submit_Recreate(t *testing.T) {
 
 		// Create new load balancer
 		awsutil.Request{
-			Body: `Action=CreateLoadBalancer&AvailabilityZones.member.1=us-east-1a&Listeners.member.1.InstancePort=8080&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=foo--web&Scheme=internal&SecurityGroups.member.1=ECSLoadBalancerSG&Subnets.member.1=subnet-a&Tags.member.1.Key=AppName&Tags.member.1.Value=foo&Tags.member.2.Key=ProcessType&Tags.member.2.Value=web&Version=2012-06-01`,
+			Body: `Action=CreateLoadBalancer&AvailabilityZones.member.1=us-east-1a&Listeners.member.1.InstancePort=8080&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=foo--web&Scheme=internal&SecurityGroups.member.1=internal-sg&Subnets.member.1=subnet-a&Tags.member.1.Key=AppName&Tags.member.1.Value=foo&Tags.member.2.Key=ProcessType&Tags.member.2.Value=web&Version=2012-06-01`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body:       `{}`,
@@ -272,16 +272,17 @@ func TestECSWithELBManager_Submit_Recreate(t *testing.T) {
 func newTestECSWithELBManager(h http.Handler) (*ECSWithELBManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	return NewECSWithELBManager(
+	m := NewECSWithELBManager(
 		aws.DefaultConfig.Merge(&aws.Config{
 			Credentials: aws.Creds("", "", ""),
 			Endpoint:    s.URL,
 			Region:      "localhost",
 			LogLevel:    0,
 		}),
-		&ELBConfig{
-			VPCID:           "ECSVPC",
-			SecurityGroupID: "ECSLoadBalancerSG",
-		},
-	), s
+	)
+	m.VPCID = "vpc-1"
+	m.InternalSecurityGroupID = "internal-sg"
+	m.ExternalSecurityGroupID = "external-sg"
+
+	return m, s
 }

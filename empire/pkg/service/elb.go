@@ -18,27 +18,18 @@ var ECSServiceRole = "ecsServiceRole"
 // balancing for the service with ELB.
 type ECSWithELBManager struct {
 	*ECSManager
-	elb             *elb.ELB
-	ec2             *ec2.EC2
-	VPCID           string
-	SecurityGroupID string
+	elb                     *elb.ELB
+	ec2                     *ec2.EC2
+	VPCID                   string
+	InternalSecurityGroupID string
+	ExternalSecurityGroupID string
 }
 
-type ELBConfig struct {
-	// The Amazon VPC ID.
-	VPCID string
-
-	// The Security Group ID to assign when creating new load balancers.
-	SecurityGroupID string
-}
-
-func NewECSWithELBManager(c *aws.Config, ec *ELBConfig) *ECSWithELBManager {
+func NewECSWithELBManager(c *aws.Config) *ECSWithELBManager {
 	return &ECSWithELBManager{
-		ECSManager:      NewECSManager(c),
-		elb:             elb.New(c),
-		ec2:             ec2.New(c),
-		VPCID:           ec.VPCID,
-		SecurityGroupID: ec.SecurityGroupID,
+		ECSManager: NewECSManager(c),
+		elb:        elb.New(c),
+		ec2:        ec2.New(c),
 	}
 }
 
@@ -133,8 +124,10 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 	}
 
 	scheme := ""
+	sg := m.ExternalSecurityGroupID
 	if process.Exposure == ExposePrivate {
 		scheme = "internal"
+		sg = m.InternalSecurityGroupID
 	}
 
 	listeners := []*elb.Listener{
@@ -151,7 +144,7 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 		LoadBalancerName:  aws.String(name),
 		AvailabilityZones: zones,
 		Scheme:            aws.String(scheme),
-		SecurityGroups:    []*string{aws.String(m.SecurityGroupID)},
+		SecurityGroups:    []*string{aws.String(sg)},
 		Subnets:           subnets,
 		Tags:              m.loadBalancerTags(app, process),
 	}
