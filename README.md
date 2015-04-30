@@ -4,6 +4,8 @@ Empire is a control layer on top of [Amazon Elastic Container Service (ECS)][ecs
 
 Empire is targeted at small to medium sized startups that are running a large number of microservices and need more flexibility than what Heroku provides.
 
+You can find a video demo of Empire [here](https://www.youtube.com/watch?v=myGiBYTfn08&feature=youtu.be&VQ=HD720).
+
 ## Quickstart
 
 To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide](./guide) for more information.
