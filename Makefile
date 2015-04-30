@@ -8,9 +8,7 @@ bootstrap:
 
 build:
 	$(MAKE) -C empire build
-	$(MAKE) -C etcd_peers build
 	$(MAKE) -C logger build
-	$(MAKE) -C router build
 	$(MAKE) -C relay build
 
 install:
