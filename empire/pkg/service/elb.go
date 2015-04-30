@@ -1,7 +1,9 @@
 package service
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ec2"
@@ -87,10 +89,6 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 
 	// If we need to recreate, first create the new load balancer, then destroy the old load balancer and process.
 	if recreate {
-		if _, err := m.elb.CreateLoadBalancer(input); err != nil {
-			return err
-		}
-
 		// Remove process
 		if err := m.removeProcess(ctx, app.Name, process.Type); err != nil {
 			return err
@@ -101,6 +99,11 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 			if _, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{LoadBalancerName: prev.LoadBalancerName}); err != nil {
 				return err
 			}
+		}
+
+		// Create new load balancer
+		if _, err := m.elb.CreateLoadBalancer(input); err != nil {
+			return err
 		}
 	}
 
@@ -203,11 +206,11 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 
 		// Create a names slice and descriptions map.
 		names := make([]*string, len(out.LoadBalancerDescriptions))
-		descs := map[*string]*elb.LoadBalancerDescription{}
+		descs := map[string]*elb.LoadBalancerDescription{}
 
 		for i, d := range out.LoadBalancerDescriptions {
 			names[i] = d.LoadBalancerName
-			descs[d.LoadBalancerName] = d
+			descs[*d.LoadBalancerName] = d
 		}
 
 		// Find all the tags for this batch of load balancers.
@@ -219,11 +222,14 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 		// Append matching load balancers to our result set.
 		for _, d := range out2.TagDescriptions {
 			if containsTags(tags, d.Tags) {
-				lbs = append(lbs, descs[d.LoadBalancerName])
+				lbs = append(lbs, descs[*d.LoadBalancerName])
 			}
 		}
 
 		nextMarker = out.NextMarker
+		if nextMarker == nil {
+			nextMarker = aws.String("")
+		}
 	}
 
 	return lbs, nil
@@ -271,9 +277,21 @@ func containsTags(a []*elb.Tag, b []*elb.Tag) bool {
 
 func containsTag(t *elb.Tag, tags []*elb.Tag) bool {
 	for _, t2 := range tags {
-		if t.Key == t2.Key && t.Value == t2.Value {
+		if *t.Key == *t2.Key && *t.Value == *t2.Value {
 			return true
 		}
 	}
 	return false
+}
+
+func inspectTags(tags []*elb.Tag) string {
+	s := make([]string, len(tags))
+	for i, t := range tags {
+		s[i] = inspectTag(t)
+	}
+	return strings.Join(s, ", ")
+}
+
+func inspectTag(t *elb.Tag) string {
+	return fmt.Sprintf("<Key: %s, Value: %s>", *t.Key, *t.Value)
 }
