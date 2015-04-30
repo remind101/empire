@@ -12,10 +12,7 @@ import (
 var (
 
 	// An test docker image that can be deployed.
-	DefaultImage = empire.Image{
-		Repo: "remind101/acme-inc",
-		ID:   "9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
-	}
+	DefaultImage = "remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2"
 )
 
 // Run the tests with empiretest.Run, which will lock access to the database

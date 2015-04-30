@@ -4,14 +4,10 @@ import (
 	"testing"
 
 	"github.com/bgentry/heroku-go"
-	"github.com/remind101/empire/empire"
 )
 
 type DeployForm struct {
-	Image struct {
-		Repo string `json:"repo"`
-		ID   string `json:"id"`
-	} `json:"image"`
+	Image string
 }
 
 type Deploy struct {
@@ -27,14 +23,13 @@ func TestDeploy(t *testing.T) {
 	mustDeploy(t, c, DefaultImage)
 }
 
-func mustDeploy(t testing.TB, c *heroku.Client, image empire.Image) Deploy {
+func mustDeploy(t testing.TB, c *heroku.Client, image string) Deploy {
 	var (
 		f DeployForm
 		d Deploy
 	)
 
-	f.Image.Repo = string(image.Repo)
-	f.Image.ID = string(image.ID)
+	f.Image = image
 
 	if err := c.Post(&d, "/deploys", &f); err != nil {
 		t.Fatal(err)

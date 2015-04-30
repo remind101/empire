@@ -1,19 +1,19 @@
 #!/bin/bash
 
-repo=$(echo $1 | cut -d : -f 1)
-id=$(echo $1 | cut -d : -f 2)
+image=$1
+
 TMPFILE=$(mktemp /tmp/.hk_deploy.XXXXXXX)
 echo "== DEBUG: REPO:${repo} ID:${id} USER:${HKUSER} API:${HEROKU_API_URL}" > $TMPFILE
 
 function deploy() {
-    curl -sS --fail -D - --user "${HKUSER}:${HKPASS}" -X POST "${HEROKU_API_URL}/deploys" -d "{\"image\":{\"repo\":\"${repo}\",\"id\":\"${id}\"}}" -H "Accept: application/vnd.heroku+json; version=3" >> $TMPFILE 2>&1
+    curl -sS --fail -D - --user "${HKUSER}:${HKPASS}" -X POST "${HEROKU_API_URL}/deploys" -d "{\"image\":\"$image\"}" -H "Accept: application/vnd.heroku+json; version=3" >> $TMPFILE 2>&1
 }
 
 if deploy; then
-  echo "Deployed $1"
+  echo "Deployed $image"
   rm $TMPFILE
 else
-  echo "Failed to deploy $1"
+  echo "Failed to deploy $image"
   cat $TMPFILE
   rm $TMPFILE
   exit 1
