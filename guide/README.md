@@ -37,7 +37,12 @@ $ aws ecs create-cluster --cluster-name default
 
 ## Step 3 - CloudFormation
 
-Create a new CloudFormation stack using the [cloudformation.json](./cloudformation.json) file within this directory.
+Create a new CloudFormation stack using the [cloudformation.json](./cloudformation.json) file within this directory. This is a very simple stack that will:
+
+* Create a VPC with 2 subnets.
+* Create an EC2 Instance Profile with the required permissions for the [ECS agent](https://github.com/aws/amazon-ecs-agent).
+* Create a a Launch Configuration and Auto Scaling Group that will use the official ECS AMI.
+* Configure the instances to be able to pull from a private registry.
 
 If you haven't already, you'll need to [create or import a keypair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) first. Also, have your docker registry credentials ready (email, username, password).
 
