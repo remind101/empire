@@ -1,0 +1,22 @@
+{
+	"ImportPath": "github.com/remind101/empire/cli",
+	"GoVersion": "go1.4.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-12",
+			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
+		},
+		{
+			"ImportPath": "github.com/bgentry/heroku-go",
+			"Rev": "b891b4c66c7a330c5da052a0789f66c4e83c1bed"
+		},
+		{
+			"ImportPath": "github.com/mgutz/ansi",
+			"Rev": "22ddafb24adc4786c83841aa3021349818c898e4"
+		}
+	]
+}
