@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"flag"
 	"os"
 
 	"github.com/bgentry/heroku-go"
@@ -17,13 +18,17 @@ type Context struct {
 
 	// The command-line arguments, minus the program name and plugin name.
 	Args []string
+
+	// A flag.FlagSet instance for this plugin.
+	Flags *flag.FlagSet
 }
 
-func NewContext(args []string) *Context {
+func NewContext(plugin string, args []string) *Context {
 	return &Context{
 		App:    os.Getenv("HKAPP"),
 		Client: NewClient(),
 		Args:   args[1:],
+		Flags:  flag.NewFlagSet(plugin, flag.ExitOnError),
 	}
 }
 

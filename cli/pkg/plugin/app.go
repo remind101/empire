@@ -27,7 +27,7 @@ func (a *App) Run(arguments []string) error {
 		return fmt.Errorf("plugin %s not found", name)
 	}
 
-	plugin.Action(NewContext(arguments))
+	plugin.Action(NewContext(name, arguments))
 
 	return nil
 }
