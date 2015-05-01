@@ -62,11 +62,8 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 }
 
 type PostAppsForm struct {
-	Name  string `json:"name"`
-	Repos struct {
-		Docker *empire.Repo `json:"docker"`
-		GitHub *empire.Repo `json:"github"`
-	} `json:"repos"`
+	Name string  `json:"name"`
+	Repo *string `json:"repo"`
 }
 
 type PostApps struct {
@@ -82,10 +79,7 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 
 	app := &empire.App{
 		Name: form.Name,
-		Repos: empire.Repos{
-			Docker: form.Repos.Docker,
-			GitHub: form.Repos.GitHub,
-		},
+		Repo: form.Repo,
 	}
 	a, err := h.AppsCreate(app)
 	if err != nil {

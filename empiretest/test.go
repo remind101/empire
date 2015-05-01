@@ -27,13 +27,8 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		},
 		AWSConfig: nil,
 		Docker: empire.DockerOptions{
-			Organization: "quay.io/ejholmes",
 			Auth: &docker.AuthConfigurations{
 				Configs: map[string]docker.AuthConfiguration{
-					"quay.io": docker.AuthConfiguration{
-						Username: "",
-						Password: "",
-					},
 					"https://index.docker.io/v1/": docker.AuthConfiguration{
 						Username: "",
 						Password: "",

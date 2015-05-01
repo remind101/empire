@@ -27,42 +27,16 @@ var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 // NewAppNameFromRepo generates a new name from a Repo
 //
 //	remind101/r101-api => r101-api
-func NewAppNameFromRepo(repo Repo) string {
-	p := strings.Split(string(repo), "/")
+func NewAppNameFromRepo(repo string) string {
+	p := strings.Split(repo, "/")
 	return p[len(p)-1]
-}
-
-// Repo types.
-var (
-	DockerRepo = "docker"
-	GitHubRepo = "github"
-)
-
-// Repos represents the configured repos for an app.
-type Repos struct {
-	GitHub *Repo `db:"github_repo"`
-	Docker *Repo `db:"docker_repo"`
-}
-
-// Set sets the given repo type with the value.
-func (r *Repos) Set(repoType string, value Repo) error {
-	switch repoType {
-	case GitHubRepo:
-		r.GitHub = &value
-	case DockerRepo:
-		r.Docker = &value
-	default:
-		return fmt.Errorf("repo type not defined: %s", repoType)
-	}
-
-	return nil
 }
 
 // App represents an app.
 type App struct {
 	Name string `db:"name"`
 
-	Repos // Any repos that this app is linked to.
+	Repo *string `db:"repo"`
 
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -102,8 +76,8 @@ func (s *store) AppsFind(name string) (*App, error) {
 	return appsFind(s.db, name)
 }
 
-func (s *store) AppsFindByRepo(repoType string, repo Repo) (*App, error) {
-	return appsFindByRepo(s.db, repoType, repo)
+func (s *store) AppsFindByRepo(repo string) (*App, error) {
+	return appsFindByRepo(s.db, repo)
 }
 
 type appsService struct {
@@ -120,21 +94,12 @@ func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
-func (s *appsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error {
-	switch repoType {
-	case DockerRepo:
-		if app.Repos.Docker != nil {
-			return nil
-		}
-	case GitHubRepo:
-		if app.Repos.GitHub != nil {
-			return nil
-		}
+func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
+	if app.Repo != nil {
+		return nil
 	}
 
-	if err := app.Repos.Set(repoType, repo); err != nil {
-		return err
-	}
+	app.Repo = &repo
 
 	_, err := s.store.AppsUpdate(app)
 	return err
@@ -142,8 +107,8 @@ func (s *appsService) AppsEnsureRepo(app *App, repoType string, repo Repo) error
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
-func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, error) {
-	a, err := s.store.AppsFindByRepo(repoType, repo)
+func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
+	a, err := s.store.AppsFindByRepo(repo)
 	if err != nil {
 		return a, err
 	}
@@ -160,14 +125,13 @@ func (s *appsService) AppsFindOrCreateByRepo(repoType string, repo Repo) (*App, 
 		return a, err
 	}
 
-	// If the app exists, update the repo value.
 	if a != nil {
-		return a, s.AppsEnsureRepo(a, repoType, repo)
+		return a, s.AppsEnsureRepo(a, repo)
 	}
 
-	a = &App{Name: n}
-	if err := a.Repos.Set(repoType, repo); err != nil {
-		return a, err
+	a = &App{
+		Name: n,
+		Repo: &repo,
 	}
 
 	return s.store.AppsCreate(a)
@@ -201,8 +165,8 @@ func appsFind(db *db, name string) (*App, error) {
 }
 
 // Finds an app by it's Repo field.
-func appsFindByRepo(db *db, repoType string, repo Repo) (*App, error) {
-	return appsFindBy(db, fmt.Sprintf("%s_repo", repoType), string(repo))
+func appsFindByRepo(db *db, repo string) (*App, error) {
+	return appsFindBy(db, "repo", repo)
 }
 
 // AppsFindBy finds an app by a field.

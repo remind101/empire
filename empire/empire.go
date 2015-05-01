@@ -36,9 +36,6 @@ const (
 
 // DockerOptions is a set of options to configure a docker api client.
 type DockerOptions struct {
-	// The default docker organization to use.
-	Organization string
-
 	// The unix socket to connect to the docker api.
 	Socket string
 
@@ -181,7 +178,6 @@ func New(options Options) (*Empire, error) {
 	}
 
 	deployer := &deployer{
-		Organization:    options.Docker.Organization,
 		store:           store,
 		appsService:     apps,
 		configsService:  configs,
@@ -319,11 +315,6 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 // DeployImage deploys an image to Empire.
 func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (*Deployment, error) {
 	return e.deployer.DeployImage(ctx, image, out)
-}
-
-// DeployCommit deploys a Commit to Empire.
-func (e *Empire) DeployCommit(ctx context.Context, commit Commit, out chan Event) (*Deployment, error) {
-	return e.deployer.DeployCommit(ctx, commit, out)
 }
 
 // AppsScale scales an apps process.

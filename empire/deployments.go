@@ -63,11 +63,6 @@ func (d *Deployment) changeStatus(status string) {
 	d.prevStatus, d.Status = d.Status, status
 }
 
-type Commit struct {
-	Repo Repo
-	Sha  string
-}
-
 // DeploymentsCreateOpts represents options that can be passed when creating a
 // new Deployment.
 type DeploymentsCreateOpts struct {
@@ -95,10 +90,6 @@ func (s *store) DeploymentsUpdate(d *Deployment) error {
 }
 
 type deployer struct {
-	// Organization is a docker repo organization to fallback to if the app
-	// doesn't specify a docker repo.
-	Organization string
-
 	store *store
 
 	*appsService
@@ -165,7 +156,7 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 }
 
 func (s *deployer) DeployImageToApp(ctx context.Context, app *App, image Image, out chan Event) (*Deployment, error) {
-	if err := s.appsService.AppsEnsureRepo(app, DockerRepo, image.Repo); err != nil {
+	if err := s.appsService.AppsEnsureRepo(app, image.Repo); err != nil {
 		return nil, err
 	}
 
@@ -178,48 +169,12 @@ func (s *deployer) DeployImageToApp(ctx context.Context, app *App, image Image, 
 
 // Deploy deploys an Image to the cluster.
 func (s *deployer) DeployImage(ctx context.Context, image Image, out chan Event) (*Deployment, error) {
-	app, err := s.appsService.AppsFindOrCreateByRepo(DockerRepo, image.Repo)
+	app, err := s.appsService.AppsFindOrCreateByRepo(image.Repo)
 	if err != nil {
 		return nil, err
 	}
 
 	return s.DeployImageToApp(ctx, app, image, out)
-}
-
-// Deploy commit deploys the commit to a specific app.
-func (s *deployer) DeployCommitToApp(ctx context.Context, app *App, commit Commit, out chan Event) (*Deployment, error) {
-	var docker Repo
-
-	if err := s.appsService.AppsEnsureRepo(app, GitHubRepo, commit.Repo); err != nil {
-		return nil, err
-	}
-
-	if app.Repos.Docker != nil {
-		docker = *app.Repos.Docker
-	} else {
-		docker = s.fallbackRepo(app.Name)
-	}
-
-	image := Image{
-		Repo: docker,
-		ID:   commit.Sha,
-	}
-
-	return s.DeployImageToApp(ctx, app, image, out)
-}
-
-// DeployCommit resolves the Commit to an Image then deploys the Image.
-func (s *deployer) DeployCommit(ctx context.Context, commit Commit, out chan Event) (*Deployment, error) {
-	app, err := s.appsService.AppsFindOrCreateByRepo(GitHubRepo, commit.Repo)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.DeployCommitToApp(ctx, app, commit, out)
-}
-
-func (s *deployer) fallbackRepo(appName string) Repo {
-	return Repo(fmt.Sprintf("%s/%s", s.Organization, appName))
 }
 
 func deploymentsCreate(db *db, d *Deployment) (*Deployment, error) {
