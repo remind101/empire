@@ -9,6 +9,7 @@ import (
 	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
 	"github.com/awslabs/aws-sdk-go/service/elb"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -41,6 +42,8 @@ func NewECSWithELBManager(c *aws.Config) *ECSWithELBManager {
 func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	for _, p := range app.Processes {
 		if p.Exposure > ExposeNone {
+			logger.Info(ctx, "process exposure greater than none, updating load balancer", "app", app, "process", p.Type)
+
 			err := m.updateLoadBalancer(ctx, app, p)
 			if err != nil {
 				return err
@@ -65,6 +68,7 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 
 	// Look for existing load balancer
 	prev, err := m.findLoadBalancer(app, process)
+	logger.Info(ctx, "looking for existing load balancer", "err", err, "app", app, "process", process.Type)
 	if err != nil {
 		return err
 	}
@@ -72,28 +76,38 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 	// If one exists, build input from previous load balancer and compare to current input.
 	// If they differ, we need to recreate the load balancer and service.
 	if prev != nil {
+		logger.Info(ctx, "previous load balancer exists, comparing", "app", app, "process", process.Type)
 		prevInput := m.loadBalancerInputFromDesc(prev, m.loadBalancerTags(app, process))
 		if reflect.DeepEqual(input, prevInput) {
 			recreate = false
+		} else {
+			logger.Info(ctx, "previous load balancer is stale, recreating", "app", app, "process", process.Type)
 		}
 	}
 
 	// If we need to recreate, first create the new load balancer, then destroy the old load balancer and process.
 	if recreate {
 		// Remove process
-		if err := m.removeProcess(ctx, app.Name, process.Type); err != nil {
+		err := m.removeProcess(ctx, app.Name, process.Type)
+		logger.Info(ctx, "removing previous process", "err", err, "app", app, "process", process.Type)
+		if err != nil {
 			return err
 		}
 
 		// Remove previous load balancer
 		if prev != nil {
-			if _, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{LoadBalancerName: prev.LoadBalancerName}); err != nil {
+			_, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{LoadBalancerName: prev.LoadBalancerName})
+			logger.Info(ctx, "removing previous load balancer", "err", err, "app", app, "process", process.Type)
+
+			if err != nil {
 				return err
 			}
 		}
 
 		// Create new load balancer
-		if _, err := m.elb.CreateLoadBalancer(input); err != nil {
+		_, err = m.elb.CreateLoadBalancer(input)
+		logger.Info(ctx, "creating new load balancer", "err", err, "app", app, "process", process.Type)
+		if err != nil {
 			return err
 		}
 	}
@@ -102,11 +116,11 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 		process.Attributes = make(map[string]interface{})
 	}
 
-	process.Attributes["Role"] = ECSServiceRole
+	process.Attributes["Role"] = aws.String(ECSServiceRole)
 	process.Attributes["LoadBalancers"] = []*ecs.LoadBalancer{
 		{
 			ContainerName:    aws.String(process.Type),
-			ContainerPort:    process.Ports[0].Host,
+			ContainerPort:    process.Ports[0].Container,
 			LoadBalancerName: input.LoadBalancerName,
 		},
 	}
