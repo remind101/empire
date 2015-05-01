@@ -49,12 +49,6 @@ var Commands = []cli.Command{
 				Usage:  "The organization to allow access to",
 				EnvVar: "EMPIRE_GITHUB_ORGANIZATION",
 			},
-			cli.StringFlag{
-				Name:   "github.secret",
-				Value:  "",
-				Usage:  "The shared secret between GitHub and Empire. GitHub will use this secret to sign webhook requests.",
-				EnvVar: "EMPIRE_GITHUB_SECRET",
-			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
 	},
@@ -143,7 +137,6 @@ func main() {
 func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts := empire.Options{}
 
-	opts.Docker.Organization = c.String("docker.organization")
 	opts.Docker.Socket = c.String("docker.socket")
 	opts.Docker.CertPath = c.String("docker.cert")
 	opts.Runner.API = c.String("runner.api")
