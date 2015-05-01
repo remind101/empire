@@ -10,7 +10,7 @@ import (
 // Image represents a container image, which is tied to a repository.
 type Image struct {
 	ID   string
-	Repo Repo
+	Repo string
 }
 
 func (i Image) String() string {
@@ -47,7 +47,7 @@ func encodeImage(i Image) string {
 func decodeImage(s string) Image {
 	c := strings.Split(s, ":")
 	return Image{
-		Repo: Repo(c[0]),
+		Repo: c[0],
 		ID:   c[1],
 	}
 }

@@ -27,8 +27,8 @@ var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 // NewAppNameFromRepo generates a new name from a Repo
 //
 //	remind101/r101-api => r101-api
-func NewAppNameFromRepo(repo Repo) string {
-	p := strings.Split(string(repo), "/")
+func NewAppNameFromRepo(repo string) string {
+	p := strings.Split(repo, "/")
 	return p[len(p)-1]
 }
 
@@ -36,7 +36,7 @@ func NewAppNameFromRepo(repo Repo) string {
 type App struct {
 	Name string `db:"name"`
 
-	Repo *Repo `db:"repo"`
+	Repo *string `db:"repo"`
 
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -76,7 +76,7 @@ func (s *store) AppsFind(name string) (*App, error) {
 	return appsFind(s.db, name)
 }
 
-func (s *store) AppsFindByRepo(repo Repo) (*App, error) {
+func (s *store) AppsFindByRepo(repo string) (*App, error) {
 	return appsFindByRepo(s.db, repo)
 }
 
@@ -94,7 +94,7 @@ func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
 }
 
 // AppsEnsureRepo will set the repo if it's not set.
-func (s *appsService) AppsEnsureRepo(app *App, repo Repo) error {
+func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
 	if app.Repo != nil {
 		return nil
 	}
@@ -107,7 +107,7 @@ func (s *appsService) AppsEnsureRepo(app *App, repo Repo) error {
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
-func (s *appsService) AppsFindOrCreateByRepo(repo Repo) (*App, error) {
+func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
 	a, err := s.store.AppsFindByRepo(repo)
 	if err != nil {
 		return a, err
@@ -165,8 +165,8 @@ func appsFind(db *db, name string) (*App, error) {
 }
 
 // Finds an app by it's Repo field.
-func appsFindByRepo(db *db, repo Repo) (*App, error) {
-	return appsFindBy(db, "repo", string(repo))
+func appsFindByRepo(db *db, repo string) (*App, error) {
+	return appsFindBy(db, "repo", repo)
 }
 
 // AppsFindBy finds an app by a field.

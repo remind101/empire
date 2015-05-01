@@ -62,8 +62,8 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 }
 
 type PostAppsForm struct {
-	Name string       `json:"name"`
-	Repo *empire.Repo `json:"repo"`
+	Name string  `json:"name"`
+	Repo *string `json:"repo"`
 }
 
 type PostApps struct {
