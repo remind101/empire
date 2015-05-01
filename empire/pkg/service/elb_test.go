@@ -90,7 +90,7 @@ func TestECSWithELBManager_Submit_Create(t *testing.T) {
 
 		awsutil.Request{
 			Operation: "AmazonEC2ContainerServiceV20141113.CreateService",
-			Body:      `{"cluster":"","desiredCount":0,"loadBalancers":[{"containerName":"web","containerPort":8080,"loadBalancerName":"foo--web"}],"serviceName":"foo--web","taskDefinition":"foo--web"}`,
+			Body:      `{"cluster":"","desiredCount":0,"loadBalancers":[{"containerName":"web","containerPort":8080,"loadBalancerName":"foo--web"}],"role":"ecsServiceRole","serviceName":"foo--web","taskDefinition":"foo--web"}`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body:       "",
@@ -254,7 +254,7 @@ func TestECSWithELBManager_Submit_Recreate(t *testing.T) {
 
 		awsutil.Request{
 			Operation: "AmazonEC2ContainerServiceV20141113.CreateService",
-			Body:      `{"cluster":"","desiredCount":0,"loadBalancers":[{"containerName":"web","containerPort":8080,"loadBalancerName":"foo--web"}],"serviceName":"foo--web","taskDefinition":"foo--web"}`,
+			Body:      `{"cluster":"","desiredCount":0,"loadBalancers":[{"containerName":"web","containerPort":8080,"loadBalancerName":"foo--web"}],"role":"ecsServiceRole","serviceName":"foo--web","taskDefinition":"foo--web"}`,
 		}: awsutil.Response{
 			StatusCode: 200,
 			Body:       "",

@@ -296,7 +296,7 @@ func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process,
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
 
 	if len(ports) > 0 {
-		env["PORT"] = fmt.Sprintf("%d", ports[0].Container)
+		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
 		// TODO: If app has domains, we want to expose publicly
 		exposure = service.ExposePrivate
 	}
