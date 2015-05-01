@@ -118,7 +118,7 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *App, process *Process) (*elb.CreateLoadBalancerInput, error) {
 	name := app.Name + "--" + process.Type
 
-	subnets, zones, err := m.subnetsAndZones()
+	subnets, err := m.subnets()
 	if err != nil {
 		return nil, err
 	}
@@ -140,13 +140,12 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 	}
 
 	input := &elb.CreateLoadBalancerInput{
-		Listeners:         listeners,
-		LoadBalancerName:  aws.String(name),
-		AvailabilityZones: zones,
-		Scheme:            aws.String(scheme),
-		SecurityGroups:    []*string{aws.String(sg)},
-		Subnets:           subnets,
-		Tags:              m.loadBalancerTags(app, process),
+		Listeners:        listeners,
+		LoadBalancerName: aws.String(name),
+		Scheme:           aws.String(scheme),
+		SecurityGroups:   []*string{aws.String(sg)},
+		Subnets:          subnets,
+		Tags:             m.loadBalancerTags(app, process),
 	}
 
 	return input, nil
@@ -159,13 +158,12 @@ func (m *ECSWithELBManager) loadBalancerInputFromDesc(desc *elb.LoadBalancerDesc
 	}
 
 	return &elb.CreateLoadBalancerInput{
-		Listeners:         listeners,
-		LoadBalancerName:  desc.LoadBalancerName,
-		AvailabilityZones: desc.AvailabilityZones,
-		Scheme:            desc.Scheme,
-		SecurityGroups:    desc.SecurityGroups,
-		Subnets:           desc.Subnets,
-		Tags:              tags,
+		Listeners:        listeners,
+		LoadBalancerName: desc.LoadBalancerName,
+		Scheme:           desc.Scheme,
+		SecurityGroups:   desc.SecurityGroups,
+		Subnets:          desc.Subnets,
+		Tags:             tags,
 	}
 }
 
@@ -228,7 +226,7 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 	return lbs, nil
 }
 
-func (m *ECSWithELBManager) subnetsAndZones() (subnets []*string, zones []*string, err error) {
+func (m *ECSWithELBManager) subnets() (subnets []*string, err error) {
 	subnetout, err := m.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
 			{Name: aws.String("vpc-id"), Values: []*string{aws.String(m.VPCID)}},
@@ -239,7 +237,6 @@ func (m *ECSWithELBManager) subnetsAndZones() (subnets []*string, zones []*strin
 	}
 
 	for _, s := range subnetout.Subnets {
-		zones = append(zones, s.AvailabilityZone)
 		subnets = append(subnets, s.SubnetID)
 	}
 
