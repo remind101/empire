@@ -115,7 +115,7 @@ var EmpireFlags = []cli.Flag{
 		Name:   "elb.vpc",
 		Value:  "",
 		Usage:  "The VPC ID empire is running inside",
-		EnvVar: "EMPIRE_VPC_ID",
+		EnvVar: "EMPIRE_ELB_VPC_ID",
 	},
 	cli.StringFlag{
 		Name:   "elb.isg",
