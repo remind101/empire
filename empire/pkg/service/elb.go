@@ -34,7 +34,7 @@ func NewECSWithELBManager(c *aws.Config) *ECSWithELBManager {
 	}
 }
 
-// Submit will create an internal ELB if the app contains a web process. It will
+// Submit will create an internal load balancer if the app contains a web process. It will
 // also create a CNAME named after the app that points to the load balancer.
 //
 // If the app has domains associated with it, the load balancer and service
@@ -54,6 +54,32 @@ func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	return m.ECSManager.Submit(ctx, app)
 }
 
+// Remove removes any ECS services that belong to this app, along with any associated load balancers.
+func (m *ECSWithELBManager) Remove(ctx context.Context, app string) error {
+	processes, err := m.listProcesses(app)
+	if err != nil {
+		return err
+	}
+
+	for t, _ := range processTypes(processes) {
+		if err := m.removeProcess(ctx, app, t); err != nil {
+			return err
+		}
+
+		lb, err := m.findLoadBalancer(app, t)
+		if err != nil {
+			return err
+		}
+
+		if _, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{LoadBalancerName: lb.LoadBalancerName}); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
 // updateLoadBalancer determines if the app process needs a new load balancer, creates one, and decorates
 // the process with the load balancer information. If a previous load balancer exists, it will be
 // removed along with existing process.
@@ -67,8 +93,8 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 	}
 
 	// Look for existing load balancer
-	prev, err := m.findLoadBalancer(app, process)
-	logger.Info(ctx, "looking for existing load balancer", "err", err, "app", app, "process", process.Type)
+	prev, err := m.findLoadBalancer(app.Name, process.Type)
+	logger.Info(ctx, "looking for existing load balancer", "err", err, "app", app.Name, "process", process.Type)
 	if err != nil {
 		return err
 	}
@@ -76,12 +102,12 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 	// If one exists, build input from previous load balancer and compare to current input.
 	// If they differ, we need to recreate the load balancer and service.
 	if prev != nil {
-		logger.Info(ctx, "previous load balancer exists, comparing", "app", app, "process", process.Type)
-		prevInput := m.loadBalancerInputFromDesc(prev, m.loadBalancerTags(app, process))
+		logger.Info(ctx, "previous load balancer exists, comparing", "app", app.Name, "process", process.Type)
+		prevInput := m.loadBalancerInputFromDesc(prev, m.loadBalancerTags(app.Name, process.Type))
 		if reflect.DeepEqual(input, prevInput) {
 			recreate = false
 		} else {
-			logger.Info(ctx, "previous load balancer is stale, recreating", "app", app, "process", process.Type)
+			logger.Info(ctx, "previous load balancer is stale, recreating", "app", app.Name, "process", process.Type)
 		}
 	}
 
@@ -89,7 +115,7 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 	if recreate {
 		// Remove process
 		err := m.removeProcess(ctx, app.Name, process.Type)
-		logger.Info(ctx, "removing previous process", "err", err, "app", app, "process", process.Type)
+		logger.Info(ctx, "removing previous process", "err", err, "app", app.Name, "process", process.Type)
 		if err != nil {
 			return err
 		}
@@ -97,7 +123,7 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 		// Remove previous load balancer
 		if prev != nil {
 			_, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{LoadBalancerName: prev.LoadBalancerName})
-			logger.Info(ctx, "removing previous load balancer", "err", err, "app", app, "process", process.Type)
+			logger.Info(ctx, "removing previous load balancer", "err", err, "app", app.Name, "process", process.Type)
 
 			if err != nil {
 				return err
@@ -106,7 +132,7 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 
 		// Create new load balancer
 		_, err = m.elb.CreateLoadBalancer(input)
-		logger.Info(ctx, "creating new load balancer", "err", err, "app", app, "process", process.Type)
+		logger.Info(ctx, "creating new load balancer", "err", err, "app", app.Name, "process", process.Type)
 		if err != nil {
 			return err
 		}
@@ -159,7 +185,7 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 		Scheme:           aws.String(scheme),
 		SecurityGroups:   []*string{aws.String(sg)},
 		Subnets:          subnets,
-		Tags:             m.loadBalancerTags(app, process),
+		Tags:             m.loadBalancerTags(app.Name, process.Type),
 	}
 
 	return input, nil
@@ -181,7 +207,7 @@ func (m *ECSWithELBManager) loadBalancerInputFromDesc(desc *elb.LoadBalancerDesc
 	}
 }
 
-func (m *ECSWithELBManager) findLoadBalancer(app *App, process *Process) (*elb.LoadBalancerDescription, error) {
+func (m *ECSWithELBManager) findLoadBalancer(app string, process string) (*elb.LoadBalancerDescription, error) {
 	lbs, err := m.findLoadBalancersByTags(m.loadBalancerTags(app, process))
 	if err != nil {
 		return nil, err
@@ -257,15 +283,15 @@ func (m *ECSWithELBManager) subnets() (subnets []*string, err error) {
 	return
 }
 
-func (m *ECSWithELBManager) loadBalancerTags(app *App, process *Process) []*elb.Tag {
+func (m *ECSWithELBManager) loadBalancerTags(app string, process string) []*elb.Tag {
 	return []*elb.Tag{
 		{
 			Key:   aws.String("AppName"),
-			Value: aws.String(app.Name),
+			Value: aws.String(app),
 		},
 		{
 			Key:   aws.String("ProcessType"),
-			Value: aws.String(process.Type),
+			Value: aws.String(process),
 		},
 	}
 }
