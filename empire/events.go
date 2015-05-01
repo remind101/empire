@@ -6,14 +6,6 @@ type Event interface {
 	Event() string
 }
 
-type DeploymentEvent struct {
-	Deployment *Deployment
-}
-
-func (e *DeploymentEvent) Event() string {
-	return "deploy"
-}
-
 type dockerProgress struct {
 	Current int   `json:"current,omitempty"`
 	Total   int   `json:"total,omitempty"`

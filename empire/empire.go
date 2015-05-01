@@ -178,7 +178,6 @@ func New(options Options) (*Empire, error) {
 	}
 
 	deployer := &deployer{
-		store:           store,
 		appsService:     apps,
 		configsService:  configs,
 		slugsService:    slugs,
@@ -313,7 +312,7 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 }
 
 // DeployImage deploys an image to Empire.
-func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (*Deployment, error) {
+func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (*Release, error) {
 	return e.deployer.DeployImage(ctx, image, out)
 }
 
