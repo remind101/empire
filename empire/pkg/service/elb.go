@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,6 +12,11 @@ import (
 	"github.com/awslabs/aws-sdk-go/service/elb"
 	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
+)
+
+const (
+	ProtocolHTTP  = "HTTP"
+	ProtocolHTTPS = "HTTPS"
 )
 
 var ECSServiceRole = "ecsServiceRole"
@@ -42,7 +48,7 @@ func NewECSWithELBManager(c *aws.Config) *ECSWithELBManager {
 func (m *ECSWithELBManager) Submit(ctx context.Context, app *App) error {
 	for _, p := range app.Processes {
 		if p.Exposure > ExposeNone {
-			logger.Info(ctx, "process exposure greater than none, updating load balancer", "app", app, "process", p.Type)
+			logger.Info(ctx, "process exposure greater than none, updating load balancer", "app", app.Name, "process", p.Type)
 
 			err := m.updateLoadBalancer(ctx, app, p)
 			if err != nil {
@@ -102,12 +108,15 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 	// If one exists, build input from previous load balancer and compare to current input.
 	// If they differ, we need to recreate the load balancer and service.
 	if prev != nil {
-		logger.Info(ctx, "previous load balancer exists, comparing", "app", app.Name, "process", process.Type)
 		prevInput := m.loadBalancerInputFromDesc(prev, m.loadBalancerTags(app.Name, process.Type))
+
 		if reflect.DeepEqual(input, prevInput) {
+			logger.Info(ctx, "previous load balancer exists, and is up to date.", "app", app.Name, "process", process.Type)
 			recreate = false
 		} else {
-			logger.Info(ctx, "previous load balancer is stale, recreating", "app", app.Name, "process", process.Type)
+			jsonInput, _ := json.Marshal(input)
+			jsonPrevInput, _ := json.Marshal(prevInput)
+			logger.Info(ctx, "previous load balancer is stale, recreating", "app", app.Name, "process", process.Type, "input", string(jsonInput), "prevInput", string(jsonPrevInput))
 		}
 	}
 
@@ -174,8 +183,8 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 		{
 			InstancePort:     aws.Long(*process.Ports[0].Host),
 			LoadBalancerPort: aws.Long(80),
-			Protocol:         aws.String("http"),
-			InstanceProtocol: aws.String("http"),
+			Protocol:         aws.String(ProtocolHTTP),
+			InstanceProtocol: aws.String(ProtocolHTTP),
 		},
 	}
 
