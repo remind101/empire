@@ -77,6 +77,10 @@ func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
 		return domain, err
 	}
 
+	if err := s.makePublic(domain.AppName); err != nil {
+		return domain, err
+	}
+
 	if err := s.registry.Register(domain); err != nil {
 		return domain, err
 	}
@@ -89,7 +93,51 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 		return err
 	}
 
-	return s.store.DomainsDestroy(domain)
+	if err := s.store.DomainsDestroy(domain); err != nil {
+		return err
+	}
+
+	// If app has no domains associated, make it private
+	d, err := s.store.DomainsFindByApp(&App{Name: domain.AppName})
+	if err != nil {
+		return err
+	}
+
+	if len(d) == 0 {
+		if err := s.makePrivate(domain.AppName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *domainsService) makePublic(app string) error {
+	a, err := s.store.AppsFind(app)
+	if err != nil {
+		return err
+	}
+
+	a.Exposure = "public"
+	if _, err := s.store.AppsUpdate(a); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *domainsService) makePrivate(app string) error {
+	a, err := s.store.AppsFind(app)
+	if err != nil {
+		return err
+	}
+
+	a.Exposure = "private"
+	if _, err := s.store.AppsUpdate(a); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *store) DomainsFindByApp(app *App) ([]*Domain, error) {

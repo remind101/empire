@@ -94,7 +94,7 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreat
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.releaser.Release(ctx, r, config, slug, formation, ports); err != nil {
+	if err := s.releaser.Release(ctx, r, config, slug, formation, ports, serviceExposure(opts.App.Exposure)); err != nil {
 		return r, err
 	}
 
@@ -271,16 +271,16 @@ type releaser struct {
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap) error {
-	app := newServiceApp(release, config, slug, formation, ports)
+func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) error {
+	app := newServiceApp(release, config, slug, formation, ports, exposure)
 	return r.manager.Submit(ctx, app)
 }
 
-func newServiceApp(release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap) *service.App {
+func newServiceApp(release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) *service.App {
 	var processes []*service.Process
 
 	for _, p := range formation {
-		processes = append(processes, newServiceProcess(release, config, slug, p, ports[p.Type]))
+		processes = append(processes, newServiceProcess(release, config, slug, p, ports[p.Type], exposure))
 	}
 
 	return &service.App{
@@ -289,16 +289,17 @@ func newServiceApp(release *Release, config *Config, slug *Slug, formation Forma
 	}
 }
 
-func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process, port int64) *service.Process {
-	var exposure service.Exposure
+func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process, port int64, exposure service.Exposure) *service.Process {
+	var procExp service.Exposure
 	ports := newServicePorts(port)
 	env := environment(config.Vars)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
 
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
-		// TODO: If app has domains, we want to expose publicly
-		exposure = service.ExposePrivate
+
+		// If we have exposed ports, set process exposure to apps exposure
+		procExp = exposure
 	}
 
 	return &service.Process{
@@ -310,7 +311,7 @@ func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process,
 		MemoryLimit: MemoryLimit,
 		CPUShares:   CPUShare,
 		Ports:       ports,
-		Exposure:    exposure,
+		Exposure:    procExp,
 	}
 }
 
@@ -337,4 +338,17 @@ func environment(vars Vars) map[string]string {
 	}
 
 	return env
+}
+
+func serviceExposure(appExp string) (exp service.Exposure) {
+	switch appExp {
+	case ExposePrivate:
+		exp = service.ExposePrivate
+	case ExposePublic:
+		exp = service.ExposePublic
+	default:
+		exp = service.ExposeNone
+	}
+
+	return exp
 }
