@@ -14,6 +14,11 @@ import (
 	"gopkg.in/gorp.v1"
 )
 
+const (
+	ExposePrivate = "private"
+	ExposePublic  = "public"
+)
+
 var (
 	// ErrInvalidName is used to indicate that the app name is not valid.
 	ErrInvalidName = &ValidationError{
@@ -37,6 +42,9 @@ type App struct {
 	Name string `db:"name"`
 
 	Repo *string `db:"repo"`
+
+	// Valid values are empire.ExposePrivate and empire.ExposePublic.
+	Exposure string `db:"exposure"`
 
 	CreatedAt time.Time `db:"created_at"`
 }
