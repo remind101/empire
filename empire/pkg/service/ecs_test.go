@@ -12,45 +12,65 @@ import (
 )
 
 func TestECSManager_Submit(t *testing.T) {
-	h := awsutil.NewHandler(map[awsutil.Request]awsutil.Response{
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.ListServices",
-			Body:      `{"cluster":""}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
+				Body:       `{"cluster":""}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DescribeServices",
-			Body:      `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"services":[{"taskDefinition":"foo--web"}]}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"taskDefinition":"foo--web"}]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
-			Body:      `{"taskDefinition":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-			Body:      `{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       "",
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       "",
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.UpdateService",
-			Body:      `{"cluster":"","desiredCount":0,"service":"foo--web","taskDefinition":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"service": {}}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
+				Body:       `{"cluster":"","desiredCount":0,"service":"foo--web","taskDefinition":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"service": {}}`,
+			},
 		},
 	})
 	m, s := newTestECSManager(h)
@@ -62,13 +82,17 @@ func TestECSManager_Submit(t *testing.T) {
 }
 
 func TestECSManager_Scale(t *testing.T) {
-	h := awsutil.NewHandler(map[awsutil.Request]awsutil.Response{
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.UpdateService",
-			Body:      `{"cluster":"","desiredCount":10,"service":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       ``,
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
+				Body:       `{"cluster":"","desiredCount":10,"service":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
 		},
 	})
 	m, s := newTestECSManager(h)
@@ -80,37 +104,53 @@ func TestECSManager_Scale(t *testing.T) {
 }
 
 func TestECSManager_Instances(t *testing.T) {
-	h := awsutil.NewHandler(map[awsutil.Request]awsutil.Response{
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.ListServices",
-			Body:      `{"cluster":""}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
+				Body:       `{"cluster":""}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.ListTasks",
-			Body:      `{"cluster":"","serviceName":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"taskArns":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
+				Body:       `{"cluster":"","serviceName":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskArns":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DescribeTasks",
-			Body:      `{"tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/foo--web","lastStatus":"RUNNING"}]}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTasks",
+				Body:       `{"tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/foo--web","lastStatus":"RUNNING"}]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
-			Body:      `{"taskDefinition":"arn:aws:ecs:us-east-1:249285743859:task-definition/foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","command":["acme-inc", "web"]}]}}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"arn:aws:ecs:us-east-1:249285743859:task-definition/foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","command":["acme-inc", "web"]}]}}`,
+			},
 		},
 	})
 	m, s := newTestECSManager(h)
@@ -141,45 +181,65 @@ func TestECSManager_Instances(t *testing.T) {
 }
 
 func TestECSManager_Remove(t *testing.T) {
-	h := awsutil.NewHandler(map[awsutil.Request]awsutil.Response{
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.ListServices",
-			Body:      `{"cluster":""}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
+				Body:       `{"cluster":""}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DescribeServices",
-			Body:      `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"services":[{"taskDefinition":"foo--web"}]}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"taskDefinition":"foo--web"}]}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
-			Body:      `{"taskDefinition":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.UpdateService",
-			Body:      `{"cluster":"","desiredCount":0,"service":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       ``,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
+				Body:       `{"cluster":"","desiredCount":0,"service":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
 		},
 
-		awsutil.Request{
-			Operation: "AmazonEC2ContainerServiceV20141113.DeleteService",
-			Body:      `{"cluster":"","service":"foo--web"}`,
-		}: awsutil.Response{
-			StatusCode: 200,
-			Body:       ``,
+		awsutil.Cycle{
+			awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DeleteService",
+				Body:       `{"cluster":"","service":"foo--web"}`,
+			},
+			awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
 		},
 	})
 	m, s := newTestECSManager(h)

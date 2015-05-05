@@ -1,6 +1,7 @@
 package awsutil
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,16 +12,14 @@ import (
 
 // Request represents an expected AWS API Operation.
 type Request struct {
-	Operation string
-	Body      string
+	RequestURI string
+	Operation  string
+	Body       string
 }
 
 func (r *Request) String() string {
-	body, err := formatJSON(strings.NewReader(r.Body))
-	if err != nil {
-		body = r.Body
-	}
-	return fmt.Sprintf("Operation: %s\nBody: %s", r.Operation, body)
+	body := formatBody(strings.NewReader(r.Body))
+	return fmt.Sprintf("RequestURI: %s\nOperation: %s\nBody: %s", r.RequestURI, r.Operation, body)
 }
 
 // Response represents a predefined response.
@@ -29,47 +28,70 @@ type Response struct {
 	Body       string
 }
 
-// Handler is an http.Handler that will play back scenarios.
+// Cycle represents a request-response cycle.
+type Cycle struct {
+	Request  Request
+	Response Response
+}
+
+// Handler is an http.Handler that will play back cycles.
 type Handler struct {
-	scenarios map[string]Response
+	cycles []Cycle
 }
 
 // NewHandler returns a new Handler instance.
-func NewHandler(m map[Request]Response) *Handler {
-	s := make(map[string]Response)
-
-	for req, res := range m {
-		s[req.String()] = res
-	}
-
-	return &Handler{
-		scenarios: s,
-	}
+func NewHandler(c []Cycle) *Handler {
+	return &Handler{cycles: c}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	raw, err := ioutil.ReadAll(r.Body)
+	if len(h.cycles) == 0 {
+		fmt.Println("No cycles remaining to replay.")
+		w.WriteHeader(404)
+		return
+	}
+
+	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
 	}
 
-	body, err := formatJSON(r.Body)
-	if err != nil {
-		body = string(raw)
-	}
-
+	cycle := h.cycles[0]
 	match := Request{
-		Operation: r.Header.Get("X-Amz-Target"),
-		Body:      body,
+		RequestURI: r.URL.RequestURI(),
+		Operation:  r.Header.Get("X-Amz-Target"),
+		Body:       string(b),
 	}
 
-	if res, ok := h.scenarios[match.String()]; ok {
-		w.WriteHeader(res.StatusCode)
-		io.WriteString(w, res.Body)
+	if cycle.Request.Body == "ignore" {
+		match.Body = cycle.Request.Body
+	}
+
+	if cycle.Request.String() == match.String() {
+		w.WriteHeader(cycle.Response.StatusCode)
+		io.WriteString(w, cycle.Response.Body)
 	} else {
+		fmt.Println("Request does not match next cycle.")
+		fmt.Println(cycle.Request.String())
 		fmt.Println(match.String())
 		w.WriteHeader(404)
 	}
+
+	h.cycles = h.cycles[1:]
+}
+
+func formatBody(r io.Reader) string {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		panic(err)
+	}
+
+	s, err := formatJSON(bytes.NewReader(b))
+	if err == nil {
+		return s
+	}
+
+	return string(b)
 }
 
 func formatJSON(r io.Reader) (string, error) {

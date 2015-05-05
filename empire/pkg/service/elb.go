@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
 	"github.com/awslabs/aws-sdk-go/service/elb"
+	"github.com/awslabs/aws-sdk-go/service/route53"
 	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
@@ -22,26 +24,36 @@ const (
 // The role to assign ECS load balancers.
 var ECSServiceRole = "ecsServiceRole"
 
-// The zone to create CNAME records for internal services.
-var Zone = "internal"
+// The default zone to create CNAME records for internal services.
+var DefaultZone = "empire."
 
 // ECSWithELBManager wraps ECSManager and manages load
 // balancing for the service with ELB.
 type ECSWithELBManager struct {
 	*ECSManager
+
+	ec2   *ec2.EC2
+	VPCID string
+
 	elb                     *elb.ELB
-	ec2                     *ec2.EC2
-	VPCID                   string
 	InternalSecurityGroupID string
 	ExternalSecurityGroupID string
+
+	route53 *route53.Route53
+	Zone    string
 }
 
 func NewECSWithELBManager(c *aws.Config) *ECSWithELBManager {
-	return &ECSWithELBManager{
+	m := &ECSWithELBManager{
 		ECSManager: NewECSManager(c),
 		elb:        elb.New(c),
 		ec2:        ec2.New(c),
+		route53:    route53.New(c),
 	}
+
+	m.Zone = DefaultZone
+
+	return m
 }
 
 // Submit will create an internal load balancer if the app contains a web process. It will
@@ -144,8 +156,15 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 		}
 
 		// Create new load balancer
-		_, err = m.elb.CreateLoadBalancer(input)
+		out, err := m.elb.CreateLoadBalancer(input)
 		logger.Info(ctx, "creating new load balancer", "err", err, "app", app.Name, "process", process.Type)
+		if err != nil {
+			return err
+		}
+
+		// Update record set
+		err = m.updateRecordSet(app.Name, out.DNSName)
+		logger.Info(ctx, "updating zone records", "err", err, "app", app.Name, "process", process.Type, "lb", input.LoadBalancerName)
 		if err != nil {
 			return err
 		}
@@ -311,6 +330,50 @@ func (m *ECSWithELBManager) loadBalancerTags(app string, process string) []*elb.
 			Value: aws.String(process),
 		},
 	}
+}
+
+// updateRecordSet updates the internal zone to include a CNAME for the app,
+// pointed at its load balancer.
+func (m *ECSWithELBManager) updateRecordSet(app string, dnsName *string) error {
+	var zone *route53.HostedZone
+	out, err := m.route53.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: aws.String(m.Zone)})
+	if err != nil {
+		return err
+	}
+
+	for _, z := range out.HostedZones {
+		if *z.Name == m.Zone {
+			zone = z
+		}
+	}
+
+	if zone == nil {
+		return errors.New("hosted zone not found, unable to update records")
+	}
+
+	input := &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: []*route53.Change{
+				&route53.Change{
+					Action: aws.String("UPSERT"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("%s.%s", app, m.Zone)),
+						Type: aws.String("CNAME"),
+						ResourceRecords: []*route53.ResourceRecord{
+							&route53.ResourceRecord{
+								Value: dnsName,
+							},
+						},
+						TTL: aws.Long(60),
+					},
+				},
+			},
+			Comment: aws.String(fmt.Sprintf("Update for empire %s app", app)),
+		},
+		HostedZoneID: zone.ID,
+	}
+	_, err = m.route53.ChangeResourceRecordSets(input)
+	return err
 }
 
 func containsTags(a []*elb.Tag, b []*elb.Tag) bool {
