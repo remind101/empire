@@ -371,7 +371,7 @@ func NewHKCmd(url, command string) *HKCmd {
 	cmd := exec.Command(p, args...)
 	cmd.Env = []string{
 		fmt.Sprintf("PATH=../../../cli/build/:%s", os.Getenv("PATH")),
-		"HKPATH=../../../hk-plugins",
+		"HKPATH=../../../cli/hk-plugins",
 		fmt.Sprintf("HEROKU_API_URL=%s", url),
 	}
 

@@ -21,4 +21,4 @@ install: cmd
 	cp cli/build/empire-plugins /usr/local/bin/empire-plugins
 	chmod +x /usr/local/bin/empire-plugins
 	mkdir -p /usr/local/lib/hk/plugin
-	cp hk-plugins/* /usr/local/lib/hk/plugin
+	cp cli/hk-plugins/* /usr/local/lib/hk/plugin
