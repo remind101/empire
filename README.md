@@ -8,7 +8,7 @@ Empire is targeted at small to medium sized startups that are running a large nu
 
 ## Quickstart
 
-To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide](./guide) for more information.
+To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide](./docs/guide) for more information.
 
 ## Architecture
 
