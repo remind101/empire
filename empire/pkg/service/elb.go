@@ -19,7 +19,11 @@ const (
 	ProtocolHTTPS = "HTTPS"
 )
 
+// The role to assign ECS load balancers.
 var ECSServiceRole = "ecsServiceRole"
+
+// The zone to create CNAME records for internal services.
+var Zone = "internal"
 
 // ECSWithELBManager wraps ECSManager and manages load
 // balancing for the service with ELB.
@@ -41,7 +45,7 @@ func NewECSWithELBManager(c *aws.Config) *ECSWithELBManager {
 }
 
 // Submit will create an internal load balancer if the app contains a web process. It will
-// also create a CNAME named after the app that points to the load balancer.
+// also create a CNAME record named after the app that points to the load balancer.
 //
 // If the app has domains associated with it, the load balancer and service
 // will be recreated, and the load balancer will be made public.
@@ -200,6 +204,7 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 	return input, nil
 }
 
+// loadBalancerInputFromDesc returns a CreateLoadBalancerInput based on a LoadBalancerDescription.
 func (m *ECSWithELBManager) loadBalancerInputFromDesc(desc *elb.LoadBalancerDescription, tags []*elb.Tag) *elb.CreateLoadBalancerInput {
 	listeners := make([]*elb.Listener, len(desc.ListenerDescriptions))
 	for i, l := range desc.ListenerDescriptions {
@@ -216,6 +221,7 @@ func (m *ECSWithELBManager) loadBalancerInputFromDesc(desc *elb.LoadBalancerDesc
 	}
 }
 
+// findLoadBalancer returns the load balancer tagged with the given app name and process type.
 func (m *ECSWithELBManager) findLoadBalancer(app string, process string) (*elb.LoadBalancerDescription, error) {
 	lbs, err := m.findLoadBalancersByTags(m.loadBalancerTags(app, process))
 	if err != nil {
@@ -229,6 +235,7 @@ func (m *ECSWithELBManager) findLoadBalancer(app string, process string) (*elb.L
 	return lbs[0], nil
 }
 
+// findLoadBalancersByTags returns a list of load balancers tagged with the given tag list.
 func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.LoadBalancerDescription, error) {
 	lbs := make([]*elb.LoadBalancerDescription, 0)
 	nextMarker := aws.String("")
@@ -275,6 +282,7 @@ func (m *ECSWithELBManager) findLoadBalancersByTags(tags []*elb.Tag) ([]*elb.Loa
 	return lbs, nil
 }
 
+// subnets returns a list of subnets within the given VPC.
 func (m *ECSWithELBManager) subnets() (subnets []*string, err error) {
 	subnetout, err := m.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
