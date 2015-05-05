@@ -16,7 +16,7 @@ build:
 	$(MAKE) -C relay build
 
 install: cmd
-	cat emp > /usr/local/bin/emp
+	cat cli/emp > /usr/local/bin/emp
 	chmod +x /usr/local/bin/emp
 	cp cli/build/empire-plugins /usr/local/bin/empire-plugins
 	chmod +x /usr/local/bin/empire-plugins
