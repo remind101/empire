@@ -33,7 +33,7 @@ Before we provision resources with CloudFormation, let's create an ECS stack for
 $ aws ecs create-cluster --cluster-name default
 ```
 
-**NOTE**: In a production setup, you would probably want to isolate the Empire controller within it's own VPC and ECS Cluster.
+**NOTE**: In a production setup, you would probably want to isolate the Empire controller in it's own Autoscaling Group & ECS cluster, and the minions in a separate Autoscaling Group & ECS cluster.
 
 ## Step 3 - CloudFormation
 
