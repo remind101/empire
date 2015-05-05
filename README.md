@@ -79,6 +79,6 @@ There is also a `tests` directory that contains integration and functional tests
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
 [heroku-api]: https://devcenter.heroku.com/articles/platform-api-reference
-[tugboat]: https://github.com/remidn101/tugboat
+[tugboat]: https://github.com/remind101/tugboat
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
