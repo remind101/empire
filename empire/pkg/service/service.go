@@ -8,6 +8,14 @@ import (
 	"golang.org/x/net/context"
 )
 
+type Exposure int
+
+const (
+	ExposeNone Exposure = iota
+	ExposePrivate
+	ExposePublic
+)
+
 type App struct {
 	// The name of the app.
 	Name string
@@ -40,6 +48,9 @@ type Process struct {
 	// Mapping of host -> container port mappings.
 	Ports []PortMap
 
+	// Exposure is the level of exposure for this process.
+	Exposure Exposure
+
 	// Instances is the desired instances of this service to run.
 	Instances uint
 
@@ -49,6 +60,9 @@ type Process struct {
 	// The amount of CPU to allocate to this process, out of 1024. Maps to
 	// the --cpu-shares flag for docker.
 	CPUShares uint
+
+	// Attributes is an arbitrary map of attributes that can be assigned.
+	Attributes map[string]interface{}
 }
 
 // Instance represents an Instance of a Process.
@@ -65,7 +79,7 @@ type Instance struct {
 	UpdatedAt time.Time
 }
 
-// Manager is an interface to interfacing with Services.
+// Manager is an interface for interfacing with Services.
 type Manager interface {
 	// Submit submits an app, creating it or updating it as necessary.
 	Submit(context.Context, *App) error

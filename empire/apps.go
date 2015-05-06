@@ -14,6 +14,11 @@ import (
 	"gopkg.in/gorp.v1"
 )
 
+const (
+	ExposePrivate = "private"
+	ExposePublic  = "public"
+)
+
 var (
 	// ErrInvalidName is used to indicate that the app name is not valid.
 	ErrInvalidName = &ValidationError{
@@ -38,6 +43,9 @@ type App struct {
 
 	Repo *string `db:"repo"`
 
+	// Valid values are empire.ExposePrivate and empire.ExposePublic.
+	Exposure string `db:"exposure"`
+
 	CreatedAt time.Time `db:"created_at"`
 }
 
@@ -53,6 +61,11 @@ func (a *App) IsValid() error {
 // PreInsert implements a pre insert hook for the db interface
 func (a *App) PreInsert(s gorp.SqlExecutor) error {
 	a.CreatedAt = timex.Now()
+
+	if a.Exposure == "" {
+		a.Exposure = ExposePrivate
+	}
+
 	return a.IsValid()
 }
 

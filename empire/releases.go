@@ -72,7 +72,7 @@ type releasesService struct {
 	releaser *releaser
 }
 
-// Create creates the release, then sets the current process formation on the release.
+// ReleasesCreate creates the release, then sets the current process formation on the release.
 func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreateOpts) (*Release, error) {
 	config, slug := opts.Config, opts.Slug
 
@@ -87,8 +87,14 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreat
 		return nil, err
 	}
 
+	// Create port mappings for formation.
+	ports, err := s.newProcessPorts(r, formation)
+	if err != nil {
+		return nil, err
+	}
+
 	// Schedule the new release onto the cluster.
-	if err := s.releaser.Release(ctx, r, config, slug, formation); err != nil {
+	if err := s.releaser.Release(ctx, r, config, slug, formation, ports, serviceExposure(opts.App.Exposure)); err != nil {
 		return r, err
 	}
 
@@ -123,6 +129,22 @@ func (s *releasesService) createFormation(release *Release, slug *Slug) (Formati
 	}
 
 	return f, nil
+}
+
+// newProcessPorts returns a map of ports for a release. It will allocate new ports to an app if need be.
+func (s *releasesService) newProcessPorts(release *Release, formation Formation) (ProcessPortMap, error) {
+	m := ProcessPortMap{}
+	for _, p := range formation {
+		if p.Type == WebProcessType {
+			// TODO: Support a port per process, allowing more than one process to expose a port.
+			port, err := s.store.PortsFindOrCreateByApp(&App{Name: release.AppName})
+			if err != nil {
+				return m, err
+			}
+			m[WebProcessType] = int64(port.Port)
+		}
+	}
+	return m, nil
 }
 
 // Rolls back to a specific release version.
@@ -184,7 +206,7 @@ func releasesFindByAppNameAndVersion(db *db, appName string, v int) (*Release, e
 	return &release, nil
 }
 
-// ReleasesCreate creates a new Release and inserts it into the database.
+// releasesCreate creates a new Release and inserts it into the database.
 func releasesCreate(db *db, release *Release) (*Release, error) {
 	t, err := db.Begin()
 	if err != nil {
@@ -249,16 +271,16 @@ type releaser struct {
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation) error {
-	app := newServiceApp(release, config, slug, formation)
+func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) error {
+	app := newServiceApp(release, config, slug, formation, ports, exposure)
 	return r.manager.Submit(ctx, app)
 }
 
-func newServiceApp(release *Release, config *Config, slug *Slug, formation Formation) *service.App {
+func newServiceApp(release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) *service.App {
 	var processes []*service.Process
 
 	for _, p := range formation {
-		processes = append(processes, newServiceProcess(release, config, slug, p))
+		processes = append(processes, newServiceProcess(release, config, slug, p, ports[p.Type], exposure))
 	}
 
 	return &service.App{
@@ -267,29 +289,44 @@ func newServiceApp(release *Release, config *Config, slug *Slug, formation Forma
 	}
 }
 
-func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process) *service.Process {
+func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process, port int64, exposure service.Exposure) *service.Process {
+	var procExp service.Exposure
+	ports := newServicePorts(port)
 	env := environment(config.Vars)
 	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
 
-	var ports []service.PortMap
-	if p.Type == "web" {
-		port := int64(WebPort)
-		ports = append(ports, service.PortMap{
-			Container: &port,
-		})
-		env["PORT"] = fmt.Sprintf("%d", port)
+	if len(ports) > 0 {
+		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
+
+		// If we have exposed ports, set process exposure to apps exposure
+		procExp = exposure
 	}
 
 	return &service.Process{
 		Type:        string(p.Type),
 		Env:         env,
 		Command:     string(p.Command),
-		Image:       fmt.Sprintf("%s:%s", slug.Image.Repo, slug.Image.ID),
+		Image:       slug.Image.String(),
 		Instances:   uint(p.Quantity),
 		MemoryLimit: MemoryLimit,
 		CPUShares:   CPUShare,
 		Ports:       ports,
+		Exposure:    procExp,
 	}
+}
+
+func newServicePorts(hostPort int64) []service.PortMap {
+	var ports []service.PortMap
+	if hostPort != 0 {
+		// TODO: We can just map the same host port as the container port, as we make it
+		// available as $PORT in the env vars.
+		port := int64(WebPort)
+		ports = append(ports, service.PortMap{
+			Host:      &hostPort,
+			Container: &port,
+		})
+	}
+	return ports
 }
 
 // environment coerces a Vars into a map[string]string.
@@ -301,4 +338,17 @@ func environment(vars Vars) map[string]string {
 	}
 
 	return env
+}
+
+func serviceExposure(appExp string) (exp service.Exposure) {
+	switch appExp {
+	case ExposePrivate:
+		exp = service.ExposePrivate
+	case ExposePublic:
+		exp = service.ExposePublic
+	default:
+		exp = service.ExposeNone
+	}
+
+	return exp
 }

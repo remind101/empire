@@ -11,8 +11,11 @@ import (
 	"golang.org/x/net/context"
 )
 
-// ProcessQuantityMap represents a map of process types to quantities
+// ProcessQuantityMap represents a map of process types to quantities.
 type ProcessQuantityMap map[ProcessType]int
+
+// ProcessPortMap represents a map of process types to exposed ports.
+type ProcessPortMap map[ProcessType]int64
 
 // DefaultQuantities maps a process type to the default number of instances to
 // run.

@@ -106,6 +106,24 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_ECS_CLUSTER",
 	},
 	cli.StringFlag{
+		Name:   "elb.vpc",
+		Value:  "",
+		Usage:  "The VPC ID empire is running inside",
+		EnvVar: "EMPIRE_ELB_VPC_ID",
+	},
+	cli.StringFlag{
+		Name:   "elb.isg",
+		Value:  "",
+		Usage:  "The ELB security group to assign internal load balancers",
+		EnvVar: "EMPIRE_ELB_INTERNAL_SG",
+	},
+	cli.StringFlag{
+		Name:   "elb.esg",
+		Value:  "",
+		Usage:  "The ELB security group to assign external load balancers",
+		EnvVar: "EMPIRE_ELB_EXTERNAL_SG",
+	},
+	cli.StringFlag{
 		Name:   "secret",
 		Value:  "<change this>",
 		Usage:  "The secret used to sign access tokens",
@@ -142,6 +160,9 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Runner.API = c.String("runner.api")
 	opts.AWSConfig = aws.DefaultConfig
 	opts.ECS.Cluster = c.String("ecs.cluster")
+	opts.ELB.VPCID = c.String("elb.vpc")
+	opts.ELB.InternalSecurityGroupID = c.String("elb.isg")
+	opts.ELB.ExternalSecurityGroupID = c.String("elb.esg")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
 

@@ -123,11 +123,21 @@ func (m *ECSManager) createTaskDefinition(app *App, process *Process) (*ecs.Task
 
 // createService creates a Service in ECS for the service.
 func (m *ECSManager) createService(app *App, p *Process) (*ecs.Service, error) {
+	var role *string
+	var loadBalancers []*ecs.LoadBalancer
+
+	if v, ok := p.Attributes["LoadBalancers"].([]*ecs.LoadBalancer); ok {
+		loadBalancers = v
+		role = aws.String(ECSServiceRole)
+	}
+
 	resp, err := m.ecs.CreateAppService(app.Name, &ecs.CreateServiceInput{
 		Cluster:        aws.String(m.Cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		ServiceName:    aws.String(p.Type),
 		TaskDefinition: aws.String(p.Type),
+		LoadBalancers:  loadBalancers,
+		Role:           role,
 	})
 	return resp.Service, err
 }
@@ -190,7 +200,9 @@ func (m *ECSManager) Remove(ctx context.Context, app string) error {
 }
 
 func (m *ECSManager) removeProcess(ctx context.Context, app, process string) error {
-	if err := m.Scale(ctx, app, process, 0); err != nil {
+	if err := m.Scale(ctx, app, process, 0); noService(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 
