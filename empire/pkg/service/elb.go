@@ -174,7 +174,6 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 		process.Attributes = make(map[string]interface{})
 	}
 
-	process.Attributes["Role"] = aws.String(ECSServiceRole)
 	process.Attributes["LoadBalancers"] = []*ecs.LoadBalancer{
 		{
 			ContainerName:    aws.String(process.Type),
