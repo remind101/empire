@@ -61,6 +61,11 @@ func (a *App) IsValid() error {
 // PreInsert implements a pre insert hook for the db interface
 func (a *App) PreInsert(s gorp.SqlExecutor) error {
 	a.CreatedAt = timex.Now()
+
+	if a.Exposure == "" {
+		a.Exposure = ExposePrivate
+	}
+
 	return a.IsValid()
 }
 
