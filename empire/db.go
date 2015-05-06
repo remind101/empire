@@ -40,7 +40,6 @@ func newDB(uri string) (*db, error) {
 
 	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name")
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
-	db.AddTableWithName(Deployment{}, "deployments").SetKeys(true, "ID")
 	db.AddTableWithName(Domain{}, "domains").SetKeys(true, "ID")
 	db.AddTableWithName(Port{}, "ports").SetKeys(true, "ID")
 	db.AddTableWithName(Process{}, "processes").SetKeys(true, "ID")
