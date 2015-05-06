@@ -86,6 +86,20 @@ func TestECSWithELBManager_Submit_Create(t *testing.T) {
 			},
 		},
 
+		// Add connection draining
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=ModifyLoadBalancerAttributes&LoadBalancerAttributes.ConnectionDraining.Enabled=true&LoadBalancerAttributes.ConnectionDraining.Timeout=300&LoadBalancerName=foo--web&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<?xml version="1.0"?>
+<ModifyLoadBalancerAttributesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+</ModifyLoadBalancerAttributesResponse>`,
+			},
+		},
+
 		// Update zone records
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -327,6 +341,20 @@ func TestECSWithELBManager_Submit_Recreate(t *testing.T) {
 <CreateLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
   <DNSName>foo--web.us-east-1.elb.amazonaws.com</DNSName>
 </CreateLoadBalancerResponse>`,
+			},
+		},
+
+		// Add connection draining
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=ModifyLoadBalancerAttributes&LoadBalancerAttributes.ConnectionDraining.Enabled=true&LoadBalancerAttributes.ConnectionDraining.Timeout=300&LoadBalancerName=foo--web&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<?xml version="1.0"?>
+<ModifyLoadBalancerAttributesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+</ModifyLoadBalancerAttributesResponse>`,
 			},
 		},
 

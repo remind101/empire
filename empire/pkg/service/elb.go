@@ -165,6 +165,21 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 			return err
 		}
 
+		// Add connection draining to the LoadBalancer.
+		_, err = m.elb.ModifyLoadBalancerAttributes(&elb.ModifyLoadBalancerAttributesInput{
+			LoadBalancerAttributes: &elb.LoadBalancerAttributes{
+				ConnectionDraining: &elb.ConnectionDraining{
+					Enabled: aws.Boolean(true),
+					Timeout: aws.Long(300), // TODO: Configurable?
+				},
+			},
+			LoadBalancerName: input.LoadBalancerName,
+		})
+		logger.Info(ctx, "enabling connection draining", "err", err, "app", app.Name, "process", process.Type, "lb", *input.LoadBalancerName)
+		if err != nil {
+			return err
+		}
+
 		// Update record set
 		err = m.updateRecordSet(app.Name, out.DNSName)
 		logger.Info(ctx, "updating zone records", "err", err, "app", app.Name, "process", process.Type, "lb", input.LoadBalancerName)
