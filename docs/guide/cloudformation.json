@@ -124,6 +124,38 @@
       }
     },
 
+    "InternalDomain": {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "HostedZoneConfig": {
+          "Comment": "Hosted zone for internal Empire services."
+        },
+        "Name": "empire.",
+        "VPCs": [
+          {
+            "VPCId": { "Ref": "Vpc" },
+            "VPCRegion": "us-east-1"
+          }
+        ]
+      }
+    },
+
+    "DHCPOptions": {
+      "Type" : "AWS::EC2::DHCPOptions",
+      "Properties": {
+        "DomainName": "empire",
+        "DomainNameServers": [ "AmazonProvidedDNS" ]
+      }
+    },
+
+    "VPCDHCPOptionsAssociation": {
+      "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
+      "Properties": {
+        "DhcpOptionsId": { "Ref": "DHCPOptions" },
+        "VpcId": { "Ref": "Vpc" }
+      }
+    },
+
     "InstanceSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
@@ -132,6 +164,38 @@
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp", "FromPort": "1", "ToPort": "65535",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+
+    "InternalLoadBalancerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Internal Load Balancer Allowed Ports",
+        "VpcId": { "Ref": "Vpc" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+
+    "ExternalLoadBalancerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "External Load Balancer Allowed Ports",
+        "VpcId": { "Ref": "Vpc" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp", "FromPort": "80", "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp", "FromPort": "443", "ToPort": "443",
             "CidrIp": "0.0.0.0/0"
           }
         ]
@@ -196,7 +260,13 @@
             {
               "Effect": "Allow",
               "Action": [
-                "ecs:*"
+                "ec2:Describe*",
+                "elasticloadbalancing:*",
+                "ecs:*",
+                "iam:ListInstanceProfiles",
+                "iam:ListRoles",
+                "iam:PassRole",
+                "route53:*"
               ],
               "Resource": [
                 "*"
@@ -264,6 +334,14 @@
     "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",
       "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] }
+    },
+    "InternalELBSG": {
+      "Description": "The Internal ELB Security Group",
+      "Value": { "Ref": "InternalLoadBalancerSecurityGroup" }
+    },
+    "ExternalELBSG": {
+      "Description": "The External ELB Security Group",
+      "Value": { "Ref": "ExternalLoadBalancerSecurityGroup" }
     }
   }
 }
