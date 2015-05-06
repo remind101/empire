@@ -46,8 +46,8 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 		return nil, err
 	}
 
-	scheme := "internal"            // TODO
-	sg := m.InternalSecurityGroupID // TODO
+	scheme := "internal"
+	sg := m.InternalSecurityGroupID
 
 	if o.External {
 		scheme = "internet-facing"
@@ -62,7 +62,7 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 				Protocol:         aws.String("http"),
 				InstanceProtocol: aws.String("http"),
 			},
-		}, // TODO
+		},
 		LoadBalancerName: aws.String(o.Name),
 		Scheme:           aws.String(scheme),
 		SecurityGroups:   []*string{aws.String(sg)},
@@ -70,9 +70,24 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 		Tags:             elbTags(o.Tags),
 	}
 
-	_, err = m.elb.CreateLoadBalancer(input)
+	// Create the ELB.
+	if _, err := m.elb.CreateLoadBalancer(input); err != nil {
+		return nil, err
+	}
 
-	// TODO: Add connection draining.
+	// Add connection draining to the LoadBalancer.
+	if _, err := m.elb.ModifyLoadBalancerAttributes(&elb.ModifyLoadBalancerAttributesInput{
+		LoadBalancerAttributes: &elb.LoadBalancerAttributes{
+			ConnectionDraining: &elb.ConnectionDraining{
+				Enabled: aws.Boolean(true),
+				Timeout: aws.Long(300), // TODO: Configurable?
+			},
+		},
+		LoadBalancerName: input.LoadBalancerName,
+	}); err != nil {
+		return nil, err
+	}
+
 	// TODO: Create route53 record.
 
 	return &LoadBalancer{

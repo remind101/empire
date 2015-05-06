@@ -24,6 +24,18 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 </CreateLoadBalancerResponse>`,
 			},
 		},
+		{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=ModifyLoadBalancerAttributes&LoadBalancerAttributes.ConnectionDraining.Enabled=true&LoadBalancerAttributes.ConnectionDraining.Timeout=300&LoadBalancerName=acme-inc&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<?xml version="1.0"?>
+<ModifyLoadBalancerAttributesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+</ModifyLoadBalancerAttributesResponse>`,
+			},
+		},
 	})
 	m, s := newTestELBManager(h)
 	defer s.Close()
