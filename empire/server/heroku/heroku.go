@@ -54,6 +54,12 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 	// OAuth
 	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
 
+	// SSL
+	r.Handle("GET", "/apps/{app}/ssl-endpoints", &GetSSLEndpoints{e})             // hk ssl
+	r.Handle("POST", "/apps/{app}/ssl-endpoints", &PostSSLEndpoints{e})           // hk ssl-cert-add
+	r.Handle("PATCH", "/apps/{app}/ssl-endpoints/{cert}", &PatchSSLEndpoint{e})   // hk ssl-cert-add, hk ssl-cert-rollback
+	r.Handle("DELETE", "/apps/{app}/ssl-endpoints/{cert}", &DeleteSSLEndpoint{e}) // hk ssl-destroy
+
 	errorHandler := func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)
 	}
