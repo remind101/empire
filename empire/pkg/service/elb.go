@@ -106,7 +106,7 @@ func (m *ECSWithELBManager) Remove(ctx context.Context, app string) error {
 // the process with the load balancer information. If a previous load balancer exists, it will be
 // removed along with existing process.
 func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, process *Process) error {
-	recreate := true
+	recreate := false
 
 	// Build input for load balancer
 	input, err := m.loadBalancerInputFromApp(ctx, app, process)
@@ -121,18 +121,21 @@ func (m *ECSWithELBManager) updateLoadBalancer(ctx context.Context, app *App, pr
 		return err
 	}
 
-	// If one exists, build input from previous load balancer and compare to current input.
+	// If no load balancer exists, create one.
+	// If a load balancer exists, build input from previous load balancer and compare to current input.
 	// If they differ, we need to recreate the load balancer and service.
-	if prev != nil {
+	if prev == nil {
+		recreate = true
+	} else {
 		prevInput := m.loadBalancerInputFromDesc(prev, m.loadBalancerTags(app.Name, process.Type))
 
 		if reflect.DeepEqual(input, prevInput) {
 			logger.Info(ctx, "previous load balancer exists, and is up to date.", "app", app.Name, "process", process.Type)
-			recreate = false
 		} else {
 			jsonInput, _ := json.Marshal(input)
 			jsonPrevInput, _ := json.Marshal(prevInput)
 			logger.Info(ctx, "previous load balancer is stale, recreating", "app", app.Name, "process", process.Type, "input", string(jsonInput), "prevInput", string(jsonPrevInput))
+			recreate = true
 		}
 	}
 
