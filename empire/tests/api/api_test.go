@@ -6,7 +6,7 @@ import (
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/empire/empire/empiretest"
 )
 
 var (
