@@ -195,11 +195,12 @@ func (m *ECSWithELBManager) loadBalancerInputFromApp(ctx context.Context, app *A
 		return nil, err
 	}
 
-	scheme := ""
-	sg := m.ExternalSecurityGroupID
-	if process.Exposure == ExposePrivate {
-		scheme = "internal"
-		sg = m.InternalSecurityGroupID
+	scheme := "internal"
+	sg := m.InternalSecurityGroupID
+
+	if process.Exposure == ExposePublic {
+		scheme = "internet-facing"
+		sg = m.ExternalSecurityGroupID
 	}
 
 	listeners := []*elb.Listener{
