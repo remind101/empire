@@ -124,6 +124,38 @@
       }
     },
 
+    "InternalDomain": {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "HostedZoneConfig": {
+          "Comment": "Hosted zone for internal Empire services."
+        },
+        "Name": "empire.",
+        "VPCs": [
+          {
+            "VPCId": { "Ref": "Vpc" },
+            "VPCRegion": "us-east-1"
+          }
+        ]
+      }
+    },
+
+    "DHCPOptions": {
+      "Type" : "AWS::EC2::DHCPOptions",
+      "Properties": {
+        "DomainName": "empire",
+        "DomainNameServers": [ "AmazonProvidedDNS" ]
+      }
+    },
+
+    "VPCDHCPOptionsAssociation": {
+      "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
+      "Properties": {
+        "DhcpOptionsId": { "Ref": "DHCPOptions" },
+        "VpcId": { "Ref": "Vpc" }
+      }
+    },
+
     "InstanceSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
