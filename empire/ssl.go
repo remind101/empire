@@ -49,6 +49,9 @@ func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Cert
 }
 
 func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Certificate) (*Certificate, error) {
+	if err := s.manager.Remove(cert.Name); err != nil {
+		return cert, err
+	}
 	id, err := s.manager.Add(cert.AppID, cert.CertificateChain, cert.PrivateKey)
 	if err != nil {
 		return cert, err
