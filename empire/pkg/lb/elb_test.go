@@ -235,7 +235,6 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 		}),
 	)
 	m.SubnetFinder = StaticSubnets([]string{"10.0.0.0/24"})
-	m.Nameserver = &fakeNameserver{}
 
 	return m, s
 }

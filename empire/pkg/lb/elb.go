@@ -17,10 +17,6 @@ type ELBManager struct {
 	// SubnetFinder is used to determine what subnets to attach the ELB to.
 	SubnetFinder
 
-	// Nameserver is used to create DNS records for the ELB when its's
-	// created.
-	Nameserver
-
 	elb *elb.ELB
 }
 
@@ -96,14 +92,10 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 		return nil, err
 	}
 
-	// Create a CNAME pointed at this load balancer.
-	if err := m.CNAME(o.Name, *out.DNSName); err != nil {
-		return nil, err
-	}
-
 	return &LoadBalancer{
-		Name: o.Name,
-	}, err
+		Name:    o.Name,
+		DNSName: *out.DNSName,
+	}, nil
 }
 
 // DestroyLoadBalancer destroys an ELB.
