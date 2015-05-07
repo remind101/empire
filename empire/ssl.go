@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 	"gopkg.in/gorp.v1"
@@ -32,33 +33,13 @@ func (c *Certificate) PreUpdate(s gorp.SqlExecutor) error {
 	return nil
 }
 
-type CertificateManager interface {
-	Upload(name string, crt string, key string) (id string, err error)
-	MetaData(id string) (data map[string]string, err error)
-	Remove(id string) (err error)
-}
-
-type fakeCertificateManager struct{}
-
-func (m *fakeCertificateManager) Upload(name string, crt string, key string) (string, error) {
-	return "fake", nil
-}
-
-func (m *fakeCertificateManager) Remove(id string) error {
-	return nil
-}
-
-func (m *fakeCertificateManager) MetaData(id string) (map[string]string, error) {
-	return map[string]string{}, nil
-}
-
 type certificatesService struct {
 	store   *store
-	manager CertificateManager
+	manager sslcert.Manager
 }
 
 func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	id, err := s.manager.Upload(cert.AppID, cert.CertificateChain, cert.PrivateKey)
+	id, err := s.manager.Add(cert.AppID, cert.CertificateChain, cert.PrivateKey)
 	if err != nil {
 		return cert, err
 	}
@@ -68,11 +49,20 @@ func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Cert
 }
 
 func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	_, err := s.store.CertificatesUpdate(cert)
+	id, err := s.manager.Add(cert.AppID, cert.CertificateChain, cert.PrivateKey)
+	if err != nil {
+		return cert, err
+	}
+
+	cert.Name = id
+	_, err = s.store.CertificatesUpdate(cert)
 	return cert, err
 }
 
 func (s *certificatesService) CertificatesDestroy(ctx context.Context, cert *Certificate) error {
+	if err := s.manager.Remove(cert.Name); err != nil {
+		return err
+	}
 	return s.store.CertificatesDestroy(cert)
 }
 

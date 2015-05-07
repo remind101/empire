@@ -9,6 +9,7 @@ import (
 	"github.com/mattes/migrate/migrate"
 	. "github.com/remind101/empire/empire/pkg/bytesize"
 	"github.com/remind101/empire/empire/pkg/service"
+	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -205,7 +206,7 @@ func New(options Options) (*Empire, error) {
 
 	certs := &certificatesService{
 		store:   store,
-		manager: &fakeCertificateManager{},
+		manager: newCertManager(options.AWSConfig),
 	}
 
 	return &Empire{
@@ -426,6 +427,14 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 	l := service.Log(m)
 	l.Prefix = "ecs"
 	return l
+}
+
+func newCertManager(config *aws.Config) sslcert.Manager {
+	if config == nil {
+		return sslcert.NewFakeManager()
+	}
+
+	return sslcert.NewIAMManager(config)
 }
 
 func newRunner(options RunnerOptions, s *store) *runner {
