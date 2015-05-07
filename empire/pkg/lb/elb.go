@@ -4,7 +4,15 @@ import (
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/elb"
+	"golang.org/x/net/context"
 )
+
+const (
+	schemeInternal = "internal"
+	schemeExternal = "internet-facing"
+)
+
+var _ Manager = &ELBManager{}
 
 // ELBManager is an implementation of the Manager interface that creates Elastic
 // Load Balancers.
@@ -43,17 +51,17 @@ func NewVPCELBManager(vpc string, c *aws.Config) *ELBManager {
 //
 // * The ELB is created and connection draining is enabled.
 // * An internal DNS CNAME record is created, pointing the the DNSName of the ELB.
-func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer, error) {
+func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalancerOpts) (*LoadBalancer, error) {
 	subnets, err := m.subnets()
 	if err != nil {
 		return nil, err
 	}
 
-	scheme := "internal"
+	scheme := schemeInternal
 	sg := m.InternalSecurityGroupID
 
 	if o.External {
-		scheme = "internet-facing"
+		scheme = schemeExternal
 		sg = m.ExternalSecurityGroupID
 	}
 
@@ -93,13 +101,14 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 	}
 
 	return &LoadBalancer{
-		Name:    o.Name,
-		DNSName: *out.DNSName,
+		Name:     o.Name,
+		DNSName:  *out.DNSName,
+		External: o.External,
 	}, nil
 }
 
 // DestroyLoadBalancer destroys an ELB.
-func (m *ELBManager) DestroyLoadBalancer(name string) error {
+func (m *ELBManager) DestroyLoadBalancer(ctx context.Context, name string) error {
 	_, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{
 		LoadBalancerName: aws.String(name),
 	})
@@ -109,7 +118,7 @@ func (m *ELBManager) DestroyLoadBalancer(name string) error {
 // LoadBalancers returns all load balancers. If tags are provided, then the
 // resulting load balancers will be filtered to only those containing the
 // provided tags.
-func (m *ELBManager) LoadBalancers(tags map[string]string) ([]*LoadBalancer, error) {
+func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) ([]*LoadBalancer, error) {
 	var (
 		nextMarker *string
 		lbs        []*LoadBalancer
@@ -147,8 +156,9 @@ func (m *ELBManager) LoadBalancers(tags map[string]string) ([]*LoadBalancer, err
 			if containsTags(tags, d.Tags) {
 				elb := descs[*d.LoadBalancerName]
 				lbs = append(lbs, &LoadBalancer{
-					Name:    *elb.LoadBalancerName,
-					DNSName: *elb.DNSName,
+					Name:     *elb.LoadBalancerName,
+					DNSName:  *elb.DNSName,
+					External: *elb.Scheme == schemeExternal,
 				})
 			}
 		}

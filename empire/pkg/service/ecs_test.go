@@ -298,11 +298,11 @@ var fakeApp = &App{
 func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	return NewECSManager(
-		aws.DefaultConfig.Merge(&aws.Config{
+	return NewECSManager(ECSConfig{
+		AWS: aws.DefaultConfig.Merge(&aws.Config{
 			Credentials: aws.Creds("", "", ""),
 			Endpoint:    s.URL,
 			Region:      "localhost",
 		}),
-	), s
+	}), s
 }

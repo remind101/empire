@@ -14,7 +14,7 @@ type LoggedManager struct {
 	Manager
 }
 
-func Log(m Manager) *LoggedManager {
+func WithLogging(m Manager) *LoggedManager {
 	return &LoggedManager{
 		Manager: m,
 	}

@@ -9,25 +9,79 @@ import (
 	"github.com/remind101/empire/empire/pkg/arn"
 	. "github.com/remind101/empire/empire/pkg/bytesize"
 	"github.com/remind101/empire/empire/pkg/ecsutil"
+	"github.com/remind101/empire/empire/pkg/lb"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 
 var DefaultDelimiter = "-"
 
+const ECSServiceRole = "ecsServiceRole"
+
 // ECSManager is an implementation of the ServiceManager interface that
 // is backed by Amazon ECS.
 type ECSManager struct {
-	// The full name of the ECS cluster to create services in.
-	Cluster string
+	ProcessManager
 
-	ecs *ecsutil.Client
+	cluster string
+	ecs     *ecsutil.Client
 }
 
-// NewECSManager returns a new ECSManager instance with a configured ECS client.
-func NewECSManager(config *aws.Config) *ECSManager {
+// ECSConfig holds configuration for generating a new ECS backed Manager
+// implementation.
+type ECSConfig struct {
+	// The ECS cluster to create services and task definitions in.
+	Cluster string
+
+	// VPC controls what subnets to attach to ELB's that are created.
+	VPC string
+
+	// The hosted zone to create internal DNS records in.
+	Zone string
+
+	// The ID of the security group to assign to internal load balancers.
+	InternalSecurityGroupID string
+	// The ID of the security group to assign to external load balancers.
+	ExternalSecurityGroupID string
+
+	// AWS configuration.
+	AWS *aws.Config
+}
+
+// NewECSManager returns a new Manager implementation that:
+//
+// * Will create internal or external ELB's for ECS services.
+// * Will create a CNAME record in route53 under the internal TLD.
+func NewECSManager(config ECSConfig) *ECSManager {
+	c := ecsutil.NewClient(config.AWS)
+
+	var pm ProcessManager = &ecsProcessManager{
+		cluster: config.Cluster,
+		ecs:     c,
+	}
+
+	// If security group ids are provided, ELB's will be created for ECS
+	// services.
+	if config.InternalSecurityGroupID != "" && config.ExternalSecurityGroupID != "" {
+		var l lb.Manager = lb.NewVPCELBManager(config.VPC, config.AWS)
+
+		if config.Zone != "" {
+			n := lb.NewRoute53Nameserver(config.AWS)
+			n.Zone = config.Zone
+
+			l = lb.WithCNAME(l, n)
+		}
+
+		pm = &LBProcessManager{
+			ProcessManager: pm,
+			lb:             lb.WithLogging(l),
+		}
+	}
+
 	return &ECSManager{
-		ecs: ecsutil.NewClient(config),
+		cluster:        config.Cluster,
+		ProcessManager: pm,
+		ecs:            c,
 	}
 }
 
@@ -40,20 +94,20 @@ func NewECSManager(config *aws.Config) *ECSManager {
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
 func (m *ECSManager) Submit(ctx context.Context, app *App) error {
-	processes, err := m.listProcesses(app.Name)
+	processes, err := m.Processes(app.Name)
 	if err != nil {
 		return err
 	}
 
 	for _, p := range app.Processes {
-		if err := m.submitProcess(app, p); err != nil {
+		if err := m.CreateProcess(ctx, app, p); err != nil {
 			return err
 		}
 	}
 
 	toRemove := diffProcessTypes(processes, app.Processes)
 	for _, p := range toRemove {
-		if err := m.removeProcess(ctx, app.Name, p); err != nil {
+		if err := m.RemoveProcess(ctx, app.Name, p); err != nil {
 			return err
 		}
 	}
@@ -61,156 +115,20 @@ func (m *ECSManager) Submit(ctx context.Context, app *App) error {
 	return nil
 }
 
-// listProcesses lists all of the ecs services for the app.
-func (m *ECSManager) listProcesses(app string) ([]*Process, error) {
-	var processes []*Process
-
-	list, err := m.ecs.ListAppServices(app, &ecs.ListServicesInput{
-		Cluster: aws.String(m.Cluster),
-	})
-	if err != nil {
-		return processes, err
-	}
-
-	if len(list.ServiceARNs) == 0 {
-		return processes, nil
-	}
-
-	desc, err := m.ecs.DescribeServices(&ecs.DescribeServicesInput{
-		Cluster:  aws.String(m.Cluster),
-		Services: list.ServiceARNs,
-	})
-	if err != nil {
-		return processes, err
-	}
-
-	for _, s := range desc.Services {
-		resp, err := m.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
-			TaskDefinition: s.TaskDefinition,
-		})
-		if err != nil {
-			return processes, err
-		}
-
-		p, err := taskDefinitionToProcess(resp.TaskDefinition)
-		if err != nil {
-			return processes, err
-		}
-
-		processes = append(processes, p)
-	}
-
-	return processes, nil
-}
-
-// submitProcess creates the a task definition based on the information provided
-// in the process, then updates or creates the associated ECS service, with the
-// new task definition.
-func (m *ECSManager) submitProcess(app *App, process *Process) error {
-	if _, err := m.createTaskDefinition(app, process); err != nil {
-		return err
-	}
-
-	_, err := m.updateCreateService(app, process)
-	return err
-}
-
-// createTaskDefinition creates a Task Definition in ECS for the service.
-func (m *ECSManager) createTaskDefinition(app *App, process *Process) (*ecs.TaskDefinition, error) {
-	resp, err := m.ecs.RegisterAppTaskDefinition(app.Name, taskDefinitionInput(process))
-	return resp.TaskDefinition, err
-}
-
-// createService creates a Service in ECS for the service.
-func (m *ECSManager) createService(app *App, p *Process) (*ecs.Service, error) {
-	var role *string
-	var loadBalancers []*ecs.LoadBalancer
-
-	if v, ok := p.Attributes["LoadBalancers"].([]*ecs.LoadBalancer); ok {
-		loadBalancers = v
-		role = aws.String(ECSServiceRole)
-	}
-
-	resp, err := m.ecs.CreateAppService(app.Name, &ecs.CreateServiceInput{
-		Cluster:        aws.String(m.Cluster),
-		DesiredCount:   aws.Long(int64(p.Instances)),
-		ServiceName:    aws.String(p.Type),
-		TaskDefinition: aws.String(p.Type),
-		LoadBalancers:  loadBalancers,
-		Role:           role,
-	})
-	return resp.Service, err
-}
-
-// updateService updates an existing Service in ECS.
-func (m *ECSManager) updateService(app *App, p *Process) (*ecs.Service, error) {
-	resp, err := m.ecs.UpdateAppService(app.Name, &ecs.UpdateServiceInput{
-		Cluster:        aws.String(m.Cluster),
-		DesiredCount:   aws.Long(int64(p.Instances)),
-		Service:        aws.String(p.Type),
-		TaskDefinition: aws.String(p.Type),
-	})
-
-	// If the service does not exist, return nil.
-	if noService(err) {
-		return nil, nil
-	}
-
-	return resp.Service, err
-}
-
-// updateCreateService will perform an upsert for the service in ECS.
-func (m *ECSManager) updateCreateService(app *App, p *Process) (*ecs.Service, error) {
-	s, err := m.updateService(app, p)
-	if err != nil {
-		return nil, err
-	}
-
-	if s != nil {
-		return s, nil
-	}
-
-	return m.createService(app, p)
-}
-
-// Scale scales an ECS service to the desired number of instances.
-func (m *ECSManager) Scale(ctx context.Context, app string, process string, instances uint) error {
-	_, err := m.ecs.UpdateAppService(app, &ecs.UpdateServiceInput{
-		Cluster:      aws.String(m.Cluster),
-		DesiredCount: aws.Long(int64(instances)),
-		Service:      aws.String(process),
-	})
-	return err
-}
-
 // Remove removes any ECS services that belong to this app.
 func (m *ECSManager) Remove(ctx context.Context, app string) error {
-	processes, err := m.listProcesses(app)
+	processes, err := m.Processes(app)
 	if err != nil {
 		return err
 	}
 
 	for t, _ := range processTypes(processes) {
-		if err := m.removeProcess(ctx, app, t); err != nil {
+		if err := m.RemoveProcess(ctx, app, t); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func (m *ECSManager) removeProcess(ctx context.Context, app, process string) error {
-	if err := m.Scale(ctx, app, process, 0); noService(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	_, err := m.ecs.DeleteAppService(app, &ecs.DeleteServiceInput{
-		Cluster: aws.String(m.Cluster),
-		Service: aws.String(process),
-	})
-	return err
 }
 
 // listAppTasks returns all tasks for a given app.
@@ -218,7 +136,7 @@ func (m *ECSManager) listAppTasks(app string) ([]*ecs.Task, error) {
 	var tasks []*ecs.Task
 
 	resp, err := m.ecs.ListAppServices(app, &ecs.ListServicesInput{
-		Cluster: aws.String(m.Cluster),
+		Cluster: aws.String(m.cluster),
 	})
 	if err != nil {
 		return tasks, err
@@ -252,7 +170,7 @@ func (m *ECSManager) listAppTasks(app string) ([]*ecs.Task, error) {
 // serviceTasks returns all tasks for a specific ECS service.
 func (m *ECSManager) serviceTasks(service string) ([]*ecs.Task, error) {
 	tr, err := m.ecs.ListTasks(&ecs.ListTasksInput{
-		Cluster:     aws.String(m.Cluster),
+		Cluster:     aws.String(m.cluster),
 		ServiceName: aws.String(service),
 	})
 	if err != nil {
@@ -310,8 +228,160 @@ func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, er
 
 func (m *ECSManager) Stop(ctx context.Context, instanceID string) error {
 	_, err := m.ecs.StopTask(&ecs.StopTaskInput{
-		Cluster: aws.String(m.Cluster),
+		Cluster: aws.String(m.cluster),
 		Task:    aws.String(instanceID),
+	})
+	return err
+}
+
+var _ ProcessManager = &ecsProcessManager{}
+
+// ecsProcessManager is an implementation of the ProcessManager interface that
+// creates ECS services for Processes.
+type ecsProcessManager struct {
+	cluster string
+	ecs     *ecsutil.Client
+}
+
+// CreateProcess creates an ECS service for the process.
+func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) error {
+	if _, err := m.createTaskDefinition(app, p); err != nil {
+		return err
+	}
+
+	_, err := m.updateCreateService(app, p)
+	return err
+}
+
+// createTaskDefinition creates a Task Definition in ECS for the service.
+func (m *ecsProcessManager) createTaskDefinition(app *App, process *Process) (*ecs.TaskDefinition, error) {
+	resp, err := m.ecs.RegisterAppTaskDefinition(app.Name, taskDefinitionInput(process))
+	return resp.TaskDefinition, err
+}
+
+// createService creates a Service in ECS for the service.
+func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, error) {
+	var role *string
+	var loadBalancers []*ecs.LoadBalancer
+
+	if p.LoadBalancer != "" {
+		loadBalancers = []*ecs.LoadBalancer{
+			{
+				ContainerName:    aws.String(p.Type),
+				ContainerPort:    p.Ports[0].Container,
+				LoadBalancerName: aws.String(p.LoadBalancer),
+			},
+		}
+		role = aws.String(ECSServiceRole)
+	}
+
+	resp, err := m.ecs.CreateAppService(app.Name, &ecs.CreateServiceInput{
+		Cluster:        aws.String(m.cluster),
+		DesiredCount:   aws.Long(int64(p.Instances)),
+		ServiceName:    aws.String(p.Type),
+		TaskDefinition: aws.String(p.Type),
+		LoadBalancers:  loadBalancers,
+		Role:           role,
+	})
+	return resp.Service, err
+}
+
+// updateService updates an existing Service in ECS.
+func (m *ecsProcessManager) updateService(app *App, p *Process) (*ecs.Service, error) {
+	resp, err := m.ecs.UpdateAppService(app.Name, &ecs.UpdateServiceInput{
+		Cluster:        aws.String(m.cluster),
+		DesiredCount:   aws.Long(int64(p.Instances)),
+		Service:        aws.String(p.Type),
+		TaskDefinition: aws.String(p.Type),
+	})
+
+	// If the service does not exist, return nil.
+	if noService(err) {
+		return nil, nil
+	}
+
+	return resp.Service, err
+}
+
+// updateCreateService will perform an upsert for the service in ECS.
+func (m *ecsProcessManager) updateCreateService(app *App, p *Process) (*ecs.Service, error) {
+	s, err := m.updateService(app, p)
+	if err != nil {
+		return nil, err
+	}
+
+	if s != nil {
+		return s, nil
+	}
+
+	return m.createService(app, p)
+}
+
+func (m *ecsProcessManager) Processes(app string) ([]*Process, error) {
+	var processes []*Process
+
+	list, err := m.ecs.ListAppServices(app, &ecs.ListServicesInput{
+		Cluster: aws.String(m.cluster),
+	})
+	if err != nil {
+		return processes, err
+	}
+
+	if len(list.ServiceARNs) == 0 {
+		return processes, nil
+	}
+
+	desc, err := m.ecs.DescribeServices(&ecs.DescribeServicesInput{
+		Cluster:  aws.String(m.cluster),
+		Services: list.ServiceARNs,
+	})
+	if err != nil {
+		return processes, err
+	}
+
+	for _, s := range desc.Services {
+		resp, err := m.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+			TaskDefinition: s.TaskDefinition,
+		})
+		if err != nil {
+			return processes, err
+		}
+
+		p, err := taskDefinitionToProcess(resp.TaskDefinition)
+		if err != nil {
+			return processes, err
+		}
+
+		processes = append(processes, p)
+	}
+
+	return processes, nil
+}
+
+func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, process string) error {
+	if err := m.Scale(ctx, app, process, 0); noService(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	_, err := m.ecs.DeleteAppService(app, &ecs.DeleteServiceInput{
+		Cluster: aws.String(m.cluster),
+		Service: aws.String(process),
+	})
+	if noService(err) {
+		return nil
+	}
+
+	return err
+}
+
+// Scale scales an ECS service to the desired number of instances.
+func (m *ecsProcessManager) Scale(ctx context.Context, app string, process string, instances uint) error {
+	_, err := m.ecs.UpdateAppService(app, &ecs.UpdateServiceInput{
+		Cluster:      aws.String(m.cluster),
+		DesiredCount: aws.Long(int64(instances)),
+		Service:      aws.String(process),
 	})
 	return err
 }
@@ -369,6 +439,11 @@ func safeString(s *string) string {
 func noService(err error) bool {
 	if err, ok := err.(aws.APIError); ok {
 		if err.Message == "Service was not ACTIVE." {
+			return true
+		}
+
+		// Wat
+		if err.Message == "Could not find returned type com.amazon.madison.cmb#CMServiceNotActiveException in model" {
 			return true
 		}
 

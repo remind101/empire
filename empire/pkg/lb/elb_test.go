@@ -8,6 +8,7 @@ import (
 
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/remind101/empire/empire/pkg/awsutil"
+	"golang.org/x/net/context"
 )
 
 func TestELB_CreateLoadBalancer(t *testing.T) {
@@ -15,7 +16,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=0&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internal&SecurityGroups.member.1=&Subnets.member.1=subnet&Version=2012-06-01`,
+				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=0&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internet-facing&SecurityGroups.member.1=&Subnets.member.1=subnet&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -41,16 +42,18 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	m, s := newTestELBManager(h)
 	defer s.Close()
 
-	lb, err := m.CreateLoadBalancer(CreateLoadBalancerOpts{
-		Name: "acme-inc",
+	lb, err := m.CreateLoadBalancer(context.Background(), CreateLoadBalancerOpts{
+		Name:     "acme-inc",
+		External: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := &LoadBalancer{
-		Name:    "acme-inc",
-		DNSName: "acme-inc.us-east-1.elb.amazonaws.com",
+		Name:     "acme-inc",
+		DNSName:  "acme-inc.us-east-1.elb.amazonaws.com",
+		External: true,
 	}
 
 	if got, want := lb, expected; !reflect.DeepEqual(got, want) {
@@ -76,7 +79,7 @@ func TestELB_DestroyLoadBalancer(t *testing.T) {
 	m, s := newTestELBManager(h)
 	defer s.Close()
 
-	if err := m.DestroyLoadBalancer("acme-inc"); err != nil {
+	if err := m.DestroyLoadBalancer(context.Background(), "acme-inc"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -117,7 +120,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 	        <AvailabilityZones>
 	          <member>us-east-1a</member>
 	        </AvailabilityZones>
-	        <Scheme>internet-facing</Scheme>
+	        <Scheme>internal</Scheme>
 	        <Subnets>
 	          <member>subnet-1a</member>
 	        </Subnets>
@@ -229,7 +232,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 	m, s := newTestELBManager(h)
 	defer s.Close()
 
-	lbs, err := m.LoadBalancers(nil)
+	lbs, err := m.LoadBalancers(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +243,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 
 	expected := []*LoadBalancer{
 		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com"},
-		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com"},
+		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true},
 	}
 
 	if got, want := lbs, expected; !reflect.DeepEqual(got, want) {
