@@ -434,7 +434,7 @@ func newCertManager(config *aws.Config) sslcert.Manager {
 		return sslcert.NewFakeManager()
 	}
 
-	return sslcert.NewIAMManager(config)
+	return sslcert.NewIAMManager(config, "/empire/certs")
 }
 
 func newRunner(options RunnerOptions, s *store) *runner {
