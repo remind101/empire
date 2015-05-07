@@ -47,7 +47,7 @@ func (n *Route53Nameserver) CNAME(cname, record string) error {
 				&route53.Change{
 					Action: aws.String("UPSERT"),
 					ResourceRecordSet: &route53.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("%s.%s", cname, zone.Name)),
+						Name: aws.String(fmt.Sprintf("%s.%s", cname, *zone.Name)),
 						Type: aws.String("CNAME"),
 						ResourceRecords: []*route53.ResourceRecord{
 							&route53.ResourceRecord{
