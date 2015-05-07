@@ -21,7 +21,7 @@ func NewIAMManager(config *aws.Config, path string) *IAMManager {
 
 func (m *IAMManager) Add(name string, cert string, key string) (string, error) {
 	input := &iam.UploadServerCertificateInput{
-		CertificateBody:       aws.String(cert), // TODO parse from cert chain
+		CertificateBody:       aws.String(PrimaryCertFromChain(cert)),
 		PrivateKey:            aws.String(key),
 		ServerCertificateName: certName(name),
 		CertificateChain:      aws.String(cert),
