@@ -1,6 +1,9 @@
 package sslcert
 
-import "regexp"
+import (
+	"bytes"
+	"encoding/pem"
+)
 
 type Manager interface {
 	// Add adds a new certificate and returns a unique id for the added certificate.
@@ -13,14 +16,16 @@ type Manager interface {
 	Remove(id string) (err error)
 }
 
-// Flags are: multiline mode, dot matches newlines, ungreedy.
-var CertPattern = regexp.MustCompile(`(?msU)-----BEGIN CERTIFICATE-----(.+)-----END CERTIFICATE-----`)
-
 func PrimaryCertFromChain(chain string) string {
-	matches := CertPattern.FindAllString(chain, -1)
-	if len(matches) > 0 {
-		return matches[0]
-	} else {
+	block, _ := pem.Decode([]byte(chain))
+	if block == nil {
 		return ""
 	}
+
+	var out bytes.Buffer
+	if err := pem.Encode(&out, block); err != nil {
+		return ""
+	}
+
+	return out.String()
 }
