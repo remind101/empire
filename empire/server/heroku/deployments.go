@@ -39,19 +39,23 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		errCh <- err
 	}()
 
-	ok := true
-	for ok {
+	for {
 		select {
 		case evt := <-ch:
 			if err := Stream(w, evt); err != nil {
 				return err
 			}
+			continue
 		case err := <-errCh:
 			if err != nil {
-				return err
+				Stream(w, map[string]*ErrorResource{
+					"error": newError(err),
+				})
+				return nil
 			}
-			ok = false
 		}
+
+		break
 	}
 
 	return Encode(w, newRelease(r))

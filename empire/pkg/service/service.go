@@ -10,6 +10,19 @@ import (
 
 type Exposure int
 
+func (e Exposure) String() string {
+	switch e {
+	case ExposeNone:
+		return "none"
+	case ExposePrivate:
+		return "private"
+	case ExposePublic:
+		return "public"
+	default:
+		return "unknown"
+	}
+}
+
 const (
 	ExposeNone Exposure = iota
 	ExposePrivate
@@ -61,8 +74,8 @@ type Process struct {
 	// the --cpu-shares flag for docker.
 	CPUShares uint
 
-	// Attributes is an arbitrary map of attributes that can be assigned.
-	Attributes map[string]interface{}
+	// A load balancer to attach to the process.
+	LoadBalancer string
 }
 
 // Instance represents an Instance of a Process.
@@ -79,13 +92,17 @@ type Instance struct {
 	UpdatedAt time.Time
 }
 
-// Manager is an interface for interfacing with Services.
-type Manager interface {
-	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App) error
-
+type Scaler interface {
 	// Scale scales an app process.
 	Scale(ctx context.Context, app string, process string, instances uint) error
+}
+
+// Manager is an interface for interfacing with Services.
+type Manager interface {
+	Scaler
+
+	// Submit submits an app, creating it or updating it as necessary.
+	Submit(context.Context, *App) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
@@ -96,4 +113,19 @@ type Manager interface {
 	// Stop stops an instance. The scheduler will automatically start a new
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
+}
+
+// ProcessManager is a layer level interface than Manager, that provides direct
+// control over individual processes.
+type ProcessManager interface {
+	Scaler
+
+	// CreateProcess creates a process for the app.
+	CreateProcess(ctx context.Context, app *App, process *Process) error
+
+	// RemoveProcess removes a process for the app.
+	RemoveProcess(ctx context.Context, app string, process string) error
+
+	// Processes returns all processes for the app.
+	Processes(app string) ([]*Process, error)
 }

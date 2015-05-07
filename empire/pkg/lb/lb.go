@@ -1,6 +1,8 @@
 // package lb provides an abstraction around creating load balancers.
 package lb
 
+import "golang.org/x/net/context"
+
 // CreateLoadBalancerOpts are options that can be provided when creating a
 // LoadBalancer.
 type CreateLoadBalancerOpts struct {
@@ -25,24 +27,31 @@ type LoadBalancer struct {
 	// DNSName is the DNS name for the load balancer. CNAME records can be
 	// created that point to this location.
 	DNSName string
+
+	// True if the load balancer is exposed externally.
+	External bool
+
+	// InstancePort is the port that this load balancer forwards requests to
+	// on the host.
+	InstancePort int64
 }
 
 // Manager is our API interface for interacting with LoadBalancers.
 type Manager interface {
 	// CreateLoadBalancer creates a new LoadBalancer with the given options.
-	CreateLoadBalancer(CreateLoadBalancerOpts) (*LoadBalancer, error)
+	CreateLoadBalancer(context.Context, CreateLoadBalancerOpts) (*LoadBalancer, error)
 
 	// DestroyLoadBalancer destroys a load balancer by name.
-	DestroyLoadBalancer(name string) error
+	DestroyLoadBalancer(ctx context.Context, name string) error
 
 	// LoadBalancers returns a list of LoadBalancers, optionally provide
 	// tags to filter by.
-	LoadBalancers(tags map[string]string) ([]*LoadBalancer, error)
+	LoadBalancers(ctx context.Context, tags map[string]string) ([]*LoadBalancer, error)
 }
 
-// CreateCNAMEs wraps a Manager to create CNAME records for the LoadBalancer
+// WithCNAME wraps a Manager to create CNAME records for the LoadBalancer
 // using a Nameserver.
-func CreateCNAMEs(m Manager, n Nameserver) Manager {
+func WithCNAME(m Manager, n Nameserver) Manager {
 	return &cnameManager{
 		Manager:    m,
 		Nameserver: n,
@@ -58,31 +67,11 @@ type cnameManager struct {
 
 // CreateLoadBalancer will create the LoadBalancer using the underlying manager,
 // then create a CNAME record pointed at the LoadBalancers DNSName.
-func (m *cnameManager) CreateLoadBalancer(opts CreateLoadBalancerOpts) (*LoadBalancer, error) {
-	lb, err := m.Manager.CreateLoadBalancer(opts)
+func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBalancerOpts) (*LoadBalancer, error) {
+	lb, err := m.Manager.CreateLoadBalancer(ctx, opts)
 	if err != nil {
 		return lb, err
 	}
 
 	return lb, m.CNAME(lb.Name, lb.DNSName)
-}
-
-// Ensure NullManager conforms to Manager interface.
-var _ Manager = &NullManager{}
-
-// NullManager is an implementation of the Manager interface that does nothing.
-type NullManager struct{}
-
-func (m *NullManager) CreateLoadBalancer(CreateLoadBalancerOpts) (*LoadBalancer, error) {
-	return &LoadBalancer{
-		Name: "fake",
-	}, nil
-}
-
-func (m *NullManager) DestroyLoadBalancer(name string) error {
-	return nil
-}
-
-func (m *NullManager) LoadBalancers(tags map[string]string) ([]*LoadBalancer, error) {
-	return nil, nil
 }

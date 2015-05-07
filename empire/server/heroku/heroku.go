@@ -102,18 +102,7 @@ func Stream(w http.ResponseWriter, v interface{}) error {
 // If an ErrorResource is provided as the error, and it provides a non-zero
 // status, that will be used as the response status code.
 func Error(w http.ResponseWriter, err error, status int) error {
-	var res *ErrorResource
-
-	switch err := err.(type) {
-	case *ErrorResource:
-		res = err
-	case *empire.ValidationError:
-		res = ErrBadRequest
-	default:
-		res = &ErrorResource{
-			Message: err.Error(),
-		}
-	}
+	res := newError(err)
 
 	// If the ErrorResource provides and exit status, we'll use that
 	// instead.
@@ -128,5 +117,5 @@ func Error(w http.ResponseWriter, err error, status int) error {
 // NoContent responds with a 404 and an empty body.
 func NoContent(w http.ResponseWriter) error {
 	w.WriteHeader(http.StatusNoContent)
-	return Encode(w, nil)
+	return nil
 }

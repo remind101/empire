@@ -408,22 +408,16 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		return service.NewFakeManager()
 	}
 
-	if elbOpts.VPCID != "" && elbOpts.InternalSecurityGroupID != "" && elbOpts.ExternalSecurityGroupID != "" {
-		m := service.NewECSWithELBManager(config)
-		m.Cluster = ecsOpts.Cluster
-		m.VPCID = elbOpts.VPCID
-		m.InternalSecurityGroupID = elbOpts.InternalSecurityGroupID
-		m.ExternalSecurityGroupID = elbOpts.ExternalSecurityGroupID
+	m := service.NewECSManager(service.ECSConfig{
+		Cluster:                 ecsOpts.Cluster,
+		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
+		ExternalSecurityGroupID: elbOpts.ExternalSecurityGroupID,
+		AWS:  config,
+		Zone: "empire.",
+		VPC:  elbOpts.VPCID,
+	})
 
-		l := service.Log(m)
-		l.Prefix = "ecs-elb"
-		return l
-	}
-
-	m := service.NewECSManager(config)
-	m.Cluster = ecsOpts.Cluster
-
-	l := service.Log(m)
+	l := service.WithLogging(m)
 	l.Prefix = "ecs"
 	return l
 }

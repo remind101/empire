@@ -1,6 +1,10 @@
 package heroku
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/remind101/empire/empire"
+)
 
 // Named matching heroku's error codes. See
 // https://devcenter.heroku.com/articles/platform-api-reference#error-responses
@@ -38,6 +42,19 @@ type ErrorResource struct {
 	ID      string `json:"id"`
 	Message string `json:"message"`
 	URL     string `json:"url"`
+}
+
+func newError(err error) *ErrorResource {
+	switch err := err.(type) {
+	case *ErrorResource:
+		return err
+	case *empire.ValidationError:
+		return ErrBadRequest
+	default:
+		return &ErrorResource{
+			Message: err.Error(),
+		}
+	}
 }
 
 // Error implements error interface.
