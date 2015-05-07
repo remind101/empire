@@ -41,11 +41,20 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	m, s := newTestELBManager(h)
 	defer s.Close()
 
-	_, err := m.CreateLoadBalancer(CreateLoadBalancerOpts{
+	lb, err := m.CreateLoadBalancer(CreateLoadBalancerOpts{
 		Name: "acme-inc",
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	expected := &LoadBalancer{
+		Name:    "acme-inc",
+		DNSName: "acme-inc.us-east-1.elb.amazonaws.com",
+	}
+
+	if got, want := lb, expected; !reflect.DeepEqual(got, want) {
+		t.Fatalf("LoadBalancer => %v; want %v", got, want)
 	}
 }
 
@@ -77,7 +86,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&Marker=&Version=2012-06-01`,
+				Body:       `Action=DescribeLoadBalancers&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -92,6 +101,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 	          <member>sg-1</member>
 	        </SecurityGroups>
 	        <LoadBalancerName>foo</LoadBalancerName>
+		<DNSName>foo.us-east-1.elb.amazonaws.com</DNSName>
 	        <VPCId>vpc-1</VPCId>
 	        <ListenerDescriptions>
 	          <member>
@@ -161,6 +171,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 	          <member>sg-1</member>
 	        </SecurityGroups>
 	        <LoadBalancerName>bar</LoadBalancerName>
+		<DNSName>bar.us-east-1.elb.amazonaws.com</DNSName>
 	        <VPCId>vpc-1</VPCId>
 	        <ListenerDescriptions>
 	          <member>
@@ -218,9 +229,22 @@ func TestELB_LoadBalancers(t *testing.T) {
 	m, s := newTestELBManager(h)
 	defer s.Close()
 
-	_, err := m.LoadBalancers(nil)
+	lbs, err := m.LoadBalancers(nil)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if got, want := len(lbs), 2; got != want {
+		t.Fatalf("%v load balancers; want %v", got, want)
+	}
+
+	expected := []*LoadBalancer{
+		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com"},
+		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com"},
+	}
+
+	if got, want := lbs, expected; !reflect.DeepEqual(got, want) {
+		t.Fatalf("LoadBalancers => %v; want %v", got, want)
 	}
 }
 

@@ -110,10 +110,12 @@ func (m *ELBManager) DestroyLoadBalancer(name string) error {
 // resulting load balancers will be filtered to only those containing the
 // provided tags.
 func (m *ELBManager) LoadBalancers(tags map[string]string) ([]*LoadBalancer, error) {
-	var lbs []*LoadBalancer
-	nextMarker := aws.String("")
+	var (
+		nextMarker *string
+		lbs        []*LoadBalancer
+	)
 
-	for *nextMarker != "" {
+	for {
 		out, err := m.elb.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{
 			Marker: nextMarker,
 		})
@@ -145,12 +147,17 @@ func (m *ELBManager) LoadBalancers(tags map[string]string) ([]*LoadBalancer, err
 			if containsTags(tags, d.Tags) {
 				elb := descs[*d.LoadBalancerName]
 				lbs = append(lbs, &LoadBalancer{
-					Name: *elb.LoadBalancerName,
+					Name:    *elb.LoadBalancerName,
+					DNSName: *elb.DNSName,
 				})
 			}
 		}
 
 		nextMarker = out.NextMarker
+		if nextMarker == nil || *nextMarker == "" {
+			// No more items
+			break
+		}
 	}
 
 	return lbs, nil
