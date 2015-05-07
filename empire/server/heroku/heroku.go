@@ -117,5 +117,5 @@ func Error(w http.ResponseWriter, err error, status int) error {
 // NoContent responds with a 404 and an empty body.
 func NoContent(w http.ResponseWriter) error {
 	w.WriteHeader(http.StatusNoContent)
-	return Encode(w, nil)
+	return nil
 }
