@@ -39,6 +39,7 @@ func newDB(uri string) (*db, error) {
 	db := &db{dbmap: dbmap, db: conn}
 
 	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name")
+	db.AddTableWithName(Certificate{}, "certificates").SetKeys(true, "ID")
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
 	db.AddTableWithName(Deployment{}, "deployments").SetKeys(true, "ID")
 	db.AddTableWithName(Domain{}, "domains").SetKeys(true, "ID")
