@@ -113,13 +113,17 @@ func lbTags(app string, process string) map[string]string {
 
 // lbOk checks if the load balancer is suitable for the process.
 func lbOk(p *Process, lb *lb.LoadBalancer) bool {
-	if p.Exposure == ExposePublic && lb.External {
-		return true
+	if p.Exposure == ExposePublic && !lb.External {
+		return false
 	}
 
-	if p.Exposure == ExposePrivate && !lb.External {
-		return true
+	if p.Exposure == ExposePrivate && lb.External {
+		return false
 	}
 
-	return false
+	if *p.Ports[0].Host != lb.InstancePort {
+		return false
+	}
+
+	return true
 }

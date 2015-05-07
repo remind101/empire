@@ -101,9 +101,10 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 	}
 
 	return &LoadBalancer{
-		Name:     o.Name,
-		DNSName:  *out.DNSName,
-		External: o.External,
+		Name:         o.Name,
+		DNSName:      *out.DNSName,
+		External:     o.External,
+		InstancePort: o.InstancePort,
 	}, nil
 }
 
@@ -155,10 +156,17 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 		for _, d := range out2.TagDescriptions {
 			if containsTags(tags, d.Tags) {
 				elb := descs[*d.LoadBalancerName]
+				var instancePort int64
+
+				if len(elb.ListenerDescriptions) > 0 {
+					instancePort = *elb.ListenerDescriptions[0].Listener.InstancePort
+				}
+
 				lbs = append(lbs, &LoadBalancer{
-					Name:     *elb.LoadBalancerName,
-					DNSName:  *elb.DNSName,
-					External: *elb.Scheme == schemeExternal,
+					Name:         *elb.LoadBalancerName,
+					DNSName:      *elb.DNSName,
+					External:     *elb.Scheme == schemeExternal,
+					InstancePort: instancePort,
 				})
 			}
 		}

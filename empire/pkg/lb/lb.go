@@ -30,6 +30,10 @@ type LoadBalancer struct {
 
 	// True if the load balancer is exposed externally.
 	External bool
+
+	// InstancePort is the port that this load balancer forwards requests to
+	// on the host.
+	InstancePort int64
 }
 
 // Manager is our API interface for interacting with LoadBalancers.

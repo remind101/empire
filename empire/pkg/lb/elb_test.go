@@ -16,7 +16,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=0&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internet-facing&SecurityGroups.member.1=&Subnets.member.1=subnet&Version=2012-06-01`,
+				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=9000&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internet-facing&SecurityGroups.member.1=&Subnets.member.1=subnet&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -43,17 +43,19 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	defer s.Close()
 
 	lb, err := m.CreateLoadBalancer(context.Background(), CreateLoadBalancerOpts{
-		Name:     "acme-inc",
-		External: true,
+		Name:         "acme-inc",
+		InstancePort: 9000,
+		External:     true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := &LoadBalancer{
-		Name:     "acme-inc",
-		DNSName:  "acme-inc.us-east-1.elb.amazonaws.com",
-		External: true,
+		Name:         "acme-inc",
+		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
+		InstancePort: 9000,
+		External:     true,
 	}
 
 	if got, want := lb, expected; !reflect.DeepEqual(got, want) {
@@ -113,7 +115,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 	              <Protocol>HTTP</Protocol>
 	              <LoadBalancerPort>80</LoadBalancerPort>
 	              <InstanceProtocol>HTTP</InstanceProtocol>
-	              <InstancePort>8080</InstancePort>
+	              <InstancePort>9000</InstancePort>
 	            </Listener>
 	          </member>
 	        </ListenerDescriptions>
@@ -183,7 +185,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 	              <Protocol>HTTP</Protocol>
 	              <LoadBalancerPort>80</LoadBalancerPort>
 	              <InstanceProtocol>HTTP</InstanceProtocol>
-	              <InstancePort>8080</InstancePort>
+	              <InstancePort>9001</InstancePort>
 	            </Listener>
 	          </member>
 	        </ListenerDescriptions>
@@ -242,8 +244,8 @@ func TestELB_LoadBalancers(t *testing.T) {
 	}
 
 	expected := []*LoadBalancer{
-		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com"},
-		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true},
+		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com", InstancePort: 9000},
+		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true, InstancePort: 9001},
 	}
 
 	if got, want := lbs, expected; !reflect.DeepEqual(got, want) {
