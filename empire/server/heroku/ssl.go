@@ -5,6 +5,7 @@ import (
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
+	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -83,15 +84,31 @@ type PatchSSLEndpoint struct {
 }
 
 func (h *PatchSSLEndpoint) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	// a, err := findApp(ctx, h)
-	// if err != nil {
-	// 	return err
-	// }
+	_, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
 
-	endpoint := SSLEndpoint{}
+	cert, err := findCert(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	var form PostSSLEndpointsForm
+	if err := Decode(r, &form); err != nil {
+		return err
+	}
+
+	cert.CertificateChain = form.CertificateChain
+	cert.PrivateKey = form.PrivateKey
+
+	cert, err = h.CertificatesUpdate(ctx, cert)
+	if err != nil {
+		return err
+	}
 
 	w.WriteHeader(200)
-	return Encode(w, endpoint)
+	return Encode(w, newSSLEndpoint(cert))
 }
 
 type DeleteSSLEndpoint struct {
@@ -99,13 +116,44 @@ type DeleteSSLEndpoint struct {
 }
 
 func (h *DeleteSSLEndpoint) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	// a, err := findApp(ctx, h)
-	// if err != nil {
-	// 	return err
-	// }
+	_, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
 
-	endpoint := SSLEndpoint{}
+	cert, err := findCert(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	if err := h.CertificatesDestroy(ctx, cert); err != nil {
+		return err
+	}
 
 	w.WriteHeader(200)
-	return Encode(w, endpoint)
+	return Encode(w, newSSLEndpoint(cert))
+}
+
+type CertFinder interface {
+	CertificatesFind(ctx context.Context, name string) (*empire.Certificate, error)
+}
+
+func findCert(ctx context.Context, f CertFinder) (*empire.Certificate, error) {
+	vars := httpx.Vars(ctx)
+	app := vars["app"]
+	name := vars["cert"]
+
+	cert, err := f.CertificatesFind(ctx, name)
+	if err != nil {
+		return cert, err
+	}
+	if cert == nil {
+		return cert, ErrNotFound
+	}
+
+	if app != cert.AppID {
+		return cert, ErrNotFound
+	}
+
+	return cert, err
 }
