@@ -17,6 +17,10 @@ type ELBManager struct {
 	// SubnetFinder is used to determine what subnets to attach the ELB to.
 	SubnetFinder
 
+	// Nameserver is used to create DNS records for the ELB when its's
+	// created.
+	Nameserver
+
 	elb *elb.ELB
 }
 
@@ -39,7 +43,10 @@ func NewVPCELBManager(vpc string, c *aws.Config) *ELBManager {
 	return m
 }
 
-// CreateLoadBalancer creates a new ELB.
+// CreateLoadBalancer creates a new ELB:
+//
+// * The ELB is created and connection draining is enabled.
+// * An internal DNS CNAME record is created, pointing the the DNSName of the ELB.
 func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer, error) {
 	subnets, err := m.subnets()
 	if err != nil {
@@ -71,7 +78,8 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 	}
 
 	// Create the ELB.
-	if _, err := m.elb.CreateLoadBalancer(input); err != nil {
+	out, err := m.elb.CreateLoadBalancer(input)
+	if err != nil {
 		return nil, err
 	}
 
@@ -88,7 +96,10 @@ func (m *ELBManager) CreateLoadBalancer(o CreateLoadBalancerOpts) (*LoadBalancer
 		return nil, err
 	}
 
-	// TODO: Create route53 record.
+	// Create a CNAME pointed at this load balancer.
+	if err := m.CNAME(o.Name, *out.DNSName); err != nil {
+		return nil, err
+	}
 
 	return &LoadBalancer{
 		Name: o.Name,

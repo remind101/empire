@@ -235,6 +235,14 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 		}),
 	)
 	m.SubnetFinder = StaticSubnets([]string{"10.0.0.0/24"})
+	m.Nameserver = &fakeNameserver{}
 
 	return m, s
+}
+
+// fakeNameserver is a fake implementation of the Nameserver interface.
+type fakeNameserver struct{}
+
+func (n *fakeNameserver) CNAME(cname, record string) error {
+	return nil
 }
