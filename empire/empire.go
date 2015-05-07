@@ -9,6 +9,7 @@ import (
 	"github.com/mattes/migrate/migrate"
 	. "github.com/remind101/empire/empire/pkg/bytesize"
 	"github.com/remind101/empire/empire/pkg/service"
+	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -100,6 +101,7 @@ type Empire struct {
 
 	accessTokens *accessTokensService
 	apps         *appsService
+	certs        *certificatesService
 	configs      *configsService
 	domains      *domainsService
 	jobStates    *processStatesService
@@ -201,11 +203,17 @@ func New(options Options) (*Empire, error) {
 		releasesService: releases,
 	}
 
+	certs := &certificatesService{
+		store:   store,
+		manager: newCertManager(options.AWSConfig),
+	}
+
 	return &Empire{
 		Logger:       newLogger(),
 		store:        store,
 		accessTokens: accessTokens,
 		apps:         apps,
+		certs:        certs,
 		configs:      configs,
 		deployer:     deployer,
 		domains:      domains,
@@ -246,6 +254,31 @@ func (e *Empire) AppsFind(name string) (*App, error) {
 // AppsDestroy destroys the app.
 func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
 	return e.apps.AppsDestroy(ctx, app)
+}
+
+// CertificatesCreate creates a certificate.
+func (e *Empire) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {
+	return e.certs.CertificatesCreate(ctx, cert)
+}
+
+// CertificatesFind returns a certificate for the given ID
+func (e *Empire) CertificatesFind(ctx context.Context, id string) (*Certificate, error) {
+	return e.store.CertificatesFind(id)
+}
+
+// CertificatesFindByApp finds a certificate
+func (e *Empire) CertificatesFindByApp(ctx context.Context, app string) (*Certificate, error) {
+	return e.store.CertificatesFindByApp(app)
+}
+
+// CertificatesUpdate updates a certificate.
+func (e *Empire) CertificatesUpdate(ctx context.Context, cert *Certificate) (*Certificate, error) {
+	return e.certs.CertificatesUpdate(ctx, cert)
+}
+
+// CertificatesDestroy destroys a certificate.
+func (e *Empire) CertificatesDestroy(ctx context.Context, cert *Certificate) error {
+	return e.certs.CertificatesDestroy(ctx, cert)
 }
 
 // ConfigsCurrent returns the current Config for a given app.
@@ -393,6 +426,14 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 	l := service.Log(m)
 	l.Prefix = "ecs"
 	return l
+}
+
+func newCertManager(config *aws.Config) sslcert.Manager {
+	if config == nil {
+		return sslcert.NewFakeManager()
+	}
+
+	return sslcert.NewIAMManager(config, "/empire/certs")
 }
 
 func newRunner(options RunnerOptions, s *store) *runner {

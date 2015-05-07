@@ -73,6 +73,10 @@
 			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
 		},
 		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/service/iam",
+			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+		},
+		{
 			"ImportPath": "github.com/awslabs/aws-sdk-go/service/route53",
 			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
 		},
