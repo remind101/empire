@@ -51,11 +51,16 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 
 		// If this app doesn't have a load balancer yet, create one.
 		if l == nil {
+			tags := lbTags(app.ID, p.Type)
+
+			// Add "App" tag so that a CNAME can be created.
+			tags[lb.AppTag] = app.Name
+
 			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
 				Name:         app.ID,
 				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
 				External:     p.Exposure == ExposePublic,
-				Tags:         lbTags(app.ID, p.Type),
+				Tags:         tags,
 			})
 			if err != nil {
 				return err

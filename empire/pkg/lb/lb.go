@@ -7,6 +7,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+const AppTag = "App"
+
 // CreateLoadBalancerOpts are options that can be provided when creating a
 // LoadBalancer.
 type CreateLoadBalancerOpts struct {
@@ -70,14 +72,19 @@ type cnameManager struct {
 }
 
 // CreateLoadBalancer will create the LoadBalancer using the underlying manager,
-// then create a CNAME record pointed at the LoadBalancers DNSName.
+// then create a CNAME record pointed at the LoadBalancers DNSName. The CNAME
+// will be pulled from the `Service` tag if provided.
 func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBalancerOpts) (*LoadBalancer, error) {
 	lb, err := m.Manager.CreateLoadBalancer(ctx, opts)
 	if err != nil {
 		return lb, err
 	}
 
-	return lb, m.CNAME(lb.Name, lb.DNSName)
+	if n, ok := opts.Tags[AppTag]; ok {
+		return lb, m.CNAME(n, lb.DNSName)
+	}
+
+	return lb, nil
 }
 
 // SanitizeUUIDs wraps a Manager implementation to strip `-` from the

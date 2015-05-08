@@ -34,7 +34,7 @@ type App struct {
 	ID string
 
 	// The name of the app.
-	//Name string
+	Name string
 
 	// Process that belong to this app.
 	Processes []*Process

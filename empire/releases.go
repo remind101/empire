@@ -74,7 +74,7 @@ type releasesService struct {
 
 // ReleasesCreate creates the release, then sets the current process formation on the release.
 func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreateOpts) (*Release, error) {
-	config, slug := opts.Config, opts.Slug
+	app, config, slug := opts.App, opts.Config, opts.Slug
 
 	r, err := s.store.ReleasesCreate(opts)
 	if err != nil {
@@ -94,7 +94,7 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreat
 	}
 
 	// Schedule the new release onto the cluster.
-	if err := s.releaser.Release(ctx, r, config, slug, formation, ports, serviceExposure(opts.App.Exposure)); err != nil {
+	if err := s.releaser.Release(ctx, app, r, config, slug, formation, ports, serviceExposure(opts.App.Exposure)); err != nil {
 		return r, err
 	}
 
@@ -271,12 +271,12 @@ type releaser struct {
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
-func (r *releaser) Release(ctx context.Context, release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) error {
-	app := newServiceApp(release, config, slug, formation, ports, exposure)
-	return r.manager.Submit(ctx, app)
+func (r *releaser) Release(ctx context.Context, app *App, release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) error {
+	a := newServiceApp(app, release, config, slug, formation, ports, exposure)
+	return r.manager.Submit(ctx, a)
 }
 
-func newServiceApp(release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) *service.App {
+func newServiceApp(app *App, release *Release, config *Config, slug *Slug, formation Formation, ports ProcessPortMap, exposure service.Exposure) *service.App {
 	var processes []*service.Process
 
 	for _, p := range formation {
@@ -285,6 +285,7 @@ func newServiceApp(release *Release, config *Config, slug *Slug, formation Forma
 
 	return &service.App{
 		ID:        release.AppID,
+		Name:      app.Name,
 		Processes: processes,
 	}
 }

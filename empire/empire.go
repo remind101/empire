@@ -109,7 +109,6 @@ type Empire struct {
 	deployer     *deployer
 	scaler       *scaler
 	restarter    *restarter
-	releaser     *releaser
 	runner       *runner
 }
 
@@ -218,7 +217,6 @@ func New(options Options) (*Empire, error) {
 		deployer:     deployer,
 		domains:      domains,
 		jobStates:    jobStates,
-		releaser:     releaser,
 		scaler:       scaler,
 		restarter:    restarter,
 		runner:       runner,
