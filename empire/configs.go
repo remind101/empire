@@ -12,9 +12,9 @@ import (
 
 // Config represents a collection of environment variables.
 type Config struct {
-	ID      string `db:"id"`
-	Vars    Vars   `db:"vars"`
-	AppName string `db:"app_id"`
+	ID    string `db:"id"`
+	Vars  Vars   `db:"vars"`
+	AppID string `db:"app_id"`
 }
 
 // NewConfig initializes a new config based on the old config, with the new
@@ -23,8 +23,8 @@ func NewConfig(old *Config, vars Vars) *Config {
 	v := mergeVars(old.Vars, vars)
 
 	return &Config{
-		AppName: old.AppName,
-		Vars:    v,
+		AppID: old.AppID,
+		Vars:  v,
 	}
 }
 
@@ -93,7 +93,7 @@ func configsFind(db *db, id string) (*Config, error) {
 
 // ConfigsFindByApp finds the current config for the given App.
 func configsFindByApp(db *db, app *App) (*Config, error) {
-	return configsFindBy(db, "app_id", app.Name)
+	return configsFindBy(db, "app_id", app.ID)
 }
 
 type configsService struct {
@@ -172,8 +172,8 @@ func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
 	}
 
 	return s.store.ConfigsCreate(&Config{
-		AppName: app.Name,
-		Vars:    make(Vars),
+		AppID: app.ID,
+		Vars:  make(Vars),
 	})
 }
 

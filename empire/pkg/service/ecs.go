@@ -69,7 +69,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 			n := lb.NewRoute53Nameserver(config.AWS)
 			n.Zone = config.Zone
 
-			l = lb.WithCNAME(l, n)
+			l = lb.SanitizeUUIDs(lb.WithCNAME(l, n))
 		}
 
 		pm = &LBProcessManager{
@@ -94,7 +94,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
 func (m *ECSManager) Submit(ctx context.Context, app *App) error {
-	processes, err := m.Processes(app.Name)
+	processes, err := m.Processes(app.ID)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (m *ECSManager) Submit(ctx context.Context, app *App) error {
 
 	toRemove := diffProcessTypes(processes, app.Processes)
 	for _, p := range toRemove {
-		if err := m.RemoveProcess(ctx, app.Name, p); err != nil {
+		if err := m.RemoveProcess(ctx, app.ID, p); err != nil {
 			return err
 		}
 	}
@@ -255,7 +255,7 @@ func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Proc
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *ecsProcessManager) createTaskDefinition(app *App, process *Process) (*ecs.TaskDefinition, error) {
-	resp, err := m.ecs.RegisterAppTaskDefinition(app.Name, taskDefinitionInput(process))
+	resp, err := m.ecs.RegisterAppTaskDefinition(app.ID, taskDefinitionInput(process))
 	return resp.TaskDefinition, err
 }
 
@@ -275,7 +275,7 @@ func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, e
 		role = aws.String(ECSServiceRole)
 	}
 
-	resp, err := m.ecs.CreateAppService(app.Name, &ecs.CreateServiceInput{
+	resp, err := m.ecs.CreateAppService(app.ID, &ecs.CreateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		ServiceName:    aws.String(p.Type),
@@ -288,7 +288,7 @@ func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, e
 
 // updateService updates an existing Service in ECS.
 func (m *ecsProcessManager) updateService(app *App, p *Process) (*ecs.Service, error) {
-	resp, err := m.ecs.UpdateAppService(app.Name, &ecs.UpdateServiceInput{
+	resp, err := m.ecs.UpdateAppService(app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		Service:        aws.String(p.Type),
@@ -444,6 +444,9 @@ func noService(err error) bool {
 
 		// Wat
 		if err.Message == "Could not find returned type com.amazon.madison.cmb#CMServiceNotActiveException in model" {
+			return true
+		}
+		if err.Message == "Could not find returned type com.amazon.madison.cmb#CMServiceNotFoundException in model" {
 			return true
 		}
 

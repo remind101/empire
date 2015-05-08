@@ -1,7 +1,11 @@
 // package lb provides an abstraction around creating load balancers.
 package lb
 
-import "golang.org/x/net/context"
+import (
+	"strings"
+
+	"golang.org/x/net/context"
+)
 
 // CreateLoadBalancerOpts are options that can be provided when creating a
 // LoadBalancer.
@@ -74,4 +78,23 @@ func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBa
 	}
 
 	return lb, m.CNAME(lb.Name, lb.DNSName)
+}
+
+// SanitizeUUIDs wraps a Manager implementation to strip `-` from the
+// LoadBalancer during creation. This is useful with the ELBManager
+// implementation when the provided names are UUID's, since it'll truncate the
+// UUID's to 32 characters, which is the maximum allowed length for ELB names.
+func SanitizeUUIDs(m Manager) Manager {
+	return &sanitizeManager{m}
+}
+
+// sanitizeManager is a Manager implementation that sanitizes uuids to fit
+// within ELB naming constraints.
+type sanitizeManager struct {
+	Manager
+}
+
+func (m *sanitizeManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalancerOpts) (*LoadBalancer, error) {
+	o.Name = strings.Replace(o.Name, "-", "", -1)
+	return m.Manager.CreateLoadBalancer(ctx, o)
 }

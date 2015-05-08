@@ -22,7 +22,7 @@ func WithLogging(m Manager) *LoggedManager {
 
 func (m *LoggedManager) Submit(ctx context.Context, app *App) error {
 	err := m.Manager.Submit(ctx, app)
-	logger.Info(ctx, m.msg("Submit"), "err", err, "app", app.Name)
+	logger.Info(ctx, m.msg("Submit"), "err", err, "app", app.ID)
 	return err
 }
 

@@ -38,7 +38,7 @@ func newDB(uri string) (*db, error) {
 	dbmap := &gorp.DbMap{Db: conn, Dialect: dialect}
 	db := &db{dbmap: dbmap, db: conn}
 
-	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name")
+	db.AddTableWithName(App{}, "apps").SetKeys(false, "Name").SetKeys(true, "ID")
 	db.AddTableWithName(Certificate{}, "certificates").SetKeys(true, "ID")
 	db.AddTableWithName(Config{}, "configs").SetKeys(true, "ID")
 	db.AddTableWithName(Domain{}, "domains").SetKeys(true, "ID")

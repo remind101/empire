@@ -2,7 +2,8 @@ CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE apps (
-  name varchar(30) NOT NULL primary key,
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  name varchar(30) NOT NULL,
   github_repo text,
   docker_repo text,
   created_at timestamp without time zone default (now() at time zone 'utc')
@@ -10,7 +11,7 @@ CREATE TABLE apps (
 
 CREATE TABLE configs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
+  app_id uuid NOT NULL references apps(id) ON DELETE CASCADE,
   vars hstore,
   created_at timestamp without time zone default (now() at time zone 'utc')
 );
@@ -23,7 +24,7 @@ CREATE TABLE slugs (
 
 CREATE TABLE releases (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
+  app_id uuid NOT NULL references apps(id) ON DELETE CASCADE,
   config_id uuid NOT NULL references configs(id) ON DELETE CASCADE,
   slug_id uuid NOT NULL references slugs(id) ON DELETE CASCADE,
   version int NOT NULL,
@@ -41,7 +42,7 @@ CREATE TABLE processes (
 
 CREATE TABLE jobs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
+  app_id uuid NOT NULL references apps(id) ON DELETE CASCADE,
   release_version int NOT NULL,
   process_type text NOT NULL,
   instance int NOT NULL,
@@ -54,7 +55,7 @@ CREATE TABLE jobs (
 
 CREATE TABLE deployments (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  app_id text NOT NULL references apps(name) ON DELETE CASCADE,
+  app_id uuid NOT NULL references apps(id) ON DELETE CASCADE,
   release_id uuid references releases(id),
   image text NOT NULL,
   status text NOT NULL,

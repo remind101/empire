@@ -60,7 +60,7 @@ func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	domain := &empire.Domain{
-		AppName:  a.Name,
+		AppID:    a.ID,
 		Hostname: form.Hostname,
 	}
 	d, err := h.DomainsCreate(domain)
@@ -95,7 +95,7 @@ func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	if d == nil || d.AppName != a.Name {
+	if d == nil || d.AppID != a.ID {
 		return &ErrorResource{
 			Status:  http.StatusNotFound,
 			ID:      "not_found",

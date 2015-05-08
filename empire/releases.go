@@ -17,7 +17,7 @@ type Release struct {
 	ID  string `db:"id"`
 	Ver int    `db:"version"` // Version conflicts with gorps optimistic locking.
 
-	AppName  string `db:"app_id"`
+	AppID    string `db:"app_id"`
 	ConfigID string `db:"config_id"`
 	SlugID   string `db:"slug_id"`
 
@@ -41,24 +41,24 @@ type ReleasesCreateOpts struct {
 }
 
 func (s *store) ReleasesLast(app *App) (*Release, error) {
-	return releasesLast(s.db, app.Name)
+	return releasesLast(s.db, app.ID)
 }
 
 func (s *store) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return releasesAllByAppName(s.db, app.Name)
+	return releasesAllByAppID(s.db, app.ID)
 }
 
 func (s *store) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
-	return releasesFindByAppNameAndVersion(s.db, app.Name, v)
+	return releasesFindByAppIDAndVersion(s.db, app.ID, v)
 }
 
-func (s *store) ReleasesFindByAppNameAndVersion(appName string, v int) (*Release, error) {
-	return releasesFindByAppNameAndVersion(s.db, appName, v)
+func (s *store) ReleasesFindByAppIDAndVersion(appID string, v int) (*Release, error) {
+	return releasesFindByAppIDAndVersion(s.db, appID, v)
 }
 
 func (s *store) ReleasesCreate(opts ReleasesCreateOpts) (*Release, error) {
 	release := &Release{
-		AppName:     opts.App.Name,
+		AppID:       opts.App.ID,
 		ConfigID:    opts.Config.ID,
 		SlugID:      opts.Slug.ID,
 		Description: opts.Description,
@@ -104,7 +104,7 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, opts ReleasesCreat
 func (s *releasesService) createFormation(release *Release, slug *Slug) (Formation, error) {
 	// Get the old release, so we can copy the Formation.
 	prev := release.Ver - 1
-	last, err := s.store.ReleasesFindByAppNameAndVersion(release.AppName, prev)
+	last, err := s.store.ReleasesFindByAppIDAndVersion(release.AppID, prev)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (s *releasesService) newProcessPorts(release *Release, formation Formation)
 	for _, p := range formation {
 		if p.Type == WebProcessType {
 			// TODO: Support a port per process, allowing more than one process to expose a port.
-			port, err := s.store.PortsFindOrCreateByApp(&App{Name: release.AppName})
+			port, err := s.store.PortsFindOrCreateByApp(&App{ID: release.AppID})
 			if err != nil {
 				return m, err
 			}
@@ -191,12 +191,12 @@ func (s *releasesService) ReleasesRollback(ctx context.Context, app *App, versio
 	return release, nil
 }
 
-// ReleasesFindByAppNameAndVersion finds a specific version of a release for a
+// ReleasesFindByAppIDAndVersion finds a specific version of a release for a
 // given app.
-func releasesFindByAppNameAndVersion(db *db, appName string, v int) (*Release, error) {
+func releasesFindByAppIDAndVersion(db *db, appID string, v int) (*Release, error) {
 	var release Release
 
-	if err := db.SelectOne(&release, `select * from releases where app_id = $1 and version = $2 limit 1`, appName, v); err != nil {
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 and version = $2 limit 1`, appID, v); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -214,7 +214,7 @@ func releasesCreate(db *db, release *Release) (*Release, error) {
 	}
 
 	// Get the last release version for this app.
-	v, err := releasesLastVersion(t, release.AppName)
+	v, err := releasesLastVersion(t, release.AppID)
 	if err != nil {
 		return release, err
 	}
@@ -234,8 +234,8 @@ func releasesCreate(db *db, release *Release) (*Release, error) {
 // is commited, so the release version can be incremented atomically.
 func releasesLastVersion(db interface {
 	SelectOne(interface{}, string, ...interface{}) error
-}, appName string) (version int, err error) {
-	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appName))
+}, appID string) (version int, err error) {
+	err = db.SelectOne(&version, `select version from releases where app_id = $1 order by version desc for update`, string(appID))
 
 	if err == sql.ErrNoRows {
 		return 0, nil
@@ -245,10 +245,10 @@ func releasesLastVersion(db interface {
 }
 
 // ReleasesLast returns the last Release for the given App.
-func releasesLast(db *db, appName string) (*Release, error) {
+func releasesLast(db *db, appID string) (*Release, error) {
 	var release Release
 
-	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, appName); err != nil {
+	if err := db.SelectOne(&release, `select * from releases where app_id = $1 order by version desc limit 1`, appID); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -259,10 +259,10 @@ func releasesLast(db *db, appName string) (*Release, error) {
 	return &release, nil
 }
 
-// ReleasesFindByAppName finds the latest release for the given app.
-func releasesAllByAppName(db *db, appName string) ([]*Release, error) {
+// ReleasesFindByAppID finds the latest release for the given app.
+func releasesAllByAppID(db *db, appID string) ([]*Release, error) {
 	var rs []*Release
-	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, appName)
+	return rs, db.Select(&rs, `select * from releases where app_id = $1 order by version desc`, appID)
 }
 
 type releaser struct {
@@ -284,7 +284,7 @@ func newServiceApp(release *Release, config *Config, slug *Slug, formation Forma
 	}
 
 	return &service.App{
-		Name:      release.AppName,
+		ID:        release.AppID,
 		Processes: processes,
 	}
 }
@@ -293,7 +293,6 @@ func newServiceProcess(release *Release, config *Config, slug *Slug, p *Process,
 	var procExp service.Exposure
 	ports := newServicePorts(port)
 	env := environment(config.Vars)
-	env["SERVICE_NAME"] = fmt.Sprintf("%s/%s", p.Type, release.AppName)
 
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)

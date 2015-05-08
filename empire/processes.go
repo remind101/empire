@@ -194,7 +194,7 @@ type processStatesService struct {
 func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
 	var states []*ProcessState
 
-	instances, err := s.manager.Instances(ctx, app.Name)
+	instances, err := s.manager.Instances(ctx, app.ID)
 	if err != nil {
 		return states, err
 	}
