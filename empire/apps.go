@@ -218,33 +218,37 @@ type scaler struct {
 	manager service.Manager
 }
 
-func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int) error {
+func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int, c *Constraints) (*Process, error) {
 	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if release == nil {
-		return &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
+		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
 	f, err := s.store.Formation(ProcessesQuery{Release: release})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	p, ok := f[t]
 	if !ok {
-		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
+		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
 	if err := s.manager.Scale(ctx, release.AppID, string(p.Type), uint(quantity)); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update quantity for this process in the formation
 	p.Quantity = quantity
-	return s.store.ProcessesUpdate(p)
+	if c != nil {
+		p.Constraints = *c
+	}
+
+	return p, s.store.ProcessesUpdate(p)
 }
 
 // restarter is a small service for restarting an apps processes.

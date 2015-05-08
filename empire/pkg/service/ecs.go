@@ -469,9 +469,11 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*Process, error) {
 	}
 
 	return &Process{
-		Type:    safeString(container.Name),
-		Command: strings.Join(command, " "),
-		Env:     env,
+		Type:        safeString(container.Name),
+		Command:     strings.Join(command, " "),
+		Env:         env,
+		CPUShares:   uint(*container.CPU),
+		MemoryLimit: uint(*container.Memory) * MB,
 	}, nil
 }
 

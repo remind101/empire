@@ -7,7 +7,6 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
-	. "github.com/remind101/empire/empire/pkg/bytesize"
 	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
@@ -24,13 +23,6 @@ var (
 )
 
 const (
-	// CPUShare maps to the docker --cpu-shares flag.
-	CPUShare = 1024 / 4
-
-	// MemoryLimit is the number of bytes of memory to allocate to each
-	// process. Eventually this should be configurable.
-	MemoryLimit = 1 * GB
-
 	// WebPort is the default PORT to set on web processes.
 	WebPort = 8080
 
@@ -360,8 +352,8 @@ func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (
 }
 
 // AppsScale scales an apps process.
-func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantity int) error {
-	return e.scaler.Scale(ctx, app, t, quantity)
+func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantity int, c *Constraints) (*Process, error) {
+	return e.scaler.Scale(ctx, app, t, quantity, c)
 }
 
 // Reset resets empire.
