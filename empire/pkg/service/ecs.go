@@ -63,7 +63,11 @@ func NewECSManager(config ECSConfig) *ECSManager {
 	// If security group ids are provided, ELB's will be created for ECS
 	// services.
 	if config.InternalSecurityGroupID != "" && config.ExternalSecurityGroupID != "" {
-		var l lb.Manager = lb.NewVPCELBManager(config.VPC, config.AWS)
+		elb := lb.NewVPCELBManager(config.VPC, config.AWS)
+		elb.InternalSecurityGroupID = config.InternalSecurityGroupID
+		elb.ExternalSecurityGroupID = config.ExternalSecurityGroupID
+
+		var l lb.Manager = elb
 
 		if config.Zone != "" {
 			n := lb.NewRoute53Nameserver(config.AWS)
