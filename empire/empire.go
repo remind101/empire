@@ -109,7 +109,6 @@ type Empire struct {
 	deployer     *deployer
 	scaler       *scaler
 	restarter    *restarter
-	releaser     *releaser
 	runner       *runner
 }
 
@@ -218,7 +217,6 @@ func New(options Options) (*Empire, error) {
 		deployer:     deployer,
 		domains:      domains,
 		jobStates:    jobStates,
-		releaser:     releaser,
 		scaler:       scaler,
 		restarter:    restarter,
 		runner:       runner,
@@ -247,8 +245,8 @@ func (e *Empire) AppsCreate(app *App) (*App, error) {
 }
 
 // AppsFind finds an app by name.
-func (e *Empire) AppsFind(name string) (*App, error) {
-	return e.store.AppsFind(name)
+func (e *Empire) AppsFindByName(name string) (*App, error) {
+	return e.store.AppsFindByName(name)
 }
 
 // AppsDestroy destroys the app.
@@ -267,8 +265,8 @@ func (e *Empire) CertificatesFind(ctx context.Context, id string) (*Certificate,
 }
 
 // CertificatesFindByApp finds a certificate
-func (e *Empire) CertificatesFindByApp(ctx context.Context, app string) (*Certificate, error) {
-	return e.store.CertificatesFindByApp(app)
+func (e *Empire) CertificatesFindByApp(ctx context.Context, appID string) (*Certificate, error) {
+	return e.store.CertificatesFindByApp(appID)
 }
 
 // CertificatesUpdate updates a certificate.

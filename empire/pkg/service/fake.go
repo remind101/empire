@@ -18,7 +18,7 @@ func NewFakeManager() *FakeManager {
 }
 
 func (m *FakeManager) Submit(ctx context.Context, app *App) error {
-	m.apps[app.Name] = app
+	m.apps[app.ID] = app
 	return nil
 }
 

@@ -43,7 +43,7 @@ func (s *store) PortsAssign(app *App) (*Port, error) {
 	}
 
 	// Assign app to port
-	port.AppID = &app.Name
+	port.AppID = &app.ID
 
 	if _, err := portsUpdate(t, port); err != nil {
 		t.Rollback()
@@ -60,7 +60,7 @@ func (s *store) PortsUnassign(app *App) error {
 
 func portsFindByApp(db *db, app *App) (*Port, error) {
 	var port *Port
-	err := db.SelectOne(&port, `select * from ports where app_id = $1 order by port limit 1`, app.Name)
+	err := db.SelectOne(&port, `select * from ports where app_id = $1 order by port limit 1`, app.ID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -84,5 +84,5 @@ func portsUpdate(db *Transaction, port *Port) (int64, error) {
 }
 
 func portsUnassign(db *db, app *App) (sql.Result, error) {
-	return db.Exec(`update ports set app_id = null where app_id = $1`, app.Name)
+	return db.Exec(`update ports set app_id = null where app_id = $1`, app.ID)
 }

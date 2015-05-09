@@ -30,6 +30,9 @@ const (
 )
 
 type App struct {
+	// The id of the app.
+	ID string
+
 	// The name of the app.
 	Name string
 

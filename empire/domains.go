@@ -18,7 +18,7 @@ var (
 
 type Domain struct {
 	ID        string    `db:"id"`
-	AppName   string    `db:"app_id"`
+	AppID     string    `db:"app_id"`
 	Hostname  string    `db:"hostname"`
 	CreatedAt time.Time `db:"created_at"`
 }
@@ -65,7 +65,7 @@ func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
 	}
 
 	if d != nil {
-		if d.AppName == domain.AppName {
+		if d.AppID == domain.AppID {
 			return domain, ErrDomainAlreadyAdded
 		} else {
 			return domain, ErrDomainInUse
@@ -77,7 +77,7 @@ func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
 		return domain, err
 	}
 
-	if err := s.makePublic(domain.AppName); err != nil {
+	if err := s.makePublic(domain.AppID); err != nil {
 		return domain, err
 	}
 
@@ -98,13 +98,13 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 	}
 
 	// If app has no domains associated, make it private
-	d, err := s.store.DomainsFindByApp(&App{Name: domain.AppName})
+	d, err := s.store.DomainsFindByApp(&App{ID: domain.AppID})
 	if err != nil {
 		return err
 	}
 
 	if len(d) == 0 {
-		if err := s.makePrivate(domain.AppName); err != nil {
+		if err := s.makePrivate(domain.AppID); err != nil {
 			return err
 		}
 	}
@@ -112,8 +112,8 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 	return nil
 }
 
-func (s *domainsService) makePublic(app string) error {
-	a, err := s.store.AppsFind(app)
+func (s *domainsService) makePublic(appID string) error {
+	a, err := s.store.AppsFind(appID)
 	if err != nil {
 		return err
 	}
@@ -126,8 +126,8 @@ func (s *domainsService) makePublic(app string) error {
 	return nil
 }
 
-func (s *domainsService) makePrivate(app string) error {
-	a, err := s.store.AppsFind(app)
+func (s *domainsService) makePrivate(appID string) error {
+	a, err := s.store.AppsFind(appID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (s *store) DomainsDestroy(domain *Domain) error {
 
 func domainsFindByApp(db *db, app *App) ([]*Domain, error) {
 	var domains []*Domain
-	return domains, db.Select(&domains, `select * from domains where app_id = $1 order by hostname`, app.Name)
+	return domains, db.Select(&domains, `select * from domains where app_id = $1 order by hostname`, app.ID)
 }
 
 func domainsFindByHostname(db *db, hostname string) (*Domain, error) {

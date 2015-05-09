@@ -32,7 +32,7 @@ func (h *GetSSLEndpoints) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 	endpoints := make([]*SSLEndpoint, 0)
 
-	cert, err := h.CertificatesFindByApp(ctx, a.Name)
+	cert, err := h.CertificatesFindByApp(ctx, a.ID)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (h *PostSSLEndpoints) ServeHTTPContext(ctx context.Context, w http.Response
 	}
 
 	cert, err := h.CertificatesCreate(ctx, &empire.Certificate{
-		AppID:            a.Name,
+		AppID:            a.ID,
 		CertificateChain: form.CertificateChain,
 		PrivateKey:       form.PrivateKey,
 	})
@@ -84,12 +84,12 @@ type PatchSSLEndpoint struct {
 }
 
 func (h *PatchSSLEndpoint) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	_, err := findApp(ctx, h)
+	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
 
-	cert, err := findCert(ctx, h)
+	cert, err := findCert(ctx, a, h)
 	if err != nil {
 		return err
 	}
@@ -116,12 +116,12 @@ type DeleteSSLEndpoint struct {
 }
 
 func (h *DeleteSSLEndpoint) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	_, err := findApp(ctx, h)
+	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
 	}
 
-	cert, err := findCert(ctx, h)
+	cert, err := findCert(ctx, a, h)
 	if err != nil {
 		return err
 	}
@@ -138,9 +138,8 @@ type CertFinder interface {
 	CertificatesFind(ctx context.Context, name string) (*empire.Certificate, error)
 }
 
-func findCert(ctx context.Context, f CertFinder) (*empire.Certificate, error) {
+func findCert(ctx context.Context, app *empire.App, f CertFinder) (*empire.Certificate, error) {
 	vars := httpx.Vars(ctx)
-	app := vars["app"]
 	name := vars["cert"]
 
 	cert, err := f.CertificatesFind(ctx, name)
@@ -151,7 +150,7 @@ func findCert(ctx context.Context, f CertFinder) (*empire.Certificate, error) {
 		return cert, ErrNotFound
 	}
 
-	if app != cert.AppID {
+	if app.ID != cert.AppID {
 		return cert, ErrNotFound
 	}
 

@@ -1,6 +1,9 @@
 package lb
 
 import (
+	"strings"
+
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/elb"
@@ -26,12 +29,15 @@ type ELBManager struct {
 	SubnetFinder
 
 	elb *elb.ELB
+
+	newName func() string
 }
 
 // NewELBManager returns a new ELBManager backed by the aws config.
 func NewELBManager(c *aws.Config) *ELBManager {
 	return &ELBManager{
-		elb: elb.New(c),
+		elb:     elb.New(c),
+		newName: newName,
 	}
 }
 
@@ -74,7 +80,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 				InstanceProtocol: aws.String("http"),
 			},
 		},
-		LoadBalancerName: aws.String(o.Name),
+		LoadBalancerName: aws.String(m.newName()),
 		Scheme:           aws.String(scheme),
 		SecurityGroups:   []*string{aws.String(sg)},
 		Subnets:          subnets,
@@ -101,7 +107,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 	}
 
 	return &LoadBalancer{
-		Name:         o.Name,
+		Name:         *input.LoadBalancerName,
 		DNSName:      *out.DNSName,
 		External:     o.External,
 		InstancePort: o.InstancePort,
@@ -248,6 +254,11 @@ func (f *VPCSubnetFinder) Subnets() ([]string, error) {
 	}
 
 	return subnets, nil
+}
+
+// newName returns a string that's suitable as a load balancer name for elb.
+func newName() string {
+	return strings.Replace(uuid.New(), "-", "", -1)
 }
 
 // elbTags takes a map[string]string and converts it to the elb.Tag format.

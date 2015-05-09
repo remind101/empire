@@ -24,7 +24,7 @@ type LBProcessManager struct {
 func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) error {
 	if p.Exposure > ExposeNone {
 		// Attempt to find an existing load balancer for this app.
-		l, err := m.findLoadBalancer(ctx, app.Name, p.Type)
+		l, err := m.findLoadBalancer(ctx, app.ID, p.Type)
 		if err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 			if !lbOk(p, l) {
 				logger.Info(ctx, "existing load balancer not suitable", "err", err, "external", l.External, "exposure", p.Exposure.String())
 
-				if err := m.RemoveProcess(ctx, app.Name, p.Type); err != nil {
+				if err := m.RemoveProcess(ctx, app.ID, p.Type); err != nil {
 					if !noService(err) {
 						return err
 					}
@@ -51,11 +51,15 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 
 		// If this app doesn't have a load balancer yet, create one.
 		if l == nil {
+			tags := lbTags(app.ID, p.Type)
+
+			// Add "App" tag so that a CNAME can be created.
+			tags[lb.AppTag] = app.Name
+
 			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
-				Name:         app.Name,
 				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
 				External:     p.Exposure == ExposePublic,
-				Tags:         lbTags(app.Name, p.Type),
+				Tags:         tags,
 			})
 			if err != nil {
 				return err
@@ -106,7 +110,7 @@ func (m *LBProcessManager) findLoadBalancer(ctx context.Context, app string, pro
 // we can find it later.
 func lbTags(app string, process string) map[string]string {
 	return map[string]string{
-		"AppName":     app,
+		"AppID":       app,
 		"ProcessType": process,
 	}
 }

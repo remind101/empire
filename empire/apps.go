@@ -39,6 +39,8 @@ func NewAppNameFromRepo(repo string) string {
 
 // App represents an app.
 type App struct {
+	ID string `db:"id"`
+
 	Name string `db:"name"`
 
 	Repo *string `db:"repo"`
@@ -85,8 +87,12 @@ func (s *store) AppsAll() ([]*App, error) {
 	return appsAll(s.db)
 }
 
-func (s *store) AppsFind(name string) (*App, error) {
-	return appsFind(s.db, name)
+func (s *store) AppsFind(id string) (*App, error) {
+	return appsFind(s.db, id)
+}
+
+func (s *store) AppsFindByName(name string) (*App, error) {
+	return appsFindByName(s.db, name)
 }
 
 func (s *store) AppsFindByRepo(repo string) (*App, error) {
@@ -99,7 +105,7 @@ type appsService struct {
 }
 
 func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
-	if err := s.manager.Remove(ctx, app.Name); err != nil {
+	if err := s.manager.Remove(ctx, app.ID); err != nil {
 		return err
 	}
 
@@ -133,7 +139,7 @@ func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
 
 	n := NewAppNameFromRepo(repo)
 
-	a, err = s.store.AppsFind(n)
+	a, err = s.store.AppsFindByName(n)
 	if err != nil {
 		return a, err
 	}
@@ -172,8 +178,13 @@ func appsAll(db *db) ([]*App, error) {
 	return apps, db.Select(&apps, `select * from apps order by name`)
 }
 
+// Finds an app by id.
+func appsFind(db *db, id string) (*App, error) {
+	return appsFindBy(db, "id", id)
+}
+
 // Finds an app by name.
-func appsFind(db *db, name string) (*App, error) {
+func appsFindByName(db *db, name string) (*App, error) {
 	return appsFindBy(db, "name", name)
 }
 
@@ -223,7 +234,7 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 		return &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	if err := s.manager.Scale(ctx, release.AppName, string(p.Type), uint(quantity)); err != nil {
+	if err := s.manager.Scale(ctx, release.AppID, string(p.Type), uint(quantity)); err != nil {
 		return err
 	}
 

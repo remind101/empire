@@ -21,7 +21,7 @@ func TestECSManager_Submit(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 		},
 
@@ -29,11 +29,11 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
-				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"services":[{"taskDefinition":"foo--web"}]}`,
+				Body:       `{"services":[{"taskDefinition":"1234--web"}]}`,
 			},
 		},
 
@@ -41,7 +41,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
-				Body:       `{"taskDefinition":"foo--web"}`,
+				Body:       `{"taskDefinition":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -53,7 +53,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"foo--web"}`,
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -65,7 +65,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
-				Body:       `{"cluster":"","desiredCount":0,"service":"foo--web","taskDefinition":"foo--web"}`,
+				Body:       `{"cluster":"","desiredCount":0,"service":"1234--web","taskDefinition":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -87,7 +87,7 @@ func TestECSManager_Scale(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
-				Body:       `{"cluster":"","desiredCount":10,"service":"foo--web"}`,
+				Body:       `{"cluster":"","desiredCount":10,"service":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -98,7 +98,7 @@ func TestECSManager_Scale(t *testing.T) {
 	m, s := newTestECSManager(h)
 	defer s.Close()
 
-	if err := m.Scale(context.Background(), "foo", "web", 10); err != nil {
+	if err := m.Scale(context.Background(), "1234", "web", 10); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -113,7 +113,7 @@ func TestECSManager_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 		},
 
@@ -121,7 +121,7 @@ func TestECSManager_Instances(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
-				Body:       `{"cluster":"","serviceName":"foo--web"}`,
+				Body:       `{"cluster":"","serviceName":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -137,7 +137,7 @@ func TestECSManager_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/foo--web","lastStatus":"RUNNING"}]}`,
+				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web","lastStatus":"RUNNING"}]}`,
 			},
 		},
 
@@ -145,7 +145,7 @@ func TestECSManager_Instances(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
-				Body:       `{"taskDefinition":"arn:aws:ecs:us-east-1:249285743859:task-definition/foo--web"}`,
+				Body:       `{"taskDefinition":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -156,7 +156,7 @@ func TestECSManager_Instances(t *testing.T) {
 	m, s := newTestECSManager(h)
 	defer s.Close()
 
-	instances, err := m.Instances(context.Background(), "foo")
+	instances, err := m.Instances(context.Background(), "1234")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestECSManager_Remove(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 		},
 
@@ -198,11 +198,11 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
-				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/foo--web"]}`,
+				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"services":[{"taskDefinition":"foo--web"}]}`,
+				Body:       `{"services":[{"taskDefinition":"1234--web"}]}`,
 			},
 		},
 
@@ -210,7 +210,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
-				Body:       `{"taskDefinition":"foo--web"}`,
+				Body:       `{"taskDefinition":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -222,7 +222,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
-				Body:       `{"cluster":"","desiredCount":0,"service":"foo--web"}`,
+				Body:       `{"cluster":"","desiredCount":0,"service":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -234,7 +234,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DeleteService",
-				Body:       `{"cluster":"","service":"foo--web"}`,
+				Body:       `{"cluster":"","service":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -245,7 +245,7 @@ func TestECSManager_Remove(t *testing.T) {
 	m, s := newTestECSManager(h)
 	defer s.Close()
 
-	if err := m.Remove(context.Background(), "foo"); err != nil {
+	if err := m.Remove(context.Background(), "1234"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -276,7 +276,7 @@ func TestDiffProcessTypes(t *testing.T) {
 
 // fake app for testing.
 var fakeApp = &App{
-	Name: "foo",
+	ID: "1234",
 	Processes: []*Process{
 		&Process{
 			Type:    "web",

@@ -85,8 +85,8 @@ func (s *store) CertificatesFind(id string) (*Certificate, error) {
 	return certificatesFindBy(s.db, "id", id)
 }
 
-func (s *store) CertificatesFindByApp(app string) (*Certificate, error) {
-	return certificatesFindBy(s.db, "app_id", app)
+func (s *store) CertificatesFindByApp(appID string) (*Certificate, error) {
+	return certificatesFindBy(s.db, "app_id", appID)
 }
 
 func certificatesCreate(db *db, cert *Certificate) (*Certificate, error) {

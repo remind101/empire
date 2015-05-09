@@ -91,12 +91,12 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 }
 
 func findApp(ctx context.Context, e interface {
-	AppsFind(name string) (*empire.App, error)
+	AppsFindByName(name string) (*empire.App, error)
 }) (*empire.App, error) {
 	vars := httpx.Vars(ctx)
 	name := vars["app"]
 
-	a, err := e.AppsFind(name)
+	a, err := e.AppsFindByName(name)
 	if a == nil {
 		return a, ErrNotFound
 	}
