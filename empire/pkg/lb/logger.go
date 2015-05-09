@@ -19,13 +19,14 @@ func WithLogging(m Manager) *LoggedManager {
 }
 
 func (m *LoggedManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalancerOpts) (*LoadBalancer, error) {
-	var dnsName string
+	var dnsName, name string
 	lb, err := m.Manager.CreateLoadBalancer(ctx, o)
 	if err == nil && lb != nil {
+		name = lb.Name
 		dnsName = lb.DNSName
 	}
 
-	logger.Info(ctx, "creating load balancer", "err", err, "name", o.Name, "external", o.External, "instance-port", o.InstancePort, "dns-name", dnsName)
+	logger.Info(ctx, "creating load balancer", "err", err, "name", name, "external", o.External, "instance-port", o.InstancePort, "dns-name", dnsName)
 	return lb, err
 }
 

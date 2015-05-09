@@ -43,7 +43,6 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	defer s.Close()
 
 	lb, err := m.CreateLoadBalancer(context.Background(), CreateLoadBalancerOpts{
-		Name:         "acme-inc",
 		InstancePort: 9000,
 		External:     true,
 	})
@@ -320,6 +319,9 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 			LogLevel:    0,
 		}),
 	)
+	m.newName = func() string {
+		return "acme-inc"
+	}
 	m.SubnetFinder = StaticSubnets([]string{"subnet"})
 
 	return m, s

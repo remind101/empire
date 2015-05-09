@@ -73,7 +73,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 			n := lb.NewRoute53Nameserver(config.AWS)
 			n.Zone = config.Zone
 
-			l = lb.SanitizeUUIDs(lb.WithCNAME(l, n))
+			l = lb.WithCNAME(l, n)
 		}
 
 		pm = &LBProcessManager{

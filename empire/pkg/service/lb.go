@@ -57,7 +57,6 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 			tags[lb.AppTag] = app.Name
 
 			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
-				Name:         app.ID,
 				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
 				External:     p.Exposure == ExposePublic,
 				Tags:         tags,
