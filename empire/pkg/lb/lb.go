@@ -33,6 +33,9 @@ type LoadBalancer struct {
 	// True if the load balancer is exposed externally.
 	External bool
 
+	// The SSL Certificate to associate with the load balancer.
+	SSLCert string
+
 	// InstancePort is the port that this load balancer forwards requests to
 	// on the host.
 	InstancePort int64
