@@ -16,6 +16,9 @@ type CreateLoadBalancerOpts struct {
 
 	// True if the load balancer should be publicy exposed.
 	External bool
+
+	// The SSL Certificate
+	SSLCert string
 }
 
 // LoadBalancer represents a load balancer.

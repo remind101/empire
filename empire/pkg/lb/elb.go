@@ -72,14 +72,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 	}
 
 	input := &elb.CreateLoadBalancerInput{
-		Listeners: []*elb.Listener{
-			{
-				InstancePort:     aws.Long(o.InstancePort),
-				LoadBalancerPort: aws.Long(80),
-				Protocol:         aws.String("http"),
-				InstanceProtocol: aws.String("http"),
-			},
-		},
+		Listeners:        elbListeners(o.InstancePort, o.SSLCert),
 		LoadBalancerName: aws.String(m.newName()),
 		Scheme:           aws.String(scheme),
 		SecurityGroups:   []*string{aws.String(sg)},
@@ -259,6 +252,31 @@ func (f *VPCSubnetFinder) Subnets() ([]string, error) {
 // newName returns a string that's suitable as a load balancer name for elb.
 func newName() string {
 	return strings.Replace(uuid.New(), "-", "", -1)
+}
+
+// elbListeners returns a suitable list of listeners. We listen on post 80 by default.
+// If certID is not empty an SSL listener will be added to the list. certID should be
+// the Amazon Resource Name (ARN) of the server certificate.
+func elbListeners(port int64, certID string) []*elb.Listener {
+	listeners := []*elb.Listener{
+		{
+			InstancePort:     aws.Long(port),
+			LoadBalancerPort: aws.Long(80),
+			Protocol:         aws.String("http"),
+			InstanceProtocol: aws.String("http"),
+		},
+	}
+
+	if certID != "" {
+		listeners = append(listeners, &elb.Listener{
+			InstancePort:     aws.Long(port),
+			LoadBalancerPort: aws.Long(443),
+			SSLCertificateID: aws.String(certID),
+			Protocol:         aws.String("https"),
+			InstanceProtocol: aws.String("http"),
+		})
+	}
+	return listeners
 }
 
 // elbTags takes a map[string]string and converts it to the elb.Tag format.
