@@ -31,11 +31,16 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 
 		if l != nil {
 			// If the load balancer doesn't match the exposure that we
-			// wan't, we'll destroy the process, which will also destroy the
+			// want, we'll destroy the process, which will also destroy the
 			// existing load balancer, then let a new load balancer get
 			// created.
 			if !lbOk(p, l) {
-				logger.Info(ctx, "existing load balancer not suitable", "err", err, "external", l.External, "exposure", p.Exposure.String())
+				logger.Info(ctx, "existing load balancer not suitable",
+					"err", err,
+					"external", l.External,
+					"exposure", p.Exposure.String(),
+					"cert", p.SSLCert,
+				)
 
 				if err := m.RemoveProcess(ctx, app.ID, p.Type); err != nil {
 					if !noService(err) {
@@ -59,6 +64,7 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
 				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
 				External:     p.Exposure == ExposePublic,
+				SSLCert:      p.SSLCert,
 				Tags:         tags,
 			})
 			if err != nil {
@@ -126,6 +132,10 @@ func lbOk(p *Process, lb *lb.LoadBalancer) bool {
 	}
 
 	if *p.Ports[0].Host != lb.InstancePort {
+		return false
+	}
+
+	if p.SSLCert != lb.SSLCert {
 		return false
 	}
 

@@ -103,6 +103,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 		Name:         *input.LoadBalancerName,
 		DNSName:      *out.DNSName,
 		External:     o.External,
+		SSLCert:      o.SSLCert,
 		InstancePort: o.InstancePort,
 	}, nil
 }
@@ -156,15 +157,22 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 			if containsTags(tags, d.Tags) {
 				elb := descs[*d.LoadBalancerName]
 				var instancePort int64
+				var sslCert string
 
 				if len(elb.ListenerDescriptions) > 0 {
 					instancePort = *elb.ListenerDescriptions[0].Listener.InstancePort
+					for _, ld := range elb.ListenerDescriptions {
+						if ld.Listener.SSLCertificateID != nil {
+							sslCert = *ld.Listener.SSLCertificateID
+						}
+					}
 				}
 
 				lbs = append(lbs, &LoadBalancer{
 					Name:         *elb.LoadBalancerName,
 					DNSName:      *elb.DNSName,
 					External:     *elb.Scheme == schemeExternal,
+					SSLCert:      sslCert,
 					InstancePort: instancePort,
 				})
 			}
