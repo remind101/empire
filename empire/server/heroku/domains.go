@@ -16,7 +16,7 @@ func newDomain(d *empire.Domain) *Domain {
 	return &Domain{
 		Id:        d.ID,
 		Hostname:  d.Hostname,
-		CreatedAt: d.CreatedAt,
+		CreatedAt: *d.CreatedAt,
 	}
 }
 

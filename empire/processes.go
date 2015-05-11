@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/empire/pkg/service"
 	"golang.org/x/net/context"
@@ -13,9 +14,6 @@ import (
 
 // ProcessQuantityMap represents a map of process types to quantities.
 type ProcessQuantityMap map[ProcessType]int
-
-// ProcessPortMap represents a map of process types to exposed ports.
-type ProcessPortMap map[ProcessType]int64
 
 // DefaultQuantities maps a process type to the default number of instances to
 // run.
@@ -60,11 +58,23 @@ func (c Command) Value() (driver.Value, error) {
 
 // Process holds configuration information about a Process Type.
 type Process struct {
-	ID        string      `db:"id"`
-	Type      ProcessType `db:"type"`
-	Quantity  int         `db:"quantity"`
-	Command   Command     `db:"command"`
-	ReleaseID string      `db:"release_id"`
+	ID       string
+	Type     ProcessType
+	Quantity int
+	Command  Command
+	Port     int `sql:"-"`
+
+	ReleaseID string
+	Release   *Release
+}
+
+// NewProcess returns a new Process instance.
+func NewProcess(t ProcessType, cmd Command) *Process {
+	return &Process{
+		Type:     t,
+		Quantity: DefaultQuantities[t],
+		Command:  cmd,
+	}
 }
 
 // CommandMap maps a process ProcessType to a Command.
@@ -109,15 +119,6 @@ func (cm CommandMap) Value() (driver.Value, error) {
 // Formation maps a process ProcessType to a Process.
 type Formation map[ProcessType]*Process
 
-// NewProcess returns a new Process instance.
-func NewProcess(t ProcessType, cmd Command) *Process {
-	return &Process{
-		Type:     t,
-		Quantity: DefaultQuantities[t],
-		Command:  cmd,
-	}
-}
-
 // NewFormation creates a new Formation based on an existing Formation and
 // the available processes from a CommandMap.
 func NewFormation(f Formation, cm CommandMap) Formation {
@@ -140,11 +141,21 @@ func NewFormation(f Formation, cm CommandMap) Formation {
 	return processes
 }
 
+func (f Formation) Processes() []*Process {
+	var processes []*Process
+
+	for _, p := range f {
+		processes = append(processes, p)
+	}
+
+	return processes
+}
+
 func (s *store) ProcessesCreate(process *Process) (*Process, error) {
 	return processesCreate(s.db, process)
 }
 
-func (s *store) ProcessesUpdate(process *Process) (int64, error) {
+func (s *store) ProcessesUpdate(process *Process) error {
 	return processesUpdate(s.db, process)
 }
 
@@ -153,20 +164,26 @@ func (s *store) ProcessesAll(release *Release) (Formation, error) {
 }
 
 // ProcessesCreate inserts a process into the database.
-func processesCreate(db *db, process *Process) (*Process, error) {
-	return process, db.Insert(process)
+func processesCreate(db *gorm.DB, process *Process) (*Process, error) {
+	return process, db.Create(process).Error
 }
 
 // ProcessesUpdate updates an existing process into the database.
-func processesUpdate(db *db, process *Process) (int64, error) {
-	return db.Update(process)
+func processesUpdate(db *gorm.DB, process *Process) error {
+	return db.Save(process).Error
+}
+
+func forRelease(release *Release) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("release_id = ?", release.ID)
+	}
 }
 
 // ProcessesAll returns all Processes for a Release as a Formation.
-func processesAll(db *db, release *Release) (Formation, error) {
+func processesAll(db *gorm.DB, release *Release) (Formation, error) {
 	var ps []*Process
 
-	if err := db.Select(&ps, `select * from processes where release_id = $1`, string(release.ID)); err != nil {
+	if err := db.Scopes(forRelease(release)).Find(&ps).Error; err != nil {
 		return nil, err
 	}
 

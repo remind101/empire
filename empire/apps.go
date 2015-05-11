@@ -1,17 +1,16 @@
 package empire
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
-	"gopkg.in/gorp.v1"
 )
 
 const (
@@ -39,16 +38,16 @@ func NewAppNameFromRepo(repo string) string {
 
 // App represents an app.
 type App struct {
-	ID string `db:"id"`
+	ID string
 
-	Name string `db:"name"`
+	Name string
 
-	Repo *string `db:"repo"`
+	Repo *string
 
 	// Valid values are empire.ExposePrivate and empire.ExposePublic.
-	Exposure string `db:"exposure"`
+	Exposure string
 
-	CreatedAt time.Time `db:"created_at"`
+	CreatedAt *time.Time
 }
 
 // IsValid returns an error if the app isn't valid.
@@ -60,9 +59,9 @@ func (a *App) IsValid() error {
 	return nil
 }
 
-// PreInsert implements a pre insert hook for the db interface
-func (a *App) PreInsert(s gorp.SqlExecutor) error {
-	a.CreatedAt = timex.Now()
+func (a *App) BeforeCreate() error {
+	t := timex.Now()
+	a.CreatedAt = &t
 
 	if a.Exposure == "" {
 		a.Exposure = ExposePrivate
@@ -75,7 +74,7 @@ func (s *store) AppsCreate(app *App) (*App, error) {
 	return appsCreate(s.db, app)
 }
 
-func (s *store) AppsUpdate(app *App) (int64, error) {
+func (s *store) AppsUpdate(app *App) error {
 	return appsUpdate(s.db, app)
 }
 
@@ -87,16 +86,37 @@ func (s *store) AppsAll() ([]*App, error) {
 	return appsAll(s.db)
 }
 
-func (s *store) AppsFind(id string) (*App, error) {
-	return appsFind(s.db, id)
+func (s *store) AppsFind(scope func(*gorm.DB) *gorm.DB) (*App, error) {
+	var app App
+	if err := s.db.Scopes(scope).First(&app).Error; err != nil {
+		if err == gorm.RecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+	return &app, nil
 }
 
-func (s *store) AppsFindByName(name string) (*App, error) {
-	return appsFindByName(s.db, name)
+// AppID returns a scope to find an app by id.
+func AppID(id string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", id)
+	}
 }
 
-func (s *store) AppsFindByRepo(repo string) (*App, error) {
-	return appsFindByRepo(s.db, repo)
+// AppName returns a scope to find an app by name.
+func AppName(name string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("name = ?", name)
+	}
+}
+
+// AppRepo returns a scope to find an app by a repo.
+func AppRepo(repo string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("repo = ?", repo)
+	}
 }
 
 type appsService struct {
@@ -120,14 +140,13 @@ func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
 
 	app.Repo = &repo
 
-	_, err := s.store.AppsUpdate(app)
-	return err
+	return s.store.AppsUpdate(app)
 }
 
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
 func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
-	a, err := s.store.AppsFindByRepo(repo)
+	a, err := s.store.AppsFind(AppRepo(repo))
 	if err != nil {
 		return a, err
 	}
@@ -139,7 +158,7 @@ func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
 
 	n := NewAppNameFromRepo(repo)
 
-	a, err = s.store.AppsFindByName(n)
+	a, err = s.store.AppsFind(AppName(n))
 	if err != nil {
 		return a, err
 	}
@@ -157,55 +176,24 @@ func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
 }
 
 // AppsCreate inserts the app into the database.
-func appsCreate(db *db, app *App) (*App, error) {
-	return app, db.Insert(app)
+func appsCreate(db *gorm.DB, app *App) (*App, error) {
+	return app, db.Create(app).Error
 }
 
 // AppsUpdate updates an app.
-func appsUpdate(db *db, app *App) (int64, error) {
-	return db.Update(app)
+func appsUpdate(db *gorm.DB, app *App) error {
+	return db.Save(app).Error
 }
 
 // AppsDestroy destroys an app.
-func appsDestroy(db *db, app *App) error {
-	_, err := db.Delete(app)
-	return err
+func appsDestroy(db *gorm.DB, app *App) error {
+	return db.Delete(app).Error
 }
 
 // AppsAll returns all Apps.
-func appsAll(db *db) ([]*App, error) {
+func appsAll(db *gorm.DB) ([]*App, error) {
 	var apps []*App
-	return apps, db.Select(&apps, `select * from apps order by name`)
-}
-
-// Finds an app by id.
-func appsFind(db *db, id string) (*App, error) {
-	return appsFindBy(db, "id", id)
-}
-
-// Finds an app by name.
-func appsFindByName(db *db, name string) (*App, error) {
-	return appsFindBy(db, "name", name)
-}
-
-// Finds an app by it's Repo field.
-func appsFindByRepo(db *db, repo string) (*App, error) {
-	return appsFindBy(db, "repo", repo)
-}
-
-// AppsFindBy finds an app by a field.
-func appsFindBy(db *db, field string, value interface{}) (*App, error) {
-	var app App
-
-	if err := findBy(db, &app, "apps", field, value); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return &app, nil
+	return apps, db.Order("name").Find(&apps).Error
 }
 
 // scaler is a small service for scaling an apps process.
@@ -240,8 +228,7 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 
 	// Update quantity for this process in the formation
 	p.Quantity = quantity
-	_, err = s.store.ProcessesUpdate(p)
-	return err
+	return s.store.ProcessesUpdate(p)
 }
 
 // restarter is a small service for restarting an apps processes.

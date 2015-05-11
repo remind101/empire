@@ -1,58 +1,45 @@
 package empire
 
-import (
-	"database/sql"
-	"fmt"
-)
+import "github.com/jinzhu/gorm"
 
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
-	ID           string     `json:"id" db:"id"`
-	Image        Image      `json:"image"`
-	ProcessTypes CommandMap `json:"process_types" db:"process_types"`
+	ID           string
+	Image        Image
+	ProcessTypes CommandMap
 }
 
 func (s *store) SlugsCreate(slug *Slug) (*Slug, error) {
 	return slugsCreate(s.db, slug)
 }
 
-func (s *store) SlugsFind(id string) (*Slug, error) {
-	return slugsFind(s.db, id)
-}
-
-func (s *store) SlugsFindByImage(image Image) (*Slug, error) {
-	return slugsFindByImage(s.db, image)
-}
-
-// SlugsCreate inserts a Slug into the database.
-func slugsCreate(db *db, slug *Slug) (*Slug, error) {
-	return slug, db.Insert(slug)
-}
-
-// SlugsFind finds a slug by id.
-func slugsFind(db *db, id string) (*Slug, error) {
-	return slugsFindBy(db, "id", id)
-}
-
-// SlugsFindByImage finds a slug by image.
-func slugsFindByImage(db *db, image Image) (*Slug, error) {
-	return slugsFindBy(db, "image", image.String())
-}
-
-// SlugsFindBy finds a slug by a field.
-func slugsFindBy(db *db, field string, value interface{}) (*Slug, error) {
+func (s *store) SlugsFind(scope func(*gorm.DB) *gorm.DB) (*Slug, error) {
 	var slug Slug
-
-	q := fmt.Sprintf(`select * from slugs where %s = $1`, field)
-	if err := db.SelectOne(&slug, q, value); err != nil {
-		if err == sql.ErrNoRows {
+	if err := s.db.Scopes(scope).First(&slug).Error; err != nil {
+		if err == gorm.RecordNotFound {
 			return nil, nil
 		}
 
 		return nil, err
 	}
-
 	return &slug, nil
+}
+
+func SlugID(id string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", id)
+	}
+}
+
+func SlugImage(image Image) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("image = ?", image.String())
+	}
+}
+
+// SlugsCreate inserts a Slug into the database.
+func slugsCreate(db *gorm.DB, slug *Slug) (*Slug, error) {
+	return slug, db.Create(slug).Error
 }
 
 // slugsService provides convenience methods for creating slugs.

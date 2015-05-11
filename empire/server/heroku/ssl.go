@@ -16,8 +16,8 @@ func newSSLEndpoint(cert *empire.Certificate) *SSLEndpoint {
 		Id:               cert.ID,
 		Name:             cert.Name,
 		CertificateChain: cert.CertificateChain,
-		CreatedAt:        cert.CreatedAt,
-		UpdatedAt:        cert.UpdatedAt,
+		CreatedAt:        *cert.CreatedAt,
+		UpdatedAt:        *cert.UpdatedAt,
 	}
 }
 
@@ -32,7 +32,7 @@ func (h *GetSSLEndpoints) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 	endpoints := make([]*SSLEndpoint, 0)
 
-	cert, err := h.CertificatesFindByApp(ctx, a.ID)
+	cert, err := h.CertificatesFindByApp(ctx, a)
 	if err != nil {
 		return err
 	}
