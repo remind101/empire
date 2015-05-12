@@ -8,7 +8,7 @@ Empire is targeted at small to medium sized startups that are running a large nu
 
 ## Quickstart
 
-To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide](./docs/guide) for more information.
+To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide][guide] for more information.
 
 ## Architecture
 
@@ -98,9 +98,31 @@ Unit tests live alongside each go file as `_test.go`.
 
 There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
 
+## Development
+
+If you want to contribute to empire, you maybe end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
+
+1. Go through the [guide][guide], but skip the step where you create the empire task definition and service. Create a `.env` file security group and vpc id's from the stack outputs.
+2. Create some IAM credentials with Administrator access and set them in `~/.aws/credentials`.
+3. Ensure that boot2docker is running and make the docker api available to empire:
+  
+   ```console
+   $ boot2docker start
+   $ $(boot2docker shellinit)
+   ```
+4. Build the empire binary and run the server:
+   
+   ```console
+   $ make build
+   $ ./build/empire server
+   ```
+
+Empire will be available at http://0.0.0.0:8080 and you can point the CLI there.
+
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
 [heroku-api]: https://devcenter.heroku.com/articles/platform-api-reference
 [tugboat]: https://github.com/remind101/tugboat
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
+[guide]: ./docs/guide
