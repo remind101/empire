@@ -59,7 +59,7 @@ $ stack-outputs $STACK
 Then create the task definition:
 
 ```console
-$ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/guide/empire.ecs.json
+$ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/docs/guide/empire.ecs.json
 ```
 
 **Create the ECS Service Role**
