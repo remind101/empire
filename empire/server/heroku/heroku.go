@@ -19,46 +19,46 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 	r := httpx.NewRouter()
 
 	// Apps
-	r.Handle("GET", "/apps", Authenticate(e, &GetApps{e}))                 // hk apps
-	r.Handle("DELETE", "/apps/{app}", Authenticate(e, &DeleteApp{e}))      // hk destroy
-	r.Handle("POST", "/apps", Authenticate(e, &PostApps{e}))               // hk create
-	r.Handle("POST", "/organizations/apps", Authenticate(e, &PostApps{e})) // hk create
+	r.Handle("/apps", Authenticate(e, &GetApps{e})).Methods("GET")                 // hk apps
+	r.Handle("/apps/{app}", Authenticate(e, &DeleteApp{e})).Methods("DELETE")      // hk destroy
+	r.Handle("/apps", Authenticate(e, &PostApps{e})).Methods("POST")               // hk create
+	r.Handle("/organizations/apps", Authenticate(e, &PostApps{e})).Methods("POST") // hk create
 
 	// Domains
-	r.Handle("GET", "/apps/{app}/domains", Authenticate(e, &GetDomains{e}))                 // hk domains
-	r.Handle("POST", "/apps/{app}/domains", Authenticate(e, &PostDomains{e}))               // hk domain-add
-	r.Handle("DELETE", "/apps/{app}/domains/{hostname}", Authenticate(e, &DeleteDomain{e})) // hk domain-remove
+	r.Handle("/apps/{app}/domains", Authenticate(e, &GetDomains{e})).Methods("GET")                 // hk domains
+	r.Handle("/apps/{app}/domains", Authenticate(e, &PostDomains{e})).Methods("POST")               // hk domain-add
+	r.Handle("/apps/{app}/domains/{hostname}", Authenticate(e, &DeleteDomain{e})).Methods("DELETE") // hk domain-remove
 
 	// Deploys
-	r.Handle("POST", "/deploys", Authenticate(e, &PostDeploys{e})) // Deploy an app
+	r.Handle("/deploys", Authenticate(e, &PostDeploys{e})).Methods("POST") // Deploy an app
 
 	// Releases
-	r.Handle("GET", "/apps/{app}/releases", Authenticate(e, &GetReleases{e}))          // hk releases
-	r.Handle("GET", "/apps/{app}/releases/{version}", Authenticate(e, &GetRelease{e})) // hk release-info
-	r.Handle("POST", "/apps/{app}/releases", Authenticate(e, &PostReleases{e}))        // hk rollback
+	r.Handle("/apps/{app}/releases", Authenticate(e, &GetReleases{e})).Methods("GET")          // hk releases
+	r.Handle("/apps/{app}/releases/{version}", Authenticate(e, &GetRelease{e})).Methods("GET") // hk release-info
+	r.Handle("/apps/{app}/releases", Authenticate(e, &PostReleases{e})).Methods("POST")        // hk rollback
 
 	// Configs
-	r.Handle("GET", "/apps/{app}/config-vars", Authenticate(e, &GetConfigs{e}))     // hk env, hk get
-	r.Handle("PATCH", "/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})) // hk set
+	r.Handle("/apps/{app}/config-vars", Authenticate(e, &GetConfigs{e})).Methods("GET")     // hk env, hk get
+	r.Handle("/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})).Methods("PATCH") // hk set
 
 	// Processes
-	r.Handle("GET", "/apps/{app}/dynos", Authenticate(e, &GetProcesses{e}))                     // hk dynos
-	r.Handle("POST", "/apps/{app}/dynos", Authenticate(e, &PostProcess{e}))                     // hk run
-	r.Handle("DELETE", "/apps/{app}/dynos", Authenticate(e, &DeleteProcesses{e}))               // hk restart
-	r.Handle("DELETE", "/apps/{app}/dynos/{ptype}.{pid}", Authenticate(e, &DeleteProcesses{e})) // hk restart web.1
-	r.Handle("DELETE", "/apps/{app}/dynos/{ptype}", Authenticate(e, &DeleteProcesses{e}))       // hk restart web
+	r.Handle("/apps/{app}/dynos", Authenticate(e, &GetProcesses{e})).Methods("GET")                     // hk dynos
+	r.Handle("/apps/{app}/dynos", Authenticate(e, &PostProcess{e})).Methods("POST")                     // hk run
+	r.Handle("/apps/{app}/dynos", Authenticate(e, &DeleteProcesses{e})).Methods("DELETE")               // hk restart
+	r.Handle("/apps/{app}/dynos/{ptype}.{pid}", Authenticate(e, &DeleteProcesses{e})).Methods("DELETE") // hk restart web.1
+	r.Handle("/apps/{app}/dynos/{ptype}", Authenticate(e, &DeleteProcesses{e})).Methods("DELETE")       // hk restart web
 
 	// Formations
-	r.Handle("PATCH", "/apps/{app}/formation", Authenticate(e, &PatchFormation{e})) // hk scale
+	r.Handle("/apps/{app}/formation", Authenticate(e, &PatchFormation{e})).Methods("PATCH") // hk scale
 
 	// OAuth
-	r.Handle("POST", "/oauth/authorizations", &PostAuthorizations{e, auth})
+	r.Handle("/oauth/authorizations", &PostAuthorizations{e, auth}).Methods("POST")
 
 	// SSL
-	r.Handle("GET", "/apps/{app}/ssl-endpoints", &GetSSLEndpoints{e})             // hk ssl
-	r.Handle("POST", "/apps/{app}/ssl-endpoints", &PostSSLEndpoints{e})           // hk ssl-cert-add
-	r.Handle("PATCH", "/apps/{app}/ssl-endpoints/{cert}", &PatchSSLEndpoint{e})   // hk ssl-cert-add, hk ssl-cert-rollback
-	r.Handle("DELETE", "/apps/{app}/ssl-endpoints/{cert}", &DeleteSSLEndpoint{e}) // hk ssl-destroy
+	r.Handle("/apps/{app}/ssl-endpoints", &GetSSLEndpoints{e}).Methods("GET")             // hk ssl
+	r.Handle("/apps/{app}/ssl-endpoints", &PostSSLEndpoints{e}).Methods("POST")           // hk ssl-cert-add
+	r.Handle("/apps/{app}/ssl-endpoints/{cert}", &PatchSSLEndpoint{e}).Methods("PATCH")   // hk ssl-cert-add, hk ssl-cert-rollback
+	r.Handle("/apps/{app}/ssl-endpoints/{cert}", &DeleteSSLEndpoint{e}).Methods("DELETE") // hk ssl-destroy
 
 	errorHandler := func(err error, w http.ResponseWriter, r *http.Request) {
 		Error(w, err, http.StatusInternalServerError)

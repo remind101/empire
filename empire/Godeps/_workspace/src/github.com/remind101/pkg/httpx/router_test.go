@@ -25,23 +25,39 @@ func TestRouter(t *testing.T) {
 		// A simple request.
 		{
 			routes: func(r *Router) {
-				r.Handle("GET", "/path", HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+				r.Handle("/path", HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 					io.WriteString(w, ctx.Value("string").(string))
 					return nil
-				}))
+				})).Methods("GET")
 			},
 			req:  newRequest("GET", "/path", nil),
+			body: "foo",
+		},
+
+		// A headers based route.
+		{
+			routes: func(r *Router) {
+				r.Headers("X-Foo", "bar").HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+					io.WriteString(w, ctx.Value("string").(string))
+					return nil
+				})
+			},
+			req: func() *http.Request {
+				r := newRequest("GET", "/path", nil)
+				r.Header.Set("X-Foo", "bar")
+				return r
+			}(),
 			body: "foo",
 		},
 
 		// A request with vars.
 		{
 			routes: func(r *Router) {
-				r.Handle("GET", "/path/{app}", HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+				r.Handle("/path/{app}", HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 					vars := Vars(ctx)
 					io.WriteString(w, vars["app"])
 					return nil
-				}))
+				})).Methods("GET")
 			},
 			req:  newRequest("GET", "/path/acme-inc", nil),
 			body: "acme-inc",
@@ -63,6 +79,18 @@ func TestRouter(t *testing.T) {
 			},
 			req:  newRequest("GET", "/", nil),
 			body: "not found",
+		},
+
+		// Pulling out current route.
+		{
+			routes: func(r *Router) {
+				r.Handle("/path", HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+					io.WriteString(w, RouteFromContext(ctx).GetName())
+					return nil
+				})).Methods("GET").Name("bar")
+			},
+			req:  newRequest("GET", "/path", nil),
+			body: "bar",
 		},
 	}
 

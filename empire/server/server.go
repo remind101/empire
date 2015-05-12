@@ -42,10 +42,10 @@ func New(e *empire.Empire, options Options) http.Handler {
 
 	// Mount the heroku api
 	h := heroku.New(e, auth)
-	r.Header("Accept", heroku.AcceptHeader, h)
+	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
 
 	// Mount health endpoint
-	r.Handle("GET", "/health", NewHealthHandler(e))
+	r.Handle("/health", NewHealthHandler(e))
 
 	return middleware.Common(r, middleware.CommonOpts{
 		Reporter: e.Reporter,
