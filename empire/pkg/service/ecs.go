@@ -186,7 +186,8 @@ func (m *ECSManager) serviceTasks(service string) ([]*ecs.Task, error) {
 	}
 
 	dr, err := m.ecs.DescribeTasks(&ecs.DescribeTasksInput{
-		Tasks: tr.TaskARNs,
+		Cluster: aws.String(m.cluster),
+		Tasks:   tr.TaskARNs,
 	})
 	return dr.Tasks, err
 }
