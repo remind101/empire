@@ -15,7 +15,7 @@
       "Default": "ami-ae6559c6"
     },
     "KeyName": {
-      "Type": "String",
+      "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "The name of the key pair to use to allow SSH access."
     },
     "DockerUser": {
@@ -24,7 +24,8 @@
     },
     "DockerPass": {
       "Type": "String",
-      "Description": "Docker password for private registry"
+      "Description": "Docker password for private registry",
+      "NoEcho": true
     },
     "DockerEmail": {
       "Type": "String",
@@ -327,9 +328,13 @@
   },
 
   "Outputs": {
-    "ELB": {
+    "ELBName": {
       "Description": "The name of the ELB for the Empire controller",
       "Value": { "Ref": "LoadBalancer" }
+    },
+    "VPC": {
+      "Description": "The id of the VPC",
+      "Value": { "Ref": "Vpc" }
     },
     "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",

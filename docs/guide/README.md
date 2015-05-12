@@ -1,6 +1,6 @@
 # Empire Quickstart
 
-The following is meant to be used as a quick way to test empire. It is not secure and is not suitable for production use.
+The following is meant to be used as a quick way to try empire. It is not secure and is not suitable for production use.
 
 ### Prerequisites
 
@@ -10,11 +10,6 @@ This guide assumes that you have the following installed:
 
   ```console
   sudo pip install --upgrade awscli
-  ```
-* **jq**: Which can be downloaded from http://stedolan.github.io/jq/ or with Homebrew:
-
-  ```console
-  brew install jq
   ```
 
 ## Step 1 - ECS AMI
@@ -53,6 +48,8 @@ The next step is to run Empire itself on ECS.
 **Create the Task Definition**
 
 ```console
+$ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
+$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $2 | cut -f 2; }
 $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/guide/empire.ecs.json
 ```
 
@@ -63,11 +60,9 @@ Refer to the ECS documentation to create the `ecsServiceRole` role: http://docs.
 **Create the Service**
 
 ```console
-$ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
-$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 | jq -r ".Stacks[0].Outputs | .[] | select(.OutputKey == \"$2\") | .OutputValue"; }
 $ aws ecs create-service --cluster default --service-name empire --task-definition empire \
   --desired-count 1 --role ecsServiceRole \
-  --load-balancers loadBalancerName=$(stack-output $STACK ELB),containerName=empire,containerPort=8080
+  --load-balancers loadBalancerName=$(stack-output $STACK ELBName),containerName=empire,containerPort=8080
 ```
 
 ## Step 5 - Deploy something
