@@ -20,12 +20,14 @@ type Handler interface {
 
 ## Usage
 
+In order to use the `httpx.Handler` interface, you need a compatible router. One is provided within this package that wraps [gorilla mux](https://github.com/gorilla/mux) to make it context.Context aware.
+
 ```go
 r := httpx.NewRouter()
-r.Handle("GET", "/", httpx.HandlerFunc(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+r.HandleFunc("/", func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	io.WriteString(w, `ok`)
 	return nil
-}
+}).Methods("GET")
 
 // Adapt the router to the http.Handler interface and insert a
 // context.Background().
