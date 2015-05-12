@@ -47,9 +47,18 @@ The next step is to run Empire itself on ECS.
 
 **Create the Task Definition**
 
+First, replace the values of `<<VPC>>`, `<<InternalELBSG>>`, `<<ExternalELBSG>>`, with the values from the stack output:
+
 ```console
 $ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
-$ function stack-output() { aws cloudformation describe-stacks --stack-name $1 --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $2 | cut -f 2; }
+$ function stack-outputs() { aws cloudformation describe-stacks --stack-name $1 --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text; }
+$ function stack-output() { stack-output $1 $2 | grep $2 | cut -f 2; }
+$ stack-outputs $STACK
+```
+
+Then create the task definition:
+
+```console
 $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/guide/empire.ecs.json
 ```
 

@@ -34,6 +34,18 @@
         {
           "name": "EMPIRE_DATABASE_URL",
           "value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
+        },
+        {
+          "name": "EMPIRE_ELB_VPC_ID",
+          "value": "<<VPC>>"
+        },
+        {
+          "name": "EMPIRE_ELB_INTERNAL_SG",
+          "value": "<<InternalELBSG>>"
+        },
+        {
+          "name": "EMPIRE_ELB_EXTERNAL_SG",
+          "value": "<<ExternalELBSG>>"
         }
       ],
       "command": ["server", "-automigrate=true"],
