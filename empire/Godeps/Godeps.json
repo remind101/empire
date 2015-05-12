@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/remind101/empire/empire",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.4.1",
 	"Packages": [
 		"./..."
 	],
@@ -165,6 +165,10 @@
 			"Rev": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
 		},
 		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Rev": "3c2915a9dfaaeaeb1e049436ae9291f5e84c95fa"
+		},
+		{
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-22-g73672c2",
 			"Rev": "73672c22431294bd2d012742dfc488523cc631bd"
@@ -216,11 +220,6 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
-		},
-		{
-			"ImportPath": "gopkg.in/gorp.v1",
-			"Comment": "v1.7.1",
-			"Rev": "c87af80f3cc5036b55b83d77171e156791085e2e"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

@@ -16,7 +16,7 @@ func newApp(a *empire.App) *App {
 	return &App{
 		Id:        a.Name,
 		Name:      a.Name,
-		CreatedAt: a.CreatedAt,
+		CreatedAt: *a.CreatedAt,
 	}
 }
 

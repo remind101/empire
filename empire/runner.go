@@ -101,26 +101,12 @@ func (r *runner) newContainerForm(ctx context.Context, app *App, command string,
 		return nil, err
 	}
 
-	if release == nil {
-		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
-	}
-
-	config, err := r.store.ConfigsFind(release.ConfigID)
-	if err != nil {
-		return nil, err
-	}
-
-	slug, err := r.store.SlugsFind(release.SlugID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Merge env vars with App env vars.
 	vars := Vars{}
 	for key, val := range opts.Env {
 		vars[Variable(key)] = val
 	}
-	env := environment(NewConfig(config, vars).Vars)
+	env := environment(NewConfig(release.Config, vars).Vars)
 
 	username := ""
 	if user, ok := UserFromContext(ctx); ok {
@@ -129,7 +115,7 @@ func (r *runner) newContainerForm(ctx context.Context, app *App, command string,
 
 	c := &postContainersForm{
 		User:    username,
-		Image:   slug.Image.String(),
+		Image:   release.Slug.Image.String(),
 		Command: command,
 		Env:     env,
 		Attach:  true,

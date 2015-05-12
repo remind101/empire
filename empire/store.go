@@ -1,15 +1,17 @@
 package empire
 
+import "github.com/jinzhu/gorm"
+
 // store provides methods for CRUD'ing things.
 type store struct {
-	db *db
+	db *gorm.DB
 }
 
 func (s *store) Reset() error {
 	var err error
 	exec := func(sql string) {
 		if err == nil {
-			_, err = s.db.Exec(sql)
+			err = s.db.Exec(sql).Error
 		}
 	}
 
@@ -21,9 +23,5 @@ func (s *store) Reset() error {
 }
 
 func (s *store) IsHealthy() bool {
-	if _, err := s.db.Exec(`SELECT 1`); err != nil {
-		return false
-	}
-
-	return true
+	return s.db.DB().Ping() == nil
 }

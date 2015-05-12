@@ -1,14 +1,15 @@
 package empire
 
 import (
-	"database/sql"
 	"errors"
+
+	"github.com/jinzhu/gorm"
 )
 
 type Port struct {
-	ID    string  `db:"id"`
-	AppID *string `db:"app_id"`
-	Port  int     `db:"port"`
+	ID    string
+	AppID *string
+	Port  int
 }
 
 var ErrNoPorts = errors.New("no ports avaiable")
@@ -31,12 +32,9 @@ func (s *store) PortsFindByApp(app *App) (*Port, error) {
 func (s *store) PortsAssign(app *App) (*Port, error) {
 	var port *Port
 
-	t, err := s.db.Begin()
-	if err != nil {
-		return port, err
-	}
+	t := s.db.Begin()
 
-	port, err = portsFindAvailable(t)
+	port, err := portsFindAvailable(t)
 	if err != nil {
 		t.Rollback()
 		return port, err
@@ -45,44 +43,51 @@ func (s *store) PortsAssign(app *App) (*Port, error) {
 	// Assign app to port
 	port.AppID = &app.ID
 
-	if _, err := portsUpdate(t, port); err != nil {
+	if err := portsUpdate(t, port); err != nil {
 		t.Rollback()
 		return port, err
 	}
 
-	return port, t.Commit()
+	if err := t.Commit().Error; err != nil {
+		t.Rollback()
+		return port, err
+	}
+
+	return port, nil
 }
 
 func (s *store) PortsUnassign(app *App) error {
-	_, err := portsUnassign(s.db, app)
-	return err
+	return portsUnassign(s.db, app)
 }
 
-func portsFindByApp(db *db, app *App) (*Port, error) {
-	var port *Port
-	err := db.SelectOne(&port, `select * from ports where app_id = $1 order by port limit 1`, app.ID)
-	if err == sql.ErrNoRows {
-		return nil, nil
+func portsFindByApp(db *gorm.DB, app *App) (*Port, error) {
+	var port Port
+	if err := db.Where("app_id = ?", app.ID).Order("port").First(&port).Error; err != nil {
+		if err == gorm.RecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
 	}
-
-	return port, err
+	return &port, nil
 }
 
-func portsFindAvailable(db *Transaction) (*Port, error) {
-	var port *Port
-	err := db.SelectOne(&port, `select * from ports where app_id is null order by port limit 1`)
-	if err == sql.ErrNoRows {
-		return nil, ErrNoPorts
+func portsFindAvailable(db *gorm.DB) (*Port, error) {
+	var port Port
+	if err := db.Where("app_id is null").Order("port").First(&port).Error; err != nil {
+		if err == gorm.RecordNotFound {
+			return nil, ErrNoPorts
+		}
+
+		return nil, err
 	}
-
-	return port, err
-
+	return &port, nil
 }
 
-func portsUpdate(db *Transaction, port *Port) (int64, error) {
-	return db.Update(port)
+func portsUpdate(db *gorm.DB, port *Port) error {
+	return db.Save(port).Error
 }
 
-func portsUnassign(db *db, app *App) (sql.Result, error) {
-	return db.Exec(`update ports set app_id = null where app_id = $1`, app.ID)
+func portsUnassign(db *gorm.DB, app *App) error {
+	return db.Exec(`update ports set app_id = null where app_id = ?`, app.ID).Error
 }

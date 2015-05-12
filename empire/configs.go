@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
 	"golang.org/x/net/context"
 )
 
 // Config represents a collection of environment variables.
 type Config struct {
-	ID    string `db:"id"`
-	Vars  Vars   `db:"vars"`
-	AppID string `db:"app_id"`
+	ID   string
+	Vars Vars
+
+	AppID string
+	App   *App
 }
 
 // NewConfig initializes a new config based on the old config, with the new
@@ -74,26 +77,35 @@ func (s *store) ConfigsCreate(config *Config) (*Config, error) {
 	return configsCreate(s.db, config)
 }
 
-func (s *store) ConfigsFind(id string) (*Config, error) {
-	return configsFind(s.db, id)
-}
+func (s *store) ConfigsFind(scope func(*gorm.DB) *gorm.DB) (*Config, error) {
+	var config Config
+	if err := s.db.Scopes(scope).Order("created_at desc").First(&config).Error; err != nil {
+		if err == gorm.RecordNotFound {
+			return nil, nil
+		}
 
-func (s *store) ConfigsFindByApp(app *App) (*Config, error) {
-	return configsFindByApp(s.db, app)
+		return nil, err
+	}
+	return &config, nil
 }
 
 // ConfigsCreate inserts a Config in the database.
-func configsCreate(db *db, config *Config) (*Config, error) {
-	return config, db.Insert(config)
+func configsCreate(db *gorm.DB, config *Config) (*Config, error) {
+	return config, db.Create(config).Error
 }
 
-func configsFind(db *db, id string) (*Config, error) {
-	return configsFindBy(db, "id", id)
+// ConfigID returns a scope to find a config by id.
+func ConfigID(id string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", id)
+	}
 }
 
-// ConfigsFindByApp finds the current config for the given App.
-func configsFindByApp(db *db, app *App) (*Config, error) {
-	return configsFindBy(db, "app_id", app.ID)
+// ConfigApp returns a scope to find a config by app.
+func ConfigApp(app *App) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("app_id = ?", app.ID)
+	}
 }
 
 type configsService struct {
@@ -118,11 +130,6 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 	}
 
 	if release != nil {
-		slug, err := s.store.SlugsFind(release.SlugID)
-		if err != nil {
-			return c, err
-		}
-
 		keys := make([]string, 0, len(vars))
 		for k, _ := range vars {
 			keys = append(keys, string(k))
@@ -131,10 +138,10 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
 
 		// Create new release based on new config and old slug
-		_, err = s.releases.ReleasesCreate(ctx, ReleasesCreateOpts{
+		_, err = s.releases.ReleasesCreate(ctx, &Release{
 			App:         app,
 			Config:      c,
-			Slug:        slug,
+			Slug:        release.Slug,
 			Description: desc,
 		})
 		if err != nil {
@@ -155,13 +162,10 @@ func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
 	var c *Config
 
 	if r != nil {
-		c, err = s.store.ConfigsFind(r.ConfigID)
-		if err != nil {
-			return nil, err
-		}
+		c = r.Config
 	} else {
 		// It's possible to have config without releases, this handles that.
-		c, err = s.store.ConfigsFindByApp(app)
+		c, err = s.store.ConfigsFind(ConfigApp(app))
 		if err != nil {
 			return nil, err
 		}
@@ -172,24 +176,9 @@ func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
 	}
 
 	return s.store.ConfigsCreate(&Config{
-		AppID: app.ID,
-		Vars:  make(Vars),
+		App:  app,
+		Vars: make(Vars),
 	})
-}
-
-// ConfigsFindBy finds a Config by a field.
-func configsFindBy(db *db, field string, value interface{}) (*Config, error) {
-	var config Config
-
-	if err := db.SelectOne(&config, `select id, app_id, vars from configs where `+field+` = $1 order by created_at desc limit 1`, value); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return &config, nil
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a

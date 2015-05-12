@@ -1,13 +1,12 @@
 package empire
 
 import (
-	"database/sql"
 	"errors"
 
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/remind101/pkg/timex"
-	"gopkg.in/gorp.v1"
 )
 
 var (
@@ -17,49 +16,26 @@ var (
 )
 
 type Domain struct {
-	ID        string    `db:"id"`
-	AppID     string    `db:"app_id"`
-	Hostname  string    `db:"hostname"`
-	CreatedAt time.Time `db:"created_at"`
+	ID        string
+	Hostname  string
+	CreatedAt *time.Time
+
+	AppID string
+	App   *App
 }
 
-// PreInsert implements a pre insert hook for the db interface
-func (d *Domain) PreInsert(s gorp.SqlExecutor) error {
-	d.CreatedAt = timex.Now()
-	return nil
-}
-
-type domainRegistry interface {
-	Register(*Domain) error
-	Unregister(*Domain) error
-}
-
-func newDomainRegistry(urls string) domainRegistry {
-	if urls == "fake" {
-		return &fakeDomainRegistry{}
-	}
-
-	// TODO: Add a Route53 Registry that will create a CNAME to the app's ELB.
-	return &fakeDomainRegistry{}
-}
-
-type fakeDomainRegistry struct{}
-
-func (r *fakeDomainRegistry) Register(domain *Domain) error {
-	return nil
-}
-
-func (r *fakeDomainRegistry) Unregister(domain *Domain) error {
+func (d *Domain) BeforeCreate() error {
+	t := timex.Now()
+	d.CreatedAt = &t
 	return nil
 }
 
 type domainsService struct {
-	store    *store
-	registry domainRegistry
+	store *store
 }
 
 func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
-	d, err := s.store.DomainsFindByHostname(domain.Hostname)
+	d, err := s.store.DomainsFind(DomainHostname(domain.Hostname))
 	if err != nil {
 		return domain, err
 	}
@@ -81,24 +57,16 @@ func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
 		return domain, err
 	}
 
-	if err := s.registry.Register(domain); err != nil {
-		return domain, err
-	}
-
 	return domain, err
 }
 
 func (s *domainsService) DomainsDestroy(domain *Domain) error {
-	if err := s.registry.Unregister(domain); err != nil {
-		return err
-	}
-
 	if err := s.store.DomainsDestroy(domain); err != nil {
 		return err
 	}
 
 	// If app has no domains associated, make it private
-	d, err := s.store.DomainsFindByApp(&App{ID: domain.AppID})
+	d, err := s.store.DomainsAll(DomainApp(domain.App))
 	if err != nil {
 		return err
 	}
@@ -113,13 +81,13 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 }
 
 func (s *domainsService) makePublic(appID string) error {
-	a, err := s.store.AppsFind(appID)
+	a, err := s.store.AppsFind(AppID(appID))
 	if err != nil {
 		return err
 	}
 
 	a.Exposure = "public"
-	if _, err := s.store.AppsUpdate(a); err != nil {
+	if err := s.store.AppsUpdate(a); err != nil {
 		return err
 	}
 
@@ -127,25 +95,48 @@ func (s *domainsService) makePublic(appID string) error {
 }
 
 func (s *domainsService) makePrivate(appID string) error {
-	a, err := s.store.AppsFind(appID)
+	a, err := s.store.AppsFind(AppID(appID))
 	if err != nil {
 		return err
 	}
 
 	a.Exposure = "private"
-	if _, err := s.store.AppsUpdate(a); err != nil {
+	if err := s.store.AppsUpdate(a); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *store) DomainsFindByApp(app *App) ([]*Domain, error) {
-	return domainsFindByApp(s.db, app)
+// DomainHostname returns a scope that finds a domain by hostname.
+func DomainHostname(hostname string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("hostname = ?", hostname)
+	}
 }
 
-func (s *store) DomainsFindByHostname(hostname string) (*Domain, error) {
-	return domainsFindByHostname(s.db, hostname)
+// DomainApp returns a scope that will find domains for a given app.
+func DomainApp(app *App) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("app_id = ?", app.ID)
+	}
+}
+
+func (s *store) DomainsFind(scope func(*gorm.DB) *gorm.DB) (*Domain, error) {
+	var domain Domain
+	if err := s.db.Scopes(scope).First(&domain).Error; err != nil {
+		if err == gorm.RecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+	return &domain, nil
+}
+
+func (s *store) DomainsAll(scope func(*gorm.DB) *gorm.DB) ([]*Domain, error) {
+	var domains []*Domain
+	return domains, s.db.Scopes(scope).Find(&domains).Error
 }
 
 func (s *store) DomainsCreate(domain *Domain) (*Domain, error) {
@@ -156,29 +147,10 @@ func (s *store) DomainsDestroy(domain *Domain) error {
 	return domainsDestroy(s.db, domain)
 }
 
-func domainsFindByApp(db *db, app *App) ([]*Domain, error) {
-	var domains []*Domain
-	return domains, db.Select(&domains, `select * from domains where app_id = $1 order by hostname`, app.ID)
+func domainsCreate(db *gorm.DB, domain *Domain) (*Domain, error) {
+	return domain, db.Create(domain).Error
 }
 
-func domainsFindByHostname(db *db, hostname string) (*Domain, error) {
-	var domain Domain
-	if err := db.SelectOne(&domain, `select * from domains where hostname = $1`, hostname); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return &domain, nil
-}
-
-func domainsCreate(db *db, domain *Domain) (*Domain, error) {
-	return domain, db.Insert(domain)
-}
-
-func domainsDestroy(db *db, domain *Domain) error {
-	_, err := db.Delete(domain)
-	return err
+func domainsDestroy(db *gorm.DB, domain *Domain) error {
+	return db.Delete(domain).Error
 }

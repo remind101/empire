@@ -52,7 +52,7 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", image.String())
-	return s.ReleasesCreate(ctx, ReleasesCreateOpts{
+	return s.ReleasesCreate(ctx, &Release{
 		App:         app,
 		Config:      config,
 		Slug:        slug,

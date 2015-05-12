@@ -121,8 +121,6 @@ func New(options Options) (*Empire, error) {
 
 	store := &store{db: db}
 
-	domainReg := newDomainRegistry("")
-
 	extractor, err := NewExtractor(
 		options.Docker.Socket,
 		options.Docker.CertPath,
@@ -185,8 +183,7 @@ func New(options Options) (*Empire, error) {
 	}
 
 	domains := &domainsService{
-		store:    store,
-		registry: domainReg,
+		store: store,
 	}
 
 	slugs := &slugsService{
@@ -246,7 +243,7 @@ func (e *Empire) AppsCreate(app *App) (*App, error) {
 
 // AppsFind finds an app by name.
 func (e *Empire) AppsFindByName(name string) (*App, error) {
-	return e.store.AppsFindByName(name)
+	return e.store.AppsFind(AppName(name))
 }
 
 // AppsDestroy destroys the app.
@@ -261,12 +258,12 @@ func (e *Empire) CertificatesCreate(ctx context.Context, cert *Certificate) (*Ce
 
 // CertificatesFind returns a certificate for the given ID
 func (e *Empire) CertificatesFind(ctx context.Context, id string) (*Certificate, error) {
-	return e.store.CertificatesFind(id)
+	return e.store.CertificatesFind(CertificateID(id))
 }
 
 // CertificatesFindByApp finds a certificate
-func (e *Empire) CertificatesFindByApp(ctx context.Context, appID string) (*Certificate, error) {
-	return e.store.CertificatesFindByApp(appID)
+func (e *Empire) CertificatesFindByApp(ctx context.Context, app *App) (*Certificate, error) {
+	return e.store.CertificatesFind(CertificateApp(app))
 }
 
 // CertificatesUpdate updates a certificate.
@@ -293,12 +290,12 @@ func (e *Empire) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config
 
 // DomainsByApp returns the domains for a given App.
 func (e *Empire) DomainsFindByApp(app *App) ([]*Domain, error) {
-	return e.store.DomainsFindByApp(app)
+	return e.store.DomainsAll(DomainApp(app))
 }
 
 // DomainsByHostname returns the domain for a given hostname.
 func (e *Empire) DomainsFindByHostname(hostname string) (*Domain, error) {
-	return e.store.DomainsFindByHostname(hostname)
+	return e.store.DomainsFind(DomainHostname(hostname))
 }
 
 // DomainsCreate adds a new Domain for an App.

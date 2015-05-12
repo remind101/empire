@@ -1,35 +1,38 @@
 package empire
 
 import (
-	"database/sql"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
-	"gopkg.in/gorp.v1"
 )
 
 type Certificate struct {
-	ID               string    `db:"id"`
-	AppID            string    `db:"app_id"`
-	Name             string    `db:"name"`
-	CertificateChain string    `db:"certificate_chain"`
-	PrivateKey       string    `db:"-"`
-	CreatedAt        time.Time `db:"created_at"`
-	UpdatedAt        time.Time `db:"updated_at"`
+	ID               string
+	Name             string
+	CertificateChain string
+	PrivateKey       string `sql:"-"`
+	CreatedAt        *time.Time
+	UpdatedAt        *time.Time
+
+	AppID string
+	App   *App
 }
 
 // PreInsert implements a pre insert hook for the db interface
-func (c *Certificate) PreInsert(s gorp.SqlExecutor) error {
-	c.CreatedAt = timex.Now()
-	c.UpdatedAt = c.CreatedAt
+func (c *Certificate) BeforeCreate() error {
+	t := timex.Now()
+	c.CreatedAt = &t
+	c.UpdatedAt = &t
 	return nil
 }
 
 // PreUpdate implements a pre insert hook for the db interface
-func (c *Certificate) PreUpdate(s gorp.SqlExecutor) error {
-	c.UpdatedAt = timex.Now()
+func (c *Certificate) BeforeUpdate() error {
+	t := timex.Now()
+	c.UpdatedAt = &t
 	return nil
 }
 
@@ -58,8 +61,7 @@ func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Cert
 	}
 
 	cert.Name = id
-	_, err = s.store.CertificatesUpdate(cert)
-	return cert, err
+	return cert, s.store.CertificatesUpdate(cert)
 }
 
 func (s *certificatesService) CertificatesDestroy(ctx context.Context, cert *Certificate) error {
@@ -73,7 +75,7 @@ func (s *store) CertificatesCreate(cert *Certificate) (*Certificate, error) {
 	return certificatesCreate(s.db, cert)
 }
 
-func (s *store) CertificatesUpdate(cert *Certificate) (int64, error) {
+func (s *store) CertificatesUpdate(cert *Certificate) error {
 	return certificatesUpdate(s.db, cert)
 }
 
@@ -81,36 +83,37 @@ func (s *store) CertificatesDestroy(cert *Certificate) error {
 	return certificatesDestroy(s.db, cert)
 }
 
-func (s *store) CertificatesFind(id string) (*Certificate, error) {
-	return certificatesFindBy(s.db, "id", id)
-}
-
-func (s *store) CertificatesFindByApp(appID string) (*Certificate, error) {
-	return certificatesFindBy(s.db, "app_id", appID)
-}
-
-func certificatesCreate(db *db, cert *Certificate) (*Certificate, error) {
-	return cert, db.Insert(cert)
-}
-
-func certificatesUpdate(db *db, cert *Certificate) (int64, error) {
-	return db.Update(cert)
-}
-func certificatesDestroy(db *db, cert *Certificate) error {
-	_, err := db.Delete(cert)
-	return err
-}
-
-func certificatesFindBy(db *db, field string, value interface{}) (*Certificate, error) {
+func (s *store) CertificatesFind(scope func(*gorm.DB) *gorm.DB) (*Certificate, error) {
 	var cert Certificate
-
-	if err := findBy(db, &cert, "certificates", field, value); err != nil {
-		if err == sql.ErrNoRows {
+	if err := s.db.Scopes(scope).First(&cert).Error; err != nil {
+		if err == gorm.RecordNotFound {
 			return nil, nil
 		}
 
 		return nil, err
 	}
-
 	return &cert, nil
+}
+
+func CertificateID(id string) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("id = ?", id)
+	}
+}
+
+func CertificateApp(app *App) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("app_id = ?", app.ID)
+	}
+}
+
+func certificatesCreate(db *gorm.DB, cert *Certificate) (*Certificate, error) {
+	return cert, db.Create(cert).Error
+}
+
+func certificatesUpdate(db *gorm.DB, cert *Certificate) error {
+	return db.Save(cert).Error
+}
+func certificatesDestroy(db *gorm.DB, cert *Certificate) error {
+	return db.Delete(cert).Error
 }
