@@ -9,6 +9,11 @@
       "AllowedValues": [ "t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
+    "EcsCluster": {
+      "Type": "String",
+      "Default": "default",
+      "Description": "The ECS for the ecs agents to register within."
+    },
     "AmiId" : {
       "Type": "String",
       "Description": "AMI Id",
@@ -303,7 +308,7 @@
               "",
               [
                 "#!/bin/bash\n",
-                "echo ECS_CLUSTER=default >> /etc/ecs/ecs.config\n",
+                "echo ECS_CLUSTER=", { "Ref": "EcsCluster" }, " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_DATA=\"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
                 "echo \"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
