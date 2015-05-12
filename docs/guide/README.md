@@ -52,7 +52,7 @@ First, replace the values of `<<VPC>>`, `<<InternalELBSG>>`, `<<ExternalELBSG>>`
 ```console
 $ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
 $ function stack-outputs() { aws cloudformation describe-stacks --stack-name $1 --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text; }
-$ function stack-output() { stack-output $1 $2 | grep $2 | cut -f 2; }
+$ function stack-output() { stack-outputs $1 $2 | grep $2 | cut -f 2; }
 $ stack-outputs $STACK
 ```
 
