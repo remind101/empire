@@ -33,3 +33,7 @@ deployment:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push remind101/empire
       - docker push remind101/empire-logger
+
+notify:
+  webhooks:
+    - url: http://r101-pivotal-projectmonitor.herokuapp.com/projects/19a94c05-7715-4765-a419-108e35919aac/status
