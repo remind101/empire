@@ -17,7 +17,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
-				Body:       `{"cluster":""}`,
+				Body:       `{"cluster":"empire"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -29,7 +29,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
-				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+				Body:       `{"cluster":"empire","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -65,7 +65,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
-				Body:       `{"cluster":"","desiredCount":0,"service":"1234--web","taskDefinition":"1234--web"}`,
+				Body:       `{"cluster":"empire","desiredCount":0,"service":"1234--web","taskDefinition":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -87,7 +87,7 @@ func TestECSManager_Scale(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
-				Body:       `{"cluster":"","desiredCount":10,"service":"1234--web"}`,
+				Body:       `{"cluster":"empire","desiredCount":10,"service":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -109,7 +109,7 @@ func TestECSManager_Instances(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
-				Body:       `{"cluster":""}`,
+				Body:       `{"cluster":"empire"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -121,7 +121,7 @@ func TestECSManager_Instances(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
-				Body:       `{"cluster":"","serviceName":"1234--web"}`,
+				Body:       `{"cluster":"empire","serviceName":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -133,7 +133,7 @@ func TestECSManager_Instances(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTasks",
-				Body:       `{"tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+				Body:       `{"cluster":"empire","tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -186,7 +186,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
-				Body:       `{"cluster":""}`,
+				Body:       `{"cluster":"empire"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -198,7 +198,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
-				Body:       `{"cluster":"","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+				Body:       `{"cluster":"empire","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -222,7 +222,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
-				Body:       `{"cluster":"","desiredCount":0,"service":"1234--web"}`,
+				Body:       `{"cluster":"empire","desiredCount":0,"service":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -234,7 +234,7 @@ func TestECSManager_Remove(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DeleteService",
-				Body:       `{"cluster":"","service":"1234--web"}`,
+				Body:       `{"cluster":"empire","service":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -304,5 +304,6 @@ func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
 			Endpoint:    s.URL,
 			Region:      "localhost",
 		}),
+		Cluster: "empire",
 	}), s
 }
