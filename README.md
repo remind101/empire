@@ -8,7 +8,7 @@ Empire is targeted at small to medium sized startups that are running a large nu
 
 ## Quickstart
 
-To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide](./docs/guide) for more information.
+To use Empire, you'll need to have an ECS cluster running. See the [quickstart guide][guide] for more information.
 
 ## Architecture
 
@@ -70,7 +70,11 @@ set -e
 exec acme-inc server -port=$PORT
 ```
 
-## Development
+## Tests
+
+Unit tests live alongside each go file as `_test.go`.
+
+There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
 
 To get started, run:
 
@@ -84,19 +88,40 @@ To run the tests:
 $ godep go test ./...
 ```
 
+## Development
+
+If you want to contribute to empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
+
+1. Ensure that you have the AWS CLI installed and configured.
+2. Run boot2docker and export the environment variables so empire can connect:
+   
+   ```console
+   $ boot2docker start
+   $ $(boot2docker shellinit)
+   ```
+
+   You should ensure that you've configured boot2docker to disable TLS. Refer to https://coderwall.com/p/siqnjg/disable-tls-on-boot2docker.
+
+3. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
+
+   ```console
+   $ ./bin/bootstrap
+   ```
+4. Run empire with [docker-compose](https://docs.docker.com/compose/):
+   
+   ```console
+   $ docker-compose up
+   ```
+
+Empire will be available at `http://$(boot2docker ip):8080` and you can point the CLI there.
+
 **Caveats**
 
-1. `emp login` won't work by default if you're running on a non-standard port. Once you `emp login`, you'll need to change the appropriate `machine` entry in your `~/.netrc` to include the port:
+1. `emp login` won't work by default. Once you `emp login`, you'll need to change the appropriate `machine` entry in your `~/.netrc` to include the port:
 
    ```
-   machine 0.0.0.0:8080
+   machine <boot2docker ip>:8080
    ```
-
-## Tests
-
-Unit tests live alongside each go file as `_test.go`.
-
-There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
 
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
@@ -104,3 +129,4 @@ There is also a `tests` directory that contains integration and functional tests
 [tugboat]: https://github.com/remind101/tugboat
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
+[guide]: ./docs/guide

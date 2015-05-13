@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -e
+
+# This variable will be used as the cloudformation stack name and the associated
+# ECS cluster.
+STACK="empire-$(pwgen 10 1)"
+
+read -p "Docker user: " docker_user
+read -s -p "Docker pass: " docker_pass
+echo ""
+read -p "Docker email: " docker_email
+read -p "AWS KeyName: " keyname
+
+echo "==> Creating ECS service: $STACK"
+aws ecs create-cluster --cluster-name "$STACK" > /dev/null
+
+echo "==> Creating cloudformation stack: $STACK"
+aws cloudformation create-stack \
+  --stack-name "$STACK" \
+  --template-body file://$PWD/docs/guide/cloudformation.json \
+  --parameters \
+      ParameterKey=EcsCluster,ParameterValue="$STACK" \
+      ParameterKey=DesiredCapacity,ParameterValue=5 \
+      ParameterKey=MaxCapacity,ParameterValue=10 \
+      ParameterKey=DockerUser,ParameterValue="$docker_user" \
+      ParameterKey=DockerPass,ParameterValue="$docker_pass" \
+      ParameterKey=DockerEmail,ParameterValue="$docker_email" \
+      ParameterKey=KeyName,ParameterValue="$keyname" \
+  --capabilities CAPABILITY_IAM > /dev/null
+
+echo "==> Waiting for stack to complete"
+while [ $(aws cloudformation describe-stacks --stack-name "$STACK" --output text --query 'Stacks[0].StackStatus') != "CREATE_COMPLETE" ]; do
+  sleep 1
+done
+
+echo "==> Writing environment variables to .env file"
+
+# Returns the value of a named output from the created stack.
+output() {
+  aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $1 | cut -f 2
+}
+
+echo "AWS_REGION=us-east-1" > .env
+echo "AWS_ACCESS_KEY_ID=$(output AccessKey)" >> .env
+echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
+echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
+echo "EMPIRE_ELB_INTERNAL_SG=$(output InternalELBSG)" >> .env
+echo "EMPIRE_ELB_EXTERNAL_SG=$(output ExternalELBSG)" >> .env
+echo "EMPIRE_ECS_CLUSTER=$STACK" >> .env

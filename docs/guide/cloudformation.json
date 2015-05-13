@@ -9,13 +9,18 @@
       "AllowedValues": [ "t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
+    "EcsCluster": {
+      "Type": "String",
+      "Default": "default",
+      "Description": "The ECS for the ecs agents to register within."
+    },
     "AmiId" : {
       "Type": "String",
       "Description": "AMI Id",
       "Default": "ami-ae6559c6"
     },
     "KeyName": {
-      "Type": "String",
+      "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "The name of the key pair to use to allow SSH access."
     },
     "DockerUser": {
@@ -24,7 +29,8 @@
     },
     "DockerPass": {
       "Type": "String",
-      "Description": "Docker password for private registry"
+      "Description": "Docker password for private registry",
+      "NoEcho": true
     },
     "DockerEmail": {
       "Type": "String",
@@ -254,6 +260,7 @@
       "Properties": {
         "PolicyName": "ecs",
         "Roles": [ { "Ref": "InstanceRole" } ],
+        "Users": [ { "Ref": "User" } ],
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -302,7 +309,7 @@
               "",
               [
                 "#!/bin/bash\n",
-                "echo ECS_CLUSTER=default >> /etc/ecs/ecs.config\n",
+                "echo ECS_CLUSTER=", { "Ref": "EcsCluster" }, " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_DATA=\"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
                 "echo \"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
@@ -323,13 +330,38 @@
         "MaxSize": { "Ref": "MaxCapacity" },
         "DesiredCapacity": { "Ref": "DesiredCapacity" }
       }
+    },
+
+    "User": {
+      "Type": "AWS::IAM::User",
+      "Properties": { }
+    },
+
+    "AccessKey": {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "Status": "Active",
+        "UserName": { "Ref": "User" }
+      }
     }
   },
 
   "Outputs": {
-    "ELB": {
+    "ELBName": {
       "Description": "The name of the ELB for the Empire controller",
       "Value": { "Ref": "LoadBalancer" }
+    },
+    "AccessKey": {
+      "Description": "Access key that can be used for a development instance of Empire",
+      "Value": { "Ref": "AccessKey" }
+    },
+    "SecretAccessKey": {
+      "Description": "Access key that can be used for a development instance of Empire",
+      "Value": { "Fn::GetAtt": [ "AccessKey", "SecretAccessKey" ] }
+    },
+    "VPC": {
+      "Description": "The id of the VPC",
+      "Value": { "Ref": "Vpc" }
     },
     "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",
