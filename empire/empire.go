@@ -65,6 +65,12 @@ type ELBOptions struct {
 
 	// The Security Group ID to assign when creating external load balancers.
 	ExternalSecurityGroupID string
+
+	// The Subnet IDs to assign when creating internal load balancers.
+	InternalSubnetIDs []string
+
+	// The Subnet IDs to assign when creating external load balancers.
+	ExternalSubnetIDs []string
 }
 
 // RunnerOptions is a set of options to configure the one off process runner service.

@@ -16,7 +16,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=9000&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internet-facing&SecurityGroups.member.1=&Subnets.member.1=subnet&Version=2012-06-01`,
+				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=9000&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internet-facing&SecurityGroups.member.1=&Subnets.member.1=public-subnet&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -252,62 +252,6 @@ func TestELB_LoadBalancers(t *testing.T) {
 	}
 }
 
-func TestVPCSubnetFinder(t *testing.T) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeSubnets&Filter.1.Name=vpc-id&Filter.1.Value.1=&Version=2014-10-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<?xml version="1.0" encoding="UTF-8"?>
-	<DescribeSubnetsResponse xmlns="http://ec2.amazonaws.com/doc/2015-03-01/">
-	    <requestId>fd72c284-0fb5-45c1-a149-dbe7ed8e034a</requestId>
-	    <subnetSet>
-	        <item>
-	            <subnetId>subnet-a</subnetId>
-	            <state>available</state>
-	            <vpcId>vpc-1</vpcId>
-	            <cidrBlock>10.0.0.0/24</cidrBlock>
-	            <availableIpAddressCount>249</availableIpAddressCount>
-	            <availabilityZone>us-east-1a</availabilityZone>
-	            <defaultForAz>false</defaultForAz>
-	            <mapPublicIpOnLaunch>false</mapPublicIpOnLaunch>
-	        </item>
-	    </subnetSet>
-	</DescribeSubnetsResponse>`,
-			},
-		},
-	})
-	f, s := newTestVPCSubnetFinder(h)
-	defer s.Close()
-
-	subnets, err := f.Subnets()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := subnets, []string{"subnet-a"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("Subnets => %v; want %v", got, want)
-	}
-}
-
-func newTestVPCSubnetFinder(h http.Handler) (*VPCSubnetFinder, *httptest.Server) {
-	s := httptest.NewServer(h)
-
-	f := NewVPCSubnetFinder(
-		aws.DefaultConfig.Merge(&aws.Config{
-			Credentials: aws.Creds("", "", ""),
-			Endpoint:    s.URL,
-			Region:      "localhost",
-			LogLevel:    0,
-		}),
-	)
-
-	return f, s
-}
-
 func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
@@ -322,7 +266,8 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 	m.newName = func() string {
 		return "acme-inc"
 	}
-	m.SubnetFinder = StaticSubnets([]string{"subnet"})
+	m.InternalSubnetIDs = []string{"private-subnet"}
+	m.ExternalSubnetIDs = []string{"public-subnet"}
 
 	return m, s
 }

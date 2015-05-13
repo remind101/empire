@@ -123,6 +123,18 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The ELB security group to assign external load balancers",
 		EnvVar: "EMPIRE_ELB_EXTERNAL_SG",
 	},
+	cli.StringSliceFlag{
+		Name:   "elb.isubnets",
+		Value:  &cli.StringSlice{},
+		Usage:  "The comma separated subnet ids to assign internal load balancers",
+		EnvVar: "EMPIRE_ELB_INTERNAL_SUBNETS",
+	},
+	cli.StringSliceFlag{
+		Name:   "elb.esubnets",
+		Value:  &cli.StringSlice{},
+		Usage:  "The comma separated subnet ids to assign external load balancers",
+		EnvVar: "EMPIRE_ELB_EXTERNAL_SUBNETS",
+	},
 	cli.StringFlag{
 		Name:   "secret",
 		Value:  "<change this>",
@@ -163,6 +175,8 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.ELB.VPCID = c.String("elb.vpc")
 	opts.ELB.InternalSecurityGroupID = c.String("elb.isg")
 	opts.ELB.ExternalSecurityGroupID = c.String("elb.esg")
+	opts.ELB.InternalSubnetIDs = c.StringSlice("elb.isubnets")
+	opts.ELB.ExternalSubnetIDs = c.StringSlice("elb.esubnets")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
 
