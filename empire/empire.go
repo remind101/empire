@@ -204,8 +204,9 @@ func New(options Options) (*Empire, error) {
 	}
 
 	certs := &certificatesService{
-		store:   store,
-		manager: newCertManager(options.AWSConfig),
+		store:    store,
+		manager:  newCertManager(options.AWSConfig),
+		releaser: releaser,
 	}
 
 	return &Empire{

@@ -57,7 +57,7 @@ func forApp(app *App) func(*gorm.DB) *gorm.DB {
 func releasesScope(app *App) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.
-			Preload("App").Preload("Config").Preload("Slug").Preload("Processes").
+			Preload("App").Preload("App.Certificate").Preload("Config").Preload("Slug").Preload("Processes").
 			Scopes(forApp(app)).
 			Order("version desc")
 	}
@@ -261,6 +261,8 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 		procExp = serviceExposure(release.App.Exposure)
 	}
 
+	cert := serviceSSLCertName(release.App.Certificate)
+
 	return &service.Process{
 		Type:        string(p.Type),
 		Env:         env,
@@ -271,6 +273,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 		CPUShares:   CPUShare,
 		Ports:       ports,
 		Exposure:    procExp,
+		SSLCert:     cert,
 	}
 }
 
@@ -310,4 +313,11 @@ func serviceExposure(appExp string) (exp service.Exposure) {
 	}
 
 	return exp
+}
+
+func serviceSSLCertName(c *Certificate) (name string) {
+	if c != nil {
+		name = c.Name
+	}
+	return name
 }

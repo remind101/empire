@@ -44,6 +44,8 @@ type App struct {
 
 	Repo *string
 
+	Certificate *Certificate
+
 	// Valid values are empire.ExposePrivate and empire.ExposePublic.
 	Exposure string
 
