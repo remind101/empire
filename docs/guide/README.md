@@ -47,7 +47,7 @@ The next step is to run Empire itself on ECS.
 
 **Create the Task Definition**
 
-First, replace the values of `<<VPC>>`, `<<InternalELBSG>>`, `<<ExternalELBSG>>`, with the values from the stack output:
+First, replace the values of `<<VPC>>`, `<<InternalELBSG>>`, `<<ExternalELBSG>>` within [empire.ecs.json](./empire.ecs.json), with the values from the equivalent stack output:
 
 ```console
 $ export STACK=empire # Change this if you didn't use `empire` as the CloudFormation Stack name.
