@@ -44,12 +44,6 @@ func NewELBManager(c *aws.Config) *ELBManager {
 	}
 }
 
-// NewVPCELBManager returns a new ELBManager that will use a VPCSubnetFinder to
-// determine what subnets to attach to the ELB.
-func NewVPCELBManager(vpc string, c *aws.Config) *ELBManager {
-	return NewELBManager(c)
-}
-
 // CreateLoadBalancer creates a new ELB:
 //
 // * The ELB is created and connection draining is enabled.

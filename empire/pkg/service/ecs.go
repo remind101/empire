@@ -77,7 +77,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 	// If security group ids are provided, ELB's will be created for ECS
 	// services.
 	if config.validELBConfig() {
-		elb := lb.NewVPCELBManager(config.VPC, config.AWS)
+		elb := lb.NewELBManager(config.AWS)
 		elb.InternalSecurityGroupID = config.InternalSecurityGroupID
 		elb.ExternalSecurityGroupID = config.ExternalSecurityGroupID
 		elb.InternalSubnetIDs = config.InternalSubnetIDs

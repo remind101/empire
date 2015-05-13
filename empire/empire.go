@@ -57,9 +57,6 @@ type ECSOptions struct {
 
 // ELBOptions is a set of options to configure ELB.
 type ELBOptions struct {
-	// The Amazon VPC ID.
-	VPCID string
-
 	// The Security Group ID to assign when creating internal load balancers.
 	InternalSecurityGroupID string
 
@@ -418,7 +415,6 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		ExternalSecurityGroupID: elbOpts.ExternalSecurityGroupID,
 		AWS:  config,
 		Zone: "empire.",
-		VPC:  elbOpts.VPCID,
 	})
 
 	l := service.WithLogging(m)
