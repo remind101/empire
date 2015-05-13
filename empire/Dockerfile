@@ -5,4 +5,4 @@ RUN go get github.com/codegangsta/gin
 
 ENV PORT 8080
 
-CMD ["/go/bin/gin", "--appPort", "8080", "run", "server"]
+WORKDIR /go/src/github.com/remind101/empire

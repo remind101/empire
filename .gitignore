@@ -14,3 +14,4 @@ packer_cache
 Godeps/_workspace/src/github.com/fsouza/go-dockerclient/testing/data/symlink
 
 .env*
+gin-bin
