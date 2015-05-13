@@ -16,6 +16,7 @@ build:
 	$(MAKE) -C relay build
 
 install: cmd
+	go get -u github.com/heroku/hk
 	cat cli/emp > /usr/local/bin/emp
 	chmod +x /usr/local/bin/emp
 	cp cli/build/empire-plugins /usr/local/bin/empire-plugins

@@ -112,16 +112,15 @@ If you want to contribute to empire, you may end up wanting to run a local insta
    ```console
    $ docker-compose up
    ```
+5. Install the CLI.
+
+   ```console
+   $ make install
+   ```
 
 Empire will be available at `http://$(boot2docker ip):8080` and you can point the CLI there.
 
-**Caveats**
-
-1. `emp login` won't work by default. Once you `emp login`, you'll need to change the appropriate `machine` entry in your `~/.netrc` to include the port:
-
-   ```
-   machine <boot2docker ip>:8080
-   ```
+If you run into problems with authentication, ensure that the hk client you're using is built from the master branch of [github.com/heroku/hk][hk].
 
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
