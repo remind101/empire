@@ -28,14 +28,13 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
 
 	var (
-		r   *empire.Release
 		err error
 	)
 
 	ch := make(chan empire.Event)
 	errCh := make(chan error)
 	go func() {
-		r, err = h.DeployImage(ctx, form.Image, ch)
+		_, err = h.DeployImage(ctx, form.Image, ch)
 		errCh <- err
 	}()
 
@@ -43,14 +42,13 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		select {
 		case evt := <-ch:
 			if err := Stream(w, evt); err != nil {
-				return err
+				Stream(w, map[string]string{"error": err.Error()})
+				return nil
 			}
 			continue
 		case err := <-errCh:
 			if err != nil {
-				Stream(w, map[string]*ErrorResource{
-					"error": newError(err),
-				})
+				Stream(w, map[string]string{"error": err.Error()})
 				return nil
 			}
 		}
@@ -58,5 +56,5 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		break
 	}
 
-	return Encode(w, newRelease(r))
+	return nil
 }
