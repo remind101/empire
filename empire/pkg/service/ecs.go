@@ -41,11 +41,25 @@ type ECSConfig struct {
 
 	// The ID of the security group to assign to internal load balancers.
 	InternalSecurityGroupID string
+
 	// The ID of the security group to assign to external load balancers.
 	ExternalSecurityGroupID string
 
+	// The Subnet IDs to assign when creating internal load balancers.
+	InternalSubnetIDs []string
+
+	// The Subnet IDs to assign when creating external load balancers.
+	ExternalSubnetIDs []string
+
 	// AWS configuration.
 	AWS *aws.Config
+}
+
+func (c ECSConfig) validELBConfig() bool {
+	return c.InternalSecurityGroupID != "" &&
+		c.ExternalSecurityGroupID != "" &&
+		len(c.InternalSubnetIDs) > 0 &&
+		len(c.ExternalSubnetIDs) > 0
 }
 
 // NewECSManager returns a new Manager implementation that:
@@ -62,10 +76,12 @@ func NewECSManager(config ECSConfig) *ECSManager {
 
 	// If security group ids are provided, ELB's will be created for ECS
 	// services.
-	if config.InternalSecurityGroupID != "" && config.ExternalSecurityGroupID != "" {
-		elb := lb.NewVPCELBManager(config.VPC, config.AWS)
+	if config.validELBConfig() {
+		elb := lb.NewELBManager(config.AWS)
 		elb.InternalSecurityGroupID = config.InternalSecurityGroupID
 		elb.ExternalSecurityGroupID = config.ExternalSecurityGroupID
+		elb.InternalSubnetIDs = config.InternalSubnetIDs
+		elb.ExternalSubnetIDs = config.ExternalSubnetIDs
 
 		var l lb.Manager = elb
 

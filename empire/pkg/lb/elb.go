@@ -5,7 +5,6 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/awslabs/aws-sdk-go/aws"
-	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/elb"
 	"golang.org/x/net/context"
 )
@@ -22,11 +21,15 @@ var _ Manager = &ELBManager{}
 type ELBManager struct {
 	// The ID of the security group to assign to internal load balancers.
 	InternalSecurityGroupID string
+
 	// The ID of the security group to assign to external load balancers.
 	ExternalSecurityGroupID string
 
-	// SubnetFinder is used to determine what subnets to attach the ELB to.
-	SubnetFinder
+	// The Subnet IDs to assign when creating internal load balancers.
+	InternalSubnetIDs []string
+
+	// The Subnet IDs to assign when creating external load balancers.
+	ExternalSubnetIDs []string
 
 	elb *elb.ELB
 
@@ -41,34 +44,19 @@ func NewELBManager(c *aws.Config) *ELBManager {
 	}
 }
 
-// NewVPCELBManager returns a new ELBManager that will use a VPCSubnetFinder to
-// determine what subnets to attach to the ELB.
-func NewVPCELBManager(vpc string, c *aws.Config) *ELBManager {
-	f := NewVPCSubnetFinder(c)
-	f.VPC = vpc
-
-	m := NewELBManager(c)
-	m.SubnetFinder = f
-
-	return m
-}
-
 // CreateLoadBalancer creates a new ELB:
 //
 // * The ELB is created and connection draining is enabled.
 // * An internal DNS CNAME record is created, pointing the the DNSName of the ELB.
 func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalancerOpts) (*LoadBalancer, error) {
-	subnets, err := m.subnets()
-	if err != nil {
-		return nil, err
-	}
-
 	scheme := schemeInternal
 	sg := m.InternalSecurityGroupID
+	subnets := m.internalSubnets()
 
 	if o.External {
 		scheme = schemeExternal
 		sg = m.ExternalSecurityGroupID
+		subnets = m.externalSubnets()
 	}
 
 	input := &elb.CreateLoadBalancerInput{
@@ -188,73 +176,20 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 	return lbs, nil
 }
 
-func (m *ELBManager) subnets() ([]*string, error) {
-	subnets, err := m.Subnets()
-	if err != nil {
-		return nil, err
+func (m *ELBManager) internalSubnets() []*string {
+	return awsStringSlice(m.InternalSubnetIDs)
+}
+
+func (m *ELBManager) externalSubnets() []*string {
+	return awsStringSlice(m.ExternalSubnetIDs)
+}
+
+func awsStringSlice(ss []string) []*string {
+	as := make([]*string, len(ss))
+	for i, s := range ss {
+		as[i] = aws.String(s)
 	}
-
-	var p []*string
-	for _, s := range subnets {
-		ss := s
-		p = append(p, &ss)
-	}
-	return p, nil
-}
-
-// SubnetFinder is an interface that can return a list of subnets.
-type SubnetFinder interface {
-	Subnets() ([]string, error)
-}
-
-// SubnetFinderFunc is a function definition that satisfies the SubnetFinder
-// interface.
-type SubnetFinderFunc func() ([]string, error)
-
-func (f SubnetFinderFunc) Subnets() ([]string, error) {
-	return f()
-}
-
-// StaticSubnets returns a SubnetFinder that returns the given subnets.
-func StaticSubnets(subnets []string) SubnetFinder {
-	return SubnetFinderFunc(func() ([]string, error) {
-		return subnets, nil
-	})
-}
-
-// VPCSubnetFinder is an implementation of the SubnetFinder interface that
-// queries for subnets in a VPC.
-type VPCSubnetFinder struct {
-	VPC string
-	ec2 *ec2.EC2
-}
-
-// NewVPCSubnetFinder returns a new VPCSubnetFinder instance with a configured
-// ec2 client.
-func NewVPCSubnetFinder(c *aws.Config) *VPCSubnetFinder {
-	return &VPCSubnetFinder{
-		ec2: ec2.New(c),
-	}
-}
-
-// subnets queryies for subnets within the vpc.
-func (f *VPCSubnetFinder) Subnets() ([]string, error) {
-	var subnets []string
-
-	out, err := f.ec2.DescribeSubnets(&ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
-			{Name: aws.String("vpc-id"), Values: []*string{aws.String(f.VPC)}},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, s := range out.Subnets {
-		subnets = append(subnets, *s.SubnetID)
-	}
-
-	return subnets, nil
+	return as
 }
 
 // newName returns a string that's suitable as a load balancer name for elb.
