@@ -102,18 +102,18 @@ There is also a `tests` directory that contains integration and functional tests
 
 If you want to contribute to empire, you maybe end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
 
-1. Go through the [guide][guide], but skip the step where you create the empire task definition and service. Create a `.env` file security group and vpc id's from the stack outputs.
-2. Create some IAM credentials with Administrator access and set them in `~/.aws/credentials`.
-3. Ensure that boot2docker is running and make the docker api available to empire:
-  
+1. Ensure that you have the AWS CLI installed and configured.
+2. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
+
    ```console
-   $ boot2docker start
-   $ $(boot2docker shellinit)
+   $ ./bin/bootstrap
    ```
-4. Build the empire binary and run the server:
+3. Build the empire binary and run the server:
    
    ```console
-   $ make build
+   $ cd empire
+   $ make cmd
+   $ export $(cat .env)
    $ ./build/empire server
    ```
 
