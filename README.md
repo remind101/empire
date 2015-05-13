@@ -109,21 +109,21 @@ If you want to contribute to empire, you maybe end up wanting to run a local ins
    $ boot2docker start
    $ $(boot2docker shellinit)
    ```
+
+   You should ensure that you've configured boot2docker to disable TLS. Refer to https://coderwall.com/p/siqnjg/disable-tls-on-boot2docker.
+
 3. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
    ```console
    $ ./bin/bootstrap
    ```
-4. Build the empire binary and run the server:
+4. Run empire with [docker-compose](https://docs.docker.com/compose/):
    
    ```console
-   $ cd empire
-   $ make cmd
-   $ export $(cat .env)
-   $ ./build/empire server
+   $ docker-compose up
    ```
 
-Empire will be available at http://0.0.0.0:8080 and you can point the CLI there.
+Empire will be available at `http://$(boot2docker ip):8080` and you can point the CLI there.
 
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker

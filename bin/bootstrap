@@ -50,7 +50,6 @@ outputs() {
   aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text
 }
 
-cd empire
 echo "AWS_REGION=us-east-1" > .env
 echo "AWS_ACCESS_KEY_ID=$KEY" >> .env
 echo "AWS_SECRET_ACCESS_KEY=$SECRET" >> .env
