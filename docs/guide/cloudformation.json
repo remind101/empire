@@ -260,6 +260,7 @@
       "Properties": {
         "PolicyName": "ecs",
         "Roles": [ { "Ref": "InstanceRole" } ],
+        "Users": [ { "Ref": "User" } ],
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -329,6 +330,19 @@
         "MaxSize": { "Ref": "MaxCapacity" },
         "DesiredCapacity": { "Ref": "DesiredCapacity" }
       }
+    },
+
+    "User": {
+      "Type": "AWS::IAM::User",
+      "Properties": { }
+    },
+
+    "AccessKey": {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "Status": "Active",
+        "UserName": { "Ref": "User" }
+      }
     }
   },
 
@@ -336,6 +350,14 @@
     "ELBName": {
       "Description": "The name of the ELB for the Empire controller",
       "Value": { "Ref": "LoadBalancer" }
+    },
+    "AccessKey": {
+      "Description": "Access key that can be used for a development instance of Empire",
+      "Value": { "Ref": "AccessKey" }
+    },
+    "SecretAccessKey": {
+      "Description": "Access key that can be used for a development instance of Empire",
+      "Value": { "Fn::GetAtt": [ "AccessKey", "SecretAccessKey" ] }
     },
     "VPC": {
       "Description": "The id of the VPC",

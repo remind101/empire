@@ -29,16 +29,6 @@ aws cloudformation create-stack \
       ParameterKey=KeyName,ParameterValue="$keyname" \
   --capabilities CAPABILITY_IAM > /dev/null
 
-# TODO: Move this into the cloudformation stack in the guide.
-echo "==> Creating IAM user: $STACK"
-aws iam create-user --user-name "$STACK" > /dev/null
-aws iam attach-user-policy --user-name "$STACK" --policy-arn "arn:aws:iam::aws:policy/AdministratorAccess"
-
-echo "==> Creating Access Key"
-KEY_OUTPUT=$(aws iam create-access-key --user-name "$STACK" --output text)
-KEY=$(echo "$KEY_OUTPUT" | cut -f 2)
-SECRET=$(echo "$KEY_OUTPUT" | cut -f 4)
-
 echo "==> Waiting for stack to complete"
 while [ $(aws cloudformation describe-stacks --stack-name "$STACK" --output text --query 'Stacks[0].StackStatus') != "CREATE_COMPLETE" ]; do
   sleep 1
@@ -46,14 +36,15 @@ done
 
 echo "==> Writing environment variables to .env file"
 
-outputs() {
-  aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text
+# Returns the value of a named output from the created stack.
+output() {
+  aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $1 | cut -f 2
 }
 
 echo "AWS_REGION=us-east-1" > .env
-echo "AWS_ACCESS_KEY_ID=$KEY" >> .env
-echo "AWS_SECRET_ACCESS_KEY=$SECRET" >> .env
-echo "EMPIRE_ELB_VPC_ID=$(outputs | grep VPC | cut -f 2)" >> .env
-echo "EMPIRE_ELB_INTERNAL_SG=$(outputs | grep InternalELBSG | cut -f 2)" >> .env
-echo "EMPIRE_ELB_EXTERNAL_SG=$(outputs | grep ExternalELBSG | cut -f 2)" >> .env
+echo "AWS_ACCESS_KEY_ID=$(output AccessKey)" >> .env
+echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
+echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
+echo "EMPIRE_ELB_INTERNAL_SG=$(output InternalELBSG)" >> .env
+echo "EMPIRE_ELB_EXTERNAL_SG=$(output ExternalELBSG)" >> .env
 echo "EMPIRE_ECS_CLUSTER=$STACK" >> .env
