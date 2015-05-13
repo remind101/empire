@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+godep go install ./cmd/...
+exec /go/bin/empire server -automigrate=true

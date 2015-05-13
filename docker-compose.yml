@@ -1,10 +1,10 @@
 server:
   build: ./empire
-  command: /go/bin/gin -t /go/src/github.com/remind101/empire/empire -g --appPort=8080 run server
+  command: ./bin/start
   links:
     - postgres:postgres
   ports:
-    - "8080:3000"
+    - "8080:8080"
   volumes:
     - ~/.dockercfg:/root/.dockercfg
     - .:/go/src/github.com/remind101/empire
@@ -12,7 +12,6 @@ server:
   user: root
   environment:
     EMPIRE_DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
-    EMPIRE_DATABASE_MIGRATIONS: /go/src/github.com/remind101/empire/migrations
     EMPIRE_AUTOMIGRATE: true
     DOCKER_HOST:
 postgres:
