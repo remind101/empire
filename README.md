@@ -100,7 +100,7 @@ There is also a `tests` directory that contains integration and functional tests
 
 ## Development
 
-If you want to contribute to empire, you maybe end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
+If you want to contribute to empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
 
 1. Ensure that you have the AWS CLI installed and configured.
 2. Run boot2docker and export the environment variables so empire can connect:
