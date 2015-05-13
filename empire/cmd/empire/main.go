@@ -106,28 +106,28 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_ECS_CLUSTER",
 	},
 	cli.StringFlag{
-		Name:   "elb.isg",
+		Name:   "elb.sg.private",
 		Value:  "",
-		Usage:  "The ELB security group to assign internal load balancers",
-		EnvVar: "EMPIRE_ELB_INTERNAL_SG",
+		Usage:  "The ELB security group to assign private load balancers",
+		EnvVar: "EMPIRE_ELB_SG_PRIVATE",
 	},
 	cli.StringFlag{
-		Name:   "elb.esg",
+		Name:   "elb.sg.public",
 		Value:  "",
-		Usage:  "The ELB security group to assign external load balancers",
-		EnvVar: "EMPIRE_ELB_EXTERNAL_SG",
+		Usage:  "The ELB security group to assign public load balancers",
+		EnvVar: "EMPIRE_ELB_SG_PUBLIC",
 	},
 	cli.StringSliceFlag{
-		Name:   "elb.isubnets",
+		Name:   "ec2.subnets.private",
 		Value:  &cli.StringSlice{},
-		Usage:  "The comma separated subnet ids to assign internal load balancers",
-		EnvVar: "EMPIRE_ELB_INTERNAL_SUBNETS",
+		Usage:  "The comma separated private subnet ids",
+		EnvVar: "EMPIRE_EC2_SUBNETS_PRIVATE",
 	},
 	cli.StringSliceFlag{
-		Name:   "elb.esubnets",
+		Name:   "ec2.subnets.public",
 		Value:  &cli.StringSlice{},
-		Usage:  "The comma separated subnet ids to assign external load balancers",
-		EnvVar: "EMPIRE_ELB_EXTERNAL_SUBNETS",
+		Usage:  "The comma separated public subnet ids",
+		EnvVar: "EMPIRE_EC2_SUBNETS_PUBLIC",
 	},
 	cli.StringFlag{
 		Name:   "secret",
@@ -166,10 +166,10 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Runner.API = c.String("runner.api")
 	opts.AWSConfig = aws.DefaultConfig
 	opts.ECS.Cluster = c.String("ecs.cluster")
-	opts.ELB.InternalSecurityGroupID = c.String("elb.isg")
-	opts.ELB.ExternalSecurityGroupID = c.String("elb.esg")
-	opts.ELB.InternalSubnetIDs = c.StringSlice("elb.isubnets")
-	opts.ELB.ExternalSubnetIDs = c.StringSlice("elb.esubnets")
+	opts.ELB.InternalSecurityGroupID = c.String("elb.sg.private")
+	opts.ELB.ExternalSecurityGroupID = c.String("elb.sg.public")
+	opts.ELB.InternalSubnetIDs = c.StringSlice("elb.subnets.private")
+	opts.ELB.ExternalSubnetIDs = c.StringSlice("elb.subnets.public")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
 
