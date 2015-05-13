@@ -37,17 +37,15 @@ func TestReleaseInfo(t *testing.T) {
 }
 
 func TestReleaseRollback(t *testing.T) {
-	t.Skip("TODO: Not implemented yet")
-
 	c, s := NewTestClient(t)
 	defer s.Close()
 
 	// Deploy twice
-	d := mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c, DefaultImage)
 	mustDeploy(t, c, DefaultImage)
 
 	// Rollback to the first deploy.
-	mustReleaseRollback(t, c, "acme-inc", d.Release.ID)
+	mustReleaseRollback(t, c, "acme-inc", "1")
 }
 
 func mustReleaseList(t testing.TB, c *heroku.Client, appName string) []heroku.Release {
