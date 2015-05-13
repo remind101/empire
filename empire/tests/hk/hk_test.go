@@ -235,7 +235,13 @@ func TestDeploy_NoTag(t *testing.T) {
 	run(t, []Command{
 		{
 			"deploy remind101/acme-inc --no-stream",
-			"Deployed remind101/acme-inc",
+			`Pulling repository remind101/acme-inc
+345c7524bc96: Pulling image (latest) from remind101/acme-inc
+345c7524bc96: Pulling image (latest) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
+345c7524bc96: Pulling dependent layers
+a1dd7097a8e8: Download complete
+Status: Image is up to date for remind101/acme-inc:latest
+Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
