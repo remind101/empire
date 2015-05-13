@@ -26,9 +26,10 @@ test:
     - cd ~/.go_workspace/src/github.com/remind101/empire/relay && make test
 
 deployment:
-  hub: 
+  hub:
     branch: master
     commands:
       - make build
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push remind101/empire
+
