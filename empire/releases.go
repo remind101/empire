@@ -225,14 +225,29 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 }
 
 type releaser struct {
+	store   *store
 	manager service.Manager
 }
 
-// ScheduleRelease creates jobs for every process and instance count and
-// schedules them onto the cluster.
+// Release combines all the information for a release, and schedules it onto the
+// cluster.
 func (r *releaser) Release(ctx context.Context, release *Release) error {
 	a := newServiceApp(release)
 	return r.manager.Submit(ctx, a)
+}
+
+// ReleaseApp will find the last release for an app and release it.
+func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
+	release, err := r.store.ReleasesLast(app)
+	if err != nil {
+		return err
+	}
+
+	if release == nil {
+		return nil
+	}
+
+	return r.Release(ctx, release)
 }
 
 func newServiceApp(release *Release) *service.App {
