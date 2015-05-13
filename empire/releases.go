@@ -54,10 +54,13 @@ func forApp(app *App) func(*gorm.DB) *gorm.DB {
 }
 
 // releasesScope returns a common scope for querying releases.
+// NOTE: There's an bug/issue with using this scope with queries that pull
+// more than one release, so we are using it for ReleasesLast and ReleasesFindByAppAndVersion
+// only.
 func releasesScope(app *App) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.
-			Preload("App").Preload("App.Certificate").Preload("Config").Preload("Slug").Preload("Processes").
+			Preload("App").Preload("App.Certificates").Preload("Config").Preload("Slug").Preload("Processes").
 			Scopes(forApp(app)).
 			Order("version desc")
 	}
@@ -65,7 +68,7 @@ func releasesScope(app *App) func(*gorm.DB) *gorm.DB {
 
 func (s *store) ReleasesLast(app *App) (*Release, error) {
 	var release Release
-	if err := s.db.Scopes(releasesScope(app)).First(&release).Error; err != nil {
+	if err := s.db.Debug().Scopes(releasesScope(app)).First(&release).Error; err != nil {
 		if err == gorm.RecordNotFound {
 			return nil, nil
 		}
@@ -77,7 +80,7 @@ func (s *store) ReleasesLast(app *App) (*Release, error) {
 
 func (s *store) ReleasesFindByApp(app *App) ([]*Release, error) {
 	var releases []*Release
-	return releases, s.db.Scopes(releasesScope(app)).Find(&releases).Error
+	return releases, s.db.Scopes(forApp(app)).Find(&releases).Error
 }
 
 func (s *store) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
@@ -261,7 +264,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 		procExp = serviceExposure(release.App.Exposure)
 	}
 
-	cert := serviceSSLCertName(release.App.Certificate)
+	cert := serviceSSLCertName(release.App.Certificates)
 
 	return &service.Process{
 		Type:        string(p.Type),
@@ -315,9 +318,9 @@ func serviceExposure(appExp string) (exp service.Exposure) {
 	return exp
 }
 
-func serviceSSLCertName(c *Certificate) (name string) {
-	if c != nil {
-		name = c.Name
+func serviceSSLCertName(certs []*Certificate) (name string) {
+	if len(certs) > 0 {
+		name = certs[0].Name
 	}
 	return name
 }
