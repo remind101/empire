@@ -231,6 +231,19 @@ Status: Created new release v2 for acme-inc`,
 	})
 }
 
+func TestDeploy_NoTag(t *testing.T) {
+	run(t, []Command{
+		{
+			"deploy remind101/acme-inc --no-stream",
+			"Deployed remind101/acme-inc",
+		},
+		{
+			"releases -a acme-inc",
+			"v1    Dec 31 17:01  Deploy remind101/acme-inc:latest",
+		},
+	})
+}
+
 func TestScale(t *testing.T) {
 	now(time.Now().AddDate(0, 0, -5))
 	defer resetNow()

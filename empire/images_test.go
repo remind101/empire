@@ -14,13 +14,17 @@ func TestEncodeImage(t *testing.T) {
 }
 
 func TestDecodeImage(t *testing.T) {
-	s := "remind101/r101-api:1234"
-	expected := Image{
-		Repo: "remind101/r101-api",
-		ID:   "1234",
+	tests := []struct {
+		in  string
+		out Image
+	}{
+		{"remind101/r101-api:1234", Image{Repo: "remind101/r101-api", ID: "1234"}},
+		{"remind101/r101-api", Image{Repo: "remind101/r101-api", ID: "latest"}},
 	}
 
-	if got, want := decodeImage(s), expected; got != want {
-		t.Fatalf("decodeImage(%s) => %v; want %v", s, got, want)
+	for _, tt := range tests {
+		if got, want := decodeImage(tt.in), tt.out; got != want {
+			t.Fatalf("decodeImage(%s) => %v; want %v", tt.in, got, want)
+		}
 	}
 }

@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+// DefaultTag is used when json decoding an image. If there is no tag part
+// present, this will be used as the tag.
+const DefaultTag = "latest"
+
 // Image represents a container image, which is tied to a repository.
 type Image struct {
 	ID   string
@@ -44,10 +48,20 @@ func encodeImage(i Image) string {
 	return fmt.Sprintf("%s:%s", i.Repo, i.ID)
 }
 
-func decodeImage(s string) Image {
-	c := strings.Split(s, ":")
-	return Image{
-		Repo: c[0],
-		ID:   c[1],
+func decodeImage(s string) (image Image) {
+	p := strings.Split(s, ":")
+
+	if len(p) == 0 {
+		return
 	}
+
+	image.Repo = p[0]
+
+	if len(p) == 1 {
+		image.ID = DefaultTag
+		return
+	}
+
+	image.ID = p[1]
+	return
 }
