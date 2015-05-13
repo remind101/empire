@@ -162,25 +162,17 @@ func (m *ECSManager) listAppTasks(app string) ([]*ecs.Task, error) {
 		return tasks, err
 	}
 
-	l := len(resp.ServiceARNs)
-	serviceTasks := make(chan []*ecs.Task, l)
-
 	for _, s := range resp.ServiceARNs {
 		id, err := arn.ResourceID(*s)
 		if err != nil {
 			return tasks, err
 		}
 
-		go func(id string) {
-			// TODO handle error
-			t, _ := m.serviceTasks(id)
+		t, err := m.serviceTasks(id)
+		if err != nil {
+			return tasks, err
+		}
 
-			serviceTasks <- t
-		}(id)
-	}
-
-	for i := 0; i < l; i++ {
-		t := <-serviceTasks
 		tasks = append(tasks, t...)
 	}
 
