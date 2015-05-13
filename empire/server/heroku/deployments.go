@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/remind101/empire/empire"
@@ -28,13 +29,14 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
 
 	var (
+		r   *empire.Release
 		err error
 	)
 
 	ch := make(chan empire.Event)
 	errCh := make(chan error)
 	go func() {
-		_, err = h.DeployImage(ctx, form.Image, ch)
+		r, err = h.DeployImage(ctx, form.Image, ch)
 		errCh <- err
 	}()
 
@@ -55,6 +57,10 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 		break
 	}
+
+	Stream(w, &empire.DockerEvent{
+		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
+	})
 
 	return nil
 }
