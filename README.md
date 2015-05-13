@@ -70,7 +70,11 @@ set -e
 exec acme-inc server -port=$PORT
 ```
 
-## Development
+## Tests
+
+Unit tests live alongside each go file as `_test.go`.
+
+There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
 
 To get started, run:
 
@@ -83,20 +87,6 @@ To run the tests:
 ```console
 $ godep go test ./...
 ```
-
-**Caveats**
-
-1. `emp login` won't work by default if you're running on a non-standard port. Once you `emp login`, you'll need to change the appropriate `machine` entry in your `~/.netrc` to include the port:
-
-   ```
-   machine 0.0.0.0:8080
-   ```
-
-## Tests
-
-Unit tests live alongside each go file as `_test.go`.
-
-There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
 
 ## Development
 
@@ -124,6 +114,14 @@ If you want to contribute to empire, you may end up wanting to run a local insta
    ```
 
 Empire will be available at `http://$(boot2docker ip):8080` and you can point the CLI there.
+
+**Caveats**
+
+1. `emp login` won't work by default if you're running on a non-standard port. Once you `emp login`, you'll need to change the appropriate `machine` entry in your `~/.netrc` to include the port:
+
+   ```
+   machine 0.0.0.0:8080
+   ```
 
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
