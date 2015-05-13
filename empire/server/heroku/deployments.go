@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/remind101/empire/empire"
@@ -43,14 +44,13 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		select {
 		case evt := <-ch:
 			if err := Stream(w, evt); err != nil {
-				return err
+				Stream(w, map[string]string{"error": err.Error()})
+				return nil
 			}
 			continue
 		case err := <-errCh:
 			if err != nil {
-				Stream(w, map[string]*ErrorResource{
-					"error": newError(err),
-				})
+				Stream(w, map[string]string{"error": err.Error()})
 				return nil
 			}
 		}
@@ -58,5 +58,9 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		break
 	}
 
-	return Encode(w, newRelease(r))
+	Stream(w, &empire.DockerEvent{
+		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
+	})
+
+	return nil
 }

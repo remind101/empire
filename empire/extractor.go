@@ -42,6 +42,10 @@ func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Reso
 type resolver struct{}
 
 func (r *resolver) Resolve(image Image, out chan Event) (Image, error) {
+	for _, e := range FakeDockerPull(image) {
+		ee := e
+		out <- &ee
+	}
 	return image, nil
 }
 

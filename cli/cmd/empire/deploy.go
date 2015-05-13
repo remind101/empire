@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/term"
 	"github.com/remind101/empire/cli/pkg/plugin"
 )
 
@@ -19,28 +19,16 @@ type PostDeployForm struct {
 }
 
 func runDeploy(c *plugin.Context) {
-	noStream := c.Flags.Bool("no-stream", false, "If true, output will not be streamed to the terminal.")
-	c.Flags.Parse(c.Args[1:])
-
-	if len(c.Args) < 1 {
-		fmt.Println("Usage: emp deploy repo:id")
-		return
-	}
-
-	var w io.Writer
-	if *noStream {
-		w = ioutil.Discard
-	} else {
-		w = os.Stdout
-	}
+	r, w := io.Pipe()
 
 	image := c.Args[0]
 	form := &PostDeployForm{Image: image}
 
-	err := c.Client.Post(w, "/deploys", form)
-	if err != nil {
-		plugin.Must(err)
-	}
+	go func() {
+		plugin.Must(c.Client.Post(w, "/deploys", form))
+		plugin.Must(w.Close())
+	}()
 
-	fmt.Printf("Deployed %s\n", image)
+	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
+	plugin.Must(jsonmessage.DisplayJSONMessagesStream(r, os.Stdout, outFd, isTerminalOut))
 }

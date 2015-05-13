@@ -15,6 +15,26 @@
 			"Rev": "b891b4c66c7a330c5da052a0789f66c4e83c1bed"
 		},
 		{
+			"ImportPath": "github.com/docker/docker/pkg/jsonmessage",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/term",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/timeutils",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/units",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
 			"ImportPath": "github.com/mgutz/ansi",
 			"Rev": "22ddafb24adc4786c83841aa3021349818c898e4"
 		}
