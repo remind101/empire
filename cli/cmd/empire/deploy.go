@@ -26,6 +26,7 @@ func runDeploy(c *plugin.Context) {
 
 	go func() {
 		plugin.Must(c.Client.Post(w, "/deploys", form))
+		plugin.Must(w.Close())
 	}()
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
