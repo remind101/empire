@@ -53,7 +53,7 @@ outputs() {
 cd empire
 echo "AWS_REGION=us-east-1" > .env
 echo "AWS_ACCESS_KEY_ID=$KEY" >> .env
-echo "AWS_ACCESS_SECRET=$SECRET" >> .env
+echo "AWS_SECRET_ACCESS_KEY=$SECRET" >> .env
 echo "EMPIRE_ELB_VPC_ID=$(outputs | grep VPC | cut -f 2)" >> .env
 echo "EMPIRE_ELB_INTERNAL_SG=$(outputs | grep InternalELBSG | cut -f 2)" >> .env
 echo "EMPIRE_ELB_EXTERNAL_SG=$(outputs | grep ExternalELBSG | cut -f 2)" >> .env
