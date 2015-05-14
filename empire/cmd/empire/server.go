@@ -10,9 +10,9 @@ import (
 )
 
 func runServer(c *cli.Context) {
-	port := c.String("port")
+	port := c.String(FlagPort)
 
-	if c.Bool("automigrate") {
+	if c.Bool(FlagAutoMigrate) {
 		runMigrate(c)
 	}
 
@@ -28,9 +28,9 @@ func runServer(c *cli.Context) {
 
 func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts := server.Options{}
-	opts.GitHub.ClientID = c.String("github.client.id")
-	opts.GitHub.ClientSecret = c.String("github.client.secret")
-	opts.GitHub.Organization = c.String("github.organization")
+	opts.GitHub.ClientID = c.String(FlagGithubClient)
+	opts.GitHub.ClientSecret = c.String(FlagGithubSecret)
+	opts.GitHub.Organization = c.String(FlagGithubOrg)
 
 	return server.New(e, opts)
 }

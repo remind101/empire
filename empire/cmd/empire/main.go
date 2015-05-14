@@ -14,6 +14,35 @@ import (
 	"github.com/remind101/pkg/reporter/hb"
 )
 
+const (
+	FlagPort        = "port"
+	FlagAutoMigrate = "automigrate"
+
+	FlagGithubClient = "github.client.id"
+	FlagGithubSecret = "github.client.secret"
+	FlagGithubOrg    = "github.organization"
+
+	FlagDBPath = "path"
+	FlagDB     = "db"
+
+	FlagDockerOrg    = "docker.organization"
+	FlagDockerSocket = "docker.socket"
+	FlagDockerCert   = "docker.cert"
+	FlagDockerAuth   = "docker.auth"
+
+	FlagECSCluster = "ecs.cluster"
+
+	FlagELBSGPrivate = "elb.sg.private"
+	FlagELBSGPublic  = "elb.sg.private"
+
+	FlagEC2SubnetsPrivate = "ec2.subnets.private"
+	FlagEC2SubnetsPublic  = "ec2.subnets.public"
+
+	FlagSecret   = "secret"
+	FlagReporter = "reporter"
+	FlagRunner   = "runner"
+)
+
 // Commands are the subcommands that are available.
 var Commands = []cli.Command{
 	{
@@ -22,29 +51,29 @@ var Commands = []cli.Command{
 		Usage:     "Run the empire HTTP api",
 		Flags: append([]cli.Flag{
 			cli.StringFlag{
-				Name:   "port",
+				Name:   FlagPort,
 				Value:  "8080",
 				Usage:  "The port to run the server on",
 				EnvVar: "EMPIRE_PORT",
 			},
 			cli.BoolFlag{
-				Name:  "automigrate",
+				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
 			},
 			cli.StringFlag{
-				Name:   "github.client.id",
+				Name:   FlagGithubClient,
 				Value:  "",
 				Usage:  "The client id for the GitHub OAuth application",
 				EnvVar: "EMPIRE_GITHUB_CLIENT_ID",
 			},
 			cli.StringFlag{
-				Name:   "github.client.secret",
+				Name:   FlagGithubSecret,
 				Value:  "",
 				Usage:  "The client secret for the GitHub OAuth application",
 				EnvVar: "EMPIRE_GITHUB_CLIENT_SECRET",
 			},
 			cli.StringFlag{
-				Name:   "github.organization",
+				Name:   FlagGithubOrg,
 				Value:  "",
 				Usage:  "The organization to allow access to",
 				EnvVar: "EMPIRE_GITHUB_ORGANIZATION",
@@ -62,12 +91,12 @@ var Commands = []cli.Command{
 
 var DBFlags = []cli.Flag{
 	cli.StringFlag{
-		Name:  "path",
+		Name:  FlagDBPath,
 		Value: "./migrations",
 		Usage: "Path to database migrations",
 	},
 	cli.StringFlag{
-		Name:   "db",
+		Name:   FlagDB,
 		Value:  "postgres://localhost/empire?sslmode=disable",
 		Usage:  "SQL connection string for the database",
 		EnvVar: "EMPIRE_DATABASE_URL",
@@ -76,73 +105,73 @@ var DBFlags = []cli.Flag{
 
 var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
-		Name:   "docker.organization",
+		Name:   FlagDockerOrg,
 		Value:  "",
 		Usage:  "The fallback docker registry organization to use when an app is not linked to a docker repo. (e.g. quay.io/remind101)",
 		EnvVar: "DOCKER_ORGANIZATION",
 	},
 	cli.StringFlag{
-		Name:   "docker.socket",
+		Name:   FlagDockerSocket,
 		Value:  "unix:///var/run/docker.sock",
 		Usage:  "The location of the docker api",
 		EnvVar: "DOCKER_HOST",
 	},
 	cli.StringFlag{
-		Name:   "docker.cert",
+		Name:   FlagDockerCert,
 		Value:  "",
 		Usage:  "If using TLS, a path to a certificate to use",
 		EnvVar: "DOCKER_CERT_PATH",
 	},
 	cli.StringFlag{
-		Name:   "docker.auth",
+		Name:   FlagDockerAuth,
 		Value:  path.Join(os.Getenv("HOME"), ".dockercfg"),
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
 	},
 	cli.StringFlag{
-		Name:   "ecs.cluster",
+		Name:   FlagECSCluster,
 		Value:  "default",
 		Usage:  "The ECS cluster to create services within",
 		EnvVar: "EMPIRE_ECS_CLUSTER",
 	},
 	cli.StringFlag{
-		Name:   "elb.sg.private",
+		Name:   FlagELBSGPrivate,
 		Value:  "",
 		Usage:  "The ELB security group to assign private load balancers",
 		EnvVar: "EMPIRE_ELB_SG_PRIVATE",
 	},
 	cli.StringFlag{
-		Name:   "elb.sg.public",
+		Name:   FlagELBSGPublic,
 		Value:  "",
 		Usage:  "The ELB security group to assign public load balancers",
 		EnvVar: "EMPIRE_ELB_SG_PUBLIC",
 	},
 	cli.StringSliceFlag{
-		Name:   "ec2.subnets.private",
+		Name:   FlagEC2SubnetsPrivate,
 		Value:  &cli.StringSlice{},
 		Usage:  "The comma separated private subnet ids",
 		EnvVar: "EMPIRE_EC2_SUBNETS_PRIVATE",
 	},
 	cli.StringSliceFlag{
-		Name:   "ec2.subnets.public",
+		Name:   FlagEC2SubnetsPublic,
 		Value:  &cli.StringSlice{},
 		Usage:  "The comma separated public subnet ids",
 		EnvVar: "EMPIRE_EC2_SUBNETS_PUBLIC",
 	},
 	cli.StringFlag{
-		Name:   "secret",
+		Name:   FlagSecret,
 		Value:  "<change this>",
 		Usage:  "The secret used to sign access tokens",
 		EnvVar: "EMPIRE_TOKEN_SECRET",
 	},
 	cli.StringFlag{
-		Name:   "reporter",
+		Name:   FlagReporter,
 		Value:  "",
 		Usage:  "The error reporter to use. (e.g. hb://api.honeybadger.io?key=<apikey>&environment=production)",
 		EnvVar: "EMPIRE_REPORTER",
 	},
 	cli.StringFlag{
-		Name:   "runner.api",
+		Name:   FlagRunner,
 		Value:  "",
 		Usage:  "The location of the container runner api",
 		EnvVar: "EMPIRE_RUNNER",
@@ -161,19 +190,19 @@ func main() {
 func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts := empire.Options{}
 
-	opts.Docker.Socket = c.String("docker.socket")
-	opts.Docker.CertPath = c.String("docker.cert")
-	opts.Runner.API = c.String("runner.api")
+	opts.Docker.Socket = c.String(FlagDockerSocket)
+	opts.Docker.CertPath = c.String(FlagDockerCert)
+	opts.Runner.API = c.String(FlagRunner)
 	opts.AWSConfig = aws.DefaultConfig
-	opts.ECS.Cluster = c.String("ecs.cluster")
-	opts.ELB.InternalSecurityGroupID = c.String("elb.sg.private")
-	opts.ELB.ExternalSecurityGroupID = c.String("elb.sg.public")
-	opts.ELB.InternalSubnetIDs = c.StringSlice("ec2.subnets.private")
-	opts.ELB.ExternalSubnetIDs = c.StringSlice("ec2.subnets.public")
-	opts.DB = c.String("db")
-	opts.Secret = c.String("secret")
+	opts.ECS.Cluster = c.String(FlagECSCluster)
+	opts.ELB.InternalSecurityGroupID = c.String(FlagELBSGPrivate)
+	opts.ELB.ExternalSecurityGroupID = c.String(FlagELBSGPublic)
+	opts.ELB.InternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPrivate)
+	opts.ELB.ExternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPublic)
+	opts.DB = c.String(FlagDB)
+	opts.Secret = c.String(FlagSecret)
 
-	auth, err := dockerAuth(c.String("docker.auth"))
+	auth, err := dockerAuth(c.String(FlagDockerAuth))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +214,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 		return e, err
 	}
 
-	reporter, err := newReporter(c.String("reporter"))
+	reporter, err := newReporter(c.String(FlagReporter))
 	if err != nil {
 		return e, err
 	}

@@ -9,8 +9,8 @@ import (
 )
 
 func runMigrate(c *cli.Context) {
-	path := c.String("path")
-	db := c.String("db")
+	path := c.String(FlagDBPath)
+	db := c.String(FlagDB)
 
 	errors, ok := empire.Migrate(db, path)
 	if !ok {
