@@ -410,8 +410,10 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		Cluster:                 ecsOpts.Cluster,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
 		ExternalSecurityGroupID: elbOpts.ExternalSecurityGroupID,
-		AWS:  config,
-		Zone: "empire.",
+		InternalSubnetIDs:       elbOpts.InternalSubnetIDs,
+		ExternalSubnetIDs:       elbOpts.ExternalSubnetIDs,
+		AWS:                     config,
+		Zone:                    "empire.",
 	})
 
 	l := service.WithLogging(m)
