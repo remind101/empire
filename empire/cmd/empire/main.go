@@ -30,7 +30,8 @@ const (
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
 
-	FlagECSCluster = "ecs.cluster"
+	FlagECSCluster     = "ecs.cluster"
+	FlagECSServiceRole = "ecs.service.role"
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
@@ -135,6 +136,12 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_ECS_CLUSTER",
 	},
 	cli.StringFlag{
+		Name:   FlagECSServiceRole,
+		Value:  "default",
+		Usage:  "The ECS cluster to create services within",
+		EnvVar: "EMPIRE_ECS_SERVICE_ROLE",
+	},
+	cli.StringFlag{
 		Name:   FlagELBSGPrivate,
 		Value:  "",
 		Usage:  "The ELB security group to assign private load balancers",
@@ -195,6 +202,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Runner.API = c.String(FlagRunner)
 	opts.AWSConfig = aws.DefaultConfig
 	opts.ECS.Cluster = c.String(FlagECSCluster)
+	opts.ECS.ServiceRole = c.String(FlagECSServiceRole)
 	opts.ELB.InternalSecurityGroupID = c.String(FlagELBSGPrivate)
 	opts.ELB.ExternalSecurityGroupID = c.String(FlagELBSGPublic)
 	opts.ELB.InternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPrivate)

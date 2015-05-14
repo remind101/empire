@@ -284,6 +284,53 @@
       }
     },
 
+    "ServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2008-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ecs.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        }
+      }
+    },
+
+    "ServiceRolePolicies": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "ecsServiceRole",
+        "Roles": [ { "Ref": "ServiceRole" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:Describe*",
+                "elasticloadbalancing:*",
+                "ecs:*",
+                "iam:ListInstanceProfiles",
+                "iam:ListRoles",
+                "iam:PassRole",
+                "route53:*"
+              ],
+              "Resource": [
+                "*"
+              ]
+            }
+          ]
+        }
+      }
+    },
+
     "InstanceProfile": {
       "Type": "AWS::IAM::InstanceProfile",
       "Properties": {
@@ -351,7 +398,11 @@
       "Description": "The name of the ELB for the Empire controller",
       "Value": { "Ref": "LoadBalancer" }
     },
-    "AccessKey": {
+    "ServiceRole": {
+      "Description": "Role to assume when creating an ECS service with an ELB attached",
+      "Value": { "Ref": "ServiceRole" }
+    },
+    "AccessKeyId": {
       "Description": "Access key that can be used for a development instance of Empire",
       "Value": { "Ref": "AccessKey" }
     },

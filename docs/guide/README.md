@@ -62,15 +62,11 @@ Then create the task definition:
 $ aws ecs register-task-definition --family empire --cli-input-json file://$PWD/docs/guide/empire.ecs.json
 ```
 
-**Create the ECS Service Role**
-
-Refer to the ECS documentation to create the `ecsServiceRole` role: http://docs.aws.amazon.com/AmazonECS/latest/developerguide/IAM_policies.html#service_IAM_role
-
 **Create the Service**
 
 ```console
 $ aws ecs create-service --cluster default --service-name empire --task-definition empire \
-  --desired-count 1 --role ecsServiceRole \
+  --desired-count 1 --role $(stack-output $STACK ServiceRole) \
   --load-balancers loadBalancerName=$(stack-output $STACK ELBName),containerName=empire,containerPort=8080
 ```
 

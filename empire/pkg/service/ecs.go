@@ -16,8 +16,6 @@ import (
 
 var DefaultDelimiter = "-"
 
-const ECSServiceRole = "ecsServiceRole"
-
 // ECSManager is an implementation of the ServiceManager interface that
 // is backed by Amazon ECS.
 type ECSManager struct {
@@ -32,6 +30,9 @@ type ECSManager struct {
 type ECSConfig struct {
 	// The ECS cluster to create services and task definitions in.
 	Cluster string
+
+	// The IAM role to use for ECS services with ELB's attached.
+	ServiceRole string
 
 	// VPC controls what subnets to attach to ELB's that are created.
 	VPC string
@@ -70,8 +71,9 @@ func NewECSManager(config ECSConfig) *ECSManager {
 	c := ecsutil.NewClient(config.AWS)
 
 	var pm ProcessManager = &ecsProcessManager{
-		cluster: config.Cluster,
-		ecs:     c,
+		cluster:     config.Cluster,
+		serviceRole: config.Cluster,
+		ecs:         c,
 	}
 
 	// If security group ids are provided, ELB's will be created for ECS
@@ -252,8 +254,9 @@ var _ ProcessManager = &ecsProcessManager{}
 // ecsProcessManager is an implementation of the ProcessManager interface that
 // creates ECS services for Processes.
 type ecsProcessManager struct {
-	cluster string
-	ecs     *ecsutil.Client
+	cluster     string
+	serviceRole string
+	ecs         *ecsutil.Client
 }
 
 // CreateProcess creates an ECS service for the process.
@@ -285,7 +288,7 @@ func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, e
 				LoadBalancerName: aws.String(p.LoadBalancer),
 			},
 		}
-		role = aws.String(ECSServiceRole)
+		role = aws.String(m.serviceRole)
 	}
 
 	resp, err := m.ecs.CreateAppService(app.ID, &ecs.CreateServiceInput{
