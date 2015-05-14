@@ -33,7 +33,7 @@ const (
 	FlagECSCluster = "ecs.cluster"
 
 	FlagELBSGPrivate = "elb.sg.private"
-	FlagELBSGPublic  = "elb.sg.private"
+	FlagELBSGPublic  = "elb.sg.public"
 
 	FlagEC2SubnetsPrivate = "ec2.subnets.private"
 	FlagEC2SubnetsPublic  = "ec2.subnets.public"
