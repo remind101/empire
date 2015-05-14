@@ -124,61 +124,57 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 		return c, err
 	}
 
-	release, err := s.store.ReleasesLast(app)
+	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
+		if err == gorm.RecordNotFound {
+			err = nil
+		}
+
 		return c, err
 	}
 
-	if release != nil {
-		keys := make([]string, 0, len(vars))
-		for k, _ := range vars {
-			keys = append(keys, string(k))
-		}
-
-		desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
-
-		// Create new release based on new config and old slug
-		_, err = s.releases.ReleasesCreate(ctx, &Release{
-			App:         release.App,
-			Config:      c,
-			Slug:        release.Slug,
-			Description: desc,
-		})
-		if err != nil {
-			return c, err
-		}
+	keys := make([]string, 0, len(vars))
+	for k, _ := range vars {
+		keys = append(keys, string(k))
 	}
 
-	return c, nil
+	desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
+
+	// Create new release based on new config and old slug
+	_, err = s.releases.ReleasesCreate(ctx, &Release{
+		App:         release.App,
+		Config:      c,
+		Slug:        release.Slug,
+		Description: desc,
+	})
+	return c, err
 }
 
 // Returns configs for latest release or the latest configs if there are no releases.
 func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
-	r, err := s.store.ReleasesLast(app)
+	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
+		if err == gorm.RecordNotFound {
+			// It's possible to have config without releases, this handles that.
+			c, err := s.store.ConfigsFind(ConfigApp(app))
+			if err != nil {
+				return nil, err
+			}
+
+			if c == nil {
+				return s.store.ConfigsCreate(&Config{
+					App:  app,
+					Vars: make(Vars),
+				})
+			}
+
+			return c, nil
+		}
+
 		return nil, err
 	}
 
-	var c *Config
-
-	if r != nil {
-		c = r.Config
-	} else {
-		// It's possible to have config without releases, this handles that.
-		c, err = s.store.ConfigsFind(ConfigApp(app))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if c != nil {
-		return c, nil
-	}
-
-	return s.store.ConfigsCreate(&Config{
-		App:  app,
-		Vars: make(Vars),
-	})
+	return r.Config, nil
 }
 
 // mergeVars copies all of the vars from a, and merges b into them, returning a
