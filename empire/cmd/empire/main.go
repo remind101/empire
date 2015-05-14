@@ -168,8 +168,8 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.ECS.Cluster = c.String("ecs.cluster")
 	opts.ELB.InternalSecurityGroupID = c.String("elb.sg.private")
 	opts.ELB.ExternalSecurityGroupID = c.String("elb.sg.public")
-	opts.ELB.InternalSubnetIDs = c.StringSlice("elb.subnets.private")
-	opts.ELB.ExternalSubnetIDs = c.StringSlice("elb.subnets.public")
+	opts.ELB.InternalSubnetIDs = c.StringSlice("ec2.subnets.private")
+	opts.ELB.ExternalSubnetIDs = c.StringSlice("ec2.subnets.public")
 	opts.DB = c.String("db")
 	opts.Secret = c.String("secret")
 
