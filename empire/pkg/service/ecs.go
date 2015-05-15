@@ -72,7 +72,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 
 	var pm ProcessManager = &ecsProcessManager{
 		cluster:     config.Cluster,
-		serviceRole: config.Cluster,
+		serviceRole: config.ServiceRole,
 		ecs:         c,
 	}
 
