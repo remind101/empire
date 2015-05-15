@@ -52,7 +52,8 @@ type DockerOptions struct {
 
 // ECSOptions is a set of options to configure ECS.
 type ECSOptions struct {
-	Cluster string
+	Cluster     string
+	ServiceRole string
 }
 
 // ELBOptions is a set of options to configure ELB.
@@ -408,6 +409,7 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 
 	m := service.NewECSManager(service.ECSConfig{
 		Cluster:                 ecsOpts.Cluster,
+		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
 		ExternalSecurityGroupID: elbOpts.ExternalSecurityGroupID,
 		InternalSubnetIDs:       elbOpts.InternalSubnetIDs,

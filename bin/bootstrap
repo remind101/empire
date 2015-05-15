@@ -42,9 +42,10 @@ output() {
 }
 
 echo "AWS_REGION=us-east-1" > .env
-echo "AWS_ACCESS_KEY_ID=$(output AccessKey)" >> .env
+echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
 echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
 echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
-echo "EMPIRE_ELB_INTERNAL_SG=$(output InternalELBSG)" >> .env
-echo "EMPIRE_ELB_EXTERNAL_SG=$(output ExternalELBSG)" >> .env
+echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
+echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
 echo "EMPIRE_ECS_CLUSTER=$STACK" >> .env
+echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
