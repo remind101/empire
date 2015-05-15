@@ -20,13 +20,18 @@ func NewIAMManager(config *aws.Config, path string) *IAMManager {
 }
 
 func (m *IAMManager) Add(name string, cert string, key string) (string, error) {
+	primary, chain := SplitCertChain(cert)
 	input := &iam.UploadServerCertificateInput{
-		CertificateBody:       aws.String(PrimaryCertFromChain(cert)),
+		CertificateBody:       aws.String(primary),
 		PrivateKey:            aws.String(key),
 		ServerCertificateName: certName(name),
-		CertificateChain:      aws.String(cert),
-		Path:                  aws.String(m.path),
+		Path: aws.String(m.path),
 	}
+
+	if len(chain) > 0 {
+		input.CertificateChain = aws.String(chain)
+	}
+
 	output, err := m.iam.UploadServerCertificate(input)
 	if err != nil {
 		return "", err

@@ -79,8 +79,11 @@ b8ravHNjkOR/ez4iyz0H7V84dJzjA1BOoa+Y7mHyhD8S
 -----END CERTIFICATE-----
 `
 
-	res := PrimaryCertFromChain(primary + chain)
-	if res != primary {
-		t.Errorf("PrimaryCertFromChain() => %v; want %v", res, primary)
+	pri, rest := SplitCertChain(primary + chain)
+	if pri != primary {
+		t.Errorf("SplitCertChain() => %v; want %v", pri, primary)
+	}
+	if rest != chain {
+		t.Errorf("SplitCertChain() => %v; want %v", rest, chain)
 	}
 }
