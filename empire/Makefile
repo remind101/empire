@@ -9,8 +9,8 @@ bootstrap: cmd
 	createdb empire
 	./build/empire migrate
 
-build: Dockerfile
-	docker build --no-cache -t remind101/empire .
+build: Dockerfile.prod
+	docker build --no-cache -f Dockerfile.prod -t remind101/empire .
 
 test:
 	godep go test ./... && godep go vet ./...
