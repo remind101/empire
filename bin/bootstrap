@@ -2,6 +2,8 @@
 
 set -e
 
+command -v pwgen >/dev/null 2>&1 || { echo >&2 "pwgen is required but not installed. Aborting."; exit 1; }
+
 # This variable will be used as the cloudformation stack name and the associated
 # ECS cluster.
 STACK="empire-$(pwgen 10 1)"
@@ -30,11 +32,19 @@ aws cloudformation create-stack \
   --capabilities CAPABILITY_IAM > /dev/null
 
 echo "==> Waiting for stack to complete"
-while [ $(aws cloudformation describe-stacks --stack-name "$STACK" --output text --query 'Stacks[0].StackStatus') != "CREATE_COMPLETE" ]; do
+stack_status=""
+while [ "$stack_status" != "CREATE_COMPLETE" ]; do
   sleep 1
+  echo -n -e '\033[2K\r'
+  echo -n "==> Status: $stack_status"
+  stack_status=$(aws cloudformation describe-stacks --stack-name "$STACK" --output text --query 'Stacks[0].StackStatus' 2>/dev/null)
+  if [ "$stack_status" == "ROLLBACK_COMPLETE" ]; then
+    echo "\nStack creation failed, check AWS cloudformation console for details."
+    exit 1
+  fi
 done
 
-echo "==> Writing environment variables to .env file"
+echo "\n==> Writing environment variables to .env file"
 
 # Returns the value of a named output from the created stack.
 output() {
