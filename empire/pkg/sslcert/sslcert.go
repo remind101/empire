@@ -16,16 +16,18 @@ type Manager interface {
 	Remove(id string) (err error)
 }
 
-func PrimaryCertFromChain(chain string) string {
-	block, _ := pem.Decode([]byte(chain))
+// SplitCertChain takes a complete certificate chain (including the primary cert) and
+// returns two strings: the primary cert and the rest of the certificate chain, if any.
+func SplitCertChain(chain string) (string, string) {
+	block, rest := pem.Decode([]byte(chain))
 	if block == nil {
-		return ""
+		return "", ""
 	}
 
 	var out bytes.Buffer
 	if err := pem.Encode(&out, block); err != nil {
-		return ""
+		return "", ""
 	}
 
-	return out.String()
+	return out.String(), string(rest)
 }
