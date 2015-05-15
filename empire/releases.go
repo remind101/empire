@@ -68,7 +68,7 @@ func releasesScope(app *App) func(*gorm.DB) *gorm.DB {
 
 func (s *store) ReleasesLast(app *App) (*Release, error) {
 	var release Release
-	if err := s.db.Debug().Scopes(releasesScope(app)).First(&release).Error; err != nil {
+	if err := s.db.Scopes(releasesScope(app)).First(&release).Error; err != nil {
 		if err == gorm.RecordNotFound {
 			return nil, nil
 		}
