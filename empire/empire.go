@@ -173,6 +173,7 @@ func New(options Options) (*Empire, error) {
 	runner := newRunner(options.Runner, store)
 
 	releaser := &releaser{
+		store:   store,
 		manager: manager,
 	}
 
@@ -187,7 +188,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	domains := &domainsService{
-		store: store,
+		store:    store,
+		releaser: releaser,
 	}
 
 	slugs := &slugsService{
@@ -304,13 +306,13 @@ func (e *Empire) DomainsFindByHostname(hostname string) (*Domain, error) {
 }
 
 // DomainsCreate adds a new Domain for an App.
-func (e *Empire) DomainsCreate(domain *Domain) (*Domain, error) {
-	return e.domains.DomainsCreate(domain)
+func (e *Empire) DomainsCreate(ctx context.Context, domain *Domain) (*Domain, error) {
+	return e.domains.DomainsCreate(ctx, domain)
 }
 
 // DomainsDestroy removes a Domain for an App.
-func (e *Empire) DomainsDestroy(domain *Domain) error {
-	return e.domains.DomainsDestroy(domain)
+func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
+	return e.domains.DomainsDestroy(ctx, domain)
 }
 
 // JobStatesByApp returns the JobStates for the given app.

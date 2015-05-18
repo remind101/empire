@@ -7,6 +7,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/pkg/timex"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -31,17 +32,18 @@ func (d *Domain) BeforeCreate() error {
 }
 
 type domainsService struct {
-	store *store
+	store    *store
+	releaser *releaser
 }
 
-func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
+func (s *domainsService) DomainsCreate(ctx context.Context, domain *Domain) (*Domain, error) {
 	d, err := s.store.DomainsFind(DomainHostname(domain.Hostname))
 	if err != nil {
 		return domain, err
 	}
 
 	if d != nil {
-		if d.AppID == domain.AppID {
+		if d.App.ID == domain.App.ID {
 			return domain, ErrDomainAlreadyAdded
 		} else {
 			return domain, ErrDomainInUse
@@ -53,14 +55,14 @@ func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
 		return domain, err
 	}
 
-	if err := s.makePublic(domain.AppID); err != nil {
+	if err := s.makePublic(domain.App); err != nil {
 		return domain, err
 	}
 
-	return domain, err
+	return domain, s.releaser.ReleaseApp(ctx, domain.App)
 }
 
-func (s *domainsService) DomainsDestroy(domain *Domain) error {
+func (s *domainsService) DomainsDestroy(ctx context.Context, domain *Domain) error {
 	if err := s.store.DomainsDestroy(domain); err != nil {
 		return err
 	}
@@ -72,36 +74,26 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 	}
 
 	if len(d) == 0 {
-		if err := s.makePrivate(domain.AppID); err != nil {
+		if err := s.makePrivate(domain.App); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return s.releaser.ReleaseApp(ctx, domain.App)
 }
 
-func (s *domainsService) makePublic(appID string) error {
-	a, err := s.store.AppsFind(AppID(appID))
-	if err != nil {
-		return err
-	}
-
-	a.Exposure = "public"
-	if err := s.store.AppsUpdate(a); err != nil {
+func (s *domainsService) makePublic(app *App) error {
+	app.Exposure = "public"
+	if err := s.store.AppsUpdate(app); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *domainsService) makePrivate(appID string) error {
-	a, err := s.store.AppsFind(AppID(appID))
-	if err != nil {
-		return err
-	}
-
-	a.Exposure = "private"
-	if err := s.store.AppsUpdate(a); err != nil {
+func (s *domainsService) makePrivate(app *App) error {
+	app.Exposure = "private"
+	if err := s.store.AppsUpdate(app); err != nil {
 		return err
 	}
 
@@ -124,7 +116,7 @@ func DomainApp(app *App) func(*gorm.DB) *gorm.DB {
 
 func (s *store) DomainsFind(scope func(*gorm.DB) *gorm.DB) (*Domain, error) {
 	var domain Domain
-	if err := s.db.Scopes(scope).First(&domain).Error; err != nil {
+	if err := s.db.Preload("App").Scopes(scope).First(&domain).Error; err != nil {
 		if err == gorm.RecordNotFound {
 			return nil, nil
 		}
@@ -136,7 +128,7 @@ func (s *store) DomainsFind(scope func(*gorm.DB) *gorm.DB) (*Domain, error) {
 
 func (s *store) DomainsAll(scope func(*gorm.DB) *gorm.DB) ([]*Domain, error) {
 	var domains []*Domain
-	return domains, s.db.Scopes(scope).Find(&domains).Error
+	return domains, s.db.Preload("App").Scopes(scope).Find(&domains).Error
 }
 
 func (s *store) DomainsCreate(domain *Domain) (*Domain, error) {
