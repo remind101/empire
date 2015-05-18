@@ -1,8 +1,6 @@
 package sslcert
 
 import (
-	"fmt"
-
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/iam"
 )
@@ -24,7 +22,7 @@ func (m *IAMManager) Add(name string, cert string, key string) (string, error) {
 	input := &iam.UploadServerCertificateInput{
 		CertificateBody:       aws.String(primary),
 		PrivateKey:            aws.String(key),
-		ServerCertificateName: certName(name),
+		ServerCertificateName: aws.String(name),
 		Path: aws.String(m.path),
 	}
 
@@ -37,11 +35,11 @@ func (m *IAMManager) Add(name string, cert string, key string) (string, error) {
 		return "", err
 	}
 
-	return *output.ServerCertificateMetadata.ServerCertificateID, nil
+	return *output.ServerCertificateMetadata.ARN, nil
 }
 
 func (m *IAMManager) Remove(name string) error {
-	_, err := m.iam.DeleteServerCertificate(&iam.DeleteServerCertificateInput{ServerCertificateName: certName(name)})
+	_, err := m.iam.DeleteServerCertificate(&iam.DeleteServerCertificateInput{ServerCertificateName: aws.String(name)})
 	if noCertificate(err) {
 		return nil
 	}
@@ -50,7 +48,7 @@ func (m *IAMManager) Remove(name string) error {
 
 func (m *IAMManager) MetaData(name string) (map[string]string, error) {
 	data := map[string]string{}
-	out, err := m.iam.GetServerCertificate(&iam.GetServerCertificateInput{ServerCertificateName: certName(name)})
+	out, err := m.iam.GetServerCertificate(&iam.GetServerCertificateInput{ServerCertificateName: aws.String(name)})
 	if err != nil {
 		return data, err
 	}
@@ -60,10 +58,6 @@ func (m *IAMManager) MetaData(name string) (map[string]string, error) {
 	}
 
 	return data, nil
-}
-
-func certName(name string) *string {
-	return aws.String(fmt.Sprintf("%sCert", name))
 }
 
 func noCertificate(err error) bool {

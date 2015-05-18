@@ -43,7 +43,7 @@ type certificatesService struct {
 }
 
 func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	id, err := s.manager.Add(cert.AppID, cert.CertificateChain, cert.PrivateKey)
+	id, err := s.manager.Add(certName(cert), cert.CertificateChain, cert.PrivateKey)
 	if err != nil {
 		return cert, err
 	}
@@ -53,10 +53,10 @@ func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Cert
 }
 
 func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	if err := s.manager.Remove(cert.Name); err != nil {
+	if err := s.manager.Remove(certName(cert)); err != nil {
 		return cert, err
 	}
-	id, err := s.manager.Add(cert.AppID, cert.CertificateChain, cert.PrivateKey)
+	id, err := s.manager.Add(certName(cert), cert.CertificateChain, cert.PrivateKey)
 	if err != nil {
 		return cert, err
 	}
@@ -66,10 +66,15 @@ func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Cert
 }
 
 func (s *certificatesService) CertificatesDestroy(ctx context.Context, cert *Certificate) error {
-	if err := s.manager.Remove(cert.Name); err != nil {
+	if err := s.manager.Remove(certName(cert)); err != nil {
 		return err
 	}
 	return s.store.CertificatesDestroy(cert)
+}
+
+// certName is the cert name we pass to our cert manager.
+func certName(cert *Certificate) string {
+	return cert.AppID
 }
 
 func (s *store) CertificatesCreate(cert *Certificate) (*Certificate, error) {
