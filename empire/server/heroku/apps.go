@@ -14,7 +14,7 @@ type App heroku.App
 
 func newApp(a *empire.App) *App {
 	return &App{
-		Id:        a.Name,
+		Id:        a.ID,
 		Name:      a.Name,
 		CreatedAt: *a.CreatedAt,
 	}
