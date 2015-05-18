@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
 )
@@ -44,13 +45,13 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		select {
 		case evt := <-ch:
 			if err := Stream(w, evt); err != nil {
-				Stream(w, map[string]string{"error": err.Error()})
+				Stream(w, jsonmessage.JSONMessage{ErrorMessage: err.Error()})
 				return nil
 			}
 			continue
 		case err := <-errCh:
 			if err != nil {
-				Stream(w, map[string]string{"error": err.Error()})
+				Stream(w, jsonmessage.JSONMessage{ErrorMessage: err.Error()})
 				return nil
 			}
 		}

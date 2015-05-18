@@ -96,38 +96,58 @@
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/archive",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/fileutils",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/ioutils",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/jsonmessage",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/pools",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/promise",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/system",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/term",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/timeutils",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/units",
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/vendor/src/code.google.com/p/go/src/pkg/archive/tar",
-			"Comment": "v1.4.1-889-gabdfb21",
-			"Rev": "abdfb21e3a761efdd70614de42905ff7911c5372"
+			"Comment": "v1.4.1-3107-g5221fd2",
+			"Rev": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
 		},
 		{
 			"ImportPath": "github.com/ejholmes/flock",
