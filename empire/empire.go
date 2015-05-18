@@ -293,14 +293,14 @@ func (e *Empire) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config
 	return e.configs.ConfigsApply(ctx, app, vars)
 }
 
-// DomainsByApp returns the domains for a given App.
-func (e *Empire) DomainsFindByApp(app *App) ([]*Domain, error) {
-	return e.store.DomainsAll(DomainApp(app))
+// DomainsFirst returns the first domain matching the query.
+func (e *Empire) DomainsFirst(q DomainsQuery) (*Domain, error) {
+	return e.store.DomainsFirst(q)
 }
 
-// DomainsByHostname returns the domain for a given hostname.
-func (e *Empire) DomainsFindByHostname(hostname string) (*Domain, error) {
-	return e.store.DomainsFind(DomainHostname(hostname))
+// Domains returns all domains matching the query.
+func (e *Empire) Domains(q DomainsQuery) ([]*Domain, error) {
+	return e.store.Domains(q)
 }
 
 // DomainsCreate adds a new Domain for an App.

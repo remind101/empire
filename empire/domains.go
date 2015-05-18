@@ -35,12 +35,12 @@ type domainsService struct {
 }
 
 func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
-	d, err := s.store.DomainsFind(DomainHostname(domain.Hostname))
-	if err != nil {
+	d, err := s.store.DomainsFirst(DomainsQuery{Hostname: &domain.Hostname})
+	if err != nil && err != gorm.RecordNotFound {
 		return domain, err
 	}
 
-	if d != nil {
+	if err != gorm.RecordNotFound {
 		if d.AppID == domain.AppID {
 			return domain, ErrDomainAlreadyAdded
 		} else {
@@ -66,7 +66,7 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 	}
 
 	// If app has no domains associated, make it private
-	d, err := s.store.DomainsAll(DomainApp(domain.App))
+	d, err := s.store.Domains(DomainsQuery{App: domain.App})
 	if err != nil {
 		return err
 	}
@@ -108,41 +108,49 @@ func (s *domainsService) makePrivate(appID string) error {
 	return nil
 }
 
-// DomainHostname returns a scope that finds a domain by hostname.
-func DomainHostname(hostname string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("hostname = ?", hostname)
-	}
+// DomainsQuery is a Scope implementation for common things to filter releases
+// by.
+type DomainsQuery struct {
+	// If provided, finds domains matching the given hostname.
+	Hostname *string
+
+	// If provided, filters domains belonging to the given app.
+	App *App
 }
 
-// DomainApp returns a scope that will find domains for a given app.
-func DomainApp(app *App) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("app_id = ?", app.ID)
+// Scope implements the Scope interface.
+func (q DomainsQuery) Scope(db *gorm.DB) *gorm.DB {
+	var scope ComposedScope
+
+	if q.Hostname != nil {
+		scope = append(scope, FieldEquals("hostname", *q.Hostname))
 	}
+
+	if q.App != nil {
+		scope = append(scope, FieldEquals("app_id", q.App.ID))
+	}
+
+	return scope.Scope(db)
 }
 
-func (s *store) DomainsFind(scope func(*gorm.DB) *gorm.DB) (*Domain, error) {
+// DomainsFirst returns the first matching domain.
+func (s *store) DomainsFirst(scope Scope) (*Domain, error) {
 	var domain Domain
-	if err := s.db.Scopes(scope).First(&domain).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	return &domain, nil
+	return &domain, s.First(scope, &domain)
 }
 
-func (s *store) DomainsAll(scope func(*gorm.DB) *gorm.DB) ([]*Domain, error) {
+// Domains returns all domains matching the scope.
+func (s *store) Domains(scope Scope) ([]*Domain, error) {
 	var domains []*Domain
-	return domains, s.db.Scopes(scope).Find(&domains).Error
+	return domains, s.Find(scope, &domains)
 }
 
+// DomainsCreate persists the Domain.
 func (s *store) DomainsCreate(domain *Domain) (*Domain, error) {
 	return domainsCreate(s.db, domain)
 }
 
+// DomainsDestroy destroys the Domain.
 func (s *store) DomainsDestroy(domain *Domain) error {
 	return domainsDestroy(s.db, domain)
 }
