@@ -14,3 +14,5 @@ server:
     DOCKER_HOST:
 postgres:
   image: postgres
+  ports:
+    - "5432:5432"
