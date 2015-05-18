@@ -50,7 +50,7 @@ func (r *Release) BeforeCreate() error {
 // by.
 type ReleasesQuery struct {
 	// If Provided, an app to filter by.
-	*App
+	App *App
 
 	// If provided, a version to filter by.
 	Version *int
