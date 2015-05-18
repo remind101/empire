@@ -96,7 +96,7 @@ func (r *runner) Run(ctx context.Context, app *App, command string, opts Process
 }
 
 func (r *runner) newContainerForm(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*postContainersForm, error) {
-	release, err := r.store.ReleasesLast(app)
+	release, err := r.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
 		return nil, err
 	}

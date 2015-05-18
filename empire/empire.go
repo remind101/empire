@@ -342,17 +342,17 @@ func (e *Empire) ProcessesRun(ctx context.Context, app *App, command string, opt
 
 // ReleasesFindByApp returns all Releases for a given App.
 func (e *Empire) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return e.store.ReleasesFindByApp(app)
+	return e.store.Releases(ReleasesQuery{App: app})
 }
 
 // ReleasesFindByAppAndVersion finds a specific Release for a given App.
 func (e *Empire) ReleasesFindByAppAndVersion(app *App, version int) (*Release, error) {
-	return e.store.ReleasesFindByAppAndVersion(app, version)
+	return e.store.ReleasesFirst(ReleasesQuery{App: app, Version: &version})
 }
 
 // ReleasesLast returns the last release for an App.
 func (e *Empire) ReleasesLast(app *App) (*Release, error) {
-	return e.store.ReleasesLast(app)
+	return e.store.ReleasesFirst(ReleasesQuery{App: app})
 }
 
 // ReleasesRollback rolls an app back to a specific release version. Returns a

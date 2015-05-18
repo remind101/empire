@@ -46,55 +46,51 @@ func (r *Release) BeforeCreate() error {
 	return nil
 }
 
-// forApp returns a scope that will query only records for a certain app.
-func forApp(app *App) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("app_id = ?", app.ID)
-	}
+// ReleasesQuery is a Scope implementation for common things to filter releases
+// by.
+type ReleasesQuery struct {
+	// If Provided, an app to filter by.
+	*App
+
+	// If provided, a version to filter by.
+	Version *int
 }
 
-// releasesScope returns a common scope for querying releases.
-// NOTE: There's an bug/issue with using this scope with queries that pull
-// more than one release, so we are using it for ReleasesLast and ReleasesFindByAppAndVersion
-// only.
-func releasesScope(app *App) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.
-			Preload("App").Preload("App.Certificates").Preload("Config").Preload("Slug").Preload("Processes").
-			Scopes(forApp(app)).
-			Order("version desc")
+// Scope implements the Scope interface.
+func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
+	var scope ComposedScope
+
+	if app := q.App; app != nil {
+		scope = append(scope, FieldEquals("app_id", app.ID))
 	}
+
+	if version := q.Version; version != nil {
+		scope = append(scope, FieldEquals("version", *version))
+	}
+
+	// Preload all the things.
+	scope = append(scope, Preload("App", "Config", "Slug", "Processes"))
+	scope = append(scope, Order("version desc"))
+
+	return scope.Scope(db)
 }
 
-func (s *store) ReleasesLast(app *App) (*Release, error) {
+// ReleasesFirst returns the first matching release.
+func (s *store) ReleasesFirst(scope Scope) (*Release, error) {
 	var release Release
-	if err := s.db.Scopes(releasesScope(app)).First(&release).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	return &release, nil
+	// TODO: Wrap the store with this. Gorm blows up when preloading
+	// App.Certificates on a collection of releases.
+	scope = ComposedScope{scope, Preload("App.Certificates")}
+	return &release, s.First(scope, &release)
 }
 
-func (s *store) ReleasesFindByApp(app *App) ([]*Release, error) {
+// Releases returns all releases matching the scope.
+func (s *store) Releases(scope Scope) ([]*Release, error) {
 	var releases []*Release
-	return releases, s.db.Scopes(forApp(app)).Find(&releases).Error
+	return releases, s.Find(scope, &releases)
 }
 
-func (s *store) ReleasesFindByAppAndVersion(app *App, v int) (*Release, error) {
-	var release Release
-	if err := s.db.Scopes(releasesScope(app)).Where("version = ?", v).First(&release).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	return &release, nil
-}
-
+// ReleasesCreate persists a release.
 func (s *store) ReleasesCreate(r *Release) (*Release, error) {
 	return releasesCreate(s.db, r)
 }
@@ -127,15 +123,15 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, r *Release) (*Rele
 }
 
 func (s *releasesService) createFormation(release *Release) error {
-	// Get the old release, so we can copy the Formation.
-	last, err := s.store.ReleasesLast(release.App)
-	if err != nil {
-		return err
-	}
-
 	var existing Formation
 
-	if last != nil {
+	// Get the old release, so we can copy the Formation.
+	last, err := s.store.ReleasesFirst(ReleasesQuery{App: release.App})
+	if err != nil {
+		if err != gorm.RecordNotFound {
+			return err
+		}
+	} else {
 		existing = last.Formation()
 	}
 
@@ -162,13 +158,9 @@ func (s *releasesService) newProcessPorts(r *Release) error {
 
 // Rolls back to a specific release version.
 func (s *releasesService) ReleasesRollback(ctx context.Context, app *App, version int) (*Release, error) {
-	r, err := s.store.ReleasesFindByAppAndVersion(app, version)
+	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app, Version: &version})
 	if err != nil {
 		return nil, err
-	}
-
-	if r == nil {
-		return nil, &ValidationError{Err: fmt.Errorf("release %d not found", version)}
 	}
 
 	desc := fmt.Sprintf("Rollback to v%d", version)

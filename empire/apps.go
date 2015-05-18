@@ -205,7 +205,7 @@ type scaler struct {
 }
 
 func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int) error {
-	release, err := s.store.ReleasesLast(app)
+	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
 		return err
 	}

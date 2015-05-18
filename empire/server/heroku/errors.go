@@ -3,6 +3,7 @@ package heroku
 import (
 	"net/http"
 
+	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/empire"
 )
 
@@ -45,6 +46,10 @@ type ErrorResource struct {
 }
 
 func newError(err error) *ErrorResource {
+	if err == gorm.RecordNotFound {
+		return ErrNotFound
+	}
+
 	switch err := err.(type) {
 	case *ErrorResource:
 		return err
