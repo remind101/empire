@@ -2,7 +2,12 @@
 
 set -e
 
-command -v pwgen >/dev/null 2>&1 || { echo >&2 "pwgen is required but not installed. Aborting."; exit 1; }
+check_dep() {
+  command -v $1 >/dev/null 2>&1 || { echo >&2 "$1 is required but not installed. Aborting."; exit 1; }
+}
+
+check_dep "pwgen"
+check_dep "aws"
 
 # This variable will be used as the cloudformation stack name and the associated
 # ECS cluster.
