@@ -394,6 +394,10 @@
   },
 
   "Outputs": {
+    "Subnets": {
+      "Description": "The subnets created",
+      "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
+    },
     "ELBName": {
       "Description": "The name of the ELB for the Empire controller",
       "Value": { "Ref": "LoadBalancer" }
