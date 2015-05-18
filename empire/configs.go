@@ -139,7 +139,7 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 
 		// Create new release based on new config and old slug
 		_, err = s.releases.ReleasesCreate(ctx, &Release{
-			App:         app,
+			App:         release.App,
 			Config:      c,
 			Slug:        release.Slug,
 			Description: desc,
