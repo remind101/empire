@@ -49,3 +49,5 @@ echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
 echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
 echo "EMPIRE_ECS_CLUSTER=$STACK" >> .env
 echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
+echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
+echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
