@@ -14,15 +14,21 @@ type dockerProgress struct {
 	Start   int64 `json:"start,omitempty"`
 }
 
+type dockerError struct {
+	Code    int    `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
 // DockerEvent represents an event received from the docker remote API.
 type DockerEvent struct {
-	Stream   string          `json:"stream,omitempty"`
-	Status   string          `json:"status,omitempty"`
-	Progress *dockerProgress `json:"progressDetail,omitempty"`
-	ID       string          `json:"id,omitempty"`
-	From     string          `json:"from,omitempty"`
-	Time     int64           `json:"time,omitempty"`
-	Error    error           `json:"errorDetail,omitempty"`
+	Stream       string          `json:"stream,omitempty"`
+	Status       string          `json:"status,omitempty"`
+	Progress     *dockerProgress `json:"progressDetail,omitempty"`
+	ID           string          `json:"id,omitempty"`
+	From         string          `json:"from,omitempty"`
+	Time         int64           `json:"time,omitempty"`
+	Error        *dockerError    `json:"errorDetail,omitempty"`
+	ErrorMessage string          `json:"error,omitempty"`
 }
 
 func (e *DockerEvent) Event() string {
