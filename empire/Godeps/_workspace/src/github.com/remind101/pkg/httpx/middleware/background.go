@@ -35,7 +35,7 @@ func (h *Background) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ctx == nil {
 		ctx = DefaultGenerator
 	}
-	h.ServeHTTPContext(ctx(), w, r)
+	h.ServeHTTPContext(httpx.WithRequest(ctx(), r), w, r)
 }
 
 func (h *Background) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {

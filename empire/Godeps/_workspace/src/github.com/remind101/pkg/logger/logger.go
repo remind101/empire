@@ -5,10 +5,13 @@ package logger
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"golang.org/x/net/context"
 )
+
+var Stdout = New(log.New(os.Stdout, "", 0))
 
 // Logger represents a structured leveled logger.
 type Logger interface {
@@ -17,6 +20,14 @@ type Logger interface {
 	Warn(msg string, pairs ...interface{})
 	Error(msg string, pairs ...interface{})
 	Crit(msg string, pairs ...interface{})
+}
+
+var _ childLogging = &logger{}
+
+// childLogging is an interface that loggers can implement to support
+// child/prefixed logging.
+type childLogging interface {
+	New(pairs ...interface{}) Logger
 }
 
 // logger is an implementation of the Logger interface backed by the stdlib's
@@ -32,6 +43,11 @@ func New(l *log.Logger) Logger {
 	return &logger{
 		Logger: l,
 	}
+}
+
+// New implemens the childLogging interface.
+func (l *logger) New(pairs ...interface{}) Logger {
+	return l
 }
 
 // Log logs the pairs in logfmt. It will treat consecutive arguments as a key
@@ -85,10 +101,30 @@ func FromContext(ctx context.Context) (Logger, bool) {
 	return l, ok
 }
 
+// WithValues returns a new logger prefixed with the values of the given keys
+// after being extracted from the context.
+func WithValues(ctx context.Context, keys ...string) (Logger, bool) {
+	l, ok := FromContext(ctx)
+	if !ok {
+		return l, ok
+	}
+
+	if l, ok := l.(childLogging); ok {
+		return l.New(contextPairs(ctx, keys...)...), true
+	}
+
+	// TODO: Return false if the logger doesn't support child logging?
+	return l, true
+}
+
 func Info(ctx context.Context, msg string, pairs ...interface{}) {
 	withLogger(ctx, func(l Logger) {
 		l.Info(msg, pairs...)
 	})
+}
+
+func InfoContext(ctx context.Context, msg string, keys ...string) {
+	Info(ctx, msg, contextPairs(ctx, keys...)...)
 }
 
 func Debug(ctx context.Context, msg string, pairs ...interface{}) {
@@ -119,6 +155,17 @@ func withLogger(ctx context.Context, fn func(l Logger)) {
 	if l, ok := FromContext(ctx); ok {
 		fn(l)
 	}
+}
+
+// contextPairs takes a slice of string keys, obtains their values from the
+// context.Context and returns the suitable list of key value pairs as a
+// []interface{}.
+func contextPairs(ctx context.Context, keys ...string) []interface{} {
+	var pairs []interface{}
+	for _, k := range keys {
+		pairs = append(pairs, k, ctx.Value(k))
+	}
+	return pairs
 }
 
 type key int

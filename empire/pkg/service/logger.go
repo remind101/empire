@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/remind101/pkg/logger"
+	"github.com/remind101/pkg/trace"
 	"golang.org/x/net/context"
 )
 
@@ -20,15 +21,17 @@ func WithLogging(m Manager) *LoggedManager {
 	}
 }
 
-func (m *LoggedManager) Submit(ctx context.Context, app *App) error {
-	err := m.Manager.Submit(ctx, app)
-	logger.Info(ctx, m.msg("Submit"), "err", err, "app", app.ID)
+func (m *LoggedManager) Submit(ctx context.Context, app *App) (err error) {
+	ctx, done := trace.Trace(ctx)
+	defer func() { done(err, "submitting app", "app", app.ID) }()
+	err = m.Manager.Submit(ctx, app)
 	return err
 }
 
-func (m *LoggedManager) Scale(ctx context.Context, app string, process string, instances uint) error {
-	err := m.Manager.Scale(ctx, app, process, instances)
-	logger.Info(ctx, m.msg("Scale"), "err", err, "app", app, "process", process, "instances", instances)
+func (m *LoggedManager) Scale(ctx context.Context, app string, process string, instances uint) (err error) {
+	ctx, done := trace.Trace(ctx)
+	defer func() { done(err, "scaling process", "app", app, "process", process, "instances", instances) }()
+	err = m.Manager.Scale(ctx, app, process, instances)
 	return err
 }
 
