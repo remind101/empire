@@ -30,6 +30,7 @@ const (
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
 
+	FlagAWSDebug       = "aws.debug"
 	FlagECSCluster     = "ecs.cluster"
 	FlagECSServiceRole = "ecs.service.role"
 
@@ -129,6 +130,11 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
 	},
+	cli.BoolFlag{
+		Name:   FlagAWSDebug,
+		Usage:  "Enable verbose debug output for AWS integration.",
+		EnvVar: "EMPIRE_AWS_DEBUG",
+	},
 	cli.StringFlag{
 		Name:   FlagECSCluster,
 		Value:  "default",
@@ -201,6 +207,9 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.Docker.CertPath = c.String(FlagDockerCert)
 	opts.Runner.API = c.String(FlagRunner)
 	opts.AWSConfig = aws.DefaultConfig
+	if c.Bool(FlagAWSDebug) {
+		opts.AWSConfig.LogLevel = 1
+	}
 	opts.ECS.Cluster = c.String(FlagECSCluster)
 	opts.ECS.ServiceRole = c.String(FlagECSServiceRole)
 	opts.ELB.InternalSecurityGroupID = c.String(FlagELBSGPrivate)
