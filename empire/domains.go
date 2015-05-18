@@ -81,7 +81,7 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 }
 
 func (s *domainsService) makePublic(appID string) error {
-	a, err := s.store.AppsFind(AppID(appID))
+	a, err := s.store.AppsFirst(AppsQuery{ID: &appID})
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (s *domainsService) makePublic(appID string) error {
 }
 
 func (s *domainsService) makePrivate(appID string) error {
-	a, err := s.store.AppsFind(AppID(appID))
+	a, err := s.store.AppsFirst(AppsQuery{ID: &appID})
 	if err != nil {
 		return err
 	}

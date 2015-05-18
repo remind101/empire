@@ -238,7 +238,7 @@ func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, err
 
 // AppsAll returns all Apps.
 func (e *Empire) AppsAll() ([]*App, error) {
-	return e.store.AppsAll()
+	return e.store.Apps(All)
 }
 
 // AppsCreate creates a new app.
@@ -248,7 +248,7 @@ func (e *Empire) AppsCreate(app *App) (*App, error) {
 
 // AppsFind finds an app by name.
 func (e *Empire) AppsFindByName(name string) (*App, error) {
-	return e.store.AppsFind(AppName(name))
+	return e.store.AppsFirst(AppsQuery{Name: &name})
 }
 
 // AppsDestroy destroys the app.

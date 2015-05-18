@@ -20,6 +20,11 @@ func (f ScopeFunc) Scope(db *gorm.DB) *gorm.DB {
 	return f(db)
 }
 
+// All returns a scope that simply returns the db.
+var All = ScopeFunc(func(db *gorm.DB) *gorm.DB {
+	return db
+})
+
 // ComposedScope is an implementation of the Scope interface that chains the
 // scopes together.
 type ComposedScope []Scope
