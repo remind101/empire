@@ -37,8 +37,9 @@ func (c *Certificate) BeforeUpdate() error {
 }
 
 type certificatesService struct {
-	store   *store
-	manager sslcert.Manager
+	store    *store
+	manager  sslcert.Manager
+	releaser *releaser
 }
 
 func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {

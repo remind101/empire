@@ -42,6 +42,9 @@ func (m *IAMManager) Add(name string, cert string, key string) (string, error) {
 
 func (m *IAMManager) Remove(name string) error {
 	_, err := m.iam.DeleteServerCertificate(&iam.DeleteServerCertificateInput{ServerCertificateName: certName(name)})
+	if noCertificate(err) {
+		return nil
+	}
 	return err
 }
 
@@ -61,4 +64,14 @@ func (m *IAMManager) MetaData(name string) (map[string]string, error) {
 
 func certName(name string) *string {
 	return aws.String(fmt.Sprintf("%sCert", name))
+}
+
+func noCertificate(err error) bool {
+	if err, ok := err.(aws.APIError); ok {
+		if err.Code == "NoSuchEntity" {
+			return true
+		}
+	}
+
+	return false
 }
