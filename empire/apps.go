@@ -90,7 +90,7 @@ func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
 	var scope ComposedScope
 
 	if q.ID != nil {
-		scope = append(scope, FieldEquals("id", *q.ID))
+		scope = append(scope, ID(*q.ID))
 	}
 
 	if q.Name != nil {

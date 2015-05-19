@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
+	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
@@ -32,12 +33,12 @@ func (h *GetSSLEndpoints) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 	endpoints := make([]*SSLEndpoint, 0)
 
-	cert, err := h.CertificatesFindByApp(ctx, a)
-	if err != nil {
+	cert, err := h.CertificatesFirst(ctx, empire.CertificatesQuery{App: a})
+	if err != nil && err != gorm.RecordNotFound {
 		return err
 	}
 
-	if cert != nil {
+	if err != gorm.RecordNotFound {
 		endpoints = append(endpoints, newSSLEndpoint(cert))
 	}
 
@@ -135,23 +136,19 @@ func (h *DeleteSSLEndpoint) ServeHTTPContext(ctx context.Context, w http.Respons
 }
 
 type CertFinder interface {
-	CertificatesFind(ctx context.Context, name string) (*empire.Certificate, error)
+	CertificatesFirst(ctx context.Context, q empire.CertificatesQuery) (*empire.Certificate, error)
 }
 
 func findCert(ctx context.Context, app *empire.App, f CertFinder) (*empire.Certificate, error) {
 	vars := httpx.Vars(ctx)
 	name := vars["cert"]
 
-	cert, err := f.CertificatesFind(ctx, name)
+	cert, err := f.CertificatesFirst(ctx, empire.CertificatesQuery{
+		ID:  &name,
+		App: app,
+	})
 	if err != nil {
 		return cert, err
-	}
-	if cert == nil {
-		return cert, ErrNotFound
-	}
-
-	if app.ID != cert.AppID {
-		return cert, ErrNotFound
 	}
 
 	return cert, err

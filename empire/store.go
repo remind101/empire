@@ -25,6 +25,16 @@ var All = ScopeFunc(func(db *gorm.DB) *gorm.DB {
 	return db
 })
 
+// ID returns a Scope that will find the item by id.
+func ID(id string) Scope {
+	return FieldEquals("id", id)
+}
+
+// ForApp returns a Scope that will filter items belonging the the given app.
+func ForApp(app *App) Scope {
+	return FieldEquals("app_id", app.ID)
+}
+
 // ComposedScope is an implementation of the Scope interface that chains the
 // scopes together.
 type ComposedScope []Scope
