@@ -3,4 +3,5 @@
 set -e
 
 godep go install ./cmd/...
-cd cmd/empire && exec gin --godep=true --appPort=8080 run server
+cd cmd/empire
+exec gin --godep=true --appPort=8080 --path="/go/src/github.com/remind101/empire/empire" --immediate run server
