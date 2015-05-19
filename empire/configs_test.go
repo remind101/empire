@@ -5,6 +5,19 @@ import (
 	"testing"
 )
 
+func TestConfigsQuery(t *testing.T) {
+	id := "1234"
+	app := &App{ID: "4321"}
+
+	tests := scopeTests{
+		{ConfigsQuery{}, "", []interface{}{}},
+		{ConfigsQuery{ID: &id}, "WHERE (id = $1)", []interface{}{id}},
+		{ConfigsQuery{App: app}, "WHERE (app_id = $1)", []interface{}{app.ID}},
+	}
+
+	tests.Run(t)
+}
+
 func TestMergeVars(t *testing.T) {
 	// Old vars
 	vars := Vars{
