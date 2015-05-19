@@ -256,19 +256,14 @@ func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
 	return e.apps.AppsDestroy(ctx, app)
 }
 
+// CertificatesFirst returns a certificate for the given ID
+func (e *Empire) CertificatesFirst(ctx context.Context, q CertificatesQuery) (*Certificate, error) {
+	return e.store.CertificatesFirst(q)
+}
+
 // CertificatesCreate creates a certificate.
 func (e *Empire) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {
 	return e.certs.CertificatesCreate(ctx, cert)
-}
-
-// CertificatesFind returns a certificate for the given ID
-func (e *Empire) CertificatesFind(ctx context.Context, id string) (*Certificate, error) {
-	return e.store.CertificatesFind(CertificateID(id))
-}
-
-// CertificatesFindByApp finds a certificate
-func (e *Empire) CertificatesFindByApp(ctx context.Context, app *App) (*Certificate, error) {
-	return e.store.CertificatesFind(CertificateApp(app))
 }
 
 // CertificatesUpdate updates a certificate.

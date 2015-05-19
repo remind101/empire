@@ -77,40 +77,50 @@ func certName(cert *Certificate) string {
 	return cert.AppID
 }
 
+// CertificatesQuery is a Scope implementation for common things to filter
+// certificates by.
+type CertificatesQuery struct {
+	// If provided, finds the certificate with the given id.
+	ID *string
+
+	// If provided, filters certificates belong to the given app.
+	App *App
+}
+
+// Scope implements the Scope interface.
+func (q CertificatesQuery) Scope(db *gorm.DB) *gorm.DB {
+	var scope ComposedScope
+
+	if q.ID != nil {
+		scope = append(scope, FieldEquals("id", *q.ID))
+	}
+
+	if q.App != nil {
+		scope = append(scope, FieldEquals("app_id", q.App.ID))
+	}
+
+	return scope.Scope(db)
+}
+
+// CertificatesFirst returns the first matching certificate.
+func (s *store) CertificatesFirst(scope Scope) (*Certificate, error) {
+	var cert Certificate
+	return &cert, s.First(scope, &cert)
+}
+
+// CertificatesCreate persists the certificate.
 func (s *store) CertificatesCreate(cert *Certificate) (*Certificate, error) {
 	return certificatesCreate(s.db, cert)
 }
 
+// CertificatesUpdate updates the certificate.
 func (s *store) CertificatesUpdate(cert *Certificate) error {
 	return certificatesUpdate(s.db, cert)
 }
 
+// CertificatesDestroy destroys the certificate.
 func (s *store) CertificatesDestroy(cert *Certificate) error {
 	return certificatesDestroy(s.db, cert)
-}
-
-func (s *store) CertificatesFind(scope func(*gorm.DB) *gorm.DB) (*Certificate, error) {
-	var cert Certificate
-	if err := s.db.Scopes(scope).First(&cert).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	return &cert, nil
-}
-
-func CertificateID(id string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", id)
-	}
-}
-
-func CertificateApp(app *App) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("app_id = ?", app.ID)
-	}
 }
 
 func certificatesCreate(db *gorm.DB, cert *Certificate) (*Certificate, error) {
