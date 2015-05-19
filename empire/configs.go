@@ -88,11 +88,11 @@ func (q ConfigsQuery) Scope(db *gorm.DB) *gorm.DB {
 	var scope ComposedScope
 
 	if q.ID != nil {
-		scope = append(scope, FieldEquals("id", *q.ID))
+		scope = append(scope, ID(*q.ID))
 	}
 
 	if q.App != nil {
-		scope = append(scope, FieldEquals("app_id", q.App.ID))
+		scope = append(scope, ForApp(q.App))
 	}
 
 	return scope.Scope(db)

@@ -127,7 +127,7 @@ func (q DomainsQuery) Scope(db *gorm.DB) *gorm.DB {
 	}
 
 	if q.App != nil {
-		scope = append(scope, FieldEquals("app_id", q.App.ID))
+		scope = append(scope, ForApp(q.App))
 	}
 
 	return scope.Scope(db)
