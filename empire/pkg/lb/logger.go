@@ -26,7 +26,14 @@ func (m *LoggedManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBala
 		dnsName = lb.DNSName
 	}
 
-	logger.Info(ctx, "creating load balancer", "err", err, "name", name, "external", o.External, "instance-port", o.InstancePort, "dns-name", dnsName)
+	logger.Info(ctx, "creating load balancer",
+		"err", err,
+		"name", name,
+		"external", o.External,
+		"instance-port", o.InstancePort,
+		"dns-name", dnsName,
+		"cert", o.SSLCert,
+	)
 	return lb, err
 }
 
