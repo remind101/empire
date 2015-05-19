@@ -1,8 +1,12 @@
 package empire
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	gosql "database/sql"
 
 	"github.com/jinzhu/gorm"
 )
@@ -39,4 +43,34 @@ func MockScope(called chan struct{}) Scope {
 		close(called)
 		return db
 	})
+}
+
+// scopeTest is a struct for testing scopes.
+type scopeTest struct {
+	scope Scope
+	sql   string
+	vars  []interface{}
+}
+
+func assertScopeSql(t testing.TB, scope Scope, sql string, vars ...interface{}) {
+	db, err := gorm.Open("postgres", &gosql.DB{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ds := scope.Scope(&db).NewScope(nil)
+	got := strings.TrimSpace(ds.CombinedConditionSql())
+
+	t.Logf("SQL: %s", got)
+	t.Logf("Variables: %v", ds.SqlVars)
+
+	if got != sql {
+		t.Fatalf("SQL => %v; want %v", got, sql)
+	}
+
+	if got, want := ds.SqlVars, vars; !reflect.DeepEqual(got, want) {
+		if len(got) > 0 && len(want) > 0 {
+			t.Fatalf("Vars => %v; want %v", got, want)
+		}
+	}
 }
