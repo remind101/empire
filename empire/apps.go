@@ -107,6 +107,7 @@ func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
 // AppsFirst returns the first matching release.
 func (s *store) AppsFirst(scope Scope) (*App, error) {
 	var app App
+	scope = ComposedScope{scope, Preload("Certificates")}
 	return &app, s.First(scope, &app)
 }
 
