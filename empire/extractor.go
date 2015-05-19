@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire/pkg/registry"
@@ -138,8 +139,13 @@ func NewExtractor(socket, certPath string) (Extractor, error) {
 		return nil, err
 	}
 
-	return &procfileExtractor{
-		client: c,
+	return &procfileFallbackExtractor{
+		pe: &procfileExtractor{
+			client: c,
+		},
+		ce: &cmdExtractor{
+			client: c,
+		},
 	}, nil
 }
 
@@ -156,14 +162,46 @@ func (e *extractor) Extract(image Image) (CommandMap, error) {
 	return pm, nil
 }
 
+type cmdExtractor struct {
+	// Client is the docker client to use to pull the container image.
+	client *docker.Client
+}
+
+func (e *cmdExtractor) Extract(image Image) (CommandMap, error) {
+	pm := make(CommandMap)
+
+	i, err := e.client.InspectImage(image.String())
+	if err != nil {
+		return pm, err
+	}
+
+	pm[ProcessType("web")] = Command(strings.Join(i.Config.Cmd, " "))
+
+	return pm, nil
+}
+
+// procfileFallbackExtractor attempts to extract commands using the procfileExtractor.
+// If that fails because Procfile does not exist, it uses the cmdExtractor instead.
+type procfileFallbackExtractor struct {
+	pe *procfileExtractor
+	ce *cmdExtractor
+}
+
+func (e *procfileFallbackExtractor) Extract(image Image) (CommandMap, error) {
+	cm, err := e.pe.Extract(image)
+	// If err is a ProcfileError, Procfile doesn't exist.
+	if _, ok := err.(*ProcfileError); ok {
+		cm, err = e.ce.Extract(image)
+	}
+
+	return cm, err
+}
+
 // procfileExtractor is an implementation of the Extractor interface that can
 // pull a docker image and extract it's Procfile into a process.CommandMap.
 type procfileExtractor struct {
 	// Client is the docker client to use to pull the container image.
 	client *docker.Client
-
-	// AuthConfiguration contains the docker AuthConfiguration.
-	auth *docker.AuthConfigurations
 }
 
 // Extract implements Extractor Extract.
