@@ -73,39 +73,46 @@ func (v Vars) Value() (driver.Value, error) {
 	return h.Value()
 }
 
-func (s *store) ConfigsCreate(config *Config) (*Config, error) {
-	return configsCreate(s.db, config)
+// ConfigsQuery is a Scope implementation for common things to filter releases
+// by.
+type ConfigsQuery struct {
+	// If provided, returns finds the config with the given id.
+	ID *string
+
+	// If provided, filters configs for the given app.
+	App *App
 }
 
-func (s *store) ConfigsFind(scope func(*gorm.DB) *gorm.DB) (*Config, error) {
-	var config Config
-	if err := s.db.Scopes(scope).Order("created_at desc").First(&config).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
+// Scope implements the Scope interface.
+func (q ConfigsQuery) Scope(db *gorm.DB) *gorm.DB {
+	var scope ComposedScope
 
-		return nil, err
+	if q.ID != nil {
+		scope = append(scope, FieldEquals("id", *q.ID))
 	}
-	return &config, nil
+
+	if q.App != nil {
+		scope = append(scope, FieldEquals("app_id", q.App.ID))
+	}
+
+	return scope.Scope(db)
+}
+
+// ConfigsFirst returns the first matching config.
+func (s *store) ConfigsFirst(scope Scope) (*Config, error) {
+	var config Config
+	scope = ComposedScope{Order("created_at desc"), scope}
+	return &config, s.First(scope, &config)
+}
+
+// ConfigsCreate persists the Config.
+func (s *store) ConfigsCreate(config *Config) (*Config, error) {
+	return configsCreate(s.db, config)
 }
 
 // ConfigsCreate inserts a Config in the database.
 func configsCreate(db *gorm.DB, config *Config) (*Config, error) {
 	return config, db.Create(config).Error
-}
-
-// ConfigID returns a scope to find a config by id.
-func ConfigID(id string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", id)
-	}
-}
-
-// ConfigApp returns a scope to find a config by app.
-func ConfigApp(app *App) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("app_id = ?", app.ID)
-	}
 }
 
 type configsService struct {
@@ -156,16 +163,15 @@ func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			// It's possible to have config without releases, this handles that.
-			c, err := s.store.ConfigsFind(ConfigApp(app))
+			c, err := s.store.ConfigsFirst(ConfigsQuery{App: app})
 			if err != nil {
+				if err == gorm.RecordNotFound {
+					return s.store.ConfigsCreate(&Config{
+						App:  app,
+						Vars: make(Vars),
+					})
+				}
 				return nil, err
-			}
-
-			if c == nil {
-				return s.store.ConfigsCreate(&Config{
-					App:  app,
-					Vars: make(Vars),
-				})
 			}
 
 			return c, nil
