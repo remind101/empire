@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
+	gosql "database/sql"
+
 	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestComposedScope(t *testing.T) {
@@ -52,7 +53,7 @@ type scopeTest struct {
 }
 
 func assertScopeSql(t testing.TB, scope Scope, sql string, vars ...interface{}) {
-	db, err := gorm.Open("sqlite3", ":memory:")
+	db, err := gorm.Open("postgres", &gosql.DB{})
 	if err != nil {
 		t.Fatal(err)
 	}
