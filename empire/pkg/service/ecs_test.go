@@ -230,6 +230,43 @@ func TestECSManager_Remove(t *testing.T) {
 			},
 		},
 
+		// Wait for service to have status inactive
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
+				Body:       `{"cluster":"empire"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body:       `{"cluster":"empire","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"status":"DRAINING"}]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body:       `{"cluster":"empire","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"status":"INACTIVE"}]}`,
+			},
+		},
+
 		awsutil.Cycle{
 			Request: awsutil.Request{
 				RequestURI: "/",
