@@ -58,31 +58,27 @@ type scopeTests []scopeTest
 
 // Run calls assertScopeSql for each scopeTest.
 func (tests scopeTests) Run(t testing.TB) {
-	for _, tt := range tests {
-		assertScopeSql(t, tt.scope, tt.sql, tt.vars...)
+	for i, tt := range tests {
+		sql, vars := conditionSql(tt.scope)
+
+		if got, want := sql, tt.sql; got != want {
+			t.Fatalf("#%d: SQL => %v; want %v", i, got, want)
+		}
+
+		if got, want := vars, tt.vars; !reflect.DeepEqual(got, want) {
+			if len(got) > 0 && len(want) > 0 {
+				t.Fatalf("#%d: Vars => %v; want %v", i, got, want)
+			}
+		}
 	}
 }
 
-// assertScopeSql ensures that the generating sql matches what is expected.
-func assertScopeSql(t testing.TB, scope Scope, sql string, vars ...interface{}) {
-	db, err := gorm.Open("postgres", &gosql.DB{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
+// conditionSql takes a Scope and generates the condition sql that gorm will use
+// for the query.
+func conditionSql(scope Scope) (sql string, vars []interface{}) {
+	db, _ := gorm.Open("postgres", &gosql.DB{})
 	ds := scope.Scope(&db).NewScope(nil)
-	got := strings.TrimSpace(ds.CombinedConditionSql())
-
-	t.Logf("SQL: %s", got)
-	t.Logf("Variables: %v", ds.SqlVars)
-
-	if got != sql {
-		t.Fatalf("SQL => %v; want %v", got, sql)
-	}
-
-	if got, want := ds.SqlVars, vars; !reflect.DeepEqual(got, want) {
-		if len(got) > 0 && len(want) > 0 {
-			t.Fatalf("Vars => %v; want %v", got, want)
-		}
-	}
+	sql = strings.TrimSpace(ds.CombinedConditionSql())
+	vars = ds.SqlVars
+	return
 }

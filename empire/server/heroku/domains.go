@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
+	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
@@ -30,7 +31,7 @@ func (h *GetDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 		return err
 	}
 
-	d, err := h.DomainsFindByApp(a)
+	d, err := h.Domains(empire.DomainsQuery{App: a})
 	if err != nil {
 		return err
 	}
@@ -90,17 +91,16 @@ func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	vars := httpx.Vars(ctx)
 	name := vars["hostname"]
 
-	d, err := h.DomainsFindByHostname(name)
+	d, err := h.DomainsFirst(empire.DomainsQuery{Hostname: &name, App: a})
 	if err != nil {
-		return err
-	}
-
-	if d == nil || d.AppID != a.ID {
-		return &ErrorResource{
-			Status:  http.StatusNotFound,
-			ID:      "not_found",
-			Message: "Couldn't find that domain name.",
+		if err == gorm.RecordNotFound {
+			return &ErrorResource{
+				Status:  http.StatusNotFound,
+				ID:      "not_found",
+				Message: "Couldn't find that domain name.",
+			}
 		}
+		return err
 	}
 
 	if err = h.DomainsDestroy(d); err != nil {
