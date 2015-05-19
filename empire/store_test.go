@@ -52,6 +52,18 @@ type scopeTest struct {
 	vars  []interface{}
 }
 
+// scopeTests provides a convenient way to run assertScopeSql on multiple
+// scopeTest instances.
+type scopeTests []scopeTest
+
+// Run calls assertScopeSql for each scopeTest.
+func (tests scopeTests) Run(t testing.TB) {
+	for _, tt := range tests {
+		assertScopeSql(t, tt.scope, tt.sql, tt.vars...)
+	}
+}
+
+// assertScopeSql ensures that the generating sql matches what is expected.
 func assertScopeSql(t testing.TB, scope Scope, sql string, vars ...interface{}) {
 	db, err := gorm.Open("postgres", &gosql.DB{})
 	if err != nil {
