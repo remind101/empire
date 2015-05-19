@@ -240,41 +240,6 @@ func (e *procfileExtractor) copyFile(containerID, path string) ([]byte, error) {
 	return firstFile(tar.NewReader(r))
 }
 
-// dockerClient is a fake docker client that can be used with the
-// ProcfileExtractor.
-type dockerClient struct {
-	procfile string
-}
-
-func (c *dockerClient) PullImage(options docker.PullImageOptions, auth docker.AuthConfiguration) error {
-	return nil
-}
-
-func (c *dockerClient) CreateContainer(options docker.CreateContainerOptions) (*docker.Container, error) {
-	return &docker.Container{}, nil
-}
-
-func (c *dockerClient) RemoveContainer(options docker.RemoveContainerOptions) error {
-	return nil
-}
-
-func (c *dockerClient) CopyFromContainer(options docker.CopyFromContainerOptions) error {
-	pf := c.procfile
-	tw := tar.NewWriter(options.OutputStream)
-	if err := tw.WriteHeader(&tar.Header{
-		Name: "/Procfile",
-		Size: int64(len(pf)),
-	}); err != nil {
-		return err
-	}
-
-	if _, err := tw.Write([]byte(pf)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Example instance: Procfile doesn't exist
 type ProcfileError struct {
 	Err error
