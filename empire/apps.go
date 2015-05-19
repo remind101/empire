@@ -72,52 +72,71 @@ func (a *App) BeforeCreate() error {
 	return a.IsValid()
 }
 
+// AppsQuery is a Scope implementation for common things to filter releases
+// by.
+type AppsQuery struct {
+	// If provided, an App ID to find.
+	ID *string
+
+	// If provided, finds apps matching the given name.
+	Name *string
+
+	// If provided, finds apps with the given repo attached.
+	Repo *string
+}
+
+// Scope implements the Scope interface.
+func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
+	var scope ComposedScope
+
+	if q.ID != nil {
+		scope = append(scope, FieldEquals("id", *q.ID))
+	}
+
+	if q.Name != nil {
+		scope = append(scope, FieldEquals("name", *q.Name))
+	}
+
+	if q.Repo != nil {
+		scope = append(scope, FieldEquals("repo", *q.Repo))
+	}
+
+	return scope.Scope(db)
+}
+
+// AppsFirst returns the first matching release.
+func (s *store) AppsFirst(scope Scope) (*App, error) {
+	var app App
+	return &app, s.First(scope, &app)
+}
+
+// Apps returns all apps matching the scope.
+func (s *store) Apps(scope Scope) ([]*App, error) {
+	var apps []*App
+	// Default to ordering by name.
+	scope = ComposedScope{Order("name"), scope}
+	return apps, s.Find(scope, &apps)
+}
+
+// AppsCreate persists an app.
 func (s *store) AppsCreate(app *App) (*App, error) {
 	return appsCreate(s.db, app)
 }
 
+// AppsUpdate updates an app.
 func (s *store) AppsUpdate(app *App) error {
 	return appsUpdate(s.db, app)
 }
 
+// AppsDestroy destroys an app.
 func (s *store) AppsDestroy(app *App) error {
 	return appsDestroy(s.db, app)
-}
-
-func (s *store) AppsAll() ([]*App, error) {
-	return appsAll(s.db)
-}
-
-func (s *store) AppsFind(scope func(*gorm.DB) *gorm.DB) (*App, error) {
-	var app App
-	if err := s.db.Scopes(scope).First(&app).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	return &app, nil
 }
 
 // AppID returns a scope to find an app by id.
 func AppID(id string) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("id = ?", id)
-	}
-}
-
-// AppName returns a scope to find an app by name.
-func AppName(name string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("name = ?", name)
-	}
-}
-
-// AppRepo returns a scope to find an app by a repo.
-func AppRepo(repo string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("repo = ?", repo)
 	}
 }
 
@@ -148,24 +167,24 @@ func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
 func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
-	a, err := s.store.AppsFind(AppRepo(repo))
-	if err != nil {
+	a, err := s.store.AppsFirst(AppsQuery{Repo: &repo})
+	if err != nil && err != gorm.RecordNotFound {
 		return a, err
 	}
 
 	// If the app wasn't found, create a new app linked to this repo.
-	if a != nil {
+	if err != gorm.RecordNotFound {
 		return a, nil
 	}
 
 	n := NewAppNameFromRepo(repo)
 
-	a, err = s.store.AppsFind(AppName(n))
-	if err != nil {
+	a, err = s.store.AppsFirst(AppsQuery{Name: &n})
+	if err != nil && err != gorm.RecordNotFound {
 		return a, err
 	}
 
-	if a != nil {
+	if err != gorm.RecordNotFound {
 		return a, s.AppsEnsureRepo(a, repo)
 	}
 
@@ -190,12 +209,6 @@ func appsUpdate(db *gorm.DB, app *App) error {
 // AppsDestroy destroys an app.
 func appsDestroy(db *gorm.DB, app *App) error {
 	return db.Delete(app).Error
-}
-
-// AppsAll returns all Apps.
-func appsAll(db *gorm.DB) ([]*App, error) {
-	var apps []*App
-	return apps, db.Order("name").Find(&apps).Error
 }
 
 // scaler is a small service for scaling an apps process.

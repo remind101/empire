@@ -35,7 +35,7 @@ type GetApps struct {
 }
 
 func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	apps, err := h.AppsAll()
+	apps, err := h.Apps(empire.AppsQuery{})
 	if err != nil {
 		return err
 	}
@@ -91,17 +91,12 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 }
 
 func findApp(ctx context.Context, e interface {
-	AppsFindByName(name string) (*empire.App, error)
+	AppsFirst(empire.AppsQuery) (*empire.App, error)
 }) (*empire.App, error) {
 	vars := httpx.Vars(ctx)
 	name := vars["app"]
 
-	a, err := e.AppsFindByName(name)
-	if a == nil {
-		return a, ErrNotFound
-	}
-
+	a, err := e.AppsFirst(empire.AppsQuery{Name: &name})
 	reporter.AddContext(ctx, "app", a.Name)
-
 	return a, err
 }

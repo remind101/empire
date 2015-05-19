@@ -236,19 +236,19 @@ func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, err
 	return e.accessTokens.AccessTokensCreate(accessToken)
 }
 
-// AppsAll returns all Apps.
-func (e *Empire) AppsAll() ([]*App, error) {
-	return e.store.AppsAll()
+// AppsFirst finds the first app matching the query.
+func (e *Empire) AppsFirst(q AppsQuery) (*App, error) {
+	return e.store.AppsFirst(q)
+}
+
+// Apps returns all Apps.
+func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
+	return e.store.Apps(q)
 }
 
 // AppsCreate creates a new app.
 func (e *Empire) AppsCreate(app *App) (*App, error) {
 	return e.store.AppsCreate(app)
-}
-
-// AppsFind finds an app by name.
-func (e *Empire) AppsFindByName(name string) (*App, error) {
-	return e.store.AppsFind(AppName(name))
 }
 
 // AppsDestroy destroys the app.
