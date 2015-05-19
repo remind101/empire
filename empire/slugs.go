@@ -9,32 +9,9 @@ type Slug struct {
 	ProcessTypes CommandMap
 }
 
+// SlugsCreate persists the slug.
 func (s *store) SlugsCreate(slug *Slug) (*Slug, error) {
 	return slugsCreate(s.db, slug)
-}
-
-func (s *store) SlugsFind(scope func(*gorm.DB) *gorm.DB) (*Slug, error) {
-	var slug Slug
-	if err := s.db.Scopes(scope).First(&slug).Error; err != nil {
-		if err == gorm.RecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	return &slug, nil
-}
-
-func SlugID(id string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", id)
-	}
-}
-
-func SlugImage(image Image) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("image = ?", image.String())
-	}
 }
 
 // SlugsCreate inserts a Slug into the database.
