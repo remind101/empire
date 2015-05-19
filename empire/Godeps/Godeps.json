@@ -218,6 +218,10 @@
 			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
 		},
 		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "58c62dc30cda06e4a74e18f6489bb6c112fc6e5d"
+		},
+		{
 			"ImportPath": "github.com/remind101/pkg/httpx",
 			"Rev": "1ed45246b1373c7da5becb69aa3d90ae69f16177"
 		},
