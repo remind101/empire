@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
@@ -381,7 +382,16 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 		return err
 	}
 
-	_, err := m.ecs.DeleteAppService(app, &ecs.DeleteServiceInput{
+	out, err := m.ecs.ListAppService(app, process, &ecs.ListServicesInput{Cluster: aws.String(m.cluster)})
+	if err != nil {
+		return err
+	}
+
+	if err := m.waitForServiceStatusWithTimeout(ctx, out.ServiceARNs, "INACTIVE", 60*time.Second); err != nil {
+		return err
+	}
+
+	_, err = m.ecs.DeleteAppService(app, &ecs.DeleteServiceInput{
 		Cluster: aws.String(m.cluster),
 		Service: aws.String(process),
 	})
@@ -390,6 +400,48 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 	}
 
 	return err
+}
+
+// waitForServiceStatusWithTimeout returns when waitForStatus has finished or when the
+// timeout has been reached.
+func (m *ecsProcessManager) waitForServiceStatusWithTimeout(ctx context.Context, serviceARNs []*string, desiredStatus string, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	errCh := make(chan error, 0)
+	go func() {
+		errCh <- m.waitForServiceStatus(serviceARNs, desiredStatus)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-errCh:
+		return err
+	}
+}
+
+// waitForServiceStatus returns when all services have reached the given status, or an error occurs.
+func (m *ecsProcessManager) waitForServiceStatus(serviceARNs []*string, desiredStatus string) error {
+	for {
+		desc, err := m.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(m.cluster),
+			Services: serviceARNs,
+		})
+		if err != nil {
+			return err
+		}
+		ok := true
+		for _, s := range desc.Services {
+			if *s.Status != desiredStatus {
+				ok = false
+			}
+		}
+		if ok {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 }
 
 // Scale scales an ECS service to the desired number of instances.

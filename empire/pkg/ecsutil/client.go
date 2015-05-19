@@ -60,8 +60,43 @@ func (c *Client) RegisterAppTaskDefinition(app string, input *ecs.RegisterTaskDe
 	return c.ECS.RegisterTaskDefinition(input)
 }
 
-// ListServices lists all services for the app.
+// ListAppServices lists all services for an app.
 func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+	return c.listFilterServices(input, func(ARN string) (bool, error) {
+		id, err := arn.ResourceID(ARN)
+		if err != nil {
+			return false, err
+		}
+
+		appName, _ := c.split(&id)
+
+		if appName == app {
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
+// ListAppService lists a service for an app process.
+func (c *Client) ListAppService(app string, process string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+	return c.listFilterServices(input, func(ARN string) (bool, error) {
+		id, err := arn.ResourceID(ARN)
+		if err != nil {
+			return false, err
+		}
+
+		appName, procType := c.split(&id)
+
+		if appName == app && *procType == process {
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
+// listFilterServices applies a filter function to service ARNS, returning only
+// those services for which filterFn returns true.
+func (c *Client) listFilterServices(input *ecs.ListServicesInput, filterFn func(string) (bool, error)) (*ecs.ListServicesOutput, error) {
 	resp, err := c.ECS.ListServices(input)
 	if err != nil {
 		return resp, err
@@ -73,14 +108,11 @@ func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs
 			continue
 		}
 
-		id, err := arn.ResourceID(*a)
+		ok, err := filterFn(*a)
 		if err != nil {
 			return resp, err
 		}
-
-		appName, _ := c.split(&id)
-
-		if appName == app {
+		if ok {
 			arns = append(arns, a)
 		}
 	}
