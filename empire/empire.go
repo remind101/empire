@@ -313,9 +313,9 @@ func (e *Empire) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState,
 	return e.jobStates.JobStatesByApp(ctx, app)
 }
 
-// ProcessesAll returns all processes for a given Release.
-func (e *Empire) ProcessesAll(release *Release) (Formation, error) {
-	return e.store.ProcessesAll(release)
+// Processes returns all processes for a given Release.
+func (e *Empire) Formation(release *Release) (Formation, error) {
+	return e.store.Formation(ProcessesQuery{Release: release})
 }
 
 // ProcessesRestart restarts processes matching the given prefix for the given Release.

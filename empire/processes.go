@@ -141,6 +141,18 @@ func NewFormation(f Formation, cm CommandMap) Formation {
 	return processes
 }
 
+// newFormation takes a slice of processes and returns a Formation.
+func newFormation(p []*Process) Formation {
+	f := make(Formation)
+
+	for _, pp := range p {
+		f[pp.Type] = pp
+	}
+
+	return f
+}
+
+// Processes takes a Formation and returns a slice of the processes.
 func (f Formation) Processes() []*Process {
 	var processes []*Process
 
@@ -151,16 +163,47 @@ func (f Formation) Processes() []*Process {
 	return processes
 }
 
+// ProcessesQuery is a Scope implementation for common things to filter
+// processes by.
+type ProcessesQuery struct {
+	// If provided, finds only processes belonging to the given release.
+	Release *Release
+}
+
+// Scope implements the Scope interface.
+func (q ProcessesQuery) Scope(db *gorm.DB) *gorm.DB {
+	var scope ComposedScope
+
+	if q.Release != nil {
+		scope = append(scope, FieldEquals("release_id", q.Release.ID))
+	}
+
+	return scope.Scope(db)
+}
+
+// Processes returns all processes matching the scope.
+func (s *store) Processes(scope Scope) ([]*Process, error) {
+	var processes []*Process
+	return processes, s.Find(scope, &processes)
+}
+
+// Formation returns a Formation for the processes matching the scope.
+func (s *store) Formation(scope Scope) (Formation, error) {
+	p, err := s.Processes(scope)
+	if err != nil {
+		return nil, err
+	}
+	return newFormation(p), nil
+}
+
+// ProcessesCreate persists the process.
 func (s *store) ProcessesCreate(process *Process) (*Process, error) {
 	return processesCreate(s.db, process)
 }
 
+// ProcessesUpdate updates the process.
 func (s *store) ProcessesUpdate(process *Process) error {
 	return processesUpdate(s.db, process)
-}
-
-func (s *store) ProcessesAll(release *Release) (Formation, error) {
-	return processesAll(s.db, release)
 }
 
 // ProcessesCreate inserts a process into the database.
@@ -171,29 +214,6 @@ func processesCreate(db *gorm.DB, process *Process) (*Process, error) {
 // ProcessesUpdate updates an existing process into the database.
 func processesUpdate(db *gorm.DB, process *Process) error {
 	return db.Save(process).Error
-}
-
-func forRelease(release *Release) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("release_id = ?", release.ID)
-	}
-}
-
-// ProcessesAll returns all Processes for a Release as a Formation.
-func processesAll(db *gorm.DB, release *Release) (Formation, error) {
-	var ps []*Process
-
-	if err := db.Scopes(forRelease(release)).Find(&ps).Error; err != nil {
-		return nil, err
-	}
-
-	f := make(Formation)
-
-	for _, p := range ps {
-		f[p.Type] = p
-	}
-
-	return f, nil
 }
 
 // ProcessState represents the state of a Process.

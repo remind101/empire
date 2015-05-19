@@ -227,7 +227,7 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 		return &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
-	f, err := s.store.ProcessesAll(release)
+	f, err := s.store.Formation(ProcessesQuery{Release: release})
 	if err != nil {
 		return err
 	}
