@@ -12,6 +12,7 @@ server:
   user: root
   environment:
     EMPIRE_DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
+    EMPIRE_DATABASE_MIGRATIONS: /go/src/github.com/remind101/empire/empire/migrations
     EMPIRE_AUTOMIGRATE: true
     DOCKER_HOST:
 postgres:

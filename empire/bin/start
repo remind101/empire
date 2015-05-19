@@ -3,5 +3,4 @@
 set -e
 
 godep go install ./cmd/...
-/go/bin/empire server -automigrate=true &
-exec gin --godep=true --appPort=8080
+cd cmd/empire && exec gin --godep=true --appPort=8080 run server
