@@ -1,6 +1,0 @@
-#!/bin/sh
-
-export CONTAINER_ID=`hostname`
-
-exec 2>&1
-exec /usr/bin/hekad -config /etc/hekad
