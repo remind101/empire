@@ -17,4 +17,4 @@ sumologic:
     SUMO_COLLECTOR_NAME: empire-logger-test
 dummy:
   image: alpine:3.1
-  command: /bin/sh -c "while true; do echo measure#hello=100; sleep 1; done"
+  command: /bin/sh -c "while true; do echo measure#hello=$RANDOM; sleep 1; done"
