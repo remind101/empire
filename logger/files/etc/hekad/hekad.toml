@@ -36,7 +36,7 @@ filename = "lua_decoders/linux_memstats.lua"
 
 [DockerSyslogFilter]
 type = "SandboxFilter"
-message_matcher = "Fields[ContainerName] != 'empire-logger' && Fields[ContainerName] != 'logger_logger_1'"
+message_matcher = "Fields[ContainerID] != '%ENV[CONTAINER_ID]'"
 filename = "lua_filters/docker_syslog.lua"
 ticker_interval = 1
 preserve_data = true
