@@ -1,0 +1,7 @@
+logger:
+  build: ./
+  ports:
+    - "4352:4352"
+  env_file: .env
+  environment:
+    DOCKER_HOST:
