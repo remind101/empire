@@ -13,7 +13,8 @@ function process_message ()
     local pid = read_message("Pid") or "-"
     local payload = read_message("Payload")
 
-    add_to_payload(string.format("<%d>1 %s %s %s %s - - %s\n", priority, timestamp, hostname, appname, pid, payload))
+    local msg = string.format("<%d>1 %s %s %s %s - - %s\n", priority, timestamp, hostname, appname, pid, payload)
+    add_to_payload(string.format("%d %s", msg:len() - 1, msg))
 
     return 0
 end

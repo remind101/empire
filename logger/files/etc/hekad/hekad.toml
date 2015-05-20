@@ -14,6 +14,7 @@ ticker_interval = 15
 # ------
 
 [DockerLogInput]
+endpoint = "%ENV[DOCKER_HOST]"
 
 [MemStatsInput]
 type = "FilePollingInput"
@@ -35,7 +36,7 @@ filename = "lua_decoders/linux_memstats.lua"
 
 [DockerSyslogFilter]
 type = "SandboxFilter"
-message_matcher = "Fields[ContainerName] != 'empire-logger'"
+message_matcher = "Fields[ContainerID] != '%ENV[CONTAINER_ID]'"
 filename = "lua_filters/docker_syslog.lua"
 ticker_interval = 1
 preserve_data = true
@@ -91,6 +92,8 @@ encoder = "PayloadEncoder"
 type = "HttpOutput"
 message_matcher = "Type == 'heka.sandbox-output' && Fields[payload_type] == 'buffered_syslog'"
 address = "%ENV[LIBRATO_L2MET_URL]"
+username = "%ENV[LIBRATO_L2MET_TOKEN]"
+password = ""
 encoder = "PayloadEncoder"
 
 # Librato Circular Buffer output
