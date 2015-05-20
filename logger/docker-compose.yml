@@ -1,7 +1,20 @@
 logger:
   build: ./
+  links:
+    - sumologic
   ports:
     - "4352:4352"
-  env_file: .env
+  env_file: .env.logger
   environment:
+    SUMOLOGIC_URL: "sumologic:514"
     DOCKER_HOST:
+sumologic:
+  image: sumologic/collector:latest-syslog
+  env_file: .env.sumologic
+  expose:
+    - "514"
+  environment:
+    SUMO_COLLECTOR_NAME: empire-logger-test
+dummy:
+  image: alpine:3.1
+  command: /bin/sh -c "while true; do echo measure#hello=100; sleep 1; done"

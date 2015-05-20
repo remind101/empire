@@ -1,14 +1,12 @@
-# Getting Started
+This is a [Hekad](https://hekad.readthedocs.org/en/v0.9.2/) container for forwarding logs to sumo, as well as librato via l2met.
 
-```
-docker run --name empire-logger -h %H -p 4352:4352 \
-  -e LIBRATO_L2MET_URL=l2met.librato_url \
-  -e LIBRATO_USER=username@domain.com \
-  -e LIBRATO_TOKEN=abc123 \
-  -e SUMOLOGIC_URL=sumologic_url \
-  -e INFLUXDB_URL=influxdb_url \
-  -e INFLUXDB_USER=username@domain.com \
-  -e INFLUXDB_PASSWORD=myAwesomePassword \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  remind101/empire-logger
-```
+# Development
+
+1. Copy the `.env.logger.sample` and `.env.sumologic.sample` files and replace the values with actual values
+2. Start the containers:
+  
+   ```console
+   $ docker-compose up
+   ```
+
+This will run the empire-logger, the sumologic agent and a dummy container that will generate some log messages.
