@@ -247,7 +247,11 @@ func newServiceApp(release *Release) *service.App {
 func newServiceProcess(release *Release, p *Process) *service.Process {
 	var procExp service.Exposure
 	ports := newServicePorts(int64(p.Port))
+
 	env := environment(release.Config.Vars)
+	env["EMPIRE_APPNAME"] = release.App.Name
+	env["EMPIRE_PROCESS"] = string(p.Type)
+	env["EMPIRE_RELEASE"] = fmt.Sprintf("%d", release.Version)
 
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
