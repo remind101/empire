@@ -178,7 +178,8 @@ func newTestClient(h http.Handler) (*Client, *httptest.Server) {
 	s := httptest.NewServer(h)
 
 	return NewClient(aws.DefaultConfig.Merge(&aws.Config{
-		Endpoint: s.URL,
-		Region:   "localhost",
+		Credentials: aws.Creds("", "", ""),
+		Endpoint:    s.URL,
+		Region:      "localhost",
 	})), s
 }

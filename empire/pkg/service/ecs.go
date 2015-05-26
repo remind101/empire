@@ -153,61 +153,12 @@ func (m *ECSManager) Remove(ctx context.Context, app string) error {
 	return nil
 }
 
-// listAppTasks returns all tasks for a given app.
-func (m *ECSManager) listAppTasks(app string) ([]*ecs.Task, error) {
-	var tasks []*ecs.Task
-
-	resp, err := m.ecs.ListAppServices(app, &ecs.ListServicesInput{
-		Cluster: aws.String(m.cluster),
-	})
-	if err != nil {
-		return tasks, err
-	}
-
-	for _, s := range resp.ServiceARNs {
-		id, err := arn.ResourceID(*s)
-		if err != nil {
-			return tasks, err
-		}
-
-		t, err := m.serviceTasks(id)
-		if err != nil {
-			return tasks, err
-		}
-
-		tasks = append(tasks, t...)
-	}
-
-	return tasks, nil
-}
-
-// serviceTasks returns all tasks for a specific ECS service.
-func (m *ECSManager) serviceTasks(service string) ([]*ecs.Task, error) {
-	tr, err := m.ecs.ListTasks(&ecs.ListTasksInput{
-		Cluster:     aws.String(m.cluster),
-		ServiceName: aws.String(service),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tr.TaskARNs) == 0 {
-		return []*ecs.Task{}, nil
-	}
-
-	dr, err := m.ecs.DescribeTasks(&ecs.DescribeTasksInput{
-		Cluster: aws.String(m.cluster),
-		Tasks:   tr.TaskARNs,
-	})
-	return dr.Tasks, err
-}
-
 // Instances returns all instances that are currently running, pending or
 // draining.
 func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, error) {
 	var instances []*Instance
 
-	tasks, err := m.listAppTasks(app)
+	tasks, err := m.describeAppTasks(app)
 	if err != nil {
 		return instances, err
 	}
@@ -239,6 +190,21 @@ func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, er
 	}
 
 	return instances, nil
+}
+
+func (m *ECSManager) describeAppTasks(app string) ([]*ecs.Task, error) {
+	resp, err := m.ecs.ListAppTasks(app, &ecs.ListTasksInput{
+		Cluster: aws.String(m.cluster),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tasks, err := m.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+		Cluster: aws.String(m.cluster),
+		Tasks:   resp.TaskARNs,
+	})
+	return tasks.Tasks, err
 }
 
 func (m *ECSManager) Stop(ctx context.Context, instanceID string) error {
