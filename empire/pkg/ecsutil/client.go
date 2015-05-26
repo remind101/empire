@@ -60,6 +60,73 @@ func (c *Client) RegisterAppTaskDefinition(app string, input *ecs.RegisterTaskDe
 	return c.ECS.RegisterTaskDefinition(input)
 }
 
+// ListAppTasks lists all the tasks for the app.
+func (c *Client) ListAppTasks(app string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	var arns []*string
+
+	resp, err := c.ListAppServices(app, &ecs.ListServicesInput{
+		Cluster: input.Cluster,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, s := range resp.ServiceARNs {
+		id, err := arn.ResourceID(*s)
+		if err != nil {
+			return nil, err
+		}
+
+		t, err := c.listTasks(&ecs.ListTasksInput{
+			Cluster:     input.Cluster,
+			ServiceName: aws.String(id),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(t.TaskARNs) == 0 {
+			continue
+		}
+
+		arns = append(arns, t.TaskARNs...)
+	}
+
+	return &ecs.ListTasksOutput{
+		TaskARNs: arns,
+	}, nil
+}
+
+func (c *Client) listTasks(input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	var (
+		nextMarker *string
+		arns       []*string
+	)
+
+	for {
+		resp, err := c.ECS.ListTasks(&ecs.ListTasksInput{
+			Cluster:     input.Cluster,
+			ServiceName: input.ServiceName,
+			NextToken:   nextMarker,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		arns = append(arns, resp.TaskARNs...)
+
+		nextMarker = resp.NextToken
+		if nextMarker == nil || *nextMarker == "" {
+			// No more items
+			break
+		}
+	}
+
+	return &ecs.ListTasksOutput{
+		TaskARNs: arns,
+	}, nil
+}
+
 // ListAppServices lists all services for the app.
 func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
 	resp, err := c.listServices(input)
