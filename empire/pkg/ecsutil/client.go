@@ -1,4 +1,4 @@
-// package ecsutil is a layer on top of Amazon ECS to provide an app aware ECS
+// Package ecsutil is a layer on top of Amazon ECS to provide an app aware ECS
 // client.
 package ecsutil
 
@@ -47,22 +47,22 @@ func (c *Client) DeleteAppService(app string, input *ecs.DeleteServiceInput) (*e
 	return c.ECS.DeleteService(input)
 }
 
-// UpdateService updates the service for the app.
+// UpdateAppService updates the service for the app.
 func (c *Client) UpdateAppService(app string, input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
 	input.Service = c.prefix(app, input.Service)
 	input.TaskDefinition = c.prefix(app, input.TaskDefinition)
 	return c.ECS.UpdateService(input)
 }
 
-// RegisterTaskDefinition register a task definition for the app.
+// RegisterAppTaskDefinition register a task definition for the app.
 func (c *Client) RegisterAppTaskDefinition(app string, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
 	input.Family = c.prefix(app, input.Family)
 	return c.ECS.RegisterTaskDefinition(input)
 }
 
-// ListServices lists all services for the app.
+// ListAppServices lists all services for the app.
 func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
-	resp, err := c.ECS.ListServices(input)
+	resp, err := c.listServices(input)
 	if err != nil {
 		return resp, err
 	}
@@ -85,8 +85,38 @@ func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs
 		}
 	}
 
-	resp.ServiceARNs = arns
-	return resp, nil
+	return &ecs.ListServicesOutput{
+		ServiceARNs: arns,
+	}, nil
+}
+
+func (c *Client) listServices(input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+	var (
+		nextMarker *string
+		arns       []*string
+	)
+
+	for {
+		resp, err := c.ECS.ListServices(&ecs.ListServicesInput{
+			Cluster:   input.Cluster,
+			NextToken: nextMarker,
+		})
+		if err != nil {
+			return resp, err
+		}
+
+		arns = append(arns, resp.ServiceARNs...)
+
+		nextMarker = resp.NextToken
+		if nextMarker == nil || *nextMarker == "" {
+			// No more items
+			break
+		}
+	}
+
+	return &ecs.ListServicesOutput{
+		ServiceARNs: arns,
+	}, nil
 }
 
 func (c *Client) delimiter() string {
