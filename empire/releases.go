@@ -252,7 +252,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 	env["EMPIRE_APPNAME"] = release.App.Name
 	env["EMPIRE_PROCESS"] = string(p.Type)
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("%d", release.Version)
-	env["SOURCE"] = fmt.Sprintf("%s.%s", release.App.Name, p.Type)
+	env["SOURCE"] = fmt.Sprintf("%s.%s.%d", release.App.Name, p.Type, release.Version)
 
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
