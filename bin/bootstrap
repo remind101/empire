@@ -3,7 +3,7 @@
 set -e
 
 check_dep() {
-  command -v $1 >/dev/null 2>&1 || { echo >&2 "$1 is required but not installed. Aborting."; exit 1; }
+  command -v $1 >/dev/null 2>&1 || { printf >&2 "%s is required but not installed. Aborting.\n" $1; exit 1; }
 }
 
 check_dep "pwgen"
@@ -15,14 +15,14 @@ STACK="empire-$(pwgen 10 1)"
 
 read -p "Docker user: " docker_user
 read -s -p "Docker pass: " docker_pass
-echo ""
+printf "\n"
 read -p "Docker email: " docker_email
 read -p "AWS KeyName: " keyname
 
-echo "==> Creating ECS service: $STACK"
+printf "==> Creating ECS service: %s\n" $STACK
 aws ecs create-cluster --cluster-name "$STACK" > /dev/null
 
-echo "==> Creating cloudformation stack: $STACK"
+printf "==> Creating cloudformation stack: %s\n" $STACK
 aws cloudformation create-stack \
   --stack-name "$STACK" \
   --template-body file://$PWD/docs/guide/cloudformation.json \
@@ -36,20 +36,20 @@ aws cloudformation create-stack \
       ParameterKey=KeyName,ParameterValue="$keyname" \
   --capabilities CAPABILITY_IAM > /dev/null
 
-echo "==> Waiting for stack to complete"
+printf "==> Waiting for stack to complete\n"
 stack_status=""
 while [ "$stack_status" != "CREATE_COMPLETE" ]; do
   sleep 1
-  echo -n -e '\033[2K\r'
-  echo -n "==> Status: $stack_status"
+  printf '\033[2K\r'
+  printf "==> Status: %s" $stack_status
   stack_status=$(aws cloudformation describe-stacks --stack-name "$STACK" --output text --query 'Stacks[0].StackStatus' 2>/dev/null)
   if [ "$stack_status" == "ROLLBACK_COMPLETE" ]; then
-    echo "\nStack creation failed, check AWS cloudformation console for details."
+    printf "\nStack creation failed, check AWS cloudformation console for details.\n"
     exit 1
   fi
 done
 
-echo "\n==> Writing environment variables to .env file"
+printf "\n==> Writing environment variables to .env file\n"
 
 # Returns the value of a named output from the created stack.
 output() {
