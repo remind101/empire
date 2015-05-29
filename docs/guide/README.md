@@ -18,6 +18,8 @@ Before doing any of the following, log in to your AWS account and accept the ter
 
 https://aws.amazon.com/marketplace/ordering?productId=4ce33fd9-63ff-4f35-8d3a-939b641f1931&ref_=dtl_psb_continue&region=us-east-1
 
+Make sure that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./cloudformation.json): https://github.com/remind101/empire/blob/master/docs/guide/cloudformation.json#L20
+
 If you don't do this, no EC2 instances will be started by the auto scaling group that our CloudFormation stack will create.
 
 ## Step 2 - ECS cluster
