@@ -17,7 +17,7 @@
     "AmiId" : {
       "Type": "String",
       "Description": "AMI Id",
-      "Default": "ami-ae6559c6"
+      "Default": "ami-1e091d76"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
@@ -54,7 +54,7 @@
   },
 
   "Resources": {
- 
+
     "Vpc": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
@@ -121,7 +121,7 @@
         "RouteTableId": { "Ref": "RouteViaIgw" }
       }
     },
- 
+
     "PubSubnet2RouteTableAssociation": {
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {

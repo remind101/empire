@@ -93,8 +93,14 @@ $ godep go test ./...
 If you want to contribute to empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
 
 1. Ensure that you have the AWS CLI installed and configured.
-2. Run boot2docker and export the environment variables so empire can connect:
-   
+2. Ensure that you accepted the terms and conditions for the official ECS AMI:
+
+   https://aws.amazon.com/marketplace/ordering?productId=4ce33fd9-63ff-4f35-8d3a-939b641f1931&ref_=dtl_psb_continue&region=us-east-1
+
+   Make sure that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./cloudformation.json): https://github.com/remind101/empire/blob/master/docs/guide/cloudformation.json#L20
+
+3. Run boot2docker and export the environment variables so empire can connect:
+
    ```console
    $ boot2docker start
    $ $(boot2docker shellinit)
@@ -102,17 +108,17 @@ If you want to contribute to empire, you may end up wanting to run a local insta
 
    You should ensure that you've configured boot2docker to disable TLS. Refer to https://coderwall.com/p/siqnjg/disable-tls-on-boot2docker.
 
-3. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
+4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
    ```console
    $ ./bin/bootstrap
    ```
-4. Run empire with [docker-compose](https://docs.docker.com/compose/):
-   
+5. Run empire with [docker-compose](https://docs.docker.com/compose/):
+
    ```console
    $ docker-compose up
    ```
-5. Install the emp CLI.
+6. Install the emp CLI.
 
    ```console
    $ make install
