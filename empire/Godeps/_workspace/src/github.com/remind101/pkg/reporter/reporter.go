@@ -66,8 +66,13 @@ func newError(ctx context.Context, err error) *Error {
 }
 
 // Report wraps the err as an Error and reports it the the Reporter embedded
-// within the context.Context.
+// within the context.Context. If err is nil, Report will return early, so this
+// function is safe to call without performing a nill check on the error first.
 func Report(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
+
 	e := newError(ctx, err)
 
 	if r, ok := FromContext(ctx); ok {

@@ -398,7 +398,7 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		return service.NewFakeManager()
 	}
 
-	m := service.NewECSManager(service.ECSConfig{
+	return service.NewECSManager(service.ECSConfig{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
@@ -408,10 +408,6 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		AWS:                     config,
 		Zone:                    "empire.",
 	})
-
-	l := service.WithLogging(m)
-	l.Prefix = "ecs"
-	return l
 }
 
 func newCertManager(config *aws.Config) sslcert.Manager {

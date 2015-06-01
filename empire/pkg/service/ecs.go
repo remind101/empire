@@ -227,22 +227,22 @@ type ecsProcessManager struct {
 
 // CreateProcess creates an ECS service for the process.
 func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) error {
-	if _, err := m.createTaskDefinition(app, p); err != nil {
+	if _, err := m.createTaskDefinition(ctx, app, p); err != nil {
 		return err
 	}
 
-	_, err := m.updateCreateService(app, p)
+	_, err := m.updateCreateService(ctx, app, p)
 	return err
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
-func (m *ecsProcessManager) createTaskDefinition(app *App, process *Process) (*ecs.TaskDefinition, error) {
-	resp, err := m.ecs.RegisterAppTaskDefinition(app.ID, taskDefinitionInput(process))
+func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *App, process *Process) (*ecs.TaskDefinition, error) {
+	resp, err := m.ecs.RegisterAppTaskDefinition(ctx, app.ID, taskDefinitionInput(process))
 	return resp.TaskDefinition, err
 }
 
 // createService creates a Service in ECS for the service.
-func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, error) {
+func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
 	var role *string
 	var loadBalancers []*ecs.LoadBalancer
 
@@ -257,7 +257,7 @@ func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, e
 		role = aws.String(m.serviceRole)
 	}
 
-	resp, err := m.ecs.CreateAppService(app.ID, &ecs.CreateServiceInput{
+	resp, err := m.ecs.CreateAppService(ctx, app.ID, &ecs.CreateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		ServiceName:    aws.String(p.Type),
@@ -269,8 +269,8 @@ func (m *ecsProcessManager) createService(app *App, p *Process) (*ecs.Service, e
 }
 
 // updateService updates an existing Service in ECS.
-func (m *ecsProcessManager) updateService(app *App, p *Process) (*ecs.Service, error) {
-	resp, err := m.ecs.UpdateAppService(app.ID, &ecs.UpdateServiceInput{
+func (m *ecsProcessManager) updateService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
+	resp, err := m.ecs.UpdateAppService(ctx, app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		Service:        aws.String(p.Type),
@@ -286,8 +286,8 @@ func (m *ecsProcessManager) updateService(app *App, p *Process) (*ecs.Service, e
 }
 
 // updateCreateService will perform an upsert for the service in ECS.
-func (m *ecsProcessManager) updateCreateService(app *App, p *Process) (*ecs.Service, error) {
-	s, err := m.updateService(app, p)
+func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
+	s, err := m.updateService(ctx, app, p)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func (m *ecsProcessManager) updateCreateService(app *App, p *Process) (*ecs.Serv
 		return s, nil
 	}
 
-	return m.createService(app, p)
+	return m.createService(ctx, app, p)
 }
 
 func (m *ecsProcessManager) Processes(app string) ([]*Process, error) {
@@ -347,7 +347,7 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 		return err
 	}
 
-	_, err := m.ecs.DeleteAppService(app, &ecs.DeleteServiceInput{
+	_, err := m.ecs.DeleteAppService(ctx, app, &ecs.DeleteServiceInput{
 		Cluster: aws.String(m.cluster),
 		Service: aws.String(process),
 	})
@@ -360,7 +360,7 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 
 // Scale scales an ECS service to the desired number of instances.
 func (m *ecsProcessManager) Scale(ctx context.Context, app string, process string, instances uint) error {
-	_, err := m.ecs.UpdateAppService(app, &ecs.UpdateServiceInput{
+	_, err := m.ecs.UpdateAppService(ctx, app, &ecs.UpdateServiceInput{
 		Cluster:      aws.String(m.cluster),
 		DesiredCount: aws.Long(int64(instances)),
 		Service:      aws.String(process),

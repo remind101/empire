@@ -19,18 +19,25 @@ type CommonOpts struct {
 	Logger log15.Logger
 }
 
+type log struct {
+	log15.Logger
+}
+
+func (l *log) New(pairs ...interface{}) logger.Logger {
+	return &log{l.Logger.New(pairs...)}
+}
+
 // Common wraps the httpx.Handler with some common middleware.
 func Common(h httpx.Handler, opts CommonOpts) http.Handler {
+	l := &log{opts.Logger}
+
 	// Recover from panics.
 	h = middleware.Recover(h, opts.Reporter)
 
 	// Add a logger to the context.
 	h = middleware.LogTo(h, func(ctx context.Context, r *http.Request) logger.Logger {
-		return opts.Logger.New("request_id", httpx.RequestID(ctx))
+		return l.New("request_id", httpx.RequestID(ctx))
 	})
-
-	// Add the request id to the context.
-	h = middleware.ExtractRequestID(h)
 
 	// Wrap the route in middleware to add a context.Context.
 	return middleware.BackgroundContext(h)

@@ -209,20 +209,28 @@
 			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
 		},
 		{
+			"ImportPath": "github.com/remind101/newrelic",
+			"Rev": "04b4810fa8c0ae0978c2d8e8c7ddc7e811d92d70"
+		},
+		{
 			"ImportPath": "github.com/remind101/pkg/httpx",
-			"Rev": "1ed45246b1373c7da5becb69aa3d90ae69f16177"
+			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/logger",
-			"Rev": "1ed45246b1373c7da5becb69aa3d90ae69f16177"
+			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/reporter",
-			"Rev": "1ed45246b1373c7da5becb69aa3d90ae69f16177"
+			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/timex",
-			"Rev": "1ed45246b1373c7da5becb69aa3d90ae69f16177"
+			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
+		},
+		{
+			"ImportPath": "github.com/remind101/pkg/trace",
+			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
