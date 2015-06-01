@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/remind101/empire/empire",
-	"GoVersion": "go1.4.1",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
@@ -9,11 +9,6 @@
 			"ImportPath": "code.google.com/p/go-uuid/uuid",
 			"Comment": "null-12",
 			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
-		},
-		{
-			"ImportPath": "code.google.com/p/snappy-go/snappy",
-			"Comment": "null-15",
-			"Rev": "12e4b4183793ac4b061921e7980845e750679fd0"
 		},
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
@@ -26,10 +21,6 @@
 		},
 		{
 			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/endpoints",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
-		},
-		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/ec2query",
 			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
 		},
 		{
@@ -58,10 +49,6 @@
 		},
 		{
 			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/signer/v4",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
-		},
-		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/service/ec2",
 			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
 		},
 		{
@@ -164,12 +151,16 @@
 		},
 		{
 			"ImportPath": "github.com/gocql/gocql",
-			"Comment": "go1.1-300-ga979e19",
-			"Rev": "a979e19e22d3b5dbc46550892fe5d37e74c84599"
+			"Comment": "1st_gen_framing-130-gec1f562",
+			"Rev": "ec1f5626d6984ebe4da69779317a76f3a6698381"
 		},
 		{
 			"ImportPath": "github.com/golang/groupcache/lru",
 			"Rev": "8b25adc0f62632c810997cb38c21111a3f256bf4"
+		},
+		{
+			"ImportPath": "github.com/golang/snappy/snappy",
+			"Rev": "a911026e1ffa84898778ccb0363930485e0aa880"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -195,23 +186,23 @@
 		},
 		{
 			"ImportPath": "github.com/mattes/migrate/driver",
-			"Comment": "v1.2.0-29-gcd2c561",
-			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
 		},
 		{
 			"ImportPath": "github.com/mattes/migrate/file",
-			"Comment": "v1.2.0-29-gcd2c561",
-			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
 		},
 		{
 			"ImportPath": "github.com/mattes/migrate/migrate",
-			"Comment": "v1.2.0-29-gcd2c561",
-			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
 		},
 		{
 			"ImportPath": "github.com/mattes/migrate/pipe",
-			"Comment": "v1.2.0-29-gcd2c561",
-			"Rev": "cd2c56156424002ef8373ac36af776bafcf76f4d"
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-colorable",

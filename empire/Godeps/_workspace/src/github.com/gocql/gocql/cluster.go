@@ -55,41 +55,45 @@ type DiscoveryConfig struct {
 // behavior to fit the most common use cases. Applications that requre a
 // different setup must implement their own cluster.
 type ClusterConfig struct {
-	Hosts            []string      // addresses for the initial connections
-	CQLVersion       string        // CQL version (default: 3.0.0)
-	ProtoVersion     int           // version of the native protocol (default: 2)
-	Timeout          time.Duration // connection timeout (default: 600ms)
-	Port             int           // port (default: 9042)
-	Keyspace         string        // initial keyspace (optional)
-	NumConns         int           // number of connections per host (default: 2)
-	NumStreams       int           // number of streams per connection (default: 128)
-	Consistency      Consistency   // default consistency level (default: Quorum)
-	Compressor       Compressor    // compression algorithm (default: nil)
-	Authenticator    Authenticator // authenticator (default: nil)
-	RetryPolicy      RetryPolicy   // Default retry policy to use for queries (default: 0)
-	SocketKeepalive  time.Duration // The keepalive period to use, enabled if > 0 (default: 0)
-	ConnPoolType     NewPoolFunc   // The function used to create the connection pool for the session (default: NewSimplePool)
-	DiscoverHosts    bool          // If set, gocql will attempt to automatically discover other members of the Cassandra cluster (default: false)
-	MaxPreparedStmts int           // Sets the maximum cache size for prepared statements globally for gocql (default: 1000)
-	PageSize         int           // Default page size to use for created sessions (default: 0)
-	Discovery        DiscoveryConfig
-	SslOpts          *SslOptions
+	Hosts             []string          // addresses for the initial connections
+	CQLVersion        string            // CQL version (default: 3.0.0)
+	ProtoVersion      int               // version of the native protocol (default: 2)
+	Timeout           time.Duration     // connection timeout (default: 600ms)
+	Port              int               // port (default: 9042)
+	Keyspace          string            // initial keyspace (optional)
+	NumConns          int               // number of connections per host (default: 2)
+	NumStreams        int               // number of streams per connection (default: max per protocol, either 128 or 32768)
+	Consistency       Consistency       // default consistency level (default: Quorum)
+	Compressor        Compressor        // compression algorithm (default: nil)
+	Authenticator     Authenticator     // authenticator (default: nil)
+	RetryPolicy       RetryPolicy       // Default retry policy to use for queries (default: 0)
+	SocketKeepalive   time.Duration     // The keepalive period to use, enabled if > 0 (default: 0)
+	ConnPoolType      NewPoolFunc       // The function used to create the connection pool for the session (default: NewSimplePool)
+	DiscoverHosts     bool              // If set, gocql will attempt to automatically discover other members of the Cassandra cluster (default: false)
+	MaxPreparedStmts  int               // Sets the maximum cache size for prepared statements globally for gocql (default: 1000)
+	MaxRoutingKeyInfo int               // Sets the maximum cache size for query info about statements for each session (default: 1000)
+	PageSize          int               // Default page size to use for created sessions (default: 0)
+	SerialConsistency SerialConsistency // Sets the consistency for the serial part of queries, values can be either SERIAL or LOCAL_SERIAL (default: unset)
+	Discovery         DiscoveryConfig
+	SslOpts           *SslOptions
+	DefaultTimestamp  bool // Sends a client side timestamp for all requests which overrides the timestamp at which it arrives at the server. (default: true, only enabled for protocol 3 and above)
 }
 
 // NewCluster generates a new config for the default cluster implementation.
 func NewCluster(hosts ...string) *ClusterConfig {
 	cfg := &ClusterConfig{
-		Hosts:            hosts,
-		CQLVersion:       "3.0.0",
-		ProtoVersion:     2,
-		Timeout:          600 * time.Millisecond,
-		Port:             9042,
-		NumConns:         2,
-		NumStreams:       128,
-		Consistency:      Quorum,
-		ConnPoolType:     NewSimplePool,
-		DiscoverHosts:    false,
-		MaxPreparedStmts: defaultMaxPreparedStmts,
+		Hosts:             hosts,
+		CQLVersion:        "3.0.0",
+		ProtoVersion:      2,
+		Timeout:           600 * time.Millisecond,
+		Port:              9042,
+		NumConns:          2,
+		Consistency:       Quorum,
+		ConnPoolType:      NewSimplePool,
+		DiscoverHosts:     false,
+		MaxPreparedStmts:  defaultMaxPreparedStmts,
+		MaxRoutingKeyInfo: 1000,
+		DefaultTimestamp:  true,
 	}
 	return cfg
 }
@@ -97,39 +101,7 @@ func NewCluster(hosts ...string) *ClusterConfig {
 // CreateSession initializes the cluster based on this config and returns a
 // session object that can be used to interact with the database.
 func (cfg *ClusterConfig) CreateSession() (*Session, error) {
-
-	//Check that hosts in the ClusterConfig is not empty
-	if len(cfg.Hosts) < 1 {
-		return nil, ErrNoHosts
-	}
-	pool := cfg.ConnPoolType(cfg)
-
-	//Adjust the size of the prepared statements cache to match the latest configuration
-	stmtsLRU.Lock()
-	initStmtsLRU(cfg.MaxPreparedStmts)
-	stmtsLRU.Unlock()
-
-	//See if there are any connections in the pool
-	if pool.Size() > 0 {
-		s := NewSession(pool, *cfg)
-		s.SetConsistency(cfg.Consistency)
-		s.SetPageSize(cfg.PageSize)
-
-		if cfg.DiscoverHosts {
-			hostSource := &ringDescriber{
-				session:    s,
-				dcFilter:   cfg.Discovery.DcFilter,
-				rackFilter: cfg.Discovery.RackFilter,
-			}
-
-			go hostSource.run(cfg.Discovery.Sleep)
-		}
-
-		return s, nil
-	}
-
-	pool.Close()
-	return nil, ErrNoConnectionsStarted
+	return NewSession(*cfg)
 }
 
 var (
