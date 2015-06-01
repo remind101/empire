@@ -8,36 +8,97 @@ import (
 	"golang.org/x/net/context"
 )
 
-// ECS is an ECS client with tracing.
-type ECS struct {
+// ECS represents our ECS client interface.
+type ECS interface {
+	// Task Definitions
+	RegisterTaskDefinition(context.Context, *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
+	DescribeTaskDefinition(context.Context, *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error)
+
+	// Services
+	CreateService(context.Context, *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error)
+	DeleteService(context.Context, *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
+	UpdateService(context.Context, *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	ListServices(context.Context, *ecs.ListServicesInput) (*ecs.ListServicesOutput, error)
+	DescribeServices(context.Context, *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
+
+	// Tasks
+	ListTasks(context.Context, *ecs.ListTasksInput) (*ecs.ListTasksOutput, error)
+	StopTask(context.Context, *ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
+	DescribeTasks(context.Context, *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
+}
+
+// ecsClient is a base ECS client implementation
+type ecsClient struct {
 	*ecs.ECS
 }
 
-func (c *ECS) CreateService(ctx context.Context, input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
+func (c *ecsClient) CreateService(ctx context.Context, input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.CreateService(input)
 	done(err, "CreateService", "service-name", stringField(input.ServiceName), "desired-count", intField(input.DesiredCount), "task-definition", stringField(input.TaskDefinition))
 	return resp, err
 }
 
-func (c *ECS) DeleteService(ctx context.Context, input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
+func (c *ecsClient) DeleteService(ctx context.Context, input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.DeleteService(input)
 	done(err, "DeleteService", "service-name", stringField(input.Service))
 	return resp, err
 }
 
-func (c *ECS) UpdateService(ctx context.Context, input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
+func (c *ecsClient) UpdateService(ctx context.Context, input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.UpdateService(input)
 	done(err, "UpdateService", "service-name", stringField(input.Service), "desired-count", intField(input.DesiredCount), "task-definition", stringField(input.TaskDefinition))
 	return resp, err
 }
 
-func (c *ECS) RegisterTaskDefinition(ctx context.Context, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+func (c *ecsClient) RegisterTaskDefinition(ctx context.Context, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.RegisterTaskDefinition(input)
 	done(err, "RegisterTaskDefinition", "family", stringField(input.Family))
+	return resp, err
+}
+
+func (c *ecsClient) DescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.DescribeTaskDefinition(input)
+	done(err, "DescribeTaskDefinition")
+	return resp, err
+}
+
+func (c *ecsClient) ListServices(ctx context.Context, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.ListServices(input)
+	done(err, "ListServices")
+	return resp, err
+}
+
+func (c *ecsClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.DescribeServices(input)
+	done(err, "DescribeServices")
+	return resp, err
+}
+
+func (c *ecsClient) ListTasks(ctx context.Context, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.ListTasks(input)
+	done(err, "ListTasks")
+	return resp, err
+}
+
+func (c *ecsClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.DescribeTasks(input)
+	done(err, "DescribeTasks")
+	return resp, err
+}
+
+func (c *ecsClient) StopTask(ctx context.Context, input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.StopTask(input)
+	done(err, "StopTask")
 	return resp, err
 }
 
@@ -55,4 +116,69 @@ func intField(v *int64) string {
 	}
 
 	return "<nil>"
+}
+
+// autoPaginatedClient is an ECS implementation that will autopaginate
+// responses.
+type autoPaginatedClient struct {
+	ECS
+}
+
+func (c *autoPaginatedClient) ListServices(ctx context.Context, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+	var (
+		nextMarker *string
+		arns       []*string
+	)
+
+	for {
+		resp, err := c.ECS.ListServices(ctx, &ecs.ListServicesInput{
+			Cluster:   input.Cluster,
+			NextToken: nextMarker,
+		})
+		if err != nil {
+			return resp, err
+		}
+
+		arns = append(arns, resp.ServiceARNs...)
+
+		nextMarker = resp.NextToken
+		if nextMarker == nil || *nextMarker == "" {
+			// No more items
+			break
+		}
+	}
+
+	return &ecs.ListServicesOutput{
+		ServiceARNs: arns,
+	}, nil
+}
+
+func (c *autoPaginatedClient) ListTasks(ctx context.Context, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	var (
+		nextMarker *string
+		arns       []*string
+	)
+
+	for {
+		resp, err := c.ECS.ListTasks(ctx, &ecs.ListTasksInput{
+			Cluster:     input.Cluster,
+			ServiceName: input.ServiceName,
+			NextToken:   nextMarker,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		arns = append(arns, resp.TaskARNs...)
+
+		nextMarker = resp.NextToken
+		if nextMarker == nil || *nextMarker == "" {
+			// No more items
+			break
+		}
+	}
+
+	return &ecs.ListTasksOutput{
+		TaskARNs: arns,
+	}, nil
 }

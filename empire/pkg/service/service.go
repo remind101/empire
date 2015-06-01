@@ -133,5 +133,5 @@ type ProcessManager interface {
 	RemoveProcess(ctx context.Context, app string, process string) error
 
 	// Processes returns all processes for the app.
-	Processes(app string) ([]*Process, error)
+	Processes(ctx context.Context, app string) ([]*Process, error)
 }

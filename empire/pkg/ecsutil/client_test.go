@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/empire/pkg/awsutil"
@@ -27,7 +29,7 @@ func TestListAppServices(t *testing.T) {
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppServices("acme-inc", &ecs.ListServicesInput{
+	resp, err := m.ListAppServices(context.Background(), "acme-inc", &ecs.ListServicesInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
@@ -68,7 +70,7 @@ func TestListAppServices_Pagination(t *testing.T) {
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppServices("acme-inc", &ecs.ListServicesInput{
+	resp, err := m.ListAppServices(context.Background(), "acme-inc", &ecs.ListServicesInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
@@ -109,7 +111,7 @@ func TestListAppTasks(t *testing.T) {
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppTasks("acme-inc", &ecs.ListTasksInput{
+	resp, err := m.ListAppTasks(context.Background(), "acme-inc", &ecs.ListTasksInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
@@ -162,7 +164,7 @@ func TestListAppTasks_Paginate(t *testing.T) {
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppTasks("acme-inc", &ecs.ListTasksInput{
+	resp, err := m.ListAppTasks(context.Background(), "acme-inc", &ecs.ListTasksInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {

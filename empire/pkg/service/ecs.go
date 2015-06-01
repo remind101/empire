@@ -116,7 +116,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
 func (m *ECSManager) Submit(ctx context.Context, app *App) error {
-	processes, err := m.Processes(app.ID)
+	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (m *ECSManager) Submit(ctx context.Context, app *App) error {
 
 // Remove removes any ECS services that belong to this app.
 func (m *ECSManager) Remove(ctx context.Context, app string) error {
-	processes, err := m.Processes(app)
+	processes, err := m.Processes(ctx, app)
 	if err != nil {
 		return err
 	}
@@ -158,13 +158,13 @@ func (m *ECSManager) Remove(ctx context.Context, app string) error {
 func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, error) {
 	var instances []*Instance
 
-	tasks, err := m.describeAppTasks(app)
+	tasks, err := m.describeAppTasks(ctx, app)
 	if err != nil {
 		return instances, err
 	}
 
 	for _, t := range tasks {
-		resp, err := m.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
 			TaskDefinition: t.TaskDefinitionARN,
 		})
 		if err != nil {
@@ -192,15 +192,15 @@ func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, er
 	return instances, nil
 }
 
-func (m *ECSManager) describeAppTasks(app string) ([]*ecs.Task, error) {
-	resp, err := m.ecs.ListAppTasks(app, &ecs.ListTasksInput{
+func (m *ECSManager) describeAppTasks(ctx context.Context, app string) ([]*ecs.Task, error) {
+	resp, err := m.ecs.ListAppTasks(ctx, app, &ecs.ListTasksInput{
 		Cluster: aws.String(m.cluster),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	tasks, err := m.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+	tasks, err := m.ecs.DescribeTasks(ctx, &ecs.DescribeTasksInput{
 		Cluster: aws.String(m.cluster),
 		Tasks:   resp.TaskARNs,
 	})
@@ -208,7 +208,7 @@ func (m *ECSManager) describeAppTasks(app string) ([]*ecs.Task, error) {
 }
 
 func (m *ECSManager) Stop(ctx context.Context, instanceID string) error {
-	_, err := m.ecs.StopTask(&ecs.StopTaskInput{
+	_, err := m.ecs.StopTask(ctx, &ecs.StopTaskInput{
 		Cluster: aws.String(m.cluster),
 		Task:    aws.String(instanceID),
 	})
@@ -299,10 +299,10 @@ func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *App, p
 	return m.createService(ctx, app, p)
 }
 
-func (m *ecsProcessManager) Processes(app string) ([]*Process, error) {
+func (m *ecsProcessManager) Processes(ctx context.Context, app string) ([]*Process, error) {
 	var processes []*Process
 
-	list, err := m.ecs.ListAppServices(app, &ecs.ListServicesInput{
+	list, err := m.ecs.ListAppServices(ctx, app, &ecs.ListServicesInput{
 		Cluster: aws.String(m.cluster),
 	})
 	if err != nil {
@@ -313,7 +313,7 @@ func (m *ecsProcessManager) Processes(app string) ([]*Process, error) {
 		return processes, nil
 	}
 
-	desc, err := m.ecs.DescribeServices(&ecs.DescribeServicesInput{
+	desc, err := m.ecs.DescribeServices(ctx, &ecs.DescribeServicesInput{
 		Cluster:  aws.String(m.cluster),
 		Services: list.ServiceARNs,
 	})
@@ -322,7 +322,7 @@ func (m *ecsProcessManager) Processes(app string) ([]*Process, error) {
 	}
 
 	for _, s := range desc.Services {
-		resp, err := m.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
 			TaskDefinition: s.TaskDefinition,
 		})
 		if err != nil {

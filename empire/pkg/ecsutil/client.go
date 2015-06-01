@@ -21,7 +21,7 @@ var (
 // Client is an app aware ECS client.
 type Client struct {
 	// client used to interact with the ecs API.
-	*ECS
+	ECS
 
 	// The delimiter to use to separate app name from service type. Zero
 	// value is the DefaultDelimiter.
@@ -32,7 +32,7 @@ type Client struct {
 func NewClient(config *aws.Config) *Client {
 	ecs := ecs.New(config)
 	return &Client{
-		ECS: &ECS{ecs},
+		ECS: &autoPaginatedClient{&ecsClient{ecs}},
 	}
 }
 
@@ -63,10 +63,10 @@ func (c *Client) RegisterAppTaskDefinition(ctx context.Context, app string, inpu
 }
 
 // ListAppTasks lists all the tasks for the app.
-func (c *Client) ListAppTasks(app string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+func (c *Client) ListAppTasks(ctx context.Context, app string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
 	var arns []*string
 
-	resp, err := c.ListAppServices(app, &ecs.ListServicesInput{
+	resp, err := c.ListAppServices(ctx, app, &ecs.ListServicesInput{
 		Cluster: input.Cluster,
 	})
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *Client) ListAppTasks(app string, input *ecs.ListTasksInput) (*ecs.ListT
 			return nil, err
 		}
 
-		t, err := c.listTasks(&ecs.ListTasksInput{
+		t, err := c.ListTasks(ctx, &ecs.ListTasksInput{
 			Cluster:     input.Cluster,
 			ServiceName: aws.String(id),
 		})
@@ -99,39 +99,9 @@ func (c *Client) ListAppTasks(app string, input *ecs.ListTasksInput) (*ecs.ListT
 	}, nil
 }
 
-func (c *Client) listTasks(input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
-	var (
-		nextMarker *string
-		arns       []*string
-	)
-
-	for {
-		resp, err := c.ECS.ListTasks(&ecs.ListTasksInput{
-			Cluster:     input.Cluster,
-			ServiceName: input.ServiceName,
-			NextToken:   nextMarker,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		arns = append(arns, resp.TaskARNs...)
-
-		nextMarker = resp.NextToken
-		if nextMarker == nil || *nextMarker == "" {
-			// No more items
-			break
-		}
-	}
-
-	return &ecs.ListTasksOutput{
-		TaskARNs: arns,
-	}, nil
-}
-
 // ListAppServices lists all services for the app.
-func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
-	resp, err := c.listServices(input)
+func (c *Client) ListAppServices(ctx context.Context, app string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+	resp, err := c.ListServices(ctx, input)
 	if err != nil {
 		return resp, err
 	}
@@ -151,35 +121,6 @@ func (c *Client) ListAppServices(app string, input *ecs.ListServicesInput) (*ecs
 
 		if appName == app {
 			arns = append(arns, a)
-		}
-	}
-
-	return &ecs.ListServicesOutput{
-		ServiceARNs: arns,
-	}, nil
-}
-
-func (c *Client) listServices(input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
-	var (
-		nextMarker *string
-		arns       []*string
-	)
-
-	for {
-		resp, err := c.ECS.ListServices(&ecs.ListServicesInput{
-			Cluster:   input.Cluster,
-			NextToken: nextMarker,
-		})
-		if err != nil {
-			return resp, err
-		}
-
-		arns = append(arns, resp.ServiceARNs...)
-
-		nextMarker = resp.NextToken
-		if nextMarker == nil || *nextMarker == "" {
-			// No more items
-			break
 		}
 	}
 
