@@ -11,7 +11,6 @@ import (
 	"github.com/remind101/empire/empire/pkg/ecsutil"
 	"github.com/remind101/empire/empire/pkg/lb"
 	"github.com/remind101/pkg/timex"
-	"github.com/remind101/pkg/trace"
 	"golang.org/x/net/context"
 )
 
@@ -116,7 +115,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *ECSManager) Submit(ctx context.Context, app *App) (err error) {
+func (m *ECSManager) Submit(ctx context.Context, app *App) error {
 	processes, err := m.Processes(app.ID)
 	if err != nil {
 		return err
@@ -208,10 +207,8 @@ func (m *ECSManager) describeAppTasks(app string) ([]*ecs.Task, error) {
 	return tasks.Tasks, err
 }
 
-func (m *ECSManager) Stop(ctx context.Context, instanceID string) (err error) {
-	ctx, done := trace.Trace(ctx)
-	defer func() { done(err, "stopping ecs task", "task-id", instanceID) }()
-	_, err = m.ecs.StopTask(&ecs.StopTaskInput{
+func (m *ECSManager) Stop(ctx context.Context, instanceID string) error {
+	_, err := m.ecs.StopTask(&ecs.StopTaskInput{
 		Cluster: aws.String(m.cluster),
 		Task:    aws.String(instanceID),
 	})
@@ -229,14 +226,7 @@ type ecsProcessManager struct {
 }
 
 // CreateProcess creates an ECS service for the process.
-func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) (err error) {
-	ctx, done := trace.Trace(ctx)
-	defer func() { done(err, "creating ecs process") }()
-	err = m.createProcess(ctx, app, p)
-	return err
-}
-
-func (m *ecsProcessManager) createProcess(ctx context.Context, app *App, p *Process) error {
+func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) error {
 	if _, err := m.createTaskDefinition(ctx, app, p); err != nil {
 		return err
 	}
@@ -247,16 +237,12 @@ func (m *ecsProcessManager) createProcess(ctx context.Context, app *App, p *Proc
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *App, process *Process) (*ecs.TaskDefinition, error) {
-	ctx, done := trace.Trace(ctx)
-	resp, err := m.ecs.RegisterAppTaskDefinition(app.ID, taskDefinitionInput(process))
-	done(err, "registering task definition", "app", app.ID, "process", process.Type)
+	resp, err := m.ecs.RegisterAppTaskDefinition(ctx, app.ID, taskDefinitionInput(process))
 	return resp.TaskDefinition, err
 }
 
 // createService creates a Service in ECS for the service.
 func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
-	ctx, done := trace.Trace(ctx)
-
 	var role *string
 	var loadBalancers []*ecs.LoadBalancer
 
@@ -271,38 +257,30 @@ func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Proc
 		role = aws.String(m.serviceRole)
 	}
 
-	input := &ecs.CreateServiceInput{
+	resp, err := m.ecs.CreateAppService(ctx, app.ID, &ecs.CreateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		ServiceName:    aws.String(p.Type),
 		TaskDefinition: aws.String(p.Type),
 		LoadBalancers:  loadBalancers,
 		Role:           role,
-	}
-	resp, err := m.ecs.CreateAppService(app.ID, input)
-	done(err, "creating ecs service", "app", app.ID, "service-name", *input.ServiceName, "desired-count", *input.DesiredCount, "task-definition", *input.TaskDefinition)
+	})
 	return resp.Service, err
 }
 
 // updateService updates an existing Service in ECS.
 func (m *ecsProcessManager) updateService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
-	ctx, done := trace.Trace(ctx)
-
-	input := &ecs.UpdateServiceInput{
+	resp, err := m.ecs.UpdateAppService(ctx, app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Long(int64(p.Instances)),
 		Service:        aws.String(p.Type),
 		TaskDefinition: aws.String(p.Type),
-	}
-
-	resp, err := m.ecs.UpdateAppService(app.ID, input)
+	})
 
 	// If the service does not exist, return nil.
 	if noService(err) {
 		return nil, nil
 	}
-
-	done(err, "updating ecs service", "app", app.ID, "service-name", *input.Service, "desired-count", *input.DesiredCount, "task-definition", *input.TaskDefinition)
 
 	return resp.Service, err
 }
@@ -369,7 +347,7 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 		return err
 	}
 
-	_, err := m.ecs.DeleteAppService(app, &ecs.DeleteServiceInput{
+	_, err := m.ecs.DeleteAppService(ctx, app, &ecs.DeleteServiceInput{
 		Cluster: aws.String(m.cluster),
 		Service: aws.String(process),
 	})
@@ -382,15 +360,11 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 
 // Scale scales an ECS service to the desired number of instances.
 func (m *ecsProcessManager) Scale(ctx context.Context, app string, process string, instances uint) error {
-	ctx, done := trace.Trace(ctx)
-
-	input := &ecs.UpdateServiceInput{
+	_, err := m.ecs.UpdateAppService(ctx, app, &ecs.UpdateServiceInput{
 		Cluster:      aws.String(m.cluster),
 		DesiredCount: aws.Long(int64(instances)),
 		Service:      aws.String(process),
-	}
-	_, err := m.ecs.UpdateAppService(app, input)
-	done(err, "scaling ecs service", "service-name", *input.Service, "desired-count", *input.DesiredCount)
+	})
 	return err
 }
 

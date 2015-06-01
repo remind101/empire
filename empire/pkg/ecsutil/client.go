@@ -5,6 +5,8 @@ package ecsutil
 import (
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/empire/pkg/arn"
@@ -19,7 +21,7 @@ var (
 // Client is an app aware ECS client.
 type Client struct {
 	// client used to interact with the ecs API.
-	*ecs.ECS
+	*ECS
 
 	// The delimiter to use to separate app name from service type. Zero
 	// value is the DefaultDelimiter.
@@ -30,34 +32,34 @@ type Client struct {
 func NewClient(config *aws.Config) *Client {
 	ecs := ecs.New(config)
 	return &Client{
-		ECS: ecs,
+		ECS: &ECS{ecs},
 	}
 }
 
 // CreateAppService creates a new ecs service for the app.
-func (c *Client) CreateAppService(app string, input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
+func (c *Client) CreateAppService(ctx context.Context, app string, input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
 	input.ServiceName = c.prefix(app, input.ServiceName)
 	input.TaskDefinition = c.prefix(app, input.TaskDefinition)
-	return c.ECS.CreateService(input)
+	return c.ECS.CreateService(ctx, input)
 }
 
 // DeleteAppService deletes the service for the app.
-func (c *Client) DeleteAppService(app string, input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
+func (c *Client) DeleteAppService(ctx context.Context, app string, input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
 	input.Service = c.prefix(app, input.Service)
-	return c.ECS.DeleteService(input)
+	return c.ECS.DeleteService(ctx, input)
 }
 
 // UpdateAppService updates the service for the app.
-func (c *Client) UpdateAppService(app string, input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
+func (c *Client) UpdateAppService(ctx context.Context, app string, input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
 	input.Service = c.prefix(app, input.Service)
 	input.TaskDefinition = c.prefix(app, input.TaskDefinition)
-	return c.ECS.UpdateService(input)
+	return c.ECS.UpdateService(ctx, input)
 }
 
 // RegisterAppTaskDefinition register a task definition for the app.
-func (c *Client) RegisterAppTaskDefinition(app string, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+func (c *Client) RegisterAppTaskDefinition(ctx context.Context, app string, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
 	input.Family = c.prefix(app, input.Family)
-	return c.ECS.RegisterTaskDefinition(input)
+	return c.ECS.RegisterTaskDefinition(ctx, input)
 }
 
 // ListAppTasks lists all the tasks for the app.
