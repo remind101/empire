@@ -77,7 +77,7 @@ func (c *ecsClient) ListServices(ctx context.Context, input *ecs.ListServicesInp
 func (c *ecsClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.DescribeServices(input)
-	done(err, "DescribeServices")
+	done(err, "DescribeServices", "services", len(input.Services))
 	return resp, err
 }
 
@@ -180,5 +180,46 @@ func (c *autoPaginatedClient) ListTasks(ctx context.Context, input *ecs.ListTask
 
 	return &ecs.ListTasksOutput{
 		TaskARNs: arns,
+	}, nil
+}
+
+const describeServiceLimit = 10
+
+// TODO: Parallelize this.
+func (c *autoPaginatedClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
+	var (
+		arns     = input.Services
+		max      = len(arns)
+		services []*ecs.Service
+	)
+
+	// Slice of chunks off 10 arns.
+	for i := 0; true; i += describeServiceLimit {
+		// End point for this chunk.
+		e := i + describeServiceLimit
+		if e >= max {
+			e = max
+		}
+
+		chunk := arns[i:e]
+
+		resp, err := c.ECS.DescribeServices(ctx, &ecs.DescribeServicesInput{
+			Cluster:  input.Cluster,
+			Services: chunk,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		services = append(services, resp.Services...)
+
+		// No more chunks.
+		if max == e {
+			break
+		}
+	}
+
+	return &ecs.DescribeServicesOutput{
+		Services: services,
 	}, nil
 }
