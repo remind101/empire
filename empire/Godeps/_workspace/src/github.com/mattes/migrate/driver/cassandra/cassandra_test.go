@@ -53,11 +53,8 @@ func TestMigrate(t *testing.T) {
 			Direction: direction.Up,
 			Content: []byte(`
                 CREATE TABLE yolo (
-                    id varint primary key,
-                    msg text
+                    id varint primary key
                 );
-
-				CREATE INDEX ON yolo (msg);
             `),
 		},
 		{

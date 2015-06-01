@@ -22,12 +22,7 @@ type Driver struct {
 const tableName = "schema_migrations"
 
 func (driver *Driver) Initialize(url string) error {
-	urlWithoutScheme := strings.SplitN(url, "mysql://", 2)
-	if len(urlWithoutScheme) != 2 {
-		return errors.New("invalid mysql:// scheme")
-	}
-
-	db, err := sql.Open("mysql", urlWithoutScheme[1])
+	db, err := sql.Open("mysql", strings.TrimLeft(url, "mysql://"))
 	if err != nil {
 		return err
 	}
@@ -50,12 +45,9 @@ func (driver *Driver) Close() error {
 }
 
 func (driver *Driver) ensureVersionTableExists() error {
-	_, err := driver.db.Exec("CREATE TABLE IF NOT EXISTS " + tableName + " (version int not null primary key);")
-
-	if _, isWarn := err.(mysql.MySQLWarnings); err != nil && !isWarn {
+	if _, err := driver.db.Exec("CREATE TABLE IF NOT EXISTS " + tableName + " (version int not null primary key);"); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -103,58 +95,54 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	sqlStmts := bytes.Split(f.Content, []byte(";"))
 
 	for _, sqlStmt := range sqlStmts {
-		sqlStmt = bytes.TrimSpace(sqlStmt)
-		if len(sqlStmt) > 0 {
+		if len(bytes.TrimSpace(sqlStmt)) > 0 {
 			if _, err := tx.Exec(string(sqlStmt)); err != nil {
-				mysqlErr, isErr := err.(*mysql.MySQLError)
+				mysqlErr := err.(*mysql.MySQLError)
 
-				if isErr {
-					re, err := regexp.Compile(`at line ([0-9]+)$`)
-					if err != nil {
-						pipe <- err
-						if err := tx.Rollback(); err != nil {
-							pipe <- err
-						}
-					}
-
-					var lineNo int
-					lineNoRe := re.FindStringSubmatch(mysqlErr.Message)
-					if len(lineNoRe) == 2 {
-						lineNo, err = strconv.Atoi(lineNoRe[1])
-					}
-					if err == nil {
-
-						// get white-space offset
-						// TODO this is broken, because we use sqlStmt instead of f.Content
-						wsLineOffset := 0
-						b := bufio.NewReader(bytes.NewBuffer(sqlStmt))
-						for {
-							line, _, err := b.ReadLine()
-							if err != nil {
-								break
-							}
-							if bytes.TrimSpace(line) == nil {
-								wsLineOffset += 1
-							} else {
-								break
-							}
-						}
-
-						message := mysqlErr.Error()
-						message = re.ReplaceAllString(message, fmt.Sprintf("at line %v", lineNo+wsLineOffset))
-
-						errorPart := file.LinesBeforeAndAfter(sqlStmt, lineNo, 5, 5, true)
-						pipe <- errors.New(fmt.Sprintf("%s\n\n%s", message, string(errorPart)))
-					} else {
-						pipe <- errors.New(mysqlErr.Error())
-					}
-
+				re, err := regexp.Compile(`at line ([0-9]+)$`)
+				if err != nil {
+					pipe <- err
 					if err := tx.Rollback(); err != nil {
 						pipe <- err
 					}
-
-					return
 				}
+
+				var lineNo int
+				lineNoRe := re.FindStringSubmatch(mysqlErr.Message)
+				if len(lineNoRe) == 2 {
+					lineNo, err = strconv.Atoi(lineNoRe[1])
+				}
+				if err == nil {
+
+					// get white-space offset
+					// TODO this is broken, because we use sqlStmt instead of f.Content
+					wsLineOffset := 0
+					b := bufio.NewReader(bytes.NewBuffer(sqlStmt))
+					for {
+						line, _, err := b.ReadLine()
+						if err != nil {
+							break
+						}
+						if bytes.TrimSpace(line) == nil {
+							wsLineOffset += 1
+						} else {
+							break
+						}
+					}
+
+					message := mysqlErr.Error()
+					message = re.ReplaceAllString(message, fmt.Sprintf("at line %v", lineNo+wsLineOffset))
+
+					errorPart := file.LinesBeforeAndAfter(sqlStmt, lineNo, 5, 5, true)
+					pipe <- errors.New(fmt.Sprintf("%s\n\n%s", message, string(errorPart)))
+				} else {
+					pipe <- errors.New(mysqlErr.Error())
+				}
+
+				if err := tx.Rollback(); err != nil {
+					pipe <- err
+				}
+				return
 			}
 		}
 	}
