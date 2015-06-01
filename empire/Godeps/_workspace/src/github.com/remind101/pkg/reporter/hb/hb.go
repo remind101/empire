@@ -4,11 +4,10 @@ package hb
 import (
 	"fmt"
 	"os"
-	"reflect"
-	"runtime"
 	"strings"
 
 	"github.com/remind101/pkg/reporter"
+	"github.com/remind101/pkg/reporter/util"
 	"golang.org/x/net/context"
 )
 
@@ -70,7 +69,7 @@ func NewReport(err error) *Report {
 			Language: "Go",
 		},
 		Error: &Error{
-			Class:     className(err),
+			Class:     util.ClassName(err),
 			Message:   err.Error(),
 			Backtrace: make([]*BacktraceLine, 0),
 			Source:    make(map[string]interface{}),
@@ -87,11 +86,11 @@ func NewReport(err error) *Report {
 	}
 
 	if e, ok := err.(*reporter.Error); ok {
-		r.Error.Class = className(e.Err)
+		r.Error.Class = util.ClassName(e.Err)
 
 		for _, l := range e.Backtrace {
 			r.Error.Backtrace = append(r.Error.Backtrace, &BacktraceLine{
-				Method: functionName(l.PC),
+				Method: util.FunctionName(l.PC),
 				File:   l.File,
 				Number: fmt.Sprintf("%d", l.Line),
 			})
@@ -118,16 +117,4 @@ func NewReport(err error) *Report {
 	}
 
 	return r
-}
-
-func className(err error) string {
-	return reflect.TypeOf(err).String()
-}
-
-func functionName(pc uintptr) string {
-	fn := runtime.FuncForPC(pc)
-	if fn == nil {
-		return "???"
-	}
-	return fn.Name()
 }
