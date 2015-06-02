@@ -85,7 +85,7 @@ func (c *ecsClient) RegisterTaskDefinition(ctx context.Context, input *ecs.Regis
 func (c *ecsClient) DescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.DescribeTaskDefinition(input)
-	done(err, "DescribeTaskDefinition")
+	done(err, "DescribeTaskDefinition", "task-definition", stringField(input.TaskDefinition))
 	return resp, err
 }
 
@@ -113,14 +113,14 @@ func (c *ecsClient) ListTasks(ctx context.Context, input *ecs.ListTasksInput) (*
 func (c *ecsClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.DescribeTasks(input)
-	done(err, "DescribeTasks")
+	done(err, "DescribeTasks", "tasks", len(input.Tasks))
 	return resp, err
 }
 
 func (c *ecsClient) StopTask(ctx context.Context, input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.StopTask(input)
-	done(err, "StopTask")
+	done(err, "StopTask", "task", stringField(input.Task))
 	return resp, err
 }
 
@@ -215,7 +215,7 @@ func (c *autoPaginatedClient) DescribeServices(ctx context.Context, input *ecs.D
 		services []*ecs.Service
 	)
 
-	// Slice of chunks off 10 arns.
+	// Slice off chunks of 10 arns.
 	for i := 0; true; i += describeServiceLimit {
 		// End point for this chunk.
 		e := i + describeServiceLimit
