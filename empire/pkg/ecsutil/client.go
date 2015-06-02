@@ -30,9 +30,8 @@ type Client struct {
 
 // NewClient returns a new Client instance using the provided aws.Config.
 func NewClient(config *aws.Config) *Client {
-	ecs := ecs.New(config)
 	return &Client{
-		ECS: &autoPaginatedClient{&ecsClient{ecs}},
+		ECS: newECSClient(config),
 	}
 }
 

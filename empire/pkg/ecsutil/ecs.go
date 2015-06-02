@@ -2,7 +2,9 @@ package ecsutil
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/ecs"
 	"github.com/remind101/pkg/trace"
 	"golang.org/x/net/context"
@@ -27,9 +29,21 @@ type ECS interface {
 	DescribeTasks(context.Context, *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
 }
 
+// newECSClient builds a new ECS client with autopagination and tracing.
+func newECSClient(config *aws.Config) ECS {
+	ecs := ecs.New(config)
+	return &autoPaginatedClient{
+		ECS: &ecsClient{ECS: ecs},
+	}
+}
+
 // ecsClient is a base ECS client implementation
 type ecsClient struct {
 	*ecs.ECS
+
+	// a timer used to throttle the RegisterTaskDefinition calls. ECS only
+	// allows 60/min. See http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_limits.html
+	tdThrottle *time.Ticker
 }
 
 func (c *ecsClient) CreateService(ctx context.Context, input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
@@ -54,6 +68,14 @@ func (c *ecsClient) UpdateService(ctx context.Context, input *ecs.UpdateServiceI
 }
 
 func (c *ecsClient) RegisterTaskDefinition(ctx context.Context, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+	fmt.Println("Here")
+	if c.tdThrottle == nil {
+		// Only allow 1 task definition per second.
+		c.tdThrottle = time.NewTicker(time.Second)
+	}
+
+	<-c.tdThrottle.C
+
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.RegisterTaskDefinition(input)
 	done(err, "RegisterTaskDefinition", "family", stringField(input.Family))
