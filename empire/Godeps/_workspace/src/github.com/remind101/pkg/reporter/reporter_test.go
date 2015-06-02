@@ -20,12 +20,7 @@ func TestReport(t *testing.T) {
 			t.Fatal("request information not set")
 		}
 
-		line := e.Backtrace[0]
-		fn := runtime.FuncForPC(line.PC)
-
-		if got, want := path.Base(fn.Name()), "reporter.TestReport"; got != want {
-			t.Fatalf("expected the first backtrace line to be this function")
-		}
+		checkFirstFunc(t, e, "reporter.TestReport")
 
 		return nil
 	})
@@ -37,5 +32,31 @@ func TestReport(t *testing.T) {
 
 	if err := Report(ctx, errBoom); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestReportWithSkip(t *testing.T) {
+	r := ReporterFunc(func(ctx context.Context, err error) error {
+		e := err.(*Error)
+
+		checkFirstFunc(t, e, "reporter.TestReportWithSkip")
+
+		return nil
+	})
+	ctx := WithReporter(context.Background(), r)
+
+	func() {
+		if err := ReportWithSkip(ctx, errBoom, 1); err != nil {
+			t.Fatal(err)
+		}
+	}()
+}
+
+func checkFirstFunc(t testing.TB, err *Error, name string) {
+	line := err.Backtrace[0]
+	fn := runtime.FuncForPC(line.PC)
+
+	if got, want := path.Base(fn.Name()), name; got != want {
+		t.Fatalf("Function => %s; want %s", got, want)
 	}
 }
