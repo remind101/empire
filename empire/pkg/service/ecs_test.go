@@ -250,6 +250,146 @@ func TestECSManager_Remove(t *testing.T) {
 	}
 }
 
+func TestECSManager_Processes(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
+				Body:       `{"cluster":"empire"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `{"serviceArns":[
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web1",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web2",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web3",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web4",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web5",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web6",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web7",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web8",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web9",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web10",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web11",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web12",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web13",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web14",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web15",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web16",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web17",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web18",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web19",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web20",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web21"
+				]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body: `{"cluster":"empire","services":[
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web1",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web2",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web3",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web4",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web5",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web6",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web7",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web8",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web9",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web10"
+				]}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"taskDefinition":"1234--web"}]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body: `{"cluster":"empire","services":[
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web11",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web12",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web13",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web14",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web15",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web16",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web17",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web18",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web19",
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web20"
+				]}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"taskDefinition":"1234--web"}]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body: `{"cluster":"empire","services":[
+				"arn:aws:ecs:us-east-1:249285743859:service/1234--web21"
+				]}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"taskDefinition":"1234--web"}]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+			},
+		},
+	})
+	m, s := newTestECSManager(h)
+	defer s.Close()
+
+	if _, err := m.Processes(context.Background(), "1234"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDiffProcessTypes(t *testing.T) {
 	tests := []struct {
 		old, new []*Process
