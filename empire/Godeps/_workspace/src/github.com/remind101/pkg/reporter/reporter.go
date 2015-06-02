@@ -57,23 +57,29 @@ func AddRequest(ctx context.Context, req *http.Request) {
 
 // newError returns a new Error instance. If err is already an Error instance,
 // it will be returned, otherwise err will be wrapped with NewErrorWithContext.
-func newError(ctx context.Context, err error) *Error {
+func newError(ctx context.Context, err error, skip int) *Error {
 	if e, ok := err.(*Error); ok {
 		return e
 	} else {
-		return NewErrorWithContext(ctx, err, 2)
+		return NewErrorWithContext(ctx, err, skip+1)
 	}
 }
 
-// Report wraps the err as an Error and reports it the the Reporter embedded
+// Report reports the error with the backtrace starting at the calling function.
+func Report(ctx context.Context, err error) error {
+	return ReportWithSkip(ctx, err, 1)
+}
+
+// ReportWithSkip wraps the err as an Error and reports it the the Reporter embedded
 // within the context.Context. If err is nil, Report will return early, so this
 // function is safe to call without performing a nill check on the error first.
-func Report(ctx context.Context, err error) error {
+// A skip value of 0 refers to the calling function.
+func ReportWithSkip(ctx context.Context, err error, skip int) error {
 	if err == nil {
 		return nil
 	}
 
-	e := newError(ctx, err)
+	e := newError(ctx, err, skip+1)
 
 	if r, ok := FromContext(ctx); ok {
 		return r.Report(ctx, e)

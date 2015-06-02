@@ -68,7 +68,6 @@ func (c *ecsClient) UpdateService(ctx context.Context, input *ecs.UpdateServiceI
 }
 
 func (c *ecsClient) RegisterTaskDefinition(ctx context.Context, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
-	fmt.Println("Here")
 	if c.tdThrottle == nil {
 		// Only allow 1 task definition per second.
 		c.tdThrottle = time.NewTicker(time.Second)

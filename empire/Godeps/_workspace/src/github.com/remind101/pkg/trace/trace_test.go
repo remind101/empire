@@ -8,10 +8,14 @@ import (
 )
 
 func TestTracedContext(t *testing.T) {
-	ctx := &tracedContext{Context: context.Background(), id: "1234", file: "pkg/main.go", line: 10, fnname: "pkg/main.main"}
+	ctx := &tracedContext{Context: context.Background(), id: "1234", file: "pkg/main.go", line: 10, fnname: "pkg/main.main", parent: "4321"}
 
 	if id, ok := ctx.Value("trace.id").(string); !ok || id != "1234" {
 		t.Fatalf("Expected id; got %v", id)
+	}
+
+	if id, ok := ctx.Value("trace.parent").(string); !ok || id != "4321" {
+		t.Fatalf("Expected parent; got %v", id)
 	}
 
 	if fnname, ok := ctx.Value("trace.func").(string); !ok || fnname != "pkg/main.main" {

@@ -28,13 +28,13 @@ func Trace(ctx context.Context) (context.Context, func(error, string, ...interfa
 	}
 
 	return ctx, func(err error, msg string, pairs ...interface{}) {
-		l, ok := logger.WithValues(ctx, "trace.id", "trace.func", "trace.file", "trace.line", "trace.duration")
+		l, ok := logger.WithValues(ctx, "trace.id", "trace.parent", "trace.func", "trace.file", "trace.line", "trace.duration")
 		if ok {
 			l.Info(msg, pairs...)
 		}
 
 		// Report the error to the reporter.
-		reporter.Report(ctx, err)
+		reporter.ReportWithSkip(ctx, err, 1)
 	}
 }
 
@@ -55,7 +55,7 @@ func (ctx *tracedContext) Value(v interface{}) interface{} {
 		switch key {
 		case "trace.id":
 			return ctx.id
-		case "trace.parent.id":
+		case "trace.parent":
 			return ctx.parent
 		case "trace.func":
 			return ctx.fnname

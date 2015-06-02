@@ -214,23 +214,23 @@
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/httpx",
-			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
+			"Rev": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/logger",
-			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
+			"Rev": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/reporter",
-			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
+			"Rev": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/timex",
-			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
+			"Rev": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
 			"ImportPath": "github.com/remind101/pkg/trace",
-			"Rev": "39d92f6ff6a9c82f93b48a26874d681d0015c9c5"
+			"Rev": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
