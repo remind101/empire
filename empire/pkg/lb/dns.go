@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/awslabs/aws-sdk-go/aws"
-	"github.com/awslabs/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/route53"
 )
 
 // errHostedZone is returned when the hosted zone is not found.

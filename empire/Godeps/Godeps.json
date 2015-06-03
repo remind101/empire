@@ -16,56 +16,69 @@
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/aws",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/aws",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/endpoints",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/apierr",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/json/jsonutil",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/endpoints",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/jsonrpc",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/json/jsonutil",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/query",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/jsonrpc",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/rest",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/query",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/restxml",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/rest",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/xml/xmlutil",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/restxml",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/signer/v4",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/service/ecs",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/signer/v4",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/service/elb",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/service/ecs",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/service/iam",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/service/elb",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
-			"ImportPath": "github.com/awslabs/aws-sdk-go/service/route53",
-			"Rev": "97ca10461025313fd196adbcd2ff4363fa1a2fc9"
+			"ImportPath": "github.com/aws/aws-sdk-go/service/iam",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
 			"ImportPath": "github.com/bgentry/heroku-go",
@@ -75,6 +88,9 @@
 			"ImportPath": "github.com/codegangsta/cli",
 			"Comment": "1.2.0-26-gf7ebb76",
 			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
+			"ImportPath": "github.com/aws/aws-sdk-go/service/route53",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
