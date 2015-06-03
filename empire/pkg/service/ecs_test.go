@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/remind101/empire/empire/pkg/awsutil"
 	"golang.org/x/net/context"
 )
@@ -440,7 +441,7 @@ func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
 
 	return NewECSManager(ECSConfig{
 		AWS: aws.DefaultConfig.Merge(&aws.Config{
-			Credentials: aws.Creds("", "", ""),
+			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    s.URL,
 			Region:      "localhost",
 		}),

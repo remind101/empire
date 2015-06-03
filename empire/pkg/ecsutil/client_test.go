@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/empire/pkg/awsutil"
 )
@@ -180,7 +181,7 @@ func newTestClient(h http.Handler) (*Client, *httptest.Server) {
 	s := httptest.NewServer(h)
 
 	return NewClient(aws.DefaultConfig.Merge(&aws.Config{
-		Credentials: aws.Creds("", "", ""),
+		Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 		Endpoint:    s.URL,
 		Region:      "localhost",
 	})), s
