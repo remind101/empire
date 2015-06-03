@@ -88,6 +88,8 @@
 			"ImportPath": "github.com/codegangsta/cli",
 			"Comment": "1.2.0-26-gf7ebb76",
 			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/route53",
 			"Comment": "v0.6.0-1-g5fa0a7e",
 			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
