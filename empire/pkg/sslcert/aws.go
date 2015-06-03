@@ -1,8 +1,9 @@
 package sslcert
 
 import (
-	"github.com/awslabs/aws-sdk-go/aws"
-	"github.com/awslabs/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/iam"
 )
 
 type IAMManager struct {
@@ -61,8 +62,8 @@ func (m *IAMManager) MetaData(name string) (map[string]string, error) {
 }
 
 func noCertificate(err error) bool {
-	if err, ok := err.(aws.APIError); ok {
-		if err.Code == "NoSuchEntity" {
+	if err, ok := err.(awserr.Error); ok {
+		if err.Code() == "NoSuchEntity" {
 			return true
 		}
 	}

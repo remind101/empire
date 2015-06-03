@@ -5,7 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/awslabs/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/remind101/empire/empire/pkg/awsutil"
 )
 
@@ -54,7 +55,7 @@ func newTestRoute53Nameserver(h http.Handler) (*Route53Nameserver, *httptest.Ser
 
 	n := NewRoute53Nameserver(
 		aws.DefaultConfig.Merge(&aws.Config{
-			Credentials: aws.Creds("", "", ""),
+			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    s.URL,
 			Region:      "localhost",
 			LogLevel:    0,

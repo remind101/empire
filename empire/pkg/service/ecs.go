@@ -4,8 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/awslabs/aws-sdk-go/aws"
-	"github.com/awslabs/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/empire/pkg/arn"
 	. "github.com/remind101/empire/empire/pkg/bytesize"
 	"github.com/remind101/empire/empire/pkg/ecsutil"
@@ -419,20 +420,20 @@ func safeString(s *string) string {
 }
 
 func noService(err error) bool {
-	if err, ok := err.(aws.APIError); ok {
-		if err.Message == "Service was not ACTIVE." {
+	if err, ok := err.(awserr.Error); ok {
+		if err.Message() == "Service was not ACTIVE." {
 			return true
 		}
 
 		// Wat
-		if err.Message == "Could not find returned type com.amazon.madison.cmb#CMServiceNotActiveException in model" {
+		if err.Message() == "Could not find returned type com.amazon.madison.cmb#CMServiceNotActiveException in model" {
 			return true
 		}
-		if err.Message == "Could not find returned type com.amazon.madison.cmb#CMServiceNotFoundException in model" {
+		if err.Message() == "Could not find returned type com.amazon.madison.cmb#CMServiceNotFoundException in model" {
 			return true
 		}
 
-		if err.Message == "Service not found." {
+		if err.Message() == "Service not found." {
 			return true
 		}
 	}
