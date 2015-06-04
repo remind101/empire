@@ -38,9 +38,6 @@ type ECSConfig struct {
 	// VPC controls what subnets to attach to ELB's that are created.
 	VPC string
 
-	// The hosted zone to create internal DNS records in.
-	Zone string
-
 	// The hosted zone id to create internal DNS records in
 	ZoneID string
 
@@ -91,7 +88,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 
 		var l lb.Manager = elb
 
-		if config.Zone != "" {
+		if config.ZoneID != "" {
 			n := lb.NewRoute53Nameserver(config.AWS)
 			n.ZoneID = config.ZoneID
 

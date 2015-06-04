@@ -21,7 +21,7 @@ type Nameserver interface {
 // Route53Nameserver is an implementation of the nameserver interface backed by
 // route53.
 type Route53Nameserver struct {
-	// The Hosted Zone that records will be created under.
+	// The Hosted Zone ID that records will be created under.
 	ZoneID string
 
 	route53 *route53.Route53
@@ -35,7 +35,7 @@ func NewRoute53Nameserver(c *aws.Config) *Route53Nameserver {
 	}
 }
 
-// CNAME creates a CNAME record under the HostedZone specified by Zone.
+// CNAME creates a CNAME record under the HostedZone specified by ZoneID.
 func (n *Route53Nameserver) CNAME(cname, record string) error {
 	zone, err := n.zone()
 	if err != nil {
@@ -75,7 +75,7 @@ func fixHostedZoneIDPrefix(zoneID string) *string {
 	return &s
 }
 
-// zone returns the HostedZone for the Zone.
+// zone returns the HostedZone for the ZoneID.
 func (n *Route53Nameserver) zone() (*route53.HostedZone, error) {
 	zid := fixHostedZoneIDPrefix(n.ZoneID)
 	out, err := n.route53.GetHostedZone(&route53.GetHostedZoneInput{ID: zid})

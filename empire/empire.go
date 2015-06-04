@@ -409,7 +409,6 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		InternalSubnetIDs:       elbOpts.InternalSubnetIDs,
 		ExternalSubnetIDs:       elbOpts.ExternalSubnetIDs,
 		AWS:                     config,
-		Zone:                    "empire.",
 		ZoneID:                  elbOpts.InternalZoneID,
 	})
 }
