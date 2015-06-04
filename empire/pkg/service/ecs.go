@@ -93,7 +93,6 @@ func NewECSManager(config ECSConfig) *ECSManager {
 
 		if config.Zone != "" {
 			n := lb.NewRoute53Nameserver(config.AWS)
-			n.Zone = config.Zone
 			n.ZoneID = config.ZoneID
 
 			l = lb.WithCNAME(l, n)

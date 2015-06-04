@@ -22,7 +22,6 @@ type Nameserver interface {
 // route53.
 type Route53Nameserver struct {
 	// The Hosted Zone that records will be created under.
-	Zone   string
 	ZoneID string
 
 	route53 *route53.Route53
@@ -77,7 +76,6 @@ func fixHostedZoneIDPrefix(zoneID string) *string {
 }
 
 // zone returns the HostedZone for the Zone.
-// TODO: Deal w/ pagination of results from AWS API, shouldn't have to worry for most cases since using ByName returns the list with that name first.
 func (n *Route53Nameserver) zone() (*route53.HostedZone, error) {
 	zid := fixHostedZoneIDPrefix(n.ZoneID)
 	out, err := n.route53.GetHostedZone(&route53.GetHostedZoneInput{ID: zid})

@@ -96,7 +96,6 @@ func newTestRoute53Nameserver(h http.Handler, zoneID string) (*Route53Nameserver
 			LogLevel:    0,
 		}),
 	)
-	n.Zone = "empire."
 	n.ZoneID = zoneID
 
 	return n, s
