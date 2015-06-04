@@ -41,6 +41,9 @@ type ECSConfig struct {
 	// The hosted zone to create internal DNS records in.
 	Zone string
 
+	// The hosted zone id to create internal DNS records in
+	ZoneID string
+
 	// The ID of the security group to assign to internal load balancers.
 	InternalSecurityGroupID string
 
@@ -91,6 +94,7 @@ func NewECSManager(config ECSConfig) *ECSManager {
 		if config.Zone != "" {
 			n := lb.NewRoute53Nameserver(config.AWS)
 			n.Zone = config.Zone
+			n.ZoneID = config.ZoneID
 
 			l = lb.WithCNAME(l, n)
 		}

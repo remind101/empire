@@ -69,6 +69,9 @@ type ELBOptions struct {
 
 	// The Subnet IDs to assign when creating external load balancers.
 	ExternalSubnetIDs []string
+
+	// Zone ID of the internal zone to add cnames for each elb
+	InternalZoneID string
 }
 
 // RunnerOptions is a set of options to configure the one off process runner service.
@@ -407,6 +410,7 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 		ExternalSubnetIDs:       elbOpts.ExternalSubnetIDs,
 		AWS:                     config,
 		Zone:                    "empire.",
+		ZoneID:                  elbOpts.InternalZoneID,
 	})
 }
 

@@ -3,6 +3,7 @@ package lb
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -21,7 +22,8 @@ type Nameserver interface {
 // route53.
 type Route53Nameserver struct {
 	// The Hosted Zone that records will be created under.
-	Zone string
+	Zone   string
+	ZoneID string
 
 	route53 *route53.Route53
 }
@@ -65,18 +67,23 @@ func (n *Route53Nameserver) CNAME(cname, record string) error {
 	return err
 }
 
+func fixHostedZoneIDPrefix(zoneID string) *string {
+	prefix := "/hostedzone/"
+	s := zoneID
+	if ok := strings.HasPrefix(zoneID, prefix); !ok {
+		s = strings.Join([]string{prefix, zoneID}, "")
+	}
+	return &s
+}
+
 // zone returns the HostedZone for the Zone.
+// TODO: Deal w/ pagination of results from AWS API, shouldn't have to worry for most cases since using ByName returns the list with that name first.
 func (n *Route53Nameserver) zone() (*route53.HostedZone, error) {
-	out, err := n.route53.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: aws.String(n.Zone)})
+	zid := fixHostedZoneIDPrefix(n.ZoneID)
+	out, err := n.route53.GetHostedZone(&route53.GetHostedZoneInput{ID: zid})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, z := range out.HostedZones {
-		if *z.Name == n.Zone {
-			return z, nil
-		}
-	}
-
-	return nil, errHostedZone
+	return out.HostedZone, nil
 }
