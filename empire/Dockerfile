@@ -1,11 +1,8 @@
-FROM remind101/go:1.4
-MAINTAINER Eric Holmes <eric@remind101.com>
+FROM golang:1.4
 
-USER root
-RUN addgroup -g 999 docker; addgroup app docker
-USER app
+RUN go get github.com/tools/godep
+RUN go get github.com/codegangsta/gin
 
-ENTRYPOINT ["/go/bin/empire"]
-CMD ["server"]
+ENV PORT 8080
 
-EXPOSE 8080
+WORKDIR /go/src/github.com/remind101/empire/empire

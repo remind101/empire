@@ -1,16 +1,19 @@
 server:
   build: ./empire
-  command: server -automigrate=true
+  command: ./bin/start
   links:
     - postgres:postgres
   ports:
-    - "8080:8080"
+    - "8080:3000"
   volumes:
     - ~/.dockercfg:/root/.dockercfg
+    - .:/go/src/github.com/remind101/empire
   env_file: .env
   user: root
   environment:
     EMPIRE_DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
+    EMPIRE_DATABASE_MIGRATIONS: /go/src/github.com/remind101/empire/empire/migrations
+    EMPIRE_AUTOMIGRATE: true
     DOCKER_HOST:
 postgres:
   image: postgres

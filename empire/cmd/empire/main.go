@@ -61,8 +61,9 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_PORT",
 			},
 			cli.BoolFlag{
-				Name:  FlagAutoMigrate,
-				Usage: "Whether to run the migrations at startup or not",
+				Name:   FlagAutoMigrate,
+				Usage:  "Whether to run the migrations at startup or not",
+				EnvVar: "EMPIRE_AUTOMIGRATE",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,
@@ -95,9 +96,10 @@ var Commands = []cli.Command{
 
 var DBFlags = []cli.Flag{
 	cli.StringFlag{
-		Name:  FlagDBPath,
-		Value: "./migrations",
-		Usage: "Path to database migrations",
+		Name:   FlagDBPath,
+		Value:  "./migrations",
+		Usage:  "Path to database migrations",
+		EnvVar: "EMPIRE_DATABASE_MIGRATIONS",
 	},
 	cli.StringFlag{
 		Name:   FlagDB,
