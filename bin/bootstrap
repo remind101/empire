@@ -6,18 +6,27 @@ check_dep() {
   command -v $1 >/dev/null 2>&1 || { printf >&2 "%s is required but not installed. Aborting.\n" $1; exit 1; }
 }
 
+# only works in us-east-1 for now
+export AWS_DEFAULT_REGION=us-east-1
+
 check_dep "pwgen"
 check_dep "aws"
 
 # This variable will be used as the cloudformation stack name and the associated
 # ECS cluster.
 STACK="empire-$(pwgen 10 1)"
+# TODO: make it so people can override this with envvars
+ZONES=$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' --output text | awk '{print $1, $2}')
+# have to escape commas in parameters for aws cli
+SAFEZONES=$(echo $ZONES | sed -e 's/ /\\,/g')
 
 read -p "Docker user: " docker_user
 read -s -p "Docker pass: " docker_pass
 printf "\n"
 read -p "Docker email: " docker_email
 read -p "AWS KeyName: " keyname
+
+echo "==> Launching empire in AZs: $ZONES"
 
 printf "==> Creating ECS service: %s\n" $STACK
 aws ecs create-cluster --cluster-name "$STACK" > /dev/null
@@ -33,6 +42,7 @@ aws cloudformation create-stack \
       ParameterKey=DockerUser,ParameterValue="$docker_user" \
       ParameterKey=DockerPass,ParameterValue="$docker_pass" \
       ParameterKey=DockerEmail,ParameterValue="$docker_email" \
+      ParameterKey=AvailabilityZones,ParameterValue="$SAFEZONES" \
       ParameterKey=KeyName,ParameterValue="$keyname" \
   --capabilities CAPABILITY_IAM > /dev/null
 
@@ -56,7 +66,7 @@ output() {
   aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $1 | cut -f 2
 }
 
-echo "AWS_REGION=us-east-1" > .env
+echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
 echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
 echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
 echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
@@ -66,3 +76,4 @@ echo "EMPIRE_ECS_CLUSTER=$STACK" >> .env
 echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
 echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
 echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
+echo "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=$(output InternalZoneID)" >> .env

@@ -48,8 +48,7 @@
     },
     "AvailabilityZones": {
       "Type": "CommaDelimitedList",
-      "Description": "Comma delimited list of availability zones. MAX 2",
-      "Default": "us-east-1a,us-east-1b"
+      "Description": "Comma delimited list of availability zones. MAX 2"
     }
   },
 
@@ -429,6 +428,10 @@
     "ExternalELBSG": {
       "Description": "The External ELB Security Group",
       "Value": { "Ref": "ExternalLoadBalancerSecurityGroup" }
+    },
+    "InternalZoneID": {
+      "Description": "The zone ID for the internal hosted zone.",
+      "Value": { "Ref": "InternalDomain" }
     }
   }
 }

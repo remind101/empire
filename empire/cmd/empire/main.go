@@ -40,6 +40,8 @@ const (
 	FlagEC2SubnetsPrivate = "ec2.subnets.private"
 	FlagEC2SubnetsPublic  = "ec2.subnets.public"
 
+	FlagRoute53InternalZoneID = "route53.zoneid.internal"
+
 	FlagSecret   = "secret"
 	FlagReporter = "reporter"
 	FlagRunner   = "runner"
@@ -189,6 +191,12 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The location of the container runner api",
 		EnvVar: "EMPIRE_RUNNER",
 	},
+	cli.StringFlag{
+		Name:   FlagRoute53InternalZoneID,
+		Value:  "",
+		Usage:  "The route53 zone ID of the internal 'empire.' zone.",
+		EnvVar: "EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
+	},
 }
 
 func main() {
@@ -216,6 +224,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.ELB.ExternalSecurityGroupID = c.String(FlagELBSGPublic)
 	opts.ELB.InternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPrivate)
 	opts.ELB.ExternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPublic)
+	opts.ELB.InternalZoneID = c.String(FlagRoute53InternalZoneID)
 	opts.DB = c.String(FlagDB)
 	opts.Secret = c.String(FlagSecret)
 

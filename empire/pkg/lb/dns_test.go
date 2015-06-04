@@ -10,30 +10,39 @@ import (
 	"github.com/remind101/empire/empire/pkg/awsutil"
 )
 
-func TestRoute53_CNAME(t *testing.T) {
+func route53TestHandler() *awsutil.Handler {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		{
 			Request: awsutil.Request{
-				RequestURI: "/2013-04-01/hostedzonesbyname?dnsname=empire.",
+				RequestURI: "/2013-04-01/hostedzone/FAKEZONE",
 				Body:       ``,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
 				Body: `<?xml version="1.0"?>
-<ListHostedZonesByNameResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
-  <HostedZones>
-    <HostedZone>
-      <Id>/hostedzone/ABCD</Id>
-      <Name>empire.</Name>
-    </HostedZone>
-  </HostedZones>
-  <DNSName>empire</DNSName>
-</ListHostedZonesByNameResponse>`,
+<GetHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+	<HostedZone>
+		<Id>/hostedzone/FAKEZONE</Id>
+		<Name>empire.</Name>
+		<CallerReference>FakeReference</CallerReference>
+		<Config>
+			<Comment>Fake hosted zone comment.</Comment>
+			<PrivateZone>true</PrivateZone>
+		</Config>
+		<ResourceRecordSetCount>2</ResourceRecordSetCount>
+	</HostedZone>
+	<VPCs>
+		<VPC>
+			<VPCRegion>us-east-1</VPCRegion>
+			<VPCId>vpc-0d9ea668</VPCId>
+		</VPC>
+	</VPCs>
+</GetHostedZoneResponse>`,
 			},
 		},
 		{
 			Request: awsutil.Request{
-				RequestURI: `/2013-04-01/hostedzone/ABCD/rrset`,
+				RequestURI: `/2013-04-01/hostedzone/FAKEZONE/rrset`,
 				Body:       `ignore`,
 			},
 			Response: awsutil.Response{
@@ -42,7 +51,13 @@ func TestRoute53_CNAME(t *testing.T) {
 			},
 		},
 	})
-	n, s := newTestRoute53Nameserver(h)
+
+	return h
+}
+
+func TestRoute53_CNAME(t *testing.T) {
+	h := route53TestHandler()
+	n, s := newTestRoute53Nameserver(h, "/hostedzone/FAKEZONE")
 	defer s.Close()
 
 	if err := n.CNAME("acme-inc", "123456789.us-east-1.elb.amazonaws.com"); err != nil {
@@ -50,7 +65,27 @@ func TestRoute53_CNAME(t *testing.T) {
 	}
 }
 
-func newTestRoute53Nameserver(h http.Handler) (*Route53Nameserver, *httptest.Server) {
+func TestRoute53_zone(t *testing.T) {
+	// Test both a full path to a zoneID and just the zoneID itself
+	// Route53Nameserver.zone() should be able to handle both.
+	zoneIDs := []string{"/hostedzone/FAKEZONE", "FAKEZONE"}
+	for _, zid := range zoneIDs {
+		h := route53TestHandler()
+		n, s := newTestRoute53Nameserver(h, zid)
+		defer s.Close()
+
+		zone, err := n.zone()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if *zone.ID != "/hostedzone/FAKEZONE" {
+			t.Fatalf("Got wrong zone ID: %s\n", *zone.ID)
+		}
+	}
+}
+
+func newTestRoute53Nameserver(h http.Handler, zoneID string) (*Route53Nameserver, *httptest.Server) {
 	s := httptest.NewServer(h)
 
 	n := NewRoute53Nameserver(
@@ -61,7 +96,7 @@ func newTestRoute53Nameserver(h http.Handler) (*Route53Nameserver, *httptest.Ser
 			LogLevel:    0,
 		}),
 	)
-	n.Zone = "empire."
+	n.ZoneID = zoneID
 
 	return n, s
 }
