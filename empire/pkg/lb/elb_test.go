@@ -91,7 +91,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&Version=2012-06-01`,
+				Body:       `Action=DescribeLoadBalancers&PageSize=20&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -163,7 +163,7 @@ func TestELB_LoadBalancers(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&Marker=%0A%09++++++abcd%0A%09++++&Version=2012-06-01`,
+				Body:       `Action=DescribeLoadBalancers&Marker=%0A%09++++++abcd%0A%09++++&PageSize=20&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
