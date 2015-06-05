@@ -14,6 +14,8 @@ const (
 	schemeExternal = "internet-facing"
 )
 
+var DefaultConnectionDrainingTimeout int64 = 30
+
 var _ Manager = &ELBManager{}
 
 // ELBManager is an implementation of the Manager interface that creates Elastic
@@ -79,7 +81,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 		LoadBalancerAttributes: &elb.LoadBalancerAttributes{
 			ConnectionDraining: &elb.ConnectionDraining{
 				Enabled: aws.Boolean(true),
-				Timeout: aws.Long(300), // TODO: Configurable?
+				Timeout: aws.Long(DefaultConnectionDrainingTimeout),
 			},
 		},
 		LoadBalancerName: input.LoadBalancerName,
