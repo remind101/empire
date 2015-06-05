@@ -117,7 +117,8 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 
 	for {
 		out, err := m.elb.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{
-			Marker: nextMarker,
+			Marker:   nextMarker,
+			PageSize: aws.Long(20), // Set this to 20, because DescribeTags has a limit of 20 on the LoadBalancerNames attribute.
 		})
 		if err != nil {
 			return nil, err
