@@ -253,7 +253,7 @@ type restarter struct {
 }
 
 func (s *restarter) Restart(ctx context.Context, app *App, t ProcessType, id string) error {
-	instances, err := s.manager.Instances(ctx, app.Name)
+	instances, err := s.manager.Instances(ctx, app.ID)
 	if err != nil {
 		return err
 	}

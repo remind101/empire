@@ -23,14 +23,14 @@ func TestListAppServices(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/acme-inc--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/ae69bb4c-3903-4844-82fe-548ac5b74570--web"]}`,
 			},
 		},
 	})
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppServices(context.Background(), "acme-inc", &ecs.ListServicesInput{
+	resp, err := m.ListAppServices(context.Background(), "ae69bb4c-3903-4844-82fe-548ac5b74570", &ecs.ListServicesInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
@@ -52,7 +52,7 @@ func TestListAppServices_Pagination(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/acme-inc--web"],"nextToken":"1234"}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/ae69bb4c-3903-4844-82fe-548ac5b74570--web"],"nextToken":"1234"}`,
 			},
 		},
 
@@ -64,14 +64,14 @@ func TestListAppServices_Pagination(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/acme-inc--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/ae69bb4c-3903-4844-82fe-548ac5b74570--web"]}`,
 			},
 		},
 	})
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppServices(context.Background(), "acme-inc", &ecs.ListServicesInput{
+	resp, err := m.ListAppServices(context.Background(), "ae69bb4c-3903-4844-82fe-548ac5b74570", &ecs.ListServicesInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
@@ -93,7 +93,7 @@ func TestListAppTasks(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/acme-inc--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/ae69bb4c-3903-4844-82fe-548ac5b74570--web"]}`,
 			},
 		},
 
@@ -101,7 +101,7 @@ func TestListAppTasks(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
-				Body:       `{"cluster":"cluster","serviceName":"acme-inc--web"}`,
+				Body:       `{"cluster":"cluster","serviceName":"ae69bb4c-3903-4844-82fe-548ac5b74570--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -112,7 +112,7 @@ func TestListAppTasks(t *testing.T) {
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppTasks(context.Background(), "acme-inc", &ecs.ListTasksInput{
+	resp, err := m.ListAppTasks(context.Background(), "ae69bb4c-3903-4844-82fe-548ac5b74570", &ecs.ListTasksInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
@@ -134,7 +134,7 @@ func TestListAppTasks_Paginate(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/acme-inc--web"]}`,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/ae69bb4c-3903-4844-82fe-548ac5b74570--web"]}`,
 			},
 		},
 
@@ -142,7 +142,7 @@ func TestListAppTasks_Paginate(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
-				Body:       `{"cluster":"cluster","serviceName":"acme-inc--web"}`,
+				Body:       `{"cluster":"cluster","serviceName":"ae69bb4c-3903-4844-82fe-548ac5b74570--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -154,7 +154,7 @@ func TestListAppTasks_Paginate(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
-				Body:       `{"cluster":"cluster","serviceName":"acme-inc--web","nextToken":"1234"}`,
+				Body:       `{"cluster":"cluster","serviceName":"ae69bb4c-3903-4844-82fe-548ac5b74570--web","nextToken":"1234"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -165,7 +165,7 @@ func TestListAppTasks_Paginate(t *testing.T) {
 	m, s := newTestClient(h)
 	defer s.Close()
 
-	resp, err := m.ListAppTasks(context.Background(), "acme-inc", &ecs.ListTasksInput{
+	resp, err := m.ListAppTasks(context.Background(), "ae69bb4c-3903-4844-82fe-548ac5b74570", &ecs.ListTasksInput{
 		Cluster: aws.String("cluster"),
 	})
 	if err != nil {
