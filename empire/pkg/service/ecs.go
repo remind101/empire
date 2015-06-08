@@ -201,6 +201,10 @@ func (m *ECSManager) describeAppTasks(ctx context.Context, appID string) ([]*ecs
 		return nil, err
 	}
 
+	if len(resp.TaskARNs) == 0 {
+		return []*ecs.Task{}, nil
+	}
+
 	tasks, err := m.ecs.DescribeTasks(ctx, &ecs.DescribeTasksInput{
 		Cluster: aws.String(m.cluster),
 		Tasks:   resp.TaskARNs,
