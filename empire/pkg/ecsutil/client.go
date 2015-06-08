@@ -62,10 +62,10 @@ func (c *Client) RegisterAppTaskDefinition(ctx context.Context, app string, inpu
 }
 
 // ListAppTasks lists all the tasks for the app.
-func (c *Client) ListAppTasks(ctx context.Context, app string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+func (c *Client) ListAppTasks(ctx context.Context, appID string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
 	var arns []*string
 
-	resp, err := c.ListAppServices(ctx, app, &ecs.ListServicesInput{
+	resp, err := c.ListAppServices(ctx, appID, &ecs.ListServicesInput{
 		Cluster: input.Cluster,
 	})
 	if err != nil {
@@ -99,7 +99,7 @@ func (c *Client) ListAppTasks(ctx context.Context, app string, input *ecs.ListTa
 }
 
 // ListAppServices lists all services for the app.
-func (c *Client) ListAppServices(ctx context.Context, app string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+func (c *Client) ListAppServices(ctx context.Context, appID string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
 	resp, err := c.ListServices(ctx, input)
 	if err != nil {
 		return resp, err
@@ -118,7 +118,7 @@ func (c *Client) ListAppServices(ctx context.Context, app string, input *ecs.Lis
 
 		appName, _ := c.split(&id)
 
-		if appName == app {
+		if appName == appID {
 			arns = append(arns, a)
 		}
 	}

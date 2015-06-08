@@ -91,7 +91,7 @@ func (c *ecsClient) DescribeTaskDefinition(ctx context.Context, input *ecs.Descr
 func (c *ecsClient) ListServices(ctx context.Context, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.ListServices(input)
-	done(err, "ListServices")
+	done(err, "ListServices", "services", len(resp.ServiceARNs))
 	return resp, err
 }
 

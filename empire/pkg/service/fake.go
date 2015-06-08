@@ -38,14 +38,14 @@ func (m *FakeManager) Scale(ctx context.Context, app string, ptype string, insta
 	return nil
 }
 
-func (m *FakeManager) Remove(ctx context.Context, app string) error {
-	delete(m.apps, app)
+func (m *FakeManager) Remove(ctx context.Context, appID string) error {
+	delete(m.apps, appID)
 	return nil
 }
 
-func (m *FakeManager) Instances(ctx context.Context, app string) ([]*Instance, error) {
+func (m *FakeManager) Instances(ctx context.Context, appID string) ([]*Instance, error) {
 	var instances []*Instance
-	if a, ok := m.apps[app]; ok {
+	if a, ok := m.apps[appID]; ok {
 		for _, p := range a.Processes {
 			for i := uint(1); i <= p.Instances; i++ {
 				instances = append(instances, &Instance{

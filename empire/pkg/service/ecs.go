@@ -139,14 +139,14 @@ func (m *ECSManager) Submit(ctx context.Context, app *App) error {
 }
 
 // Remove removes any ECS services that belong to this app.
-func (m *ECSManager) Remove(ctx context.Context, app string) error {
-	processes, err := m.Processes(ctx, app)
+func (m *ECSManager) Remove(ctx context.Context, appID string) error {
+	processes, err := m.Processes(ctx, appID)
 	if err != nil {
 		return err
 	}
 
 	for t, _ := range processTypes(processes) {
-		if err := m.RemoveProcess(ctx, app, t); err != nil {
+		if err := m.RemoveProcess(ctx, appID, t); err != nil {
 			return err
 		}
 	}
@@ -156,10 +156,10 @@ func (m *ECSManager) Remove(ctx context.Context, app string) error {
 
 // Instances returns all instances that are currently running, pending or
 // draining.
-func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, error) {
+func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*Instance, error) {
 	var instances []*Instance
 
-	tasks, err := m.describeAppTasks(ctx, app)
+	tasks, err := m.describeAppTasks(ctx, appID)
 	if err != nil {
 		return instances, err
 	}
@@ -193,8 +193,8 @@ func (m *ECSManager) Instances(ctx context.Context, app string) ([]*Instance, er
 	return instances, nil
 }
 
-func (m *ECSManager) describeAppTasks(ctx context.Context, app string) ([]*ecs.Task, error) {
-	resp, err := m.ecs.ListAppTasks(ctx, app, &ecs.ListTasksInput{
+func (m *ECSManager) describeAppTasks(ctx context.Context, appID string) ([]*ecs.Task, error) {
+	resp, err := m.ecs.ListAppTasks(ctx, appID, &ecs.ListTasksInput{
 		Cluster: aws.String(m.cluster),
 	})
 	if err != nil {
@@ -300,10 +300,10 @@ func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *App, p
 	return m.createService(ctx, app, p)
 }
 
-func (m *ecsProcessManager) Processes(ctx context.Context, app string) ([]*Process, error) {
+func (m *ecsProcessManager) Processes(ctx context.Context, appID string) ([]*Process, error) {
 	var processes []*Process
 
-	list, err := m.ecs.ListAppServices(ctx, app, &ecs.ListServicesInput{
+	list, err := m.ecs.ListAppServices(ctx, appID, &ecs.ListServicesInput{
 		Cluster: aws.String(m.cluster),
 	})
 	if err != nil {
