@@ -272,6 +272,8 @@
                 "iam:ListInstanceProfiles",
                 "iam:ListRoles",
                 "iam:PassRole",
+                "iam:UploadServerCertificate",
+                "iam:DeleteServerCertificate",
                 "route53:*"
               ],
               "Resource": [
