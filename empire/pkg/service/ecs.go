@@ -461,9 +461,17 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*Process, error) {
 		command = append(command, *s)
 	}
 
+	env := make(map[string]string)
+	for _, kvp := range container.Environment {
+		if kvp != nil {
+			env[safeString(kvp.Name)] = safeString(kvp.Value)
+		}
+	}
+
 	return &Process{
 		Type:    safeString(container.Name),
 		Command: strings.Join(command, " "),
+		Env:     env,
 	}, nil
 }
 

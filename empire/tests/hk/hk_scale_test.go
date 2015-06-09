@@ -26,8 +26,8 @@ Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"dynos -a acme-inc",
-			`web.1    running   5d  "./bin/web"
-web.2    running   5d  "./bin/web"`,
+			`v1.web.1    running   5d  "./bin/web"
+v1.web.2    running   5d  "./bin/web"`,
 		},
 
 		{
@@ -36,7 +36,7 @@ web.2    running   5d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			"web.1    running   5d  \"./bin/web\"",
+			"v1.web.1    running   5d  \"./bin/web\"",
 		},
 	})
 }
