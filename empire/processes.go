@@ -237,13 +237,30 @@ func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]
 	}
 
 	for _, i := range instances {
-		states = append(states, &ProcessState{
-			Name:      fmt.Sprintf("%s.%s", i.Process.Type, i.ID),
-			Command:   i.Process.Command,
-			State:     i.State,
-			UpdatedAt: i.UpdatedAt,
-		})
+		states = append(states, processStateFromInstance(i))
 	}
 
 	return states, nil
+}
+
+// processStateFromInstance converts a service.Instance into a ProcessState.
+// It pulls some of its data from empire specific environment variables if they have been set.
+// Once ECS supports this data natively, we can stop doing this.
+func processStateFromInstance(i *service.Instance) *ProcessState {
+	createdAt := i.UpdatedAt
+	if t, err := time.Parse(time.RFC3339, i.Process.Env["EMPIRE_CREATED_AT"]); err == nil {
+		createdAt = t
+	}
+
+	version := i.Process.Env["EMPIRE_RELEASE"]
+	if version == "" {
+		version = "v0"
+	}
+
+	return &ProcessState{
+		Name:      fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
+		Command:   i.Process.Command,
+		State:     i.State,
+		UpdatedAt: createdAt, // This is the best data we have, until ECS gives us UpdatedAt
+	}
 }
