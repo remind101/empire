@@ -25,7 +25,6 @@ const (
 	FlagDBPath = "path"
 	FlagDB     = "db"
 
-	FlagDockerOrg    = "docker.organization"
 	FlagDockerSocket = "docker.socket"
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
@@ -108,12 +107,6 @@ var DBFlags = []cli.Flag{
 }
 
 var EmpireFlags = []cli.Flag{
-	cli.StringFlag{
-		Name:   FlagDockerOrg,
-		Value:  "",
-		Usage:  "The fallback docker registry organization to use when an app is not linked to a docker repo. (e.g. quay.io/remind101)",
-		EnvVar: "DOCKER_ORGANIZATION",
-	},
 	cli.StringFlag{
 		Name:   FlagDockerSocket,
 		Value:  "unix:///var/run/docker.sock",
