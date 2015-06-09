@@ -1,10 +1,13 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/remind101/empire/empire/pkg/lb"
-	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
+
+var ErrUnsuitableLoadBalancer = errors.New("currently assigned load balancer is not suitable for the given exposure")
 
 // LBProcessManager is an implementation of the ProcessManager interface that creates
 // LoadBalancers when a Process is created.
@@ -29,29 +32,11 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 			return err
 		}
 
-		if l != nil {
-			// If the load balancer doesn't match the exposure that we
-			// want, we'll destroy the process, which will also destroy the
-			// existing load balancer, then let a new load balancer get
-			// created.
-			if !lbOk(p, l) {
-				logger.Info(ctx, "existing load balancer not suitable",
-					"err", err,
-					"external", l.External,
-					"exposure", p.Exposure.String(),
-					"cert", p.SSLCert,
-				)
-
-				if err := m.RemoveProcess(ctx, app.ID, p.Type); err != nil {
-					if !noService(err) {
-						return err
-					}
-				}
-
-				// We set l to nil so that a new load balancer will get
-				// created below.
-				l = nil
-			}
+		// If the load balancer doesn't match the exposure that we
+		// want, we'll return an error. Users should manually destroy
+		// the app and re-create it with the proper exposure.
+		if l != nil && !lbOk(p, l) {
+			return ErrUnsuitableLoadBalancer
 		}
 
 		// If this app doesn't have a load balancer yet, create one.

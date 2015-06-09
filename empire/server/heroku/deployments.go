@@ -45,13 +45,13 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		select {
 		case evt := <-ch:
 			if err := Stream(w, evt); err != nil {
-				Stream(w, jsonmessage.JSONMessage{ErrorMessage: err.Error()})
+				Stream(w, newJSONMessageError(err))
 				return nil
 			}
 			continue
 		case err := <-errCh:
 			if err != nil {
-				Stream(w, jsonmessage.JSONMessage{ErrorMessage: err.Error()})
+				Stream(w, newJSONMessageError(err))
 				return nil
 			}
 		}
@@ -64,4 +64,13 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	})
 
 	return nil
+}
+
+func newJSONMessageError(err error) jsonmessage.JSONMessage {
+	return jsonmessage.JSONMessage{
+		ErrorMessage: err.Error(),
+		Error: &jsonmessage.JSONError{
+			Message: err.Error(),
+		},
+	}
 }
