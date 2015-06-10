@@ -117,7 +117,7 @@ func parseMemory(s string) (uint, error) {
 	var (
 		// n is the number part of the memory
 		n uint
-		// u is the unites parts
+		// u is the units parts
 		u string
 		// mult is a number that will be used to
 		// multiply n to return bytes.
