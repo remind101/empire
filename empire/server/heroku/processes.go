@@ -16,6 +16,7 @@ func newDyno(j *empire.ProcessState) *Dyno {
 		Command:   string(j.Command),
 		Name:      string(j.Name),
 		State:     j.State,
+		Size:      j.Constraints.String(),
 		UpdatedAt: j.UpdatedAt,
 	}
 }

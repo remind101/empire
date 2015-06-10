@@ -150,7 +150,7 @@ func TestECSManager_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","command":["acme-inc", "web"]}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","cpu":256,"memory":256,"command":["acme-inc", "web"]}]}}`,
 			},
 		},
 	})

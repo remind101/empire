@@ -3,13 +3,32 @@ package empire
 import (
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
+	. "github.com/remind101/empire/empire/pkg/bytesize"
+	"github.com/remind101/empire/empire/pkg/constraints"
 	"github.com/remind101/empire/empire/pkg/service"
 	"golang.org/x/net/context"
+)
+
+var (
+	Constraints1X = Constraints{constraints.CPUShare(256), constraints.Memory(512 * MB)}
+	Constraints2X = Constraints{constraints.CPUShare(512), constraints.Memory(1 * GB)}
+	ConstraintsPX = Constraints{constraints.CPUShare(1024), constraints.Memory(6 * GB)}
+
+	// NamedConstraints maps a heroku dynos size to a Constraints.
+	NamedConstraints = map[string]Constraints{
+		"1X": Constraints1X,
+		"2X": Constraints2X,
+		"PX": ConstraintsPX,
+	}
+
+	// DefaultConstraints defaults to 1X process size.
+	DefaultConstraints = Constraints1X
 )
 
 // ProcessQuantityMap represents a map of process types to quantities.
@@ -63,6 +82,7 @@ type Process struct {
 	Quantity int
 	Command  Command
 	Port     int `sql:"-"`
+	Constraints
 
 	ReleaseID string
 	Release   *Release
@@ -71,9 +91,10 @@ type Process struct {
 // NewProcess returns a new Process instance.
 func NewProcess(t ProcessType, cmd Command) *Process {
 	return &Process{
-		Type:     t,
-		Quantity: DefaultQuantities[t],
-		Command:  cmd,
+		Type:        t,
+		Quantity:    DefaultQuantities[t],
+		Command:     cmd,
+		Constraints: DefaultConstraints,
 	}
 }
 
@@ -116,6 +137,57 @@ func (cm CommandMap) Value() (driver.Value, error) {
 	return h.Value()
 }
 
+// Constraints aliases constraints.Constraints to implement the
+// sql.Scanner interface.
+type Constraints constraints.Constraints
+
+func parseConstraints(con string) (*Constraints, error) {
+	if con == "" {
+		return nil, nil
+	}
+
+	if n, ok := NamedConstraints[con]; ok {
+		return &n, nil
+	}
+
+	c, err := constraints.Parse(con)
+	if err != nil {
+		return nil, err
+	}
+
+	r := Constraints(c)
+	return &r, nil
+}
+
+func (c *Constraints) UnmarshalJSON(b []byte) error {
+	var s string
+
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	cc, err := parseConstraints(s)
+	if err != nil {
+		return err
+	}
+
+	if cc != nil {
+		*c = *cc
+	}
+
+	return nil
+}
+
+func (c Constraints) String() string {
+	for n, constraint := range NamedConstraints {
+		if c == constraint {
+			return n
+		}
+	}
+
+	return fmt.Sprintf("%d:%s", c.CPUShare, c.Memory)
+}
+
 // Formation maps a process ProcessType to a Process.
 type Formation map[ProcessType]*Process
 
@@ -133,6 +205,7 @@ func NewFormation(f Formation, cm CommandMap) Formation {
 			// configuration for this process type, copy over the
 			// instance count.
 			p.Quantity = existing.Quantity
+			p.Constraints = existing.Constraints
 		}
 
 		processes[t] = p
@@ -218,10 +291,11 @@ func processesUpdate(db *gorm.DB, process *Process) error {
 
 // ProcessState represents the state of a Process.
 type ProcessState struct {
-	Name      string
-	Command   string
-	State     string
-	UpdatedAt time.Time
+	Name        string
+	Command     string
+	State       string
+	UpdatedAt   time.Time
+	Constraints Constraints
 }
 
 type processStatesService struct {
@@ -258,8 +332,12 @@ func processStateFromInstance(i *service.Instance) *ProcessState {
 	}
 
 	return &ProcessState{
-		Name:      fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
-		Command:   i.Process.Command,
+		Name:    fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
+		Command: i.Process.Command,
+		Constraints: Constraints{
+			CPUShare: constraints.CPUShare(i.Process.CPUShares),
+			Memory:   constraints.Memory(i.Process.MemoryLimit),
+		},
 		State:     i.State,
 		UpdatedAt: createdAt, // This is the best data we have, until ECS gives us UpdatedAt
 	}
