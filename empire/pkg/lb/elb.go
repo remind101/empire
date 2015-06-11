@@ -165,7 +165,7 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 					External:     *elb.Scheme == schemeExternal,
 					SSLCert:      sslCert,
 					InstancePort: instancePort,
-					Tags:         empireTags(d.Tags),
+					Tags:         mapTags(d.Tags),
 				})
 			}
 		}
@@ -226,8 +226,8 @@ func elbListeners(port int64, certID string) []*elb.Listener {
 	return listeners
 }
 
-// empireTags takes a list of []*elb.Tag's and converts them into a map[string]string
-func empireTags(tags []*elb.Tag) map[string]string {
+// mapTags takes a list of []*elb.Tag's and converts them into a map[string]string
+func mapTags(tags []*elb.Tag) map[string]string {
 	tagMap := make(map[string]string)
 	for _, t := range tags {
 		tagMap[*t.Key] = *t.Value
