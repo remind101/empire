@@ -130,11 +130,14 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	manager := newManager(
+	manager, err := newManager(
 		options.ECS,
 		options.ELB,
 		options.AWSConfig,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	accessTokens := &accessTokensService{
 		Secret: []byte(options.Secret),
@@ -381,12 +384,12 @@ const (
 	UserKey key = 0
 )
 
-func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) service.Manager {
+func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (service.Manager, error) {
 	if config == nil {
-		return service.NewFakeManager()
+		return service.NewFakeManager(), nil
 	}
 
-	return service.NewECSManager(service.ECSConfig{
+	return service.NewLoadBalancedECSManager(service.ECSConfig{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
