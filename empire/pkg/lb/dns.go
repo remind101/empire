@@ -16,6 +16,7 @@ var errHostedZone = errors.New("hosted zone not found, unable to update records"
 type Nameserver interface {
 	// CNAME creates a cname record pointed at record.
 	CNAME(cname, record string) error
+	DeleteCNAME(cname, record string) error
 }
 
 // Route53Nameserver is an implementation of the nameserver interface backed by
@@ -46,17 +47,8 @@ func (n *Route53Nameserver) CNAME(cname, record string) error {
 		ChangeBatch: &route53.ChangeBatch{
 			Changes: []*route53.Change{
 				&route53.Change{
-					Action: aws.String("UPSERT"),
-					ResourceRecordSet: &route53.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("%s.%s", cname, *zone.Name)),
-						Type: aws.String("CNAME"),
-						ResourceRecords: []*route53.ResourceRecord{
-							&route53.ResourceRecord{
-								Value: aws.String(record),
-							},
-						},
-						TTL: aws.Long(60),
-					},
+					Action:            aws.String("UPSERT"),
+					ResourceRecordSet: makeCNAMERecordSet(fmt.Sprintf("%s.%s", cname, *zone.Name), record, 60),
 				},
 			},
 		},
@@ -64,6 +56,41 @@ func (n *Route53Nameserver) CNAME(cname, record string) error {
 	}
 	_, err = n.route53.ChangeResourceRecordSets(input)
 	return err
+}
+
+// DeleteCNAME deletes the CNAME of an ELB from the internal zone
+func (n *Route53Nameserver) DeleteCNAME(cname, record string) error {
+	zone, err := n.zone()
+	if err != nil {
+		return err
+	}
+
+	input := &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: []*route53.Change{
+				&route53.Change{
+					Action:            aws.String("DELETE"),
+					ResourceRecordSet: makeCNAMERecordSet(fmt.Sprintf("%s.%s", cname, *zone.Name), record, 60),
+				},
+			},
+		},
+		HostedZoneID: zone.ID,
+	}
+	_, err = n.route53.ChangeResourceRecordSets(input)
+	return err
+}
+
+func makeCNAMERecordSet(cname string, target string, ttl int64) *route53.ResourceRecordSet {
+	return &route53.ResourceRecordSet{
+		Name: aws.String(cname),
+		Type: aws.String("CNAME"),
+		ResourceRecords: []*route53.ResourceRecord{
+			&route53.ResourceRecord{
+				Value: aws.String(target),
+			},
+		},
+		TTL: aws.Long(ttl),
+	}
 }
 
 func fixHostedZoneIDPrefix(zoneID string) *string {

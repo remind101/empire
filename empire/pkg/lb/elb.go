@@ -14,7 +14,7 @@ const (
 	schemeExternal = "internet-facing"
 )
 
-var DefaultConnectionDrainingTimeout int64 = 30
+var defaultConnectionDrainingTimeout int64 = 30
 
 var _ Manager = &ELBManager{}
 
@@ -81,7 +81,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 		LoadBalancerAttributes: &elb.LoadBalancerAttributes{
 			ConnectionDraining: &elb.ConnectionDraining{
 				Enabled: aws.Boolean(true),
-				Timeout: aws.Long(DefaultConnectionDrainingTimeout),
+				Timeout: aws.Long(defaultConnectionDrainingTimeout),
 			},
 		},
 		LoadBalancerName: input.LoadBalancerName,
@@ -99,9 +99,9 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 }
 
 // DestroyLoadBalancer destroys an ELB.
-func (m *ELBManager) DestroyLoadBalancer(ctx context.Context, name string) error {
+func (m *ELBManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
 	_, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{
-		LoadBalancerName: aws.String(name),
+		LoadBalancerName: aws.String(lb.Name),
 	})
 	return err
 }
@@ -165,6 +165,7 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 					External:     *elb.Scheme == schemeExternal,
 					SSLCert:      sslCert,
 					InstancePort: instancePort,
+					Tags:         empireTags(d.Tags),
 				})
 			}
 		}
@@ -223,6 +224,16 @@ func elbListeners(port int64, certID string) []*elb.Listener {
 		})
 	}
 	return listeners
+}
+
+// empireTags takes a list of []*elb.Tag's and converts them into a map[string]string
+func empireTags(tags []*elb.Tag) map[string]string {
+	tagMap := make(map[string]string)
+	for _, t := range tags {
+		tagMap[*t.Key] = *t.Value
+	}
+
+	return tagMap
 }
 
 // elbTags takes a map[string]string and converts it to the elb.Tag format.

@@ -37,8 +37,8 @@ func (m *LoggedManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBala
 	return lb, err
 }
 
-func (m *LoggedManager) DestroyLoadBalancer(ctx context.Context, name string) error {
-	err := m.Manager.DestroyLoadBalancer(ctx, name)
-	logger.Info(ctx, "destroying load balancer", "err", err, "name", name)
+func (m *LoggedManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
+	err := m.Manager.DestroyLoadBalancer(ctx, lb)
+	logger.Info(ctx, "destroying load balancer", "err", err, "name", lb.Name)
 	return err
 }

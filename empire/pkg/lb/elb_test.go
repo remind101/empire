@@ -81,7 +81,14 @@ func TestELB_DestroyLoadBalancer(t *testing.T) {
 	m, s := newTestELBManager(h)
 	defer s.Close()
 
-	if err := m.DestroyLoadBalancer(context.Background(), "acme-inc"); err != nil {
+	lb := &LoadBalancer{
+		Name:         "acme-inc",
+		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
+		InstancePort: 9000,
+		External:     true,
+	}
+
+	if err := m.DestroyLoadBalancer(context.Background(), lb); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -244,8 +251,8 @@ func TestELB_LoadBalancers(t *testing.T) {
 	}
 
 	expected := []*LoadBalancer{
-		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com", InstancePort: 9000},
-		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true, InstancePort: 9001},
+		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com", InstancePort: 9000, Tags: map[string]string{"AppName": "foo", "ProcessType": "web"}},
+		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true, InstancePort: 9001, Tags: map[string]string{"AppName": "bar", "ProcessType": "web"}},
 	}
 
 	if got, want := lbs, expected; !reflect.DeepEqual(got, want) {
