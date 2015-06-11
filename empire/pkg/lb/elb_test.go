@@ -63,7 +63,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	}
 }
 
-func TestELB_DestroyLoadBalancer(t *testing.T) {
+func buildLoadBalancerForDestroy() (*ELBManager, *httptest.Server, *LoadBalancer) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		{
 			Request: awsutil.Request{
@@ -79,7 +79,6 @@ func TestELB_DestroyLoadBalancer(t *testing.T) {
 		},
 	})
 	m, s := newTestELBManager(h)
-	defer s.Close()
 
 	lb := &LoadBalancer{
 		Name:         "acme-inc",
@@ -88,6 +87,12 @@ func TestELB_DestroyLoadBalancer(t *testing.T) {
 		External:     true,
 		Tags:         map[string]string{AppTag: "acme-inc"},
 	}
+	return m, s, lb
+}
+
+func TestELB_DestroyLoadBalancer(t *testing.T) {
+	m, s, lb := buildLoadBalancerForDestroy()
+	defer s.Close()
 
 	if err := m.DestroyLoadBalancer(context.Background(), lb); err != nil {
 		t.Fatal(err)
@@ -262,31 +267,9 @@ func TestELB_LoadBalancers(t *testing.T) {
 }
 
 func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DeleteLoadBalancer&LoadBalancerName=acme-inc&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<?xml version="1.0"?>
-<DeleteLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
-</DeleteLoadBalancerResponse>`,
-			},
-		},
-	})
-	m, s := newTestELBManager(h)
+	m, s, lb := buildLoadBalancerForDestroy()
 	defer s.Close()
 	ns := newTestNameserver("FAKEZONE")
-
-	lb := &LoadBalancer{
-		Name:         "acme-inc",
-		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
-		InstancePort: 9000,
-		External:     true,
-		Tags:         map[string]string{AppTag: "acme-inc"},
-	}
 
 	m2 := WithCNAME(m, ns)
 
