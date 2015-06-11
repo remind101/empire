@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# This is an entrypoint that can be used by docker-compose to compile then run empire
+
+set -e
+
+godep go install ./cmd/empire
+
+exec /go/bin/empire $@
