@@ -1,6 +1,7 @@
 FROM golang:1.4.2
 MAINTAINER Eric Holmes <eric@remind101.com>
 
+RUN addgroup -g 999 docker; addgroup app docker
 RUN addgroup --gid 4000 app
 RUN adduser --home /home/app --gecos "" --shell /bin/sh --uid 4000 --gid 4000 --disabled-password app
 
