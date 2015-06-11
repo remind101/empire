@@ -120,19 +120,12 @@ func New(options Options) (*Empire, error) {
 
 	store := &store{db: db}
 
-	extractor, err := NewExtractor(
-		options.Docker.Socket,
-		options.Docker.CertPath,
-	)
+	extractor, err := newExtractor(options.Docker)
 	if err != nil {
 		return nil, err
 	}
 
-	resolver, err := newResolver(
-		options.Docker.Socket,
-		options.Docker.CertPath,
-		options.Docker.Auth,
-	)
+	resolver, err := newResolver(options.Docker)
 	if err != nil {
 		return nil, err
 	}
@@ -433,4 +426,22 @@ func newLogger() log15.Logger {
 	//h = log15.CallerStackHandler("%+n", h)
 	l.SetHandler(log15.LazyHandler(h))
 	return l
+}
+
+func newExtractor(o DockerOptions) (Extractor, error) {
+	if o.Socket == "" {
+		return &fakeExtractor{}, nil
+	}
+
+	c, err := newDockerClient(o.Socket, o.CertPath)
+	return newProcfileFallbackExtractor(c), err
+}
+
+func newResolver(o DockerOptions) (Resolver, error) {
+	if o.Socket == "" {
+		return &fakeResolver{}, nil
+	}
+
+	c, err := newDockerClient(o.Socket, o.CertPath)
+	return newDockerResolver(c, o.Auth), err
 }
