@@ -83,7 +83,7 @@ func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBa
 	}
 
 	if n, ok := opts.Tags[AppTag]; ok {
-		return lb, m.CNAME(n, lb.DNSName)
+		return lb, m.CreateCNAME(n, lb.DNSName)
 	}
 
 	return lb, nil

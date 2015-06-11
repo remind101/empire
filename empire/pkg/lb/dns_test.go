@@ -55,7 +55,7 @@ func TestRoute53_CNAME(t *testing.T) {
 	n, s := newTestRoute53Nameserver(h, "/hostedzone/FAKEZONE")
 	defer s.Close()
 
-	if err := n.CNAME("acme-inc", "123456789.us-east-1.elb.amazonaws.com"); err != nil {
+	if err := n.CreateCNAME("acme-inc", "123456789.us-east-1.elb.amazonaws.com"); err != nil {
 		t.Fatal(err)
 	}
 }

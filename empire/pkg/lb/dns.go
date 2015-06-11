@@ -15,7 +15,7 @@ var errHostedZone = errors.New("hosted zone not found, unable to update records"
 // Nameserver represents a service for creating dns records.
 type Nameserver interface {
 	// CNAME creates a cname record pointed at record.
-	CNAME(cname, record string) error
+	CreateCNAME(cname, record string) error
 	DeleteCNAME(cname, record string) error
 }
 
@@ -36,8 +36,8 @@ func NewRoute53Nameserver(c *aws.Config) *Route53Nameserver {
 	}
 }
 
-// CNAME creates a CNAME record under the HostedZone specified by ZoneID.
-func (n *Route53Nameserver) CNAME(cname, record string) error {
+// CreateCNAME creates a CNAME record under the HostedZone specified by ZoneID.
+func (n *Route53Nameserver) CreateCNAME(cname, record string) error {
 	zone, err := n.zone()
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (n *Route53Nameserver) CNAME(cname, record string) error {
 			Changes: []*route53.Change{
 				&route53.Change{
 					Action:            aws.String("UPSERT"),
-					ResourceRecordSet: makeCNAMERecordSet(fmt.Sprintf("%s.%s", cname, *zone.Name), record, 60),
+					ResourceRecordSet: newCNAMERecordSet(fmt.Sprintf("%s.%s", cname, *zone.Name), record, 60),
 				},
 			},
 		},
@@ -70,7 +70,7 @@ func (n *Route53Nameserver) DeleteCNAME(cname, record string) error {
 			Changes: []*route53.Change{
 				&route53.Change{
 					Action:            aws.String("DELETE"),
-					ResourceRecordSet: makeCNAMERecordSet(fmt.Sprintf("%s.%s", cname, *zone.Name), record, 60),
+					ResourceRecordSet: newCNAMERecordSet(fmt.Sprintf("%s.%s", cname, *zone.Name), record, 60),
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func (n *Route53Nameserver) DeleteCNAME(cname, record string) error {
 	return err
 }
 
-func makeCNAMERecordSet(cname string, target string, ttl int64) *route53.ResourceRecordSet {
+func newCNAMERecordSet(cname string, target string, ttl int64) *route53.ResourceRecordSet {
 	return &route53.ResourceRecordSet{
 		Name: aws.String(cname),
 		Type: aws.String("CNAME"),

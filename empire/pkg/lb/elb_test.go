@@ -311,7 +311,7 @@ type fakeNameserver struct {
 	DeleteCNAMECalled bool
 }
 
-func (n *fakeNameserver) CNAME(cname, record string) error {
+func (n *fakeNameserver) CreateCNAME(cname, record string) error {
 	n.CNAMECalled = true
 	return nil
 }
