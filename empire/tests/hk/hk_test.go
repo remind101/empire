@@ -66,16 +66,15 @@ type HKCmd struct {
 func NewHKCmd(url, command string) *HKCmd {
 	args := strings.Split(command, " ")
 
-	p, err := filepath.Abs("../../build/hk")
+	p, err := filepath.Abs("../../build/emp")
 	if err != nil {
 		return nil
 	}
 
 	cmd := exec.Command(p, args...)
 	cmd.Env = []string{
-		fmt.Sprintf("PATH=../../../cli/build/:%s", os.Getenv("PATH")),
-		"HKPATH=../../../cli/hk-plugins",
-		fmt.Sprintf("HEROKU_API_URL=%s", url),
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		fmt.Sprintf("EMPIRE_API_URL=%s", url),
 	}
 
 	return &HKCmd{

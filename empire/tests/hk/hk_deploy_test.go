@@ -38,7 +38,7 @@ Status: Created new release v2 for acme-inc`,
 func TestDeploy_NoTag(t *testing.T) {
 	run(t, []Command{
 		{
-			"deploy remind101/acme-inc --no-stream",
+			"deploy remind101/acme-inc",
 			`Pulling repository remind101/acme-inc
 345c7524bc96: Pulling image (latest) from remind101/acme-inc
 345c7524bc96: Pulling image (latest) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
