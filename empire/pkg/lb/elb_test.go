@@ -86,6 +86,7 @@ func TestELB_DestroyLoadBalancer(t *testing.T) {
 		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
 		InstancePort: 9000,
 		External:     true,
+		Tags:         map[string]string{AppTag: "acme-inc"},
 	}
 
 	if err := m.DestroyLoadBalancer(context.Background(), lb); err != nil {
@@ -260,6 +261,45 @@ func TestELB_LoadBalancers(t *testing.T) {
 	}
 }
 
+func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=DeleteLoadBalancer&LoadBalancerName=acme-inc&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<?xml version="1.0"?>
+<DeleteLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+</DeleteLoadBalancerResponse>`,
+			},
+		},
+	})
+	m, s := newTestELBManager(h)
+	defer s.Close()
+	ns := newTestNameserver("FAKEZONE")
+
+	lb := &LoadBalancer{
+		Name:         "acme-inc",
+		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
+		InstancePort: 9000,
+		External:     true,
+		Tags:         map[string]string{AppTag: "acme-inc"},
+	}
+
+	m2 := WithCNAME(m, ns)
+
+	if err := m2.DestroyLoadBalancer(context.Background(), lb); err != nil {
+		t.Fatal(err)
+	}
+
+	if ok := ns.DeleteCNAMECalled; !ok {
+		t.Fatal("DeleteCNAME was not called.")
+	}
+
+}
+
 func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
@@ -281,8 +321,27 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 }
 
 // fakeNameserver is a fake implementation of the Nameserver interface.
-type fakeNameserver struct{}
+type fakeNameserver struct {
+	ZoneID string
+
+	CNAMECalled       bool
+	DeleteCNAMECalled bool
+}
 
 func (n *fakeNameserver) CNAME(cname, record string) error {
+	n.CNAMECalled = true
 	return nil
+}
+
+func (n *fakeNameserver) DeleteCNAME(cname, record string) error {
+	n.DeleteCNAMECalled = true
+	return nil
+}
+
+func newTestNameserver(zoneID string) *fakeNameserver {
+	return &fakeNameserver{
+		ZoneID:            zoneID,
+		CNAMECalled:       false,
+		DeleteCNAMECalled: false,
+	}
 }
