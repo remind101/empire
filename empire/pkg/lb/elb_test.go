@@ -63,7 +63,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	}
 }
 
-func TestELB_DestroyLoadBalancer(t *testing.T) {
+func buildLoadBalancerForDestroy() (*ELBManager, *httptest.Server, *LoadBalancer) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		{
 			Request: awsutil.Request{
@@ -79,9 +79,22 @@ func TestELB_DestroyLoadBalancer(t *testing.T) {
 		},
 	})
 	m, s := newTestELBManager(h)
+
+	lb := &LoadBalancer{
+		Name:         "acme-inc",
+		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
+		InstancePort: 9000,
+		External:     true,
+		Tags:         map[string]string{AppTag: "acme-inc"},
+	}
+	return m, s, lb
+}
+
+func TestELB_DestroyLoadBalancer(t *testing.T) {
+	m, s, lb := buildLoadBalancerForDestroy()
 	defer s.Close()
 
-	if err := m.DestroyLoadBalancer(context.Background(), "acme-inc"); err != nil {
+	if err := m.DestroyLoadBalancer(context.Background(), lb); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -244,13 +257,30 @@ func TestELB_LoadBalancers(t *testing.T) {
 	}
 
 	expected := []*LoadBalancer{
-		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com", InstancePort: 9000},
-		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true, InstancePort: 9001},
+		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com", InstancePort: 9000, Tags: map[string]string{"AppName": "foo", "ProcessType": "web"}},
+		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true, InstancePort: 9001, Tags: map[string]string{"AppName": "bar", "ProcessType": "web"}},
 	}
 
 	if got, want := lbs, expected; !reflect.DeepEqual(got, want) {
 		t.Fatalf("LoadBalancers => %v; want %v", got, want)
 	}
+}
+
+func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
+	m, s, lb := buildLoadBalancerForDestroy()
+	defer s.Close()
+	ns := newTestNameserver("FAKEZONE")
+
+	m2 := WithCNAME(m, ns)
+
+	if err := m2.DestroyLoadBalancer(context.Background(), lb); err != nil {
+		t.Fatal(err)
+	}
+
+	if ok := ns.DeleteCNAMECalled; !ok {
+		t.Fatal("DeleteCNAME was not called.")
+	}
+
 }
 
 func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
@@ -274,8 +304,27 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 }
 
 // fakeNameserver is a fake implementation of the Nameserver interface.
-type fakeNameserver struct{}
+type fakeNameserver struct {
+	ZoneID string
 
-func (n *fakeNameserver) CNAME(cname, record string) error {
+	CNAMECalled       bool
+	DeleteCNAMECalled bool
+}
+
+func (n *fakeNameserver) CreateCNAME(cname, record string) error {
+	n.CNAMECalled = true
 	return nil
+}
+
+func (n *fakeNameserver) DeleteCNAME(cname, record string) error {
+	n.DeleteCNAMECalled = true
+	return nil
+}
+
+func newTestNameserver(zoneID string) *fakeNameserver {
+	return &fakeNameserver{
+		ZoneID:            zoneID,
+		CNAMECalled:       false,
+		DeleteCNAMECalled: false,
+	}
 }

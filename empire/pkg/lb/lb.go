@@ -39,6 +39,9 @@ type LoadBalancer struct {
 	// InstancePort is the port that this load balancer forwards requests to
 	// on the host.
 	InstancePort int64
+
+	// Tags contain the tags attached to the LoadBalancer
+	Tags map[string]string
 }
 
 // Manager is our API interface for interacting with LoadBalancers.
@@ -47,7 +50,7 @@ type Manager interface {
 	CreateLoadBalancer(context.Context, CreateLoadBalancerOpts) (*LoadBalancer, error)
 
 	// DestroyLoadBalancer destroys a load balancer by name.
-	DestroyLoadBalancer(ctx context.Context, name string) error
+	DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error
 
 	// LoadBalancers returns a list of LoadBalancers, optionally provide
 	// tags to filter by.
@@ -80,8 +83,24 @@ func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBa
 	}
 
 	if n, ok := opts.Tags[AppTag]; ok {
-		return lb, m.CNAME(n, lb.DNSName)
+		return lb, m.CreateCNAME(n, lb.DNSName)
 	}
 
 	return lb, nil
+}
+
+// DestroyLoadBalancer destroys an ELB, then removes any CNAMEs that were
+// pointed at that ELB.
+func (m *cnameManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
+	err := m.Manager.DestroyLoadBalancer(ctx, lb)
+
+	if err != nil {
+		return err
+	}
+
+	if n, ok := lb.Tags[AppTag]; ok {
+		return m.DeleteCNAME(n, lb.DNSName)
+	}
+
+	return nil
 }

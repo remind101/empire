@@ -78,7 +78,7 @@ func (m *LBProcessManager) RemoveProcess(ctx context.Context, app string, p stri
 	}
 
 	if l != nil {
-		if err := m.lb.DestroyLoadBalancer(ctx, l.Name); err != nil {
+		if err := m.lb.DestroyLoadBalancer(ctx, l); err != nil {
 			// TODO: Maybe we shouldn't care here.
 			return err
 		}
