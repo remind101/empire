@@ -104,7 +104,10 @@ func (r *runner) newContainerForm(ctx context.Context, app *App, command string,
 	// Merge env vars with App env vars.
 	vars := Vars{}
 	for key, val := range opts.Env {
-		vars[Variable(key)] = val
+		// Go reuses the same address space for v, so &val would always
+		// return the same address
+		tmp := val
+		vars[Variable(key)] = &tmp
 	}
 	env := environment(NewConfig(release.Config, vars).Vars)
 

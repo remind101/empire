@@ -29,7 +29,18 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			"AUTH=foo\nDATABASE_URL=postgres://localhost",
+			`AUTH=foo
+DATABASE_URL=postgres://localhost`,
+		},
+		{
+			"set EMPTY_VAR= -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"env -a acme-inc",
+			`AUTH=foo
+DATABASE_URL=postgres://localhost
+EMPTY_VAR=`,
 		},
 	})
 }

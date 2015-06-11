@@ -297,7 +297,7 @@ func environment(vars Vars) map[string]string {
 	env := make(map[string]string)
 
 	for k, v := range vars {
-		env[string(k)] = string(v)
+		env[string(k)] = string(*v)
 	}
 
 	return env

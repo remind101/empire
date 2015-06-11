@@ -19,10 +19,17 @@ func TestConfigsQuery(t *testing.T) {
 }
 
 func TestMergeVars(t *testing.T) {
+	var (
+		PRODUCTION   = "production"
+		STAGING      = "staging"
+		EMPTY        = ""
+		DATABASE_URL = "postgres://localhost"
+	)
+
 	// Old vars
 	vars := Vars{
-		"RAILS_ENV":    "production",
-		"DATABASE_URL": "postgres://localhost",
+		"RAILS_ENV":    &PRODUCTION,
+		"DATABASE_URL": &DATABASE_URL,
 	}
 
 	tests := []struct {
@@ -32,21 +39,32 @@ func TestMergeVars(t *testing.T) {
 		// Removing a variable
 		{
 			Vars{
-				"RAILS_ENV": "",
+				"RAILS_ENV": nil,
 			},
 			Vars{
-				"DATABASE_URL": "postgres://localhost",
+				"DATABASE_URL": &DATABASE_URL,
+			},
+		},
+
+		// Setting an empty variable
+		{
+			Vars{
+				"RAILS_ENV": &EMPTY,
+			},
+			Vars{
+				"RAILS_ENV":    &EMPTY,
+				"DATABASE_URL": &DATABASE_URL,
 			},
 		},
 
 		// Updating a variable
 		{
 			Vars{
-				"RAILS_ENV": "staging",
+				"RAILS_ENV": &STAGING,
 			},
 			Vars{
-				"RAILS_ENV":    "staging",
-				"DATABASE_URL": "postgres://localhost",
+				"RAILS_ENV":    &STAGING,
+				"DATABASE_URL": &DATABASE_URL,
 			},
 		},
 	}

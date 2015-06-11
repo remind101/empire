@@ -39,7 +39,7 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 
 	// Configs
 	r.Handle("/apps/{app}/config-vars", Authenticate(e, &GetConfigs{e})).Methods("GET")     // hk env, hk get
-	r.Handle("/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})).Methods("PATCH") // hk set
+	r.Handle("/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})).Methods("PATCH") // hk set, hk unset
 
 	// Processes
 	r.Handle("/apps/{app}/dynos", Authenticate(e, &GetProcesses{e})).Methods("GET")                     // hk dynos
