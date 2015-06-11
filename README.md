@@ -26,11 +26,7 @@ As an example, you can use the `hk` CLI with Empire like this:
 $ HEROKU_API_URL=<empire_url> hk ...
 ```
 
-In fact, the Empire CLI itself (`emp`), is just a wrapper around `hk`.
-
-The following `hk` commands are supported: `apps`, `create`, `env`, `get`, `set`, `scale`, `dynos`, `rollback`, `releases`, `domains`.
-
-Currently, Empire doesn't support setting the size of the dyno (e.g. `hk scale web=1:PX`), but something that we're planning to add in the future.
+However, the best user experience will be by using the [emp](https://github.com/remind101/emp) command, which is a fork of `hk` with Empire specific features.
 
 ### Routing
 
@@ -119,13 +115,13 @@ If you want to contribute to empire, you may end up wanting to run a local insta
 6. Install the emp CLI.
 
    ```console
-   $ make install
+   $ go get -u github.com/remind101/emp
    ```
 
 Empire will be available at `http://$(boot2docker ip):8080` and you can point the CLI there.
 
 ```console
-$ export EMPIRE_URL=http://$(boot2docker ip):8080
+$ export EMPIRE_API_URL=http://$(boot2docker ip):8080
 $ emp deploy remind101/acme-inc
 ```
 
