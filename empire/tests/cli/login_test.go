@@ -1,4 +1,4 @@
-package hk_test
+package cli_test
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ func TestLogin(t *testing.T) {
 
 	input := "fake\nbar\n"
 
-	cmd := NewHKCmd(s.URL, "login")
+	cmd := NewCmd(s.URL, "login")
 	cmd.Stdin = strings.NewReader(input)
 
 	out, err := cmd.CombinedOutput()
@@ -34,7 +34,7 @@ func TestLoginUnauthorized(t *testing.T) {
 
 	input := "foo\nbar\n"
 
-	cmd := NewHKCmd(s.URL, "login")
+	cmd := NewCmd(s.URL, "login")
 	cmd.Stdin = strings.NewReader(input)
 
 	out, err := cmd.CombinedOutput()
@@ -54,7 +54,7 @@ func TestLoginTwoFactor(t *testing.T) {
 
 	input := "twofactor\nbar\ncode\n"
 
-	cmd := NewHKCmd(s.URL, "login")
+	cmd := NewCmd(s.URL, "login")
 	cmd.Stdin = strings.NewReader(input)
 
 	out, err := cmd.CombinedOutput()

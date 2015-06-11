@@ -1,4 +1,4 @@
-package hk_test
+package cli_test
 
 import "testing"
 

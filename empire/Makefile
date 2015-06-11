@@ -4,6 +4,7 @@ cmd:
 	godep go build -o build/empire ./cmd/empire
 
 bootstrap: cmd
+	go get github.com/remind101/emp
 	go build -o build/emp github.com/remind101/emp # Vendor the emp command for tests
 	createdb empire
 	./build/empire migrate

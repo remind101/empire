@@ -1,4 +1,4 @@
-package hk_test
+package cli_test
 
 import (
 	"fmt"
@@ -41,9 +41,9 @@ func resetNow() {
 	now(fakeNow)
 }
 
-// hk runs an hk command against a server.
-func hk(t testing.TB, token, url, command string) string {
-	cmd := NewHKCmd(url, command)
+// cli runs an cli command against a server.
+func cli(t testing.TB, token, url, command string) string {
+	cmd := NewCmd(url, command)
 	cmd.Authorize(token)
 
 	b, err := cmd.CombinedOutput()
@@ -55,15 +55,15 @@ func hk(t testing.TB, token, url, command string) string {
 	return string(b)
 }
 
-// HKCmd represents an hk command.
-type HKCmd struct {
+// Cmd represents an cli command.
+type Cmd struct {
 	*exec.Cmd
 
 	// The Heroku API URL.
 	URL string
 }
 
-func NewHKCmd(url, command string) *HKCmd {
+func NewCmd(url, command string) *Cmd {
 	args := strings.Split(command, " ")
 
 	p, err := filepath.Abs("../../build/emp")
@@ -77,13 +77,13 @@ func NewHKCmd(url, command string) *HKCmd {
 		fmt.Sprintf("EMPIRE_API_URL=%s", url),
 	}
 
-	return &HKCmd{
+	return &Cmd{
 		Cmd: cmd,
 		URL: url,
 	}
 }
 
-func (c *HKCmd) Authorize(token string) {
+func (c *Cmd) Authorize(token string) {
 	netrc, err := writeNetrc(token, c.URL)
 	if err != nil {
 		panic(err)
@@ -114,7 +114,7 @@ func writeNetrc(token, uri string) (*os.File, error) {
 }
 
 type Command struct {
-	// Command represents an hk command to run.
+	// Command represents a cli command to run.
 	Command string
 
 	// Output is the output we expect to see.
@@ -134,7 +134,7 @@ func run(t testing.TB, commands []Command) {
 	}
 
 	for _, cmd := range commands {
-		got := hk(t, token.Token, s.URL, cmd.Command)
+		got := cli(t, token.Token, s.URL, cmd.Command)
 
 		want := cmd.Output
 		if want != "" {
