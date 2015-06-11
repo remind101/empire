@@ -35,7 +35,7 @@ func NewConfig(old *Config, vars Vars) *Config {
 type Variable string
 
 // Vars represents a variable -> value mapping.
-type Vars map[Variable]string
+type Vars map[Variable]*string
 
 // Scan implements the sql.Scanner interface.
 func (v *Vars) Scan(src interface{}) error {
@@ -47,7 +47,10 @@ func (v *Vars) Scan(src interface{}) error {
 	vars := make(Vars)
 
 	for k, v := range h.Map {
-		vars[Variable(k)] = v.String
+		// Go reuses the same address space for v, so &v.String would always
+		// return the same address
+		tmp := v.String
+		vars[Variable(k)] = &tmp
 	}
 
 	*v = vars
@@ -62,7 +65,7 @@ func (v Vars) Value() (driver.Value, error) {
 	for k, v := range v {
 		m[string(k)] = sql.NullString{
 			Valid:  true,
-			String: v,
+			String: *v,
 		}
 	}
 
@@ -141,7 +144,7 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 	}
 
 	keys := make([]string, 0, len(vars))
-	for k, _ := range vars {
+	for k := range vars {
 		keys = append(keys, string(k))
 	}
 
@@ -193,10 +196,10 @@ func mergeVars(old, new Vars) Vars {
 	}
 
 	for n, v := range new {
-		if v != "" {
-			vars[n] = v
-		} else {
+		if v == nil {
 			delete(vars, n)
+		} else {
+			vars[n] = v
 		}
 	}
 
