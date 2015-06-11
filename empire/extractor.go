@@ -3,13 +3,12 @@ package empire
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/empire/pkg/registry"
 	"gopkg.in/yaml.v2"
 )
 
@@ -17,107 +16,6 @@ var (
 	// Procfile is the name of the Procfile file.
 	Procfile = "Procfile"
 )
-
-type Resolver interface {
-	Resolve(Image, chan Event) (Image, error)
-}
-
-func newResolver(socket, certPath string, auth *docker.AuthConfigurations) (Resolver, error) {
-	if socket == "" {
-		return &resolver{}, nil
-	}
-
-	c, err := newDockerClient(socket, certPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dockerResolver{
-		client: c,
-		auth:   auth,
-	}, nil
-}
-
-// resolver is a fake resolver that will just return the provided image.
-type resolver struct{}
-
-func (r *resolver) Resolve(image Image, out chan Event) (Image, error) {
-	for _, e := range FakeDockerPull(image) {
-		ee := e
-		out <- &ee
-	}
-	return image, nil
-}
-
-// dockerResolver is a resolver that pulls the docker image, then inspects it to
-// get the canonical image id.
-type dockerResolver struct {
-	client *docker.Client
-	auth   *docker.AuthConfigurations
-}
-
-func (r *dockerResolver) Resolve(image Image, out chan Event) (Image, error) {
-	pr, pw := io.Pipe()
-	errCh := make(chan error, 1)
-	go func() {
-		defer pw.Close()
-		errCh <- r.pullImage(image, pw)
-	}()
-
-	dec := json.NewDecoder(pr)
-	for {
-		var e DockerEvent
-		if err := dec.Decode(&e); err == io.EOF {
-			break
-		} else if err != nil {
-			return image, err
-		}
-		out <- &e
-	}
-
-	// Wait for pullImage to finish
-	if err := <-errCh; err != nil {
-		return image, err
-	}
-
-	i, err := r.client.InspectImage(image.String())
-	if err != nil {
-		return image, err
-	}
-
-	return Image{
-		Repo: image.Repo,
-		ID:   i.ID,
-	}, nil
-}
-
-// pullImage can pull a docker image from a repo, by it's imageID.
-//
-// Because docker does not support pulling an image by ID, we're assuming that
-// the docker image has been tagged with it's own ID beforehand.
-func (r *dockerResolver) pullImage(i Image, output io.Writer) error {
-	var a docker.AuthConfiguration
-
-	reg, _, err := registry.Split(string(i.Repo))
-	if err != nil {
-		return err
-	}
-
-	if reg == "" {
-		reg = "https://index.docker.io/v1/"
-	}
-
-	if c, ok := r.auth.Configs[reg]; ok {
-		a = c
-	}
-
-	return r.client.PullImage(docker.PullImageOptions{
-		Repository:    string(i.Repo),
-		Tag:           i.ID,
-		OutputStream:  output,
-		RawJSONStream: true,
-	}, a)
-}
 
 // Extractor represents an object that can extract the process types from an
 // image.
@@ -127,27 +25,11 @@ type Extractor interface {
 	Extract(Image) (CommandMap, error)
 }
 
-// NewExtractor returns a new Extractor instance.
-func NewExtractor(socket, certPath string) (Extractor, error) {
-	if socket == "" {
-		return &extractor{}, nil
-	}
-
-	c, err := newDockerClient(socket, certPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &procfileExtractor{
-		client: c,
-	}, nil
-}
-
-// extractor is a fake implementation of the Extractor interface.
-type extractor struct{}
+// fakeExtractor is a fake implementation of the Extractor interface.
+type fakeExtractor struct{}
 
 // Extract implements Extractor Extract.
-func (e *extractor) Extract(image Image) (CommandMap, error) {
+func (e *fakeExtractor) Extract(image Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
 	// Just return some fake processes.
@@ -156,14 +38,57 @@ func (e *extractor) Extract(image Image) (CommandMap, error) {
 	return pm, nil
 }
 
+type cmdExtractor struct {
+	// Client is the docker client to use to pull the container image.
+	client *docker.Client
+}
+
+func (e *cmdExtractor) Extract(image Image) (CommandMap, error) {
+	pm := make(CommandMap)
+
+	i, err := e.client.InspectImage(image.String())
+	if err != nil {
+		return pm, err
+	}
+
+	pm[ProcessType("web")] = Command(strings.Join(i.Config.Cmd, " "))
+
+	return pm, nil
+}
+
+// procfileFallbackExtractor attempts to extract commands using the procfileExtractor.
+// If that fails because Procfile does not exist, it uses the cmdExtractor instead.
+type procfileFallbackExtractor struct {
+	pe *procfileExtractor
+	ce *cmdExtractor
+}
+
+func newProcfileFallbackExtractor(c *docker.Client) Extractor {
+	return &procfileFallbackExtractor{
+		pe: &procfileExtractor{
+			client: c,
+		},
+		ce: &cmdExtractor{
+			client: c,
+		},
+	}
+}
+
+func (e *procfileFallbackExtractor) Extract(image Image) (CommandMap, error) {
+	cm, err := e.pe.Extract(image)
+	// If err is a ProcfileError, Procfile doesn't exist.
+	if _, ok := err.(*ProcfileError); ok {
+		cm, err = e.ce.Extract(image)
+	}
+
+	return cm, err
+}
+
 // procfileExtractor is an implementation of the Extractor interface that can
 // pull a docker image and extract it's Procfile into a process.CommandMap.
 type procfileExtractor struct {
 	// Client is the docker client to use to pull the container image.
 	client *docker.Client
-
-	// AuthConfiguration contains the docker AuthConfiguration.
-	auth *docker.AuthConfigurations
 }
 
 // Extract implements Extractor Extract.
@@ -240,41 +165,6 @@ func (e *procfileExtractor) copyFile(containerID, path string) ([]byte, error) {
 	return firstFile(tar.NewReader(r))
 }
 
-// dockerClient is a fake docker client that can be used with the
-// ProcfileExtractor.
-type dockerClient struct {
-	procfile string
-}
-
-func (c *dockerClient) PullImage(options docker.PullImageOptions, auth docker.AuthConfiguration) error {
-	return nil
-}
-
-func (c *dockerClient) CreateContainer(options docker.CreateContainerOptions) (*docker.Container, error) {
-	return &docker.Container{}, nil
-}
-
-func (c *dockerClient) RemoveContainer(options docker.RemoveContainerOptions) error {
-	return nil
-}
-
-func (c *dockerClient) CopyFromContainer(options docker.CopyFromContainerOptions) error {
-	pf := c.procfile
-	tw := tar.NewWriter(options.OutputStream)
-	if err := tw.WriteHeader(&tar.Header{
-		Name: "/Procfile",
-		Size: int64(len(pf)),
-	}); err != nil {
-		return err
-	}
-
-	if _, err := tw.Write([]byte(pf)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Example instance: Procfile doesn't exist
 type ProcfileError struct {
 	Err error
@@ -308,15 +198,4 @@ func firstFile(tr *tar.Reader) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-func newDockerClient(socket, certPath string) (*docker.Client, error) {
-	if certPath != "" {
-		cert := certPath + "/cert.pem"
-		key := certPath + "/key.pem"
-		ca := ""
-		return docker.NewTLSClient(socket, cert, key, ca)
-	}
-
-	return docker.NewClient(socket)
 }
