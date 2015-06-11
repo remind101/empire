@@ -144,7 +144,7 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 	}
 
 	keys := make([]string, 0, len(vars))
-	for k, _ := range vars {
+	for k := range vars {
 		keys = append(keys, string(k))
 	}
 
