@@ -441,6 +441,18 @@
               {
                 "Name": "EMPIRE_ELB_EXTERNAL_SG",
                 "Value": { "Ref": "ExternalLoadBalancerSecurityGroup" }
+              },
+              {
+                "Name": "EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
+                "Value": { "Ref": "InternalDomain" }
+              },
+              {
+                "Name": "EMPIRE_EC2_SUBNETS_PRIVATE",
+                "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
+              },
+              {
+                "Name": "EMPIRE_EC2_SUBNETS_PUBLIC",
+                "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
               }
             ],
             "Command": ["server", "-automigrate=true"],
