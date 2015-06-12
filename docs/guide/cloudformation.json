@@ -9,11 +9,6 @@
       "AllowedValues": [ "t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
-    "EcsCluster": {
-      "Type": "String",
-      "Default": "default",
-      "Description": "The ECS for the ecs agents to register within."
-    },
     "AmiId" : {
       "Type": "String",
       "Description": "AMI Id",
@@ -139,7 +134,7 @@
         "VPCs": [
           {
             "VPCId": { "Ref": "Vpc" },
-            "VPCRegion": "us-east-1"
+            "VPCRegion": { "Ref": "AWS::Region" }
           }
         ]
       }
@@ -357,7 +352,7 @@
               "",
               [
                 "#!/bin/bash\n",
-                "echo ECS_CLUSTER=", { "Ref": "EcsCluster" }, " >> /etc/ecs/ecs.config\n",
+                "echo ECS_CLUSTER=", { "Ref": "Cluster" }, " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_DATA=\"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
                 "echo \"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
@@ -391,6 +386,133 @@
         "Status": "Active",
         "UserName": { "Ref": "User" }
       }
+    },
+
+    "Cluster": {
+      "Type": "AWS::ECS::Cluster"
+    },
+
+    "TaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Name": "postgres",
+            "Image": "postgres",
+            "Cpu": 512,
+            "Memory": 256,
+            "EntryPoint": [],
+            "Environment": [],
+            "Command": [],
+            "PortMappings": [
+              {
+                "HostPort": 5432,
+                "ContainerPort": 5432
+              }
+            ],
+            "VolumesFrom": [],
+            "Links": [],
+            "MountPoints": [],
+            "Essential": "true"
+          },
+          {
+            "Name": "empire",
+            "Image": "remind101/empire:latest",
+            "Cpu": 512,
+            "Memory": 256,
+            "EntryPoint": [],
+            "Environment": [
+              {
+                "Name": "AWS_REGION",
+                "Value": { "Ref": "AWS::Region" }
+              },
+              {
+                "Name": "EMPIRE_DATABASE_URL",
+                "Value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
+              },
+              {
+                "Name": "EMPIRE_ELB_VPC_ID",
+                "Value": { "Ref": "Vpc" }
+              },
+              {
+                "Name": "EMPIRE_ELB_INTERNAL_SG",
+                "Value": { "Ref": "InternalLoadBalancerSecurityGroup" }
+              },
+              {
+                "Name": "EMPIRE_ELB_EXTERNAL_SG",
+                "Value": { "Ref": "ExternalLoadBalancerSecurityGroup" }
+              },
+              {
+                "Name": "EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
+                "Value": { "Ref": "InternalDomain" }
+              },
+              {
+                "Name": "EMPIRE_EC2_SUBNETS_PRIVATE",
+                "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
+              },
+              {
+                "Name": "EMPIRE_EC2_SUBNETS_PUBLIC",
+                "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
+              }
+            ],
+            "Command": ["server", "-automigrate=true"],
+            "PortMappings": [
+              {
+                "HostPort": 8080,
+                "ContainerPort": 8080
+              }
+            ],
+            "VolumesFrom": [],
+            "Links": [
+              "postgres:postgres"
+            ],
+            "MountPoints": [
+              {
+                "SourceVolume": "dockerSocket",
+                "ContainerPath": "/var/run/docker.sock",
+                "ReadOnly": false
+              },
+              {
+                "SourceVolume": "dockerCfg",
+                "ContainerPath": "/root/.dockercfg",
+                "ReadOnly": false
+              }
+            ],
+            "Essential": true
+          }
+        ],
+        "Volumes": [
+          {
+            "Name": "dockerSocket",
+            "Host": {
+              "SourcePath": "/var/run/docker.sock"
+            }
+          },
+          {
+            "Name": "dockerCfg",
+            "Host": {
+              "SourcePath": "/home/ec2-user/.dockercfg"
+            }
+          }
+        ]
+      }
+    },
+
+    "Service": {
+      "Type" : "AWS::ECS::Service",
+      "Properties" : {
+        "Cluster" : { "Ref": "Cluster" },
+        "DesiredCount" : 1,
+        "LoadBalancers" : [
+          {
+            "ContainerName": "empire",
+            "ContainerPort": 8080,
+            "LoadBalancerName": { "Ref": "LoadBalancer" }
+          }
+        ],
+        "Role" : { "Ref": "ServiceRole" },
+        "TaskDefinition" : { "Ref": "TaskDefinition" }
+      }
     }
   },
 
@@ -402,6 +524,10 @@
     "ELBName": {
       "Description": "The name of the ELB for the Empire controller",
       "Value": { "Ref": "LoadBalancer" }
+    },
+    "Cluster": {
+      "Description": "Name of the ECS Cluster",
+      "Value": { "Ref": "Cluster" }
     },
     "ServiceRole": {
       "Description": "Role to assume when creating an ECS service with an ELB attached",
