@@ -134,7 +134,7 @@
         "VPCs": [
           {
             "VPCId": { "Ref": "Vpc" },
-            "VPCRegion": "us-east-1"
+            "VPCRegion": { "Ref": "AWS::Region" }
           }
         ]
       }
@@ -424,7 +424,7 @@
             "Environment": [
               {
                 "Name": "AWS_REGION",
-                "Value": "us-east-1"
+                "Value": { "Ref": "AWS::Region" }
               },
               {
                 "Name": "EMPIRE_DATABASE_URL",
