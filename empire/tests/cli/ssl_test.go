@@ -27,7 +27,7 @@ Status: Created new release v1 for acme-inc`,
 		},
 		{
 			fmt.Sprintf("ssl-cert-add -a acme-inc %s %s", crt.Name(), key.Name()),
-			`Added cert for acme-inc at .`,
+			`Added cert for acme-inc.`,
 		},
 		{
 			`set FOO=bar -a acme-inc`, // Trigger a release
