@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -57,55 +58,101 @@ type ECSConfig struct {
 	AWS *aws.Config
 }
 
-func (c ECSConfig) validELBConfig() bool {
-	return c.InternalSecurityGroupID != "" &&
-		c.ExternalSecurityGroupID != "" &&
-		len(c.InternalSubnetIDs) > 0 &&
-		len(c.ExternalSubnetIDs) > 0
-}
-
 // NewECSManager returns a new Manager implementation that:
 //
-// * Will create internal or external ELB's for ECS services.
-// * Will create a CNAME record in route53 under the internal TLD.
-func NewECSManager(config ECSConfig) *ECSManager {
+// * Creates services with ECS.
+func NewECSManager(config ECSConfig) (*ECSManager, error) {
 	c := ecsutil.NewClient(config.AWS)
 
+	// Create the ECS Manager
 	var pm ProcessManager = &ecsProcessManager{
 		cluster:     config.Cluster,
 		serviceRole: config.ServiceRole,
 		ecs:         c,
 	}
 
-	// If security group ids are provided, ELB's will be created for ECS
-	// services.
-	if config.validELBConfig() {
-		elb := lb.NewELBManager(config.AWS)
-		elb.InternalSecurityGroupID = config.InternalSecurityGroupID
-		elb.ExternalSecurityGroupID = config.ExternalSecurityGroupID
-		elb.InternalSubnetIDs = config.InternalSubnetIDs
-		elb.ExternalSubnetIDs = config.ExternalSubnetIDs
+	return &ECSManager{
+		cluster:        config.Cluster,
+		ProcessManager: pm,
+		ecs:            c,
+	}, nil
+}
 
-		var l lb.Manager = elb
+// NewLoadBalancedECSManager returns a new Manager implementation that:
+//
+// * Creates services with ECS.
+// * Creates internal or external ELB's for ECS services.
+// * Creates a CNAME record in route53 under the internal TLD.
+func NewLoadBalancedECSManager(config ECSConfig) (*ECSManager, error) {
+	if err := validateLoadBalancedConfig(config); err != nil {
+		return nil, err
+	}
 
-		if config.ZoneID != "" {
-			n := lb.NewRoute53Nameserver(config.AWS)
-			n.ZoneID = config.ZoneID
+	c := ecsutil.NewClient(config.AWS)
 
-			l = lb.WithCNAME(l, n)
-		}
+	// Create the ECS Manager
+	var pm ProcessManager = &ecsProcessManager{
+		cluster:     config.Cluster,
+		serviceRole: config.ServiceRole,
+		ecs:         c,
+	}
 
-		pm = &LBProcessManager{
-			ProcessManager: pm,
-			lb:             lb.WithLogging(l),
-		}
+	// Create the ELB Manager
+	elb := lb.NewELBManager(config.AWS)
+	elb.InternalSecurityGroupID = config.InternalSecurityGroupID
+	elb.ExternalSecurityGroupID = config.ExternalSecurityGroupID
+	elb.InternalSubnetIDs = config.InternalSubnetIDs
+	elb.ExternalSubnetIDs = config.ExternalSubnetIDs
+
+	// Compose the LB Manager
+	var lbm lb.Manager = elb
+
+	n := lb.NewRoute53Nameserver(config.AWS)
+	n.ZoneID = config.ZoneID
+
+	lbm = lb.WithCNAME(lbm, n)
+	lbm = lb.WithLogging(lbm)
+
+	pm = &LBProcessManager{
+		ProcessManager: pm,
+		lb:             lbm,
 	}
 
 	return &ECSManager{
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
+	}, nil
+}
+
+func validateLoadBalancedConfig(c ECSConfig) error {
+	r := func(n string) error {
+		return errors.New(fmt.Sprintf("%s is required", n))
 	}
+
+	if c.Cluster == "" {
+		return r("Cluster")
+	}
+	if c.ServiceRole == "" {
+		return r("ServiceRole")
+	}
+	if c.ZoneID == "" {
+		return r("ZoneID")
+	}
+	if c.InternalSecurityGroupID == "" {
+		return r("InternalSecurityGroupID")
+	}
+	if c.ExternalSecurityGroupID == "" {
+		return r("ExternalSecurityGroupID")
+	}
+	if len(c.InternalSubnetIDs) == 0 {
+		return r("InternalSubnetIDs")
+	}
+	if len(c.ExternalSubnetIDs) == 0 {
+		return r("ExternalSubnetIDs")
+	}
+
+	return nil
 }
 
 // Submit will create an ECS service for each individual process in the App. New

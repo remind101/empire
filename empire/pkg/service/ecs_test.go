@@ -439,12 +439,18 @@ var fakeApp = &App{
 func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	return NewECSManager(ECSConfig{
+	m, err := NewECSManager(ECSConfig{
 		AWS: aws.DefaultConfig.Merge(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    s.URL,
 			Region:      "localhost",
 		}),
 		Cluster: "empire",
-	}), s
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	return m, s
 }

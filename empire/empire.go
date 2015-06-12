@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
+	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -130,11 +131,14 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	manager := newManager(
+	manager, err := newManager(
 		options.ECS,
 		options.ELB,
 		options.AWSConfig,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	accessTokens := &accessTokensService{
 		Secret: []byte(options.Secret),
@@ -381,12 +385,13 @@ const (
 	UserKey key = 0
 )
 
-func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) service.Manager {
+func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (service.Manager, error) {
 	if config == nil {
-		return service.NewFakeManager()
+		log.Println("warn: AWS not configured, ECS service management disabled.")
+		return service.NewFakeManager(), nil
 	}
 
-	return service.NewECSManager(service.ECSConfig{
+	return service.NewLoadBalancedECSManager(service.ECSConfig{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
@@ -400,6 +405,7 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) serv
 
 func newCertManager(config *aws.Config) sslcert.Manager {
 	if config == nil {
+		log.Println("warn: AWS not configured, IAM server certificate management disabled.")
 		return sslcert.NewFakeManager()
 	}
 
@@ -409,6 +415,7 @@ func newCertManager(config *aws.Config) sslcert.Manager {
 func newRunner(options RunnerOptions, s *store) *runner {
 	var r containerRelayer
 	if options.API == "fake" {
+		log.Println("warn: runner not configured, command runner disabled.")
 		r = &fakeRelayer{}
 	} else {
 		r = &relayer{API: options.API}
@@ -430,6 +437,7 @@ func newLogger() log15.Logger {
 
 func newExtractor(o DockerOptions) (Extractor, error) {
 	if o.Socket == "" {
+		log.Println("warn: docker socket not configured, docker command extractor disabled.")
 		return &fakeExtractor{}, nil
 	}
 
@@ -439,6 +447,7 @@ func newExtractor(o DockerOptions) (Extractor, error) {
 
 func newResolver(o DockerOptions) (Resolver, error) {
 	if o.Socket == "" {
+		log.Println("warn: docker socket not configured, docker image puller disabled.")
 		return &fakeResolver{}, nil
 	}
 
