@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/empire/pkg/httpmock"
 )
 
 func TestFakeExtractor(t *testing.T) {
@@ -30,7 +30,7 @@ func TestFakeExtractor(t *testing.T) {
 }
 
 func TestCmdExtractor(t *testing.T) {
-	api := newReplayHandler(t).Add(testPathHandler(t,
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
 		"GET /images/remind101:acme-inc/json",
 		200, `{ "Config": { "Cmd": ["/go/bin/app","server"] } }`,
 	))
@@ -60,16 +60,16 @@ func TestCmdExtractor(t *testing.T) {
 }
 
 func TestProcfileExtractor(t *testing.T) {
-	api := newReplayHandler(t).Add(testPathHandler(t,
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
 		"POST /containers/create",
 		200, `{ "ID": "abc" }`,
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"GET /containers/abc/json",
 		200, `{}`,
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"POST /containers/abc/copy",
 		200, tarProcfile(t),
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"DELETE /containers/abc",
 		200, `{}`,
 	))
@@ -100,19 +100,19 @@ func TestProcfileExtractor(t *testing.T) {
 }
 
 func TestProcfileFallbackExtractor(t *testing.T) {
-	api := newReplayHandler(t).Add(testPathHandler(t,
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
 		"POST /containers/create",
 		200, `{ "ID": "abc" }`,
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"GET /containers/abc/json",
 		200, `{}`,
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"POST /containers/abc/copy",
 		404, ``,
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"DELETE /containers/abc",
 		200, `{}`,
-	)).Add(testPathHandler(t,
+	)).Add(httpmock.PathHandler(t,
 		"GET /images/remind101:acme-inc/json",
 		200, `{ "Config": { "Cmd": ["/go/bin/app","server"] } }`,
 	))
@@ -150,46 +150,6 @@ func newTestDockerClient(t *testing.T, fakeDockerAPI http.Handler) (*docker.Clie
 	}
 
 	return c, s
-}
-
-type replayHandler struct {
-	t        *testing.T
-	i        int
-	handlers []http.Handler
-}
-
-func newReplayHandler(t *testing.T) *replayHandler {
-	return &replayHandler{t: t, handlers: make([]http.Handler, 0)}
-}
-
-func (h *replayHandler) Add(handler http.Handler) *replayHandler {
-	h.handlers = append(h.handlers, handler)
-	return h
-}
-
-func (h *replayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if h.i >= len(h.handlers) {
-		h.t.Errorf("http request: %s %s; no more handlers to replay", r.Method, r.URL.Path)
-	} else {
-		h.handlers[h.i].ServeHTTP(w, r)
-		h.i++
-	}
-}
-
-func testPathHandler(t *testing.T, methPath string, respStatus int, respBody string) http.Handler {
-	s := strings.SplitN(methPath, " ", 2)
-	method := s[0]
-	path := s[1]
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if method == r.Method && path == r.URL.Path {
-			w.WriteHeader(respStatus)
-			w.Write([]byte(respBody))
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			t.Errorf("http request => %s %s; want %s %s", r.Method, r.URL.Path, method, path)
-		}
-	})
 }
 
 func tarProcfile(t *testing.T) string {
