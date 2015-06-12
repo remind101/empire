@@ -28,15 +28,11 @@ read -p "AWS KeyName: " keyname
 
 echo "==> Launching empire in AZs: $ZONES"
 
-printf "==> Creating ECS service: %s\n" $STACK
-aws ecs create-cluster --cluster-name "$STACK" > /dev/null
-
 printf "==> Creating cloudformation stack: %s\n" $STACK
 aws cloudformation create-stack \
   --stack-name "$STACK" \
   --template-body file://$PWD/docs/guide/cloudformation.json \
   --parameters \
-      ParameterKey=EcsCluster,ParameterValue="$STACK" \
       ParameterKey=DesiredCapacity,ParameterValue=5 \
       ParameterKey=MaxCapacity,ParameterValue=10 \
       ParameterKey=DockerUser,ParameterValue="$docker_user" \
@@ -72,7 +68,7 @@ echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
 echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
 echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
 echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
-echo "EMPIRE_ECS_CLUSTER=$STACK" >> .env
+echo "EMPIRE_ECS_CLUSTER=$(output Cluster)" >> .env
 echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
 echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
 echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
