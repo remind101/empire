@@ -42,7 +42,7 @@ func TestLoginUnauthorized(t *testing.T) {
 		t.Fatal("Expected an error")
 	}
 
-	if got, want := string(out), "Enter email: error: Request not authenticated, API token is missing, invalid or expired Log in with `hk login`.\n"; got != want {
+	if got, want := string(out), "Enter email: error: Request not authenticated, API token is missing, invalid or expired Log in with `emp login`.\n"; got != want {
 		t.Fatalf("%q", got)
 	}
 }
