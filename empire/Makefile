@@ -1,5 +1,6 @@
 .PHONY: cmd build test
 
+TYPE = "patch"
 VERSION = "0.8.0"
 
 cmd:
@@ -16,3 +17,7 @@ build: Dockerfile
 
 test:
 	godep go test ./... && godep go vet ./...
+
+release:
+	pip install --upgrade bumpversion
+	bumpversion ${TYPE}
