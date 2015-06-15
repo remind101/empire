@@ -1,7 +1,7 @@
 .PHONY: cmd build test
 
 TYPE = "patch"
-VERSION = "0.8.0"
+VERSION = "0.9.0"
 
 cmd:
 	godep go build -o build/empire ./cmd/empire
