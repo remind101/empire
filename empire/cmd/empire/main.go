@@ -196,6 +196,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "empire"
 	app.Usage = "Platform as a Binary"
+	app.Version = Version
 	app.Commands = Commands
 
 	app.Run(os.Args)

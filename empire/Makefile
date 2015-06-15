@@ -1,5 +1,7 @@
 .PHONY: cmd build test
 
+VERSION = "0.8.0"
+
 cmd:
 	godep go build -o build/empire ./cmd/empire
 
@@ -10,7 +12,7 @@ bootstrap: cmd
 	./build/empire migrate
 
 build: Dockerfile
-	docker build --no-cache -t remind101/empire .
+	docker build --no-cache -t remind101/empire:$(VERSION) .
 
 test:
 	godep go test ./... && godep go vet ./...
