@@ -68,7 +68,7 @@ exec acme-inc server -port=$PORT
 
 Unit tests live alongside each go file as `_test.go`.
 
-There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [hk][hk] command.
+There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [emp][emp] command.
 
 To get started, run:
 
@@ -137,4 +137,5 @@ $ emp deploy remind101/acme-inc
 [tugboat]: https://github.com/remind101/tugboat
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
+[emp]: https://github.com/remind101/emp
 [guide]: ./docs/guide
