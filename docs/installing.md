@@ -16,7 +16,7 @@ This guide assumes that you have the following installed:
 * **AWS CLI**: If you haven't already done so, you can find the instructions at [http://aws.amazon.com/cli/](http://aws.amazon.com/cli/). You'll need a fairly recent version of the CLI, which has support for ECS.
 
 ```console
-sudo -H pip install --upgrade awscli
+$ sudo -H pip install --upgrade awscli
 ```
 
 * **EC2 SSH KeyPair**: You'll need to make sure that you've created an EC2 SSH KeyPair for the hosts that you are launching in the demo environment. See [creating or importing a keypair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) for more information

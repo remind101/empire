@@ -1,4 +1,4 @@
-$ empire :: Using
+# Empire :: Using
 
 1. [Overview](./README.md)
 2. [Installing](./installing.md)
