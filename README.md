@@ -125,8 +125,6 @@ $ export EMPIRE_API_URL=http://$(boot2docker ip):8080
 $ emp deploy remind101/acme-inc
 ```
 
-If you run into problems with authentication, ensure that the hk client you're using is built from the master branch of [github.com/heroku/hk][hk].
-
 ## Roadmap
 
 * [Enhanced Procfile support](https://github.com/remind101/empire/issues/491).
