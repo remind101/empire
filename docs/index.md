@@ -7,91 +7,110 @@
 5. [Troubleshooting](./troubleshooting.md) **TODO**
 6. [Roadmap](./roadmap.md) **TODO**
 
-Empire is an open source, self-hosted PaaS that intends to make the deployment and
-management of 12-factor apps easy. It's goals are:
+Empire is an open source, self-hosted PaaS that makes deployment and management
+of [dockerized][dockerized] [12-factor apps][12factor] easy. Empire's goals are
+described below.
 
 ### Ease of Use
 
-We're big fans of Twelve-Factor apps and Heroku, and so when we built Empire we sought
-to try and make it as similar to Heroku as we could.
+We're big fans of Twelve-Factor apps and Heroku. When we built Empire we strived
+to make it as similar to the Heroku experience as we could.
 
-### Simple in Design
+### Simple Design
 
-We wanted to make the management of Empire itself as easy as possible. This meant
-keeping it's dependencies to a small number, and trying to make as many of those be
-managed services.
+We want to make managing Empire as easy as possible. This means keeping it's
+dependencies to a minimum. Of those dependencies, as many as possible are
+available as managed services.
 
-As of now, the two major dependencies are:
+As of now, Empire's two major dependencies are:
 
-- Amazon's EC2 Container Service (ECS)
-- A postgres database (which we tend to use RDS for, simplifying management even more)
+1. [Amazon EC2 Container Service ][ecs]
+2. A PostgreSQL database. We use [Amazon RDS][amazonrds]
 
-As well, Empire itself is meant to be simple. Once an application has been handed to
-ECS, Empire lets ECS manage it entirely, taking a hands off approach. It doesn't
-attempt to modify the application unless someone asks it to (ie: scaling up, modifying
-environment variables, or deploying a new release).
+Empire itself is also very simple. Once an application has been handed to ECS,
+Empire takes a hands off approach and lets ECS manage it entirely. It doesn't
+attempt to modify the application unless someone asks it to (i.e., scaling up
+or down, modifying environment variables, or deploying new releases).
 
-### Failure Resiliency
+### Failure Resilient
 
-We wanted to make sure that in the case that we lost a container, a host, or even
-multiple hosts the system would recover. Using Amazon services & features, we're able
-to achieve this.
+We want to make sure that in the case that we lose a container, a host, or even
+multiple hosts the system will recover. By using Amazon services and features,
+we are able to achieve this.
 
-- A container dies? No problem, ECS will bring it back up. In the mean time traffic for
-  that app will be routed to other containers (provided you are running multiple) via
-  ELB.
-- A host dies? No problem, ECS will reschedule containers while Autoscaling will
-  bring up a new host in it's place. Again ELB will make sure that the app stays up,
-  provided there are multiple copies of it running.
-- Multiple hosts dies? See above - though obviously it might take a little longer to
-  recover.
+* A container dies? No problem; ECS will bring it back up. In the meantime
+  traffic for that app is routed to other containers (provided you have scaled
+  your app to more than one process) via [ELB][elb].
 
-### Better security controls
+* A host dies? No problem; ECS will reschedule containers while
+  [Auto Scaling][autoscaling] brings up a new host in it's place. Again, ELB
+  will make sure that the app stays up, provided there are multiple copies of it
+  running.
 
-Because we control the hosts that our containers run on, we can control things like
-having the filesystem be encrypted. We also have direct access to things like
-Amazon Security Groups & Identity and Access Management (IAM).
+* Multiple hosts dies? See above - though it may take a longer to recover.
 
-### Better visibility
+### Better Security Controls
 
-Again, because we control everything down to the instance OS, we can gather stats
-all the way down. We can tell if we have a 'noisy neighbor' by watching for things
-like stolen CPU time. Also we can implement just about any piece of software we want
-on the host side.
+We have full of control over the hosts that our containers run on. That means we
+can control things like filesystem encryption. We also have direct access to
+[Amazon Identity and Access Management (IAM)][iam].
+
+### Better Visibility
+
+Since we control everything down to the instance OS, we can gather stats at
+every layer in the stack. We can tell if we have a 'noisy neighbor' by watching
+for stolen CPU time. We can install any type of monitoring, logging, or metrics
+software we want on the host side.
 
 # Who should use Empire?
 
-Empire isn't for everyone. While it aims to be operationally simple to run, there are
-still some operational costs involved in managing the service. Mostly Empire is
-meant for companies who run many services in a microservices/SOA type architecture,
-are looking for the ease of use of a Heroku like system, but need additional control
-over things like security and the systems their applications run on.
+Empire isn't for everyone. While it aims to be simple to run, there are still
+some operational costs involved in managing the service. Empire is well suited
+for companies that have a microservices/SOA type architecture, are looking for
+the ease of use of a Heroku like system, but need additional control over
+security and the systems their applications run on.
 
+# What does Empire not do?
 
-# What doesn't Empire do?
+There are a few things Empire does not do currently - largely due to the fact
+that these add quite a bit of complexity to Empire. We feel that different users
+will want the flexibility to come up with their own solutions.
 
-So what doesn't Empire do for you that Heroku does? There are a few things - largely
-due to the fact that these add quite a bit of complexity to Empire, and we felt that
-different users would want the flexibility to come up with their own solutions.
+In the future, as we iterate on how we handle these things at Remind, we'll
+share how we handle them, or open source them.
 
-In the future, as we iterate on how we handle these things at Remind, we'll share how
-we handle them, or even just open source those projects as well.
+## Logging and Metrics
 
-## Logging & Metrics
+Internally at Remind we use a combination of [logspout][logspout], [Heka][heka],
+and [Sumo Logic][sumologic] to aggregate logs from both containers and the
+container host. We use [collectd][collectd] and [Librato][librato] to gather
+stats from both the containers and the container host as well.
 
-Internally @ Remind we use a combination of logspout, heka, and sumologic to aggregate
-the logs from both containers and the host itself. We use collectd and librato to
-gather stats from both the containers and the host as well.
-
-In general this solution works for us, but we don't feel that it's sufficiently generic
+This solution works for us, but we don't feel that it's sufficiently generic
 or simple enough to make it a part of the core Empire project itself.
 
-## Creating & Serving Docker Images
+## Creating and Serving Docker Images
 
 Empire deploys docker images, so you'll need some place to host those images and
 something to build them.
 
-At Remind we host our docker images in a private repository on the main Docker Hub
-site. We build images via circle-ci on each push into each repository.
+At Remind we host our docker images in a private repository on the official
+[Docker Hub Registry][dockerhub]. We build images via CircleCI on each push into
+each repository.
 
 ## Attached Resources
+
+[dockerized]: https://docs.docker.com/userguide/dockerizing/
+[12factor]: http://12factor.net/
+[amazonrds]: http://aws.amazon.com/rds/postgresql/
+[ecs]: http://aws.amazon.com/ecs/
+[elb]: http://aws.amazon.com/elasticloadbalancing/
+[autoscaling]: http://aws.amazon.com/autoscaling/
+[iam]: http://aws.amazon.com/iam/
+[logspout]: https://github.com/gliderlabs/logspout
+[heka]: http://hekad.readthedocs.org/en/latest/
+[sumologic]: https://www.sumologic.com/
+[collectd]: https://collectd.org/
+[librato]: https://www.librato.com/
+[dockerhub]: https://registry.hub.docker.com/
+[circleci]: https://circleci.com/
