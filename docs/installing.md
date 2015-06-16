@@ -38,8 +38,8 @@ Also check that the offical ECS AMI ID for US East matches with the one in [clou
 In order to get access to the script & cloudformation template, you need to check out a copy of the empire source control:
 
 ```console
-# git clone https://github.com/remind101/empire.git
-# cd empire
+$ git clone https://github.com/remind101/empire.git
+$ cd empire
 ```
 
 ## Step 3 - CloudFormation
@@ -48,7 +48,7 @@ Create a new CloudFormation stack using the [launch\_demo](../bin/launch_demo) s
 
 
 ```console
-# ./bin/launch_demo
+$ ./bin/launch_demo
 AWS SSH KeyName: default
 Do you have a docker account & want to use it for private repo access? [y/N] n
 ==> Launching empire in AZs: us-east-1b us-east-1c, Cloudformation Stack empire-33f2adf2
