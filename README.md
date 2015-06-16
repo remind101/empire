@@ -38,7 +38,7 @@ Apps default to only being exposed internally, unless you add a custom domain to
 
 ### Deploying
 
-Any tagged Docker image can be deployed to Empire as an app. Empire doesn't enforce how you tag your Docker images, but we recommend tagging the image with the git sha that it was built from, and deploying that. We have a tool for performing deployments called [Tugboat][tugboat] that supports deploying Docker images to empire.
+Any tagged Docker image can be deployed to Empire as an app. Empire doesn't enforce how you tag your Docker images, but we recommend tagging the image with the git sha that it was built from, and deploying that. We have a tool for performing deployments called [Tugboat][tugboat] that supports deploying Docker images to Empire.
 
 When you deploy a Docker image to Empire, it will extract a `Procfile` from the WORKDIR. Like Heroku, you can specify different process types that compose your service (e.g. `web` and `worker`), and scale them individually. Each process type in the Procfile maps directly to an ECS Service.
 
@@ -84,7 +84,7 @@ $ godep go test ./...
 
 ## Development
 
-If you want to contribute to empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
+If you want to contribute to Empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
 
 1. Ensure that you have the AWS CLI installed and configured.
 2. Ensure that you accepted the terms and conditions for the official ECS AMI:
@@ -93,7 +93,7 @@ If you want to contribute to empire, you may end up wanting to run a local insta
 
    Also check that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./cloudformation.json): https://github.com/remind101/empire/blob/master/docs/guide/cloudformation.json#L20
 
-3. Run boot2docker and export the environment variables so empire can connect:
+3. Run boot2docker and export the environment variables so Empire can connect:
 
    ```console
    $ boot2docker start
@@ -107,7 +107,7 @@ If you want to contribute to empire, you may end up wanting to run a local insta
    ```console
    $ ./bin/bootstrap
    ```
-5. Run empire with [docker-compose](https://docs.docker.com/compose/):
+5. Run Empire with [docker-compose](https://docs.docker.com/compose/):
 
    ```console
    $ docker-compose up
