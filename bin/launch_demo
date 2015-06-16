@@ -71,4 +71,4 @@ while [ "$stack_status" != "CREATE_COMPLETE" ]; do
     exit 1
   fi
 done
-echo "Stack $STACK complete. EMPIRE_API_URL=http://$(output ELBDNSName)/"
+echo "==> Stack $STACK complete. EMPIRE_API_URL=http://$(output ELBDNSName)/"
