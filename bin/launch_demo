@@ -35,7 +35,7 @@ ZONES=$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneNa
 # have to escape commas in parameters for aws cli
 SAFEZONES=$(echo $ZONES | sed -e 's/ /\\,/g')
 
-read -p "AWS KeyName: " keyname
+read -p "AWS SSH KeyName: " keyname
 read -p "Do you have a docker account & want to use it for private repo access? [y/N] " private_docker
 
 private_docker=$(echo $private_docker | tr '[a-z]' '[A-Z'])
