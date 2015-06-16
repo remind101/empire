@@ -100,7 +100,7 @@ If you want to contribute to empire, you may end up wanting to run a local insta
    $ $(boot2docker shellinit)
    ```
 
-   You should ensure that you've configured boot2docker to disable TLS. Refer to https://coderwall.com/p/siqnjg/disable-tls-on-boot2docker.
+   You should ensure that you've configured boot2docker to disable TLS. Refer to the [wiki](https://github.com/remind101/empire/wiki/Disable-TLS-on-boot2docker).
 
 4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
@@ -126,6 +126,12 @@ $ emp deploy remind101/acme-inc
 ```
 
 If you run into problems with authentication, ensure that the hk client you're using is built from the master branch of [github.com/heroku/hk][hk].
+
+## Roadmap
+
+* [Enhanced Procfile support](https://github.com/remind101/empire/issues/491).
+* Kubernetes backend.
+* Sidekiq containers.
 
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
