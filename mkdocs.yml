@@ -1,1 +1,9 @@
-site_name: My Docs
+site_name: Empire Documentation
+theme: readthedocs
+pages:
+  - 'Overview': 'README.md'
+  - 'Installing': 'installing.md'
+  - 'Using': 'using.md'
+  - 'Administering - TODO': 'administering.md'
+  - 'Troubleshooting - TODO': 'troubleshooting.md'
+  - 'Roadmap - TODO': 'roadmap.md'
