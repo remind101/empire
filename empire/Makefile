@@ -2,7 +2,6 @@
 
 REPO = remind101/empire
 TYPE = patch
-VERSION = 0.9.0
 
 cmd:
 	godep go build -o build/empire ./cmd/empire
@@ -19,8 +18,10 @@ build: Dockerfile
 test:
 	godep go test ./... && godep go vet ./...
 
-release: test build
+bump:
 	pip install --upgrade bumpversion
 	bumpversion ${TYPE}
-	docker tag ${REPO} ${REPO}:${VERSION}
-	docker push ${REPO}:${VERSION}
+
+release: test build bump
+	docker tag ${REPO} ${REPO}:$(shell cat VERSION)
+	docker push ${REPO}:$(shell cat VERSION)
