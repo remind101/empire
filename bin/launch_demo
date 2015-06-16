@@ -71,4 +71,7 @@ while [ "$stack_status" != "CREATE_COMPLETE" ]; do
     exit 1
   fi
 done
-echo "==> Stack $STACK complete. EMPIRE_API_URL=http://$(output ELBDNSName)/"
+echo
+echo "==> Stack $STACK complete. Now run the following commands - when asked for a username, enter 'fake'. The password is blank:"
+echo "$ export EMPIRE_API_URL=http://$(output ELBDNSName)/"
+echo "$ emp login"
