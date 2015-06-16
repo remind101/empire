@@ -1,5 +1,12 @@
 # Empire :: Installing
 
+1. [Overview](./README.md)
+2. [Installing](./installing.md)
+3. [Using](./using.md)
+4. [Administering](./administering.md) **TODO**
+5. [Troubleshooting](./troubleshooting.md) **TODO**
+6. [Roadmap](./roadmap.md) **TODO**
+
 The following is meant to be used as a quick way to try empire. It is not secure and is not suitable for production use.
 
 ### Prerequisites

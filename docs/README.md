@@ -3,9 +3,9 @@
 1. [Overview](./README.md)
 2. [Installing](./installing.md)
 3. [Using](./using.md)
-4. [Administering](./administering.md)
-5. [Troubleshooting](./troubleshooting.md)
-6. [Roadmap](./roadmap.md)
+4. [Administering](./administering.md) **TODO**
+5. [Troubleshooting](./troubleshooting.md) **TODO**
+6. [Roadmap](./roadmap.md) **TODO**
 
 Empire is an open source, self-hosted PaaS that intends to make the deployment and
 management of 12-factor apps easy. It's goals are:

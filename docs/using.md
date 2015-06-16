@@ -1,5 +1,12 @@
 # Empire :: Using
 
+1. [Overview](./README.md)
+2. [Installing](./installing.md)
+3. [Using](./using.md)
+4. [Administering](./administering.md) **TODO**
+5. [Troubleshooting](./troubleshooting.md) **TODO**
+6. [Roadmap](./roadmap.md) **TODO**
+
 Going forward from the [installing](./installing.md) guide, the first thing we'll need to do is tell the empire client where it can find the empire API. The *launch_demo* command should have printed that out for you, so make sure you've set it in your environment like so:
 
   ```console
