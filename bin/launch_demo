@@ -40,7 +40,7 @@ read -p "Do you have a docker account & want to use it for private repo access? 
 
 private_docker=$(echo $private_docker | tr '[a-z]' '[A-Z'])
 
-AWSCMD="aws cloudformation create-stack --stack-name "$STACK" --template-body file://$PWD/docs/guide/cloudformation.json --capabilities CAPABILITY_IAM" 
+AWSCMD="aws cloudformation create-stack --stack-name "$STACK" --template-body file://$PWD/docs/cloudformation.json --capabilities CAPABILITY_IAM" 
 
 PARAMETERS="ParameterKey=DesiredCapacity,ParameterValue=5 ParameterKey=MaxCapacity,ParameterValue=10 ParameterKey=AvailabilityZones,ParameterValue=\"$SAFEZONES\" ParameterKey=KeyName,ParameterValue=$keyname"
 
