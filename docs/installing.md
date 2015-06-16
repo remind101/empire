@@ -31,8 +31,8 @@ Also check that the offical ECS AMI ID for US East matches with the one in [clou
 In order to get access to the script & cloudformation template, you need to check out a copy of the empire source control:
 
   ```console
-  git clone https://github.com/remind101/empire.git
-  cd empire
+  # git clone https://github.com/remind101/empire.git
+  # cd empire
   ```
 
 ## Step 2 - CloudFormation
@@ -47,7 +47,7 @@ Create a new CloudFormation stack using the [launch\_demo](../bin/launch_demo) s
   ==> Launching empire in AZs: us-east-1b us-east-1c, Cloudformation Stack empire-33f2adf2
   ==> Waiting for stack to complete
   ==> Status: CREATE_IN_PROGRESS
-  ==> Stack empire-33f2adf2 complete. EMPIRE_API_URL=http://http://empire-20-LoadBala-13W8IZP5QE8B7-1586184748.us-east-1.elb.amazonaws.com/
+  ==> Stack empire-33f2adf2 complete. EMPIRE_API_URL=http://empire-60-LoadBala-1M8NAQ24SPGMP-770037928.us-east-1.elb.amazonaws.com/
   ```
 
 This is a very simple stack that will:
@@ -57,13 +57,3 @@ This is a very simple stack that will:
 * Create a a Launch Configuration and Auto Scaling Group that will use the official ECS AMI.
 * Create an ECS Cluster and Service for Empire.
 * Configure the instances to be able to pull from a private registry. (If you provide docker credentials when it asks)
-
-## Step 3 - Deploy something
-
-Now once Empire is running and has registered itself with ELB, you can use the `emp` CLI to deploy apps:
-
-```console
-$ export EMPIRE_API_URL=http://$(stack-output $STACK ELBDNSName)
-$ emp login # username is fake, password is blank
-$ emp deploy remind101/acme-inc:latest
-```
