@@ -1,7 +1,7 @@
 site_name: Empire Documentation
 theme: readthedocs
 pages:
-  - 'Overview': 'README.md'
+  - 'Overview': 'index.md'
   - 'Installing': 'installing.md'
   - 'Using': 'using.md'
   - 'Administering - TODO': 'administering.md'
