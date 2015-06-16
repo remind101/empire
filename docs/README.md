@@ -23,8 +23,13 @@ managed services.
 
 As of now, the two major dependencies are:
 
-- Amazon's EC2 Container Service
+- Amazon's EC2 Container Service (ECS)
 - A postgres database (which we tend to use RDS for, simplifying management even more)
+
+As well, Empire itself is meant to be simple. Once an application has been handed to
+ECS, Empire lets ECS manage it entirely, taking a hands off approach. It doesn't
+attempt to modify the application unless someone asks it to (ie: scaling up, modifying
+environment variables, or deploying a new release).
 
 ### Failure Resiliency
 
