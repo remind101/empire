@@ -31,7 +31,7 @@ echo "==> Launching empire in AZs: $ZONES"
 printf "==> Creating cloudformation stack: %s\n" $STACK
 aws cloudformation create-stack \
   --stack-name "$STACK" \
-  --template-body file://$PWD/docs/guide/cloudformation.json \
+  --template-body file://$PWD/docs/cloudformation.json \
   --parameters \
       ParameterKey=DesiredCapacity,ParameterValue=5 \
       ParameterKey=MaxCapacity,ParameterValue=10 \

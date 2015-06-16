@@ -91,7 +91,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 
    https://aws.amazon.com/marketplace/ordering?productId=4ce33fd9-63ff-4f35-8d3a-939b641f1931&ref_=dtl_psb_continue&region=us-east-1
 
-   Also check that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./cloudformation.json): https://github.com/remind101/empire/blob/master/docs/guide/cloudformation.json#L20
+   Also check that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./docs/cloudformation.json): https://github.com/remind101/empire/blob/master/docs/cloudformation.json#L20
 
 3. Run boot2docker and export the environment variables so Empire can connect:
 
@@ -138,4 +138,4 @@ $ emp deploy remind101/acme-inc
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
 [emp]: https://github.com/remind101/emp
-[guide]: ./docs/guide
+[guide]: ./docs
