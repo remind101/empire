@@ -7,16 +7,16 @@
 5. [Troubleshooting](./troubleshooting.md) **TODO**
 6. [Roadmap](./roadmap.md) **TODO**
 
-The following is meant to be used as a quick way to try empire. It is not secure and is not suitable for production use.
+**IMPORTANT:** The following is meant to be used as a quick way to try empire. This method is not suggested for a production environment, and should not be considered secure. There will be further docs describing best practices for production environments.
 
 ### Prerequisites
 
 This guide assumes that you have the following installed:
 
-* **AWS CLI**: If you haven't already done so, you can find the instructions at http://aws.amazon.com/cli/. You'll need a fairly recent version of the CLI, which has support for ECS.
+* **AWS CLI**: If you haven't already done so, you can find the instructions at [http://aws.amazon.com/cli/](http://aws.amazon.com/cli/). You'll need a fairly recent version of the CLI, which has support for ECS.
 
   ```console
-  sudo pip install --upgrade awscli
+  sudo -H pip install --upgrade awscli
   ```
 
 * **EC2 SSH KeyPair**: You'll need to make sure that you've created an EC2 SSH KeyPair for the hosts that you are launching in the demo environment. See [creating or importing a keypair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) for more information
@@ -49,7 +49,7 @@ Create a new CloudFormation stack using the [launch\_demo](../bin/launch_demo) s
 
   ```console
   # ./bin/launch_demo
-  AWS KeyName: default
+  AWS SSH KeyName: default
   Do you have a docker account & want to use it for private repo access? [y/N] n
   ==> Launching empire in AZs: us-east-1b us-east-1c, Cloudformation Stack empire-33f2adf2
   ==> Waiting for stack to complete

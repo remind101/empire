@@ -63,7 +63,7 @@ Now we can see acme-inc is running as an app in Empire. One feature of Empire is
   v1.web.ea82cf91-5324-4a11-a7b0-8a9672a119e1  1X  RUNNING  62s  "acme-inc server"
   ```
 
-Lets break down each part of the output, starting with the first field - the task name. As you can see, docker task names are broken up into 3 period (.) separated parts. The first is the 'release' version of the task, in this case **v1**. The second is the process type of the task: **web**. Finally we have a random UUID which we use to ensure that our task names are uniquely named.
+Lets break down each part of the output, starting with the first field - the task name. As you can see, empire task names are broken up into 3 period (.) separated parts. The first is the 'release' version of the task, in this case **v1**. The second is the process type of the task: **web**. Finally we have a random UUID which we use to ensure that our task names are uniquely named.
 
 The next field is the resource size of the container. Empire supports the standard Heroku container sizes (1X/2X/PX), as well as more fine grained controls (256:1GB - for 256 CPU shares and 1 gigabyte of memory, for example), but we'll go over those more later on.
 
