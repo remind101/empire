@@ -20,16 +20,19 @@
     },
     "DockerUser": {
       "Type": "String",
-      "Description": "Docker username for private registry"
+      "Description": "Docker username for private registry",
+      "Default": ""
     },
     "DockerPass": {
       "Type": "String",
       "Description": "Docker password for private registry",
+      "Default": "",
       "NoEcho": true
     },
     "DockerEmail": {
       "Type": "String",
-      "Description": "Docker registry email"
+      "Description": "Docker registry email",
+      "Default": ""
     },
     "MaxCapacity": {
       "Type": "String",
@@ -431,15 +434,19 @@
                 "Value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
               },
               {
+                "Name": "EMPIRE_ECS_CLUSTER",
+                "Value": { "Ref": "Cluster"  }
+              },
+              {
                 "Name": "EMPIRE_ELB_VPC_ID",
                 "Value": { "Ref": "Vpc" }
               },
               {
-                "Name": "EMPIRE_ELB_INTERNAL_SG",
+                "Name": "EMPIRE_ELB_SG_PRIVATE",
                 "Value": { "Ref": "InternalLoadBalancerSecurityGroup" }
               },
               {
-                "Name": "EMPIRE_ELB_EXTERNAL_SG",
+                "Name": "EMPIRE_ELB_SG_PUBLIC",
                 "Value": { "Ref": "ExternalLoadBalancerSecurityGroup" }
               },
               {
