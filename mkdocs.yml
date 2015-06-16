@@ -1,0 +1,9 @@
+site_name: Empire Documentation
+theme: readthedocs
+pages:
+  - 'Overview': 'index.md'
+  - 'Installing': 'installing.md'
+  - 'Using': 'using.md'
+  - 'Administering - TODO': 'administering.md'
+  - 'Troubleshooting - TODO': 'troubleshooting.md'
+  - 'Roadmap - TODO': 'roadmap.md'
