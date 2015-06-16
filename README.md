@@ -127,6 +127,12 @@ $ emp deploy remind101/acme-inc
 
 If you run into problems with authentication, ensure that the hk client you're using is built from the master branch of [github.com/heroku/hk][hk].
 
+## Roadmap
+
+* [Enhanced Procfile support](https://github.com/remind101/empire/issues/491).
+* Kubernetes backend.
+* Sidekiq containers.
+
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
 [heroku-api]: https://devcenter.heroku.com/articles/platform-api-reference
