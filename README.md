@@ -10,7 +10,7 @@ To use Empire, you'll need to have an ECS cluster running. See the [quickstart g
 
 ## Architecture
 
-Empire aims to make it trivially easy to deploy a container based microservices architecture, without all of the complexities of managing systems like Mesos or Kubernetes. ECS takes care of much of that work, but Empire attemps to enhance the interface to ECS for deploying and maintaining applications, allowing you to deploy Docker images as easily as:
+Empire aims to make it trivially easy to deploy a container based microservices architecture, without all of the complexities of managing systems like Mesos or Kubernetes. ECS takes care of much of that work, but Empire attempts to enhance the interface to ECS for deploying and maintaining applications, allowing you to deploy Docker images as easily as:
 
 ```console
 $ emp deploy remind101/acme-inc:latest
