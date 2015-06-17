@@ -5,5 +5,5 @@ pages:
   - 'Installing': 'installing.md'
   - 'Using': 'using.md'
   - 'Administering - TODO': 'administering.md'
-  - 'Troubleshooting - TODO': 'troubleshooting.md'
+  - 'Troubleshooting': 'troubleshooting.md'
   - 'Roadmap - TODO': 'roadmap.md'
