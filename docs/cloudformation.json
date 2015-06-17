@@ -18,6 +18,11 @@
       "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "The name of the key pair to use to allow SSH access."
     },
+    "DockerRegistry": {
+      "Type": "String",
+      "Description": "Docker private registry url",
+      "Default": "https://index.docker.io/v1/"
+    },
     "DockerUser": {
       "Type": "String",
       "Description": "Docker username for private registry",
@@ -357,8 +362,8 @@
                 "#!/bin/bash\n",
                 "echo ECS_CLUSTER=", { "Ref": "Cluster" }, " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_DATA=\"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
-                "echo \"{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
+                "echo ECS_ENGINE_AUTH_DATA=\"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /etc/ecs/ecs.config\n",
+                "echo \"{\\\"", { "Ref": "DockerRegistry" }, "\\\":{\\\"auth\\\":\\\"", { "Fn::Base64": { "Fn::Join": [ ":", [ { "Ref": "DockerUser" }, { "Ref": "DockerPass" } ] ] } }, "\\\",\\\"email\\\":\\\"", { "Ref": "DockerEmail" }, "\\\"}}\" >> /home/ec2-user/.dockercfg\n"
               ]
             ]
           }

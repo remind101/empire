@@ -20,6 +20,11 @@ ZONES=$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneNa
 # have to escape commas in parameters for aws cli
 SAFEZONES=$(echo $ZONES | sed -e 's/ /\\,/g')
 
+DEFAULT_DOCKER_REGISTRY="https://index.docker.io/v1/"
+
+read -p "Docker registry ($DEFAULT_DOCKER_REGISTRY): " docker_registry
+[ -z "${docker_registry}" ] && docker_registry=$DEFAULT_DOCKER_REGISTRY
+
 read -p "Docker user: " docker_user
 read -s -p "Docker pass: " docker_pass
 printf "\n"
@@ -35,6 +40,7 @@ aws cloudformation create-stack \
   --parameters \
       ParameterKey=DesiredCapacity,ParameterValue=5 \
       ParameterKey=MaxCapacity,ParameterValue=10 \
+      ParameterKey=DockerRegistry,ParameterValue="$docker_registry" \
       ParameterKey=DockerUser,ParameterValue="$docker_user" \
       ParameterKey=DockerPass,ParameterValue="$docker_pass" \
       ParameterKey=DockerEmail,ParameterValue="$docker_email" \
