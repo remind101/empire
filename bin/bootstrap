@@ -35,7 +35,12 @@ fi
 DEFAULT_STACK="empire-${SUFFIX}"
 STACK="${STACK:-${DEFAULT_STACK}}"
 
-ZONES=${ZONES:-$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' --output text | awk '{print $1, $2}')}
+# If no zones are set in the environment, query them
+if [ -z "$ZONES" ]
+then
+    ZONES=$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' --output text | awk '{print $1, $2}')
+fi
+
 # have to escape commas in parameters for aws cli
 SAFEZONES=$(echo $ZONES | sed -e 's/ /\\,/g')
 
