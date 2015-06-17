@@ -105,7 +105,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
    ```console
-   $ ./bin/bootstrap
+   $ DEMOMODE=0 ./bin/bootstrap
    ```
 5. Run Empire with [docker-compose](https://docs.docker.com/compose/):
 
