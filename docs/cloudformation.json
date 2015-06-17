@@ -68,6 +68,7 @@
 
     "PubSubnetAz1" : {
       "Type": "AWS::EC2::Subnet",
+      "DependsOn": "AttachGateway",
       "Properties": {
         "VpcId": { "Ref" : "Vpc" },
         "CidrBlock": "10.0.0.0/24",
@@ -79,6 +80,7 @@
 
     "PubSubnetAz2" : {
       "Type": "AWS::EC2::Subnet",
+      "DependsOn": "AttachGateway",
       "Properties": {
         "VpcId": { "Ref" : "Vpc" },
         "CidrBlock": "10.0.1.0/24",
@@ -212,6 +214,7 @@
 
     "LoadBalancer": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "DependsOn": "AttachGateway",
       "Properties": {
         "SecurityGroups": [
           { "Ref": "InstanceSecurityGroup" }
@@ -345,6 +348,7 @@
 
     "LaunchConfiguration": {
       "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "DependsOn": "Cluster",
       "Properties": {
         "ImageId": { "Ref": "AmiId" },
         "InstanceType": { "Ref": "InstanceType" },
@@ -512,6 +516,7 @@
 
     "Service": {
       "Type" : "AWS::ECS::Service",
+      "DependsOn": "Cluster",
       "Properties" : {
         "Cluster" : { "Ref": "Cluster" },
         "DesiredCount" : 1,
