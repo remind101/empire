@@ -52,7 +52,17 @@
     "AvailabilityZones": {
       "Type": "CommaDelimitedList",
       "Description": "Comma delimited list of availability zones. MAX 2"
+    },
+    "LaunchEmpire": {
+      "Type": "Number",
+      "Default": "1",
+      "Description": "If 1, then launch Empire & Postgres as ECS tasks. If anything else, skip launching Empire (intended for dev use when Empire is ran locally)"
     }
+  },
+
+  "Conditions": {
+    "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "1"]},
+    "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]}
   },
 
   "Resources": {
@@ -214,6 +224,7 @@
 
     "LoadBalancer": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Condition": "DemoMode",
       "DependsOn": "AttachGateway",
       "Properties": {
         "SecurityGroups": [
@@ -406,6 +417,7 @@
 
     "TaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
+      "Condition": "DemoMode",
       "Properties": {
         "ContainerDefinitions": [
           {
@@ -516,6 +528,7 @@
 
     "Service": {
       "Type" : "AWS::ECS::Service",
+      "Condition": "DemoMode",
       "DependsOn": "Cluster",
       "Properties" : {
         "Cluster" : { "Ref": "Cluster" },
@@ -540,7 +553,8 @@
     },
     "ELBName": {
       "Description": "The name of the ELB for the Empire controller",
-      "Value": { "Ref": "LoadBalancer" }
+      "Value": { "Ref": "LoadBalancer" },
+      "Condition": "DemoMode"
     },
     "Cluster": {
       "Description": "Name of the ECS Cluster",
@@ -564,7 +578,8 @@
     },
     "ELBDNSName": {
       "Description": "The DNS name of the ELB for the Empire controller",
-      "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] }
+      "Value": { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] },
+      "Condition": "DemoMode"
     },
     "InternalELBSG": {
       "Description": "The Internal ELB Security Group",

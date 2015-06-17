@@ -60,13 +60,15 @@ Create a new CloudFormation stack using the [launch_demo](../bin/launch_demo)
 script.
 
 ```console
-$ ./bin/launch_demo
+$ ./bin/bootstrap
 AWS SSH KeyName: default
 Do you have a docker account & want to use it for private repo access? [y/N] n
-==> Launching empire in AZs: us-east-1b us-east-1c, Cloudformation Stack empire-33f2adf2
+==> Launching empire in AZs: us-east-1a us-east-1b, Cloudformation Stack empire-1a96c6f3
 ==> Waiting for stack to complete
 ==> Status: CREATE_IN_PROGRESS
-==> Stack empire-33f2adf2 complete. EMPIRE_API_URL=http://empire-60-LoadBala-1M8NAQ24SPGMP-770037928.us-east-1.elb.amazonaws.com/
+==> Stack empire-1a96c6f3 complete. Now run the following commands - when asked for a username, enter 'fake'. The password is blank:
+$ export EMPIRE_API_URL=http://empire-1a-LoadBala-EC3V01X8GHOO-1318261069.us-east-1.elb.amazonaws.com/
+$ emp login
 ```
 
 This is a very simple stack that will:

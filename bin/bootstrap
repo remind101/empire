@@ -2,51 +2,73 @@
 
 set -e
 
+# Set to anything other than 1 to skip launching Empire/Postgres as a service
+# in ECS (meant for development)
+DEMOMODE=${DEMOMODE:-1}
+
+# Check for dependent commands
 check_dep() {
   command -v $1 >/dev/null 2>&1 || { printf >&2 "%s is required but not installed. Aborting.\n" $1; exit 1; }
+}
+
+# Returns the value of a named output from the created stack.
+output() {
+  aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $1 | cut -f 2
 }
 
 # only works in us-east-1 for now
 export AWS_DEFAULT_REGION=us-east-1
 
-check_dep "pwgen"
 check_dep "aws"
 
 # This variable will be used as the cloudformation stack name and the associated
 # ECS cluster.
-STACK="empire-$(pwgen 10 1)"
-# TODO: make it so people can override this with envvars
-ZONES=$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' --output text | awk '{print $1, $2}')
+SUFFIX=""
+[ -x /sbin/md5 ] && SUFFIX=$(date | /sbin/md5 | head -c 8)
+[ -x /usr/bin/md5sum ] && SUFFIX=$(date | /usr/sbin/md5sum | head -c 8)
+if [ -z ${SUFFIX} ]
+then
+    echo "No /sbin/md5 or /usr/sbin/md5sum found on system, switching to default name"
+    SUFFIX=my-stack
+fi
+
+DEFAULT_STACK="empire-${SUFFIX}"
+STACK="${STACK:-${DEFAULT_STACK}}"
+
+ZONES=${ZONES:-$(aws ec2 describe-availability-zones --query 'AvailabilityZones[*].ZoneName' --output text | awk '{print $1, $2}')}
 # have to escape commas in parameters for aws cli
 SAFEZONES=$(echo $ZONES | sed -e 's/ /\\,/g')
 
+read -p "AWS SSH KeyName: " keyname
+read -p "Do you have a docker account & want to use it for private repo access? [y/N] " private_docker
+
+private_docker=$(echo $private_docker | tr '[a-z]' '[A-Z'])
 DEFAULT_DOCKER_REGISTRY="https://index.docker.io/v1/"
 
-read -p "Docker registry ($DEFAULT_DOCKER_REGISTRY): " docker_registry
-[ -z "${docker_registry}" ] && docker_registry=$DEFAULT_DOCKER_REGISTRY
+AWSCMD="aws cloudformation create-stack --stack-name "$STACK" --template-body file://$PWD/docs/cloudformation.json --capabilities CAPABILITY_IAM"
 
-read -p "Docker user: " docker_user
-read -s -p "Docker pass: " docker_pass
-printf "\n"
-read -p "Docker email: " docker_email
-read -p "AWS KeyName: " keyname
 
-echo "==> Launching empire in AZs: $ZONES"
+PARAMETERS="ParameterKey=DesiredCapacity,ParameterValue=5 ParameterKey=MaxCapacity,ParameterValue=10 ParameterKey=AvailabilityZones,ParameterValue=\"$SAFEZONES\" ParameterKey=KeyName,ParameterValue=$keyname ParameterKey=LaunchEmpire,ParameterValue=$DEMOMODE"
 
-printf "==> Creating cloudformation stack: %s\n" $STACK
-aws cloudformation create-stack \
-  --stack-name "$STACK" \
-  --template-body file://$PWD/docs/cloudformation.json \
-  --parameters \
-      ParameterKey=DesiredCapacity,ParameterValue=5 \
-      ParameterKey=MaxCapacity,ParameterValue=10 \
-      ParameterKey=DockerRegistry,ParameterValue="$docker_registry" \
-      ParameterKey=DockerUser,ParameterValue="$docker_user" \
-      ParameterKey=DockerPass,ParameterValue="$docker_pass" \
-      ParameterKey=DockerEmail,ParameterValue="$docker_email" \
-      ParameterKey=AvailabilityZones,ParameterValue="$SAFEZONES" \
-      ParameterKey=KeyName,ParameterValue="$keyname" \
-  --capabilities CAPABILITY_IAM > /dev/null
+if [ "$private_docker" == "Y" ]
+then
+  read -p "Docker registry ($DEFAULT_DOCKER_REGISTRY): " docker_registry
+  [ -z "${docker_registry}" ] && docker_registry=$DEFAULT_DOCKER_REGISTRY
+
+  read -p "Docker user: " docker_user
+  read -s -p "Docker pass: " docker_pass
+  printf "\n"
+  read -p "Docker email: " docker_email
+
+
+  PARAMETERS="${PARAMETERS} ParameterKey=DockerRegistry,ParameterValue='$docker_registry' ParameterKey=DockerUser,ParameterValue='$docker_user' ParameterKey=DockerPass,ParameterValue='$docker_pass' ParameterKey=DockerEmail,ParameterValue='$docker_email'"
+fi
+
+AWSCMD="${AWSCMD} --parameters ${PARAMETERS} > /dev/null"
+
+echo "==> Launching empire in AZs: $ZONES, Cloudformation Stack $STACK"
+
+eval $AWSCMD
 
 printf "==> Waiting for stack to complete\n"
 stack_status=""
@@ -61,21 +83,26 @@ while [ "$stack_status" != "CREATE_COMPLETE" ]; do
   fi
 done
 
-printf "\n==> Writing environment variables to .env file\n"
+echo
+echo "==> Stack $STACK complete."
 
-# Returns the value of a named output from the created stack.
-output() {
-  aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output text | grep $1 | cut -f 2
-}
-
-echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
-echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
-echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
-echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
-echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
-echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
-echo "EMPIRE_ECS_CLUSTER=$(output Cluster)" >> .env
-echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
-echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
-echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
-echo "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=$(output InternalZoneID)" >> .env
+# Give additional info if in DEMOMODE
+if [ "$DEMOMODE" -eq 1 ]
+then
+  echo "==> Now run the following commands - when asked for a username, enter 'fake'. The password is blank:"
+  echo "$ export EMPIRE_API_URL=http://$(output ELBDNSName)/"
+  echo "$ emp login"
+else
+  echo "==> Dumping stack info into .env for devmode."
+  echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
+  echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
+  echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
+  echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
+  echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
+  echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
+  echo "EMPIRE_ECS_CLUSTER=$(output Cluster)" >> .env
+  echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
+  echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
+  echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
+  echo "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=$(output InternalZoneID)" >> .env
+fi
