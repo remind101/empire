@@ -100,7 +100,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
    $ $(boot2docker shellinit)
    ```
 
-   You should ensure that you've configured boot2docker to disable TLS. Refer to the [troubleshooting doc](./docs/troubleshooting.md).
+   You should ensure that you've configured boot2docker to disable TLS. Refer to the [troubleshooting](./docs/troubleshooting.md) doc.
 
 4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
