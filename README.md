@@ -30,7 +30,7 @@ However, the best user experience will be by using the [emp](https://github.com/
 
 ### Routing
 
-Empire's routing layer is backed by internal ELB's. Any application that specifies a web process will get an internal ELB attached to its associated ECS Service. When a new version of the app is deployed, ECS manages spinning up the new versions of the process, waiting for old connections to drain, then killing the old release.
+Empire's routing layer is backed by internal ELBs. Any application that specifies a web process will get an internal ELB attached to its associated ECS Service. When a new version of the app is deployed, ECS manages spinning up the new versions of the process, waiting for old connections to drain, then killing the old release.
 
 When a new internal ELB is created, an associated CNAME record will be created in Route53 under the internal TLD, which means you can use DNS for service discovery. If we deploy an app named `feed` then it will be available at `http://feed` within the ECS cluster.
 

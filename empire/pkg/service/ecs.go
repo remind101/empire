@@ -33,10 +33,10 @@ type ECSConfig struct {
 	// The ECS cluster to create services and task definitions in.
 	Cluster string
 
-	// The IAM role to use for ECS services with ELB's attached.
+	// The IAM role to use for ECS services with ELBs attached.
 	ServiceRole string
 
-	// VPC controls what subnets to attach to ELB's that are created.
+	// VPC controls what subnets to attach to ELBs that are created.
 	VPC string
 
 	// The hosted zone id to create internal DNS records in
@@ -81,7 +81,7 @@ func NewECSManager(config ECSConfig) (*ECSManager, error) {
 // NewLoadBalancedECSManager returns a new Manager implementation that:
 //
 // * Creates services with ECS.
-// * Creates internal or external ELB's for ECS services.
+// * Creates internal or external ELBs for ECS services.
 // * Creates a CNAME record in route53 under the internal TLD.
 func NewLoadBalancedECSManager(config ECSConfig) (*ECSManager, error) {
 	if err := validateLoadBalancedConfig(config); err != nil {
