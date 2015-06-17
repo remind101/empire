@@ -131,6 +131,10 @@ $ emp deploy remind101/acme-inc
 * Kubernetes backend.
 * Sidekiq containers.
 
+## Community
+
+We have a google group, [empire-dev][empire-dev], where you can ask questions and engage with the Empire community.
+
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker
 [heroku-api]: https://devcenter.heroku.com/articles/platform-api-reference
@@ -139,3 +143,4 @@ $ emp deploy remind101/acme-inc
 [hk]: https://github.com/heroku/hk
 [emp]: https://github.com/remind101/emp
 [guide]: ./docs
+[empire-dev]: https://groups.google.com/forum/#!forum/empire-dev
