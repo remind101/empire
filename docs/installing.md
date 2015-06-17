@@ -56,7 +56,7 @@ $ cd empire
 
 ## Step 3 - Create CloudFormation stack
 
-Create a new CloudFormation stack using the [launch_demo](../bin/launch_demo)
+Create a new CloudFormation stack using the [bootstrap](../bin/bootstrap)
 script.
 
 ```console
