@@ -40,7 +40,7 @@ const bytes = uint(1)
 // CPUShare represents a CPUShare.
 type CPUShare int
 
-// NewCPUShare casts i to a CPUShare and ensures it's validity.
+// NewCPUShare casts i to a CPUShare and ensures its validity.
 func NewCPUShare(i int) (CPUShare, error) {
 	if i < 2 || i > 1024 {
 		return 0, ErrInvalidCPUShare
