@@ -1,5 +1,7 @@
 # Empire
 
+[![readthedocs badge](https://readthedocs.org/projects/pip/badge/?version=latest)](http://empire.readthedocs.org/en/latest/) [![Circle CI](https://circleci.com/gh/remind101/empire.svg?style=svg)](https://circleci.com/gh/remind101/empire)
+
 Empire is a control layer on top of [Amazon EC2 Container Service (ECS)][ecs] that provides a Heroku like workflow. It conforms to a subset of the [Heroku Platform API][heroku-api], which means you can use the same tools and processes that you use with Heroku, but with all the power of EC2 and [Docker][docker].
 
 Empire is targeted at small to medium sized startups that are running a large number of microservices and need more flexibility than what Heroku provides.
