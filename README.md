@@ -100,7 +100,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
    $ $(boot2docker shellinit)
    ```
 
-   You should ensure that you've configured boot2docker to disable TLS. Refer to the [troubleshooting](./docs/troubleshooting.md) doc.
+   You should ensure that you've configured boot2docker to disable TLS. Refer to the [disabling boot2docker tls](http://empire.readthedocs.org/en/latest/troubleshooting/#x509-certificate-signed-by-unknown-authority-with-docker-compose) docs in the troubleshooting guide.
 
 4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
@@ -142,5 +142,5 @@ We have a google group, [empire-dev][empire-dev], where you can ask questions an
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
 [emp]: https://github.com/remind101/emp
-[guide]: ./docs
+[guide]: http://empire.readthedocs.org/en/latest/
 [empire-dev]: https://groups.google.com/forum/#!forum/empire-dev
