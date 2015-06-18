@@ -81,7 +81,15 @@ func (s *store) ReleasesFirst(scope Scope) (*Release, error) {
 	// TODO: Wrap the store with this. Gorm blows up when preloading
 	// App.Certificates on a collection of releases.
 	scope = ComposedScope{scope, Preload("App.Certificates")}
-	return &release, s.First(scope, &release)
+	if err := s.First(scope, &release); err != nil {
+		return &release, err
+	}
+
+	if err := s.attachPorts(&release); err != nil {
+		return &release, err
+	}
+
+	return &release, nil
 }
 
 // Releases returns all releases matching the scope.
@@ -92,7 +100,26 @@ func (s *store) Releases(scope Scope) ([]*Release, error) {
 
 // ReleasesCreate persists a release.
 func (s *store) ReleasesCreate(r *Release) (*Release, error) {
+	if err := s.attachPorts(r); err != nil {
+		return r, err
+	}
+
 	return releasesCreate(s.db, r)
+}
+
+// attachPorts returns a map of ports for a release. It will allocate new ports to an app if need be.
+func (s *store) attachPorts(r *Release) error {
+	for _, p := range r.Processes {
+		if p.Type == WebProcessType {
+			// TODO: Support a port per process, allowing more than one process to expose a port.
+			port, err := s.PortsFindOrCreateByApp(r.App)
+			if err != nil {
+				return err
+			}
+			p.Port = port.Port
+		}
+	}
+	return nil
 }
 
 // releasesService is a service for creating and rolling back a Release.
@@ -111,11 +138,6 @@ func (s *releasesService) ReleasesCreate(ctx context.Context, r *Release) (*Rele
 	r, err := s.store.ReleasesCreate(r)
 	if err != nil {
 		return r, err
-	}
-
-	// Create port mappings for formation.
-	if err := s.newProcessPorts(r); err != nil {
-		return nil, err
 	}
 
 	// Schedule the new release onto the cluster.
@@ -138,21 +160,6 @@ func (s *releasesService) createFormation(release *Release) error {
 	f := NewFormation(existing, release.Slug.ProcessTypes)
 	release.Processes = f.Processes()
 
-	return nil
-}
-
-// newProcessPorts returns a map of ports for a release. It will allocate new ports to an app if need be.
-func (s *releasesService) newProcessPorts(r *Release) error {
-	for _, p := range r.Processes {
-		if p.Type == WebProcessType {
-			// TODO: Support a port per process, allowing more than one process to expose a port.
-			port, err := s.store.PortsFindOrCreateByApp(r.App)
-			if err != nil {
-				return err
-			}
-			p.Port = port.Port
-		}
-	}
 	return nil
 }
 
@@ -220,6 +227,7 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 }
 
 type releaser struct {
+	store   *store
 	manager service.Manager
 }
 
@@ -228,6 +236,20 @@ type releaser struct {
 func (r *releaser) Release(ctx context.Context, release *Release) error {
 	a := newServiceApp(release)
 	return r.manager.Submit(ctx, a)
+}
+
+// ReleaseApp will find the last release for an app and release it.
+func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
+	release, err := r.store.ReleasesFirst(ReleasesQuery{App: app})
+	if err != nil {
+		return err
+	}
+
+	if release == nil {
+		return nil
+	}
+
+	return r.Release(ctx, release)
 }
 
 func newServiceApp(release *Release) *service.App {

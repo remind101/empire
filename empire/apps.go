@@ -253,36 +253,14 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 
 // restarter is a small service for restarting an apps processes.
 type restarter struct {
-	manager service.Manager
+	manager  service.Manager
+	releaser *releaser
 }
 
-func (s *restarter) Restart(ctx context.Context, app *App, t ProcessType, id string) error {
-	instances, err := s.manager.Instances(ctx, app.ID)
-	if err != nil {
-		return err
-	}
-
-	var selected []*service.Instance
-
+func (s *restarter) Restart(ctx context.Context, app *App, id string) error {
 	if id != "" {
-		for _, i := range instances {
-			if i.ID == id {
-				selected = []*service.Instance{i}
-			}
-		}
-	} else if t != "" {
-		for _, i := range instances {
-			if i.Process.Type == string(t) {
-				selected = append(selected, i)
-			}
-		}
+		return s.manager.Stop(ctx, id)
 	}
 
-	for _, i := range selected {
-		if err := s.manager.Stop(ctx, i.ID); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return s.releaser.ReleaseApp(ctx, app)
 }
