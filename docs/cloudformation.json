@@ -479,6 +479,11 @@
                 "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
               },
               {
+                "Name": "EMPIRE_ECS_SERVICE_ROLE",
+                "Value": { "Ref": "ServiceRole" }
+              },
+
+              {
                 "Name": "EMPIRE_EC2_SUBNETS_PUBLIC",
                 "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
               }
