@@ -1,13 +1,6 @@
 # Empire :: Troubleshooting
 
-1. [Overview](./index.md)
-2. [Installing](./installing.md)
-3. [Using](./using.md)
-4. [Administering](./administering.md) **TODO**
-5. [Troubleshooting](./troubleshooting.md)
-6. [Roadmap](./roadmap.md) **TODO**
-
-### x509: certificate signed by unknown authority with docker-compose
+## x509: certificate signed by unknown authority with docker-compose
 
 If you are encountering this error with using docker-compose and boot2docker,
 you need to disable TLS on boot2docker. Here is how to do so:
@@ -33,7 +26,7 @@ you need to disable TLS on boot2docker. Here is how to do so:
   eval "$(boot2docker shellinit)"
   ```
 
-### Deleting an Empire CloudFormation stack
+## Deleting an Empire CloudFormation stack
 
 If you've created an Empire CloudFormation stack and deployed an app to it, you have created an ECS Service with an attached ELB inside the VPC of your Empire stack. Before you can delete the stack, you must no longer have any services or ELBs running inside of it. You can do this by running `emp destroy <app>` for each app in your Empire cluster.
 

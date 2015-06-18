@@ -1,12 +1,5 @@
 # Empire :: Overview
 
-1. [Overview](./index.md)
-2. [Installing](./installing.md)
-3. [Using](./using.md)
-4. [Administering](./administering.md) **TODO**
-5. [Troubleshooting](./troubleshooting.md)
-6. [Roadmap](./roadmap.md) **TODO**
-
 Empire is an open source, self-hosted PaaS that makes deployment and management
 of [dockerized][dockerized] [12-factor apps][12factor] easy. Empire's goals are
 described below.

@@ -1,12 +1,5 @@
 # Empire :: Installing
 
-1. [Overview](./index.md)
-2. [Installing](./installing.md)
-3. [Using](./using.md)
-4. [Administering](./administering.md) **TODO**
-5. [Troubleshooting](./troubleshooting.md)
-6. [Roadmap](./roadmap.md) **TODO**
-
 **IMPORTANT:** Use the following document as a quick way to try empire. This
 method is not suggested for a production environment, and should not be
 considered secure. There will be further docs describing best practices for
