@@ -18,7 +18,7 @@ to make it as similar to the Heroku experience as we could.
 
 ### Simple Design
 
-We want to make managing Empire as easy as possible. This means keeping it's
+We want to make managing Empire as easy as possible. This means keeping its
 dependencies to a minimum. Of those dependencies, as many as possible are
 available as managed services.
 
@@ -43,7 +43,7 @@ we are able to achieve this.
   your app to more than one process) via [ELB][elb].
 
 * A host dies? No problem; ECS will reschedule containers while
-  [Auto Scaling][autoscaling] brings up a new host in it's place. Again, ELB
+  [Auto Scaling][autoscaling] brings up a new host in its place. Again, ELB
   will make sure that the app stays up, provided there are multiple copies of it
   running.
 

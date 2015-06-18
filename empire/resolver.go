@@ -72,10 +72,10 @@ func (r *dockerResolver) Resolve(image Image, out chan Event) (Image, error) {
 	}, nil
 }
 
-// pullImage can pull a docker image from a repo, by it's imageID.
+// pullImage can pull a docker image from a repo, by its imageID.
 //
 // Because docker does not support pulling an image by ID, we're assuming that
-// the docker image has been tagged with it's own ID beforehand.
+// the docker image has been tagged with its own ID beforehand.
 func (r *dockerResolver) pullImage(i Image, output io.Writer) error {
 	var a docker.AuthConfiguration
 

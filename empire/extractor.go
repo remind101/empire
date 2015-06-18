@@ -85,7 +85,7 @@ func (e *procfileFallbackExtractor) Extract(image Image) (CommandMap, error) {
 }
 
 // procfileExtractor is an implementation of the Extractor interface that can
-// pull a docker image and extract it's Procfile into a process.CommandMap.
+// pull a docker image and extract its Procfile into a process.CommandMap.
 type procfileExtractor struct {
 	// Client is the docker client to use to pull the container image.
 	client *docker.Client
@@ -141,7 +141,7 @@ func (e *procfileExtractor) createContainer(i Image) (*docker.Container, error) 
 	})
 }
 
-// removeContainer removes a container by it's ID.
+// removeContainer removes a container by its ID.
 func (e *procfileExtractor) removeContainer(containerID string) error {
 	return e.client.RemoveContainer(docker.RemoveContainerOptions{
 		ID: containerID,

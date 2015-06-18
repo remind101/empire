@@ -55,8 +55,8 @@ func (s *Server) CloseClientConnections() {
 	hl.Unlock()
 }
 
-// historyListener keeps track of all connections that it's ever
-// accepted.
+// historyListener keeps track of all connections that it has
+// ever accepted.
 type historyListener struct {
 	net.Listener
 	sync.Mutex // protects history

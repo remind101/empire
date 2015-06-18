@@ -67,7 +67,7 @@ func WithCNAME(m Manager, n Nameserver) Manager {
 }
 
 // cnameManager is an implementation of the Manager interface that creates CNAME
-// records for the LoadBalancer after it's created.
+// records for the LoadBalancer after its created.
 type cnameManager struct {
 	Manager
 	Nameserver
