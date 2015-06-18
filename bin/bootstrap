@@ -46,8 +46,10 @@ SAFEZONES=$(echo $ZONES | sed -e 's/ /\\,/g')
 
 read -p "AWS SSH KeyName: " keyname
 read -p "Do you have a docker account & want to use it for private repo access? [y/N] " private_docker
+read -p "Do you want to use github for authentication [y/N] " github_auth
 
 private_docker=$(echo $private_docker | tr '[a-z]' '[A-Z'])
+github_auth=$(echo $github_auth | tr '[a-z]' '[A-Z]')
 DEFAULT_DOCKER_REGISTRY="https://index.docker.io/v1/"
 
 AWSCMD="aws cloudformation create-stack --stack-name "$STACK" --template-body file://$PWD/docs/cloudformation.json --capabilities CAPABILITY_IAM"
@@ -67,6 +69,16 @@ then
 
 
   PARAMETERS="${PARAMETERS} ParameterKey=DockerRegistry,ParameterValue='$docker_registry' ParameterKey=DockerUser,ParameterValue='$docker_user' ParameterKey=DockerPass,ParameterValue='$docker_pass' ParameterKey=DockerEmail,ParameterValue='$docker_email'"
+fi
+
+if [ "$github_auth" == "Y" ]
+then
+  read -p "Github client_id: " github_client_id
+  read -s -p "Github client_secret: " github_client_secret
+  printf "\n"
+  read -p "Github organization: " github_org
+
+  PARAMETERS="${PARAMETERS} ParameterKey=GithubClient,ParameterValue='$github_client_id' ParameterKey=GithubSecret,ParameterValue='$github_client_secret' ParameterKey=GithubOrg,ParameterValue='$github_org' ParameterKey=EnableGithubAuth,ParameterValue=1"
 fi
 
 AWSCMD="${AWSCMD} --parameters ${PARAMETERS} > /dev/null"
@@ -98,6 +110,7 @@ then
   echo "$ export EMPIRE_API_URL=http://$(output ELBDNSName)/"
   echo "$ emp login"
 else
+  echo "==> Your load balancer is at http://$(output ELBDNSName)/"
   echo "==> Dumping stack info into .env for devmode."
   echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
   echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env

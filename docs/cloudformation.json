@@ -39,6 +39,27 @@
       "Description": "Docker registry email",
       "Default": ""
     },
+    "GithubClient": {
+      "Type": "String",
+      "Description": "Github Client ID",
+      "Default": ""
+    },
+    "GithubSecret": {
+      "Type": "String",
+      "Description": "Github Client Secret",
+      "Default": "",
+      "NoEcho": true
+    },
+    "GithubOrg": {
+      "Type": "String",
+      "Description": "Github Organization",
+      "Default": ""
+    },
+    "EnableGithubAuth": {
+      "Type": "Number",
+      "Description": "If 1, then enable github authentication",
+      "Default": "0"
+    },
     "MaxCapacity": {
       "Type": "String",
       "Description": "Maximum number of EC2 instances in the auto scaling group",
@@ -62,7 +83,8 @@
 
   "Conditions": {
     "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "1"]},
-    "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]}
+    "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]},
+    "GithubAuth": {"Fn::Equals": [{"Ref": "EnableGithubAuth"}, "1"]}
   },
 
   "Resources": {
@@ -486,6 +508,21 @@
               {
                 "Name": "EMPIRE_EC2_SUBNETS_PUBLIC",
                 "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_CLIENT_ID",
+                "Condition": "GithubAuth",
+                "Value": { "Ref": "GithubClient" }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_CLIENT_SECRET",
+                "Condition": "GithubAuth",
+                "Value": { "Ref": "GithubSecret" }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_ORGANIZATION",
+                "Condition": "GithubAuth",
+                "Value": { "Ref": "GithubOrg" }
               }
             ],
             "Command": ["server", "-automigrate=true"],
