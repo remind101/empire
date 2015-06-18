@@ -99,6 +99,7 @@ then
   echo "$ emp login"
 else
   if [ ! -e ~/.dockercfg ]; then
+    echo "==> ~/.dockercfg not found. Creating."
     echo '{}' > ~/.dockercfg
   fi
 
