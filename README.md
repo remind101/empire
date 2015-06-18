@@ -114,6 +114,8 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
    ```console
    $ docker-compose up
    ```
+
+   **NOTE**: You might need to run this twice the first time you start it up, to give the postgres container time to initialize.
 6. Install the emp CLI.
 
    ```console

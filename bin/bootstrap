@@ -98,6 +98,11 @@ then
   echo "$ export EMPIRE_API_URL=http://$(output ELBDNSName)/"
   echo "$ emp login"
 else
+  if [ ! -e ~/.dockercfg ]; then
+    echo "==> ~/.dockercfg not found. Creating."
+    echo '{}' > ~/.dockercfg
+  fi
+
   echo "==> Dumping stack info into .env for devmode."
   echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
   echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
