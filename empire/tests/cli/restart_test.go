@@ -34,12 +34,8 @@ v1.web.2  1X  running   5d  "./bin/web"`,
 			"Restarted all dynos for acme-inc.",
 		},
 		{
-			"restart web -a acme-inc",
-			"Restarted web dynos for acme-inc.",
-		},
-		{
-			"restart web.1 -a acme-inc",
-			"Restarted web.1 dyno for acme-inc.",
+			"restart 1 -a acme-inc",
+			"Restarted 1 dynos for acme-inc.",
 		},
 	})
 }

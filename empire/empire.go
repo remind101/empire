@@ -158,15 +158,17 @@ func New(options Options) (*Empire, error) {
 		manager: manager,
 	}
 
-	restarter := &restarter{
+	releaser := &releaser{
+		store:   store,
 		manager: manager,
+	}
+
+	restarter := &restarter{
+		releaser: releaser,
+		manager:  manager,
 	}
 
 	runner := newRunner(options.Runner, store)
-
-	releaser := &releaser{
-		manager: manager,
-	}
 
 	releases := &releasesService{
 		store:    store,
@@ -307,8 +309,8 @@ func (e *Empire) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState,
 
 // ProcessesRestart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
-func (e *Empire) ProcessesRestart(ctx context.Context, app *App, t ProcessType, id string) error {
-	return e.restarter.Restart(ctx, app, t, id)
+func (e *Empire) ProcessesRestart(ctx context.Context, app *App, id string) error {
+	return e.restarter.Restart(ctx, app, id)
 }
 
 type ProcessesRunOpts struct {

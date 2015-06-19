@@ -66,3 +66,11 @@ func newError(err error) *ErrorResource {
 func (e *ErrorResource) Error() string {
 	return e.Message
 }
+
+func errNotImplemented(message string) *ErrorResource {
+	return &ErrorResource{
+		Status:  http.StatusNotImplemented,
+		ID:      "not_implemented",
+		Message: message,
+	}
+}
