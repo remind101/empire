@@ -7,7 +7,7 @@ server:
     - "8080:8080"
   volumes:
     - ~/.dockercfg:/root/.dockercfg
-    - /var/lib/boot2docker/tls:/root/certs
+    - "$DOCKER_CERT_PATH:/root/certs:ro"
   env_file: .env
   user: root
   environment:
