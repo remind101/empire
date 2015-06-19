@@ -7,7 +7,7 @@ func newDockerClient(socket, certPath string) (*docker.Client, error) {
 	if certPath != "" {
 		cert := certPath + "/cert.pem"
 		key := certPath + "/key.pem"
-		ca := ""
+		ca := certPath + "/ca.pem"
 		return docker.NewTLSClient(socket, cert, key, ca)
 	}
 

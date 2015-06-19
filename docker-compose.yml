@@ -7,11 +7,13 @@ server:
     - "8080:8080"
   volumes:
     - ~/.dockercfg:/root/.dockercfg
+    - "$DOCKER_CERT_PATH:/root/certs:ro"
   env_file: .env
   user: root
   environment:
     EMPIRE_DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
     DOCKER_HOST:
+    DOCKER_CERT_PATH: /root/certs
 postgres:
   image: postgres
   ports:
