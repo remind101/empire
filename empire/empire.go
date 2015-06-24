@@ -8,6 +8,7 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
+	"github.com/remind101/empire/empire/pkg/dockerutil"
 	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
@@ -443,7 +444,7 @@ func newExtractor(o DockerOptions) (Extractor, error) {
 		return &fakeExtractor{}, nil
 	}
 
-	c, err := newDockerClient(o.Socket, o.CertPath)
+	c, err := dockerutil.NewDockerClient(o.Socket, o.CertPath)
 	return newProcfileFallbackExtractor(c), err
 }
 
@@ -453,6 +454,6 @@ func newResolver(o DockerOptions) (Resolver, error) {
 		return &fakeResolver{}, nil
 	}
 
-	c, err := newDockerClient(o.Socket, o.CertPath)
+	c, err := dockerutil.NewDockerClient(o.Socket, o.CertPath)
 	return newDockerResolver(c, o.Auth), err
 }
