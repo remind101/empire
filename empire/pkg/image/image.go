@@ -26,13 +26,8 @@ import (
 // present, this will be used as the tag.
 const DefaultTag = "latest"
 
-var (
-	// ErrInvalidImage is returned when the image does not specify a repo.
-	ErrInvalidImage = errors.New("image: invalid")
-
-	// ErrInvalidRepo is returned by Split when the repo is not a valid repo.
-	ErrInvalidRepo = errors.New("image: not a valid repo")
-)
+// ErrInvalidImage is returned when the image does not specify a repo.
+var ErrInvalidImage = errors.New("image: invalid")
 
 // Image represents all the information about an image.
 type Image struct {
