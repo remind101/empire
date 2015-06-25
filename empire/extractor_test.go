@@ -8,10 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/remind101/empire/empire/pkg/image"
-
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire/pkg/httpmock"
+	"github.com/remind101/empire/empire/pkg/image"
 )
 
 func TestFakeExtractor(t *testing.T) {

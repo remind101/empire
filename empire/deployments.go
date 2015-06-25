@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/remind101/empire/empire/pkg/image"
-
 	"golang.org/x/net/context"
 )
 

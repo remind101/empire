@@ -4,13 +4,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/remind101/empire/empire/pkg/image"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/dockerutil"
+	"github.com/remind101/empire/empire/pkg/image"
 	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"

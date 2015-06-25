@@ -3,9 +3,8 @@ package empire
 import (
 	"fmt"
 
-	"github.com/remind101/empire/empire/pkg/image"
-
 	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/remind101/empire/empire/pkg/image"
 )
 
 // Event defines an interface for events within empire.
