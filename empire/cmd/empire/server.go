@@ -31,6 +31,7 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts.GitHub.ClientID = c.String(FlagGithubClient)
 	opts.GitHub.ClientSecret = c.String(FlagGithubSecret)
 	opts.GitHub.Organization = c.String(FlagGithubOrg)
+	opts.GitHub.ApiURL = c.String(FlagGithubApiURL)
 
 	return server.New(e, opts)
 }
