@@ -36,6 +36,10 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		err error
 	)
 
+	if form.Image.Tag == "" && form.Image.Digest == "" {
+		form.Image.Tag = "latest"
+	}
+
 	ch := make(chan empire.Event)
 	errCh := make(chan error)
 	go func() {
