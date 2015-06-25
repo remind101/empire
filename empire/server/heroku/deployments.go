@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/remind101/empire/empire/pkg/image"
+
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
@@ -16,7 +18,7 @@ type PostDeploys struct {
 
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
-	Image empire.Image
+	Image image.Image
 }
 
 // Serve implements the Handler interface.

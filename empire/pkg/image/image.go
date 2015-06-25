@@ -15,6 +15,8 @@
 package image
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -44,6 +46,41 @@ type Image struct {
 
 func (i Image) String() string {
 	return Encode(i)
+}
+
+// Scan implements the sql.Scanner interface.
+func (i *Image) Scan(src interface{}) error {
+	if src, ok := src.([]byte); ok {
+		image, err := Decode(string(src))
+		if err != nil {
+			return err
+		}
+
+		*i = image
+	}
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (i Image) Value() (driver.Value, error) {
+	return driver.Value(i.String()), nil
+}
+
+func (i *Image) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	image, err := Decode(s)
+	if err != nil {
+		return err
+	}
+
+	*i = image
+
+	return nil
 }
 
 // Decode decodes the string representation of an image into an Image structure.

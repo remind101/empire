@@ -1,11 +1,15 @@
 package empire
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/remind101/empire/empire/pkg/image"
+
+	"github.com/jinzhu/gorm"
+)
 
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
 	ID           string
-	Image        Image
+	Image        image.Image
 	ProcessTypes CommandMap
 }
 
@@ -27,20 +31,20 @@ type slugsService struct {
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) SlugsCreateByImage(image Image, out chan Event) (*Slug, error) {
-	return slugsCreateByImage(s.store, s.extractor, s.resolver, image, out)
+func (s *slugsService) SlugsCreateByImage(img image.Image, out chan Event) (*Slug, error) {
+	return slugsCreateByImage(s.store, s.extractor, s.resolver, img, out)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image, out chan Event) (*Slug, error) {
-	_, err := r.Resolve(image, out)
+func slugsCreateByImage(store *store, e Extractor, r Resolver, img image.Image, out chan Event) (*Slug, error) {
+	_, err := r.Resolve(img, out)
 	if err != nil {
 		return nil, err
 	}
 
-	slug, err := slugsExtract(e, image)
+	slug, err := slugsExtract(e, img)
 	if err != nil {
 		return slug, err
 	}
@@ -50,12 +54,12 @@ func slugsCreateByImage(store *store, e Extractor, r Resolver, image Image, out 
 
 // SlugsExtract extracts the process types from the image, then returns a new
 // Slug instance.
-func slugsExtract(e Extractor, image Image) (*Slug, error) {
+func slugsExtract(e Extractor, img image.Image) (*Slug, error) {
 	slug := &Slug{
-		Image: image,
+		Image: img,
 	}
 
-	pt, err := e.Extract(image)
+	pt, err := e.Extract(img)
 	if err != nil {
 		return slug, err
 	}

@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/remind101/empire/empire/pkg/image"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
@@ -347,8 +349,8 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 }
 
 // DeployImage deploys an image to Empire.
-func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (*Release, error) {
-	return e.deployer.DeployImage(ctx, image, out)
+func (e *Empire) DeployImage(ctx context.Context, img image.Image, out chan Event) (*Release, error) {
+	return e.deployer.DeployImage(ctx, img, out)
 }
 
 // AppsScale scales an apps process.
