@@ -85,26 +85,20 @@ func (i *Image) UnmarshalJSON(b []byte) error {
 
 // Decode decodes the string representation of an image into an Image structure.
 func Decode(in string) (image Image, err error) {
-	p := strings.Split(in, ":")
+	repo, tag := parseRepositoryTag(in)
+	image.Registry, image.Repository = splitRepository(repo)
 
-	if len(p) == 0 {
-		err = ErrInvalidImage
-		return
+	if strings.Contains(tag, ":") {
+		image.Digest = tag
+	} else {
+		image.Tag = tag
 	}
-
-	image.Registry, image.Repository = splitRepository(p[0])
 
 	if image.Repository == "" {
 		err = ErrInvalidImage
 		return
 	}
 
-	if len(p) == 1 {
-		image.Tag = DefaultTag
-		return
-	}
-
-	image.Tag = p[1]
 	return
 }
 
@@ -114,7 +108,14 @@ func Encode(image Image) string {
 	if image.Registry != "" {
 		repo = fmt.Sprintf("%s/%s", image.Registry, repo)
 	}
-	return fmt.Sprintf("%s:%s", repo, image.Tag)
+
+	if image.Digest != "" {
+		return fmt.Sprintf("%s@%s", repo, image.Digest)
+	} else if image.Tag != "" {
+		return fmt.Sprintf("%s:%s", repo, image.Tag)
+	}
+
+	return repo
 }
 
 // splitRepository splits a full docker repo into registry and path segments.
@@ -130,4 +131,21 @@ func splitRepository(fullRepo string) (registry string, path string) {
 	}
 
 	return parts[0], strings.Join(parts[1:], "/")
+}
+
+// Copied from https://github.com/docker/docker/blob/50a1d0f0ef83a9ed55ea2caaa79539ec835877a3/pkg/parsers/parsers.go#L71-L89
+func parseRepositoryTag(repos string) (string, string) {
+	n := strings.Index(repos, "@")
+	if n >= 0 {
+		parts := strings.Split(repos, "@")
+		return parts[0], parts[1]
+	}
+	n = strings.LastIndex(repos, ":")
+	if n < 0 {
+		return repos, ""
+	}
+	if tag := repos[n+1:]; !strings.Contains(tag, "/") {
+		return repos[:n], tag
+	}
+	return repos, ""
 }
