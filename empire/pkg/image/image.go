@@ -97,14 +97,7 @@ func Decode(in string) (image Image, err error) {
 		return
 	}
 
-	reg, repo, err2 := splitRepository(p[0])
-	if err2 != nil {
-		err = err2
-		return
-	}
-
-	image.Registry = reg
-	image.Repository = repo
+	image.Registry, image.Repository = splitRepository(p[0])
 
 	if image.Repository == "" {
 		err = ErrInvalidImage
@@ -130,16 +123,16 @@ func Encode(image Image) string {
 }
 
 // splitRepository splits a full docker repo into registry and path segments.
-func splitRepository(fullRepo string) (registry string, path string, err error) {
+func splitRepository(fullRepo string) (registry string, path string) {
 	parts := strings.Split(fullRepo, "/")
 
 	if len(parts) < 2 {
-		return "", parts[0], nil
+		return "", parts[0]
 	}
 
 	if len(parts) == 2 {
-		return "", strings.Join(parts, "/"), nil
+		return "", strings.Join(parts, "/")
 	}
 
-	return parts[0], strings.Join(parts[1:], "/"), nil
+	return parts[0], strings.Join(parts[1:], "/")
 }
