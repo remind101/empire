@@ -454,6 +454,6 @@ func newResolver(o DockerOptions) (Resolver, error) {
 		return &fakeResolver{}, nil
 	}
 
-	c, err := dockerutil.NewDockerClient(o.Socket, o.CertPath)
-	return newDockerResolver(c, o.Auth), err
+	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
+	return newDockerResolver(c), err
 }

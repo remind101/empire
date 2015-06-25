@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/empire/pkg/registry"
+	"github.com/remind101/empire/empire/pkg/dockerutil"
 )
 
 type Resolver interface {
@@ -26,14 +26,12 @@ func (r *fakeResolver) Resolve(image Image, out chan Event) (Image, error) {
 // dockerResolver is a resolver that pulls the docker image, then inspects it to
 // get the canonical image id.
 type dockerResolver struct {
-	client *docker.Client
-	auth   *docker.AuthConfigurations
+	client *dockerutil.Client
 }
 
-func newDockerResolver(c *docker.Client, auth *docker.AuthConfigurations) Resolver {
+func newDockerResolver(c *dockerutil.Client) Resolver {
 	return &dockerResolver{
 		client: c,
-		auth:   auth,
 	}
 }
 
@@ -77,25 +75,10 @@ func (r *dockerResolver) Resolve(image Image, out chan Event) (Image, error) {
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with its own ID beforehand.
 func (r *dockerResolver) pullImage(i Image, output io.Writer) error {
-	var a docker.AuthConfiguration
-
-	reg, _, err := registry.Split(string(i.Repo))
-	if err != nil {
-		return err
-	}
-
-	if reg == "" {
-		reg = "https://index.docker.io/v1/"
-	}
-
-	if c, ok := r.auth.Configs[reg]; ok {
-		a = c
-	}
-
 	return r.client.PullImage(docker.PullImageOptions{
 		Repository:    string(i.Repo),
 		Tag:           i.ID,
 		OutputStream:  output,
 		RawJSONStream: true,
-	}, a)
+	})
 }
