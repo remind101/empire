@@ -78,7 +78,8 @@ func (r *dockerResolver) Resolve(img image.Image, out chan Event) (image.Image, 
 // the docker image has been tagged with its own ID beforehand.
 func (r *dockerResolver) pullImage(img image.Image, output io.Writer) error {
 	return r.client.PullImage(docker.PullImageOptions{
-		Repository:    string(img.Repository),
+		Registry:      img.Registry,
+		Repository:    img.Repository,
 		Tag:           img.Tag,
 		OutputStream:  output,
 		RawJSONStream: true,

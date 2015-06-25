@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/empire/pkg/registry"
 )
 
 // NewDockerClient returns a new docker.Client using the given socket and certificate path.
@@ -64,10 +63,7 @@ func newClient(auth *docker.AuthConfigurations, c *docker.Client) *Client {
 func (c *Client) PullImage(opts docker.PullImageOptions) error {
 	var a docker.AuthConfiguration
 
-	reg, _, err := registry.Split(string(opts.Repository))
-	if err != nil {
-		return err
-	}
+	reg := opts.Registry
 
 	if reg == "" {
 		reg = "https://index.docker.io/v1/"

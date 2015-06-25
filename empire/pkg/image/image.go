@@ -26,8 +26,13 @@ import (
 // present, this will be used as the tag.
 const DefaultTag = "latest"
 
-// ErrInvalidImage is returned when the image does not specify a repo.
-var ErrInvalidImage = errors.New("invalid image")
+var (
+	// ErrInvalidImage is returned when the image does not specify a repo.
+	ErrInvalidImage = errors.New("image: invalid")
+
+	// ErrInvalidRepo is returned by Split when the repo is not a valid repo.
+	ErrInvalidRepo = errors.New("image: not a valid repo")
+)
 
 // Image represents all the information about an image.
 type Image struct {
@@ -92,7 +97,14 @@ func Decode(in string) (image Image, err error) {
 		return
 	}
 
-	image.Repository = p[0]
+	reg, repo, err2 := splitRepository(p[0])
+	if err2 != nil {
+		err = err2
+		return
+	}
+
+	image.Registry = reg
+	image.Repository = repo
 
 	if image.Repository == "" {
 		err = ErrInvalidImage
@@ -110,5 +122,24 @@ func Decode(in string) (image Image, err error) {
 
 // Encode encodes an Image to it's string representation.
 func Encode(image Image) string {
-	return fmt.Sprintf("%s:%s", image.Repository, image.Tag)
+	repo := image.Repository
+	if image.Registry != "" {
+		repo = fmt.Sprintf("%s/%s", image.Registry, repo)
+	}
+	return fmt.Sprintf("%s:%s", repo, image.Tag)
+}
+
+// splitRepository splits a full docker repo into registry and path segments.
+func splitRepository(fullRepo string) (registry string, path string, err error) {
+	parts := strings.Split(fullRepo, "/")
+
+	if len(parts) < 2 {
+		return "", parts[0], nil
+	}
+
+	if len(parts) == 2 {
+		return "", strings.Join(parts, "/"), nil
+	}
+
+	return parts[0], strings.Join(parts[1:], "/"), nil
 }
