@@ -31,10 +31,7 @@ func (r *runnerService) Run(ctx context.Context, app *App, opts ProcessRunOpts) 
 		return err
 	}
 
-	a := &service.App{
-		ID:   release.App.ID,
-		Name: release.App.Name,
-	}
+	a := newServiceApp(release)
 	p := newServiceProcess(release, NewProcess("run", Command(opts.Command)))
 
 	for k, v := range opts.Env {
