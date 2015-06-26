@@ -104,6 +104,7 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		}
 
 		dyno := &heroku.Dyno{
+			Name:      "run",
 			Command:   form.Command,
 			CreatedAt: timex.Now(),
 		}

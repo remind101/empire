@@ -74,6 +74,7 @@ func NewCmd(url, command string) *Cmd {
 	cmd := exec.Command(p, args...)
 	cmd.Env = []string{
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		"TERM=screen-256color",
 		fmt.Sprintf("EMPIRE_API_URL=%s", url),
 	}
 
