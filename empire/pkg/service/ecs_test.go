@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/remind101/empire/empire/pkg/awsutil"
+	"github.com/remind101/empire/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
@@ -421,7 +422,7 @@ var fakeApp = &App{
 	Processes: []*Process{
 		&Process{
 			Type:    "web",
-			Image:   "remind101/acme-inc:latest",
+			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 			Command: "acme-inc web",
 			Env: map[string]string{
 				"USER": "foo",

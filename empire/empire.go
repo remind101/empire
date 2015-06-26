@@ -129,7 +129,13 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
+	runner, err := newRunner(options.Docker)
+	if err != nil {
+		return nil, err
+	}
+
 	manager, err := newManager(
+		runner,
 		options.ECS,
 		options.ELB,
 		options.AWSConfig,
@@ -164,11 +170,6 @@ func New(options Options) (*Empire, error) {
 	restarter := &restarter{
 		releaser: releaser,
 		manager:  manager,
-	}
-
-	runner, err := newRunner(options.Docker, store)
-	if err != nil {
-		return nil, err
 	}
 
 	releases := &releasesService{
@@ -216,8 +217,11 @@ func New(options Options) (*Empire, error) {
 		jobStates:    jobStates,
 		scaler:       scaler,
 		restarter:    restarter,
-		runner:       runner,
-		releases:     releases,
+		runner: &runnerService{
+			store:   store,
+			manager: manager,
+		},
+		releases: releases,
 	}, nil
 }
 
@@ -382,13 +386,13 @@ const (
 	UserKey key = 0
 )
 
-func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (service.Manager, error) {
+func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (service.Manager, error) {
 	if config == nil {
 		log.Println("warn: AWS not configured, ECS service management disabled.")
 		return service.NewFakeManager(), nil
 	}
 
-	return service.NewLoadBalancedECSManager(service.ECSConfig{
+	m, err := service.NewLoadBalancedECSManager(service.ECSConfig{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
@@ -398,6 +402,14 @@ func newManager(ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (ser
 		AWS:                     config,
 		ZoneID:                  elbOpts.InternalZoneID,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &service.AttachedRunner{
+		Manager: m,
+		Runner:  r,
+	}, nil
 }
 
 func newCertManager(config *aws.Config) sslcert.Manager {
@@ -409,12 +421,9 @@ func newCertManager(config *aws.Config) sslcert.Manager {
 	return sslcert.NewIAMManager(config, "/empire/certs/")
 }
 
-func newRunner(o DockerOptions, s *store) (*runnerService, error) {
+func newRunner(o DockerOptions) (*runner.Runner, error) {
 	if o.Socket == "" {
-		return &runnerService{
-			store:  s,
-			runner: &fakeRunner{},
-		}, nil
+		return nil, nil
 	}
 
 	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
@@ -422,10 +431,7 @@ func newRunner(o DockerOptions, s *store) (*runnerService, error) {
 		return nil, err
 	}
 
-	return &runnerService{
-		store:  s,
-		runner: runner.NewRunner(c),
-	}, nil
+	return runner.NewRunner(c), nil
 }
 
 func newLogger() log15.Logger {
