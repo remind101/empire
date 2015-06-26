@@ -6,7 +6,7 @@ import (
 	"github.com/bgentry/heroku-go"
 )
 
-func TestProcessesPost(t *testing.T) {
+func testProcessesPost(t *testing.T) {
 	c, s := NewTestClient(t)
 	defer s.Close()
 

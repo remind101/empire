@@ -1,9 +1,8 @@
 package empire
 
 import (
-	"github.com/remind101/empire/empire/pkg/image"
-
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/empire/pkg/image"
 )
 
 // Slug represents a container image with the extracted ProcessType.

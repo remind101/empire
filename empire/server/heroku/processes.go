@@ -1,6 +1,8 @@
 package heroku
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
@@ -74,24 +76,20 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	relay, err := h.ProcessesRun(ctx, a, form.Command, empire.ProcessesRunOpts{
-		Attach: form.Attach,
-		Env:    form.Env,
-		Size:   form.Size,
-	})
+	inStream, outStream, err := hijackServer(w)
+	if err != nil {
+		return err
+	}
+	defer closeStreams(inStream, outStream)
 
-	dyno := &heroku.Dyno{
-		Name:      relay.Name,
-		AttachURL: &relay.AttachURL,
-		Command:   relay.Command,
-		State:     relay.State,
-		Type:      relay.Type,
-		Size:      relay.Size,
-		CreatedAt: relay.CreatedAt,
+	fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.docker.raw-stream\r\n\r\n")
+
+	if err := h.ProcessesRun(ctx, a, form.Command, inStream, outStream); err != nil {
+		fmt.Fprintf(outStream, "%v", err)
+		return nil
 	}
 
-	w.WriteHeader(201)
-	return Encode(w, dyno)
+	return nil
 }
 
 type DeleteProcesses struct {
@@ -117,4 +115,26 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 
 	return NoContent(w)
+}
+
+func closeStreams(streams ...interface{}) {
+	for _, stream := range streams {
+		if tcpc, ok := stream.(interface {
+			CloseWrite() error
+		}); ok {
+			tcpc.CloseWrite()
+		} else if closer, ok := stream.(io.Closer); ok {
+			closer.Close()
+		}
+	}
+}
+
+func hijackServer(w http.ResponseWriter) (io.ReadCloser, io.Writer, error) {
+	conn, _, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		return nil, nil, err
+	}
+	// Flush the options to make sure the client sets the raw mode
+	conn.Write([]byte{})
+	return conn, conn, nil
 }

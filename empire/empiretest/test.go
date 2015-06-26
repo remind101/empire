@@ -21,10 +21,7 @@ var (
 // the database is clean before returning.
 func NewEmpire(t testing.TB) *empire.Empire {
 	opts := empire.Options{
-		DB: DatabaseURL,
-		Runner: empire.RunnerOptions{
-			API: "fake",
-		},
+		DB:        DatabaseURL,
 		AWSConfig: nil,
 		Docker: empire.DockerOptions{
 			Auth: &docker.AuthConfigurations{

@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
+	"io"
 	"log"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/empire/pkg/dockerutil"
 	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/empire/pkg/runner"
 	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
@@ -69,15 +71,9 @@ type ELBOptions struct {
 	InternalZoneID string
 }
 
-// RunnerOptions is a set of options to configure the one off process runner service.
-type RunnerOptions struct {
-	API string
-}
-
 // Options is provided to New to configure the Empire services.
 type Options struct {
 	Docker DockerOptions
-	Runner RunnerOptions
 	ECS    ECSOptions
 	ELB    ELBOptions
 
@@ -111,7 +107,7 @@ type Empire struct {
 	deployer     *deployer
 	scaler       *scaler
 	restarter    *restarter
-	runner       *runner
+	runner       *runnerService
 }
 
 // New returns a new Empire instance.
@@ -170,7 +166,10 @@ func New(options Options) (*Empire, error) {
 		manager:  manager,
 	}
 
-	runner := newRunner(options.Runner, store)
+	runner, err := newRunner(options.Docker, store)
+	if err != nil {
+		return nil, err
+	}
 
 	releases := &releasesService{
 		store:    store,
@@ -315,15 +314,9 @@ func (e *Empire) ProcessesRestart(ctx context.Context, app *App, id string) erro
 	return e.restarter.Restart(ctx, app, id)
 }
 
-type ProcessesRunOpts struct {
-	Attach bool
-	Env    map[string]string
-	Size   string
-}
-
 // ProcessesRun runs a one-off process for a given App and command.
-func (e *Empire) ProcessesRun(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {
-	return e.runner.Run(ctx, app, command, opts)
+func (e *Empire) ProcessesRun(ctx context.Context, app *App, command string, in io.Reader, out io.Writer) error {
+	return e.runner.Run(ctx, app, command, in, out)
 }
 
 // ReleasesFindByApp returns all Releases for a given App.
@@ -416,19 +409,23 @@ func newCertManager(config *aws.Config) sslcert.Manager {
 	return sslcert.NewIAMManager(config, "/empire/certs/")
 }
 
-func newRunner(options RunnerOptions, s *store) *runner {
-	var r containerRelayer
-	if options.API == "fake" {
-		log.Println("warn: runner not configured, command runner disabled.")
-		r = &fakeRelayer{}
-	} else {
-		r = &relayer{API: options.API}
+func newRunner(o DockerOptions, s *store) (*runnerService, error) {
+	if o.Socket == "" {
+		return &runnerService{
+			store:  s,
+			runner: &fakeRunner{},
+		}, nil
 	}
 
-	return &runner{
-		store:   s,
-		relayer: r,
+	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
+	if err != nil {
+		return nil, err
 	}
+
+	return &runnerService{
+		store:  s,
+		runner: runner.NewRunner(c),
+	}, nil
 }
 
 func newLogger() log15.Logger {

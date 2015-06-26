@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/runner"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -81,48 +83,42 @@ func (r *relayer) Relay(ctx context.Context, f *postContainersForm) (*ContainerR
 	return cr, nil
 }
 
-type runner struct {
-	store   *store
-	relayer containerRelayer
+type fakeRunner struct{}
+
+func (r *fakeRunner) Run(_ context.Context, opts runner.RunOpts) error {
+	return nil
 }
 
-func (r *runner) Run(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*ContainerRelay, error) {
-	c, err := r.newContainerForm(ctx, app, command, opts)
+type runnerService struct {
+	store  *store
+	runner interface {
+		Run(context.Context, runner.RunOpts) error
+	}
+}
+
+func (r *runnerService) Run(ctx context.Context, app *App, command string, in io.Reader, out io.Writer) error {
+	opts, err := r.newRunOpts(ctx, app, command)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return r.relayer.Relay(ctx, c)
+	opts.Input = in
+	opts.Output = out
+
+	return r.runner.Run(ctx, opts)
 }
 
-func (r *runner) newContainerForm(ctx context.Context, app *App, command string, opts ProcessesRunOpts) (*postContainersForm, error) {
+func (r *runnerService) newRunOpts(ctx context.Context, app *App, command string) (runner.RunOpts, error) {
 	release, err := r.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
-		return nil, err
+		return runner.RunOpts{}, err
 	}
 
-	// Merge env vars with App env vars.
-	vars := Vars{}
-	for key, val := range opts.Env {
-		// Go reuses the same address space for v, so &val would always
-		// return the same address
-		tmp := val
-		vars[Variable(key)] = &tmp
-	}
-	env := environment(NewConfig(release.Config, vars).Vars)
+	env := environment(release.Config.Vars)
 
-	username := ""
-	if user, ok := UserFromContext(ctx); ok {
-		username = user.Name
-	}
-
-	c := &postContainersForm{
-		User:    username,
-		Image:   release.Slug.Image.String(),
+	return runner.RunOpts{
+		Image:   release.Slug.Image,
 		Command: command,
 		Env:     env,
-		Attach:  true,
-	}
-
-	return c, nil
+	}, nil
 }
