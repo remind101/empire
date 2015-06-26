@@ -6,27 +6,21 @@ import (
 	"github.com/bgentry/heroku-go"
 )
 
-func testProcessesPost(t *testing.T) {
+func TestProcessesPost(t *testing.T) {
 	c, s := NewTestClient(t)
 	defer s.Close()
 
 	mustDeploy(t, c, DefaultImage)
-	a := true
+	a := false
 
-	d, err := c.DynoCreate("acme-inc", "bash", &heroku.DynoCreateOpts{
+	if _, err := c.DynoCreate("acme-inc", "bash", &heroku.DynoCreateOpts{
 		Attach: &a,
 		Env: &map[string]string{
 			"COLUMNS": "178",
 			"LINES":   "43",
 			"TERM":    "xterm-256color",
 		},
-	})
-
-	if err != nil {
+	}); err != nil {
 		t.Fatal(err)
-	}
-
-	if got, want := *d.AttachURL, "fake://example.com:5000/abc"; got != want {
-		t.Fatalf("AttachURL => %v; want %v", got, want)
 	}
 }
