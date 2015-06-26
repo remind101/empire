@@ -1,7 +1,6 @@
 package empire // import "github.com/remind101/empire/empire"
 
 import (
-	"io"
 	"log"
 	"os"
 
@@ -319,8 +318,8 @@ func (e *Empire) ProcessesRestart(ctx context.Context, app *App, id string) erro
 }
 
 // ProcessesRun runs a one-off process for a given App and command.
-func (e *Empire) ProcessesRun(ctx context.Context, app *App, command string, in io.Reader, out io.Writer) error {
-	return e.runner.Run(ctx, app, command, in, out)
+func (e *Empire) ProcessesRun(ctx context.Context, app *App, opts ProcessRunOpts) error {
+	return e.runner.Run(ctx, app, opts)
 }
 
 // ReleasesFindByApp returns all Releases for a given App.

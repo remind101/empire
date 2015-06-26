@@ -77,6 +77,11 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
+	opts := empire.ProcessRunOpts{
+		Command: form.Command,
+		Env:     form.Env,
+	}
+
 	if form.Attach {
 		inStream, outStream, err := hijackServer(w)
 		if err != nil {
@@ -86,12 +91,15 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.docker.raw-stream\r\n\r\n")
 
-		if err := h.ProcessesRun(ctx, a, form.Command, inStream, outStream); err != nil {
+		opts.Input = inStream
+		opts.Output = outStream
+
+		if err := h.ProcessesRun(ctx, a, opts); err != nil {
 			fmt.Fprintf(outStream, "%v", err)
 			return nil
 		}
 	} else {
-		if err := h.ProcessesRun(ctx, a, form.Command, nil, nil); err != nil {
+		if err := h.ProcessesRun(ctx, a, opts); err != nil {
 			return err
 		}
 
