@@ -8,6 +8,7 @@ import (
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 
@@ -76,17 +77,31 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	inStream, outStream, err := hijackServer(w)
-	if err != nil {
-		return err
-	}
-	defer closeStreams(inStream, outStream)
+	if form.Attach {
+		inStream, outStream, err := hijackServer(w)
+		if err != nil {
+			return err
+		}
+		defer closeStreams(inStream, outStream)
 
-	fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.docker.raw-stream\r\n\r\n")
+		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.docker.raw-stream\r\n\r\n")
 
-	if err := h.ProcessesRun(ctx, a, form.Command, inStream, outStream); err != nil {
-		fmt.Fprintf(outStream, "%v", err)
-		return nil
+		if err := h.ProcessesRun(ctx, a, form.Command, inStream, outStream); err != nil {
+			fmt.Fprintf(outStream, "%v", err)
+			return nil
+		}
+	} else {
+		if err := h.ProcessesRun(ctx, a, form.Command, nil, nil); err != nil {
+			return err
+		}
+
+		dyno := &heroku.Dyno{
+			Command:   form.Command,
+			CreatedAt: timex.Now(),
+		}
+
+		w.WriteHeader(201)
+		return Encode(w, dyno)
 	}
 
 	return nil
