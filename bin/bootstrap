@@ -1,5 +1,24 @@
 #!/bin/bash
 
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo '!! This script produces an insecure demo or dev environment and is   !!'
+echo '!! not meant to be ran in production. As well it is exposed to the   !!'
+echo '!! internet and as such should not be left running without further   !!'
+echo '!! locking down of the security groups.                              !!'
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+read -p "Do you want to continue? (y/N)" SECCHECK
+
+SECCHECK=$(echo $SECCHECK | tr '[:upper:]' '[:lower:]')
+
+if [ "$SECCHECK" != "y" ]
+then
+    echo "Aborting."
+    exit
+fi
+
 set -e
 
 # Set to anything other than 1 to skip launching Empire/Postgres as a service
