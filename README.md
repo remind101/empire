@@ -78,6 +78,9 @@ To get started, run:
 $ make bootstrap
 ```
 
+The bootstrap command assumes you have a running postgres server. It will create a database called `empire`
+using the postgres client connection defaults.
+
 To run the tests:
 
 ```console
