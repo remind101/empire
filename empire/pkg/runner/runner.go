@@ -50,13 +50,13 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 		return fmt.Errorf("runner: pull: %v", err)
 	}
 
-	c, err := r.createContainer(opts)
+	c, err := r.create(opts)
 	if err != nil {
 		return fmt.Errorf("runner: create container: %v", err)
 	}
-	defer r.removeContainer(c.ID)
+	defer r.remove(c.ID)
 
-	if err := r.startContainer(c.ID); err != nil {
+	if err := r.start(c.ID); err != nil {
 		return fmt.Errorf("runner: start containeer: %v", err)
 	}
 
@@ -89,7 +89,7 @@ func (r *Runner) pull(img image.Image, out io.Writer) error {
 	})
 }
 
-func (r *Runner) createContainer(opts RunOpts) (*docker.Container, error) {
+func (r *Runner) create(opts RunOpts) (*docker.Container, error) {
 	return r.client.CreateContainer(docker.CreateContainerOptions{
 		Name: uuid.New(),
 		Config: &docker.Config{
@@ -106,7 +106,7 @@ func (r *Runner) createContainer(opts RunOpts) (*docker.Container, error) {
 	})
 }
 
-func (r *Runner) startContainer(id string) error {
+func (r *Runner) start(id string) error {
 	return r.client.StartContainer(id, nil)
 }
 
@@ -134,7 +134,7 @@ func (r *Runner) stop(id string) error {
 	return r.client.StopContainer(id, DefaultStopTimeout)
 }
 
-func (r *Runner) removeContainer(id string) error {
+func (r *Runner) remove(id string) error {
 	return r.client.RemoveContainer(docker.RemoveContainerOptions{
 		ID:            id,
 		RemoveVolumes: true,
