@@ -63,6 +63,7 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 	if err := r.attach(c.ID, opts.Input, opts.Output); err != nil {
 		return fmt.Errorf("runner: attach: %v", err)
 	}
+	defer tryClose(opts.Output)
 
 	if err := r.wait(c.ID); err != nil {
 		return fmt.Errorf("runner: wait: %v", err)
@@ -149,4 +150,12 @@ func envKeys(env map[string]string) []string {
 	}
 
 	return s
+}
+
+func tryClose(w io.Writer) error {
+	if w, ok := w.(io.Closer); ok {
+		return w.Close()
+	}
+
+	return nil
 }
