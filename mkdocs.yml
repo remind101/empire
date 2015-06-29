@@ -4,6 +4,8 @@ pages:
   - 'Overview': 'index.md'
   - 'Installing': 'installing.md'
   - 'Using': 'using.md'
+  - 'Production Best Practices': 'production_best_practices.md'
   - 'Administering - TODO': 'administering.md'
   - 'Troubleshooting': 'troubleshooting.md'
   - 'Roadmap - TODO': 'roadmap.md'
+  - 'FAQ - TODO': 'faq.md'
