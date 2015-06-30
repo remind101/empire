@@ -3,7 +3,10 @@ package dockerutil
 import (
 	"os"
 
+	"golang.org/x/net/context"
+
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/pkg/trace"
 )
 
 // NewDockerClient returns a new docker.Client using the given socket and certificate path.
@@ -60,7 +63,7 @@ func newClient(auth *docker.AuthConfigurations, c *docker.Client) *Client {
 }
 
 // PullImage wraps the docker clients PullImage to handle authentication.
-func (c *Client) PullImage(opts docker.PullImageOptions) error {
+func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) error {
 	var a docker.AuthConfiguration
 
 	reg := opts.Registry
@@ -73,5 +76,36 @@ func (c *Client) PullImage(opts docker.PullImageOptions) error {
 		a = c
 	}
 
-	return c.Client.PullImage(opts, a)
+	ctx, done := trace.Trace(ctx)
+	err := c.Client.PullImage(opts, a)
+	done(err, "PullImage", "registry", opts.Registry, "repository", opts.Repository, "tag", opts.Tag)
+	return err
+}
+
+func (c *Client) CreateContainer(ctx context.Context, opts docker.CreateContainerOptions) (*docker.Container, error) {
+	ctx, done := trace.Trace(ctx)
+	container, err := c.Client.CreateContainer(opts)
+	done(err, "CreateContainer", "image", opts.Config.Image)
+	return container, err
+}
+
+func (c *Client) StartContainer(ctx context.Context, id string, config *docker.HostConfig) error {
+	ctx, done := trace.Trace(ctx)
+	err := c.Client.StartContainer(id, config)
+	done(err, "StartContainer", "id", id)
+	return err
+}
+
+func (c *Client) AttachToContainer(ctx context.Context, opts docker.AttachToContainerOptions) error {
+	ctx, done := trace.Trace(ctx)
+	err := c.Client.AttachToContainer(opts)
+	done(err, "AttachToContainer", "container", opts.Container)
+	return err
+}
+
+func (c *Client) StopContainer(ctx context.Context, id string, timeout uint) error {
+	ctx, done := trace.Trace(ctx)
+	err := c.Client.StopContainer(id, timeout)
+	done(err, "StopContainer", "id", id, "timeout", timeout)
+	return err
 }

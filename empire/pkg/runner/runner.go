@@ -47,21 +47,21 @@ func NewRunner(client *dockerutil.Client) *Runner {
 }
 
 func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
-	if err := r.pull(opts.Image, replaceNL(opts.Output)); err != nil {
+	if err := r.pull(ctx, opts.Image, replaceNL(opts.Output)); err != nil {
 		return fmt.Errorf("runner: pull: %v", err)
 	}
 
-	c, err := r.create(opts)
+	c, err := r.create(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("runner: create container: %v", err)
 	}
 	defer r.remove(c.ID)
 
-	if err := r.start(c.ID); err != nil {
+	if err := r.start(ctx, c.ID); err != nil {
 		return fmt.Errorf("runner: start containeer: %v", err)
 	}
 
-	if err := r.attach(c.ID, opts.Input, opts.Output); err != nil {
+	if err := r.attach(ctx, c.ID, opts.Input, opts.Output); err != nil {
 		return fmt.Errorf("runner: attach: %v", err)
 	}
 	defer tryClose(opts.Output)
@@ -70,7 +70,7 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 		return fmt.Errorf("runner: wait: %v", err)
 	}
 
-	if err := r.stop(c.ID); err != nil {
+	if err := r.stop(ctx, c.ID); err != nil {
 		if _, ok := err.(*docker.ContainerNotRunning); ok {
 			return nil
 		}
@@ -81,8 +81,8 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 	return nil
 }
 
-func (r *Runner) pull(img image.Image, out io.Writer) error {
-	return r.client.PullImage(docker.PullImageOptions{
+func (r *Runner) pull(ctx context.Context, img image.Image, out io.Writer) error {
+	return r.client.PullImage(ctx, docker.PullImageOptions{
 		Registry:     img.Registry,
 		Repository:   img.Repository,
 		Tag:          img.Tag,
@@ -90,8 +90,8 @@ func (r *Runner) pull(img image.Image, out io.Writer) error {
 	})
 }
 
-func (r *Runner) create(opts RunOpts) (*docker.Container, error) {
-	return r.client.CreateContainer(docker.CreateContainerOptions{
+func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, error) {
+	return r.client.CreateContainer(ctx, docker.CreateContainerOptions{
 		Name: uuid.New(),
 		Config: &docker.Config{
 			Tty:          true,
@@ -107,12 +107,12 @@ func (r *Runner) create(opts RunOpts) (*docker.Container, error) {
 	})
 }
 
-func (r *Runner) start(id string) error {
-	return r.client.StartContainer(id, nil)
+func (r *Runner) start(ctx context.Context, id string) error {
+	return r.client.StartContainer(ctx, id, nil)
 }
 
-func (r *Runner) attach(id string, in io.Reader, out io.Writer) error {
-	return r.client.AttachToContainer(docker.AttachToContainerOptions{
+func (r *Runner) attach(ctx context.Context, id string, in io.Reader, out io.Writer) error {
+	return r.client.AttachToContainer(ctx, docker.AttachToContainerOptions{
 		Container:    id,
 		InputStream:  in,
 		OutputStream: out,
@@ -131,8 +131,8 @@ func (r *Runner) wait(id string) error {
 	return err
 }
 
-func (r *Runner) stop(id string) error {
-	return r.client.StopContainer(id, DefaultStopTimeout)
+func (r *Runner) stop(ctx context.Context, id string) error {
+	return r.client.StopContainer(ctx, id, DefaultStopTimeout)
 }
 
 func (r *Runner) remove(id string) error {
