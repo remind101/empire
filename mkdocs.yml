@@ -20,8 +20,7 @@ pages:
   - Hacking on Empire:
     - "Running Tests - TODO": "running_tests.md"
     - "Running Empire Locally - TODO": "running_empire_locally.md"
-    - "Contributing Guidelines": "../CONTRIBUTING.md"
-    - "Reporting Bugs": "../CONTRIBUTING.md"
+    - "Contribution Guidelines & Bug Reporting": "contributing.md"
     - "Reporting Security Vulnerabilities - TODO": "reporting_security_vulnerabilities.md"
   - Reference:
     - "Configuration - TODO": "configuration.md"
