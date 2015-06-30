@@ -289,7 +289,16 @@ func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Proc
 }
 
 func (m *ecsProcessManager) Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error {
-	return errors.New("running a process is not implemented")
+	attachment := "detached"
+	if out != nil {
+		attachment = "attached"
+	}
+	// TODO(ejholmes): Actually implement this. We could have the ECS
+	// manager handle the lifecycle of "detached" processes which don't have
+	// their stdin, stdout and stderr attached. It would be nice if we can
+	// eventually remove the "runner" package and have both attached and
+	// detached processes run via ECS.
+	return fmt.Errorf("running a %s process is not implemented by the ECS manager.", attachment)
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
