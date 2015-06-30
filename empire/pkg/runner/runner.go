@@ -2,6 +2,7 @@
 package runner
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -46,7 +47,7 @@ func NewRunner(client *dockerutil.Client) *Runner {
 }
 
 func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
-	if err := r.pull(opts.Image, opts.Output); err != nil {
+	if err := r.pull(opts.Image, replaceNL(opts.Output)); err != nil {
 		return fmt.Errorf("runner: pull: %v", err)
 	}
 
@@ -158,4 +159,20 @@ func tryClose(w io.Writer) error {
 	}
 
 	return nil
+}
+
+// replaceNL returns an io.Writer that will replace "\n" with "\r\n" in the
+// stream.
+var replaceNL = func(w io.Writer) io.Writer {
+	o, n := []byte("\n"), []byte("\r\n")
+	return writerFunc(func(p []byte) (int, error) {
+		return w.Write(bytes.Replace(p, o, n, -1))
+	})
+}
+
+// writerFunc is a function that implements io.Writer.
+type writerFunc func([]byte) (int, error)
+
+func (f writerFunc) Write(p []byte) (int, error) {
+	return f(p)
 }
