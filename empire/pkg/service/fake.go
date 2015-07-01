@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -61,5 +62,12 @@ func (m *FakeManager) Instances(ctx context.Context, appID string) ([]*Instance,
 }
 
 func (m *FakeManager) Stop(ctx context.Context, instanceID string) error {
+	return nil
+}
+
+func (m *FakeManager) Run(ctx context.Context, app *App, p *Process, in io.Reader, out io.Writer) error {
+	if out != nil {
+		fmt.Fprintf(out, "Fake output for `%s` on %s\n", p.Command, app.Name)
+	}
 	return nil
 }

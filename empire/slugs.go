@@ -1,9 +1,9 @@
 package empire
 
 import (
-	"github.com/remind101/empire/empire/pkg/image"
-
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/empire/pkg/image"
+	"golang.org/x/net/context"
 )
 
 // Slug represents a container image with the extracted ProcessType.
@@ -31,15 +31,15 @@ type slugsService struct {
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) SlugsCreateByImage(img image.Image, out chan Event) (*Slug, error) {
-	return slugsCreateByImage(s.store, s.extractor, s.resolver, img, out)
+func (s *slugsService) SlugsCreateByImage(ctx context.Context, img image.Image, out chan Event) (*Slug, error) {
+	return slugsCreateByImage(ctx, s.store, s.extractor, s.resolver, img, out)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(store *store, e Extractor, r Resolver, img image.Image, out chan Event) (*Slug, error) {
-	_, err := r.Resolve(img, out)
+func slugsCreateByImage(ctx context.Context, store *store, e Extractor, r Resolver, img image.Image, out chan Event) (*Slug, error) {
+	_, err := r.Resolve(ctx, img, out)
 	if err != nil {
 		return nil, err
 	}

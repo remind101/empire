@@ -11,4 +11,3 @@ bootstrap:
 
 build:
 	$(MAKE) -C empire build
-	$(MAKE) -C relay build

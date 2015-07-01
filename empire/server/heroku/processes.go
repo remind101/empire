@@ -1,11 +1,14 @@
 package heroku
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire/empire"
 	"github.com/remind101/pkg/httpx"
+	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 
@@ -74,24 +77,43 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	relay, err := h.ProcessesRun(ctx, a, form.Command, empire.ProcessesRunOpts{
-		Attach: form.Attach,
-		Env:    form.Env,
-		Size:   form.Size,
-	})
-
-	dyno := &heroku.Dyno{
-		Name:      relay.Name,
-		AttachURL: &relay.AttachURL,
-		Command:   relay.Command,
-		State:     relay.State,
-		Type:      relay.Type,
-		Size:      relay.Size,
-		CreatedAt: relay.CreatedAt,
+	opts := empire.ProcessRunOpts{
+		Command: form.Command,
+		Env:     form.Env,
 	}
 
-	w.WriteHeader(201)
-	return Encode(w, dyno)
+	if form.Attach {
+		inStream, outStream, err := hijackServer(w)
+		if err != nil {
+			return err
+		}
+		defer closeStreams(inStream, outStream)
+
+		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n")
+
+		opts.Input = inStream
+		opts.Output = outStream
+
+		if err := h.ProcessesRun(ctx, a, opts); err != nil {
+			fmt.Fprintf(outStream, "%v", err)
+			return nil
+		}
+	} else {
+		if err := h.ProcessesRun(ctx, a, opts); err != nil {
+			return err
+		}
+
+		dyno := &heroku.Dyno{
+			Name:      "run",
+			Command:   form.Command,
+			CreatedAt: timex.Now(),
+		}
+
+		w.WriteHeader(201)
+		return Encode(w, dyno)
+	}
+
+	return nil
 }
 
 type DeleteProcesses struct {
@@ -117,4 +139,26 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 
 	return NoContent(w)
+}
+
+func closeStreams(streams ...interface{}) {
+	for _, stream := range streams {
+		if tcpc, ok := stream.(interface {
+			CloseWrite() error
+		}); ok {
+			tcpc.CloseWrite()
+		} else if closer, ok := stream.(io.Closer); ok {
+			closer.Close()
+		}
+	}
+}
+
+func hijackServer(w http.ResponseWriter) (io.ReadCloser, io.Writer, error) {
+	conn, _, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		return nil, nil, err
+	}
+	// Flush the options to make sure the client sets the raw mode
+	conn.Write([]byte{})
+	return conn, conn, nil
 }
