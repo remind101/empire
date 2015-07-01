@@ -1,5 +1,5 @@
 server:
-  build: ./empire
+  build: .
   command: server -automigrate=true
   links:
     - postgres:postgres
