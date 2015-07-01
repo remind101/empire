@@ -1,4 +1,4 @@
-.PHONY: cmd build test
+.PHONY: cmd build test bootstrap
 
 REPO = remind101/empire
 TYPE = patch
