@@ -2,7 +2,7 @@ package empire
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 

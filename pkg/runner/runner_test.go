@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/remind101/empire/empire/pkg/dockerutil"
-	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/pkg/dockerutil"
+	"github.com/remind101/empire/pkg/image"
 )
 
 func TestRunner(t *testing.T) {

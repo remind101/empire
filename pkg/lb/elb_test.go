@@ -8,7 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/remind101/empire/empire/pkg/awsutil"
+	"github.com/remind101/empire/pkg/awsutil"
 	"golang.org/x/net/context"
 )
 

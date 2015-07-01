@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/pkg/image"
 )
 
 // Event defines an interface for events within empire.

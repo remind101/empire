@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 

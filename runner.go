@@ -3,7 +3,7 @@ package empire
 import (
 	"io"
 
-	"github.com/remind101/empire/empire/pkg/service"
+	"github.com/remind101/empire/pkg/service"
 	"golang.org/x/net/context"
 )
 

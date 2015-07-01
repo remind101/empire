@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/remind101/empire/empire/pkg/awsutil"
+	"github.com/remind101/empire/pkg/awsutil"
 )
 
 func TestRoute53_CNAME(t *testing.T) {

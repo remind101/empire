@@ -7,8 +7,8 @@ import (
 
 	"github.com/ejholmes/flock"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/server"
+	"github.com/remind101/empire"
+	"github.com/remind101/empire/server"
 )
 
 var (

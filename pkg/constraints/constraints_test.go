@@ -3,7 +3,7 @@ package constraints
 import (
 	"testing"
 
-	. "github.com/remind101/empire/empire/pkg/bytesize"
+	. "github.com/remind101/empire/pkg/bytesize"
 )
 
 func TestCPUShare_ParseCPUShare(t *testing.T) {

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/pkg/image"
 
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire"
 	"golang.org/x/net/context"
 )
 

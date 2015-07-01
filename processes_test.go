@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/remind101/empire/empire/pkg/bytesize"
-	"github.com/remind101/empire/empire/pkg/constraints"
+	. "github.com/remind101/empire/pkg/bytesize"
+	"github.com/remind101/empire/pkg/constraints"
 )
 
 func TestProcessesQuery(t *testing.T) {

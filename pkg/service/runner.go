@@ -3,7 +3,7 @@ package service
 import (
 	"io"
 
-	"github.com/remind101/empire/empire/pkg/runner"
+	"github.com/remind101/empire/pkg/runner"
 	"golang.org/x/net/context"
 )
 

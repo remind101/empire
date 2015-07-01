@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/bgentry/heroku-go"
-	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/server/authorization"
+	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/authorization"
 	"golang.org/x/net/context"
 )
 

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/codegangsta/cli"
-	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire"
 )
 
 func runMigrate(c *cli.Context) {

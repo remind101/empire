@@ -3,7 +3,7 @@ package github
 import (
 	"testing"
 
-	"github.com/remind101/empire/empire/server/authorization"
+	"github.com/remind101/empire/server/authorization"
 )
 
 func TestAuthorizeTwoFactorRequired(t *testing.T) {

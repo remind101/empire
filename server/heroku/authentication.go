@@ -3,7 +3,7 @@ package heroku
 import (
 	"net/http"
 
-	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"

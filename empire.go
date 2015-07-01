@@ -1,4 +1,4 @@
-package empire // import "github.com/remind101/empire/empire"
+package empire // import "github.com/remind101/empire"
 
 import (
 	"log"
@@ -8,11 +8,11 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
-	"github.com/remind101/empire/empire/pkg/dockerutil"
-	"github.com/remind101/empire/empire/pkg/image"
-	"github.com/remind101/empire/empire/pkg/runner"
-	"github.com/remind101/empire/empire/pkg/service"
-	"github.com/remind101/empire/empire/pkg/sslcert"
+	"github.com/remind101/empire/pkg/dockerutil"
+	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/runner"
+	"github.com/remind101/empire/pkg/service"
+	"github.com/remind101/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )

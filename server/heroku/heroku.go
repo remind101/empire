@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/server/authorization"
+	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/authorization"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
 )

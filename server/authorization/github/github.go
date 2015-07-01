@@ -1,8 +1,8 @@
 package github
 
 import (
-	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/server/authorization"
+	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/authorization"
 )
 
 // Authorizer is an implementation of the authorization.Authorizer interface backed by

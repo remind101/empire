@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire/empire/pkg/image"
+	"github.com/remind101/empire/pkg/image"
 	"gopkg.in/yaml.v2"
 )
 

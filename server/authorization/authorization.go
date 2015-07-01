@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire"
 )
 
 var (

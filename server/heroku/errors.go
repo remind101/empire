@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire"
 )
 
 // Named matching heroku's error codes. See

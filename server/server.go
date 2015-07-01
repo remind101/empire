@@ -3,11 +3,11 @@ package server
 import (
 	"net/http"
 
-	"github.com/remind101/empire/empire"
-	"github.com/remind101/empire/empire/server/authorization"
-	githubauth "github.com/remind101/empire/empire/server/authorization/github"
-	"github.com/remind101/empire/empire/server/heroku"
-	"github.com/remind101/empire/empire/server/middleware"
+	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/authorization"
+	githubauth "github.com/remind101/empire/server/authorization/github"
+	"github.com/remind101/empire/server/heroku"
+	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )

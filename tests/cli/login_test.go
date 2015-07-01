@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/remind101/empire/empire/empiretest"
+	"github.com/remind101/empire/empiretest"
 )
 
 func TestLogin(t *testing.T) {

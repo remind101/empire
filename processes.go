@@ -9,9 +9,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
-	. "github.com/remind101/empire/empire/pkg/bytesize"
-	"github.com/remind101/empire/empire/pkg/constraints"
-	"github.com/remind101/empire/empire/pkg/service"
+	. "github.com/remind101/empire/pkg/bytesize"
+	"github.com/remind101/empire/pkg/constraints"
+	"github.com/remind101/empire/pkg/service"
 	"golang.org/x/net/context"
 )
 

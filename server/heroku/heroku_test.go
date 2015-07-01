@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/remind101/empire/empire"
+	"github.com/remind101/empire"
 )
 
 func TestEncode(t *testing.T) {

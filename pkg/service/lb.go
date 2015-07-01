@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 
-	"github.com/remind101/empire/empire/pkg/lb"
+	"github.com/remind101/empire/pkg/lb"
 	"golang.org/x/net/context"
 )
 
