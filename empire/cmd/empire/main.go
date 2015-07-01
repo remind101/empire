@@ -21,6 +21,7 @@ const (
 	FlagGithubClient = "github.client.id"
 	FlagGithubSecret = "github.client.secret"
 	FlagGithubOrg    = "github.organization"
+	FlagGithubApiURL = "github.api.url"
 
 	FlagDBPath = "path"
 	FlagDB     = "db"
@@ -80,6 +81,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The organization to allow access to",
 				EnvVar: "EMPIRE_GITHUB_ORGANIZATION",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubApiURL,
+				Value:  "",
+				Usage:  "The URL to use when talking to GitHub.",
+				EnvVar: "EMPIRE_GITHUB_API_URL",
 			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,

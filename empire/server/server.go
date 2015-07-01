@@ -28,6 +28,7 @@ type Options struct {
 		ClientID     string
 		ClientSecret string
 		Organization string
+		ApiURL       string
 	}
 }
 
@@ -38,6 +39,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 		options.GitHub.ClientID,
 		options.GitHub.ClientSecret,
 		options.GitHub.Organization,
+		options.GitHub.ApiURL,
 	)
 
 	// Mount the heroku api
@@ -82,7 +84,7 @@ func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWrite
 // NewAuthorizer returns a new Authorizer. If the client id is present, it will
 // return a real Authorizer that talks to GitHub. If an empty string is
 // provided, then it will just return a fake authorizer.
-func NewAuthorizer(clientID, clientSecret, organization string) authorization.Authorizer {
+func NewAuthorizer(clientID, clientSecret, organization string, apiURL string) authorization.Authorizer {
 	if clientID == "" {
 		return &authorization.Fake{}
 	}
@@ -92,5 +94,6 @@ func NewAuthorizer(clientID, clientSecret, organization string) authorization.Au
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Organization: organization,
+		ApiURL:       apiURL,
 	}
 }

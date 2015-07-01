@@ -22,6 +22,9 @@ type Authorizer struct {
 	// organization.
 	Organization string
 
+	// The oauth application URL.
+	ApiURL string
+
 	client interface {
 		CreateAuthorization(CreateAuthorizationOpts) (*Authorization, error)
 		GetUser(token string) (*User, error)
@@ -32,7 +35,9 @@ type Authorizer struct {
 func (a *Authorizer) Authorize(username, password, twofactor string) (*empire.User, error) {
 	c := a.client
 	if c == nil {
-		c = &Client{}
+		c = &Client{
+			URL: a.ApiURL,
+		}
 	}
 
 	auth, err := c.CreateAuthorization(CreateAuthorizationOpts{
