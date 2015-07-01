@@ -1,4 +1,4 @@
-# Empire :: Overview
+# Empire :: Introduction
 
 Empire is an open source, self-hosted PaaS that makes deployment and management
 of [dockerized][dockerized] [12-factor apps][12factor] easy. Empire's goals are

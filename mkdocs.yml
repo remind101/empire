@@ -1,11 +1,30 @@
 site_name: Empire Documentation
 theme: readthedocs
 pages:
-  - 'Overview': 'index.md'
-  - 'Installing': 'installing.md'
-  - 'Using': 'using.md'
-  - 'Production Best Practices - WIP': 'production_best_practices.md'
-  - 'Administering - TODO': 'administering.md'
-  - 'Troubleshooting': 'troubleshooting.md'
-  - 'Roadmap - TODO': 'roadmap.md'
-  - 'FAQ - TODO': 'faq.md'
+  - 'Introduction': 'index.md'
+  - Overview:
+    - "Features & Design Goals - TODO": "features_and_design_goals.md"
+    - "Known Limitations - TODO": "known_limitations.md"
+    - "Roadmap - TODO": "roadmap.md"
+    - "FAQ - TODO": "faq.md"
+  - Getting Started:
+    - "Prerequisites - TODO": "prerequisites.md"
+    - "Quickstart: Installing": "quickstart_installing.md"
+    - "Quickstart: Using": "quickstart_using.md"
+    - "Production Best Practices - WIP": "production_best_practices.md"
+  - Users Guide:
+    - "Deploying an Application - TODO": "deploying_an_application.md"
+    - "Process Management - TODO": "process_management.md"
+    - "Exposing an app publicly - TODO": "exposing_an_app_publicly.md"
+    - "SSL Certs - TODO": "ssl_certs.md"
+  - Hacking on Empire:
+    - "Running Tests - TODO": "running_tests.md"
+    - "Running Empire Locally - TODO": "running_empire_locally.md"
+    - "Contribution Guidelines & Bug Reporting": "contributing.md"
+    - "Reporting Security Vulnerabilities - TODO": "reporting_security_vulnerabilities.md"
+  - Reference:
+    - "Configuration - TODO": "configuration.md"
+    - "Command Line - TODO": "command_line.md"
+    - "Troubleshooting - TODO": "troubleshooting.md"
+
+
