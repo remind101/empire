@@ -1,5 +1,4 @@
 build
-relay/build
 packer_cache
 *.tar.gz
 .*.sw*
