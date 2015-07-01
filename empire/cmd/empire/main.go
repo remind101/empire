@@ -207,7 +207,6 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 
 	opts.Docker.Socket = c.String(FlagDockerSocket)
 	opts.Docker.CertPath = c.String(FlagDockerCert)
-	opts.Runner.API = c.String(FlagRunner)
 	opts.AWSConfig = aws.DefaultConfig
 	if c.Bool(FlagAWSDebug) {
 		opts.AWSConfig.LogLevel = 1

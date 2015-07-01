@@ -45,7 +45,7 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	}
 
 	// Create a new slug for the docker image.
-	slug, err := s.SlugsCreateByImage(image, opts.EventCh)
+	slug, err := s.SlugsCreateByImage(ctx, image, opts.EventCh)
 	if err != nil {
 		return nil, err
 	}

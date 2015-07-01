@@ -17,6 +17,19 @@ import (
 	"github.com/remind101/pkg/timex"
 )
 
+func DeployCommand(tag, version string) Command {
+	return Command{
+		fmt.Sprintf("deploy remind101/acme-inc:%s", tag),
+		`Pulling repository remind101/acme-inc
+345c7524bc96: Pulling image (` + tag + `) from remind101/acme-inc
+345c7524bc96: Pulling image (` + tag + `) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
+345c7524bc96: Pulling dependent layers
+a1dd7097a8e8: Download complete
+Status: Image is up to date for remind101/acme-inc:` + tag + `
+Status: Created new release ` + version + ` for acme-inc`,
+	}
+}
+
 // Run the tests with empiretest.Run, which will lock access to the database
 // since it can't be shared by parallel tests.
 func TestMain(m *testing.M) {
@@ -74,6 +87,7 @@ func NewCmd(url, command string) *Cmd {
 	cmd := exec.Command(p, args...)
 	cmd.Env = []string{
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		"TERM=screen-256color",
 		fmt.Sprintf("EMPIRE_API_URL=%s", url),
 	}
 

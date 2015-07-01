@@ -3,8 +3,10 @@
 package service
 
 import (
+	"io"
 	"time"
 
+	"github.com/remind101/empire/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
@@ -53,7 +55,7 @@ type Process struct {
 	Type string
 
 	// The Image to run.
-	Image string
+	Image image.Image
 
 	// The Command to run.
 	Command string
@@ -103,9 +105,15 @@ type Scaler interface {
 	Scale(ctx context.Context, app string, process string, instances uint) error
 }
 
+type Runner interface {
+	// Run runs a process.
+	Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error
+}
+
 // Manager is an interface for interfacing with Services.
 type Manager interface {
 	Scaler
+	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
 	Submit(context.Context, *App) error
@@ -125,6 +133,7 @@ type Manager interface {
 // control over individual processes.
 type ProcessManager interface {
 	Scaler
+	Runner
 
 	// CreateProcess creates a process for the app.
 	CreateProcess(ctx context.Context, app *App, process *Process) error

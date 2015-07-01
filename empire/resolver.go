@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 
+	"golang.org/x/net/context"
+
 	"github.com/remind101/empire/empire/pkg/image"
 
 	"github.com/fsouza/go-dockerclient"
@@ -11,13 +13,13 @@ import (
 )
 
 type Resolver interface {
-	Resolve(image.Image, chan Event) (image.Image, error)
+	Resolve(context.Context, image.Image, chan Event) (image.Image, error)
 }
 
 // fakeResolver is a fake resolver that will just return the provided image.
 type fakeResolver struct{}
 
-func (r *fakeResolver) Resolve(img image.Image, out chan Event) (image.Image, error) {
+func (r *fakeResolver) Resolve(_ context.Context, img image.Image, out chan Event) (image.Image, error) {
 	for _, e := range FakeDockerPull(img) {
 		ee := e
 		out <- &ee
@@ -37,12 +39,12 @@ func newDockerResolver(c *dockerutil.Client) Resolver {
 	}
 }
 
-func (r *dockerResolver) Resolve(img image.Image, out chan Event) (image.Image, error) {
+func (r *dockerResolver) Resolve(ctx context.Context, img image.Image, out chan Event) (image.Image, error) {
 	pr, pw := io.Pipe()
 	errCh := make(chan error, 1)
 	go func() {
 		defer pw.Close()
-		errCh <- r.pullImage(img, pw)
+		errCh <- r.pullImage(ctx, img, pw)
 	}()
 
 	dec := json.NewDecoder(pr)
@@ -76,8 +78,8 @@ func (r *dockerResolver) Resolve(img image.Image, out chan Event) (image.Image, 
 //
 // Because docker does not support pulling an image by ID, we're assuming that
 // the docker image has been tagged with its own ID beforehand.
-func (r *dockerResolver) pullImage(img image.Image, output io.Writer) error {
-	return r.client.PullImage(docker.PullImageOptions{
+func (r *dockerResolver) pullImage(ctx context.Context, img image.Image, output io.Writer) error {
+	return r.client.PullImage(ctx, docker.PullImageOptions{
 		Registry:      img.Registry,
 		Repository:    img.Repository,
 		Tag:           img.Tag,

@@ -290,7 +290,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 		Type:        string(p.Type),
 		Env:         env,
 		Command:     string(p.Command),
-		Image:       release.Slug.Image.String(),
+		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),
 		MemoryLimit: uint(p.Constraints.Memory),
 		CPUShares:   uint(p.Constraints.CPUShare),
