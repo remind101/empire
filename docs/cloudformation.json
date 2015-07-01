@@ -534,7 +534,7 @@
     "Service": {
       "Type" : "AWS::ECS::Service",
       "Condition": "DemoMode",
-      "DependsOn": "Cluster",
+      "DependsOn": ["Cluster","ServiceRole","ServiceRolePolicies"],
       "Properties" : {
         "Cluster" : { "Ref": "Cluster" },
         "DesiredCount" : 1,
