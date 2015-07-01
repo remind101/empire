@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/empire/pkg/image"
 	"gopkg.in/yaml.v2"
 )
 
@@ -22,14 +23,14 @@ var (
 type Extractor interface {
 	// Extract takes a repo in the form `remind101/r101-api`, and an image
 	// id, and extracts the process types from the image.
-	Extract(Image) (CommandMap, error)
+	Extract(image.Image) (CommandMap, error)
 }
 
 // fakeExtractor is a fake implementation of the Extractor interface.
 type fakeExtractor struct{}
 
 // Extract implements Extractor Extract.
-func (e *fakeExtractor) Extract(image Image) (CommandMap, error) {
+func (e *fakeExtractor) Extract(img image.Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
 	// Just return some fake processes.
@@ -43,10 +44,10 @@ type cmdExtractor struct {
 	client *docker.Client
 }
 
-func (e *cmdExtractor) Extract(image Image) (CommandMap, error) {
+func (e *cmdExtractor) Extract(img image.Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
-	i, err := e.client.InspectImage(image.String())
+	i, err := e.client.InspectImage(img.String())
 	if err != nil {
 		return pm, err
 	}
@@ -74,11 +75,11 @@ func newProcfileFallbackExtractor(c *docker.Client) Extractor {
 	}
 }
 
-func (e *procfileFallbackExtractor) Extract(image Image) (CommandMap, error) {
-	cm, err := e.pe.Extract(image)
+func (e *procfileFallbackExtractor) Extract(img image.Image) (CommandMap, error) {
+	cm, err := e.pe.Extract(img)
 	// If err is a ProcfileError, Procfile doesn't exist.
 	if _, ok := err.(*ProcfileError); ok {
-		cm, err = e.ce.Extract(image)
+		cm, err = e.ce.Extract(img)
 	}
 
 	return cm, err
@@ -92,10 +93,10 @@ type procfileExtractor struct {
 }
 
 // Extract implements Extractor Extract.
-func (e *procfileExtractor) Extract(image Image) (CommandMap, error) {
+func (e *procfileExtractor) Extract(img image.Image) (CommandMap, error) {
 	pm := make(CommandMap)
 
-	c, err := e.createContainer(image)
+	c, err := e.createContainer(img)
 	if err != nil {
 		return pm, err
 	}
@@ -133,10 +134,10 @@ func (e *procfileExtractor) procfile(id string) (string, error) {
 }
 
 // createContainer creates a new docker container for the given docker image.
-func (e *procfileExtractor) createContainer(i Image) (*docker.Container, error) {
+func (e *procfileExtractor) createContainer(img image.Image) (*docker.Container, error) {
 	return e.client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Image: i.String(),
+			Image: img.String(),
 		},
 	})
 }

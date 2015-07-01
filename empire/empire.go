@@ -8,6 +8,8 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
+	"github.com/remind101/empire/empire/pkg/dockerutil"
+	"github.com/remind101/empire/empire/pkg/image"
 	"github.com/remind101/empire/empire/pkg/service"
 	"github.com/remind101/empire/empire/pkg/sslcert"
 	"github.com/remind101/pkg/reporter"
@@ -346,8 +348,8 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 }
 
 // DeployImage deploys an image to Empire.
-func (e *Empire) DeployImage(ctx context.Context, image Image, out chan Event) (*Release, error) {
-	return e.deployer.DeployImage(ctx, image, out)
+func (e *Empire) DeployImage(ctx context.Context, img image.Image, out chan Event) (*Release, error) {
+	return e.deployer.DeployImage(ctx, img, out)
 }
 
 // AppsScale scales an apps process.
@@ -443,7 +445,7 @@ func newExtractor(o DockerOptions) (Extractor, error) {
 		return &fakeExtractor{}, nil
 	}
 
-	c, err := newDockerClient(o.Socket, o.CertPath)
+	c, err := dockerutil.NewDockerClient(o.Socket, o.CertPath)
 	return newProcfileFallbackExtractor(c), err
 }
 
@@ -453,6 +455,6 @@ func newResolver(o DockerOptions) (Resolver, error) {
 		return &fakeResolver{}, nil
 	}
 
-	c, err := newDockerClient(o.Socket, o.CertPath)
-	return newDockerResolver(c, o.Auth), err
+	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
+	return newDockerResolver(c), err
 }

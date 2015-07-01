@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/remind101/empire/empire/pkg/image"
+
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/empire"
 	"golang.org/x/net/context"
@@ -16,7 +18,7 @@ type PostDeploys struct {
 
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
-	Image empire.Image
+	Image image.Image
 }
 
 // Serve implements the Handler interface.
@@ -33,6 +35,10 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		r   *empire.Release
 		err error
 	)
+
+	if form.Image.Tag == "" && form.Image.Digest == "" {
+		form.Image.Tag = "latest"
+	}
 
 	ch := make(chan empire.Event)
 	errCh := make(chan error)

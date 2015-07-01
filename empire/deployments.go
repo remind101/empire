@@ -3,6 +3,7 @@ package empire
 import (
 	"fmt"
 
+	"github.com/remind101/empire/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
@@ -20,7 +21,7 @@ type DeploymentsCreateOpts struct {
 	App *App
 
 	// Image is the image that's being deployed.
-	Image Image
+	Image image.Image
 
 	// EventCh will receive deployment events during deployment.
 	EventCh chan Event
@@ -60,24 +61,24 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	})
 }
 
-func (s *deployer) DeployImageToApp(ctx context.Context, app *App, image Image, out chan Event) (*Release, error) {
-	if err := s.appsService.AppsEnsureRepo(app, image.Repo); err != nil {
+func (s *deployer) DeployImageToApp(ctx context.Context, app *App, img image.Image, out chan Event) (*Release, error) {
+	if err := s.appsService.AppsEnsureRepo(app, img.Repository); err != nil {
 		return nil, err
 	}
 
 	return s.DeploymentsDo(ctx, DeploymentsCreateOpts{
 		App:     app,
-		Image:   image,
+		Image:   img,
 		EventCh: out,
 	})
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deployer) DeployImage(ctx context.Context, image Image, out chan Event) (*Release, error) {
-	app, err := s.appsService.AppsFindOrCreateByRepo(image.Repo)
+func (s *deployer) DeployImage(ctx context.Context, img image.Image, out chan Event) (*Release, error) {
+	app, err := s.appsService.AppsFindOrCreateByRepo(img.Repository)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DeployImageToApp(ctx, app, image, out)
+	return s.DeployImageToApp(ctx, app, img, out)
 }

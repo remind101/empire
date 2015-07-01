@@ -10,12 +10,13 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/empire/pkg/httpmock"
+	"github.com/remind101/empire/empire/pkg/image"
 )
 
 func TestFakeExtractor(t *testing.T) {
 	e := fakeExtractor{}
 
-	got, err := e.Extract(Image{})
+	got, err := e.Extract(image.Image{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,9 +43,9 @@ func TestCmdExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(Image{
-		ID:   "acme-inc",
-		Repo: "remind101",
+	got, err := e.Extract(image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -81,9 +82,9 @@ func TestProcfileExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(Image{
-		ID:   "acme-inc",
-		Repo: "remind101",
+	got, err := e.Extract(image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -122,9 +123,9 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 
 	e := newProcfileFallbackExtractor(c)
 
-	got, err := e.Extract(Image{
-		ID:   "acme-inc",
-		Repo: "remind101",
+	got, err := e.Extract(image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
 	})
 	if err != nil {
 		t.Fatal(err)
