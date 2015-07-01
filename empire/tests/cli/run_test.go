@@ -2,7 +2,7 @@ package cli_test
 
 import "testing"
 
-func TestRunDetached(t *testing.T) {
+func testRunDetached(t *testing.T) {
 	run(t, []Command{
 		DeployCommand("latest", "v1"),
 		{
@@ -12,7 +12,7 @@ func TestRunDetached(t *testing.T) {
 	})
 }
 
-func TestRunAttached(t *testing.T) {
+func testRunAttached(t *testing.T) {
 	run(t, []Command{
 		DeployCommand("latest", "v1"),
 		{
