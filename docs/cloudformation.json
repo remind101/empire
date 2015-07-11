@@ -16,7 +16,7 @@
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
-      "Description": "The name of the key pair to use to allow SSH access."
+      "Description": "The name of the key pair to use to allow SSH access. If you have not already created a key pair, you can find more information at http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html."
     },
     "DockerRegistry": {
       "Type": "String",
