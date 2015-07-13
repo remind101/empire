@@ -1,8 +1,12 @@
 # Empire
 
+[![Join the chat at https://gitter.im/remind101/empire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/remind101/empire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+[![readthedocs badge](https://readthedocs.org/projects/pip/badge/?version=latest)](http://empire.readthedocs.org/en/latest/) [![Circle CI](https://circleci.com/gh/remind101/empire.svg?style=svg)](https://circleci.com/gh/remind101/empire)
+
 Empire is a control layer on top of [Amazon EC2 Container Service (ECS)][ecs] that provides a Heroku like workflow. It conforms to a subset of the [Heroku Platform API][heroku-api], which means you can use the same tools and processes that you use with Heroku, but with all the power of EC2 and [Docker][docker].
 
-Empire is targeted at small to medium sized startups that are running a large number of microservices and need more flexibility than what Heroku provides.
+Empire is targeted at small to medium sized startups that are running a large number of microservices and need more flexibility than what Heroku provides. You can read the original blog post about why we built empire on the [Remind engineering blog](http://engineering.remind.com/introducing-empire/).
 
 ## Quickstart
 
@@ -30,7 +34,7 @@ However, the best user experience will be by using the [emp](https://github.com/
 
 ### Routing
 
-Empire's routing layer is backed by internal ELB's. Any application that specifies a web process will get an internal ELB attached to it's associated ECS Service. When a new version of the app is deployed, ECS manages spinning up the new versions of the process, waiting for old connections to drain, then killing the old release.
+Empire's routing layer is backed by internal ELBs. Any application that specifies a web process will get an internal ELB attached to its associated ECS Service. When a new version of the app is deployed, ECS manages spinning up the new versions of the process, waiting for old connections to drain, then killing the old release.
 
 When a new internal ELB is created, an associated CNAME record will be created in Route53 under the internal TLD, which means you can use DNS for service discovery. If we deploy an app named `feed` then it will be available at `http://feed` within the ECS cluster.
 
@@ -76,6 +80,9 @@ To get started, run:
 $ make bootstrap
 ```
 
+The bootstrap command assumes you have a running postgres server. It will create a database called `empire`
+using the postgres client connection defaults.
+
 To run the tests:
 
 ```console
@@ -99,19 +106,18 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
    $ boot2docker start
    $ $(boot2docker shellinit)
    ```
-
-   You should ensure that you've configured boot2docker to disable TLS. Refer to the [troubleshooting](./docs/troubleshooting.md) doc.
-
 4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
    ```console
-   $ ./bin/bootstrap
+   $ DEMOMODE=0 ./bin/bootstrap
    ```
 5. Run Empire with [docker-compose](https://docs.docker.com/compose/):
 
    ```console
    $ docker-compose up
    ```
+
+   **NOTE**: You might need to run this twice the first time you start it up, to give the postgres container time to initialize.
 6. Install the emp CLI.
 
    ```console
@@ -142,5 +148,5 @@ We have a google group, [empire-dev][empire-dev], where you can ask questions an
 [heroku-go]: https://github.com/bgentry/heroku-go
 [hk]: https://github.com/heroku/hk
 [emp]: https://github.com/remind101/emp
-[guide]: ./docs
+[guide]: http://empire.readthedocs.org/en/latest/
 [empire-dev]: https://groups.google.com/forum/#!forum/empire-dev
