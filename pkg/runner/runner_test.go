@@ -22,7 +22,7 @@ func TestRunner(t *testing.T) {
 			Repository: "ubuntu",
 			Tag:        "14.04",
 		},
-		Command: "/bin/bash",
+		Command: "/bin/bash 'sleep 60'",
 		Input:   strings.NewReader("ls\nexit\n"),
 		Output:  out,
 	}); err != nil {

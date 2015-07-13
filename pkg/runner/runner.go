@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
@@ -91,6 +91,11 @@ func (r *Runner) pull(ctx context.Context, img image.Image, out io.Writer) error
 }
 
 func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, error) {
+	cmd, err := shellwords.Parse(opts.Command)
+	if err != nil {
+		return nil, err
+	}
+
 	return r.client.CreateContainer(ctx, docker.CreateContainerOptions{
 		Name: uuid.New(),
 		Config: &docker.Config{
@@ -100,7 +105,7 @@ func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, e
 			AttachStderr: true,
 			OpenStdin:    true,
 			Image:        opts.Image.String(),
-			Cmd:          strings.Split(opts.Command, " "),
+			Cmd:          cmd,
 			Env:          envKeys(opts.Env),
 		},
 		HostConfig: &docker.HostConfig{},
