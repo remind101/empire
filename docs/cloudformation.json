@@ -244,8 +244,8 @@
         ],
         "HealthCheck": {
           "Target": "HTTP:8080/health",
-          "HealthyThreshold": "2",
-          "UnhealthyThreshold": "10",
+          "HealthyThreshold": "10",
+          "UnhealthyThreshold": "2",
           "Interval": "30",
           "Timeout": "5"
         }
