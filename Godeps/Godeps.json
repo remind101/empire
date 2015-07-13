@@ -81,6 +81,11 @@
 			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/route53",
+			"Comment": "v0.6.0-1-g5fa0a7e",
+			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
+		},
+		{
 			"ImportPath": "github.com/bgentry/heroku-go",
 			"Rev": "b891b4c66c7a330c5da052a0789f66c4e83c1bed"
 		},
@@ -88,11 +93,6 @@
 			"ImportPath": "github.com/codegangsta/cli",
 			"Comment": "1.2.0-26-gf7ebb76",
 			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
-		},
-		{
-			"ImportPath": "github.com/aws/aws-sdk-go/service/route53",
-			"Comment": "v0.6.0-1-g5fa0a7e",
-			"Rev": "5fa0a7e63b3d9f094d7e8549ce483a190587398f"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
@@ -225,6 +225,14 @@
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
 			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-shellwords",
+			"Rev": "f4e566c536cf69158e808ec28ef4182a37fdc981"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "542ae647f8601bafd96233961b150cae198e0295"
 		},
 		{
 			"ImportPath": "github.com/remind101/newrelic",
