@@ -42,17 +42,17 @@
     "MaxCapacity": {
       "Type": "String",
       "Description": "Maximum number of EC2 instances in the auto scaling group",
-      "Default": "2"
+      "Default": "5"
     },
     "DesiredCapacity": {
       "Type": "String",
       "Description": "Desired number of EC2 instances in the auto scaling group",
-      "Default": "1"
+      "Default": "3"
     },
     "AvailabilityZones": {
       "Type": "List<AWS::EC2::AvailabilityZone::Name>",
       "Description": "Comma delimited list of availability zones. MAX 2",
-      "Default": ["us-east-1a", "us-east-1b"]
+      "Default": "us-east-1a,us-east-1b"
     },
     "LaunchEmpire": {
       "Type": "Number",
