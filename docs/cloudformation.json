@@ -10,8 +10,8 @@
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
     "AmiId" : {
-      "Type": "String",
-      "Description": "AMI Id",
+      "Type": "AWS::EC2::Image::Id",
+      "Description": "AMI Id. Defaults to the official ECS Optimized Linux.",
       "Default": "ami-e1c33f8a"
     },
     "KeyName": {
@@ -50,8 +50,9 @@
       "Default": "1"
     },
     "AvailabilityZones": {
-      "Type": "CommaDelimitedList",
-      "Description": "Comma delimited list of availability zones. MAX 2"
+      "Type": "List<AWS::EC2::AvailabilityZone::Name>",
+      "Description": "Comma delimited list of availability zones. MAX 2",
+      "Default": ["us-east-1a", "us-east-1b"]
     },
     "LaunchEmpire": {
       "Type": "Number",
