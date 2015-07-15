@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/mattn/go-shellwords"
+	shellwords "github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/arn"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/ecsutil"

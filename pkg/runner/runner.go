@@ -9,7 +9,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/mattn/go-shellwords"
+	shellwords "github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
