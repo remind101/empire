@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	shellwords "github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/arn"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/ecsutil"
@@ -303,7 +304,12 @@ func (m *ecsProcessManager) Run(ctx context.Context, app *App, process *Process,
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *App, process *Process) (*ecs.TaskDefinition, error) {
-	resp, err := m.ecs.RegisterAppTaskDefinition(ctx, app.ID, taskDefinitionInput(process))
+	taskDef, err := taskDefinitionInput(process)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := m.ecs.RegisterAppTaskDefinition(ctx, app.ID, taskDef)
 	return resp.TaskDefinition, err
 }
 
@@ -436,9 +442,15 @@ func (m *ecsProcessManager) Scale(ctx context.Context, app string, process strin
 
 // taskDefinitionInput returns an ecs.RegisterTaskDefinitionInput suitable for
 // creating a task definition from a Process.
-func taskDefinitionInput(p *Process) *ecs.RegisterTaskDefinitionInput {
+func taskDefinitionInput(p *Process) (*ecs.RegisterTaskDefinitionInput, error) {
+	args, err := shellwords.Parse(p.Command)
+	if err != nil {
+		return nil, err
+	}
+
+	// ecs.ContainerDefinition{Command} is expecting a []*string
 	var command []*string
-	for _, s := range strings.Split(p.Command, " ") {
+	for _, s := range args {
 		ss := s
 		command = append(command, &ss)
 	}
@@ -473,7 +485,7 @@ func taskDefinitionInput(p *Process) *ecs.RegisterTaskDefinitionInput {
 				PortMappings: ports,
 			},
 		},
-	}
+	}, nil
 }
 
 func safeString(s *string) string {

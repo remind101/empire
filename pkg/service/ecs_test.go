@@ -47,7 +47,7 @@ func TestECSManager_Submit(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
 			},
 		},
 
@@ -55,7 +55,7 @@ func TestECSManager_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -151,7 +151,7 @@ func TestECSManager_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","cpu":256,"memory":256,"command":["acme-inc", "web"]}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","cpu":256,"memory":256,"command":["acme-inc", "web", "--port 80"]}]}}`,
 			},
 		},
 	})
@@ -173,7 +173,7 @@ func TestECSManager_Instances(t *testing.T) {
 		t.Fatalf("State => %s; want %s", got, want)
 	}
 
-	if got, want := i.Process.Command, "acme-inc web"; got != want {
+	if got, want := i.Process.Command, "acme-inc web --port 80"; got != want {
 		t.Fatalf("Command => %s; want %s", got, want)
 	}
 
@@ -216,7 +216,7 @@ func TestECSManager_Remove(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
 			},
 		},
 
@@ -356,7 +356,7 @@ func TestECSManager_Processes(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
 			},
 		},
 
@@ -368,7 +368,7 @@ func TestECSManager_Processes(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
 			},
 		},
 
@@ -380,7 +380,7 @@ func TestECSManager_Processes(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
 			},
 		},
 	})
@@ -423,7 +423,7 @@ var fakeApp = &App{
 		&Process{
 			Type:    "web",
 			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-			Command: "acme-inc web",
+			Command: "acme-inc web '--port 80'",
 			Env: map[string]string{
 				"USER": "foo",
 			},
