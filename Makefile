@@ -13,7 +13,7 @@ bootstrap: cmd
 	./build/empire migrate
 
 build: Dockerfile
-	docker build --no-cache -t ${REPO} .
+	docker build -t ${REPO} .
 
 test:
 	godep go test ./... && godep go vet ./...
