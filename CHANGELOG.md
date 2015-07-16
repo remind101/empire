@@ -12,6 +12,10 @@
 
 * Implemented support for attached one-off commands #568
 
+**Bugs**
+
+* Fixes a bug that caused containers launched by one-off tasks to stay around if the client disconnected. #589
+
 ## 0.9.0 (2015-06-16)
 
 Initial public release

@@ -60,22 +60,10 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 	if err := r.start(ctx, c.ID); err != nil {
 		return fmt.Errorf("runner: start containeer: %v", err)
 	}
+	defer tryClose(opts.Output)
 
 	if err := r.attach(ctx, c.ID, opts.Input, opts.Output); err != nil {
 		return fmt.Errorf("runner: attach: %v", err)
-	}
-	defer tryClose(opts.Output)
-
-	if err := r.wait(c.ID); err != nil {
-		return fmt.Errorf("runner: wait: %v", err)
-	}
-
-	if err := r.stop(ctx, c.ID); err != nil {
-		if _, ok := err.(*docker.ContainerNotRunning); ok {
-			return nil
-		}
-
-		return fmt.Errorf("runner: stop: %v", err)
 	}
 
 	return nil
@@ -129,15 +117,6 @@ func (r *Runner) attach(ctx context.Context, id string, in io.Reader, out io.Wri
 		Stderr:       true,
 		RawTerminal:  true,
 	})
-}
-
-func (r *Runner) wait(id string) error {
-	_, err := r.client.WaitContainer(id)
-	return err
-}
-
-func (r *Runner) stop(ctx context.Context, id string) error {
-	return r.client.StopContainer(ctx, id, DefaultStopTimeout)
 }
 
 func (r *Runner) remove(ctx context.Context, id string) error {
