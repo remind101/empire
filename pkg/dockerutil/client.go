@@ -109,3 +109,10 @@ func (c *Client) StopContainer(ctx context.Context, id string, timeout uint) err
 	done(err, "StopContainer", "id", id, "timeout", timeout)
 	return err
 }
+
+func (c *Client) RemoveContainer(ctx context.Context, opts docker.RemoveContainerOptions) error {
+	ctx, done := trace.Trace(ctx)
+	err := c.Client.RemoveContainer(opts)
+	done(err, "RemoveContainer", "id", opts.ID)
+	return err
+}
