@@ -55,7 +55,7 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 	if err != nil {
 		return fmt.Errorf("runner: create container: %v", err)
 	}
-	defer r.remove(c.ID)
+	defer r.remove(ctx, c.ID)
 
 	if err := r.start(ctx, c.ID); err != nil {
 		return fmt.Errorf("runner: start containeer: %v", err)
@@ -140,8 +140,8 @@ func (r *Runner) stop(ctx context.Context, id string) error {
 	return r.client.StopContainer(ctx, id, DefaultStopTimeout)
 }
 
-func (r *Runner) remove(id string) error {
-	return r.client.RemoveContainer(docker.RemoveContainerOptions{
+func (r *Runner) remove(ctx context.Context, id string) error {
+	return r.client.RemoveContainer(ctx, docker.RemoveContainerOptions{
 		ID:            id,
 		RemoveVolumes: true,
 		Force:         true,
