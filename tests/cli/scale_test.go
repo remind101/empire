@@ -31,3 +31,21 @@ v1.web.2  1X  running   5d  "./bin/web"`,
 		},
 	})
 }
+
+func TestScale_Constraints(t *testing.T) {
+	run(t, []Command{
+		DeployCommand("latest", "v1"),
+		{
+			"scale web=2:256:1GB -a acme-inc",
+			"Scaled acme-inc to web=2:256:1.00gb.",
+		},
+		{
+			"scale web=2:256:6GB -a acme-inc",
+			"Scaled acme-inc to web=2:256:6.00gb.",
+		},
+		{
+			"scale web=2:256:600GB -a acme-inc",
+			"Scaled acme-inc to web=2:256:600.00gb.",
+		},
+	})
+}
