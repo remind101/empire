@@ -76,6 +76,13 @@ func Order(order string) Scope {
 	})
 }
 
+// Limit returns a Scope that limits the results.
+func Limit(limit int) Scope {
+	return ScopeFunc(func(db *gorm.DB) *gorm.DB {
+		return db.Limit(limit)
+	})
+}
+
 // store provides methods for CRUD'ing things.
 type store struct {
 	db *gorm.DB

@@ -323,8 +323,8 @@ func (e *Empire) ProcessesRun(ctx context.Context, app *App, opts ProcessRunOpts
 }
 
 // ReleasesFindByApp returns all Releases for a given App.
-func (e *Empire) ReleasesFindByApp(app *App) ([]*Release, error) {
-	return e.store.Releases(ReleasesQuery{App: app})
+func (e *Empire) ReleasesFindByApp(app *App, limit *int) ([]*Release, error) {
+	return e.store.Releases(ReleasesQuery{App: app, Limit: limit})
 }
 
 // ReleasesFindByAppAndVersion finds a specific Release for a given App.

@@ -49,11 +49,14 @@ func (r *Release) BeforeCreate() error {
 // ReleasesQuery is a Scope implementation for common things to filter releases
 // by.
 type ReleasesQuery struct {
-	// If Provided, an app to filter by.
+	// If provided, an app to filter by.
 	App *App
 
 	// If provided, a version to filter by.
 	Version *int
+
+	// If provided, paginate the results.
+	Limit *int
 }
 
 // Scope implements the Scope interface.
@@ -66,6 +69,10 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 
 	if version := q.Version; version != nil {
 		scope = append(scope, FieldEquals("version", *version))
+	}
+
+	if limit := q.Limit; limit != nil {
+		scope = append(scope, Limit(*limit))
 	}
 
 	// Preload all the things.
