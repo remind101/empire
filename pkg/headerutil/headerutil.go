@@ -1,21 +1,46 @@
 package headerutil
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
-type Range map[string]string
+type Range struct {
+	// If provided, specifies field to sort by.
+	Sort *string
 
-func ParseRange(header string) Range {
-	// version ..; max=20, , order=desc
-	rangeHeader := make(Range)
+	// If provided, limits the results to the provided value.
+	Max *int
+
+	// The order the results are returned in.
+	Order *string
+}
+
+func ParseRange(header string) (*Range, error) {
+	rangeHeader := Range{}
 
 	for _, i := range strings.Split(header, ",") {
 		for _, j := range strings.Split(i, ";") {
-			keyV := strings.Split(j, "=")
-			if len(keyV) > 1 {
-				rangeHeader[strings.TrimSpace(keyV[0])] = strings.TrimSpace(keyV[1])
+			parts := strings.Split(j, "=")
+			if len(parts) == 1 {
+				if rangeHeader.Sort == nil {
+					sort := strings.TrimRight(parts[0], " ..")
+					rangeHeader.Sort = &sort
+				}
+			} else {
+				if value := strings.TrimSpace(parts[0]); value == "max" {
+					max, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+					if err != nil {
+						return nil, err
+					}
+					rangeHeader.Max = &max
+				} else {
+					order := strings.TrimSpace(parts[1])
+					rangeHeader.Order = &order
+				}
 			}
 		}
 	}
 
-	return rangeHeader
+	return &rangeHeader, nil
 }

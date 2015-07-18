@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/service"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -55,8 +56,8 @@ type ReleasesQuery struct {
 	// If provided, a version to filter by.
 	Version *int
 
-	// If provided, paginate the results.
-	Limit *int
+	// If provided, uses the limit and sorting parameters specified in the range.
+	Range *headerutil.Range
 }
 
 // Scope implements the Scope interface.
@@ -71,13 +72,19 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 		scope = append(scope, FieldEquals("version", *version))
 	}
 
-	if limit := q.Limit; limit != nil {
-		scope = append(scope, Limit(*limit))
+	if rangeHeader := q.Range; rangeHeader != nil {
+		if max := rangeHeader.Max; max != nil {
+			scope = append(scope, Limit(*max))
+		}
+
+		if sort := rangeHeader.Sort; sort != nil {
+			order := fmt.Sprintf("%s %s", *sort, *(rangeHeader.Order))
+			scope = append(scope, Order(order))
+		}
 	}
 
 	// Preload all the things.
 	scope = append(scope, Preload("App", "Config", "Slug", "Processes"))
-	scope = append(scope, Order("version desc"))
 
 	return scope.Scope(db)
 }
