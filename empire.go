@@ -322,14 +322,14 @@ func (e *Empire) ProcessesRun(ctx context.Context, app *App, opts ProcessRunOpts
 	return e.runner.Run(ctx, app, opts)
 }
 
-// ReleasesFindByApp returns all Releases for a given App.
-func (e *Empire) ReleasesFindByApp(app *App, limit *int) ([]*Release, error) {
-	return e.store.Releases(ReleasesQuery{App: app, Limit: limit})
+// Releases returns all Releases for a given App.
+func (e *Empire) Releases(q ReleasesQuery) ([]*Release, error) {
+	return e.store.Releases(q)
 }
 
-// ReleasesFindByAppAndVersion finds a specific Release for a given App.
-func (e *Empire) ReleasesFindByAppAndVersion(app *App, version int) (*Release, error) {
-	return e.store.ReleasesFirst(ReleasesQuery{App: app, Version: &version})
+// ReleasesFirst returns the first releases for a given App.
+func (e *Empire) ReleasesFirst(q ReleasesQuery) (*Release, error) {
+	return e.store.ReleasesFirst(q)
 }
 
 // ReleasesLast returns the last release for an App.

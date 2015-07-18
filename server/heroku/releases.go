@@ -53,7 +53,7 @@ func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 		return err
 	}
 
-	rel, err := h.ReleasesFindByAppAndVersion(a, vers)
+	rel, err := h.ReleasesFirst(empire.ReleasesQuery{App: a, Version: &vers})
 	if err != nil {
 		return err
 	}
@@ -72,17 +72,15 @@ func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	var rangeHeader headerutil.Range
+	var rangeHeader *headerutil.Range
 	if header := r.Header.Get("Range"); header != "" {
-		rangeHeader = headerutil.ParseRange(header)
+		rangeHeader, err = headerutil.ParseRange(header)
+		if err != nil {
+			return err
+		}
 	}
 
-	l, err := strconv.Atoi(rangeHeader["max"])
-	if err != nil {
-		return err
-	}
-
-	rels, err := h.ReleasesFindByApp(a, &l)
+	rels, err := h.Releases(empire.ReleasesQuery{App: a, Range: rangeHeader})
 	if err != nil {
 		return err
 	}
