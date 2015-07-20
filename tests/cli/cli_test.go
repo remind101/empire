@@ -127,6 +127,14 @@ func writeNetrc(token, uri string) (*os.File, error) {
 	return f, nil
 }
 
+func deleteNetrc() error {
+	err := os.Remove(".netrc")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type Command struct {
 	// Command represents a cli command to run.
 	Command string
@@ -139,6 +147,12 @@ func run(t testing.TB, commands []Command) {
 	e := empiretest.NewEmpire(t)
 	s := empiretest.NewServer(t, e)
 	defer s.Close()
+
+	if err := deleteNetrc(); err != nil {
+		if err.Error() != "remove .netrc: no such file or directory" {
+			t.Fatal(err)
+		}
+	}
 
 	token, err := e.AccessTokensCreate(&empire.AccessToken{
 		User: &empire.User{Name: "fake", GitHubToken: "token"},
