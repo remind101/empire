@@ -72,15 +72,8 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 		scope = append(scope, FieldEquals("version", *version))
 	}
 
-	if rangeHeader := q.Range; rangeHeader != nil {
-		if max := rangeHeader.Max; max != nil {
-			scope = append(scope, Limit(*max))
-		}
-
-		if sort := rangeHeader.Sort; sort != nil {
-			order := fmt.Sprintf("%s %s", *sort, *(rangeHeader.Order))
-			scope = append(scope, Order(order))
-		}
+	if r := q.Range; r != nil {
+		scope = append(scope, Range(r))
 	}
 
 	// Preload all the things.

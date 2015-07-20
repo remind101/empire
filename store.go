@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/pkg/headerutil"
 )
 
 // Scope is an interface that scopes a gorm.DB. Scopes are used in
@@ -81,6 +82,22 @@ func Limit(limit int) Scope {
 	return ScopeFunc(func(db *gorm.DB) *gorm.DB {
 		return db.Limit(limit)
 	})
+}
+
+// Range returns a Scope that limits and orders the results.
+func Range(r *headerutil.Range) Scope {
+	var scope ComposedScope
+
+	if max := r.Max; max != nil {
+		scope = append(scope, Limit(*max))
+	}
+
+	if sort := r.Sort; sort != nil {
+		order := fmt.Sprintf("%s %s", *sort, *(r.Order))
+		scope = append(scope, Order(order))
+	}
+
+	return scope
 }
 
 // store provides methods for CRUD'ing things.
