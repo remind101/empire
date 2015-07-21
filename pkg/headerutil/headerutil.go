@@ -24,8 +24,10 @@ func ParseRange(header string) (*Range, error) {
 			parts := strings.Split(j, "=")
 			if len(parts) == 1 {
 				if rangeHeader.Sort == nil {
-					sort := strings.TrimRight(parts[0], " ..")
-					rangeHeader.Sort = &sort
+					if len(parts[0]) > 0 && parts[0] != " " {
+						sort := strings.TrimSpace(strings.TrimRight(parts[0], " .."))
+						rangeHeader.Sort = &sort
+					}
 				}
 			} else {
 				if value := strings.TrimSpace(parts[0]); value == "max" {
