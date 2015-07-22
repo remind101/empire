@@ -11,6 +11,7 @@
 **Features**
 
 * Implemented support for attached one-off commands #568
+* Added support for GitHub Deployments #602
 
 **Bugs**
 
