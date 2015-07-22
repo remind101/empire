@@ -146,7 +146,7 @@ var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   FlagECSServiceRole,
 		Value:  "ecsServiceRole",
-		Usage:  "The ECS cluster to create services within",
+		Usage:  "The IAM Role to use for managing ECS",
 		EnvVar: "EMPIRE_ECS_SERVICE_ROLE",
 	},
 	cli.StringFlag{
