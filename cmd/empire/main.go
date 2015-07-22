@@ -10,6 +10,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/github"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
 )
@@ -18,10 +19,15 @@ const (
 	FlagPort        = "port"
 	FlagAutoMigrate = "automigrate"
 
-	FlagGithubClient = "github.client.id"
-	FlagGithubSecret = "github.client.secret"
-	FlagGithubOrg    = "github.organization"
-	FlagGithubApiURL = "github.api.url"
+	FlagGithubClient       = "github.client.id"
+	FlagGithubClientSecret = "github.client.secret"
+	FlagGithubOrg          = "github.organization"
+	FlagGithubApiURL       = "github.api.url"
+
+	FlagGithubWebhooksSecret           = "github.webhooks.secret"
+	FlagGithubDeploymentsEnvironment   = "github.deployments.environment"
+	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
+	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
 
 	FlagDBPath = "path"
 	FlagDB     = "db"
@@ -71,7 +77,7 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_GITHUB_CLIENT_ID",
 			},
 			cli.StringFlag{
-				Name:   FlagGithubSecret,
+				Name:   FlagGithubClientSecret,
 				Value:  "",
 				Usage:  "The client secret for the GitHub OAuth application",
 				EnvVar: "EMPIRE_GITHUB_CLIENT_SECRET",
@@ -87,6 +93,30 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The URL to use when talking to GitHub.",
 				EnvVar: "EMPIRE_GITHUB_API_URL",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubWebhooksSecret,
+				Value:  "",
+				Usage:  "Shared secret between GitHub and Empire for signing webhooks.",
+				EnvVar: "EMPIRE_GITHUB_WEBHOOKS_SECRET",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubDeploymentsEnvironment,
+				Value:  "",
+				Usage:  "If provided, only github deployments to the specified environment will be handled.",
+				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_ENVIRONMENT",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubDeploymentsImageTemplate,
+				Value:  github.DefaultTemplate,
+				Usage:  "A Go text/template that will be used to determine the docker image to deploy.",
+				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_IMAGE_TEMPLATE",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubDeploymentsTugboatURL,
+				Value:  "",
+				Usage:  "If provided, logs from deployments triggered via GitHub deployments will be sent to this tugboat instance.",
+				EnvVar: "EMPIRE_TUGBOAT_URL",
 			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,

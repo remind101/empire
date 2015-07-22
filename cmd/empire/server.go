@@ -29,9 +29,13 @@ func runServer(c *cli.Context) {
 func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts := server.Options{}
 	opts.GitHub.ClientID = c.String(FlagGithubClient)
-	opts.GitHub.ClientSecret = c.String(FlagGithubSecret)
+	opts.GitHub.ClientSecret = c.String(FlagGithubClientSecret)
 	opts.GitHub.Organization = c.String(FlagGithubOrg)
 	opts.GitHub.ApiURL = c.String(FlagGithubApiURL)
+	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
+	opts.GitHub.Deployments.Environment = c.String(FlagGithubDeploymentsEnvironment)
+	opts.GitHub.Deployments.ImageTemplate = c.String(FlagGithubDeploymentsImageTemplate)
+	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	return server.New(e, opts)
 }
