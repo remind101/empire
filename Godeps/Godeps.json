@@ -11,6 +11,11 @@
 			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
 		},
 		{
+			"ImportPath": "code.google.com/p/goauth2/oauth",
+			"Comment": "weekly-56",
+			"Rev": "afe77d958c701557ec5dc56f6936fcc194d15520"
+		},
+		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.6.4-12-g467d9d5",
 			"Rev": "467d9d55c2d2c17248441a8fc661561161f40d5e"
@@ -159,6 +164,10 @@
 			"Rev": "3c37e99d21fd913bd81c35b3c2f661cd04f2b1e8"
 		},
 		{
+			"ImportPath": "github.com/ejholmes/hookshot",
+			"Rev": "4802bea385193a8f3268b38a2918d46049931d6b"
+		},
+		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
 			"Rev": "86685ba63cf0bb59ec6e1908c90585a25f163ad5"
 		},
@@ -181,6 +190,14 @@
 			"Rev": "a911026e1ffa84898778ccb0363930485e0aa880"
 		},
 		{
+			"ImportPath": "github.com/google/go-github/github",
+			"Rev": "34fb8ee07214d23c3035c95691fe9069705814d6"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Rev": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
@@ -196,6 +213,10 @@
 		{
 			"ImportPath": "github.com/jinzhu/gorm",
 			"Rev": "3c2915a9dfaaeaeb1e049436ae9291f5e84c95fa"
+		},
+		{
+			"ImportPath": "github.com/joshk/pusher",
+			"Rev": "011114c803b3adb8dab3c66f3d4648e8b9513bd9"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
@@ -231,10 +252,6 @@
 			"Rev": "f4e566c536cf69158e808ec28ef4182a37fdc981"
 		},
 		{
-			"ImportPath": "github.com/mattn/go-sqlite3",
-			"Rev": "542ae647f8601bafd96233961b150cae198e0295"
-		},
-		{
 			"ImportPath": "github.com/remind101/newrelic",
 			"Rev": "04b4810fa8c0ae0978c2d8e8c7ddc7e811d92d70"
 		},
@@ -259,12 +276,22 @@
 			"Rev": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
+			"ImportPath": "github.com/remind101/tugboat",
+			"Comment": "v0.0.1-273-g03f9841",
+			"Rev": "03f98419c613f5acb798bf52df5a0215028fb063"
+		},
+		{
 			"ImportPath": "github.com/vaughan0/go-ini",
 			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
+		},
+		{
+			"ImportPath": "gopkg.in/gorp.v1",
+			"Comment": "v1.7.1",
+			"Rev": "c87af80f3cc5036b55b83d77171e156791085e2e"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

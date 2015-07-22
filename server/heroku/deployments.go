@@ -1,7 +1,6 @@
 package heroku
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/remind101/empire/pkg/image"
@@ -31,44 +30,17 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
 
-	var (
-		r   *empire.Release
-		err error
-	)
-
 	if form.Image.Tag == "" && form.Image.Digest == "" {
 		form.Image.Tag = "latest"
 	}
 
-	ch := make(chan empire.Event)
-	errCh := make(chan error)
-	go func() {
-		r, err = h.DeployImage(ctx, form.Image, ch)
-		errCh <- err
-	}()
+	user, _ := empire.UserFromContext(ctx)
 
-	for {
-		select {
-		case evt := <-ch:
-			if err := Stream(w, evt); err != nil {
-				Stream(w, newJSONMessageError(err))
-				return nil
-			}
-			continue
-		case err := <-errCh:
-			if err != nil {
-				Stream(w, newJSONMessageError(err))
-				return nil
-			}
-		}
-
-		break
-	}
-
-	Stream(w, &empire.DockerEvent{
-		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
+	h.Deploy(ctx, empire.DeployOpts{
+		Image:  form.Image,
+		Output: w,
+		User:   user,
 	})
-
 	return nil
 }
 

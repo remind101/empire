@@ -6,6 +6,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/authorization"
 	githubauth "github.com/remind101/empire/server/authorization/github"
+	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
@@ -29,6 +30,16 @@ type Options struct {
 		ClientSecret string
 		Organization string
 		ApiURL       string
+
+		// Deployments
+		Webhooks struct {
+			Secret string
+		}
+		Deployments struct {
+			Environment   string
+			ImageTemplate string
+			TugboatURL    string
+		}
 	}
 }
 
@@ -42,6 +53,17 @@ func New(e *empire.Empire, options Options) http.Handler {
 		options.GitHub.ApiURL,
 	)
 
+	if options.GitHub.Webhooks.Secret != "" {
+		// Mount GitHub webhooks
+		g := github.New(e, github.Options{
+			Secret:        options.GitHub.Webhooks.Secret,
+			Environment:   options.GitHub.Deployments.Environment,
+			ImageTemplate: options.GitHub.Deployments.ImageTemplate,
+			TugboatURL:    options.GitHub.Deployments.TugboatURL,
+		})
+		r.Match(githubWebhook, g)
+	}
+
 	// Mount the heroku api
 	h := heroku.New(e, auth)
 	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
@@ -53,6 +75,13 @@ func New(e *empire.Empire, options Options) http.Handler {
 		Reporter: e.Reporter,
 		Logger:   e.Logger,
 	})
+}
+
+// githubWebhook is a MatcherFunc that matches requests that have an
+// `X-GitHub-Event` header present.
+func githubWebhook(r *http.Request) bool {
+	h := r.Header[http.CanonicalHeaderKey("X-GitHub-Event")]
+	return len(h) > 0
 }
 
 // HealthHandler is an http.Handler that returns the health of empire.

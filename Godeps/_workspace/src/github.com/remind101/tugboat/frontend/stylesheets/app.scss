@@ -1,0 +1,31 @@
+@import
+  'spinner',
+  'job';
+
+#loading {
+  text-align: center;
+  padding-top: 40px;
+
+  img {
+    display: block;
+    margin: 0 auto;
+  }
+
+  .spinner > div {
+    background-color: #000;
+  }
+}
+
+#header .navbar-right {
+  margin-right: 0;
+
+  .user a {
+    display: inline-block;
+  }
+
+  .user .gravatar {
+    border-radius: 100px;
+    max-width: 45px;
+    margin-top: -3px;
+  }
+}
