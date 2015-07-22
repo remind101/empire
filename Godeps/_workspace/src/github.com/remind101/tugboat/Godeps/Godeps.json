@@ -1,0 +1,142 @@
+{
+	"ImportPath": "github.com/remind101/tugboat",
+	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-12",
+			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
+		},
+		{
+			"ImportPath": "code.google.com/p/goauth2/oauth",
+			"Comment": "weekly-48",
+			"Rev": "6a3615e294b534a1c24cb5d3d7570fa8bbc30c99"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-26-gf7ebb76",
+			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/negroni",
+			"Comment": "v0.1-55-g1dd3ab0",
+			"Rev": "1dd3ab0ff59e13f5b73dcbf70703710aebe50d2f"
+		},
+		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Comment": "v2.0.0-3-gc0da491",
+			"Rev": "c0da49162251c81124e34f3e7885527a091dacd5"
+		},
+		{
+			"ImportPath": "github.com/ejholmes/flock",
+			"Rev": "3c37e99d21fd913bd81c35b3c2f661cd04f2b1e8"
+		},
+		{
+			"ImportPath": "github.com/ejholmes/hookshot",
+			"Rev": "70f39e4f31e273e8a74c801d6cced84fd775e5fa"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-86-g7d52f0f",
+			"Rev": "7d52f0fc9e81d12e0d0a2f8b6749fb96058d73d4"
+		},
+		{
+			"ImportPath": "github.com/gocql/gocql",
+			"Comment": "1st_gen_framing-130-gec1f562",
+			"Rev": "ec1f5626d6984ebe4da69779317a76f3a6698381"
+		},
+		{
+			"ImportPath": "github.com/golang/groupcache/lru",
+			"Rev": "8b25adc0f62632c810997cb38c21111a3f256bf4"
+		},
+		{
+			"ImportPath": "github.com/golang/snappy/snappy",
+			"Rev": "a911026e1ffa84898778ccb0363930485e0aa880"
+		},
+		{
+			"ImportPath": "github.com/google/go-github/github",
+			"Rev": "7ea4ee6d222607c11ea86e99a6f6723beeae785d"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Rev": "ec0a78e0f4db229b7897be36596a8944230b857a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"ImportPath": "github.com/joshk/pusher",
+			"Rev": "011114c803b3adb8dab3c66f3d4648e8b9513bd9"
+		},
+		{
+			"ImportPath": "github.com/kr/githubauth",
+			"Rev": "95d2c115027b84d2c91da52f88e33053306fc669"
+		},
+		{
+			"ImportPath": "github.com/kr/session",
+			"Rev": "baa866e82c31195297c540d1ce6c823511868821"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-22-g73672c2",
+			"Rev": "73672c22431294bd2d012742dfc488523cc631bd"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/driver",
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/file",
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/migrate",
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"ImportPath": "github.com/mattes/migrate/pipe",
+			"Comment": "v1.2.0",
+			"Rev": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/nacl/secretbox",
+			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/poly1305",
+			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/salsa20/salsa",
+			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "11c60b6f71a6ad48ed6f93c65fa4c6f9b1b5b46a"
+		},
+		{
+			"ImportPath": "gopkg.in/gorp.v1",
+			"Comment": "v1.7.1",
+			"Rev": "c87af80f3cc5036b55b83d77171e156791085e2e"
+		},
+		{
+			"ImportPath": "speter.net/go/exp/math/dec/inf",
+			"Rev": "42ca6cd68aa922bc3f32f1e056e61b65945d9ad7"
+		}
+	]
+}

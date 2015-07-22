@@ -1,0 +1,102 @@
+.spinner {
+  display: inline-block;
+  width: 50px;
+  height: 30px;
+  text-align: center;
+  font-size: 10px; }
+
+.spinner > div {
+  background-color: #3498db;
+  height: 100%;
+  width: 6px;
+  display: inline-block;
+  -webkit-animation: stretchdelay 1.2s infinite ease-in-out;
+  animation: stretchdelay 1.2s infinite ease-in-out; }
+
+.spinner .rect2 {
+  -webkit-animation-delay: -1.1s;
+  animation-delay: -1.1s; }
+
+.spinner .rect3 {
+  -webkit-animation-delay: -1s;
+  animation-delay: -1s; }
+
+.spinner .rect4 {
+  -webkit-animation-delay: -0.9s;
+  animation-delay: -0.9s; }
+
+.spinner .rect5 {
+  -webkit-animation-delay: -0.8s;
+  animation-delay: -0.8s; }
+
+@-webkit-keyframes stretchdelay {
+  0%, 40%, 100% {
+    -webkit-transform: scaleY(0.4); }
+
+  20% {
+    -webkit-transform: scaleY(1); } }
+
+@keyframes stretchdelay {
+  0%, 40%, 100% {
+    transform: scaleY(0.4);
+    -webkit-transform: scaleY(0.4); }
+
+  20% {
+    transform: scaleY(1);
+    -webkit-transform: scaleY(1); } }
+
+.job__header {
+  margin: 40px;
+  text-align: center; }
+  .job__header .is-queued {
+    color: #999; }
+    .job__header .is-queued .spinner > div {
+      background-color: #999; }
+  .job__header .is-started {
+    color: #3498db; }
+    .job__header .is-started .spinner > div {
+      background-color: #3498db; }
+  .job__header .is-failed, .job__header .is-errored {
+    color: #e74c3c; }
+  .job__header .spinner {
+    margin-left: -10px; }
+
+.job__destination {
+  color: #999;
+  font-size: 20px; }
+
+.job__log {
+  padding: 10px;
+  color: #f1f1f1;
+  background: #000;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-work;
+  border-radius: 5px;
+  margin-bottom: 40px; }
+
+.job__not-started {
+  padding: 60px;
+  text-align: center;
+  border-radius: 5px;
+  border: 4px dashed #eee; }
+
+#loading {
+  text-align: center;
+  padding-top: 40px; }
+  #loading img {
+    display: block;
+    margin: 0 auto; }
+  #loading .spinner > div {
+    background-color: #000; }
+
+#header .navbar-right {
+  margin-right: 0; }
+  #header .navbar-right .user a {
+    display: inline-block; }
+  #header .navbar-right .user .gravatar {
+    border-radius: 100px;
+    max-width: 45px;
+    margin-top: -3px; }

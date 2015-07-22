@@ -1,0 +1,22 @@
+language: go
+
+addons:
+  postgresql: "9.4"
+
+services:
+  - postgresql
+
+go:
+  - 1.4
+
+before_install:
+  - go install -a -race std
+  - go get github.com/tools/godep
+  - export PATH=$HOME/gopath/bin:$PATH
+  - createdb tugboat
+  - godep go install ./cmd/...
+  - tugboat migrate
+
+script:
+  - make cmd
+  - godep go test -race ./...

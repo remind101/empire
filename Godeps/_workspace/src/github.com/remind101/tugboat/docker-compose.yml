@@ -1,0 +1,11 @@
+tugboat:
+  build: ./
+  env_file: .env
+  ports:
+    - "8080:8080"
+  environment:
+    DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
+  links:
+    - postgres
+postgres:
+  image: postgres

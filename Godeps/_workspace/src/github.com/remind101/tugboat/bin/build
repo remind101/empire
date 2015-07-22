@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+echo "@edge http://dl-4.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
+packages="curl git go@edge"
+
+apk add --update curl git go@edge
+
+GOPATH=/go go get github.com/tools/godep
+cd /go/src/github.com/remind101/tugboat
+PATH="/go/bin:$PATH" GOPATH=/go godep go install ./cmd/...
+mv /go/bin/tugboat /bin
+
+mkdir -p /var/run/tugboat
+cp Procfile /var/run/tugboat
+cp -r ./migrations /var/run/tugboat
+cp -r ./frontend /var/run/tugboat
+
+apk del curl git go
+rm -rf /var/cache/apk/* /go /var/run/tugboat/frontend/node_modules
