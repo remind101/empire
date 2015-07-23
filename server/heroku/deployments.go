@@ -36,7 +36,7 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 	user, _ := empire.UserFromContext(ctx)
 
-	h.Deploy(ctx, empire.DeployOpts{
+	h.Deploy(ctx, empire.DeploymentsCreateOpts{
 		Image:  form.Image,
 		Output: w,
 		User:   user,

@@ -2,6 +2,7 @@ package empire
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
@@ -23,8 +24,12 @@ type DeploymentsCreateOpts struct {
 	// Image is the image that's being deployed.
 	Image image.Image
 
-	// EventCh will receive deployment events during deployment.
-	EventCh chan Event
+	// User the user that is triggering the deployment.
+	User *User
+
+	// Output is an io.Writer where deployment output and events will be
+	// streamed in jsonmessage format.
+	Output io.Writer
 }
 
 type deployer struct {
@@ -45,7 +50,7 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	}
 
 	// Create a new slug for the docker image.
-	slug, err := s.SlugsCreateByImage(ctx, image, opts.EventCh)
+	slug, err := s.SlugsCreateByImage(ctx, image, opts.Output)
 	if err != nil {
 		return nil, err
 	}
@@ -61,24 +66,20 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	})
 }
 
-func (s *deployer) DeployImageToApp(ctx context.Context, app *App, img image.Image, out chan Event) (*Release, error) {
-	if err := s.appsService.AppsEnsureRepo(app, img.Repository); err != nil {
+func (s *deployer) DeployImageToApp(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	if err := s.appsService.AppsEnsureRepo(opts.App, opts.Image.Repository); err != nil {
 		return nil, err
 	}
 
-	return s.DeploymentsDo(ctx, DeploymentsCreateOpts{
-		App:     app,
-		Image:   img,
-		EventCh: out,
-	})
+	return s.DeploymentsDo(ctx, opts)
 }
 
 // Deploy deploys an Image to the cluster.
-func (s *deployer) DeployImage(ctx context.Context, img image.Image, out chan Event) (*Release, error) {
-	app, err := s.appsService.AppsFindOrCreateByRepo(img.Repository)
+func (s *deployer) DeployImage(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	app, err := s.appsService.AppsFindOrCreateByRepo(opts.Image.Repository)
 	if err != nil {
 		return nil, err
 	}
-
-	return s.DeployImageToApp(ctx, app, img, out)
+	opts.App = app
+	return s.DeployImageToApp(ctx, opts)
 }

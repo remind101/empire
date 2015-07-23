@@ -3,10 +3,8 @@ package empire // import "github.com/remind101/empire"
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -15,7 +13,6 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/pkg/service"
 	"github.com/remind101/empire/pkg/sslcert"
@@ -349,70 +346,22 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 	return e.releases.ReleasesRollback(ctx, app, version)
 }
 
-type DeployOpts struct {
-	// The image to Deploy.
-	Image image.Image
-
-	// The user that performed this deployment.
-	User *User
-
-	// Where output will be written to.
-	Output io.Writer
-}
-
 // Deploy deploys an image and streams the output to w.
-func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
-	w := opts.Output
-	if w == nil {
-		w = ioutil.Discard
-	}
-	img := opts.Image
-
-	stream := func(w io.Writer, v interface{}) error {
-		if err := json.NewEncoder(w).Encode(v); err != nil {
-			return err
-		}
-
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-
-		return nil
+func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	if opts.Output == nil {
+		opts.Output = ioutil.Discard
 	}
 
-	var (
-		r   *Release
-		err error
-	)
-
-	ch := make(chan Event)
-	errCh := make(chan error)
-	go func() {
-		r, err = e.deployer.DeployImage(ctx, img, ch)
-		errCh <- err
-	}()
-
-	for {
-		select {
-		case evt := <-ch:
-			if err := stream(w, evt); err != nil {
-				stream(w, newJSONMessageError(err))
-				return r, err
-			}
-			continue
-		case err := <-errCh:
-			if err != nil {
-				stream(w, newJSONMessageError(err))
-				return r, err
-			}
-		}
-
-		break
+	r, err := e.deployer.DeployImage(ctx, opts)
+	if err != nil {
+		return r, err
 	}
 
-	stream(w, &DockerEvent{
+	if err := json.NewEncoder(opts.Output).Encode(&jsonmessage.JSONMessage{
 		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
-	})
+	}); err != nil {
+		return r, err
+	}
 
 	return r, nil
 }
