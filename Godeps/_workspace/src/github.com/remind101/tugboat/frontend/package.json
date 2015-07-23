@@ -1,6 +1,9 @@
 {
   "name": "tugbt",
   "repository": "tugbt/tugbt",
+  "scripts": {
+    "build": "./node_modules/.bin/gulp"
+  },
   "devDependencies": {
     "gulp": "~3.8.6",
     "gulp-rev": "~0.4.2",
