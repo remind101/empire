@@ -3,6 +3,7 @@ package authorization
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/remind101/empire"
 )
@@ -28,6 +29,13 @@ type Fake struct{}
 
 // Authorizer implements Authorizer Authorize.
 func (a *Fake) Authorize(username, password, twofactor string) (*empire.User, error) {
+	// Delete the .netrc created by previous TestLogin*.
+	if err := deleteNetrc(); err != nil {
+		if err.Error() != "remove .netrc: no such file or directory" {
+			return nil, err
+		}
+	}
+
 	user := &empire.User{Name: "fake", GitHubToken: "token"}
 
 	if username == "fake" {
@@ -51,4 +59,12 @@ type MembershipError struct {
 
 func (e *MembershipError) Error() string {
 	return fmt.Sprintf("authorization: not a member of %s", e.Organization)
+}
+
+func deleteNetrc() error {
+	err := os.Remove(".netrc")
+	if err != nil {
+		return err
+	}
+	return nil
 }
