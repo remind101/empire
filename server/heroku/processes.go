@@ -92,6 +92,8 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n")
 
+		// We send the null character periodically, to keep the connection alive.
+		// Otherwise the connection would close after the ELB idle connection timeout.
 		go func() {
 			for {
 				fmt.Fprintf(outStream, "\x00")
