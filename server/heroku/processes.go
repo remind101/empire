@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
@@ -90,6 +91,13 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		defer closeStreams(inStream, outStream)
 
 		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n")
+
+		go func() {
+			for {
+				fmt.Fprintf(outStream, "\x00")
+				runtime.Gosched()
+			}
+		}()
 
 		opts.Input = inStream
 		opts.Output = outStream
