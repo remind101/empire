@@ -36,6 +36,9 @@ type DeployOpts struct {
 	// The repo that this deployment is for.
 	Repo string
 
+	// The GitHub login of the user that triggered the Depoyment.
+	User string
+
 	// The name of the provider that this deployment relates to. In general,
 	// this would be the platform that is being deployed to (e.g.
 	// heroku/empire).
@@ -52,6 +55,7 @@ func NewDeployOptsFromEvent(e events.Deployment) DeployOpts {
 		Environment: e.Deployment.Environment,
 		Description: e.Deployment.Description,
 		Repo:        e.Repository.FullName,
+		User:        e.Deployment.Creator.Login,
 	}
 }
 
@@ -177,6 +181,9 @@ type Deployment struct {
 	// The Repo that's being deployed to.
 	Repo string `db:"repo"`
 
+	// The GitHub user that triggered the deployment.
+	User string `db:"login"`
+
 	// The name of the provider that was used to perform the deployment.
 	Provider string `db:"provider"`
 
@@ -204,6 +211,7 @@ func newDeployment(opts DeployOpts) *Deployment {
 		Environment: opts.Environment,
 		Description: opts.Description,
 		Repo:        opts.Repo,
+		User:        opts.User,
 	}
 }
 

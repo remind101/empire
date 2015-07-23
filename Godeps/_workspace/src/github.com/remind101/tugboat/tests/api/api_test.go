@@ -112,6 +112,7 @@ func createDeployment(c *tugboat.Client) (*tugboat.Deployment, error) {
 		Environment: "production",
 		Description: "Deployment",
 		Repo:        "remind101/acme-inc",
+		User:        "ejholmes",
 		Provider:    "heroku",
 	})
 }

@@ -12,6 +12,7 @@ import (
 type Deployment struct {
 	ID          string `json:"id"`
 	GitHubID    int64  `json:"github_id"`
+	User        string `json:"user"`
 	Repo        string `json:"repo"`
 	Sha         string `json:"sha"`
 	Ref         string `json:"ref"`
@@ -26,6 +27,7 @@ func newDeployment(d *tugboat.Deployment) *Deployment {
 	return &Deployment{
 		ID:          d.ID,
 		GitHubID:    d.GitHubID,
+		User:        d.User,
 		Repo:        d.Repo,
 		Sha:         d.Sha,
 		Ref:         d.Ref,

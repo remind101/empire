@@ -277,8 +277,8 @@
 		},
 		{
 			"ImportPath": "github.com/remind101/tugboat",
-			"Comment": "v0.0.1-273-g03f9841",
-			"Rev": "03f98419c613f5acb798bf52df5a0215028fb063"
+			"Comment": "v0.0.1-275-g26c5f5c",
+			"Rev": "26c5f5ca2a0098a94b9335c805e3cbbc2636a46f"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
