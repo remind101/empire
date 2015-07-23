@@ -1,9 +1,6 @@
 package empire // import "github.com/remind101/empire"
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -106,7 +103,7 @@ type Empire struct {
 	domains      *domainsService
 	jobStates    *processStatesService
 	releases     *releasesService
-	deployer     *deployer
+	deployer     deployer
 	scaler       *scaler
 	restarter    *restarter
 	runner       *runnerService
@@ -194,7 +191,7 @@ func New(options Options) (*Empire, error) {
 		resolver:  resolver,
 	}
 
-	deployer := &deployer{
+	deployer := &deployerService{
 		appsService:     apps,
 		configsService:  configs,
 		slugsService:    slugs,
@@ -348,22 +345,7 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
-	if opts.Output == nil {
-		opts.Output = ioutil.Discard
-	}
-
-	r, err := e.deployer.DeployImage(ctx, opts)
-	if err != nil {
-		return r, err
-	}
-
-	if err := json.NewEncoder(opts.Output).Encode(&jsonmessage.JSONMessage{
-		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
-	}); err != nil {
-		return r, err
-	}
-
-	return r, nil
+	return e.deployer.Deploy(ctx, opts)
 }
 
 func newJSONMessageError(err error) jsonmessage.JSONMessage {
