@@ -85,10 +85,16 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", img.String())
 
+	var creator string
+	if opts.User != nil {
+		creator = opts.User.Name
+	}
+
 	r, err := s.ReleasesCreate(ctx, &Release{
 		App:         app,
 		Config:      config,
 		Slug:        slug,
+		Creator:     creator,
 		Description: desc,
 	})
 

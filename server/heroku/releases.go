@@ -21,6 +21,12 @@ func newRelease(r *empire.Release) *Release {
 		}{
 			Id: r.SlugID,
 		},
+		User: struct {
+			Id    string `json:"id"`
+			Email string `json:"email"`
+		}{
+			Email: r.Creator,
+		},
 		Description: r.Description,
 		CreatedAt:   *r.CreatedAt,
 	}
