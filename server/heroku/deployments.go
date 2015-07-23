@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/pkg/image"
+	streamhttp "github.com/remind101/empire/pkg/stream/http"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire"
 	"golang.org/x/net/context"
 )
@@ -36,19 +36,10 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 	user, _ := empire.UserFromContext(ctx)
 
-	h.Deploy(ctx, empire.DeployOpts{
+	h.Deploy(ctx, empire.DeploymentsCreateOpts{
 		Image:  form.Image,
-		Output: w,
+		Output: streamhttp.StreamingResponseWriter(w),
 		User:   user,
 	})
 	return nil
-}
-
-func newJSONMessageError(err error) jsonmessage.JSONMessage {
-	return jsonmessage.JSONMessage{
-		ErrorMessage: err.Error(),
-		Error: &jsonmessage.JSONError{
-			Message: err.Error(),
-		},
-	}
 }

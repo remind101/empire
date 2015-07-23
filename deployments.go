@@ -1,8 +1,11 @@
 package empire
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
@@ -23,11 +26,23 @@ type DeploymentsCreateOpts struct {
 	// Image is the image that's being deployed.
 	Image image.Image
 
-	// EventCh will receive deployment events during deployment.
-	EventCh chan Event
+	// User the user that is triggering the deployment.
+	User *User
+
+	// Output is an io.Writer where deployment output and events will be
+	// streamed in jsonmessage format.
+	Output io.Writer
 }
 
-type deployer struct {
+// deployer is an interface that represents something that can perform a
+// deployment.
+type deployer interface {
+	Deploy(context.Context, DeploymentsCreateOpts) (*Release, error)
+}
+
+// deployerService is an implementation of the deployer interface that performs
+// the core business logic to deploy.
+type deployerService struct {
 	*appsService
 	*configsService
 	*slugsService
@@ -35,8 +50,24 @@ type deployer struct {
 }
 
 // DeploymentsDo performs the Deployment.
-func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
-	app, image := opts.App, opts.Image
+func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	app, img := opts.App, opts.Image
+
+	// If no app is specified, attempt to find the app that relates to this
+	// images repository, or create it if not found.
+	if app == nil {
+		var err error
+		app, err = s.appsService.AppsFindOrCreateByRepo(img.Repository)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// If the app doesn't already have a repo attached to it, we'll attach
+		// this image's repo.
+		if err := s.appsService.AppsEnsureRepo(app, img.Repository); err != nil {
+			return nil, err
+		}
+	}
 
 	// Grab the latest config.
 	config, err := s.ConfigsCurrent(app)
@@ -45,40 +76,27 @@ func (s *deployer) DeploymentsDo(ctx context.Context, opts DeploymentsCreateOpts
 	}
 
 	// Create a new slug for the docker image.
-	slug, err := s.SlugsCreateByImage(ctx, image, opts.EventCh)
+	slug, err := s.SlugsCreateByImage(ctx, img, opts.Output)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a new release for the Config
 	// and Slug.
-	desc := fmt.Sprintf("Deploy %s", image.String())
-	return s.ReleasesCreate(ctx, &Release{
+	desc := fmt.Sprintf("Deploy %s", img.String())
+
+	r, err := s.ReleasesCreate(ctx, &Release{
 		App:         app,
 		Config:      config,
 		Slug:        slug,
 		Description: desc,
 	})
-}
 
-func (s *deployer) DeployImageToApp(ctx context.Context, app *App, img image.Image, out chan Event) (*Release, error) {
-	if err := s.appsService.AppsEnsureRepo(app, img.Repository); err != nil {
-		return nil, err
+	if err := json.NewEncoder(opts.Output).Encode(&jsonmessage.JSONMessage{
+		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
+	}); err != nil {
+		return r, err
 	}
 
-	return s.DeploymentsDo(ctx, DeploymentsCreateOpts{
-		App:     app,
-		Image:   img,
-		EventCh: out,
-	})
-}
-
-// Deploy deploys an Image to the cluster.
-func (s *deployer) DeployImage(ctx context.Context, img image.Image, out chan Event) (*Release, error) {
-	app, err := s.appsService.AppsFindOrCreateByRepo(img.Repository)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.DeployImageToApp(ctx, app, img, out)
+	return r, nil
 }
