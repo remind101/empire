@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/service"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -49,11 +50,14 @@ func (r *Release) BeforeCreate() error {
 // ReleasesQuery is a Scope implementation for common things to filter releases
 // by.
 type ReleasesQuery struct {
-	// If Provided, an app to filter by.
+	// If provided, an app to filter by.
 	App *App
 
 	// If provided, a version to filter by.
 	Version *int
+
+	// If provided, uses the limit and sorting parameters specified in the range.
+	Range *headerutil.Range
 }
 
 // Scope implements the Scope interface.
@@ -68,9 +72,12 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 		scope = append(scope, FieldEquals("version", *version))
 	}
 
+	if r := q.Range; r != nil {
+		scope = append(scope, Range(r))
+	}
+
 	// Preload all the things.
 	scope = append(scope, Preload("App", "Config", "Slug", "Processes"))
-	scope = append(scope, Order("version desc"))
 
 	return scope.Scope(db)
 }
