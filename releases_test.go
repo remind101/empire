@@ -15,14 +15,14 @@ func TestReleasesQuery(t *testing.T) {
 		order   = "desc"
 	)
 
-	rangeHeader := &headerutil.Range{
+	rangeHeader := headerutil.Range{
 		Sort:  &sort,
 		Max:   &max,
 		Order: &order,
 	}
 
 	tests := scopeTests{
-		{ReleasesQuery{}, "", []interface{}{}},
+		{ReleasesQuery{}, "ORDER BY version desc", []interface{}{}},
 		{ReleasesQuery{Range: rangeHeader}, "ORDER BY version desc LIMIT 20", []interface{}{}},
 		{ReleasesQuery{App: app, Range: rangeHeader}, "WHERE (app_id = $1) ORDER BY version desc LIMIT 20", []interface{}{"1234"}},
 		{ReleasesQuery{Version: &version, Range: rangeHeader}, "WHERE (version = $1) ORDER BY version desc LIMIT 20", []interface{}{1}},

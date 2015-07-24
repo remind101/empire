@@ -46,3 +46,27 @@ func ParseRange(header string) (*Range, error) {
 
 	return &rangeHeader, nil
 }
+
+// WithDefaults returns a new Range instance with the defaults taken from d.
+func (r *Range) WithDefaults(d Range) Range {
+	if r == nil {
+		return d
+	}
+
+	// Make a copy.
+	c := *r
+
+	if c.Max == nil {
+		c.Max = d.Max
+	}
+
+	if c.Sort == nil {
+		c.Sort = d.Sort
+	}
+
+	if c.Order == nil {
+		c.Order = d.Order
+	}
+
+	return c
+}
