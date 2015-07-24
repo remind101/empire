@@ -58,7 +58,7 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 	defer r.remove(ctx, c.ID)
 
 	if err := r.start(ctx, c.ID); err != nil {
-		return fmt.Errorf("runner: start containeer: %v", err)
+		return fmt.Errorf("runner: start container: %v", err)
 	}
 	defer tryClose(opts.Output)
 

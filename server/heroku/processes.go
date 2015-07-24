@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
+	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -90,6 +92,9 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		defer closeStreams(inStream, outStream)
 
 		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n")
+
+		// Prevent the ELB idle connection timeout to close the connection.
+		defer close(streamhttp.Heartbeat(outStream, 10*time.Second))
 
 		opts.Input = inStream
 		opts.Output = outStream
