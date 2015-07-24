@@ -57,7 +57,7 @@ type ReleasesQuery struct {
 	Version *int
 
 	// If provided, uses the limit and sorting parameters specified in the range.
-	Range *headerutil.Range
+	Range headerutil.Range
 }
 
 // Scope implements the Scope interface.
@@ -72,16 +72,22 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 		scope = append(scope, FieldEquals("version", *version))
 	}
 
-	if r := q.Range; r != nil {
-		scope = append(scope, Range(r))
-	} else {
-		scope = append(scope, Order("version desc"))
-	}
+	scope = append(scope, Range(q.Range.WithDefaults(q.DefaultRange())))
 
 	// Preload all the things.
 	scope = append(scope, Preload("App", "Config", "Slug", "Processes"))
 
 	return scope.Scope(db)
+}
+
+// DefaultRange returns the default headerutil.Range used if values aren't
+// provided.
+func (q ReleasesQuery) DefaultRange() headerutil.Range {
+	sort, order := "version", "desc"
+	return headerutil.Range{
+		Sort:  &sort,
+		Order: &order,
+	}
 }
 
 // ReleasesFirst returns the first matching release.

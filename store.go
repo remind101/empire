@@ -85,15 +85,15 @@ func Limit(limit int) Scope {
 }
 
 // Range returns a Scope that limits and orders the results.
-func Range(r *headerutil.Range) Scope {
+func Range(r headerutil.Range) Scope {
 	var scope ComposedScope
 
-	if max := r.Max; max != nil {
-		scope = append(scope, Limit(*max))
+	if r.Max != nil {
+		scope = append(scope, Limit(*r.Max))
 	}
 
-	if sort := r.Sort; sort != nil {
-		order := fmt.Sprintf("%s %s", *sort, *(r.Order))
+	if r.Sort != nil && r.Order != nil {
+		order := fmt.Sprintf("%s %s", *r.Sort, *r.Order)
 		scope = append(scope, Order(order))
 	}
 

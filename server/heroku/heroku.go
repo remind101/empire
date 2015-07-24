@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/server/authorization"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
@@ -118,4 +119,18 @@ func Error(w http.ResponseWriter, err error, status int) error {
 func NoContent(w http.ResponseWriter) error {
 	w.WriteHeader(http.StatusNoContent)
 	return nil
+}
+
+// RangeHeader parses the Range header and returns an headerutil.Range.
+func RangeHeader(r *http.Request) (headerutil.Range, error) {
+	header := r.Header.Get("Range")
+	if header == "" {
+		return headerutil.Range{}, nil
+	}
+
+	rangeHeader, err := headerutil.ParseRange(header)
+	if err != nil {
+		return headerutil.Range{}, err
+	}
+	return *rangeHeader, nil
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -72,12 +71,9 @@ func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	var rangeHeader *headerutil.Range
-	if header := r.Header.Get("Range"); header != "" {
-		rangeHeader, err = headerutil.ParseRange(header)
-		if err != nil {
-			return err
-		}
+	rangeHeader, err := RangeHeader(r)
+	if err != nil {
+		return err
 	}
 
 	rels, err := h.Releases(empire.ReleasesQuery{App: a, Range: rangeHeader})

@@ -15,7 +15,7 @@ func TestReleasesQuery(t *testing.T) {
 		order   = "desc"
 	)
 
-	rangeHeader := &headerutil.Range{
+	rangeHeader := headerutil.Range{
 		Sort:  &sort,
 		Max:   &max,
 		Order: &order,
