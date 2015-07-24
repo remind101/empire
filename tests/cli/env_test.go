@@ -80,3 +80,36 @@ acme-inc.2.web.2    running   5d  "./bin/web"`,
 		},
 	})
 }
+
+// Test to prevent a regression of https://github.com/remind101/empire/pull/612,
+// where the releases weren't being sorted by version, so a random config was
+// chosen.
+func TestConfigConsistency(t *testing.T) {
+	run(t, []Command{
+		DeployCommand("latest", "v1"),
+		{
+			"set FOO1=foo1 -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"env -a acme-inc",
+			"FOO1=foo1",
+		},
+		{
+			"set FOO2=foo2 -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"env -a acme-inc",
+			"FOO1=foo1\nFOO2=foo2",
+		},
+		{
+			"set FOO3=foo3 -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"env -a acme-inc",
+			"FOO1=foo1\nFOO2=foo2\nFOO3=foo3",
+		},
+	})
+}
