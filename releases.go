@@ -74,6 +74,8 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 
 	if r := q.Range; r != nil {
 		scope = append(scope, Range(r))
+	} else {
+		scope = append(scope, Order("version desc"))
 	}
 
 	// Preload all the things.
