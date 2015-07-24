@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"runtime"
+	"time"
 
 	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
+	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -92,14 +93,8 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n")
 
-		// We send the null character periodically, to keep the connection alive.
-		// Otherwise the connection would close after the ELB idle connection timeout.
-		go func() {
-			for {
-				fmt.Fprintf(outStream, "\x00")
-				runtime.Gosched()
-			}
-		}()
+		// Prevent the ELB idle connection timeout to close the connection.
+		defer close(streamhttp.Heartbeat(outStream, 10*time.Second))
 
 		opts.Input = inStream
 		opts.Output = outStream
