@@ -78,7 +78,6 @@ func Heartbeat(outStream io.Writer, interval time.Duration) chan struct{} {
 				t.Stop()
 				return
 			}
-			break
 		}
 	}()
 
