@@ -13,40 +13,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/archive"
-	"github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/fileutils"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/fileutils"
 )
 
-func createTarStream(srcPath, dockerfilePath string) (io.ReadCloser, error) {
+func createTarStream(srcPath string) (io.ReadCloser, error) {
 	excludes, err := parseDockerignore(srcPath)
 	if err != nil {
 		return nil, err
-	}
-
-	includes := []string{"."}
-
-	// If .dockerignore mentions .dockerignore or the Dockerfile
-	// then make sure we send both files over to the daemon
-	// because Dockerfile is, obviously, needed no matter what, and
-	// .dockerignore is needed to know if either one needs to be
-	// removed.  The deamon will remove them for us, if needed, after it
-	// parses the Dockerfile.
-	//
-	// https://github.com/docker/docker/issues/8330
-	//
-	forceIncludeFiles := []string{".dockerignore", dockerfilePath}
-
-	for _, includeFile := range forceIncludeFiles {
-		if includeFile == "" {
-			continue
-		}
-		keepThem, err := fileutils.Matches(includeFile, excludes)
-		if err != nil {
-			return nil, fmt.Errorf("cannot match .dockerfile: '%s', error: %s", includeFile, err)
-		}
-		if keepThem {
-			includes = append(includes, includeFile)
-		}
 	}
 
 	if err := validateContextDirectory(srcPath, excludes); err != nil {
@@ -54,7 +28,6 @@ func createTarStream(srcPath, dockerfilePath string) (io.ReadCloser, error) {
 	}
 	tarOpts := &archive.TarOptions{
 		ExcludePatterns: excludes,
-		IncludeFiles:    includes,
 		Compression:     archive.Uncompressed,
 		NoLchown:        true,
 	}
@@ -111,7 +84,16 @@ func parseDockerignore(root string) ([]string, error) {
 	if err != nil && !os.IsNotExist(err) {
 		return excludes, fmt.Errorf("error reading .dockerignore: '%s'", err)
 	}
-	excludes = strings.Split(string(ignore), "\n")
+	for _, pattern := range strings.Split(string(ignore), "\n") {
+		matches, err := filepath.Match(pattern, "Dockerfile")
+		if err != nil {
+			return excludes, fmt.Errorf("bad .dockerignore pattern: '%s', error: %s", pattern, err)
+		}
+		if matches {
+			return excludes, fmt.Errorf("dockerfile was excluded by .dockerignore pattern '%s'", pattern)
+		}
+		excludes = append(excludes, pattern)
+	}
 
 	return excludes, nil
 }

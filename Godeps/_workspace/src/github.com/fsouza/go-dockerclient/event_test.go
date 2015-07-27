@@ -57,6 +57,7 @@ func testEventListeners(testName string, t *testing.T, buildServer func(http.Han
 {"status":"destroy","id":"dfdf82bd3881","from":"base:latest","time":1374067970}
 `
 
+	var req http.Request
 	server := buildServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rsc := bufio.NewScanner(strings.NewReader(response))
 		for rsc.Scan() {
@@ -64,6 +65,7 @@ func testEventListeners(testName string, t *testing.T, buildServer func(http.Han
 			w.(http.Flusher).Flush()
 			time.Sleep(10 * time.Millisecond)
 		}
+		req = *r
 	}))
 	defer server.Close()
 
@@ -74,12 +76,7 @@ func testEventListeners(testName string, t *testing.T, buildServer func(http.Han
 	client.SkipServerVersionCheck = true
 
 	listener := make(chan *APIEvents, 10)
-	defer func() {
-		time.Sleep(10 * time.Millisecond)
-		if err := client.RemoveEventListener(listener); err != nil {
-			t.Error(err)
-		}
-	}()
+	defer func() { time.Sleep(10 * time.Millisecond); client.RemoveEventListener(listener) }()
 
 	err = client.AddEventListener(listener)
 	if err != nil {
@@ -92,7 +89,7 @@ func testEventListeners(testName string, t *testing.T, buildServer func(http.Han
 	for {
 		select {
 		case msg := <-listener:
-			t.Logf("Received: %v", *msg)
+			t.Logf("Received: %s", *msg)
 			count++
 			err = checkEvent(count, msg)
 			if err != nil {
