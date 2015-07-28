@@ -27,3 +27,17 @@ func TestApps(t *testing.T) {
 		},
 	})
 }
+
+func TestAppInfo(t *testing.T) {
+	run(t, []Command{
+		{
+			"create acme-inc",
+			"Created acme-inc.",
+		},
+		{
+			"info -a acme-inc",
+			`Name:      acme-inc
+ID:		  1234`,
+		},
+	})
+}
