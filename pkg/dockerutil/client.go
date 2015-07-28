@@ -1,6 +1,7 @@
 package dockerutil
 
 import (
+	"log"
 	"os"
 
 	"golang.org/x/net/context"
@@ -67,7 +68,7 @@ func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) er
 	var a docker.AuthConfiguration
 
 	reg := opts.Registry
-
+	log.Printf("registry: %s", reg)
 	if reg == "" {
 		reg = "https://index.docker.io/v1/"
 	}
