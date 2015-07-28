@@ -44,6 +44,20 @@ func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 	return Encode(w, newApps(apps))
 }
 
+type GetAppInfo struct {
+	*empire.Empire
+}
+
+func (h *GetAppInfo) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(200)
+	return Encode(w, newApp(a))
+}
+
 type DeleteApp struct {
 	*empire.Empire
 }
