@@ -344,7 +344,7 @@ func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*
 }
 
 // Deploy deploys an image and streams the output to w.
-func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+func (e *Empire) Deploy(ctx context.Context, opts *DeploymentsCreateOpts) (*Release, error) {
 	return e.deployer.Deploy(ctx, opts)
 }
 

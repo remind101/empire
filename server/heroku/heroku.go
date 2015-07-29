@@ -20,11 +20,12 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 	r := httpx.NewRouter()
 
 	// Apps
-	r.Handle("/apps", Authenticate(e, &GetApps{e})).Methods("GET")                 // hk apps
-	r.Handle("/apps/{app}", Authenticate(e, &GetAppInfo{e})).Methods("GET")        // hk info
-	r.Handle("/apps/{app}", Authenticate(e, &DeleteApp{e})).Methods("DELETE")      // hk destroy
-	r.Handle("/apps", Authenticate(e, &PostApps{e})).Methods("POST")               // hk create
-	r.Handle("/organizations/apps", Authenticate(e, &PostApps{e})).Methods("POST") // hk create
+	r.Handle("/apps", Authenticate(e, &GetApps{e})).Methods("GET")                  // hk apps
+	r.Handle("/apps/{app}", Authenticate(e, &GetAppInfo{e})).Methods("GET")         // hk info
+	r.Handle("/apps/{app}", Authenticate(e, &DeleteApp{e})).Methods("DELETE")       // hk destroy
+	r.Handle("/apps/{app}/deploys", Authenticate(e, &DeployApp{e})).Methods("POST") // Deploy an image to an app
+	r.Handle("/apps", Authenticate(e, &PostApps{e})).Methods("POST")                // hk create
+	r.Handle("/organizations/apps", Authenticate(e, &PostApps{e})).Methods("POST")  // hk create
 
 	// Domains
 	r.Handle("/apps/{app}/domains", Authenticate(e, &GetDomains{e})).Methods("GET")                 // hk domains

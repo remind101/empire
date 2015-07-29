@@ -81,7 +81,7 @@ func (d *empireDeployer) Deploy(ctx context.Context, p events.Deployment, w io.W
 		return err
 	}
 
-	_, err = d.Empire.Deploy(ctx, empire.DeploymentsCreateOpts{
+	_, err = d.Empire.Deploy(ctx, &empire.DeploymentsCreateOpts{
 		Image:  img,
 		Output: w,
 		User:   &empire.User{Name: p.Deployment.Creator.Login},
