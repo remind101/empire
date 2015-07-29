@@ -1,6 +1,9 @@
 package cli_test
 
-import "testing"
+import (
+	"regexp"
+	"testing"
+)
 
 func TestCreate(t *testing.T) {
 	run(t, []Command{
@@ -29,6 +32,11 @@ func TestApps(t *testing.T) {
 }
 
 func TestAppInfo(t *testing.T) {
+	regex, err := regexp.Compile("Name: acme-inc\nID:   [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	run(t, []Command{
 		{
 			"create acme-inc",
@@ -36,8 +44,7 @@ func TestAppInfo(t *testing.T) {
 		},
 		{
 			"info -a acme-inc",
-			`Name:      acme-inc
-ID:		  1234`,
+			regex,
 		},
 	})
 }
