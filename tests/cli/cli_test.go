@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -132,7 +133,7 @@ type Command struct {
 	Command string
 
 	// Output is the output we expect to see.
-	Output string
+	Output interface{}
 }
 
 func run(t testing.TB, commands []Command) {
@@ -150,13 +151,18 @@ func run(t testing.TB, commands []Command) {
 	for _, cmd := range commands {
 		got := cli(t, token.Token, s.URL, cmd.Command)
 
-		want := cmd.Output
-		if want != "" {
-			want = want + "\n"
-		}
+		if want, ok := cmd.Output.(string); ok {
+			if want != "" {
+				want = want + "\n"
+			}
 
-		if got != want {
-			t.Fatalf("%q != %q", got, want)
+			if got != want {
+				t.Fatalf("%q != %q", got, want)
+			}
+		} else if regex, ok := cmd.Output.(*regexp.Regexp); ok {
+			if !regex.MatchString(got) {
+				t.Fatalf("%q != %q", got, regex.String())
+			}
 		}
 	}
 }
