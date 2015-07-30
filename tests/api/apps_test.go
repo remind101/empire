@@ -87,6 +87,13 @@ func TestAppDeploy(t *testing.T) {
 	if _, err := c.ReleaseList("acme-inc", nil); err == nil {
 		t.Fatal("Expected no release for acme-inc")
 	}
+
+	// Deploy remind101/acme-inc which should infer acme-inc app name
+	mustDeploy(t, c, DefaultImage)
+	acmeIncAppReleases := mustReleaseList(t, c, "acme-inc")
+	if len(acmeIncAppReleases) != 1 {
+		t.Fatal("Expected a release for acme-inc")
+	}
 }
 
 func TestAppDeployResourceDoesNotExist(t *testing.T) {

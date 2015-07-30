@@ -28,10 +28,10 @@ var (
 // NamePattern is a regex pattern that app names must conform to.
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
-// NewAppNameFromRepo generates a new name from a Repo
+// AppNameFromRepo generates a name from a Repo
 //
 //	remind101/r101-api => r101-api
-func NewAppNameFromRepo(repo string) string {
+func AppNameFromRepo(repo string) string {
 	p := strings.Split(repo, "/")
 	return p[len(p)-1]
 }
@@ -168,23 +168,13 @@ func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
 // AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
 func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
-	a, err := s.store.AppsFirst(AppsQuery{Repo: &repo})
+	n := AppNameFromRepo(repo)
+	a, err := s.store.AppsFirst(AppsQuery{Name: &n})
 	if err != nil && err != gorm.RecordNotFound {
 		return a, err
 	}
 
-	// If the app wasn't found, create a new app linked to this repo.
-	if err != gorm.RecordNotFound {
-		return a, nil
-	}
-
-	n := NewAppNameFromRepo(repo)
-
-	a, err = s.store.AppsFirst(AppsQuery{Name: &n})
-	if err != nil && err != gorm.RecordNotFound {
-		return a, err
-	}
-
+	// If the app wasn't found, create a new app.
 	if err != gorm.RecordNotFound {
 		return a, s.AppsEnsureRepo(a, repo)
 	}
