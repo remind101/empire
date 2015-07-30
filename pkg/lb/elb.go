@@ -125,7 +125,7 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 		}
 
 		if len(out.LoadBalancerDescriptions) == 0 {
-			continue
+			break
 		}
 
 		// Create a names slice and descriptions map.
