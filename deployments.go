@@ -37,7 +37,7 @@ type DeploymentsCreateOpts struct {
 // deployer is an interface that represents something that can perform a
 // deployment.
 type deployer interface {
-	Deploy(context.Context, *DeploymentsCreateOpts) (*Release, error)
+	Deploy(context.Context, DeploymentsCreateOpts) (*Release, error)
 }
 
 // deployerService is an implementation of the deployer interface that performs
@@ -50,7 +50,7 @@ type deployerService struct {
 }
 
 // DeploymentsDo performs the Deployment.
-func (s *deployerService) Deploy(ctx context.Context, opts *DeploymentsCreateOpts) (*Release, error) {
+func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this

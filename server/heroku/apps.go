@@ -85,12 +85,12 @@ func (h *DeployApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	opts, err := getDeploymentsCreateOpts(ctx, w, r)
+	opts, err := newDeploymentsCreateOpts(ctx, w, r)
 	opts.App = a
 	if err != nil {
 		return err
 	}
-	h.Deploy(ctx, opts)
+	h.Deploy(ctx, *opts)
 	return nil
 }
 
