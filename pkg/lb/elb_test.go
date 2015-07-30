@@ -266,6 +266,35 @@ func TestELB_LoadBalancers(t *testing.T) {
 	}
 }
 
+func TestELB_EmptyLoadBalancers(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=DescribeLoadBalancers&PageSize=20&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
+	  <DescribeLoadBalancersResult>
+	    <LoadBalancerDescriptions/>
+	  </DescribeLoadBalancersResult>
+	</DescribeLoadBalancersResponse>`,
+			},
+		},
+	})
+	m, s := newTestELBManager(h)
+	defer s.Close()
+
+	lbs, err := m.LoadBalancers(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := len(lbs), 0; got != want {
+		t.Fatalf("%v load balancers; want %v", got, want)
+	}
+}
+
 func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
 	m, s, lb := buildLoadBalancerForDestroy()
 	defer s.Close()
