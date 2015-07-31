@@ -1,6 +1,6 @@
 # Changelog
 
-## HEAD
+## 0.9.1 (2015-07-31)
 
 **Documentation**
 
