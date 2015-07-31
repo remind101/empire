@@ -24,7 +24,7 @@ bump:
 	pip install --upgrade bumpversion
 	bumpversion ${TYPE}
 
-release: test build bump
+release: test bump
 	# Wait for the `master` branch to build on CircleCI before running this. We'll
 	# pull that image and tag it with the new version.
 	docker pull ${REPO}:latest
