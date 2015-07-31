@@ -75,6 +75,25 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 	return NoContent(w)
 }
 
+type DeployApp struct {
+	*empire.Empire
+}
+
+func (h *DeployApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	opts, err := newDeploymentsCreateOpts(ctx, w, r)
+	opts.App = a
+	if err != nil {
+		return err
+	}
+	h.Deploy(ctx, *opts)
+	return nil
+}
+
 type PostAppsForm struct {
 	Name string  `json:"name"`
 	Repo *string `json:"repo"`

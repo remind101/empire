@@ -22,10 +22,19 @@ type PostDeployForm struct {
 
 // Serve implements the Handler interface.
 func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
+	opts, err := newDeploymentsCreateOpts(ctx, w, req)
+	if err != nil {
+		return err
+	}
+	h.Deploy(ctx, *opts)
+	return nil
+}
+
+func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *http.Request) (*empire.DeploymentsCreateOpts, error) {
 	var form PostDeployForm
 
 	if err := Decode(req, &form); err != nil {
-		return err
+		return nil, err
 	}
 
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
@@ -36,10 +45,10 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 
 	user, _ := empire.UserFromContext(ctx)
 
-	h.Deploy(ctx, empire.DeploymentsCreateOpts{
+	opts := empire.DeploymentsCreateOpts{
 		Image:  form.Image,
 		Output: streamhttp.StreamingResponseWriter(w),
 		User:   user,
-	})
-	return nil
+	}
+	return &opts, nil
 }
