@@ -28,6 +28,7 @@ type Release struct {
 
 	Processes []*Process
 
+	Creator     string
 	Description string
 	CreatedAt   *time.Time
 }
