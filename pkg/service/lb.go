@@ -1,13 +1,11 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/remind101/empire/pkg/lb"
 	"golang.org/x/net/context"
 )
-
-var ErrUnsuitableLoadBalancer = errors.New("currently assigned load balancer is not suitable for the given exposure")
 
 // LBProcessManager is an implementation of the ProcessManager interface that creates
 // LoadBalancers when a Process is created.
@@ -35,8 +33,10 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 		// If the load balancer doesn't match the exposure that we
 		// want, we'll return an error. Users should manually destroy
 		// the app and re-create it with the proper exposure.
-		if l != nil && !lbOk(p, l) {
-			return ErrUnsuitableLoadBalancer
+		if l != nil {
+			if err = lbOk(p, l); err != nil {
+				return err
+			}
 		}
 
 		// If this app doesn't have a load balancer yet, create one.
@@ -107,22 +107,22 @@ func lbTags(app string, process string) map[string]string {
 }
 
 // lbOk checks if the load balancer is suitable for the process.
-func lbOk(p *Process, lb *lb.LoadBalancer) bool {
+func lbOk(p *Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == ExposePublic && !lb.External {
-		return false
+		return fmt.Errorf("Process %s is public, but load balancer is private.", p.Type)
 	}
 
 	if p.Exposure == ExposePrivate && lb.External {
-		return false
+		return fmt.Errorf("Process %s is private, but load balancer is public.", p.Type)
 	}
 
 	if *p.Ports[0].Host != lb.InstancePort {
-		return false
+		return fmt.Errorf("Process %s instance port is %d, but load balancer instance port is %d.", p.Type, p.Ports[0].Host, lb.InstancePort)
 	}
 
 	if p.SSLCert != lb.SSLCert {
-		return false
+		return fmt.Errorf("Process ssl certificate does not match load balancer ssl certificate.")
 	}
 
-	return true
+	return nil
 }
