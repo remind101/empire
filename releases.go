@@ -32,6 +32,7 @@ type Release struct {
 	CreatedAt   *time.Time
 }
 
+// Formation creates a Formation object
 func (r *Release) Formation() Formation {
 	f := make(Formation)
 	for _, p := range r.Processes {
@@ -40,7 +41,7 @@ func (r *Release) Formation() Formation {
 	return f
 }
 
-// Set created_at before inserting.
+// BeforeCreate sets created_at before inserting.
 func (r *Release) BeforeCreate() error {
 	t := timex.Now()
 	r.CreatedAt = &t

@@ -20,13 +20,17 @@ type PostDeployForm struct {
 	Image image.Image
 }
 
-// Serve implements the Handler interface.
+// ServeHTTPContext implements the Handler interface.
 func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
 	opts, err := newDeploymentsCreateOpts(ctx, w, req)
 	if err != nil {
 		return err
 	}
-	h.Deploy(ctx, *opts)
+
+	_, err = h.Deploy(ctx, *opts)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

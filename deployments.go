@@ -49,8 +49,8 @@ type deployerService struct {
 	*releasesService
 }
 
-// DeploymentsDo performs the Deployment.
-func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+// doDeploy does the actual deployment
+func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this
@@ -92,9 +92,27 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts
 		Description: desc,
 	})
 
-	if err := json.NewEncoder(opts.Output).Encode(&jsonmessage.JSONMessage{
-		Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name),
-	}); err != nil {
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// Deploy is a thin wrapper around doDeploy to handle errors & output more cleanly
+func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	r, err := s.doDeploy(ctx, opts)
+	var msg jsonmessage.JSONMessage
+	if err != nil {
+		msg = newJSONMessageError(err)
+		if err = json.NewEncoder(opts.Output).Encode(&msg); err != nil {
+			return nil, err
+		}
+	} else {
+		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
+	}
+
+	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {
 		return r, err
 	}
 
