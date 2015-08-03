@@ -20,13 +20,16 @@ type PostDeployForm struct {
 	Image image.Image
 }
 
-// Serve implements the Handler interface.
+// ServeHTTPContext implements the Handler interface.
 func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
 	opts, err := newDeploymentsCreateOpts(ctx, w, req)
 	if err != nil {
 		return err
 	}
-	h.Deploy(ctx, *opts)
+
+	// We ignore errors here since this is a streaming endpoint,
+	// and the error is handled in the response message
+	_, _ = h.Deploy(ctx, *opts)
 	return nil
 }
 
