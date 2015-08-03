@@ -289,17 +289,22 @@ func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Proc
 	return err
 }
 
-func (m *ecsProcessManager) Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error {
-	attachment := "detached"
+func (m *ecsProcessManager) Run(ctx context.Context, app *App, p *Process, in io.Reader, out io.Writer) error {
 	if out != nil {
-		attachment = "attached"
+		return fmt.Errorf("running an attached process is not implemented by the ECS manager.")
 	}
-	// TODO(ejholmes): Actually implement this. We could have the ECS
-	// manager handle the lifecycle of "detached" processes which don't have
-	// their stdin, stdout and stderr attached. It would be nice if we can
-	// eventually remove the "runner" package and have both attached and
-	// detached processes run via ECS.
-	return fmt.Errorf("running a %s process is not implemented by the ECS manager.", attachment)
+
+	td, err := m.createTaskDefinition(ctx, app, p)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.ecs.RunTask(ctx, &ecs.RunTaskInput{
+		Cluster:        aws.String(m.cluster),
+		Count:          aws.Long(1),
+		TaskDefinition: aws.String(fmt.Sprintf("%s:%d", *td.Family, *td.Revision)),
+	})
+	return err
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.

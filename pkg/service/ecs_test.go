@@ -83,6 +83,39 @@ func TestECSManager_Submit(t *testing.T) {
 	}
 }
 
+func TestECSManager_Run_Detached(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc","web"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"family":"1234--web", "revision": 2}}`,
+			},
+		},
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.RunTask",
+				Body:       `{"cluster":"empire","count":1,"taskDefinition":"1234--web:2"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
+		},
+	})
+	m, s := newTestECSManager(h)
+	defer s.Close()
+
+	if err := m.Run(context.Background(), fakeApp, fakeApp.Processes[0], nil, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestECSManager_Scale(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
