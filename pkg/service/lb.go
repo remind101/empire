@@ -1,13 +1,11 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/remind101/empire/pkg/lb"
 	"golang.org/x/net/context"
 )
-
-var ErrUnsuitableLoadBalancer = errors.New("currently assigned load balancer is not suitable for the given exposure")
 
 // LBProcessManager is an implementation of the ProcessManager interface that creates
 // LoadBalancers when a Process is created.
@@ -35,8 +33,10 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 		// If the load balancer doesn't match the exposure that we
 		// want, we'll return an error. Users should manually destroy
 		// the app and re-create it with the proper exposure.
-		if l != nil && !lbOk(p, l) {
-			return ErrUnsuitableLoadBalancer
+		if l != nil {
+			if err = lbOk(p, l); err != nil {
+				return err
+			}
 		}
 
 		// If this app doesn't have a load balancer yet, create one.
@@ -106,23 +106,60 @@ func lbTags(app string, process string) map[string]string {
 	}
 }
 
+// LoadBalancerExposureError is returned when the exposure of the process in the data store does not match the exposure of the ELB
+type LoadBalancerExposureError struct {
+	proc *Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *LoadBalancerExposureError) Error() string {
+	var lbExposure string
+	if !e.lb.External {
+		lbExposure = "private"
+	} else {
+		lbExposure = "public"
+	}
+
+	return fmt.Sprintf("Process %s is %s, but load balancer is %s.", e.proc.Type, e.proc.Exposure, lbExposure)
+}
+
+// LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
+type LoadBalancerPortMismatchError struct {
+	proc *Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *LoadBalancerPortMismatchError) Error() string {
+	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, e.proc.Ports[0].Host, e.lb.InstancePort)
+}
+
+// SslCertMismatchError is returned when the ssl cert in the data store does not match the ssl cert on the ELB
+type SslCertMismatchError struct {
+	proc *Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *SslCertMismatchError) Error() string {
+	return fmt.Sprintf("Process ssl certificate (%s) does not match load balancer ssl certificate (%s).", e.proc.SSLCert, e.lb.SSLCert)
+}
+
 // lbOk checks if the load balancer is suitable for the process.
-func lbOk(p *Process, lb *lb.LoadBalancer) bool {
+func lbOk(p *Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == ExposePublic && !lb.External {
-		return false
+		return &LoadBalancerExposureError{p, lb}
 	}
 
 	if p.Exposure == ExposePrivate && lb.External {
-		return false
+		return &LoadBalancerExposureError{p, lb}
 	}
 
 	if *p.Ports[0].Host != lb.InstancePort {
-		return false
+		return &LoadBalancerPortMismatchError{p, lb}
 	}
 
 	if p.SSLCert != lb.SSLCert {
-		return false
+		return &SslCertMismatchError{p, lb}
 	}
 
-	return true
+	return nil
 }
