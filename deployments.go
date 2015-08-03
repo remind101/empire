@@ -92,22 +92,16 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 		Description: desc,
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return r, err
 }
 
 // Deploy is a thin wrapper around doDeploy to handle errors & output more cleanly
 func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
-	r, err := s.doDeploy(ctx, opts)
 	var msg jsonmessage.JSONMessage
+
+	r, err := s.doDeploy(ctx, opts)
 	if err != nil {
 		msg = newJSONMessageError(err)
-		if err = json.NewEncoder(opts.Output).Encode(&msg); err != nil {
-			return nil, err
-		}
 	} else {
 		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
 	}

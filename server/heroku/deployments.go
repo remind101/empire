@@ -27,10 +27,9 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	_, err = h.Deploy(ctx, *opts)
-	if err != nil {
-		return err
-	}
+	// We ignore errors here since this is a streaming endpoint,
+	// and the error is handled in the response message
+	_, _ = h.Deploy(ctx, *opts)
 	return nil
 }
 
