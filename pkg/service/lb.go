@@ -106,22 +106,56 @@ func lbTags(app string, process string) map[string]string {
 	}
 }
 
+type loadBalancerExposureError struct {
+	proc *Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *loadBalancerExposureError) Error() string {
+	var lbExposure string
+	if !e.lb.External {
+		lbExposure = "private"
+	} else {
+		lbExposure = "public"
+	}
+
+	return fmt.Sprintf("Process %s is %s, but load balancer is %s.", e.proc.Type, e.proc.Exposure, lbExposure)
+}
+
+type loadBalancerPortMismatchError struct {
+	proc *Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *loadBalancerPortMismatchError) Error() string {
+	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, e.proc.Ports[0].Host, e.lb.InstancePort)
+}
+
+type sslCertMismatchError struct {
+	proc *Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *sslCertMismatchError) Error() string {
+	return fmt.Sprintf("Process ssl certificate (%s) does not match load balancer ssl certificate (%s).", e.proc.SSLCert, e.lb.SSLCert)
+}
+
 // lbOk checks if the load balancer is suitable for the process.
 func lbOk(p *Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == ExposePublic && !lb.External {
-		return fmt.Errorf("Process %s is public, but load balancer is private.", p.Type)
+		return &loadBalancerExposureError{p, lb}
 	}
 
 	if p.Exposure == ExposePrivate && lb.External {
-		return fmt.Errorf("Process %s is private, but load balancer is public.", p.Type)
+		return &loadBalancerExposureError{p, lb}
 	}
 
 	if *p.Ports[0].Host != lb.InstancePort {
-		return fmt.Errorf("Process %s instance port is %d, but load balancer instance port is %d.", p.Type, p.Ports[0].Host, lb.InstancePort)
+		return &loadBalancerPortMismatchError{p, lb}
 	}
 
 	if p.SSLCert != lb.SSLCert {
-		return fmt.Errorf("Process ssl certificate does not match load balancer ssl certificate.")
+		return &sslCertMismatchError{p, lb}
 	}
 
 	return nil
