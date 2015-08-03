@@ -106,12 +106,13 @@ func lbTags(app string, process string) map[string]string {
 	}
 }
 
-type loadBalancerExposureError struct {
+// LoadBalancerExposureError is returned when the exposure of the process in the data store does not match the exposure of the ELB
+type LoadBalancerExposureError struct {
 	proc *Process
 	lb   *lb.LoadBalancer
 }
 
-func (e *loadBalancerExposureError) Error() string {
+func (e *LoadBalancerExposureError) Error() string {
 	var lbExposure string
 	if !e.lb.External {
 		lbExposure = "private"
@@ -122,40 +123,42 @@ func (e *loadBalancerExposureError) Error() string {
 	return fmt.Sprintf("Process %s is %s, but load balancer is %s.", e.proc.Type, e.proc.Exposure, lbExposure)
 }
 
-type loadBalancerPortMismatchError struct {
+// LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
+type LoadBalancerPortMismatchError struct {
 	proc *Process
 	lb   *lb.LoadBalancer
 }
 
-func (e *loadBalancerPortMismatchError) Error() string {
+func (e *LoadBalancerPortMismatchError) Error() string {
 	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, e.proc.Ports[0].Host, e.lb.InstancePort)
 }
 
-type sslCertMismatchError struct {
+// SslCertMismatchError is returned when the ssl cert in the data store does not match the ssl cert on the ELB
+type SslCertMismatchError struct {
 	proc *Process
 	lb   *lb.LoadBalancer
 }
 
-func (e *sslCertMismatchError) Error() string {
+func (e *SslCertMismatchError) Error() string {
 	return fmt.Sprintf("Process ssl certificate (%s) does not match load balancer ssl certificate (%s).", e.proc.SSLCert, e.lb.SSLCert)
 }
 
 // lbOk checks if the load balancer is suitable for the process.
 func lbOk(p *Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == ExposePublic && !lb.External {
-		return &loadBalancerExposureError{p, lb}
+		return &LoadBalancerExposureError{p, lb}
 	}
 
 	if p.Exposure == ExposePrivate && lb.External {
-		return &loadBalancerExposureError{p, lb}
+		return &LoadBalancerExposureError{p, lb}
 	}
 
 	if *p.Ports[0].Host != lb.InstancePort {
-		return &loadBalancerPortMismatchError{p, lb}
+		return &LoadBalancerPortMismatchError{p, lb}
 	}
 
 	if p.SSLCert != lb.SSLCert {
-		return &sslCertMismatchError{p, lb}
+		return &SslCertMismatchError{p, lb}
 	}
 
 	return nil
