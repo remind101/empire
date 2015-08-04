@@ -131,12 +131,6 @@ $ export EMPIRE_API_URL=http://$(boot2docker ip):8080
 $ emp deploy remind101/acme-inc
 ```
 
-## Roadmap
-
-* [Enhanced Procfile support](https://github.com/remind101/empire/issues/491).
-* Kubernetes backend.
-* Sidekiq containers.
-
 ## Community
 
 We have a google group, [empire-dev][empire-dev], where you can ask questions and engage with the Empire community.
