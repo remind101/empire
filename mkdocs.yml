@@ -23,8 +23,8 @@ pages:
     - "Contribution Guidelines & Bug Reporting": "contributing.md"
     - "Reporting Security Vulnerabilities - TODO": "reporting_security_vulnerabilities.md"
   - Reference:
-    - "Configuration - TODO": "configuration.md"
+    - "Configuration": "configuration.md"
     - "Command Line - TODO": "command_line.md"
-    - "Troubleshooting - TODO": "troubleshooting.md"
+    - "Troubleshooting": "troubleshooting.md"
 
 
