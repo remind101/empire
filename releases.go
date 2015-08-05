@@ -287,6 +287,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 	ports := newServicePorts(int64(p.Port))
 
 	env := environment(release.Config.Vars)
+	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
 	env["EMPIRE_PROCESS"] = string(p.Type)
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
