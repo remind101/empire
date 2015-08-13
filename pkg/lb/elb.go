@@ -83,6 +83,9 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 				Enabled: aws.Boolean(true),
 				Timeout: aws.Long(defaultConnectionDrainingTimeout),
 			},
+			CrossZoneLoadBalancing: &elb.CrossZoneLoadBalancing{
+				Enabled: aws.Boolean(true),
+			},
 		},
 		LoadBalancerName: input.LoadBalancerName,
 	}); err != nil {
