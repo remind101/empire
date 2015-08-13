@@ -30,7 +30,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
-				Body:       `Action=ModifyLoadBalancerAttributes&LoadBalancerAttributes.ConnectionDraining.Enabled=true&LoadBalancerAttributes.ConnectionDraining.Timeout=30&LoadBalancerName=acme-inc&Version=2012-06-01`,
+				Body:       `Action=ModifyLoadBalancerAttributes&LoadBalancerAttributes.ConnectionDraining.Enabled=true&LoadBalancerAttributes.ConnectionDraining.Timeout=30&LoadBalancerAttributes.CrossZoneLoadBalancing.Enabled=true&LoadBalancerName=acme-inc&Version=2012-06-01`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
