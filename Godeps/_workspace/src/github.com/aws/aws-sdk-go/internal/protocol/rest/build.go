@@ -1,3 +1,4 @@
+// Package rest provides RESTful serialization of AWS requests and responses.
 package rest
 
 import (
@@ -12,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/internal/apierr"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/service"
 )
 
 // RFC822 returns an RFC822 formatted timestamp for AWS protocols
@@ -36,7 +37,7 @@ func init() {
 }
 
 // Build builds the REST component of a service request.
-func Build(r *aws.Request) {
+func Build(r *service.Request) {
 	if r.ParamsFilled() {
 		v := reflect.ValueOf(r.Params).Elem()
 		buildLocationElements(r, v)
@@ -44,7 +45,7 @@ func Build(r *aws.Request) {
 	}
 }
 
-func buildLocationElements(r *aws.Request, v reflect.Value) {
+func buildLocationElements(r *service.Request, v reflect.Value) {
 	query := r.HTTPRequest.URL.Query()
 
 	for i := 0; i < v.NumField(); i++ {
@@ -86,7 +87,7 @@ func buildLocationElements(r *aws.Request, v reflect.Value) {
 	updatePath(r.HTTPRequest.URL, r.HTTPRequest.URL.Path)
 }
 
-func buildBody(r *aws.Request, v reflect.Value) {
+func buildBody(r *service.Request, v reflect.Value) {
 	if field, ok := v.Type().FieldByName("SDKShapeTraits"); ok {
 		if payloadName := field.Tag.Get("payload"); payloadName != "" {
 			pfield, _ := v.Type().FieldByName(payloadName)
@@ -101,7 +102,7 @@ func buildBody(r *aws.Request, v reflect.Value) {
 					case string:
 						r.SetStringBody(reader)
 					default:
-						r.Error = apierr.New("Marshal",
+						r.Error = awserr.New("SerializationError",
 							"failed to encode REST request",
 							fmt.Errorf("unknown payload type %s", payload.Type()))
 					}
@@ -111,30 +112,30 @@ func buildBody(r *aws.Request, v reflect.Value) {
 	}
 }
 
-func buildHeader(r *aws.Request, v reflect.Value, name string) {
+func buildHeader(r *service.Request, v reflect.Value, name string) {
 	str, err := convertType(v)
 	if err != nil {
-		r.Error = apierr.New("Marshal", "failed to encode REST request", err)
+		r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
 	} else if str != nil {
 		r.HTTPRequest.Header.Add(name, *str)
 	}
 }
 
-func buildHeaderMap(r *aws.Request, v reflect.Value, prefix string) {
+func buildHeaderMap(r *service.Request, v reflect.Value, prefix string) {
 	for _, key := range v.MapKeys() {
 		str, err := convertType(v.MapIndex(key))
 		if err != nil {
-			r.Error = apierr.New("Marshal", "failed to encode REST request", err)
+			r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
 		} else if str != nil {
 			r.HTTPRequest.Header.Add(prefix+key.String(), *str)
 		}
 	}
 }
 
-func buildURI(r *aws.Request, v reflect.Value, name string) {
+func buildURI(r *service.Request, v reflect.Value, name string) {
 	value, err := convertType(v)
 	if err != nil {
-		r.Error = apierr.New("Marshal", "failed to encode REST request", err)
+		r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
 	} else if value != nil {
 		uri := r.HTTPRequest.URL.Path
 		uri = strings.Replace(uri, "{"+name+"}", EscapePath(*value, true), -1)
@@ -143,10 +144,10 @@ func buildURI(r *aws.Request, v reflect.Value, name string) {
 	}
 }
 
-func buildQueryString(r *aws.Request, v reflect.Value, name string, query url.Values) {
+func buildQueryString(r *service.Request, v reflect.Value, name string, query url.Values) {
 	str, err := convertType(v)
 	if err != nil {
-		r.Error = apierr.New("Marshal", "failed to encode REST request", err)
+		r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
 	} else if str != nil {
 		query.Set(name, *str)
 	}
@@ -155,8 +156,13 @@ func buildQueryString(r *aws.Request, v reflect.Value, name string, query url.Va
 func updatePath(url *url.URL, urlPath string) {
 	scheme, query := url.Scheme, url.RawQuery
 
+	hasSlash := strings.HasSuffix(urlPath, "/")
+
 	// clean up path
 	urlPath = path.Clean(urlPath)
+	if hasSlash && !strings.HasSuffix(urlPath, "/") {
+		urlPath += "/"
+	}
 
 	// get formatted URL minus scheme so we can build this into Opaque
 	url.Scheme, url.Path, url.RawQuery = "", "", ""

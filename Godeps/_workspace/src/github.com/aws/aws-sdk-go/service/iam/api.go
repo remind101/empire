@@ -4,32 +4,27 @@
 package iam
 
 import (
-	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/service"
 )
 
-var oprw sync.Mutex
+const opAddClientIDToOpenIDConnectProvider = "AddClientIDToOpenIDConnectProvider"
 
 // AddClientIDToOpenIDConnectProviderRequest generates a request for the AddClientIDToOpenIDConnectProvider operation.
-func (c *IAM) AddClientIDToOpenIDConnectProviderRequest(input *AddClientIDToOpenIDConnectProviderInput) (req *aws.Request, output *AddClientIDToOpenIDConnectProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAddClientIDToOpenIDConnectProvider == nil {
-		opAddClientIDToOpenIDConnectProvider = &aws.Operation{
-			Name:       "AddClientIDToOpenIDConnectProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) AddClientIDToOpenIDConnectProviderRequest(input *AddClientIDToOpenIDConnectProviderInput) (req *service.Request, output *AddClientIDToOpenIDConnectProviderOutput) {
+	op := &service.Operation{
+		Name:       opAddClientIDToOpenIDConnectProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AddClientIDToOpenIDConnectProviderInput{}
 	}
 
-	req = c.newRequest(opAddClientIDToOpenIDConnectProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AddClientIDToOpenIDConnectProviderOutput{}
 	req.Data = output
 	return
@@ -46,26 +41,21 @@ func (c *IAM) AddClientIDToOpenIDConnectProvider(input *AddClientIDToOpenIDConne
 	return out, err
 }
 
-var opAddClientIDToOpenIDConnectProvider *aws.Operation
+const opAddRoleToInstanceProfile = "AddRoleToInstanceProfile"
 
 // AddRoleToInstanceProfileRequest generates a request for the AddRoleToInstanceProfile operation.
-func (c *IAM) AddRoleToInstanceProfileRequest(input *AddRoleToInstanceProfileInput) (req *aws.Request, output *AddRoleToInstanceProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAddRoleToInstanceProfile == nil {
-		opAddRoleToInstanceProfile = &aws.Operation{
-			Name:       "AddRoleToInstanceProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) AddRoleToInstanceProfileRequest(input *AddRoleToInstanceProfileInput) (req *service.Request, output *AddRoleToInstanceProfileOutput) {
+	op := &service.Operation{
+		Name:       opAddRoleToInstanceProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AddRoleToInstanceProfileInput{}
 	}
 
-	req = c.newRequest(opAddRoleToInstanceProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AddRoleToInstanceProfileOutput{}
 	req.Data = output
 	return
@@ -81,26 +71,21 @@ func (c *IAM) AddRoleToInstanceProfile(input *AddRoleToInstanceProfileInput) (*A
 	return out, err
 }
 
-var opAddRoleToInstanceProfile *aws.Operation
+const opAddUserToGroup = "AddUserToGroup"
 
 // AddUserToGroupRequest generates a request for the AddUserToGroup operation.
-func (c *IAM) AddUserToGroupRequest(input *AddUserToGroupInput) (req *aws.Request, output *AddUserToGroupOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAddUserToGroup == nil {
-		opAddUserToGroup = &aws.Operation{
-			Name:       "AddUserToGroup",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) AddUserToGroupRequest(input *AddUserToGroupInput) (req *service.Request, output *AddUserToGroupOutput) {
+	op := &service.Operation{
+		Name:       opAddUserToGroup,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AddUserToGroupInput{}
 	}
 
-	req = c.newRequest(opAddUserToGroup, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AddUserToGroupOutput{}
 	req.Data = output
 	return
@@ -113,26 +98,21 @@ func (c *IAM) AddUserToGroup(input *AddUserToGroupInput) (*AddUserToGroupOutput,
 	return out, err
 }
 
-var opAddUserToGroup *aws.Operation
+const opAttachGroupPolicy = "AttachGroupPolicy"
 
 // AttachGroupPolicyRequest generates a request for the AttachGroupPolicy operation.
-func (c *IAM) AttachGroupPolicyRequest(input *AttachGroupPolicyInput) (req *aws.Request, output *AttachGroupPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAttachGroupPolicy == nil {
-		opAttachGroupPolicy = &aws.Operation{
-			Name:       "AttachGroupPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) AttachGroupPolicyRequest(input *AttachGroupPolicyInput) (req *service.Request, output *AttachGroupPolicyOutput) {
+	op := &service.Operation{
+		Name:       opAttachGroupPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AttachGroupPolicyInput{}
 	}
 
-	req = c.newRequest(opAttachGroupPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AttachGroupPolicyOutput{}
 	req.Data = output
 	return
@@ -152,26 +132,21 @@ func (c *IAM) AttachGroupPolicy(input *AttachGroupPolicyInput) (*AttachGroupPoli
 	return out, err
 }
 
-var opAttachGroupPolicy *aws.Operation
+const opAttachRolePolicy = "AttachRolePolicy"
 
 // AttachRolePolicyRequest generates a request for the AttachRolePolicy operation.
-func (c *IAM) AttachRolePolicyRequest(input *AttachRolePolicyInput) (req *aws.Request, output *AttachRolePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAttachRolePolicy == nil {
-		opAttachRolePolicy = &aws.Operation{
-			Name:       "AttachRolePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) AttachRolePolicyRequest(input *AttachRolePolicyInput) (req *service.Request, output *AttachRolePolicyOutput) {
+	op := &service.Operation{
+		Name:       opAttachRolePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AttachRolePolicyInput{}
 	}
 
-	req = c.newRequest(opAttachRolePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AttachRolePolicyOutput{}
 	req.Data = output
 	return
@@ -195,26 +170,21 @@ func (c *IAM) AttachRolePolicy(input *AttachRolePolicyInput) (*AttachRolePolicyO
 	return out, err
 }
 
-var opAttachRolePolicy *aws.Operation
+const opAttachUserPolicy = "AttachUserPolicy"
 
 // AttachUserPolicyRequest generates a request for the AttachUserPolicy operation.
-func (c *IAM) AttachUserPolicyRequest(input *AttachUserPolicyInput) (req *aws.Request, output *AttachUserPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAttachUserPolicy == nil {
-		opAttachUserPolicy = &aws.Operation{
-			Name:       "AttachUserPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) AttachUserPolicyRequest(input *AttachUserPolicyInput) (req *service.Request, output *AttachUserPolicyOutput) {
+	op := &service.Operation{
+		Name:       opAttachUserPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AttachUserPolicyInput{}
 	}
 
-	req = c.newRequest(opAttachUserPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AttachUserPolicyOutput{}
 	req.Data = output
 	return
@@ -234,26 +204,21 @@ func (c *IAM) AttachUserPolicy(input *AttachUserPolicyInput) (*AttachUserPolicyO
 	return out, err
 }
 
-var opAttachUserPolicy *aws.Operation
+const opChangePassword = "ChangePassword"
 
 // ChangePasswordRequest generates a request for the ChangePassword operation.
-func (c *IAM) ChangePasswordRequest(input *ChangePasswordInput) (req *aws.Request, output *ChangePasswordOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opChangePassword == nil {
-		opChangePassword = &aws.Operation{
-			Name:       "ChangePassword",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ChangePasswordRequest(input *ChangePasswordInput) (req *service.Request, output *ChangePasswordOutput) {
+	op := &service.Operation{
+		Name:       opChangePassword,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ChangePasswordInput{}
 	}
 
-	req = c.newRequest(opChangePassword, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ChangePasswordOutput{}
 	req.Data = output
 	return
@@ -271,26 +236,21 @@ func (c *IAM) ChangePassword(input *ChangePasswordInput) (*ChangePasswordOutput,
 	return out, err
 }
 
-var opChangePassword *aws.Operation
+const opCreateAccessKey = "CreateAccessKey"
 
 // CreateAccessKeyRequest generates a request for the CreateAccessKey operation.
-func (c *IAM) CreateAccessKeyRequest(input *CreateAccessKeyInput) (req *aws.Request, output *CreateAccessKeyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateAccessKey == nil {
-		opCreateAccessKey = &aws.Operation{
-			Name:       "CreateAccessKey",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateAccessKeyRequest(input *CreateAccessKeyInput) (req *service.Request, output *CreateAccessKeyOutput) {
+	op := &service.Operation{
+		Name:       opCreateAccessKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateAccessKeyInput{}
 	}
 
-	req = c.newRequest(opCreateAccessKey, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateAccessKeyOutput{}
 	req.Data = output
 	return
@@ -319,26 +279,21 @@ func (c *IAM) CreateAccessKey(input *CreateAccessKeyInput) (*CreateAccessKeyOutp
 	return out, err
 }
 
-var opCreateAccessKey *aws.Operation
+const opCreateAccountAlias = "CreateAccountAlias"
 
 // CreateAccountAliasRequest generates a request for the CreateAccountAlias operation.
-func (c *IAM) CreateAccountAliasRequest(input *CreateAccountAliasInput) (req *aws.Request, output *CreateAccountAliasOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateAccountAlias == nil {
-		opCreateAccountAlias = &aws.Operation{
-			Name:       "CreateAccountAlias",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateAccountAliasRequest(input *CreateAccountAliasInput) (req *service.Request, output *CreateAccountAliasOutput) {
+	op := &service.Operation{
+		Name:       opCreateAccountAlias,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateAccountAliasInput{}
 	}
 
-	req = c.newRequest(opCreateAccountAlias, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateAccountAliasOutput{}
 	req.Data = output
 	return
@@ -353,26 +308,21 @@ func (c *IAM) CreateAccountAlias(input *CreateAccountAliasInput) (*CreateAccount
 	return out, err
 }
 
-var opCreateAccountAlias *aws.Operation
+const opCreateGroup = "CreateGroup"
 
 // CreateGroupRequest generates a request for the CreateGroup operation.
-func (c *IAM) CreateGroupRequest(input *CreateGroupInput) (req *aws.Request, output *CreateGroupOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateGroup == nil {
-		opCreateGroup = &aws.Operation{
-			Name:       "CreateGroup",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateGroupRequest(input *CreateGroupInput) (req *service.Request, output *CreateGroupOutput) {
+	op := &service.Operation{
+		Name:       opCreateGroup,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateGroupInput{}
 	}
 
-	req = c.newRequest(opCreateGroup, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateGroupOutput{}
 	req.Data = output
 	return
@@ -389,26 +339,21 @@ func (c *IAM) CreateGroup(input *CreateGroupInput) (*CreateGroupOutput, error) {
 	return out, err
 }
 
-var opCreateGroup *aws.Operation
+const opCreateInstanceProfile = "CreateInstanceProfile"
 
 // CreateInstanceProfileRequest generates a request for the CreateInstanceProfile operation.
-func (c *IAM) CreateInstanceProfileRequest(input *CreateInstanceProfileInput) (req *aws.Request, output *CreateInstanceProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateInstanceProfile == nil {
-		opCreateInstanceProfile = &aws.Operation{
-			Name:       "CreateInstanceProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateInstanceProfileRequest(input *CreateInstanceProfileInput) (req *service.Request, output *CreateInstanceProfileOutput) {
+	op := &service.Operation{
+		Name:       opCreateInstanceProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateInstanceProfileInput{}
 	}
 
-	req = c.newRequest(opCreateInstanceProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateInstanceProfileOutput{}
 	req.Data = output
 	return
@@ -426,26 +371,21 @@ func (c *IAM) CreateInstanceProfile(input *CreateInstanceProfileInput) (*CreateI
 	return out, err
 }
 
-var opCreateInstanceProfile *aws.Operation
+const opCreateLoginProfile = "CreateLoginProfile"
 
 // CreateLoginProfileRequest generates a request for the CreateLoginProfile operation.
-func (c *IAM) CreateLoginProfileRequest(input *CreateLoginProfileInput) (req *aws.Request, output *CreateLoginProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateLoginProfile == nil {
-		opCreateLoginProfile = &aws.Operation{
-			Name:       "CreateLoginProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateLoginProfileRequest(input *CreateLoginProfileInput) (req *service.Request, output *CreateLoginProfileOutput) {
+	op := &service.Operation{
+		Name:       opCreateLoginProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateLoginProfileInput{}
 	}
 
-	req = c.newRequest(opCreateLoginProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateLoginProfileOutput{}
 	req.Data = output
 	return
@@ -461,26 +401,21 @@ func (c *IAM) CreateLoginProfile(input *CreateLoginProfileInput) (*CreateLoginPr
 	return out, err
 }
 
-var opCreateLoginProfile *aws.Operation
+const opCreateOpenIDConnectProvider = "CreateOpenIDConnectProvider"
 
 // CreateOpenIDConnectProviderRequest generates a request for the CreateOpenIDConnectProvider operation.
-func (c *IAM) CreateOpenIDConnectProviderRequest(input *CreateOpenIDConnectProviderInput) (req *aws.Request, output *CreateOpenIDConnectProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateOpenIDConnectProvider == nil {
-		opCreateOpenIDConnectProvider = &aws.Operation{
-			Name:       "CreateOpenIDConnectProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateOpenIDConnectProviderRequest(input *CreateOpenIDConnectProviderInput) (req *service.Request, output *CreateOpenIDConnectProviderOutput) {
+	op := &service.Operation{
+		Name:       opCreateOpenIDConnectProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateOpenIDConnectProviderInput{}
 	}
 
-	req = c.newRequest(opCreateOpenIDConnectProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateOpenIDConnectProviderOutput{}
 	req.Data = output
 	return
@@ -509,26 +444,21 @@ func (c *IAM) CreateOpenIDConnectProvider(input *CreateOpenIDConnectProviderInpu
 	return out, err
 }
 
-var opCreateOpenIDConnectProvider *aws.Operation
+const opCreatePolicy = "CreatePolicy"
 
 // CreatePolicyRequest generates a request for the CreatePolicy operation.
-func (c *IAM) CreatePolicyRequest(input *CreatePolicyInput) (req *aws.Request, output *CreatePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreatePolicy == nil {
-		opCreatePolicy = &aws.Operation{
-			Name:       "CreatePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreatePolicyRequest(input *CreatePolicyInput) (req *service.Request, output *CreatePolicyOutput) {
+	op := &service.Operation{
+		Name:       opCreatePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreatePolicyInput{}
 	}
 
-	req = c.newRequest(opCreatePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreatePolicyOutput{}
 	req.Data = output
 	return
@@ -550,26 +480,21 @@ func (c *IAM) CreatePolicy(input *CreatePolicyInput) (*CreatePolicyOutput, error
 	return out, err
 }
 
-var opCreatePolicy *aws.Operation
+const opCreatePolicyVersion = "CreatePolicyVersion"
 
 // CreatePolicyVersionRequest generates a request for the CreatePolicyVersion operation.
-func (c *IAM) CreatePolicyVersionRequest(input *CreatePolicyVersionInput) (req *aws.Request, output *CreatePolicyVersionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreatePolicyVersion == nil {
-		opCreatePolicyVersion = &aws.Operation{
-			Name:       "CreatePolicyVersion",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreatePolicyVersionRequest(input *CreatePolicyVersionInput) (req *service.Request, output *CreatePolicyVersionOutput) {
+	op := &service.Operation{
+		Name:       opCreatePolicyVersion,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreatePolicyVersionInput{}
 	}
 
-	req = c.newRequest(opCreatePolicyVersion, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreatePolicyVersionOutput{}
 	req.Data = output
 	return
@@ -594,26 +519,21 @@ func (c *IAM) CreatePolicyVersion(input *CreatePolicyVersionInput) (*CreatePolic
 	return out, err
 }
 
-var opCreatePolicyVersion *aws.Operation
+const opCreateRole = "CreateRole"
 
 // CreateRoleRequest generates a request for the CreateRole operation.
-func (c *IAM) CreateRoleRequest(input *CreateRoleInput) (req *aws.Request, output *CreateRoleOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateRole == nil {
-		opCreateRole = &aws.Operation{
-			Name:       "CreateRole",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateRoleRequest(input *CreateRoleInput) (req *service.Request, output *CreateRoleOutput) {
+	op := &service.Operation{
+		Name:       opCreateRole,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateRoleInput{}
 	}
 
-	req = c.newRequest(opCreateRole, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateRoleOutput{}
 	req.Data = output
 	return
@@ -633,26 +553,21 @@ func (c *IAM) CreateRole(input *CreateRoleInput) (*CreateRoleOutput, error) {
 	return out, err
 }
 
-var opCreateRole *aws.Operation
+const opCreateSAMLProvider = "CreateSAMLProvider"
 
 // CreateSAMLProviderRequest generates a request for the CreateSAMLProvider operation.
-func (c *IAM) CreateSAMLProviderRequest(input *CreateSAMLProviderInput) (req *aws.Request, output *CreateSAMLProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateSAMLProvider == nil {
-		opCreateSAMLProvider = &aws.Operation{
-			Name:       "CreateSAMLProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateSAMLProviderRequest(input *CreateSAMLProviderInput) (req *service.Request, output *CreateSAMLProviderOutput) {
+	op := &service.Operation{
+		Name:       opCreateSAMLProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateSAMLProviderInput{}
 	}
 
-	req = c.newRequest(opCreateSAMLProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateSAMLProviderOutput{}
 	req.Data = output
 	return
@@ -684,26 +599,21 @@ func (c *IAM) CreateSAMLProvider(input *CreateSAMLProviderInput) (*CreateSAMLPro
 	return out, err
 }
 
-var opCreateSAMLProvider *aws.Operation
+const opCreateUser = "CreateUser"
 
 // CreateUserRequest generates a request for the CreateUser operation.
-func (c *IAM) CreateUserRequest(input *CreateUserInput) (req *aws.Request, output *CreateUserOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateUser == nil {
-		opCreateUser = &aws.Operation{
-			Name:       "CreateUser",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateUserRequest(input *CreateUserInput) (req *service.Request, output *CreateUserOutput) {
+	op := &service.Operation{
+		Name:       opCreateUser,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateUserInput{}
 	}
 
-	req = c.newRequest(opCreateUser, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateUserOutput{}
 	req.Data = output
 	return
@@ -720,26 +630,21 @@ func (c *IAM) CreateUser(input *CreateUserInput) (*CreateUserOutput, error) {
 	return out, err
 }
 
-var opCreateUser *aws.Operation
+const opCreateVirtualMFADevice = "CreateVirtualMFADevice"
 
 // CreateVirtualMFADeviceRequest generates a request for the CreateVirtualMFADevice operation.
-func (c *IAM) CreateVirtualMFADeviceRequest(input *CreateVirtualMFADeviceInput) (req *aws.Request, output *CreateVirtualMFADeviceOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateVirtualMFADevice == nil {
-		opCreateVirtualMFADevice = &aws.Operation{
-			Name:       "CreateVirtualMFADevice",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) CreateVirtualMFADeviceRequest(input *CreateVirtualMFADeviceInput) (req *service.Request, output *CreateVirtualMFADeviceOutput) {
+	op := &service.Operation{
+		Name:       opCreateVirtualMFADevice,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateVirtualMFADeviceInput{}
 	}
 
-	req = c.newRequest(opCreateVirtualMFADevice, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateVirtualMFADeviceOutput{}
 	req.Data = output
 	return
@@ -765,26 +670,21 @@ func (c *IAM) CreateVirtualMFADevice(input *CreateVirtualMFADeviceInput) (*Creat
 	return out, err
 }
 
-var opCreateVirtualMFADevice *aws.Operation
+const opDeactivateMFADevice = "DeactivateMFADevice"
 
 // DeactivateMFADeviceRequest generates a request for the DeactivateMFADevice operation.
-func (c *IAM) DeactivateMFADeviceRequest(input *DeactivateMFADeviceInput) (req *aws.Request, output *DeactivateMFADeviceOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeactivateMFADevice == nil {
-		opDeactivateMFADevice = &aws.Operation{
-			Name:       "DeactivateMFADevice",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeactivateMFADeviceRequest(input *DeactivateMFADeviceInput) (req *service.Request, output *DeactivateMFADeviceOutput) {
+	op := &service.Operation{
+		Name:       opDeactivateMFADevice,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeactivateMFADeviceInput{}
 	}
 
-	req = c.newRequest(opDeactivateMFADevice, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeactivateMFADeviceOutput{}
 	req.Data = output
 	return
@@ -802,26 +702,21 @@ func (c *IAM) DeactivateMFADevice(input *DeactivateMFADeviceInput) (*DeactivateM
 	return out, err
 }
 
-var opDeactivateMFADevice *aws.Operation
+const opDeleteAccessKey = "DeleteAccessKey"
 
 // DeleteAccessKeyRequest generates a request for the DeleteAccessKey operation.
-func (c *IAM) DeleteAccessKeyRequest(input *DeleteAccessKeyInput) (req *aws.Request, output *DeleteAccessKeyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteAccessKey == nil {
-		opDeleteAccessKey = &aws.Operation{
-			Name:       "DeleteAccessKey",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteAccessKeyRequest(input *DeleteAccessKeyInput) (req *service.Request, output *DeleteAccessKeyOutput) {
+	op := &service.Operation{
+		Name:       opDeleteAccessKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteAccessKeyInput{}
 	}
 
-	req = c.newRequest(opDeleteAccessKey, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteAccessKeyOutput{}
 	req.Data = output
 	return
@@ -839,26 +734,21 @@ func (c *IAM) DeleteAccessKey(input *DeleteAccessKeyInput) (*DeleteAccessKeyOutp
 	return out, err
 }
 
-var opDeleteAccessKey *aws.Operation
+const opDeleteAccountAlias = "DeleteAccountAlias"
 
 // DeleteAccountAliasRequest generates a request for the DeleteAccountAlias operation.
-func (c *IAM) DeleteAccountAliasRequest(input *DeleteAccountAliasInput) (req *aws.Request, output *DeleteAccountAliasOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteAccountAlias == nil {
-		opDeleteAccountAlias = &aws.Operation{
-			Name:       "DeleteAccountAlias",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteAccountAliasRequest(input *DeleteAccountAliasInput) (req *service.Request, output *DeleteAccountAliasOutput) {
+	op := &service.Operation{
+		Name:       opDeleteAccountAlias,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteAccountAliasInput{}
 	}
 
-	req = c.newRequest(opDeleteAccountAlias, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteAccountAliasOutput{}
 	req.Data = output
 	return
@@ -873,26 +763,21 @@ func (c *IAM) DeleteAccountAlias(input *DeleteAccountAliasInput) (*DeleteAccount
 	return out, err
 }
 
-var opDeleteAccountAlias *aws.Operation
+const opDeleteAccountPasswordPolicy = "DeleteAccountPasswordPolicy"
 
 // DeleteAccountPasswordPolicyRequest generates a request for the DeleteAccountPasswordPolicy operation.
-func (c *IAM) DeleteAccountPasswordPolicyRequest(input *DeleteAccountPasswordPolicyInput) (req *aws.Request, output *DeleteAccountPasswordPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteAccountPasswordPolicy == nil {
-		opDeleteAccountPasswordPolicy = &aws.Operation{
-			Name:       "DeleteAccountPasswordPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteAccountPasswordPolicyRequest(input *DeleteAccountPasswordPolicyInput) (req *service.Request, output *DeleteAccountPasswordPolicyOutput) {
+	op := &service.Operation{
+		Name:       opDeleteAccountPasswordPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteAccountPasswordPolicyInput{}
 	}
 
-	req = c.newRequest(opDeleteAccountPasswordPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteAccountPasswordPolicyOutput{}
 	req.Data = output
 	return
@@ -905,26 +790,21 @@ func (c *IAM) DeleteAccountPasswordPolicy(input *DeleteAccountPasswordPolicyInpu
 	return out, err
 }
 
-var opDeleteAccountPasswordPolicy *aws.Operation
+const opDeleteGroup = "DeleteGroup"
 
 // DeleteGroupRequest generates a request for the DeleteGroup operation.
-func (c *IAM) DeleteGroupRequest(input *DeleteGroupInput) (req *aws.Request, output *DeleteGroupOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteGroup == nil {
-		opDeleteGroup = &aws.Operation{
-			Name:       "DeleteGroup",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteGroupRequest(input *DeleteGroupInput) (req *service.Request, output *DeleteGroupOutput) {
+	op := &service.Operation{
+		Name:       opDeleteGroup,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteGroupInput{}
 	}
 
-	req = c.newRequest(opDeleteGroup, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteGroupOutput{}
 	req.Data = output
 	return
@@ -938,26 +818,21 @@ func (c *IAM) DeleteGroup(input *DeleteGroupInput) (*DeleteGroupOutput, error) {
 	return out, err
 }
 
-var opDeleteGroup *aws.Operation
+const opDeleteGroupPolicy = "DeleteGroupPolicy"
 
 // DeleteGroupPolicyRequest generates a request for the DeleteGroupPolicy operation.
-func (c *IAM) DeleteGroupPolicyRequest(input *DeleteGroupPolicyInput) (req *aws.Request, output *DeleteGroupPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteGroupPolicy == nil {
-		opDeleteGroupPolicy = &aws.Operation{
-			Name:       "DeleteGroupPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteGroupPolicyRequest(input *DeleteGroupPolicyInput) (req *service.Request, output *DeleteGroupPolicyOutput) {
+	op := &service.Operation{
+		Name:       opDeleteGroupPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteGroupPolicyInput{}
 	}
 
-	req = c.newRequest(opDeleteGroupPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteGroupPolicyOutput{}
 	req.Data = output
 	return
@@ -975,26 +850,21 @@ func (c *IAM) DeleteGroupPolicy(input *DeleteGroupPolicyInput) (*DeleteGroupPoli
 	return out, err
 }
 
-var opDeleteGroupPolicy *aws.Operation
+const opDeleteInstanceProfile = "DeleteInstanceProfile"
 
 // DeleteInstanceProfileRequest generates a request for the DeleteInstanceProfile operation.
-func (c *IAM) DeleteInstanceProfileRequest(input *DeleteInstanceProfileInput) (req *aws.Request, output *DeleteInstanceProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteInstanceProfile == nil {
-		opDeleteInstanceProfile = &aws.Operation{
-			Name:       "DeleteInstanceProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteInstanceProfileRequest(input *DeleteInstanceProfileInput) (req *service.Request, output *DeleteInstanceProfileOutput) {
+	op := &service.Operation{
+		Name:       opDeleteInstanceProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteInstanceProfileInput{}
 	}
 
-	req = c.newRequest(opDeleteInstanceProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteInstanceProfileOutput{}
 	req.Data = output
 	return
@@ -1014,26 +884,21 @@ func (c *IAM) DeleteInstanceProfile(input *DeleteInstanceProfileInput) (*DeleteI
 	return out, err
 }
 
-var opDeleteInstanceProfile *aws.Operation
+const opDeleteLoginProfile = "DeleteLoginProfile"
 
 // DeleteLoginProfileRequest generates a request for the DeleteLoginProfile operation.
-func (c *IAM) DeleteLoginProfileRequest(input *DeleteLoginProfileInput) (req *aws.Request, output *DeleteLoginProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteLoginProfile == nil {
-		opDeleteLoginProfile = &aws.Operation{
-			Name:       "DeleteLoginProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteLoginProfileRequest(input *DeleteLoginProfileInput) (req *service.Request, output *DeleteLoginProfileOutput) {
+	op := &service.Operation{
+		Name:       opDeleteLoginProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteLoginProfileInput{}
 	}
 
-	req = c.newRequest(opDeleteLoginProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteLoginProfileOutput{}
 	req.Data = output
 	return
@@ -1052,26 +917,21 @@ func (c *IAM) DeleteLoginProfile(input *DeleteLoginProfileInput) (*DeleteLoginPr
 	return out, err
 }
 
-var opDeleteLoginProfile *aws.Operation
+const opDeleteOpenIDConnectProvider = "DeleteOpenIDConnectProvider"
 
 // DeleteOpenIDConnectProviderRequest generates a request for the DeleteOpenIDConnectProvider operation.
-func (c *IAM) DeleteOpenIDConnectProviderRequest(input *DeleteOpenIDConnectProviderInput) (req *aws.Request, output *DeleteOpenIDConnectProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteOpenIDConnectProvider == nil {
-		opDeleteOpenIDConnectProvider = &aws.Operation{
-			Name:       "DeleteOpenIDConnectProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteOpenIDConnectProviderRequest(input *DeleteOpenIDConnectProviderInput) (req *service.Request, output *DeleteOpenIDConnectProviderOutput) {
+	op := &service.Operation{
+		Name:       opDeleteOpenIDConnectProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteOpenIDConnectProviderInput{}
 	}
 
-	req = c.newRequest(opDeleteOpenIDConnectProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteOpenIDConnectProviderOutput{}
 	req.Data = output
 	return
@@ -1091,26 +951,21 @@ func (c *IAM) DeleteOpenIDConnectProvider(input *DeleteOpenIDConnectProviderInpu
 	return out, err
 }
 
-var opDeleteOpenIDConnectProvider *aws.Operation
+const opDeletePolicy = "DeletePolicy"
 
 // DeletePolicyRequest generates a request for the DeletePolicy operation.
-func (c *IAM) DeletePolicyRequest(input *DeletePolicyInput) (req *aws.Request, output *DeletePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeletePolicy == nil {
-		opDeletePolicy = &aws.Operation{
-			Name:       "DeletePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeletePolicyRequest(input *DeletePolicyInput) (req *service.Request, output *DeletePolicyOutput) {
+	op := &service.Operation{
+		Name:       opDeletePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeletePolicyInput{}
 	}
 
-	req = c.newRequest(opDeletePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeletePolicyOutput{}
 	req.Data = output
 	return
@@ -1140,26 +995,21 @@ func (c *IAM) DeletePolicy(input *DeletePolicyInput) (*DeletePolicyOutput, error
 	return out, err
 }
 
-var opDeletePolicy *aws.Operation
+const opDeletePolicyVersion = "DeletePolicyVersion"
 
 // DeletePolicyVersionRequest generates a request for the DeletePolicyVersion operation.
-func (c *IAM) DeletePolicyVersionRequest(input *DeletePolicyVersionInput) (req *aws.Request, output *DeletePolicyVersionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeletePolicyVersion == nil {
-		opDeletePolicyVersion = &aws.Operation{
-			Name:       "DeletePolicyVersion",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeletePolicyVersionRequest(input *DeletePolicyVersionInput) (req *service.Request, output *DeletePolicyVersionOutput) {
+	op := &service.Operation{
+		Name:       opDeletePolicyVersion,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeletePolicyVersionInput{}
 	}
 
-	req = c.newRequest(opDeletePolicyVersion, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeletePolicyVersionOutput{}
 	req.Data = output
 	return
@@ -1180,26 +1030,21 @@ func (c *IAM) DeletePolicyVersion(input *DeletePolicyVersionInput) (*DeletePolic
 	return out, err
 }
 
-var opDeletePolicyVersion *aws.Operation
+const opDeleteRole = "DeleteRole"
 
 // DeleteRoleRequest generates a request for the DeleteRole operation.
-func (c *IAM) DeleteRoleRequest(input *DeleteRoleInput) (req *aws.Request, output *DeleteRoleOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteRole == nil {
-		opDeleteRole = &aws.Operation{
-			Name:       "DeleteRole",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteRoleRequest(input *DeleteRoleInput) (req *service.Request, output *DeleteRoleOutput) {
+	op := &service.Operation{
+		Name:       opDeleteRole,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteRoleInput{}
 	}
 
-	req = c.newRequest(opDeleteRole, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteRoleOutput{}
 	req.Data = output
 	return
@@ -1217,26 +1062,21 @@ func (c *IAM) DeleteRole(input *DeleteRoleInput) (*DeleteRoleOutput, error) {
 	return out, err
 }
 
-var opDeleteRole *aws.Operation
+const opDeleteRolePolicy = "DeleteRolePolicy"
 
 // DeleteRolePolicyRequest generates a request for the DeleteRolePolicy operation.
-func (c *IAM) DeleteRolePolicyRequest(input *DeleteRolePolicyInput) (req *aws.Request, output *DeleteRolePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteRolePolicy == nil {
-		opDeleteRolePolicy = &aws.Operation{
-			Name:       "DeleteRolePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteRolePolicyRequest(input *DeleteRolePolicyInput) (req *service.Request, output *DeleteRolePolicyOutput) {
+	op := &service.Operation{
+		Name:       opDeleteRolePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteRolePolicyInput{}
 	}
 
-	req = c.newRequest(opDeleteRolePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteRolePolicyOutput{}
 	req.Data = output
 	return
@@ -1254,26 +1094,21 @@ func (c *IAM) DeleteRolePolicy(input *DeleteRolePolicyInput) (*DeleteRolePolicyO
 	return out, err
 }
 
-var opDeleteRolePolicy *aws.Operation
+const opDeleteSAMLProvider = "DeleteSAMLProvider"
 
 // DeleteSAMLProviderRequest generates a request for the DeleteSAMLProvider operation.
-func (c *IAM) DeleteSAMLProviderRequest(input *DeleteSAMLProviderInput) (req *aws.Request, output *DeleteSAMLProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteSAMLProvider == nil {
-		opDeleteSAMLProvider = &aws.Operation{
-			Name:       "DeleteSAMLProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteSAMLProviderRequest(input *DeleteSAMLProviderInput) (req *service.Request, output *DeleteSAMLProviderOutput) {
+	op := &service.Operation{
+		Name:       opDeleteSAMLProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteSAMLProviderInput{}
 	}
 
-	req = c.newRequest(opDeleteSAMLProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteSAMLProviderOutput{}
 	req.Data = output
 	return
@@ -1292,26 +1127,54 @@ func (c *IAM) DeleteSAMLProvider(input *DeleteSAMLProviderInput) (*DeleteSAMLPro
 	return out, err
 }
 
-var opDeleteSAMLProvider *aws.Operation
+const opDeleteSSHPublicKey = "DeleteSSHPublicKey"
+
+// DeleteSSHPublicKeyRequest generates a request for the DeleteSSHPublicKey operation.
+func (c *IAM) DeleteSSHPublicKeyRequest(input *DeleteSSHPublicKeyInput) (req *service.Request, output *DeleteSSHPublicKeyOutput) {
+	op := &service.Operation{
+		Name:       opDeleteSSHPublicKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &DeleteSSHPublicKeyInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &DeleteSSHPublicKeyOutput{}
+	req.Data = output
+	return
+}
+
+// Deletes the specified SSH public key.
+//
+// The SSH public key deleted by this action is used only for authenticating
+// the associated IAM user to an AWS CodeCommit repository. For more information
+// about using SSH keys to authenticate to an AWS CodeCommit repository, see
+// Set up AWS CodeCommit for SSH Connections (http://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-credentials-ssh.html)
+// in the AWS CodeCommit User Guide.
+func (c *IAM) DeleteSSHPublicKey(input *DeleteSSHPublicKeyInput) (*DeleteSSHPublicKeyOutput, error) {
+	req, out := c.DeleteSSHPublicKeyRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opDeleteServerCertificate = "DeleteServerCertificate"
 
 // DeleteServerCertificateRequest generates a request for the DeleteServerCertificate operation.
-func (c *IAM) DeleteServerCertificateRequest(input *DeleteServerCertificateInput) (req *aws.Request, output *DeleteServerCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteServerCertificate == nil {
-		opDeleteServerCertificate = &aws.Operation{
-			Name:       "DeleteServerCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteServerCertificateRequest(input *DeleteServerCertificateInput) (req *service.Request, output *DeleteServerCertificateOutput) {
+	op := &service.Operation{
+		Name:       opDeleteServerCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteServerCertificateInput{}
 	}
 
-	req = c.newRequest(opDeleteServerCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteServerCertificateOutput{}
 	req.Data = output
 	return
@@ -1334,26 +1197,21 @@ func (c *IAM) DeleteServerCertificate(input *DeleteServerCertificateInput) (*Del
 	return out, err
 }
 
-var opDeleteServerCertificate *aws.Operation
+const opDeleteSigningCertificate = "DeleteSigningCertificate"
 
 // DeleteSigningCertificateRequest generates a request for the DeleteSigningCertificate operation.
-func (c *IAM) DeleteSigningCertificateRequest(input *DeleteSigningCertificateInput) (req *aws.Request, output *DeleteSigningCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteSigningCertificate == nil {
-		opDeleteSigningCertificate = &aws.Operation{
-			Name:       "DeleteSigningCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteSigningCertificateRequest(input *DeleteSigningCertificateInput) (req *service.Request, output *DeleteSigningCertificateOutput) {
+	op := &service.Operation{
+		Name:       opDeleteSigningCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteSigningCertificateInput{}
 	}
 
-	req = c.newRequest(opDeleteSigningCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteSigningCertificateOutput{}
 	req.Data = output
 	return
@@ -1371,26 +1229,21 @@ func (c *IAM) DeleteSigningCertificate(input *DeleteSigningCertificateInput) (*D
 	return out, err
 }
 
-var opDeleteSigningCertificate *aws.Operation
+const opDeleteUser = "DeleteUser"
 
 // DeleteUserRequest generates a request for the DeleteUser operation.
-func (c *IAM) DeleteUserRequest(input *DeleteUserInput) (req *aws.Request, output *DeleteUserOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteUser == nil {
-		opDeleteUser = &aws.Operation{
-			Name:       "DeleteUser",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteUserRequest(input *DeleteUserInput) (req *service.Request, output *DeleteUserOutput) {
+	op := &service.Operation{
+		Name:       opDeleteUser,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteUserInput{}
 	}
 
-	req = c.newRequest(opDeleteUser, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteUserOutput{}
 	req.Data = output
 	return
@@ -1404,26 +1257,21 @@ func (c *IAM) DeleteUser(input *DeleteUserInput) (*DeleteUserOutput, error) {
 	return out, err
 }
 
-var opDeleteUser *aws.Operation
+const opDeleteUserPolicy = "DeleteUserPolicy"
 
 // DeleteUserPolicyRequest generates a request for the DeleteUserPolicy operation.
-func (c *IAM) DeleteUserPolicyRequest(input *DeleteUserPolicyInput) (req *aws.Request, output *DeleteUserPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteUserPolicy == nil {
-		opDeleteUserPolicy = &aws.Operation{
-			Name:       "DeleteUserPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteUserPolicyRequest(input *DeleteUserPolicyInput) (req *service.Request, output *DeleteUserPolicyOutput) {
+	op := &service.Operation{
+		Name:       opDeleteUserPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteUserPolicyInput{}
 	}
 
-	req = c.newRequest(opDeleteUserPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteUserPolicyOutput{}
 	req.Data = output
 	return
@@ -1441,26 +1289,21 @@ func (c *IAM) DeleteUserPolicy(input *DeleteUserPolicyInput) (*DeleteUserPolicyO
 	return out, err
 }
 
-var opDeleteUserPolicy *aws.Operation
+const opDeleteVirtualMFADevice = "DeleteVirtualMFADevice"
 
 // DeleteVirtualMFADeviceRequest generates a request for the DeleteVirtualMFADevice operation.
-func (c *IAM) DeleteVirtualMFADeviceRequest(input *DeleteVirtualMFADeviceInput) (req *aws.Request, output *DeleteVirtualMFADeviceOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteVirtualMFADevice == nil {
-		opDeleteVirtualMFADevice = &aws.Operation{
-			Name:       "DeleteVirtualMFADevice",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DeleteVirtualMFADeviceRequest(input *DeleteVirtualMFADeviceInput) (req *service.Request, output *DeleteVirtualMFADeviceOutput) {
+	op := &service.Operation{
+		Name:       opDeleteVirtualMFADevice,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteVirtualMFADeviceInput{}
 	}
 
-	req = c.newRequest(opDeleteVirtualMFADevice, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteVirtualMFADeviceOutput{}
 	req.Data = output
 	return
@@ -1476,26 +1319,21 @@ func (c *IAM) DeleteVirtualMFADevice(input *DeleteVirtualMFADeviceInput) (*Delet
 	return out, err
 }
 
-var opDeleteVirtualMFADevice *aws.Operation
+const opDetachGroupPolicy = "DetachGroupPolicy"
 
 // DetachGroupPolicyRequest generates a request for the DetachGroupPolicy operation.
-func (c *IAM) DetachGroupPolicyRequest(input *DetachGroupPolicyInput) (req *aws.Request, output *DetachGroupPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDetachGroupPolicy == nil {
-		opDetachGroupPolicy = &aws.Operation{
-			Name:       "DetachGroupPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DetachGroupPolicyRequest(input *DetachGroupPolicyInput) (req *service.Request, output *DetachGroupPolicyOutput) {
+	op := &service.Operation{
+		Name:       opDetachGroupPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DetachGroupPolicyInput{}
 	}
 
-	req = c.newRequest(opDetachGroupPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DetachGroupPolicyOutput{}
 	req.Data = output
 	return
@@ -1513,26 +1351,21 @@ func (c *IAM) DetachGroupPolicy(input *DetachGroupPolicyInput) (*DetachGroupPoli
 	return out, err
 }
 
-var opDetachGroupPolicy *aws.Operation
+const opDetachRolePolicy = "DetachRolePolicy"
 
 // DetachRolePolicyRequest generates a request for the DetachRolePolicy operation.
-func (c *IAM) DetachRolePolicyRequest(input *DetachRolePolicyInput) (req *aws.Request, output *DetachRolePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDetachRolePolicy == nil {
-		opDetachRolePolicy = &aws.Operation{
-			Name:       "DetachRolePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DetachRolePolicyRequest(input *DetachRolePolicyInput) (req *service.Request, output *DetachRolePolicyOutput) {
+	op := &service.Operation{
+		Name:       opDetachRolePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DetachRolePolicyInput{}
 	}
 
-	req = c.newRequest(opDetachRolePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DetachRolePolicyOutput{}
 	req.Data = output
 	return
@@ -1550,26 +1383,21 @@ func (c *IAM) DetachRolePolicy(input *DetachRolePolicyInput) (*DetachRolePolicyO
 	return out, err
 }
 
-var opDetachRolePolicy *aws.Operation
+const opDetachUserPolicy = "DetachUserPolicy"
 
 // DetachUserPolicyRequest generates a request for the DetachUserPolicy operation.
-func (c *IAM) DetachUserPolicyRequest(input *DetachUserPolicyInput) (req *aws.Request, output *DetachUserPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDetachUserPolicy == nil {
-		opDetachUserPolicy = &aws.Operation{
-			Name:       "DetachUserPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) DetachUserPolicyRequest(input *DetachUserPolicyInput) (req *service.Request, output *DetachUserPolicyOutput) {
+	op := &service.Operation{
+		Name:       opDetachUserPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DetachUserPolicyInput{}
 	}
 
-	req = c.newRequest(opDetachUserPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DetachUserPolicyOutput{}
 	req.Data = output
 	return
@@ -1587,26 +1415,21 @@ func (c *IAM) DetachUserPolicy(input *DetachUserPolicyInput) (*DetachUserPolicyO
 	return out, err
 }
 
-var opDetachUserPolicy *aws.Operation
+const opEnableMFADevice = "EnableMFADevice"
 
 // EnableMFADeviceRequest generates a request for the EnableMFADevice operation.
-func (c *IAM) EnableMFADeviceRequest(input *EnableMFADeviceInput) (req *aws.Request, output *EnableMFADeviceOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opEnableMFADevice == nil {
-		opEnableMFADevice = &aws.Operation{
-			Name:       "EnableMFADevice",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) EnableMFADeviceRequest(input *EnableMFADeviceInput) (req *service.Request, output *EnableMFADeviceOutput) {
+	op := &service.Operation{
+		Name:       opEnableMFADevice,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &EnableMFADeviceInput{}
 	}
 
-	req = c.newRequest(opEnableMFADevice, input, output)
+	req = c.newRequest(op, input, output)
 	output = &EnableMFADeviceOutput{}
 	req.Data = output
 	return
@@ -1621,26 +1444,21 @@ func (c *IAM) EnableMFADevice(input *EnableMFADeviceInput) (*EnableMFADeviceOutp
 	return out, err
 }
 
-var opEnableMFADevice *aws.Operation
+const opGenerateCredentialReport = "GenerateCredentialReport"
 
 // GenerateCredentialReportRequest generates a request for the GenerateCredentialReport operation.
-func (c *IAM) GenerateCredentialReportRequest(input *GenerateCredentialReportInput) (req *aws.Request, output *GenerateCredentialReportOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGenerateCredentialReport == nil {
-		opGenerateCredentialReport = &aws.Operation{
-			Name:       "GenerateCredentialReport",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GenerateCredentialReportRequest(input *GenerateCredentialReportInput) (req *service.Request, output *GenerateCredentialReportOutput) {
+	op := &service.Operation{
+		Name:       opGenerateCredentialReport,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GenerateCredentialReportInput{}
 	}
 
-	req = c.newRequest(opGenerateCredentialReport, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GenerateCredentialReportOutput{}
 	req.Data = output
 	return
@@ -1655,26 +1473,21 @@ func (c *IAM) GenerateCredentialReport(input *GenerateCredentialReportInput) (*G
 	return out, err
 }
 
-var opGenerateCredentialReport *aws.Operation
+const opGetAccessKeyLastUsed = "GetAccessKeyLastUsed"
 
 // GetAccessKeyLastUsedRequest generates a request for the GetAccessKeyLastUsed operation.
-func (c *IAM) GetAccessKeyLastUsedRequest(input *GetAccessKeyLastUsedInput) (req *aws.Request, output *GetAccessKeyLastUsedOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetAccessKeyLastUsed == nil {
-		opGetAccessKeyLastUsed = &aws.Operation{
-			Name:       "GetAccessKeyLastUsed",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetAccessKeyLastUsedRequest(input *GetAccessKeyLastUsedInput) (req *service.Request, output *GetAccessKeyLastUsedOutput) {
+	op := &service.Operation{
+		Name:       opGetAccessKeyLastUsed,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetAccessKeyLastUsedInput{}
 	}
 
-	req = c.newRequest(opGetAccessKeyLastUsed, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetAccessKeyLastUsedOutput{}
 	req.Data = output
 	return
@@ -1690,32 +1503,27 @@ func (c *IAM) GetAccessKeyLastUsed(input *GetAccessKeyLastUsedInput) (*GetAccess
 	return out, err
 }
 
-var opGetAccessKeyLastUsed *aws.Operation
+const opGetAccountAuthorizationDetails = "GetAccountAuthorizationDetails"
 
 // GetAccountAuthorizationDetailsRequest generates a request for the GetAccountAuthorizationDetails operation.
-func (c *IAM) GetAccountAuthorizationDetailsRequest(input *GetAccountAuthorizationDetailsInput) (req *aws.Request, output *GetAccountAuthorizationDetailsOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetAccountAuthorizationDetails == nil {
-		opGetAccountAuthorizationDetails = &aws.Operation{
-			Name:       "GetAccountAuthorizationDetails",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) GetAccountAuthorizationDetailsRequest(input *GetAccountAuthorizationDetailsInput) (req *service.Request, output *GetAccountAuthorizationDetailsOutput) {
+	op := &service.Operation{
+		Name:       opGetAccountAuthorizationDetails,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &GetAccountAuthorizationDetailsInput{}
 	}
 
-	req = c.newRequest(opGetAccountAuthorizationDetails, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetAccountAuthorizationDetailsOutput{}
 	req.Data = output
 	return
@@ -1741,26 +1549,21 @@ func (c *IAM) GetAccountAuthorizationDetailsPages(input *GetAccountAuthorization
 	})
 }
 
-var opGetAccountAuthorizationDetails *aws.Operation
+const opGetAccountPasswordPolicy = "GetAccountPasswordPolicy"
 
 // GetAccountPasswordPolicyRequest generates a request for the GetAccountPasswordPolicy operation.
-func (c *IAM) GetAccountPasswordPolicyRequest(input *GetAccountPasswordPolicyInput) (req *aws.Request, output *GetAccountPasswordPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetAccountPasswordPolicy == nil {
-		opGetAccountPasswordPolicy = &aws.Operation{
-			Name:       "GetAccountPasswordPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetAccountPasswordPolicyRequest(input *GetAccountPasswordPolicyInput) (req *service.Request, output *GetAccountPasswordPolicyOutput) {
+	op := &service.Operation{
+		Name:       opGetAccountPasswordPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetAccountPasswordPolicyInput{}
 	}
 
-	req = c.newRequest(opGetAccountPasswordPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetAccountPasswordPolicyOutput{}
 	req.Data = output
 	return
@@ -1774,26 +1577,21 @@ func (c *IAM) GetAccountPasswordPolicy(input *GetAccountPasswordPolicyInput) (*G
 	return out, err
 }
 
-var opGetAccountPasswordPolicy *aws.Operation
+const opGetAccountSummary = "GetAccountSummary"
 
 // GetAccountSummaryRequest generates a request for the GetAccountSummary operation.
-func (c *IAM) GetAccountSummaryRequest(input *GetAccountSummaryInput) (req *aws.Request, output *GetAccountSummaryOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetAccountSummary == nil {
-		opGetAccountSummary = &aws.Operation{
-			Name:       "GetAccountSummary",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetAccountSummaryRequest(input *GetAccountSummaryInput) (req *service.Request, output *GetAccountSummaryOutput) {
+	op := &service.Operation{
+		Name:       opGetAccountSummary,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetAccountSummaryInput{}
 	}
 
-	req = c.newRequest(opGetAccountSummary, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetAccountSummaryOutput{}
 	req.Data = output
 	return
@@ -1810,26 +1608,21 @@ func (c *IAM) GetAccountSummary(input *GetAccountSummaryInput) (*GetAccountSumma
 	return out, err
 }
 
-var opGetAccountSummary *aws.Operation
+const opGetCredentialReport = "GetCredentialReport"
 
 // GetCredentialReportRequest generates a request for the GetCredentialReport operation.
-func (c *IAM) GetCredentialReportRequest(input *GetCredentialReportInput) (req *aws.Request, output *GetCredentialReportOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetCredentialReport == nil {
-		opGetCredentialReport = &aws.Operation{
-			Name:       "GetCredentialReport",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetCredentialReportRequest(input *GetCredentialReportInput) (req *service.Request, output *GetCredentialReportOutput) {
+	op := &service.Operation{
+		Name:       opGetCredentialReport,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetCredentialReportInput{}
 	}
 
-	req = c.newRequest(opGetCredentialReport, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetCredentialReportOutput{}
 	req.Data = output
 	return
@@ -1844,32 +1637,27 @@ func (c *IAM) GetCredentialReport(input *GetCredentialReportInput) (*GetCredenti
 	return out, err
 }
 
-var opGetCredentialReport *aws.Operation
+const opGetGroup = "GetGroup"
 
 // GetGroupRequest generates a request for the GetGroup operation.
-func (c *IAM) GetGroupRequest(input *GetGroupInput) (req *aws.Request, output *GetGroupOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetGroup == nil {
-		opGetGroup = &aws.Operation{
-			Name:       "GetGroup",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) GetGroupRequest(input *GetGroupInput) (req *service.Request, output *GetGroupOutput) {
+	op := &service.Operation{
+		Name:       opGetGroup,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &GetGroupInput{}
 	}
 
-	req = c.newRequest(opGetGroup, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetGroupOutput{}
 	req.Data = output
 	return
@@ -1890,26 +1678,21 @@ func (c *IAM) GetGroupPages(input *GetGroupInput, fn func(p *GetGroupOutput, las
 	})
 }
 
-var opGetGroup *aws.Operation
+const opGetGroupPolicy = "GetGroupPolicy"
 
 // GetGroupPolicyRequest generates a request for the GetGroupPolicy operation.
-func (c *IAM) GetGroupPolicyRequest(input *GetGroupPolicyInput) (req *aws.Request, output *GetGroupPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetGroupPolicy == nil {
-		opGetGroupPolicy = &aws.Operation{
-			Name:       "GetGroupPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetGroupPolicyRequest(input *GetGroupPolicyInput) (req *service.Request, output *GetGroupPolicyOutput) {
+	op := &service.Operation{
+		Name:       opGetGroupPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetGroupPolicyInput{}
 	}
 
-	req = c.newRequest(opGetGroupPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetGroupPolicyOutput{}
 	req.Data = output
 	return
@@ -1932,26 +1715,21 @@ func (c *IAM) GetGroupPolicy(input *GetGroupPolicyInput) (*GetGroupPolicyOutput,
 	return out, err
 }
 
-var opGetGroupPolicy *aws.Operation
+const opGetInstanceProfile = "GetInstanceProfile"
 
 // GetInstanceProfileRequest generates a request for the GetInstanceProfile operation.
-func (c *IAM) GetInstanceProfileRequest(input *GetInstanceProfileInput) (req *aws.Request, output *GetInstanceProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetInstanceProfile == nil {
-		opGetInstanceProfile = &aws.Operation{
-			Name:       "GetInstanceProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetInstanceProfileRequest(input *GetInstanceProfileInput) (req *service.Request, output *GetInstanceProfileOutput) {
+	op := &service.Operation{
+		Name:       opGetInstanceProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetInstanceProfileInput{}
 	}
 
-	req = c.newRequest(opGetInstanceProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetInstanceProfileOutput{}
 	req.Data = output
 	return
@@ -1967,26 +1745,21 @@ func (c *IAM) GetInstanceProfile(input *GetInstanceProfileInput) (*GetInstancePr
 	return out, err
 }
 
-var opGetInstanceProfile *aws.Operation
+const opGetLoginProfile = "GetLoginProfile"
 
 // GetLoginProfileRequest generates a request for the GetLoginProfile operation.
-func (c *IAM) GetLoginProfileRequest(input *GetLoginProfileInput) (req *aws.Request, output *GetLoginProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetLoginProfile == nil {
-		opGetLoginProfile = &aws.Operation{
-			Name:       "GetLoginProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetLoginProfileRequest(input *GetLoginProfileInput) (req *service.Request, output *GetLoginProfileOutput) {
+	op := &service.Operation{
+		Name:       opGetLoginProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetLoginProfileInput{}
 	}
 
-	req = c.newRequest(opGetLoginProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetLoginProfileOutput{}
 	req.Data = output
 	return
@@ -2001,26 +1774,21 @@ func (c *IAM) GetLoginProfile(input *GetLoginProfileInput) (*GetLoginProfileOutp
 	return out, err
 }
 
-var opGetLoginProfile *aws.Operation
+const opGetOpenIDConnectProvider = "GetOpenIDConnectProvider"
 
 // GetOpenIDConnectProviderRequest generates a request for the GetOpenIDConnectProvider operation.
-func (c *IAM) GetOpenIDConnectProviderRequest(input *GetOpenIDConnectProviderInput) (req *aws.Request, output *GetOpenIDConnectProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetOpenIDConnectProvider == nil {
-		opGetOpenIDConnectProvider = &aws.Operation{
-			Name:       "GetOpenIDConnectProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetOpenIDConnectProviderRequest(input *GetOpenIDConnectProviderInput) (req *service.Request, output *GetOpenIDConnectProviderOutput) {
+	op := &service.Operation{
+		Name:       opGetOpenIDConnectProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetOpenIDConnectProviderInput{}
 	}
 
-	req = c.newRequest(opGetOpenIDConnectProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetOpenIDConnectProviderOutput{}
 	req.Data = output
 	return
@@ -2033,26 +1801,21 @@ func (c *IAM) GetOpenIDConnectProvider(input *GetOpenIDConnectProviderInput) (*G
 	return out, err
 }
 
-var opGetOpenIDConnectProvider *aws.Operation
+const opGetPolicy = "GetPolicy"
 
 // GetPolicyRequest generates a request for the GetPolicy operation.
-func (c *IAM) GetPolicyRequest(input *GetPolicyInput) (req *aws.Request, output *GetPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetPolicy == nil {
-		opGetPolicy = &aws.Operation{
-			Name:       "GetPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetPolicyRequest(input *GetPolicyInput) (req *service.Request, output *GetPolicyOutput) {
+	op := &service.Operation{
+		Name:       opGetPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetPolicyInput{}
 	}
 
-	req = c.newRequest(opGetPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetPolicyOutput{}
 	req.Data = output
 	return
@@ -2078,26 +1841,21 @@ func (c *IAM) GetPolicy(input *GetPolicyInput) (*GetPolicyOutput, error) {
 	return out, err
 }
 
-var opGetPolicy *aws.Operation
+const opGetPolicyVersion = "GetPolicyVersion"
 
 // GetPolicyVersionRequest generates a request for the GetPolicyVersion operation.
-func (c *IAM) GetPolicyVersionRequest(input *GetPolicyVersionInput) (req *aws.Request, output *GetPolicyVersionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetPolicyVersion == nil {
-		opGetPolicyVersion = &aws.Operation{
-			Name:       "GetPolicyVersion",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetPolicyVersionRequest(input *GetPolicyVersionInput) (req *service.Request, output *GetPolicyVersionOutput) {
+	op := &service.Operation{
+		Name:       opGetPolicyVersion,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetPolicyVersionInput{}
 	}
 
-	req = c.newRequest(opGetPolicyVersion, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetPolicyVersionOutput{}
 	req.Data = output
 	return
@@ -2121,26 +1879,21 @@ func (c *IAM) GetPolicyVersion(input *GetPolicyVersionInput) (*GetPolicyVersionO
 	return out, err
 }
 
-var opGetPolicyVersion *aws.Operation
+const opGetRole = "GetRole"
 
 // GetRoleRequest generates a request for the GetRole operation.
-func (c *IAM) GetRoleRequest(input *GetRoleInput) (req *aws.Request, output *GetRoleOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetRole == nil {
-		opGetRole = &aws.Operation{
-			Name:       "GetRole",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetRoleRequest(input *GetRoleInput) (req *service.Request, output *GetRoleOutput) {
+	op := &service.Operation{
+		Name:       opGetRole,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetRoleInput{}
 	}
 
-	req = c.newRequest(opGetRole, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetRoleOutput{}
 	req.Data = output
 	return
@@ -2156,26 +1909,21 @@ func (c *IAM) GetRole(input *GetRoleInput) (*GetRoleOutput, error) {
 	return out, err
 }
 
-var opGetRole *aws.Operation
+const opGetRolePolicy = "GetRolePolicy"
 
 // GetRolePolicyRequest generates a request for the GetRolePolicy operation.
-func (c *IAM) GetRolePolicyRequest(input *GetRolePolicyInput) (req *aws.Request, output *GetRolePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetRolePolicy == nil {
-		opGetRolePolicy = &aws.Operation{
-			Name:       "GetRolePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetRolePolicyRequest(input *GetRolePolicyInput) (req *service.Request, output *GetRolePolicyOutput) {
+	op := &service.Operation{
+		Name:       opGetRolePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetRolePolicyInput{}
 	}
 
-	req = c.newRequest(opGetRolePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetRolePolicyOutput{}
 	req.Data = output
 	return
@@ -2201,26 +1949,21 @@ func (c *IAM) GetRolePolicy(input *GetRolePolicyInput) (*GetRolePolicyOutput, er
 	return out, err
 }
 
-var opGetRolePolicy *aws.Operation
+const opGetSAMLProvider = "GetSAMLProvider"
 
 // GetSAMLProviderRequest generates a request for the GetSAMLProvider operation.
-func (c *IAM) GetSAMLProviderRequest(input *GetSAMLProviderInput) (req *aws.Request, output *GetSAMLProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetSAMLProvider == nil {
-		opGetSAMLProvider = &aws.Operation{
-			Name:       "GetSAMLProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetSAMLProviderRequest(input *GetSAMLProviderInput) (req *service.Request, output *GetSAMLProviderOutput) {
+	op := &service.Operation{
+		Name:       opGetSAMLProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetSAMLProviderInput{}
 	}
 
-	req = c.newRequest(opGetSAMLProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetSAMLProviderOutput{}
 	req.Data = output
 	return
@@ -2236,26 +1979,54 @@ func (c *IAM) GetSAMLProvider(input *GetSAMLProviderInput) (*GetSAMLProviderOutp
 	return out, err
 }
 
-var opGetSAMLProvider *aws.Operation
+const opGetSSHPublicKey = "GetSSHPublicKey"
+
+// GetSSHPublicKeyRequest generates a request for the GetSSHPublicKey operation.
+func (c *IAM) GetSSHPublicKeyRequest(input *GetSSHPublicKeyInput) (req *service.Request, output *GetSSHPublicKeyOutput) {
+	op := &service.Operation{
+		Name:       opGetSSHPublicKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &GetSSHPublicKeyInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &GetSSHPublicKeyOutput{}
+	req.Data = output
+	return
+}
+
+// Retrieves the specified SSH public key, including metadata about the key.
+//
+// The SSH public key retrieved by this action is used only for authenticating
+// the associated IAM user to an AWS CodeCommit repository. For more information
+// about using SSH keys to authenticate to an AWS CodeCommit repository, see
+// Set up AWS CodeCommit for SSH Connections (http://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-credentials-ssh.html)
+// in the AWS CodeCommit User Guide.
+func (c *IAM) GetSSHPublicKey(input *GetSSHPublicKeyInput) (*GetSSHPublicKeyOutput, error) {
+	req, out := c.GetSSHPublicKeyRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opGetServerCertificate = "GetServerCertificate"
 
 // GetServerCertificateRequest generates a request for the GetServerCertificate operation.
-func (c *IAM) GetServerCertificateRequest(input *GetServerCertificateInput) (req *aws.Request, output *GetServerCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetServerCertificate == nil {
-		opGetServerCertificate = &aws.Operation{
-			Name:       "GetServerCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetServerCertificateRequest(input *GetServerCertificateInput) (req *service.Request, output *GetServerCertificateOutput) {
+	op := &service.Operation{
+		Name:       opGetServerCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetServerCertificateInput{}
 	}
 
-	req = c.newRequest(opGetServerCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetServerCertificateOutput{}
 	req.Data = output
 	return
@@ -2268,26 +2039,21 @@ func (c *IAM) GetServerCertificate(input *GetServerCertificateInput) (*GetServer
 	return out, err
 }
 
-var opGetServerCertificate *aws.Operation
+const opGetUser = "GetUser"
 
 // GetUserRequest generates a request for the GetUser operation.
-func (c *IAM) GetUserRequest(input *GetUserInput) (req *aws.Request, output *GetUserOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetUser == nil {
-		opGetUser = &aws.Operation{
-			Name:       "GetUser",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetUserRequest(input *GetUserInput) (req *service.Request, output *GetUserOutput) {
+	op := &service.Operation{
+		Name:       opGetUser,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetUserInput{}
 	}
 
-	req = c.newRequest(opGetUser, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetUserOutput{}
 	req.Data = output
 	return
@@ -2304,26 +2070,21 @@ func (c *IAM) GetUser(input *GetUserInput) (*GetUserOutput, error) {
 	return out, err
 }
 
-var opGetUser *aws.Operation
+const opGetUserPolicy = "GetUserPolicy"
 
 // GetUserPolicyRequest generates a request for the GetUserPolicy operation.
-func (c *IAM) GetUserPolicyRequest(input *GetUserPolicyInput) (req *aws.Request, output *GetUserPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetUserPolicy == nil {
-		opGetUserPolicy = &aws.Operation{
-			Name:       "GetUserPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) GetUserPolicyRequest(input *GetUserPolicyInput) (req *service.Request, output *GetUserPolicyOutput) {
+	op := &service.Operation{
+		Name:       opGetUserPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetUserPolicyInput{}
 	}
 
-	req = c.newRequest(opGetUserPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetUserPolicyOutput{}
 	req.Data = output
 	return
@@ -2346,32 +2107,27 @@ func (c *IAM) GetUserPolicy(input *GetUserPolicyInput) (*GetUserPolicyOutput, er
 	return out, err
 }
 
-var opGetUserPolicy *aws.Operation
+const opListAccessKeys = "ListAccessKeys"
 
 // ListAccessKeysRequest generates a request for the ListAccessKeys operation.
-func (c *IAM) ListAccessKeysRequest(input *ListAccessKeysInput) (req *aws.Request, output *ListAccessKeysOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListAccessKeys == nil {
-		opListAccessKeys = &aws.Operation{
-			Name:       "ListAccessKeys",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListAccessKeysRequest(input *ListAccessKeysInput) (req *service.Request, output *ListAccessKeysOutput) {
+	op := &service.Operation{
+		Name:       opListAccessKeys,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListAccessKeysInput{}
 	}
 
-	req = c.newRequest(opListAccessKeys, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListAccessKeysOutput{}
 	req.Data = output
 	return
@@ -2403,32 +2159,27 @@ func (c *IAM) ListAccessKeysPages(input *ListAccessKeysInput, fn func(p *ListAcc
 	})
 }
 
-var opListAccessKeys *aws.Operation
+const opListAccountAliases = "ListAccountAliases"
 
 // ListAccountAliasesRequest generates a request for the ListAccountAliases operation.
-func (c *IAM) ListAccountAliasesRequest(input *ListAccountAliasesInput) (req *aws.Request, output *ListAccountAliasesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListAccountAliases == nil {
-		opListAccountAliases = &aws.Operation{
-			Name:       "ListAccountAliases",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListAccountAliasesRequest(input *ListAccountAliasesInput) (req *service.Request, output *ListAccountAliasesOutput) {
+	op := &service.Operation{
+		Name:       opListAccountAliases,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListAccountAliasesInput{}
 	}
 
-	req = c.newRequest(opListAccountAliases, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListAccountAliasesOutput{}
 	req.Data = output
 	return
@@ -2452,26 +2203,27 @@ func (c *IAM) ListAccountAliasesPages(input *ListAccountAliasesInput, fn func(p 
 	})
 }
 
-var opListAccountAliases *aws.Operation
+const opListAttachedGroupPolicies = "ListAttachedGroupPolicies"
 
 // ListAttachedGroupPoliciesRequest generates a request for the ListAttachedGroupPolicies operation.
-func (c *IAM) ListAttachedGroupPoliciesRequest(input *ListAttachedGroupPoliciesInput) (req *aws.Request, output *ListAttachedGroupPoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListAttachedGroupPolicies == nil {
-		opListAttachedGroupPolicies = &aws.Operation{
-			Name:       "ListAttachedGroupPolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListAttachedGroupPoliciesRequest(input *ListAttachedGroupPoliciesInput) (req *service.Request, output *ListAttachedGroupPoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListAttachedGroupPolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListAttachedGroupPoliciesInput{}
 	}
 
-	req = c.newRequest(opListAttachedGroupPolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListAttachedGroupPoliciesOutput{}
 	req.Data = output
 	return
@@ -2495,26 +2247,34 @@ func (c *IAM) ListAttachedGroupPolicies(input *ListAttachedGroupPoliciesInput) (
 	return out, err
 }
 
-var opListAttachedGroupPolicies *aws.Operation
+func (c *IAM) ListAttachedGroupPoliciesPages(input *ListAttachedGroupPoliciesInput, fn func(p *ListAttachedGroupPoliciesOutput, lastPage bool) (shouldContinue bool)) error {
+	page, _ := c.ListAttachedGroupPoliciesRequest(input)
+	return page.EachPage(func(p interface{}, lastPage bool) bool {
+		return fn(p.(*ListAttachedGroupPoliciesOutput), lastPage)
+	})
+}
+
+const opListAttachedRolePolicies = "ListAttachedRolePolicies"
 
 // ListAttachedRolePoliciesRequest generates a request for the ListAttachedRolePolicies operation.
-func (c *IAM) ListAttachedRolePoliciesRequest(input *ListAttachedRolePoliciesInput) (req *aws.Request, output *ListAttachedRolePoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListAttachedRolePolicies == nil {
-		opListAttachedRolePolicies = &aws.Operation{
-			Name:       "ListAttachedRolePolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListAttachedRolePoliciesRequest(input *ListAttachedRolePoliciesInput) (req *service.Request, output *ListAttachedRolePoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListAttachedRolePolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListAttachedRolePoliciesInput{}
 	}
 
-	req = c.newRequest(opListAttachedRolePolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListAttachedRolePoliciesOutput{}
 	req.Data = output
 	return
@@ -2538,26 +2298,34 @@ func (c *IAM) ListAttachedRolePolicies(input *ListAttachedRolePoliciesInput) (*L
 	return out, err
 }
 
-var opListAttachedRolePolicies *aws.Operation
+func (c *IAM) ListAttachedRolePoliciesPages(input *ListAttachedRolePoliciesInput, fn func(p *ListAttachedRolePoliciesOutput, lastPage bool) (shouldContinue bool)) error {
+	page, _ := c.ListAttachedRolePoliciesRequest(input)
+	return page.EachPage(func(p interface{}, lastPage bool) bool {
+		return fn(p.(*ListAttachedRolePoliciesOutput), lastPage)
+	})
+}
+
+const opListAttachedUserPolicies = "ListAttachedUserPolicies"
 
 // ListAttachedUserPoliciesRequest generates a request for the ListAttachedUserPolicies operation.
-func (c *IAM) ListAttachedUserPoliciesRequest(input *ListAttachedUserPoliciesInput) (req *aws.Request, output *ListAttachedUserPoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListAttachedUserPolicies == nil {
-		opListAttachedUserPolicies = &aws.Operation{
-			Name:       "ListAttachedUserPolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListAttachedUserPoliciesRequest(input *ListAttachedUserPoliciesInput) (req *service.Request, output *ListAttachedUserPoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListAttachedUserPolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListAttachedUserPoliciesInput{}
 	}
 
-	req = c.newRequest(opListAttachedUserPolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListAttachedUserPoliciesOutput{}
 	req.Data = output
 	return
@@ -2581,26 +2349,34 @@ func (c *IAM) ListAttachedUserPolicies(input *ListAttachedUserPoliciesInput) (*L
 	return out, err
 }
 
-var opListAttachedUserPolicies *aws.Operation
+func (c *IAM) ListAttachedUserPoliciesPages(input *ListAttachedUserPoliciesInput, fn func(p *ListAttachedUserPoliciesOutput, lastPage bool) (shouldContinue bool)) error {
+	page, _ := c.ListAttachedUserPoliciesRequest(input)
+	return page.EachPage(func(p interface{}, lastPage bool) bool {
+		return fn(p.(*ListAttachedUserPoliciesOutput), lastPage)
+	})
+}
+
+const opListEntitiesForPolicy = "ListEntitiesForPolicy"
 
 // ListEntitiesForPolicyRequest generates a request for the ListEntitiesForPolicy operation.
-func (c *IAM) ListEntitiesForPolicyRequest(input *ListEntitiesForPolicyInput) (req *aws.Request, output *ListEntitiesForPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListEntitiesForPolicy == nil {
-		opListEntitiesForPolicy = &aws.Operation{
-			Name:       "ListEntitiesForPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListEntitiesForPolicyRequest(input *ListEntitiesForPolicyInput) (req *service.Request, output *ListEntitiesForPolicyOutput) {
+	op := &service.Operation{
+		Name:       opListEntitiesForPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListEntitiesForPolicyInput{}
 	}
 
-	req = c.newRequest(opListEntitiesForPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListEntitiesForPolicyOutput{}
 	req.Data = output
 	return
@@ -2621,32 +2397,34 @@ func (c *IAM) ListEntitiesForPolicy(input *ListEntitiesForPolicyInput) (*ListEnt
 	return out, err
 }
 
-var opListEntitiesForPolicy *aws.Operation
+func (c *IAM) ListEntitiesForPolicyPages(input *ListEntitiesForPolicyInput, fn func(p *ListEntitiesForPolicyOutput, lastPage bool) (shouldContinue bool)) error {
+	page, _ := c.ListEntitiesForPolicyRequest(input)
+	return page.EachPage(func(p interface{}, lastPage bool) bool {
+		return fn(p.(*ListEntitiesForPolicyOutput), lastPage)
+	})
+}
+
+const opListGroupPolicies = "ListGroupPolicies"
 
 // ListGroupPoliciesRequest generates a request for the ListGroupPolicies operation.
-func (c *IAM) ListGroupPoliciesRequest(input *ListGroupPoliciesInput) (req *aws.Request, output *ListGroupPoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListGroupPolicies == nil {
-		opListGroupPolicies = &aws.Operation{
-			Name:       "ListGroupPolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListGroupPoliciesRequest(input *ListGroupPoliciesInput) (req *service.Request, output *ListGroupPoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListGroupPolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListGroupPoliciesInput{}
 	}
 
-	req = c.newRequest(opListGroupPolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListGroupPoliciesOutput{}
 	req.Data = output
 	return
@@ -2677,32 +2455,27 @@ func (c *IAM) ListGroupPoliciesPages(input *ListGroupPoliciesInput, fn func(p *L
 	})
 }
 
-var opListGroupPolicies *aws.Operation
+const opListGroups = "ListGroups"
 
 // ListGroupsRequest generates a request for the ListGroups operation.
-func (c *IAM) ListGroupsRequest(input *ListGroupsInput) (req *aws.Request, output *ListGroupsOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListGroups == nil {
-		opListGroups = &aws.Operation{
-			Name:       "ListGroups",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListGroupsRequest(input *ListGroupsInput) (req *service.Request, output *ListGroupsOutput) {
+	op := &service.Operation{
+		Name:       opListGroups,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListGroupsInput{}
 	}
 
-	req = c.newRequest(opListGroups, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListGroupsOutput{}
 	req.Data = output
 	return
@@ -2724,32 +2497,27 @@ func (c *IAM) ListGroupsPages(input *ListGroupsInput, fn func(p *ListGroupsOutpu
 	})
 }
 
-var opListGroups *aws.Operation
+const opListGroupsForUser = "ListGroupsForUser"
 
 // ListGroupsForUserRequest generates a request for the ListGroupsForUser operation.
-func (c *IAM) ListGroupsForUserRequest(input *ListGroupsForUserInput) (req *aws.Request, output *ListGroupsForUserOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListGroupsForUser == nil {
-		opListGroupsForUser = &aws.Operation{
-			Name:       "ListGroupsForUser",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListGroupsForUserRequest(input *ListGroupsForUserInput) (req *service.Request, output *ListGroupsForUserOutput) {
+	op := &service.Operation{
+		Name:       opListGroupsForUser,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListGroupsForUserInput{}
 	}
 
-	req = c.newRequest(opListGroupsForUser, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListGroupsForUserOutput{}
 	req.Data = output
 	return
@@ -2771,32 +2539,27 @@ func (c *IAM) ListGroupsForUserPages(input *ListGroupsForUserInput, fn func(p *L
 	})
 }
 
-var opListGroupsForUser *aws.Operation
+const opListInstanceProfiles = "ListInstanceProfiles"
 
 // ListInstanceProfilesRequest generates a request for the ListInstanceProfiles operation.
-func (c *IAM) ListInstanceProfilesRequest(input *ListInstanceProfilesInput) (req *aws.Request, output *ListInstanceProfilesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListInstanceProfiles == nil {
-		opListInstanceProfiles = &aws.Operation{
-			Name:       "ListInstanceProfiles",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListInstanceProfilesRequest(input *ListInstanceProfilesInput) (req *service.Request, output *ListInstanceProfilesOutput) {
+	op := &service.Operation{
+		Name:       opListInstanceProfiles,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListInstanceProfilesInput{}
 	}
 
-	req = c.newRequest(opListInstanceProfiles, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListInstanceProfilesOutput{}
 	req.Data = output
 	return
@@ -2820,32 +2583,27 @@ func (c *IAM) ListInstanceProfilesPages(input *ListInstanceProfilesInput, fn fun
 	})
 }
 
-var opListInstanceProfiles *aws.Operation
+const opListInstanceProfilesForRole = "ListInstanceProfilesForRole"
 
 // ListInstanceProfilesForRoleRequest generates a request for the ListInstanceProfilesForRole operation.
-func (c *IAM) ListInstanceProfilesForRoleRequest(input *ListInstanceProfilesForRoleInput) (req *aws.Request, output *ListInstanceProfilesForRoleOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListInstanceProfilesForRole == nil {
-		opListInstanceProfilesForRole = &aws.Operation{
-			Name:       "ListInstanceProfilesForRole",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListInstanceProfilesForRoleRequest(input *ListInstanceProfilesForRoleInput) (req *service.Request, output *ListInstanceProfilesForRoleOutput) {
+	op := &service.Operation{
+		Name:       opListInstanceProfilesForRole,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListInstanceProfilesForRoleInput{}
 	}
 
-	req = c.newRequest(opListInstanceProfilesForRole, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListInstanceProfilesForRoleOutput{}
 	req.Data = output
 	return
@@ -2869,32 +2627,27 @@ func (c *IAM) ListInstanceProfilesForRolePages(input *ListInstanceProfilesForRol
 	})
 }
 
-var opListInstanceProfilesForRole *aws.Operation
+const opListMFADevices = "ListMFADevices"
 
 // ListMFADevicesRequest generates a request for the ListMFADevices operation.
-func (c *IAM) ListMFADevicesRequest(input *ListMFADevicesInput) (req *aws.Request, output *ListMFADevicesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListMFADevices == nil {
-		opListMFADevices = &aws.Operation{
-			Name:       "ListMFADevices",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListMFADevicesRequest(input *ListMFADevicesInput) (req *service.Request, output *ListMFADevicesOutput) {
+	op := &service.Operation{
+		Name:       opListMFADevices,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListMFADevicesInput{}
 	}
 
-	req = c.newRequest(opListMFADevices, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListMFADevicesOutput{}
 	req.Data = output
 	return
@@ -2919,26 +2672,21 @@ func (c *IAM) ListMFADevicesPages(input *ListMFADevicesInput, fn func(p *ListMFA
 	})
 }
 
-var opListMFADevices *aws.Operation
+const opListOpenIDConnectProviders = "ListOpenIDConnectProviders"
 
 // ListOpenIDConnectProvidersRequest generates a request for the ListOpenIDConnectProviders operation.
-func (c *IAM) ListOpenIDConnectProvidersRequest(input *ListOpenIDConnectProvidersInput) (req *aws.Request, output *ListOpenIDConnectProvidersOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListOpenIDConnectProviders == nil {
-		opListOpenIDConnectProviders = &aws.Operation{
-			Name:       "ListOpenIDConnectProviders",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListOpenIDConnectProvidersRequest(input *ListOpenIDConnectProvidersInput) (req *service.Request, output *ListOpenIDConnectProvidersOutput) {
+	op := &service.Operation{
+		Name:       opListOpenIDConnectProviders,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ListOpenIDConnectProvidersInput{}
 	}
 
-	req = c.newRequest(opListOpenIDConnectProviders, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListOpenIDConnectProvidersOutput{}
 	req.Data = output
 	return
@@ -2951,26 +2699,27 @@ func (c *IAM) ListOpenIDConnectProviders(input *ListOpenIDConnectProvidersInput)
 	return out, err
 }
 
-var opListOpenIDConnectProviders *aws.Operation
+const opListPolicies = "ListPolicies"
 
 // ListPoliciesRequest generates a request for the ListPolicies operation.
-func (c *IAM) ListPoliciesRequest(input *ListPoliciesInput) (req *aws.Request, output *ListPoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListPolicies == nil {
-		opListPolicies = &aws.Operation{
-			Name:       "ListPolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListPoliciesRequest(input *ListPoliciesInput) (req *service.Request, output *ListPoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListPolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListPoliciesInput{}
 	}
 
-	req = c.newRequest(opListPolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListPoliciesOutput{}
 	req.Data = output
 	return
@@ -2995,26 +2744,28 @@ func (c *IAM) ListPolicies(input *ListPoliciesInput) (*ListPoliciesOutput, error
 	return out, err
 }
 
-var opListPolicies *aws.Operation
+func (c *IAM) ListPoliciesPages(input *ListPoliciesInput, fn func(p *ListPoliciesOutput, lastPage bool) (shouldContinue bool)) error {
+	page, _ := c.ListPoliciesRequest(input)
+	return page.EachPage(func(p interface{}, lastPage bool) bool {
+		return fn(p.(*ListPoliciesOutput), lastPage)
+	})
+}
+
+const opListPolicyVersions = "ListPolicyVersions"
 
 // ListPolicyVersionsRequest generates a request for the ListPolicyVersions operation.
-func (c *IAM) ListPolicyVersionsRequest(input *ListPolicyVersionsInput) (req *aws.Request, output *ListPolicyVersionsOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListPolicyVersions == nil {
-		opListPolicyVersions = &aws.Operation{
-			Name:       "ListPolicyVersions",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListPolicyVersionsRequest(input *ListPolicyVersionsInput) (req *service.Request, output *ListPolicyVersionsOutput) {
+	op := &service.Operation{
+		Name:       opListPolicyVersions,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ListPolicyVersionsInput{}
 	}
 
-	req = c.newRequest(opListPolicyVersions, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListPolicyVersionsOutput{}
 	req.Data = output
 	return
@@ -3032,32 +2783,27 @@ func (c *IAM) ListPolicyVersions(input *ListPolicyVersionsInput) (*ListPolicyVer
 	return out, err
 }
 
-var opListPolicyVersions *aws.Operation
+const opListRolePolicies = "ListRolePolicies"
 
 // ListRolePoliciesRequest generates a request for the ListRolePolicies operation.
-func (c *IAM) ListRolePoliciesRequest(input *ListRolePoliciesInput) (req *aws.Request, output *ListRolePoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListRolePolicies == nil {
-		opListRolePolicies = &aws.Operation{
-			Name:       "ListRolePolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListRolePoliciesRequest(input *ListRolePoliciesInput) (req *service.Request, output *ListRolePoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListRolePolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListRolePoliciesInput{}
 	}
 
-	req = c.newRequest(opListRolePolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListRolePoliciesOutput{}
 	req.Data = output
 	return
@@ -3088,32 +2834,27 @@ func (c *IAM) ListRolePoliciesPages(input *ListRolePoliciesInput, fn func(p *Lis
 	})
 }
 
-var opListRolePolicies *aws.Operation
+const opListRoles = "ListRoles"
 
 // ListRolesRequest generates a request for the ListRoles operation.
-func (c *IAM) ListRolesRequest(input *ListRolesInput) (req *aws.Request, output *ListRolesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListRoles == nil {
-		opListRoles = &aws.Operation{
-			Name:       "ListRoles",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListRolesRequest(input *ListRolesInput) (req *service.Request, output *ListRolesOutput) {
+	op := &service.Operation{
+		Name:       opListRoles,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListRolesInput{}
 	}
 
-	req = c.newRequest(opListRoles, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListRolesOutput{}
 	req.Data = output
 	return
@@ -3137,26 +2878,21 @@ func (c *IAM) ListRolesPages(input *ListRolesInput, fn func(p *ListRolesOutput, 
 	})
 }
 
-var opListRoles *aws.Operation
+const opListSAMLProviders = "ListSAMLProviders"
 
 // ListSAMLProvidersRequest generates a request for the ListSAMLProviders operation.
-func (c *IAM) ListSAMLProvidersRequest(input *ListSAMLProvidersInput) (req *aws.Request, output *ListSAMLProvidersOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListSAMLProviders == nil {
-		opListSAMLProviders = &aws.Operation{
-			Name:       "ListSAMLProviders",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ListSAMLProvidersRequest(input *ListSAMLProvidersInput) (req *service.Request, output *ListSAMLProvidersOutput) {
+	op := &service.Operation{
+		Name:       opListSAMLProviders,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ListSAMLProvidersInput{}
 	}
 
-	req = c.newRequest(opListSAMLProviders, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListSAMLProvidersOutput{}
 	req.Data = output
 	return
@@ -3171,32 +2907,64 @@ func (c *IAM) ListSAMLProviders(input *ListSAMLProvidersInput) (*ListSAMLProvide
 	return out, err
 }
 
-var opListSAMLProviders *aws.Operation
+const opListSSHPublicKeys = "ListSSHPublicKeys"
+
+// ListSSHPublicKeysRequest generates a request for the ListSSHPublicKeys operation.
+func (c *IAM) ListSSHPublicKeysRequest(input *ListSSHPublicKeysInput) (req *service.Request, output *ListSSHPublicKeysOutput) {
+	op := &service.Operation{
+		Name:       opListSSHPublicKeys,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &ListSSHPublicKeysInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &ListSSHPublicKeysOutput{}
+	req.Data = output
+	return
+}
+
+// Returns information about the SSH public keys associated with the specified
+// IAM user. If there are none, the action returns an empty list.
+//
+// The SSH public keys returned by this action are used only for authenticating
+// the IAM user to an AWS CodeCommit repository. For more information about
+// using SSH keys to authenticate to an AWS CodeCommit repository, see Set up
+// AWS CodeCommit for SSH Connections (http://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-credentials-ssh.html)
+// in the AWS CodeCommit User Guide.
+//
+// Although each user is limited to a small number of keys, you can still paginate
+// the results using the MaxItems and Marker parameters.
+func (c *IAM) ListSSHPublicKeys(input *ListSSHPublicKeysInput) (*ListSSHPublicKeysOutput, error) {
+	req, out := c.ListSSHPublicKeysRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opListServerCertificates = "ListServerCertificates"
 
 // ListServerCertificatesRequest generates a request for the ListServerCertificates operation.
-func (c *IAM) ListServerCertificatesRequest(input *ListServerCertificatesInput) (req *aws.Request, output *ListServerCertificatesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListServerCertificates == nil {
-		opListServerCertificates = &aws.Operation{
-			Name:       "ListServerCertificates",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListServerCertificatesRequest(input *ListServerCertificatesInput) (req *service.Request, output *ListServerCertificatesOutput) {
+	op := &service.Operation{
+		Name:       opListServerCertificates,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListServerCertificatesInput{}
 	}
 
-	req = c.newRequest(opListServerCertificates, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListServerCertificatesOutput{}
 	req.Data = output
 	return
@@ -3219,32 +2987,27 @@ func (c *IAM) ListServerCertificatesPages(input *ListServerCertificatesInput, fn
 	})
 }
 
-var opListServerCertificates *aws.Operation
+const opListSigningCertificates = "ListSigningCertificates"
 
 // ListSigningCertificatesRequest generates a request for the ListSigningCertificates operation.
-func (c *IAM) ListSigningCertificatesRequest(input *ListSigningCertificatesInput) (req *aws.Request, output *ListSigningCertificatesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListSigningCertificates == nil {
-		opListSigningCertificates = &aws.Operation{
-			Name:       "ListSigningCertificates",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListSigningCertificatesRequest(input *ListSigningCertificatesInput) (req *service.Request, output *ListSigningCertificatesOutput) {
+	op := &service.Operation{
+		Name:       opListSigningCertificates,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListSigningCertificatesInput{}
 	}
 
-	req = c.newRequest(opListSigningCertificates, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListSigningCertificatesOutput{}
 	req.Data = output
 	return
@@ -3273,32 +3036,27 @@ func (c *IAM) ListSigningCertificatesPages(input *ListSigningCertificatesInput, 
 	})
 }
 
-var opListSigningCertificates *aws.Operation
+const opListUserPolicies = "ListUserPolicies"
 
 // ListUserPoliciesRequest generates a request for the ListUserPolicies operation.
-func (c *IAM) ListUserPoliciesRequest(input *ListUserPoliciesInput) (req *aws.Request, output *ListUserPoliciesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListUserPolicies == nil {
-		opListUserPolicies = &aws.Operation{
-			Name:       "ListUserPolicies",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListUserPoliciesRequest(input *ListUserPoliciesInput) (req *service.Request, output *ListUserPoliciesOutput) {
+	op := &service.Operation{
+		Name:       opListUserPolicies,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListUserPoliciesInput{}
 	}
 
-	req = c.newRequest(opListUserPolicies, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListUserPoliciesOutput{}
 	req.Data = output
 	return
@@ -3328,32 +3086,27 @@ func (c *IAM) ListUserPoliciesPages(input *ListUserPoliciesInput, fn func(p *Lis
 	})
 }
 
-var opListUserPolicies *aws.Operation
+const opListUsers = "ListUsers"
 
 // ListUsersRequest generates a request for the ListUsers operation.
-func (c *IAM) ListUsersRequest(input *ListUsersInput) (req *aws.Request, output *ListUsersOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListUsers == nil {
-		opListUsers = &aws.Operation{
-			Name:       "ListUsers",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListUsersRequest(input *ListUsersInput) (req *service.Request, output *ListUsersOutput) {
+	op := &service.Operation{
+		Name:       opListUsers,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListUsersInput{}
 	}
 
-	req = c.newRequest(opListUsers, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListUsersOutput{}
 	req.Data = output
 	return
@@ -3377,32 +3130,27 @@ func (c *IAM) ListUsersPages(input *ListUsersInput, fn func(p *ListUsersOutput, 
 	})
 }
 
-var opListUsers *aws.Operation
+const opListVirtualMFADevices = "ListVirtualMFADevices"
 
 // ListVirtualMFADevicesRequest generates a request for the ListVirtualMFADevices operation.
-func (c *IAM) ListVirtualMFADevicesRequest(input *ListVirtualMFADevicesInput) (req *aws.Request, output *ListVirtualMFADevicesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListVirtualMFADevices == nil {
-		opListVirtualMFADevices = &aws.Operation{
-			Name:       "ListVirtualMFADevices",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"Marker"},
-				OutputTokens:    []string{"Marker"},
-				LimitToken:      "MaxItems",
-				TruncationToken: "IsTruncated",
-			},
-		}
+func (c *IAM) ListVirtualMFADevicesRequest(input *ListVirtualMFADevicesInput) (req *service.Request, output *ListVirtualMFADevicesOutput) {
+	op := &service.Operation{
+		Name:       opListVirtualMFADevices,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"Marker"},
+			OutputTokens:    []string{"Marker"},
+			LimitToken:      "MaxItems",
+			TruncationToken: "IsTruncated",
+		},
 	}
 
 	if input == nil {
 		input = &ListVirtualMFADevicesInput{}
 	}
 
-	req = c.newRequest(opListVirtualMFADevices, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListVirtualMFADevicesOutput{}
 	req.Data = output
 	return
@@ -3427,26 +3175,21 @@ func (c *IAM) ListVirtualMFADevicesPages(input *ListVirtualMFADevicesInput, fn f
 	})
 }
 
-var opListVirtualMFADevices *aws.Operation
+const opPutGroupPolicy = "PutGroupPolicy"
 
 // PutGroupPolicyRequest generates a request for the PutGroupPolicy operation.
-func (c *IAM) PutGroupPolicyRequest(input *PutGroupPolicyInput) (req *aws.Request, output *PutGroupPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opPutGroupPolicy == nil {
-		opPutGroupPolicy = &aws.Operation{
-			Name:       "PutGroupPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) PutGroupPolicyRequest(input *PutGroupPolicyInput) (req *service.Request, output *PutGroupPolicyOutput) {
+	op := &service.Operation{
+		Name:       opPutGroupPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &PutGroupPolicyInput{}
 	}
 
-	req = c.newRequest(opPutGroupPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &PutGroupPolicyOutput{}
 	req.Data = output
 	return
@@ -3475,26 +3218,21 @@ func (c *IAM) PutGroupPolicy(input *PutGroupPolicyInput) (*PutGroupPolicyOutput,
 	return out, err
 }
 
-var opPutGroupPolicy *aws.Operation
+const opPutRolePolicy = "PutRolePolicy"
 
 // PutRolePolicyRequest generates a request for the PutRolePolicy operation.
-func (c *IAM) PutRolePolicyRequest(input *PutRolePolicyInput) (req *aws.Request, output *PutRolePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opPutRolePolicy == nil {
-		opPutRolePolicy = &aws.Operation{
-			Name:       "PutRolePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) PutRolePolicyRequest(input *PutRolePolicyInput) (req *service.Request, output *PutRolePolicyOutput) {
+	op := &service.Operation{
+		Name:       opPutRolePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &PutRolePolicyInput{}
 	}
 
-	req = c.newRequest(opPutRolePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &PutRolePolicyOutput{}
 	req.Data = output
 	return
@@ -3529,26 +3267,21 @@ func (c *IAM) PutRolePolicy(input *PutRolePolicyInput) (*PutRolePolicyOutput, er
 	return out, err
 }
 
-var opPutRolePolicy *aws.Operation
+const opPutUserPolicy = "PutUserPolicy"
 
 // PutUserPolicyRequest generates a request for the PutUserPolicy operation.
-func (c *IAM) PutUserPolicyRequest(input *PutUserPolicyInput) (req *aws.Request, output *PutUserPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opPutUserPolicy == nil {
-		opPutUserPolicy = &aws.Operation{
-			Name:       "PutUserPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) PutUserPolicyRequest(input *PutUserPolicyInput) (req *service.Request, output *PutUserPolicyOutput) {
+	op := &service.Operation{
+		Name:       opPutUserPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &PutUserPolicyInput{}
 	}
 
-	req = c.newRequest(opPutUserPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &PutUserPolicyOutput{}
 	req.Data = output
 	return
@@ -3577,26 +3310,21 @@ func (c *IAM) PutUserPolicy(input *PutUserPolicyInput) (*PutUserPolicyOutput, er
 	return out, err
 }
 
-var opPutUserPolicy *aws.Operation
+const opRemoveClientIDFromOpenIDConnectProvider = "RemoveClientIDFromOpenIDConnectProvider"
 
 // RemoveClientIDFromOpenIDConnectProviderRequest generates a request for the RemoveClientIDFromOpenIDConnectProvider operation.
-func (c *IAM) RemoveClientIDFromOpenIDConnectProviderRequest(input *RemoveClientIDFromOpenIDConnectProviderInput) (req *aws.Request, output *RemoveClientIDFromOpenIDConnectProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opRemoveClientIDFromOpenIDConnectProvider == nil {
-		opRemoveClientIDFromOpenIDConnectProvider = &aws.Operation{
-			Name:       "RemoveClientIDFromOpenIDConnectProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) RemoveClientIDFromOpenIDConnectProviderRequest(input *RemoveClientIDFromOpenIDConnectProviderInput) (req *service.Request, output *RemoveClientIDFromOpenIDConnectProviderOutput) {
+	op := &service.Operation{
+		Name:       opRemoveClientIDFromOpenIDConnectProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &RemoveClientIDFromOpenIDConnectProviderInput{}
 	}
 
-	req = c.newRequest(opRemoveClientIDFromOpenIDConnectProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &RemoveClientIDFromOpenIDConnectProviderOutput{}
 	req.Data = output
 	return
@@ -3613,26 +3341,21 @@ func (c *IAM) RemoveClientIDFromOpenIDConnectProvider(input *RemoveClientIDFromO
 	return out, err
 }
 
-var opRemoveClientIDFromOpenIDConnectProvider *aws.Operation
+const opRemoveRoleFromInstanceProfile = "RemoveRoleFromInstanceProfile"
 
 // RemoveRoleFromInstanceProfileRequest generates a request for the RemoveRoleFromInstanceProfile operation.
-func (c *IAM) RemoveRoleFromInstanceProfileRequest(input *RemoveRoleFromInstanceProfileInput) (req *aws.Request, output *RemoveRoleFromInstanceProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opRemoveRoleFromInstanceProfile == nil {
-		opRemoveRoleFromInstanceProfile = &aws.Operation{
-			Name:       "RemoveRoleFromInstanceProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) RemoveRoleFromInstanceProfileRequest(input *RemoveRoleFromInstanceProfileInput) (req *service.Request, output *RemoveRoleFromInstanceProfileOutput) {
+	op := &service.Operation{
+		Name:       opRemoveRoleFromInstanceProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &RemoveRoleFromInstanceProfileInput{}
 	}
 
-	req = c.newRequest(opRemoveRoleFromInstanceProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &RemoveRoleFromInstanceProfileOutput{}
 	req.Data = output
 	return
@@ -3653,26 +3376,21 @@ func (c *IAM) RemoveRoleFromInstanceProfile(input *RemoveRoleFromInstanceProfile
 	return out, err
 }
 
-var opRemoveRoleFromInstanceProfile *aws.Operation
+const opRemoveUserFromGroup = "RemoveUserFromGroup"
 
 // RemoveUserFromGroupRequest generates a request for the RemoveUserFromGroup operation.
-func (c *IAM) RemoveUserFromGroupRequest(input *RemoveUserFromGroupInput) (req *aws.Request, output *RemoveUserFromGroupOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opRemoveUserFromGroup == nil {
-		opRemoveUserFromGroup = &aws.Operation{
-			Name:       "RemoveUserFromGroup",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) RemoveUserFromGroupRequest(input *RemoveUserFromGroupInput) (req *service.Request, output *RemoveUserFromGroupOutput) {
+	op := &service.Operation{
+		Name:       opRemoveUserFromGroup,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &RemoveUserFromGroupInput{}
 	}
 
-	req = c.newRequest(opRemoveUserFromGroup, input, output)
+	req = c.newRequest(op, input, output)
 	output = &RemoveUserFromGroupOutput{}
 	req.Data = output
 	return
@@ -3685,26 +3403,21 @@ func (c *IAM) RemoveUserFromGroup(input *RemoveUserFromGroupInput) (*RemoveUserF
 	return out, err
 }
 
-var opRemoveUserFromGroup *aws.Operation
+const opResyncMFADevice = "ResyncMFADevice"
 
 // ResyncMFADeviceRequest generates a request for the ResyncMFADevice operation.
-func (c *IAM) ResyncMFADeviceRequest(input *ResyncMFADeviceInput) (req *aws.Request, output *ResyncMFADeviceOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opResyncMFADevice == nil {
-		opResyncMFADevice = &aws.Operation{
-			Name:       "ResyncMFADevice",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) ResyncMFADeviceRequest(input *ResyncMFADeviceInput) (req *service.Request, output *ResyncMFADeviceOutput) {
+	op := &service.Operation{
+		Name:       opResyncMFADevice,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ResyncMFADeviceInput{}
 	}
 
-	req = c.newRequest(opResyncMFADevice, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ResyncMFADeviceOutput{}
 	req.Data = output
 	return
@@ -3721,26 +3434,21 @@ func (c *IAM) ResyncMFADevice(input *ResyncMFADeviceInput) (*ResyncMFADeviceOutp
 	return out, err
 }
 
-var opResyncMFADevice *aws.Operation
+const opSetDefaultPolicyVersion = "SetDefaultPolicyVersion"
 
 // SetDefaultPolicyVersionRequest generates a request for the SetDefaultPolicyVersion operation.
-func (c *IAM) SetDefaultPolicyVersionRequest(input *SetDefaultPolicyVersionInput) (req *aws.Request, output *SetDefaultPolicyVersionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSetDefaultPolicyVersion == nil {
-		opSetDefaultPolicyVersion = &aws.Operation{
-			Name:       "SetDefaultPolicyVersion",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) SetDefaultPolicyVersionRequest(input *SetDefaultPolicyVersionInput) (req *service.Request, output *SetDefaultPolicyVersionOutput) {
+	op := &service.Operation{
+		Name:       opSetDefaultPolicyVersion,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SetDefaultPolicyVersionInput{}
 	}
 
-	req = c.newRequest(opSetDefaultPolicyVersion, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SetDefaultPolicyVersionOutput{}
 	req.Data = output
 	return
@@ -3762,26 +3470,21 @@ func (c *IAM) SetDefaultPolicyVersion(input *SetDefaultPolicyVersionInput) (*Set
 	return out, err
 }
 
-var opSetDefaultPolicyVersion *aws.Operation
+const opUpdateAccessKey = "UpdateAccessKey"
 
 // UpdateAccessKeyRequest generates a request for the UpdateAccessKey operation.
-func (c *IAM) UpdateAccessKeyRequest(input *UpdateAccessKeyInput) (req *aws.Request, output *UpdateAccessKeyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateAccessKey == nil {
-		opUpdateAccessKey = &aws.Operation{
-			Name:       "UpdateAccessKey",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateAccessKeyRequest(input *UpdateAccessKeyInput) (req *service.Request, output *UpdateAccessKeyOutput) {
+	op := &service.Operation{
+		Name:       opUpdateAccessKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateAccessKeyInput{}
 	}
 
-	req = c.newRequest(opUpdateAccessKey, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateAccessKeyOutput{}
 	req.Data = output
 	return
@@ -3805,26 +3508,21 @@ func (c *IAM) UpdateAccessKey(input *UpdateAccessKeyInput) (*UpdateAccessKeyOutp
 	return out, err
 }
 
-var opUpdateAccessKey *aws.Operation
+const opUpdateAccountPasswordPolicy = "UpdateAccountPasswordPolicy"
 
 // UpdateAccountPasswordPolicyRequest generates a request for the UpdateAccountPasswordPolicy operation.
-func (c *IAM) UpdateAccountPasswordPolicyRequest(input *UpdateAccountPasswordPolicyInput) (req *aws.Request, output *UpdateAccountPasswordPolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateAccountPasswordPolicy == nil {
-		opUpdateAccountPasswordPolicy = &aws.Operation{
-			Name:       "UpdateAccountPasswordPolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateAccountPasswordPolicyRequest(input *UpdateAccountPasswordPolicyInput) (req *service.Request, output *UpdateAccountPasswordPolicyOutput) {
+	op := &service.Operation{
+		Name:       opUpdateAccountPasswordPolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateAccountPasswordPolicyInput{}
 	}
 
-	req = c.newRequest(opUpdateAccountPasswordPolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateAccountPasswordPolicyOutput{}
 	req.Data = output
 	return
@@ -3846,26 +3544,21 @@ func (c *IAM) UpdateAccountPasswordPolicy(input *UpdateAccountPasswordPolicyInpu
 	return out, err
 }
 
-var opUpdateAccountPasswordPolicy *aws.Operation
+const opUpdateAssumeRolePolicy = "UpdateAssumeRolePolicy"
 
 // UpdateAssumeRolePolicyRequest generates a request for the UpdateAssumeRolePolicy operation.
-func (c *IAM) UpdateAssumeRolePolicyRequest(input *UpdateAssumeRolePolicyInput) (req *aws.Request, output *UpdateAssumeRolePolicyOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateAssumeRolePolicy == nil {
-		opUpdateAssumeRolePolicy = &aws.Operation{
-			Name:       "UpdateAssumeRolePolicy",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateAssumeRolePolicyRequest(input *UpdateAssumeRolePolicyInput) (req *service.Request, output *UpdateAssumeRolePolicyOutput) {
+	op := &service.Operation{
+		Name:       opUpdateAssumeRolePolicy,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateAssumeRolePolicyInput{}
 	}
 
-	req = c.newRequest(opUpdateAssumeRolePolicy, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateAssumeRolePolicyOutput{}
 	req.Data = output
 	return
@@ -3880,26 +3573,21 @@ func (c *IAM) UpdateAssumeRolePolicy(input *UpdateAssumeRolePolicyInput) (*Updat
 	return out, err
 }
 
-var opUpdateAssumeRolePolicy *aws.Operation
+const opUpdateGroup = "UpdateGroup"
 
 // UpdateGroupRequest generates a request for the UpdateGroup operation.
-func (c *IAM) UpdateGroupRequest(input *UpdateGroupInput) (req *aws.Request, output *UpdateGroupOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateGroup == nil {
-		opUpdateGroup = &aws.Operation{
-			Name:       "UpdateGroup",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateGroupRequest(input *UpdateGroupInput) (req *service.Request, output *UpdateGroupOutput) {
+	op := &service.Operation{
+		Name:       opUpdateGroup,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateGroupInput{}
 	}
 
-	req = c.newRequest(opUpdateGroup, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateGroupOutput{}
 	req.Data = output
 	return
@@ -3921,26 +3609,21 @@ func (c *IAM) UpdateGroup(input *UpdateGroupInput) (*UpdateGroupOutput, error) {
 	return out, err
 }
 
-var opUpdateGroup *aws.Operation
+const opUpdateLoginProfile = "UpdateLoginProfile"
 
 // UpdateLoginProfileRequest generates a request for the UpdateLoginProfile operation.
-func (c *IAM) UpdateLoginProfileRequest(input *UpdateLoginProfileInput) (req *aws.Request, output *UpdateLoginProfileOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateLoginProfile == nil {
-		opUpdateLoginProfile = &aws.Operation{
-			Name:       "UpdateLoginProfile",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateLoginProfileRequest(input *UpdateLoginProfileInput) (req *service.Request, output *UpdateLoginProfileOutput) {
+	op := &service.Operation{
+		Name:       opUpdateLoginProfile,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateLoginProfileInput{}
 	}
 
-	req = c.newRequest(opUpdateLoginProfile, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateLoginProfileOutput{}
 	req.Data = output
 	return
@@ -3957,26 +3640,21 @@ func (c *IAM) UpdateLoginProfile(input *UpdateLoginProfileInput) (*UpdateLoginPr
 	return out, err
 }
 
-var opUpdateLoginProfile *aws.Operation
+const opUpdateOpenIDConnectProviderThumbprint = "UpdateOpenIDConnectProviderThumbprint"
 
 // UpdateOpenIDConnectProviderThumbprintRequest generates a request for the UpdateOpenIDConnectProviderThumbprint operation.
-func (c *IAM) UpdateOpenIDConnectProviderThumbprintRequest(input *UpdateOpenIDConnectProviderThumbprintInput) (req *aws.Request, output *UpdateOpenIDConnectProviderThumbprintOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateOpenIDConnectProviderThumbprint == nil {
-		opUpdateOpenIDConnectProviderThumbprint = &aws.Operation{
-			Name:       "UpdateOpenIDConnectProviderThumbprint",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateOpenIDConnectProviderThumbprintRequest(input *UpdateOpenIDConnectProviderThumbprintInput) (req *service.Request, output *UpdateOpenIDConnectProviderThumbprintOutput) {
+	op := &service.Operation{
+		Name:       opUpdateOpenIDConnectProviderThumbprint,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateOpenIDConnectProviderThumbprintInput{}
 	}
 
-	req = c.newRequest(opUpdateOpenIDConnectProviderThumbprint, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateOpenIDConnectProviderThumbprintOutput{}
 	req.Data = output
 	return
@@ -4002,26 +3680,21 @@ func (c *IAM) UpdateOpenIDConnectProviderThumbprint(input *UpdateOpenIDConnectPr
 	return out, err
 }
 
-var opUpdateOpenIDConnectProviderThumbprint *aws.Operation
+const opUpdateSAMLProvider = "UpdateSAMLProvider"
 
 // UpdateSAMLProviderRequest generates a request for the UpdateSAMLProvider operation.
-func (c *IAM) UpdateSAMLProviderRequest(input *UpdateSAMLProviderInput) (req *aws.Request, output *UpdateSAMLProviderOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateSAMLProvider == nil {
-		opUpdateSAMLProvider = &aws.Operation{
-			Name:       "UpdateSAMLProvider",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateSAMLProviderRequest(input *UpdateSAMLProviderInput) (req *service.Request, output *UpdateSAMLProviderOutput) {
+	op := &service.Operation{
+		Name:       opUpdateSAMLProvider,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateSAMLProviderInput{}
 	}
 
-	req = c.newRequest(opUpdateSAMLProvider, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateSAMLProviderOutput{}
 	req.Data = output
 	return
@@ -4036,26 +3709,57 @@ func (c *IAM) UpdateSAMLProvider(input *UpdateSAMLProviderInput) (*UpdateSAMLPro
 	return out, err
 }
 
-var opUpdateSAMLProvider *aws.Operation
+const opUpdateSSHPublicKey = "UpdateSSHPublicKey"
+
+// UpdateSSHPublicKeyRequest generates a request for the UpdateSSHPublicKey operation.
+func (c *IAM) UpdateSSHPublicKeyRequest(input *UpdateSSHPublicKeyInput) (req *service.Request, output *UpdateSSHPublicKeyOutput) {
+	op := &service.Operation{
+		Name:       opUpdateSSHPublicKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &UpdateSSHPublicKeyInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &UpdateSSHPublicKeyOutput{}
+	req.Data = output
+	return
+}
+
+// Sets the status of the specified SSH public key to active or inactive. SSH
+// public keys that are inactive cannot be used for authentication. This action
+// can be used to disable a user's SSH public key as part of a key rotation
+// work flow.
+//
+// The SSH public key affected by this action is used only for authenticating
+// the associated IAM user to an AWS CodeCommit repository. For more information
+// about using SSH keys to authenticate to an AWS CodeCommit repository, see
+// Set up AWS CodeCommit for SSH Connections (http://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-credentials-ssh.html)
+// in the AWS CodeCommit User Guide.
+func (c *IAM) UpdateSSHPublicKey(input *UpdateSSHPublicKeyInput) (*UpdateSSHPublicKeyOutput, error) {
+	req, out := c.UpdateSSHPublicKeyRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opUpdateServerCertificate = "UpdateServerCertificate"
 
 // UpdateServerCertificateRequest generates a request for the UpdateServerCertificate operation.
-func (c *IAM) UpdateServerCertificateRequest(input *UpdateServerCertificateInput) (req *aws.Request, output *UpdateServerCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateServerCertificate == nil {
-		opUpdateServerCertificate = &aws.Operation{
-			Name:       "UpdateServerCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateServerCertificateRequest(input *UpdateServerCertificateInput) (req *service.Request, output *UpdateServerCertificateOutput) {
+	op := &service.Operation{
+		Name:       opUpdateServerCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateServerCertificateInput{}
 	}
 
-	req = c.newRequest(opUpdateServerCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateServerCertificateOutput{}
 	req.Data = output
 	return
@@ -4078,26 +3782,21 @@ func (c *IAM) UpdateServerCertificate(input *UpdateServerCertificateInput) (*Upd
 	return out, err
 }
 
-var opUpdateServerCertificate *aws.Operation
+const opUpdateSigningCertificate = "UpdateSigningCertificate"
 
 // UpdateSigningCertificateRequest generates a request for the UpdateSigningCertificate operation.
-func (c *IAM) UpdateSigningCertificateRequest(input *UpdateSigningCertificateInput) (req *aws.Request, output *UpdateSigningCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateSigningCertificate == nil {
-		opUpdateSigningCertificate = &aws.Operation{
-			Name:       "UpdateSigningCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateSigningCertificateRequest(input *UpdateSigningCertificateInput) (req *service.Request, output *UpdateSigningCertificateOutput) {
+	op := &service.Operation{
+		Name:       opUpdateSigningCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateSigningCertificateInput{}
 	}
 
-	req = c.newRequest(opUpdateSigningCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateSigningCertificateOutput{}
 	req.Data = output
 	return
@@ -4117,26 +3816,21 @@ func (c *IAM) UpdateSigningCertificate(input *UpdateSigningCertificateInput) (*U
 	return out, err
 }
 
-var opUpdateSigningCertificate *aws.Operation
+const opUpdateUser = "UpdateUser"
 
 // UpdateUserRequest generates a request for the UpdateUser operation.
-func (c *IAM) UpdateUserRequest(input *UpdateUserInput) (req *aws.Request, output *UpdateUserOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUpdateUser == nil {
-		opUpdateUser = &aws.Operation{
-			Name:       "UpdateUser",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UpdateUserRequest(input *UpdateUserInput) (req *service.Request, output *UpdateUserOutput) {
+	op := &service.Operation{
+		Name:       opUpdateUser,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UpdateUserInput{}
 	}
 
-	req = c.newRequest(opUpdateUser, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UpdateUserOutput{}
 	req.Data = output
 	return
@@ -4158,26 +3852,54 @@ func (c *IAM) UpdateUser(input *UpdateUserInput) (*UpdateUserOutput, error) {
 	return out, err
 }
 
-var opUpdateUser *aws.Operation
+const opUploadSSHPublicKey = "UploadSSHPublicKey"
+
+// UploadSSHPublicKeyRequest generates a request for the UploadSSHPublicKey operation.
+func (c *IAM) UploadSSHPublicKeyRequest(input *UploadSSHPublicKeyInput) (req *service.Request, output *UploadSSHPublicKeyOutput) {
+	op := &service.Operation{
+		Name:       opUploadSSHPublicKey,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &UploadSSHPublicKeyInput{}
+	}
+
+	req = c.newRequest(op, input, output)
+	output = &UploadSSHPublicKeyOutput{}
+	req.Data = output
+	return
+}
+
+// Uploads an SSH public key and associates it with the specified IAM user.
+//
+// The SSH public key uploaded by this action can be used only for authenticating
+// the associated IAM user to an AWS CodeCommit repository. For more information
+// about using SSH keys to authenticate to an AWS CodeCommit repository, see
+// Set up AWS CodeCommit for SSH Connections (http://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-credentials-ssh.html)
+// in the AWS CodeCommit User Guide.
+func (c *IAM) UploadSSHPublicKey(input *UploadSSHPublicKeyInput) (*UploadSSHPublicKeyOutput, error) {
+	req, out := c.UploadSSHPublicKeyRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+const opUploadServerCertificate = "UploadServerCertificate"
 
 // UploadServerCertificateRequest generates a request for the UploadServerCertificate operation.
-func (c *IAM) UploadServerCertificateRequest(input *UploadServerCertificateInput) (req *aws.Request, output *UploadServerCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUploadServerCertificate == nil {
-		opUploadServerCertificate = &aws.Operation{
-			Name:       "UploadServerCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UploadServerCertificateRequest(input *UploadServerCertificateInput) (req *service.Request, output *UploadServerCertificateOutput) {
+	op := &service.Operation{
+		Name:       opUploadServerCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UploadServerCertificateInput{}
 	}
 
-	req = c.newRequest(opUploadServerCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UploadServerCertificateOutput{}
 	req.Data = output
 	return
@@ -4204,26 +3926,21 @@ func (c *IAM) UploadServerCertificate(input *UploadServerCertificateInput) (*Upl
 	return out, err
 }
 
-var opUploadServerCertificate *aws.Operation
+const opUploadSigningCertificate = "UploadSigningCertificate"
 
 // UploadSigningCertificateRequest generates a request for the UploadSigningCertificate operation.
-func (c *IAM) UploadSigningCertificateRequest(input *UploadSigningCertificateInput) (req *aws.Request, output *UploadSigningCertificateOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUploadSigningCertificate == nil {
-		opUploadSigningCertificate = &aws.Operation{
-			Name:       "UploadSigningCertificate",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *IAM) UploadSigningCertificateRequest(input *UploadSigningCertificateInput) (req *service.Request, output *UploadSigningCertificateOutput) {
+	op := &service.Operation{
+		Name:       opUploadSigningCertificate,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UploadSigningCertificateInput{}
 	}
 
-	req = c.newRequest(opUploadSigningCertificate, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UploadSigningCertificateOutput{}
 	req.Data = output
 	return
@@ -4252,8 +3969,6 @@ func (c *IAM) UploadSigningCertificate(input *UploadSigningCertificateInput) (*U
 	return out, err
 }
 
-var opUploadSigningCertificate *aws.Operation
-
 // Contains information about an AWS access key.
 //
 //  This data type is used as a response element in the CreateAccessKey and
@@ -4265,7 +3980,7 @@ var opUploadSigningCertificate *aws.Operation
 // key, you must create a new access key.
 type AccessKey struct {
 	// The ID for this access key.
-	AccessKeyID *string `locationName:"AccessKeyId" type:"string" required:"true"`
+	AccessKeyId *string `type:"string" required:"true"`
 
 	// The date when the access key was created.
 	CreateDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
@@ -4275,7 +3990,7 @@ type AccessKey struct {
 
 	// The status of the access key. Active means the key is valid for API calls,
 	// while Inactive means it is not.
-	Status *string `type:"string" required:"true"`
+	Status *string `type:"string" required:"true" enum:"statusType"`
 
 	// The name of the IAM user that the access key is associated with.
 	UserName *string `type:"string" required:"true"`
@@ -4287,23 +4002,55 @@ type metadataAccessKey struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AccessKey) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AccessKey) GoString() string {
+	return s.String()
+}
+
 // Contains information about the last time an AWS access key was used.
 //
 // This data type is used as a response element in the GetAccessKeyLastUsed
 // action.
 type AccessKeyLastUsed struct {
 	// The date and time, in ISO 8601 date-time format (http://www.iso.org/iso/iso8601),
-	// when the access key was most recently used.
+	// when the access key was most recently used. This field is null when:
+	//
+	//   The user does not have an access key.
+	//
+	//   An access key exists but has never been used, at least not since IAM started
+	// tracking this information on April 22nd, 2015.
+	//
+	//   There is no sign-in data associated with the user
 	LastUsedDate *time.Time `type:"timestamp" timestampFormat:"iso8601" required:"true"`
 
-	// The AWS region where this access key was most recently used.
+	// The AWS region where this access key was most recently used. This field is
+	// null when:
 	//
-	// For more information about AWS regions, see Regions and Endpoints (http://docs.aws.amazon.com/general/latest/gr/rande.html)
+	//   The user does not have an access key.
+	//
+	//   An access key exists but has never been used, at least not since IAM started
+	// tracking this information on April 22nd, 2015.
+	//
+	//   There is no sign-in data associated with the user
+	//
+	//   For more information about AWS regions, see Regions and Endpoints (http://docs.aws.amazon.com/general/latest/gr/rande.html)
 	// in the Amazon Web Services General Reference.
 	Region *string `type:"string" required:"true"`
 
 	// The name of the AWS service with which this access key was most recently
-	// used.
+	// used. This field is null when:
+	//
+	//   The user does not have an access key.
+	//
+	//   An access key exists but has never been used, at least not since IAM started
+	// tracking this information on April 22nd, 2015.
+	//
+	//   There is no sign-in data associated with the user
 	ServiceName *string `type:"string" required:"true"`
 
 	metadataAccessKeyLastUsed `json:"-" xml:"-"`
@@ -4313,19 +4060,29 @@ type metadataAccessKeyLastUsed struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AccessKeyLastUsed) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AccessKeyLastUsed) GoString() string {
+	return s.String()
+}
+
 // Contains information about an AWS access key, without its secret key.
 //
 // This data type is used as a response element in the ListAccessKeys action.
 type AccessKeyMetadata struct {
 	// The ID for this access key.
-	AccessKeyID *string `locationName:"AccessKeyId" type:"string"`
+	AccessKeyId *string `type:"string"`
 
 	// The date when the access key was created.
 	CreateDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// The status of the access key. Active means the key is valid for API calls;
 	// Inactive means it is not.
-	Status *string `type:"string"`
+	Status *string `type:"string" enum:"statusType"`
 
 	// The name of the IAM user that the key is associated with.
 	UserName *string `type:"string"`
@@ -4337,6 +4094,16 @@ type metadataAccessKeyMetadata struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AccessKeyMetadata) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AccessKeyMetadata) GoString() string {
+	return s.String()
+}
+
 type AddClientIDToOpenIDConnectProviderInput struct {
 	// The client ID (also known as audience) to add to the IAM OpenID Connect provider.
 	ClientID *string `type:"string" required:"true"`
@@ -4344,7 +4111,7 @@ type AddClientIDToOpenIDConnectProviderInput struct {
 	// The Amazon Resource Name (ARN) of the IAM OpenID Connect (OIDC) provider
 	// to add the client ID to. You can get a list of OIDC provider ARNs by using
 	// the ListOpenIDConnectProviders action.
-	OpenIDConnectProviderARN *string `locationName:"OpenIDConnectProviderArn" type:"string" required:"true"`
+	OpenIDConnectProviderArn *string `type:"string" required:"true"`
 
 	metadataAddClientIDToOpenIDConnectProviderInput `json:"-" xml:"-"`
 }
@@ -4353,12 +4120,32 @@ type metadataAddClientIDToOpenIDConnectProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AddClientIDToOpenIDConnectProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddClientIDToOpenIDConnectProviderInput) GoString() string {
+	return s.String()
+}
+
 type AddClientIDToOpenIDConnectProviderOutput struct {
 	metadataAddClientIDToOpenIDConnectProviderOutput `json:"-" xml:"-"`
 }
 
 type metadataAddClientIDToOpenIDConnectProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AddClientIDToOpenIDConnectProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddClientIDToOpenIDConnectProviderOutput) GoString() string {
+	return s.String()
 }
 
 type AddRoleToInstanceProfileInput struct {
@@ -4375,12 +4162,32 @@ type metadataAddRoleToInstanceProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AddRoleToInstanceProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddRoleToInstanceProfileInput) GoString() string {
+	return s.String()
+}
+
 type AddRoleToInstanceProfileOutput struct {
 	metadataAddRoleToInstanceProfileOutput `json:"-" xml:"-"`
 }
 
 type metadataAddRoleToInstanceProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AddRoleToInstanceProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddRoleToInstanceProfileOutput) GoString() string {
+	return s.String()
 }
 
 type AddUserToGroupInput struct {
@@ -4397,12 +4204,32 @@ type metadataAddUserToGroupInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AddUserToGroupInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddUserToGroupInput) GoString() string {
+	return s.String()
+}
+
 type AddUserToGroupOutput struct {
 	metadataAddUserToGroupOutput `json:"-" xml:"-"`
 }
 
 type metadataAddUserToGroupOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AddUserToGroupOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddUserToGroupOutput) GoString() string {
+	return s.String()
 }
 
 type AttachGroupPolicyInput struct {
@@ -4414,13 +4241,23 @@ type AttachGroupPolicyInput struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	metadataAttachGroupPolicyInput `json:"-" xml:"-"`
 }
 
 type metadataAttachGroupPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AttachGroupPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachGroupPolicyInput) GoString() string {
+	return s.String()
 }
 
 type AttachGroupPolicyOutput struct {
@@ -4431,13 +4268,23 @@ type metadataAttachGroupPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AttachGroupPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachGroupPolicyOutput) GoString() string {
+	return s.String()
+}
+
 type AttachRolePolicyInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The name (friendly name, not ARN) of the role to attach the policy to.
 	RoleName *string `type:"string" required:"true"`
@@ -4449,6 +4296,16 @@ type metadataAttachRolePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AttachRolePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachRolePolicyInput) GoString() string {
+	return s.String()
+}
+
 type AttachRolePolicyOutput struct {
 	metadataAttachRolePolicyOutput `json:"-" xml:"-"`
 }
@@ -4457,13 +4314,23 @@ type metadataAttachRolePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AttachRolePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachRolePolicyOutput) GoString() string {
+	return s.String()
+}
+
 type AttachUserPolicyInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The name (friendly name, not ARN) of the user to attach the policy to.
 	UserName *string `type:"string" required:"true"`
@@ -4475,12 +4342,32 @@ type metadataAttachUserPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AttachUserPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachUserPolicyInput) GoString() string {
+	return s.String()
+}
+
 type AttachUserPolicyOutput struct {
 	metadataAttachUserPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataAttachUserPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AttachUserPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachUserPolicyOutput) GoString() string {
+	return s.String()
 }
 
 // Contains information about an attached policy.
@@ -4499,7 +4386,7 @@ type AttachedPolicy struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string"`
+	PolicyArn *string `type:"string"`
 
 	// The friendly name of the attached policy.
 	PolicyName *string `type:"string"`
@@ -4509,6 +4396,16 @@ type AttachedPolicy struct {
 
 type metadataAttachedPolicy struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AttachedPolicy) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AttachedPolicy) GoString() string {
+	return s.String()
 }
 
 type ChangePasswordInput struct {
@@ -4526,12 +4423,32 @@ type metadataChangePasswordInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ChangePasswordInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangePasswordInput) GoString() string {
+	return s.String()
+}
+
 type ChangePasswordOutput struct {
 	metadataChangePasswordOutput `json:"-" xml:"-"`
 }
 
 type metadataChangePasswordOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ChangePasswordOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangePasswordOutput) GoString() string {
+	return s.String()
 }
 
 type CreateAccessKeyInput struct {
@@ -4543,6 +4460,16 @@ type CreateAccessKeyInput struct {
 
 type metadataCreateAccessKeyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateAccessKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateAccessKeyInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful CreateAccessKey request.
@@ -4557,6 +4484,16 @@ type metadataCreateAccessKeyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateAccessKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateAccessKeyOutput) GoString() string {
+	return s.String()
+}
+
 type CreateAccountAliasInput struct {
 	// The account alias to create.
 	AccountAlias *string `type:"string" required:"true"`
@@ -4568,12 +4505,32 @@ type metadataCreateAccountAliasInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateAccountAliasInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateAccountAliasInput) GoString() string {
+	return s.String()
+}
+
 type CreateAccountAliasOutput struct {
 	metadataCreateAccountAliasOutput `json:"-" xml:"-"`
 }
 
 type metadataCreateAccountAliasOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateAccountAliasOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateAccountAliasOutput) GoString() string {
+	return s.String()
 }
 
 type CreateGroupInput struct {
@@ -4595,6 +4552,16 @@ type metadataCreateGroupInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateGroupInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateGroupInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateGroup request.
 type CreateGroupOutput struct {
 	// Information about the group.
@@ -4605,6 +4572,16 @@ type CreateGroupOutput struct {
 
 type metadataCreateGroupOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateGroupOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateGroupOutput) GoString() string {
+	return s.String()
 }
 
 type CreateInstanceProfileInput struct {
@@ -4626,6 +4603,16 @@ type metadataCreateInstanceProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateInstanceProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateInstanceProfileInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateInstanceProfile request.
 type CreateInstanceProfileOutput struct {
 	// Information about the instance profile.
@@ -4636,6 +4623,16 @@ type CreateInstanceProfileOutput struct {
 
 type metadataCreateInstanceProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateInstanceProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateInstanceProfileOutput) GoString() string {
+	return s.String()
 }
 
 type CreateLoginProfileInput struct {
@@ -4655,6 +4652,16 @@ type metadataCreateLoginProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateLoginProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateLoginProfileInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateLoginProfile request.
 type CreateLoginProfileOutput struct {
 	// The user name and password create date.
@@ -4665,6 +4672,16 @@ type CreateLoginProfileOutput struct {
 
 type metadataCreateLoginProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateLoginProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateLoginProfileOutput) GoString() string {
+	return s.String()
 }
 
 type CreateOpenIDConnectProviderInput struct {
@@ -4711,7 +4728,7 @@ type CreateOpenIDConnectProviderInput struct {
 	// You cannot register the same provider multiple times in a single AWS account.
 	// If you try to submit a URL that has already been used for an OpenID Connect
 	// provider in the AWS account, you will get an error.
-	URL *string `locationName:"Url" type:"string" required:"true"`
+	Url *string `type:"string" required:"true"`
 
 	metadataCreateOpenIDConnectProviderInput `json:"-" xml:"-"`
 }
@@ -4720,17 +4737,37 @@ type metadataCreateOpenIDConnectProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateOpenIDConnectProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateOpenIDConnectProviderInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateOpenIDConnectProvider request.
 type CreateOpenIDConnectProviderOutput struct {
 	// The Amazon Resource Name (ARN) of the IAM OpenID Connect provider that was
 	// created. For more information, see OpenIDConnectProviderListEntry.
-	OpenIDConnectProviderARN *string `locationName:"OpenIDConnectProviderArn" type:"string"`
+	OpenIDConnectProviderArn *string `type:"string"`
 
 	metadataCreateOpenIDConnectProviderOutput `json:"-" xml:"-"`
 }
 
 type metadataCreateOpenIDConnectProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateOpenIDConnectProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateOpenIDConnectProviderOutput) GoString() string {
+	return s.String()
 }
 
 type CreatePolicyInput struct {
@@ -4765,6 +4802,16 @@ type metadataCreatePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreatePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePolicyInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreatePolicy request.
 type CreatePolicyOutput struct {
 	// Information about the policy.
@@ -4777,13 +4824,23 @@ type metadataCreatePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreatePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePolicyOutput) GoString() string {
+	return s.String()
+}
+
 type CreatePolicyVersionInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The policy document.
 	PolicyDocument *string `type:"string" required:"true"`
@@ -4806,6 +4863,16 @@ type metadataCreatePolicyVersionInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreatePolicyVersionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePolicyVersionInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreatePolicyVersion request.
 type CreatePolicyVersionOutput struct {
 	// Information about the policy version.
@@ -4816,6 +4883,16 @@ type CreatePolicyVersionOutput struct {
 
 type metadataCreatePolicyVersionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreatePolicyVersionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePolicyVersionOutput) GoString() string {
+	return s.String()
 }
 
 type CreateRoleInput struct {
@@ -4840,6 +4917,16 @@ type metadataCreateRoleInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateRoleInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateRoleInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateRole request.
 type CreateRoleOutput struct {
 	// Information about the role.
@@ -4850,6 +4937,16 @@ type CreateRoleOutput struct {
 
 type metadataCreateRoleOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateRoleOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateRoleOutput) GoString() string {
+	return s.String()
 }
 
 type CreateSAMLProviderInput struct {
@@ -4874,16 +4971,36 @@ type metadataCreateSAMLProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateSAMLProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateSAMLProviderInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateSAMLProvider request.
 type CreateSAMLProviderOutput struct {
 	// The Amazon Resource Name (ARN) of the SAML provider.
-	SAMLProviderARN *string `locationName:"SAMLProviderArn" type:"string"`
+	SAMLProviderArn *string `type:"string"`
 
 	metadataCreateSAMLProviderOutput `json:"-" xml:"-"`
 }
 
 type metadataCreateSAMLProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateSAMLProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateSAMLProviderOutput) GoString() string {
+	return s.String()
 }
 
 type CreateUserInput struct {
@@ -4905,6 +5022,16 @@ type metadataCreateUserInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateUserInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateUserInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateUser request.
 type CreateUserOutput struct {
 	// Information about the user.
@@ -4915,6 +5042,16 @@ type CreateUserOutput struct {
 
 type metadataCreateUserOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateUserOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateUserOutput) GoString() string {
+	return s.String()
 }
 
 type CreateVirtualMFADeviceInput struct {
@@ -4937,6 +5074,16 @@ type metadataCreateVirtualMFADeviceInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateVirtualMFADeviceInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateVirtualMFADeviceInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful CreateVirtualMFADevice request.
 type CreateVirtualMFADeviceOutput struct {
 	// A newly created virtual MFA device.
@@ -4947,6 +5094,16 @@ type CreateVirtualMFADeviceOutput struct {
 
 type metadataCreateVirtualMFADeviceOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateVirtualMFADeviceOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateVirtualMFADeviceOutput) GoString() string {
+	return s.String()
 }
 
 type DeactivateMFADeviceInput struct {
@@ -4964,6 +5121,16 @@ type metadataDeactivateMFADeviceInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeactivateMFADeviceInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeactivateMFADeviceInput) GoString() string {
+	return s.String()
+}
+
 type DeactivateMFADeviceOutput struct {
 	metadataDeactivateMFADeviceOutput `json:"-" xml:"-"`
 }
@@ -4972,10 +5139,20 @@ type metadataDeactivateMFADeviceOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeactivateMFADeviceOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeactivateMFADeviceOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteAccessKeyInput struct {
 	// The access key ID for the access key ID and secret access key you want to
 	// delete.
-	AccessKeyID *string `locationName:"AccessKeyId" type:"string" required:"true"`
+	AccessKeyId *string `type:"string" required:"true"`
 
 	// The name of the user whose key you want to delete.
 	UserName *string `type:"string"`
@@ -4987,12 +5164,32 @@ type metadataDeleteAccessKeyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteAccessKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteAccessKeyInput) GoString() string {
+	return s.String()
+}
+
 type DeleteAccessKeyOutput struct {
 	metadataDeleteAccessKeyOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteAccessKeyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteAccessKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteAccessKeyOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteAccountAliasInput struct {
@@ -5006,12 +5203,32 @@ type metadataDeleteAccountAliasInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteAccountAliasInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteAccountAliasInput) GoString() string {
+	return s.String()
+}
+
 type DeleteAccountAliasOutput struct {
 	metadataDeleteAccountAliasOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteAccountAliasOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteAccountAliasOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteAccountAliasOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteAccountPasswordPolicyInput struct {
@@ -5022,12 +5239,32 @@ type metadataDeleteAccountPasswordPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteAccountPasswordPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteAccountPasswordPolicyInput) GoString() string {
+	return s.String()
+}
+
 type DeleteAccountPasswordPolicyOutput struct {
 	metadataDeleteAccountPasswordPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteAccountPasswordPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteAccountPasswordPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteAccountPasswordPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteGroupInput struct {
@@ -5041,12 +5278,32 @@ type metadataDeleteGroupInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteGroupInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteGroupInput) GoString() string {
+	return s.String()
+}
+
 type DeleteGroupOutput struct {
 	metadataDeleteGroupOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteGroupOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteGroupOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteGroupOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteGroupPolicyInput struct {
@@ -5064,12 +5321,32 @@ type metadataDeleteGroupPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteGroupPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteGroupPolicyInput) GoString() string {
+	return s.String()
+}
+
 type DeleteGroupPolicyOutput struct {
 	metadataDeleteGroupPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteGroupPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteGroupPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteGroupPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteInstanceProfileInput struct {
@@ -5083,12 +5360,32 @@ type metadataDeleteInstanceProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteInstanceProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteInstanceProfileInput) GoString() string {
+	return s.String()
+}
+
 type DeleteInstanceProfileOutput struct {
 	metadataDeleteInstanceProfileOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteInstanceProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteInstanceProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteInstanceProfileOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteLoginProfileInput struct {
@@ -5102,6 +5399,16 @@ type metadataDeleteLoginProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteLoginProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteLoginProfileInput) GoString() string {
+	return s.String()
+}
+
 type DeleteLoginProfileOutput struct {
 	metadataDeleteLoginProfileOutput `json:"-" xml:"-"`
 }
@@ -5110,17 +5417,37 @@ type metadataDeleteLoginProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteLoginProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteLoginProfileOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteOpenIDConnectProviderInput struct {
 	// The Amazon Resource Name (ARN) of the IAM OpenID Connect provider to delete.
 	// You can get a list of OpenID Connect provider ARNs by using the ListOpenIDConnectProviders
 	// action.
-	OpenIDConnectProviderARN *string `locationName:"OpenIDConnectProviderArn" type:"string" required:"true"`
+	OpenIDConnectProviderArn *string `type:"string" required:"true"`
 
 	metadataDeleteOpenIDConnectProviderInput `json:"-" xml:"-"`
 }
 
 type metadataDeleteOpenIDConnectProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteOpenIDConnectProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteOpenIDConnectProviderInput) GoString() string {
+	return s.String()
 }
 
 type DeleteOpenIDConnectProviderOutput struct {
@@ -5131,19 +5458,39 @@ type metadataDeleteOpenIDConnectProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteOpenIDConnectProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteOpenIDConnectProviderOutput) GoString() string {
+	return s.String()
+}
+
 type DeletePolicyInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	metadataDeletePolicyInput `json:"-" xml:"-"`
 }
 
 type metadataDeletePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeletePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePolicyInput) GoString() string {
+	return s.String()
 }
 
 type DeletePolicyOutput struct {
@@ -5154,20 +5501,30 @@ type metadataDeletePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeletePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePolicyOutput) GoString() string {
+	return s.String()
+}
+
 type DeletePolicyVersionInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The policy version to delete.
 	//
 	// For more information about managed policy versions, see Versioning for Managed
 	// Policies (http://docs.aws.amazon.com/IAM/latest/UserGuide/policies-managed-versions.html)
 	// in the Using IAM guide.
-	VersionID *string `locationName:"VersionId" type:"string" required:"true"`
+	VersionId *string `type:"string" required:"true"`
 
 	metadataDeletePolicyVersionInput `json:"-" xml:"-"`
 }
@@ -5176,12 +5533,32 @@ type metadataDeletePolicyVersionInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeletePolicyVersionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePolicyVersionInput) GoString() string {
+	return s.String()
+}
+
 type DeletePolicyVersionOutput struct {
 	metadataDeletePolicyVersionOutput `json:"-" xml:"-"`
 }
 
 type metadataDeletePolicyVersionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeletePolicyVersionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePolicyVersionOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteRoleInput struct {
@@ -5195,12 +5572,32 @@ type metadataDeleteRoleInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteRoleInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteRoleInput) GoString() string {
+	return s.String()
+}
+
 type DeleteRoleOutput struct {
 	metadataDeleteRoleOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteRoleOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteRoleOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteRoleOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteRolePolicyInput struct {
@@ -5218,6 +5615,16 @@ type metadataDeleteRolePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteRolePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteRolePolicyInput) GoString() string {
+	return s.String()
+}
+
 type DeleteRolePolicyOutput struct {
 	metadataDeleteRolePolicyOutput `json:"-" xml:"-"`
 }
@@ -5226,9 +5633,19 @@ type metadataDeleteRolePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteRolePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteRolePolicyOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteSAMLProviderInput struct {
 	// The Amazon Resource Name (ARN) of the SAML provider to delete.
-	SAMLProviderARN *string `locationName:"SAMLProviderArn" type:"string" required:"true"`
+	SAMLProviderArn *string `type:"string" required:"true"`
 
 	metadataDeleteSAMLProviderInput `json:"-" xml:"-"`
 }
@@ -5237,12 +5654,74 @@ type metadataDeleteSAMLProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteSAMLProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteSAMLProviderInput) GoString() string {
+	return s.String()
+}
+
 type DeleteSAMLProviderOutput struct {
 	metadataDeleteSAMLProviderOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteSAMLProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteSAMLProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteSAMLProviderOutput) GoString() string {
+	return s.String()
+}
+
+type DeleteSSHPublicKeyInput struct {
+	// The unique identifier for the SSH public key.
+	SSHPublicKeyId *string `type:"string" required:"true"`
+
+	// The name of the IAM user associated with the SSH public key.
+	UserName *string `type:"string" required:"true"`
+
+	metadataDeleteSSHPublicKeyInput `json:"-" xml:"-"`
+}
+
+type metadataDeleteSSHPublicKeyInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteSSHPublicKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteSSHPublicKeyInput) GoString() string {
+	return s.String()
+}
+
+type DeleteSSHPublicKeyOutput struct {
+	metadataDeleteSSHPublicKeyOutput `json:"-" xml:"-"`
+}
+
+type metadataDeleteSSHPublicKeyOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteSSHPublicKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteSSHPublicKeyOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteServerCertificateInput struct {
@@ -5256,6 +5735,16 @@ type metadataDeleteServerCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteServerCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteServerCertificateInput) GoString() string {
+	return s.String()
+}
+
 type DeleteServerCertificateOutput struct {
 	metadataDeleteServerCertificateOutput `json:"-" xml:"-"`
 }
@@ -5264,9 +5753,19 @@ type metadataDeleteServerCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteServerCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteServerCertificateOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteSigningCertificateInput struct {
 	// The ID of the signing certificate to delete.
-	CertificateID *string `locationName:"CertificateId" type:"string" required:"true"`
+	CertificateId *string `type:"string" required:"true"`
 
 	// The name of the user the signing certificate belongs to.
 	UserName *string `type:"string"`
@@ -5278,12 +5777,32 @@ type metadataDeleteSigningCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteSigningCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteSigningCertificateInput) GoString() string {
+	return s.String()
+}
+
 type DeleteSigningCertificateOutput struct {
 	metadataDeleteSigningCertificateOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteSigningCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteSigningCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteSigningCertificateOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteUserInput struct {
@@ -5297,12 +5816,32 @@ type metadataDeleteUserInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteUserInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteUserInput) GoString() string {
+	return s.String()
+}
+
 type DeleteUserOutput struct {
 	metadataDeleteUserOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteUserOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteUserOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteUserOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteUserPolicyInput struct {
@@ -5320,12 +5859,32 @@ type metadataDeleteUserPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteUserPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteUserPolicyInput) GoString() string {
+	return s.String()
+}
+
 type DeleteUserPolicyOutput struct {
 	metadataDeleteUserPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteUserPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteUserPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteUserPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type DeleteVirtualMFADeviceInput struct {
@@ -5340,12 +5899,32 @@ type metadataDeleteVirtualMFADeviceInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteVirtualMFADeviceInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteVirtualMFADeviceInput) GoString() string {
+	return s.String()
+}
+
 type DeleteVirtualMFADeviceOutput struct {
 	metadataDeleteVirtualMFADeviceOutput `json:"-" xml:"-"`
 }
 
 type metadataDeleteVirtualMFADeviceOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteVirtualMFADeviceOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteVirtualMFADeviceOutput) GoString() string {
+	return s.String()
 }
 
 type DetachGroupPolicyInput struct {
@@ -5357,13 +5936,23 @@ type DetachGroupPolicyInput struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	metadataDetachGroupPolicyInput `json:"-" xml:"-"`
 }
 
 type metadataDetachGroupPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DetachGroupPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DetachGroupPolicyInput) GoString() string {
+	return s.String()
 }
 
 type DetachGroupPolicyOutput struct {
@@ -5374,13 +5963,23 @@ type metadataDetachGroupPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DetachGroupPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DetachGroupPolicyOutput) GoString() string {
+	return s.String()
+}
+
 type DetachRolePolicyInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The name (friendly name, not ARN) of the role to detach the policy from.
 	RoleName *string `type:"string" required:"true"`
@@ -5392,6 +5991,16 @@ type metadataDetachRolePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DetachRolePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DetachRolePolicyInput) GoString() string {
+	return s.String()
+}
+
 type DetachRolePolicyOutput struct {
 	metadataDetachRolePolicyOutput `json:"-" xml:"-"`
 }
@@ -5400,13 +6009,23 @@ type metadataDetachRolePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DetachRolePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DetachRolePolicyOutput) GoString() string {
+	return s.String()
+}
+
 type DetachUserPolicyInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The name (friendly name, not ARN) of the user to detach the policy from.
 	UserName *string `type:"string" required:"true"`
@@ -5418,12 +6037,32 @@ type metadataDetachUserPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DetachUserPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DetachUserPolicyInput) GoString() string {
+	return s.String()
+}
+
 type DetachUserPolicyOutput struct {
 	metadataDetachUserPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataDetachUserPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DetachUserPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DetachUserPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type EnableMFADeviceInput struct {
@@ -5447,12 +6086,32 @@ type metadataEnableMFADeviceInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s EnableMFADeviceInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s EnableMFADeviceInput) GoString() string {
+	return s.String()
+}
+
 type EnableMFADeviceOutput struct {
 	metadataEnableMFADeviceOutput `json:"-" xml:"-"`
 }
 
 type metadataEnableMFADeviceOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s EnableMFADeviceOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s EnableMFADeviceOutput) GoString() string {
+	return s.String()
 }
 
 type GenerateCredentialReportInput struct {
@@ -5463,13 +6122,23 @@ type metadataGenerateCredentialReportInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GenerateCredentialReportInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GenerateCredentialReportInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful GenerateCredentialReport request.
 type GenerateCredentialReportOutput struct {
 	// Information about the credential report.
 	Description *string `type:"string"`
 
 	// Information about the state of the credential report.
-	State *string `type:"string"`
+	State *string `type:"string" enum:"ReportStateType"`
 
 	metadataGenerateCredentialReportOutput `json:"-" xml:"-"`
 }
@@ -5478,15 +6147,35 @@ type metadataGenerateCredentialReportOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GenerateCredentialReportOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GenerateCredentialReportOutput) GoString() string {
+	return s.String()
+}
+
 type GetAccessKeyLastUsedInput struct {
 	// The identifier of an access key.
-	AccessKeyID *string `locationName:"AccessKeyId" type:"string" required:"true"`
+	AccessKeyId *string `type:"string" required:"true"`
 
 	metadataGetAccessKeyLastUsedInput `json:"-" xml:"-"`
 }
 
 type metadataGetAccessKeyLastUsedInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetAccessKeyLastUsedInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccessKeyLastUsedInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetAccessKeyLastUsed request. It is
@@ -5506,20 +6195,31 @@ type metadataGetAccessKeyLastUsedOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetAccessKeyLastUsedOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccessKeyLastUsedOutput) GoString() string {
+	return s.String()
+}
+
 type GetAccountAuthorizationDetailsInput struct {
 	// A list of entity types (user, group, role, local managed policy, or AWS managed
 	// policy) for filtering the results.
 	Filter []*string `type:"list"`
 
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
 	// Use this only when paginating results to indicate the maximum number of items
 	// you want in the response. If there are additional items beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	metadataGetAccountAuthorizationDetailsInput `json:"-" xml:"-"`
@@ -5527,6 +6227,16 @@ type GetAccountAuthorizationDetailsInput struct {
 
 type metadataGetAccountAuthorizationDetailsInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetAccountAuthorizationDetailsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccountAuthorizationDetailsInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetAccountAuthorizationDetails request.
@@ -5539,8 +6249,8 @@ type GetAccountAuthorizationDetailsOutput struct {
 	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list containing information about managed policies.
@@ -5559,12 +6269,32 @@ type metadataGetAccountAuthorizationDetailsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetAccountAuthorizationDetailsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccountAuthorizationDetailsOutput) GoString() string {
+	return s.String()
+}
+
 type GetAccountPasswordPolicyInput struct {
 	metadataGetAccountPasswordPolicyInput `json:"-" xml:"-"`
 }
 
 type metadataGetAccountPasswordPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetAccountPasswordPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccountPasswordPolicyInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetAccountPasswordPolicy request.
@@ -5582,12 +6312,32 @@ type metadataGetAccountPasswordPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetAccountPasswordPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccountPasswordPolicyOutput) GoString() string {
+	return s.String()
+}
+
 type GetAccountSummaryInput struct {
 	metadataGetAccountSummaryInput `json:"-" xml:"-"`
 }
 
 type metadataGetAccountSummaryInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetAccountSummaryInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccountSummaryInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetAccountSummary request.
@@ -5744,12 +6494,32 @@ type metadataGetAccountSummaryOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetAccountSummaryOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetAccountSummaryOutput) GoString() string {
+	return s.String()
+}
+
 type GetCredentialReportInput struct {
 	metadataGetCredentialReportInput `json:"-" xml:"-"`
 }
 
 type metadataGetCredentialReportInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetCredentialReportInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetCredentialReportInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetCredentialReport request.
@@ -5762,7 +6532,7 @@ type GetCredentialReportOutput struct {
 	GeneratedTime *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// The format (MIME type) of the credential report.
-	ReportFormat *string `type:"string"`
+	ReportFormat *string `type:"string" enum:"ReportFormatType"`
 
 	metadataGetCredentialReportOutput `json:"-" xml:"-"`
 }
@@ -5771,19 +6541,30 @@ type metadataGetCredentialReportOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetCredentialReportOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetCredentialReportOutput) GoString() string {
+	return s.String()
+}
+
 type GetGroupInput struct {
 	// The name of the group.
 	GroupName *string `type:"string" required:"true"`
 
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of groups
-	// you want in the response. If there are additional groups beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	metadataGetGroupInput `json:"-" xml:"-"`
@@ -5793,17 +6574,27 @@ type metadataGetGroupInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetGroupInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetGroupInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful GetGroup request.
 type GetGroupOutput struct {
 	// Information about the group.
 	Group *Group `type:"structure" required:"true"`
 
-	// A flag that indicates whether there are more user names to list. If your
-	// results were truncated, you can make a subsequent pagination request using
-	// the Marker request parameter to retrieve more user names in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, then this element is present and contains the value
+	// When IsTruncated is true, this element is present and contains the value
 	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
@@ -5815,6 +6606,16 @@ type GetGroupOutput struct {
 
 type metadataGetGroupOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetGroupOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetGroupOutput) GoString() string {
+	return s.String()
 }
 
 type GetGroupPolicyInput struct {
@@ -5829,6 +6630,16 @@ type GetGroupPolicyInput struct {
 
 type metadataGetGroupPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetGroupPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetGroupPolicyInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetGroupPolicy request.
@@ -5849,6 +6660,16 @@ type metadataGetGroupPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetGroupPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetGroupPolicyOutput) GoString() string {
+	return s.String()
+}
+
 type GetInstanceProfileInput struct {
 	// The name of the instance profile to get information about.
 	InstanceProfileName *string `type:"string" required:"true"`
@@ -5858,6 +6679,16 @@ type GetInstanceProfileInput struct {
 
 type metadataGetInstanceProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetInstanceProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetInstanceProfileInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetInstanceProfile request.
@@ -5872,6 +6703,16 @@ type metadataGetInstanceProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetInstanceProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetInstanceProfileOutput) GoString() string {
+	return s.String()
+}
+
 type GetLoginProfileInput struct {
 	// The name of the user whose login profile you want to retrieve.
 	UserName *string `type:"string" required:"true"`
@@ -5881,6 +6722,16 @@ type GetLoginProfileInput struct {
 
 type metadataGetLoginProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetLoginProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetLoginProfileInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetLoginProfile request.
@@ -5895,17 +6746,37 @@ type metadataGetLoginProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetLoginProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetLoginProfileOutput) GoString() string {
+	return s.String()
+}
+
 type GetOpenIDConnectProviderInput struct {
 	// The Amazon Resource Name (ARN) of the IAM OpenID Connect (OIDC) provider
 	// to get information for. You can get a list of OIDC provider ARNs by using
 	// the ListOpenIDConnectProviders action.
-	OpenIDConnectProviderARN *string `locationName:"OpenIDConnectProviderArn" type:"string" required:"true"`
+	OpenIDConnectProviderArn *string `type:"string" required:"true"`
 
 	metadataGetOpenIDConnectProviderInput `json:"-" xml:"-"`
 }
 
 type metadataGetOpenIDConnectProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetOpenIDConnectProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetOpenIDConnectProviderInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetOpenIDConnectProvider request.
@@ -5924,7 +6795,7 @@ type GetOpenIDConnectProviderOutput struct {
 
 	// The URL that the IAM OpenID Connect provider is associated with. For more
 	// information, see CreateOpenIDConnectProvider.
-	URL *string `locationName:"Url" type:"string"`
+	Url *string `type:"string"`
 
 	metadataGetOpenIDConnectProviderOutput `json:"-" xml:"-"`
 }
@@ -5933,19 +6804,39 @@ type metadataGetOpenIDConnectProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetOpenIDConnectProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetOpenIDConnectProviderOutput) GoString() string {
+	return s.String()
+}
+
 type GetPolicyInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	metadataGetPolicyInput `json:"-" xml:"-"`
 }
 
 type metadataGetPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPolicyInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetPolicy request.
@@ -5960,22 +6851,42 @@ type metadataGetPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPolicyOutput) GoString() string {
+	return s.String()
+}
+
 type GetPolicyVersionInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// Identifies the policy version to retrieve.
-	VersionID *string `locationName:"VersionId" type:"string" required:"true"`
+	VersionId *string `type:"string" required:"true"`
 
 	metadataGetPolicyVersionInput `json:"-" xml:"-"`
 }
 
 type metadataGetPolicyVersionInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetPolicyVersionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPolicyVersionInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetPolicyVersion request.
@@ -5994,6 +6905,16 @@ type metadataGetPolicyVersionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetPolicyVersionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPolicyVersionOutput) GoString() string {
+	return s.String()
+}
+
 type GetRoleInput struct {
 	// The name of the role to get information about.
 	RoleName *string `type:"string" required:"true"`
@@ -6003,6 +6924,16 @@ type GetRoleInput struct {
 
 type metadataGetRoleInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetRoleInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetRoleInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetRole request.
@@ -6017,6 +6948,16 @@ type metadataGetRoleOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetRoleOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetRoleOutput) GoString() string {
+	return s.String()
+}
+
 type GetRolePolicyInput struct {
 	// The name of the policy document to get.
 	PolicyName *string `type:"string" required:"true"`
@@ -6029,6 +6970,16 @@ type GetRolePolicyInput struct {
 
 type metadataGetRolePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetRolePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetRolePolicyInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetRolePolicy request.
@@ -6049,15 +7000,35 @@ type metadataGetRolePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetRolePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetRolePolicyOutput) GoString() string {
+	return s.String()
+}
+
 type GetSAMLProviderInput struct {
 	// The Amazon Resource Name (ARN) of the SAML provider to get information about.
-	SAMLProviderARN *string `locationName:"SAMLProviderArn" type:"string" required:"true"`
+	SAMLProviderArn *string `type:"string" required:"true"`
 
 	metadataGetSAMLProviderInput `json:"-" xml:"-"`
 }
 
 type metadataGetSAMLProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetSAMLProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetSAMLProviderInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetSAMLProvider request.
@@ -6078,6 +7049,67 @@ type metadataGetSAMLProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetSAMLProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetSAMLProviderOutput) GoString() string {
+	return s.String()
+}
+
+type GetSSHPublicKeyInput struct {
+	// Specifies the public key encoding format to use in the response. To retrieve
+	// the public key in ssh-rsa format, use SSH. To retrieve the public key in
+	// PEM format, use PEM.
+	Encoding *string `type:"string" required:"true" enum:"encodingType"`
+
+	// The unique identifier for the SSH public key.
+	SSHPublicKeyId *string `type:"string" required:"true"`
+
+	// The name of the IAM user associated with the SSH public key.
+	UserName *string `type:"string" required:"true"`
+
+	metadataGetSSHPublicKeyInput `json:"-" xml:"-"`
+}
+
+type metadataGetSSHPublicKeyInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetSSHPublicKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetSSHPublicKeyInput) GoString() string {
+	return s.String()
+}
+
+// Contains the response to a successful GetSSHPublicKey request.
+type GetSSHPublicKeyOutput struct {
+	// Information about the SSH public key.
+	SSHPublicKey *SSHPublicKey `type:"structure"`
+
+	metadataGetSSHPublicKeyOutput `json:"-" xml:"-"`
+}
+
+type metadataGetSSHPublicKeyOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetSSHPublicKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetSSHPublicKeyOutput) GoString() string {
+	return s.String()
+}
+
 type GetServerCertificateInput struct {
 	// The name of the server certificate you want to retrieve information about.
 	ServerCertificateName *string `type:"string" required:"true"`
@@ -6087,6 +7119,16 @@ type GetServerCertificateInput struct {
 
 type metadataGetServerCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetServerCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetServerCertificateInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetServerCertificate request.
@@ -6099,6 +7141,16 @@ type GetServerCertificateOutput struct {
 
 type metadataGetServerCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetServerCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetServerCertificateOutput) GoString() string {
+	return s.String()
 }
 
 type GetUserInput struct {
@@ -6115,6 +7167,16 @@ type metadataGetUserInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetUserInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetUserInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful GetUser request.
 type GetUserOutput struct {
 	// Information about the user.
@@ -6125,6 +7187,16 @@ type GetUserOutput struct {
 
 type metadataGetUserOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetUserOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetUserOutput) GoString() string {
+	return s.String()
 }
 
 type GetUserPolicyInput struct {
@@ -6139,6 +7211,16 @@ type GetUserPolicyInput struct {
 
 type metadataGetUserPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetUserPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetUserPolicyInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful GetUserPolicy request.
@@ -6159,6 +7241,16 @@ type metadataGetUserPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetUserPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetUserPolicyOutput) GoString() string {
+	return s.String()
+}
+
 // Contains information about an IAM group entity.
 //
 //  This data type is used as a response element in the following actions:
@@ -6168,7 +7260,7 @@ type Group struct {
 	// The Amazon Resource Name (ARN) specifying the group. For more information
 	// about ARNs and how to use them in policies, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	ARN *string `locationName:"Arn" type:"string" required:"true"`
+	Arn *string `type:"string" required:"true"`
 
 	// The date and time, in ISO 8601 date-time format (http://www.iso.org/iso/iso8601),
 	// when the group was created.
@@ -6177,7 +7269,7 @@ type Group struct {
 	// The stable and unique string identifying the group. For more information
 	// about IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	GroupID *string `locationName:"GroupId" type:"string" required:"true"`
+	GroupId *string `type:"string" required:"true"`
 
 	// The friendly name that identifies the group.
 	GroupName *string `type:"string" required:"true"`
@@ -6194,6 +7286,16 @@ type metadataGroup struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s Group) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Group) GoString() string {
+	return s.String()
+}
+
 // Contains information about an IAM group, including all of the group's policies.
 //
 // This data type is used as a response element in the GetAccountAuthorizationDetails
@@ -6204,7 +7306,7 @@ type GroupDetail struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	// A list of the managed policies attached to the group.
 	AttachedManagedPolicies []*AttachedPolicy `type:"list"`
@@ -6216,7 +7318,7 @@ type GroupDetail struct {
 	// The stable and unique string identifying the group. For more information
 	// about IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	GroupID *string `locationName:"GroupId" type:"string"`
+	GroupId *string `type:"string"`
 
 	// The friendly name that identifies the group.
 	GroupName *string `type:"string"`
@@ -6236,6 +7338,16 @@ type metadataGroupDetail struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GroupDetail) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GroupDetail) GoString() string {
+	return s.String()
+}
+
 // Contains information about an instance profile.
 //
 // This data type is used as a response element in the following actions:
@@ -6252,7 +7364,7 @@ type InstanceProfile struct {
 	// information about ARNs and how to use them in policies, see IAM Identifiers
 	// (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	ARN *string `locationName:"Arn" type:"string" required:"true"`
+	Arn *string `type:"string" required:"true"`
 
 	// The date when the instance profile was created.
 	CreateDate *time.Time `type:"timestamp" timestampFormat:"iso8601" required:"true"`
@@ -6260,7 +7372,7 @@ type InstanceProfile struct {
 	// The stable and unique string identifying the instance profile. For more information
 	// about IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	InstanceProfileID *string `locationName:"InstanceProfileId" type:"string" required:"true"`
+	InstanceProfileId *string `type:"string" required:"true"`
 
 	// The name identifying the instance profile.
 	InstanceProfileName *string `type:"string" required:"true"`
@@ -6280,16 +7392,27 @@ type metadataInstanceProfile struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s InstanceProfile) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s InstanceProfile) GoString() string {
+	return s.String()
+}
+
 type ListAccessKeysInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of keys you want in the response. If there are additional keys beyond the
-	// maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The name of the user.
@@ -6302,18 +7425,28 @@ type metadataListAccessKeysInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAccessKeysInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAccessKeysInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListAccessKeys request.
 type ListAccessKeysOutput struct {
 	// A list of access key metadata.
 	AccessKeyMetadata []*AccessKeyMetadata `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more keys to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more keys in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListAccessKeysOutput `json:"-" xml:"-"`
@@ -6323,15 +7456,26 @@ type metadataListAccessKeysOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAccessKeysOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAccessKeysOutput) GoString() string {
+	return s.String()
+}
+
 type ListAccountAliasesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of account
-	// aliases you want in the response. If there are additional account aliases
-	// beyond the maximum you specify, the IsTruncated response element is true.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
 	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
@@ -6342,20 +7486,28 @@ type metadataListAccountAliasesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAccountAliasesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAccountAliasesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListAccountAliases request.
 type ListAccountAliasesOutput struct {
 	// A list of aliases associated with the account.
 	AccountAliases []*string `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more account aliases to list. If
-	// your results were truncated, you can make a subsequent pagination request
-	// using the Marker request parameter to retrieve more account aliases in the
-	// list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListAccountAliasesOutput `json:"-" xml:"-"`
@@ -6365,20 +7517,31 @@ type metadataListAccountAliasesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAccountAliasesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAccountAliasesOutput) GoString() string {
+	return s.String()
+}
+
 type ListAttachedGroupPoliciesInput struct {
 	// The name (friendly name, not ARN) of the group to list attached policies
 	// for.
 	GroupName *string `type:"string" required:"true"`
 
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of policies
-	// you want in the response. If there are additional policies beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. This parameter is optional. If
@@ -6392,18 +7555,28 @@ type metadataListAttachedGroupPoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAttachedGroupPoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAttachedGroupPoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListAttachedGroupPolicies request.
 type ListAttachedGroupPoliciesOutput struct {
 	// A list of the attached policies.
 	AttachedPolicies []*AttachedPolicy `type:"list"`
 
-	// A flag that indicates whether there are more policies to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more policies in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListAttachedGroupPoliciesOutput `json:"-" xml:"-"`
@@ -6413,16 +7586,27 @@ type metadataListAttachedGroupPoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAttachedGroupPoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAttachedGroupPoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListAttachedRolePoliciesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of policies
-	// you want in the response. If there are additional policies beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. This parameter is optional. If
@@ -6439,18 +7623,28 @@ type metadataListAttachedRolePoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAttachedRolePoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAttachedRolePoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListAttachedRolePolicies request.
 type ListAttachedRolePoliciesOutput struct {
 	// A list of the attached policies.
 	AttachedPolicies []*AttachedPolicy `type:"list"`
 
-	// A flag that indicates whether there are more policies to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more policies in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListAttachedRolePoliciesOutput `json:"-" xml:"-"`
@@ -6460,16 +7654,27 @@ type metadataListAttachedRolePoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAttachedRolePoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAttachedRolePoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListAttachedUserPoliciesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of policies
-	// you want in the response. If there are additional policies beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. This parameter is optional. If
@@ -6486,18 +7691,28 @@ type metadataListAttachedUserPoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAttachedUserPoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAttachedUserPoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListAttachedUserPolicies request.
 type ListAttachedUserPoliciesOutput struct {
 	// A list of the attached policies.
 	AttachedPolicies []*AttachedPolicy `type:"list"`
 
-	// A flag that indicates whether there are more policies to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more policies in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListAttachedUserPoliciesOutput `json:"-" xml:"-"`
@@ -6507,23 +7722,34 @@ type metadataListAttachedUserPoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListAttachedUserPoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListAttachedUserPoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListEntitiesForPolicyInput struct {
 	// The entity type to use for filtering the results.
 	//
 	// For example, when EntityFilter is Role, only the roles that are attached
 	// to the specified policy are returned. This parameter is optional. If it is
 	// not included, all attached entities (users, groups, and roles) are returned.
-	EntityFilter *string `type:"string"`
+	EntityFilter *string `type:"string" enum:"EntityType"`
 
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of entities
-	// you want in the response. If there are additional entities beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. This parameter is optional. If
@@ -6535,7 +7761,7 @@ type ListEntitiesForPolicyInput struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	metadataListEntitiesForPolicyInput `json:"-" xml:"-"`
 }
@@ -6544,15 +7770,25 @@ type metadataListEntitiesForPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListEntitiesForPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListEntitiesForPolicyInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListEntitiesForPolicy request.
 type ListEntitiesForPolicyOutput struct {
-	// A flag that indicates whether there are more entities to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more entities in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of groups that the policy is attached to.
@@ -6571,19 +7807,30 @@ type metadataListEntitiesForPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListEntitiesForPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListEntitiesForPolicyOutput) GoString() string {
+	return s.String()
+}
+
 type ListGroupPoliciesInput struct {
 	// The name of the group to list policies for.
 	GroupName *string `type:"string" required:"true"`
 
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of policy
-	// names you want in the response. If there are additional policy names beyond
-	// the maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	metadataListGroupPoliciesInput `json:"-" xml:"-"`
@@ -6593,15 +7840,25 @@ type metadataListGroupPoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListGroupPoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListGroupPoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListGroupPolicies request.
 type ListGroupPoliciesOutput struct {
-	// A flag that indicates whether there are more policy names to list. If your
-	// results were truncated, you can make a subsequent pagination request using
-	// the Marker request parameter to retrieve more policy names in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of policy names.
@@ -6614,16 +7871,27 @@ type metadataListGroupPoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListGroupPoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListGroupPoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListGroupsForUserInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of groups
-	// you want in the response. If there are additional groups beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The name of the user to list groups for.
@@ -6636,18 +7904,28 @@ type metadataListGroupsForUserInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListGroupsForUserInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListGroupsForUserInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListGroupsForUser request.
 type ListGroupsForUserOutput struct {
 	// A list of groups.
 	Groups []*Group `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more groups to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more groups in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListGroupsForUserOutput `json:"-" xml:"-"`
@@ -6657,16 +7935,27 @@ type metadataListGroupsForUserOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListGroupsForUserOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListGroupsForUserOutput) GoString() string {
+	return s.String()
+}
+
 type ListGroupsInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of groups
-	// you want in the response. If there are additional groups beyond the maximum
-	// you specify, the IsTruncated response element is true. This parameter is
-	// optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. For example, the prefix /division_abc/subdivision_xyz/
@@ -6683,18 +7972,28 @@ type metadataListGroupsInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListGroupsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListGroupsInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListGroups request.
 type ListGroupsOutput struct {
 	// A list of groups.
 	Groups []*Group `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more groups to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more groups in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListGroupsOutput `json:"-" xml:"-"`
@@ -6704,17 +8003,27 @@ type metadataListGroupsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListGroupsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListGroupsOutput) GoString() string {
+	return s.String()
+}
+
 type ListInstanceProfilesForRoleInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of instance profiles you want in the response. If there are additional instance
-	// profiles beyond the maximum you specify, the IsTruncated response element
-	// is true. This parameter is optional. If you do not include it, it defaults
-	// to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The name of the role to list instance profiles for.
@@ -6727,19 +8036,28 @@ type metadataListInstanceProfilesForRoleInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListInstanceProfilesForRoleInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListInstanceProfilesForRoleInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListInstanceProfilesForRole request.
 type ListInstanceProfilesForRoleOutput struct {
 	// A list of instance profiles.
 	InstanceProfiles []*InstanceProfile `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more instance profiles to list. If
-	// your results were truncated, you can make a subsequent pagination request
-	// using the Marker request parameter to retrieve more instance profiles in
-	// the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListInstanceProfilesForRoleOutput `json:"-" xml:"-"`
@@ -6749,17 +8067,27 @@ type metadataListInstanceProfilesForRoleOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListInstanceProfilesForRoleOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListInstanceProfilesForRoleOutput) GoString() string {
+	return s.String()
+}
+
 type ListInstanceProfilesInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of instance profiles you want in the response. If there are additional instance
-	// profiles beyond the maximum you specify, the IsTruncated response element
-	// is true. This parameter is optional. If you do not include it, it defaults
-	// to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. For example, the prefix /application_abc/component_xyz/
@@ -6776,19 +8104,28 @@ type metadataListInstanceProfilesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListInstanceProfilesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListInstanceProfilesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListInstanceProfiles request.
 type ListInstanceProfilesOutput struct {
 	// A list of instance profiles.
 	InstanceProfiles []*InstanceProfile `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more instance profiles to list. If
-	// your results were truncated, you can make a subsequent pagination request
-	// using the Marker request parameter to retrieve more instance profiles in
-	// the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListInstanceProfilesOutput `json:"-" xml:"-"`
@@ -6798,16 +8135,27 @@ type metadataListInstanceProfilesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListInstanceProfilesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListInstanceProfilesOutput) GoString() string {
+	return s.String()
+}
+
 type ListMFADevicesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of MFA
-	// devices you want in the response. If there are additional MFA devices beyond
-	// the maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The name of the user whose MFA devices you want to list.
@@ -6820,18 +8168,28 @@ type metadataListMFADevicesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListMFADevicesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListMFADevicesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListMFADevices request.
 type ListMFADevicesOutput struct {
-	// A flag that indicates whether there are more MFA devices to list. If your
-	// results were truncated, you can make a subsequent pagination request using
-	// the Marker request parameter to retrieve more MFA devices in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
 	// A list of MFA devices.
 	MFADevices []*MFADevice `type:"list" required:"true"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListMFADevicesOutput `json:"-" xml:"-"`
@@ -6841,12 +8199,32 @@ type metadataListMFADevicesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListMFADevicesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListMFADevicesOutput) GoString() string {
+	return s.String()
+}
+
 type ListOpenIDConnectProvidersInput struct {
 	metadataListOpenIDConnectProvidersInput `json:"-" xml:"-"`
 }
 
 type metadataListOpenIDConnectProvidersInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListOpenIDConnectProvidersInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListOpenIDConnectProvidersInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful ListOpenIDConnectProviders request.
@@ -6861,16 +8239,27 @@ type metadataListOpenIDConnectProvidersOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListOpenIDConnectProvidersOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListOpenIDConnectProvidersOutput) GoString() string {
+	return s.String()
+}
+
 type ListPoliciesInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of policies you want in the response. If there are additional policies beyond
-	// the maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// A flag to filter the results to only the attached policies.
@@ -6891,7 +8280,7 @@ type ListPoliciesInput struct {
 	//
 	// This parameter is optional. If it is not included, or if it is set to All,
 	// all policies are returned.
-	Scope *string `type:"string"`
+	Scope *string `type:"string" enum:"policyScopeType"`
 
 	metadataListPoliciesInput `json:"-" xml:"-"`
 }
@@ -6900,15 +8289,25 @@ type metadataListPoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListPoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListPoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListPolicies request.
 type ListPoliciesOutput struct {
-	// A flag that indicates whether there are more policies to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more policies in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of policies.
@@ -6921,17 +8320,27 @@ type metadataListPoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListPoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListPoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListPolicyVersionsInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of policy versions you want in the response. If there are additional policy
-	// versions beyond the maximum you specify, the IsTruncated response element
-	// is true. This parameter is optional. If you do not include it, it defaults
-	// to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
@@ -6939,7 +8348,7 @@ type ListPolicyVersionsInput struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	metadataListPolicyVersionsInput `json:"-" xml:"-"`
 }
@@ -6948,16 +8357,25 @@ type metadataListPolicyVersionsInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListPolicyVersionsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListPolicyVersionsInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListPolicyVersions request.
 type ListPolicyVersionsOutput struct {
-	// A flag that indicates whether there are more policy versions to list. If
-	// your results were truncated, you can make a subsequent pagination request
-	// using the Marker request parameter to retrieve more policy versions in the
-	// list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of policy versions.
@@ -6974,15 +8392,26 @@ type metadataListPolicyVersionsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListPolicyVersionsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListPolicyVersionsOutput) GoString() string {
+	return s.String()
+}
+
 type ListRolePoliciesInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of role policies you want in the response. If there are additional role policies
-	// beyond the maximum you specify, the IsTruncated response element is true.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
 	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
@@ -6996,15 +8425,25 @@ type metadataListRolePoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListRolePoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListRolePoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListRolePolicies request.
 type ListRolePoliciesOutput struct {
-	// A flag that indicates whether there are more policy names to list. If your
-	// results were truncated, you can make a subsequent pagination request using
-	// the Marker request parameter to retrieve more policy names in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of policy names.
@@ -7017,16 +8456,27 @@ type metadataListRolePoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListRolePoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListRolePoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListRolesInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of roles you want in the response. If there are additional roles beyond the
-	// maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. For example, the prefix /application_abc/component_xyz/
@@ -7043,15 +8493,25 @@ type metadataListRolesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListRolesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListRolesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListRoles request.
 type ListRolesOutput struct {
-	// A flag that indicates whether there are more roles to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more roles in the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of roles.
@@ -7064,12 +8524,32 @@ type metadataListRolesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListRolesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListRolesOutput) GoString() string {
+	return s.String()
+}
+
 type ListSAMLProvidersInput struct {
 	metadataListSAMLProvidersInput `json:"-" xml:"-"`
 }
 
 type metadataListSAMLProvidersInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListSAMLProvidersInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSAMLProvidersInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful ListSAMLProviders request.
@@ -7084,17 +8564,93 @@ type metadataListSAMLProvidersOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
-type ListServerCertificatesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+// String returns the string representation
+func (s ListSAMLProvidersOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSAMLProvidersOutput) GoString() string {
+	return s.String()
+}
+
+type ListSSHPublicKeysInput struct {
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of server
-	// certificates you want in the response. If there are additional server certificates
-	// beyond the maximum you specify, the IsTruncated response element will be
-	// set to true. This parameter is optional. If you do not include it, it defaults
-	// to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
+	MaxItems *int64 `type:"integer"`
+
+	// The name of the IAM user to list SSH public keys for. If none is specified,
+	// the UserName field is determined implicitly based on the AWS access key used
+	// to sign the request.
+	UserName *string `type:"string"`
+
+	metadataListSSHPublicKeysInput `json:"-" xml:"-"`
+}
+
+type metadataListSSHPublicKeysInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListSSHPublicKeysInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSSHPublicKeysInput) GoString() string {
+	return s.String()
+}
+
+// Contains the response to a successful ListSSHPublicKeys request.
+type ListSSHPublicKeysOutput struct {
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
+	IsTruncated *bool `type:"boolean"`
+
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
+	Marker *string `type:"string"`
+
+	// A list of SSH public keys.
+	SSHPublicKeys []*SSHPublicKeyMetadata `type:"list"`
+
+	metadataListSSHPublicKeysOutput `json:"-" xml:"-"`
+}
+
+type metadataListSSHPublicKeysOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListSSHPublicKeysOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSSHPublicKeysOutput) GoString() string {
+	return s.String()
+}
+
+type ListServerCertificatesInput struct {
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
+	Marker *string `type:"string"`
+
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The path prefix for filtering the results. For example: /company/servercerts
@@ -7111,16 +8667,25 @@ type metadataListServerCertificatesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListServerCertificatesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListServerCertificatesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListServerCertificates request.
 type ListServerCertificatesOutput struct {
-	// A flag that indicates whether there are more server certificates to list.
-	// If your results were truncated, you can make a subsequent pagination request
-	// using the Marker request parameter to retrieve more server certificates in
-	// the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of server certificates.
@@ -7133,16 +8698,27 @@ type metadataListServerCertificatesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListServerCertificatesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListServerCertificatesOutput) GoString() string {
+	return s.String()
+}
+
 type ListSigningCertificatesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of certificate
-	// IDs you want in the response. If there are additional certificate IDs beyond
-	// the maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The name of the user.
@@ -7155,18 +8731,28 @@ type metadataListSigningCertificatesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListSigningCertificatesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSigningCertificatesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListSigningCertificates request.
 type ListSigningCertificatesOutput struct {
 	// A list of the user's signing certificate information.
 	Certificates []*SigningCertificate `type:"list" required:"true"`
 
-	// A flag that indicates whether there are more certificate IDs to list. If
-	// your results were truncated, you can make a subsequent pagination request
-	// using the Marker request parameter to retrieve more certificates in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	metadataListSigningCertificatesOutput `json:"-" xml:"-"`
@@ -7176,16 +8762,27 @@ type metadataListSigningCertificatesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListSigningCertificatesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSigningCertificatesOutput) GoString() string {
+	return s.String()
+}
+
 type ListUserPoliciesInput struct {
-	// Use this only when paginating results, and only in a subsequent request after
-	// you've received a response where the results are truncated. Set it to the
-	// value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this only when paginating results to indicate the maximum number of policy
-	// names you want in the response. If there are additional policy names beyond
-	// the maximum you specify, the IsTruncated response element is true. This parameter
-	// is optional. If you do not include it, it defaults to 100.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
+	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
 	// The name of the user to list policies for.
@@ -7198,15 +8795,25 @@ type metadataListUserPoliciesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListUserPoliciesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListUserPoliciesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListUserPolicies request.
 type ListUserPoliciesOutput struct {
-	// A flag that indicates whether there are more policy names to list. If your
-	// results were truncated, you can make a subsequent pagination request using
-	// the Marker request parameter to retrieve more policy names in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of policy names.
@@ -7219,15 +8826,26 @@ type metadataListUserPoliciesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListUserPoliciesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListUserPoliciesOutput) GoString() string {
+	return s.String()
+}
+
 type ListUsersInput struct {
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of user names you want in the response. If there are additional user names
-	// beyond the maximum you specify, the IsTruncated response element is true.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
 	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
@@ -7245,15 +8863,25 @@ type metadataListUsersInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListUsersInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListUsersInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListUsers request.
 type ListUsersOutput struct {
-	// A flag that indicates whether there are more user names to list. If your
-	// results were truncated, you can make a subsequent pagination request using
-	// the Marker request parameter to retrieve more users in the list.
+	// A flag that indicates whether there are more items to return. If your results
+	// were truncated, you can make a subsequent pagination request using the Marker
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// A list of users.
@@ -7266,20 +8894,31 @@ type metadataListUsersOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListUsersOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListUsersOutput) GoString() string {
+	return s.String()
+}
+
 type ListVirtualMFADevicesInput struct {
 	// The status (unassigned or assigned) of the devices to list. If you do not
 	// specify an AssignmentStatus, the action defaults to Any which lists both
 	// assigned and unassigned virtual MFA devices.
-	AssignmentStatus *string `type:"string"`
+	AssignmentStatus *string `type:"string" enum:"assignmentStatusType"`
 
-	// Use this parameter only when paginating results, and only in a subsequent
-	// request after you've received a response where the results are truncated.
-	// Set it to the value of the Marker element in the response you just received.
+	// Use this parameter only when paginating results and only after you have received
+	// a response where the results are truncated. Set it to the value of the Marker
+	// element in the response you just received.
 	Marker *string `type:"string"`
 
-	// Use this parameter only when paginating results to indicate the maximum number
-	// of MFA devices you want in the response. If there are additional MFA devices
-	// beyond the maximum you specify, the IsTruncated response element is true.
+	// Use this only when paginating results to indicate the maximum number of items
+	// you want in the response. If there are additional items beyond the maximum
+	// you specify, the IsTruncated response element is true.
+	//
 	// This parameter is optional. If you do not include it, it defaults to 100.
 	MaxItems *int64 `type:"integer"`
 
@@ -7290,15 +8929,25 @@ type metadataListVirtualMFADevicesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListVirtualMFADevicesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListVirtualMFADevicesInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful ListVirtualMFADevices request.
 type ListVirtualMFADevicesOutput struct {
-	// A flag that indicates whether there are more items to list. If your results
+	// A flag that indicates whether there are more items to return. If your results
 	// were truncated, you can make a subsequent pagination request using the Marker
-	// request parameter to retrieve more items the list.
+	// request parameter to retrieve more items.
 	IsTruncated *bool `type:"boolean"`
 
-	// If IsTruncated is true, this element is present and contains the value to
-	// use for the Marker parameter in a subsequent pagination request.
+	// When IsTruncated is true, this element is present and contains the value
+	// to use for the Marker parameter in a subsequent pagination request.
 	Marker *string `type:"string"`
 
 	// The list of virtual MFA devices in the current account that match the AssignmentStatus
@@ -7310,6 +8959,16 @@ type ListVirtualMFADevicesOutput struct {
 
 type metadataListVirtualMFADevicesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListVirtualMFADevicesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListVirtualMFADevicesOutput) GoString() string {
+	return s.String()
 }
 
 // Contains the user name and password create date for a user.
@@ -7334,6 +8993,16 @@ type metadataLoginProfile struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s LoginProfile) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s LoginProfile) GoString() string {
+	return s.String()
+}
+
 // Contains information about an MFA device.
 //
 // This data type is used as a response element in the ListMFADevices action.
@@ -7355,6 +9024,16 @@ type metadataMFADevice struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s MFADevice) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s MFADevice) GoString() string {
+	return s.String()
+}
+
 // Contains information about a managed policy, including the policy's ARN,
 // versions, and the number of principal entities (users, groups, and roles)
 // that the policy is attached to.
@@ -7371,7 +9050,7 @@ type ManagedPolicyDetail struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	// The number of principal entities (users, groups, and roles) that the policy
 	// is attached to.
@@ -7387,7 +9066,7 @@ type ManagedPolicyDetail struct {
 	// For more information about policy versions, see Versioning for Managed Policies
 	// (http://docs.aws.amazon.com/IAM/latest/UserGuide/policies-managed-versions.html)
 	// in the Using IAM guide.
-	DefaultVersionID *string `locationName:"DefaultVersionId" type:"string"`
+	DefaultVersionId *string `type:"string"`
 
 	// A friendly description of the policy.
 	Description *string `type:"string"`
@@ -7405,7 +9084,7 @@ type ManagedPolicyDetail struct {
 	//
 	// For more information about IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	PolicyID *string `locationName:"PolicyId" type:"string"`
+	PolicyId *string `type:"string"`
 
 	// The friendly name (not ARN) identifying the policy.
 	PolicyName *string `type:"string"`
@@ -7429,6 +9108,16 @@ type metadataManagedPolicyDetail struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ManagedPolicyDetail) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ManagedPolicyDetail) GoString() string {
+	return s.String()
+}
+
 // Contains the Amazon Resource Name (ARN) for an IAM OpenID Connect provider.
 type OpenIDConnectProviderListEntry struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
@@ -7436,13 +9125,23 @@ type OpenIDConnectProviderListEntry struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	metadataOpenIDConnectProviderListEntry `json:"-" xml:"-"`
 }
 
 type metadataOpenIDConnectProviderListEntry struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s OpenIDConnectProviderListEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s OpenIDConnectProviderListEntry) GoString() string {
+	return s.String()
 }
 
 // Contains information about the account password policy.
@@ -7490,6 +9189,16 @@ type metadataPasswordPolicy struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PasswordPolicy) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PasswordPolicy) GoString() string {
+	return s.String()
+}
+
 // Contains information about a managed policy.
 //
 // This data type is used as a response element in the CreatePolicy, GetPolicy,
@@ -7504,7 +9213,7 @@ type Policy struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	// The number of entities (users, groups, and roles) that the policy is attached
 	// to.
@@ -7515,7 +9224,7 @@ type Policy struct {
 	CreateDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// The identifier for the version of the policy that is set as the default version.
-	DefaultVersionID *string `locationName:"DefaultVersionId" type:"string"`
+	DefaultVersionId *string `type:"string"`
 
 	// A friendly description of the policy.
 	//
@@ -7536,7 +9245,7 @@ type Policy struct {
 	//
 	// For more information about IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	PolicyID *string `locationName:"PolicyId" type:"string"`
+	PolicyId *string `type:"string"`
 
 	// The friendly name (not ARN) identifying the policy.
 	PolicyName *string `type:"string"`
@@ -7557,6 +9266,16 @@ type metadataPolicy struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s Policy) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Policy) GoString() string {
+	return s.String()
+}
+
 // Contains information about an IAM policy, including the policy document.
 //
 // This data type is used as a response element in the GetAccountAuthorizationDetails
@@ -7573,6 +9292,16 @@ type PolicyDetail struct {
 
 type metadataPolicyDetail struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PolicyDetail) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PolicyDetail) GoString() string {
+	return s.String()
 }
 
 // Contains information about a group that a managed policy is attached to.
@@ -7594,6 +9323,16 @@ type metadataPolicyGroup struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PolicyGroup) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PolicyGroup) GoString() string {
+	return s.String()
+}
+
 // Contains information about a role that a managed policy is attached to.
 //
 // This data type is used as a response element in the ListEntitiesForPolicy
@@ -7613,6 +9352,16 @@ type metadataPolicyRole struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PolicyRole) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PolicyRole) GoString() string {
+	return s.String()
+}
+
 // Contains information about a user that a managed policy is attached to.
 //
 // This data type is used as a response element in the ListEntitiesForPolicy
@@ -7630,6 +9379,16 @@ type PolicyUser struct {
 
 type metadataPolicyUser struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PolicyUser) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PolicyUser) GoString() string {
+	return s.String()
 }
 
 // Contains information about a version of a managed policy.
@@ -7660,13 +9419,23 @@ type PolicyVersion struct {
 	//
 	// Policy version identifiers always begin with v (always lowercase). When
 	// a policy is created, the first policy version is v1.
-	VersionID *string `locationName:"VersionId" type:"string"`
+	VersionId *string `type:"string"`
 
 	metadataPolicyVersion `json:"-" xml:"-"`
 }
 
 type metadataPolicyVersion struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PolicyVersion) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PolicyVersion) GoString() string {
+	return s.String()
 }
 
 type PutGroupPolicyInput struct {
@@ -7686,12 +9455,32 @@ type metadataPutGroupPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PutGroupPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutGroupPolicyInput) GoString() string {
+	return s.String()
+}
+
 type PutGroupPolicyOutput struct {
 	metadataPutGroupPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataPutGroupPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PutGroupPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutGroupPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type PutRolePolicyInput struct {
@@ -7711,12 +9500,32 @@ type metadataPutRolePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PutRolePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutRolePolicyInput) GoString() string {
+	return s.String()
+}
+
 type PutRolePolicyOutput struct {
 	metadataPutRolePolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataPutRolePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PutRolePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutRolePolicyOutput) GoString() string {
+	return s.String()
 }
 
 type PutUserPolicyInput struct {
@@ -7736,12 +9545,32 @@ type metadataPutUserPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PutUserPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutUserPolicyInput) GoString() string {
+	return s.String()
+}
+
 type PutUserPolicyOutput struct {
 	metadataPutUserPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataPutUserPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PutUserPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutUserPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type RemoveClientIDFromOpenIDConnectProviderInput struct {
@@ -7752,7 +9581,7 @@ type RemoveClientIDFromOpenIDConnectProviderInput struct {
 	// The Amazon Resource Name (ARN) of the IAM OpenID Connect (OIDC) provider
 	// to remove the client ID from. You can get a list of OIDC provider ARNs by
 	// using the ListOpenIDConnectProviders action.
-	OpenIDConnectProviderARN *string `locationName:"OpenIDConnectProviderArn" type:"string" required:"true"`
+	OpenIDConnectProviderArn *string `type:"string" required:"true"`
 
 	metadataRemoveClientIDFromOpenIDConnectProviderInput `json:"-" xml:"-"`
 }
@@ -7761,12 +9590,32 @@ type metadataRemoveClientIDFromOpenIDConnectProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s RemoveClientIDFromOpenIDConnectProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemoveClientIDFromOpenIDConnectProviderInput) GoString() string {
+	return s.String()
+}
+
 type RemoveClientIDFromOpenIDConnectProviderOutput struct {
 	metadataRemoveClientIDFromOpenIDConnectProviderOutput `json:"-" xml:"-"`
 }
 
 type metadataRemoveClientIDFromOpenIDConnectProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s RemoveClientIDFromOpenIDConnectProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemoveClientIDFromOpenIDConnectProviderOutput) GoString() string {
+	return s.String()
 }
 
 type RemoveRoleFromInstanceProfileInput struct {
@@ -7783,12 +9632,32 @@ type metadataRemoveRoleFromInstanceProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s RemoveRoleFromInstanceProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemoveRoleFromInstanceProfileInput) GoString() string {
+	return s.String()
+}
+
 type RemoveRoleFromInstanceProfileOutput struct {
 	metadataRemoveRoleFromInstanceProfileOutput `json:"-" xml:"-"`
 }
 
 type metadataRemoveRoleFromInstanceProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s RemoveRoleFromInstanceProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemoveRoleFromInstanceProfileOutput) GoString() string {
+	return s.String()
 }
 
 type RemoveUserFromGroupInput struct {
@@ -7805,12 +9674,32 @@ type metadataRemoveUserFromGroupInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s RemoveUserFromGroupInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemoveUserFromGroupInput) GoString() string {
+	return s.String()
+}
+
 type RemoveUserFromGroupOutput struct {
 	metadataRemoveUserFromGroupOutput `json:"-" xml:"-"`
 }
 
 type metadataRemoveUserFromGroupOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s RemoveUserFromGroupOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemoveUserFromGroupOutput) GoString() string {
+	return s.String()
 }
 
 type ResyncMFADeviceInput struct {
@@ -7833,12 +9722,32 @@ type metadataResyncMFADeviceInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ResyncMFADeviceInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ResyncMFADeviceInput) GoString() string {
+	return s.String()
+}
+
 type ResyncMFADeviceOutput struct {
 	metadataResyncMFADeviceOutput `json:"-" xml:"-"`
 }
 
 type metadataResyncMFADeviceOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ResyncMFADeviceOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ResyncMFADeviceOutput) GoString() string {
+	return s.String()
 }
 
 // Contains information about an IAM role.
@@ -7854,7 +9763,7 @@ type Role struct {
 	// The Amazon Resource Name (ARN) specifying the role. For more information
 	// about ARNs and how to use them in policies, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	ARN *string `locationName:"Arn" type:"string" required:"true"`
+	Arn *string `type:"string" required:"true"`
 
 	// The policy that grants an entity permission to assume the role.
 	AssumeRolePolicyDocument *string `type:"string"`
@@ -7871,7 +9780,7 @@ type Role struct {
 	// The stable and unique string identifying the role. For more information about
 	// IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	RoleID *string `locationName:"RoleId" type:"string" required:"true"`
+	RoleId *string `type:"string" required:"true"`
 
 	// The friendly name that identifies the role.
 	RoleName *string `type:"string" required:"true"`
@@ -7881,6 +9790,16 @@ type Role struct {
 
 type metadataRole struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s Role) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Role) GoString() string {
+	return s.String()
 }
 
 // Contains information about an IAM role, including all of the role's policies.
@@ -7893,7 +9812,7 @@ type RoleDetail struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	// The trust policy that grants permission to assume the role.
 	AssumeRolePolicyDocument *string `type:"string"`
@@ -7917,7 +9836,7 @@ type RoleDetail struct {
 	// The stable and unique string identifying the role. For more information about
 	// IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	RoleID *string `locationName:"RoleId" type:"string"`
+	RoleId *string `type:"string"`
 
 	// The friendly name that identifies the role.
 	RoleName *string `type:"string"`
@@ -7933,10 +9852,20 @@ type metadataRoleDetail struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s RoleDetail) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RoleDetail) GoString() string {
+	return s.String()
+}
+
 // Contains the list of SAML providers for this account.
 type SAMLProviderListEntry struct {
 	// The Amazon Resource Name (ARN) of the SAML provider.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	// The date and time when the SAML provider was created.
 	CreateDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
@@ -7949,6 +9878,93 @@ type SAMLProviderListEntry struct {
 
 type metadataSAMLProviderListEntry struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SAMLProviderListEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SAMLProviderListEntry) GoString() string {
+	return s.String()
+}
+
+// Contains information about an SSH public key.
+//
+// This data type is used as a response element in the GetSSHPublicKey and
+// UploadSSHPublicKey actions.
+type SSHPublicKey struct {
+	// The MD5 message digest of the SSH public key.
+	Fingerprint *string `type:"string" required:"true"`
+
+	// The SSH public key.
+	SSHPublicKeyBody *string `type:"string" required:"true"`
+
+	// The unique identifier for the SSH public key.
+	SSHPublicKeyId *string `type:"string" required:"true"`
+
+	// The status of the SSH public key. Active means the key can be used for authentication
+	// with an AWS CodeCommit repository. Inactive means the key cannot be used.
+	Status *string `type:"string" required:"true" enum:"statusType"`
+
+	// The date and time, in ISO 8601 date-time format (http://www.iso.org/iso/iso8601),
+	// when the SSH public key was uploaded.
+	UploadDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+
+	// The name of the IAM user associated with the SSH public key.
+	UserName *string `type:"string" required:"true"`
+
+	metadataSSHPublicKey `json:"-" xml:"-"`
+}
+
+type metadataSSHPublicKey struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SSHPublicKey) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SSHPublicKey) GoString() string {
+	return s.String()
+}
+
+// Contains information about an SSH public key, without the key's body or fingerprint.
+//
+// This data type is used as a response element in the ListSSHPublicKeys action.
+type SSHPublicKeyMetadata struct {
+	// The unique identifier for the SSH public key.
+	SSHPublicKeyId *string `type:"string" required:"true"`
+
+	// The status of the SSH public key. Active means the key can be used for authentication
+	// with an AWS CodeCommit repository. Inactive means the key cannot be used.
+	Status *string `type:"string" required:"true" enum:"statusType"`
+
+	// The date and time, in ISO 8601 date-time format (http://www.iso.org/iso/iso8601),
+	// when the SSH public key was uploaded.
+	UploadDate *time.Time `type:"timestamp" timestampFormat:"iso8601" required:"true"`
+
+	// The name of the IAM user associated with the SSH public key.
+	UserName *string `type:"string" required:"true"`
+
+	metadataSSHPublicKeyMetadata `json:"-" xml:"-"`
+}
+
+type metadataSSHPublicKeyMetadata struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SSHPublicKeyMetadata) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SSHPublicKeyMetadata) GoString() string {
+	return s.String()
 }
 
 // Contains information about a server certificate.
@@ -7973,6 +9989,16 @@ type metadataServerCertificate struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ServerCertificate) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ServerCertificate) GoString() string {
+	return s.String()
+}
+
 // Contains information about a server certificate without its certificate body,
 // certificate chain, and private key.
 //
@@ -7983,7 +10009,7 @@ type ServerCertificateMetadata struct {
 	// information about ARNs and how to use them in policies, see IAM Identifiers
 	// (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	ARN *string `locationName:"Arn" type:"string" required:"true"`
+	Arn *string `type:"string" required:"true"`
 
 	// The date on which the certificate is set to expire.
 	Expiration *time.Time `type:"timestamp" timestampFormat:"iso8601"`
@@ -7996,7 +10022,7 @@ type ServerCertificateMetadata struct {
 	// The stable and unique string identifying the server certificate. For more
 	// information about IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	ServerCertificateID *string `locationName:"ServerCertificateId" type:"string" required:"true"`
+	ServerCertificateId *string `type:"string" required:"true"`
 
 	// The name that identifies the server certificate.
 	ServerCertificateName *string `type:"string" required:"true"`
@@ -8011,20 +10037,30 @@ type metadataServerCertificateMetadata struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ServerCertificateMetadata) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ServerCertificateMetadata) GoString() string {
+	return s.String()
+}
+
 type SetDefaultPolicyVersionInput struct {
 	// The Amazon Resource Name (ARN). ARNs are unique identifiers for AWS resources.
 	//
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	PolicyARN *string `locationName:"PolicyArn" type:"string" required:"true"`
+	PolicyArn *string `type:"string" required:"true"`
 
 	// The version of the policy to set as the default (operative) version.
 	//
 	// For more information about managed policy versions, see Versioning for Managed
 	// Policies (http://docs.aws.amazon.com/IAM/latest/UserGuide/policies-managed-versions.html)
 	// in the Using IAM guide.
-	VersionID *string `locationName:"VersionId" type:"string" required:"true"`
+	VersionId *string `type:"string" required:"true"`
 
 	metadataSetDefaultPolicyVersionInput `json:"-" xml:"-"`
 }
@@ -8033,12 +10069,32 @@ type metadataSetDefaultPolicyVersionInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SetDefaultPolicyVersionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetDefaultPolicyVersionInput) GoString() string {
+	return s.String()
+}
+
 type SetDefaultPolicyVersionOutput struct {
 	metadataSetDefaultPolicyVersionOutput `json:"-" xml:"-"`
 }
 
 type metadataSetDefaultPolicyVersionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SetDefaultPolicyVersionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetDefaultPolicyVersionOutput) GoString() string {
+	return s.String()
 }
 
 // Contains information about an X.509 signing certificate.
@@ -8050,11 +10106,11 @@ type SigningCertificate struct {
 	CertificateBody *string `type:"string" required:"true"`
 
 	// The ID for the signing certificate.
-	CertificateID *string `locationName:"CertificateId" type:"string" required:"true"`
+	CertificateId *string `type:"string" required:"true"`
 
 	// The status of the signing certificate. Active means the key is valid for
 	// API calls, while Inactive means it is not.
-	Status *string `type:"string" required:"true"`
+	Status *string `type:"string" required:"true" enum:"statusType"`
 
 	// The date when the signing certificate was uploaded.
 	UploadDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
@@ -8069,14 +10125,24 @@ type metadataSigningCertificate struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SigningCertificate) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SigningCertificate) GoString() string {
+	return s.String()
+}
+
 type UpdateAccessKeyInput struct {
 	// The access key ID of the secret access key you want to update.
-	AccessKeyID *string `locationName:"AccessKeyId" type:"string" required:"true"`
+	AccessKeyId *string `type:"string" required:"true"`
 
 	// The status you want to assign to the secret access key. Active means the
 	// key can be used for API calls to AWS, while Inactive means the key cannot
 	// be used.
-	Status *string `type:"string" required:"true"`
+	Status *string `type:"string" required:"true" enum:"statusType"`
 
 	// The name of the user whose key you want to update.
 	UserName *string `type:"string"`
@@ -8088,12 +10154,32 @@ type metadataUpdateAccessKeyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateAccessKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateAccessKeyInput) GoString() string {
+	return s.String()
+}
+
 type UpdateAccessKeyOutput struct {
 	metadataUpdateAccessKeyOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateAccessKeyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateAccessKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateAccessKeyOutput) GoString() string {
+	return s.String()
 }
 
 type UpdateAccountPasswordPolicyInput struct {
@@ -8161,12 +10247,32 @@ type metadataUpdateAccountPasswordPolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateAccountPasswordPolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateAccountPasswordPolicyInput) GoString() string {
+	return s.String()
+}
+
 type UpdateAccountPasswordPolicyOutput struct {
 	metadataUpdateAccountPasswordPolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateAccountPasswordPolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateAccountPasswordPolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateAccountPasswordPolicyOutput) GoString() string {
+	return s.String()
 }
 
 type UpdateAssumeRolePolicyInput struct {
@@ -8183,12 +10289,32 @@ type metadataUpdateAssumeRolePolicyInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateAssumeRolePolicyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateAssumeRolePolicyInput) GoString() string {
+	return s.String()
+}
+
 type UpdateAssumeRolePolicyOutput struct {
 	metadataUpdateAssumeRolePolicyOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateAssumeRolePolicyOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateAssumeRolePolicyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateAssumeRolePolicyOutput) GoString() string {
+	return s.String()
 }
 
 type UpdateGroupInput struct {
@@ -8209,12 +10335,32 @@ type metadataUpdateGroupInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateGroupInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateGroupInput) GoString() string {
+	return s.String()
+}
+
 type UpdateGroupOutput struct {
 	metadataUpdateGroupOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateGroupOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateGroupOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateGroupOutput) GoString() string {
+	return s.String()
 }
 
 type UpdateLoginProfileInput struct {
@@ -8234,6 +10380,16 @@ type metadataUpdateLoginProfileInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateLoginProfileInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateLoginProfileInput) GoString() string {
+	return s.String()
+}
+
 type UpdateLoginProfileOutput struct {
 	metadataUpdateLoginProfileOutput `json:"-" xml:"-"`
 }
@@ -8242,11 +10398,21 @@ type metadataUpdateLoginProfileOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateLoginProfileOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateLoginProfileOutput) GoString() string {
+	return s.String()
+}
+
 type UpdateOpenIDConnectProviderThumbprintInput struct {
 	// The Amazon Resource Name (ARN) of the IAM OpenID Connect (OIDC) provider
 	// to update the thumbprint for. You can get a list of OIDC provider ARNs by
 	// using the ListOpenIDConnectProviders action.
-	OpenIDConnectProviderARN *string `locationName:"OpenIDConnectProviderArn" type:"string" required:"true"`
+	OpenIDConnectProviderArn *string `type:"string" required:"true"`
 
 	// A list of certificate thumbprints that are associated with the specified
 	// IAM OpenID Connect provider. For more information, see CreateOpenIDConnectProvider.
@@ -8259,12 +10425,32 @@ type metadataUpdateOpenIDConnectProviderThumbprintInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateOpenIDConnectProviderThumbprintInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateOpenIDConnectProviderThumbprintInput) GoString() string {
+	return s.String()
+}
+
 type UpdateOpenIDConnectProviderThumbprintOutput struct {
 	metadataUpdateOpenIDConnectProviderThumbprintOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateOpenIDConnectProviderThumbprintOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateOpenIDConnectProviderThumbprintOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateOpenIDConnectProviderThumbprintOutput) GoString() string {
+	return s.String()
 }
 
 type UpdateSAMLProviderInput struct {
@@ -8276,7 +10462,7 @@ type UpdateSAMLProviderInput struct {
 	SAMLMetadataDocument *string `type:"string" required:"true"`
 
 	// The Amazon Resource Name (ARN) of the SAML provider to update.
-	SAMLProviderARN *string `locationName:"SAMLProviderArn" type:"string" required:"true"`
+	SAMLProviderArn *string `type:"string" required:"true"`
 
 	metadataUpdateSAMLProviderInput `json:"-" xml:"-"`
 }
@@ -8285,10 +10471,20 @@ type metadataUpdateSAMLProviderInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateSAMLProviderInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateSAMLProviderInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful UpdateSAMLProvider request.
 type UpdateSAMLProviderOutput struct {
 	// The Amazon Resource Name (ARN) of the SAML provider that was updated.
-	SAMLProviderARN *string `locationName:"SAMLProviderArn" type:"string"`
+	SAMLProviderArn *string `type:"string"`
 
 	metadataUpdateSAMLProviderOutput `json:"-" xml:"-"`
 }
@@ -8297,13 +10493,71 @@ type metadataUpdateSAMLProviderOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateSAMLProviderOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateSAMLProviderOutput) GoString() string {
+	return s.String()
+}
+
+type UpdateSSHPublicKeyInput struct {
+	// The unique identifier for the SSH public key.
+	SSHPublicKeyId *string `type:"string" required:"true"`
+
+	// The status to assign to the SSH public key. Active means the key can be used
+	// for authentication with an AWS CodeCommit repository. Inactive means the
+	// key cannot be used.
+	Status *string `type:"string" required:"true" enum:"statusType"`
+
+	// The name of the IAM user associated with the SSH public key.
+	UserName *string `type:"string" required:"true"`
+
+	metadataUpdateSSHPublicKeyInput `json:"-" xml:"-"`
+}
+
+type metadataUpdateSSHPublicKeyInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateSSHPublicKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateSSHPublicKeyInput) GoString() string {
+	return s.String()
+}
+
+type UpdateSSHPublicKeyOutput struct {
+	metadataUpdateSSHPublicKeyOutput `json:"-" xml:"-"`
+}
+
+type metadataUpdateSSHPublicKeyOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateSSHPublicKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateSSHPublicKeyOutput) GoString() string {
+	return s.String()
+}
+
 type UpdateServerCertificateInput struct {
 	// The new path for the server certificate. Include this only if you are updating
 	// the server certificate's path.
 	NewPath *string `type:"string"`
 
 	// The new name for the server certificate. Include this only if you are updating
-	// the server certificate's name.
+	// the server certificate's name. The name of the certificate cannot contain
+	// any spaces.
 	NewServerCertificateName *string `type:"string"`
 
 	// The name of the server certificate that you want to update.
@@ -8316,6 +10570,16 @@ type metadataUpdateServerCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateServerCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateServerCertificateInput) GoString() string {
+	return s.String()
+}
+
 type UpdateServerCertificateOutput struct {
 	metadataUpdateServerCertificateOutput `json:"-" xml:"-"`
 }
@@ -8324,14 +10588,24 @@ type metadataUpdateServerCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateServerCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateServerCertificateOutput) GoString() string {
+	return s.String()
+}
+
 type UpdateSigningCertificateInput struct {
 	// The ID of the signing certificate you want to update.
-	CertificateID *string `locationName:"CertificateId" type:"string" required:"true"`
+	CertificateId *string `type:"string" required:"true"`
 
 	// The status you want to assign to the certificate. Active means the certificate
 	// can be used for API calls to AWS, while Inactive means the certificate cannot
 	// be used.
-	Status *string `type:"string" required:"true"`
+	Status *string `type:"string" required:"true" enum:"statusType"`
 
 	// The name of the user the signing certificate belongs to.
 	UserName *string `type:"string"`
@@ -8343,12 +10617,32 @@ type metadataUpdateSigningCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateSigningCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateSigningCertificateInput) GoString() string {
+	return s.String()
+}
+
 type UpdateSigningCertificateOutput struct {
 	metadataUpdateSigningCertificateOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateSigningCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateSigningCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateSigningCertificateOutput) GoString() string {
+	return s.String()
 }
 
 type UpdateUserInput struct {
@@ -8371,12 +10665,79 @@ type metadataUpdateUserInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UpdateUserInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateUserInput) GoString() string {
+	return s.String()
+}
+
 type UpdateUserOutput struct {
 	metadataUpdateUserOutput `json:"-" xml:"-"`
 }
 
 type metadataUpdateUserOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UpdateUserOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UpdateUserOutput) GoString() string {
+	return s.String()
+}
+
+type UploadSSHPublicKeyInput struct {
+	// The SSH public key. The public key must be encoded in ssh-rsa format or PEM
+	// format.
+	SSHPublicKeyBody *string `type:"string" required:"true"`
+
+	// The name of the IAM user to associate the SSH public key with.
+	UserName *string `type:"string" required:"true"`
+
+	metadataUploadSSHPublicKeyInput `json:"-" xml:"-"`
+}
+
+type metadataUploadSSHPublicKeyInput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UploadSSHPublicKeyInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UploadSSHPublicKeyInput) GoString() string {
+	return s.String()
+}
+
+// Contains the response to a successful UploadSSHPublicKey request.
+type UploadSSHPublicKeyOutput struct {
+	// Contains information about the SSH public key.
+	SSHPublicKey *SSHPublicKey `type:"structure"`
+
+	metadataUploadSSHPublicKeyOutput `json:"-" xml:"-"`
+}
+
+type metadataUploadSSHPublicKeyOutput struct {
+	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UploadSSHPublicKeyOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UploadSSHPublicKeyOutput) GoString() string {
+	return s.String()
 }
 
 type UploadServerCertificateInput struct {
@@ -8404,6 +10765,7 @@ type UploadServerCertificateInput struct {
 	PrivateKey *string `type:"string" required:"true"`
 
 	// The name for the server certificate. Do not include the path in this value.
+	// The name of the certificate cannot contain any spaces.
 	ServerCertificateName *string `type:"string" required:"true"`
 
 	metadataUploadServerCertificateInput `json:"-" xml:"-"`
@@ -8411,6 +10773,16 @@ type UploadServerCertificateInput struct {
 
 type metadataUploadServerCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UploadServerCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UploadServerCertificateInput) GoString() string {
+	return s.String()
 }
 
 // Contains the response to a successful UploadServerCertificate request.
@@ -8424,6 +10796,16 @@ type UploadServerCertificateOutput struct {
 
 type metadataUploadServerCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UploadServerCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UploadServerCertificateOutput) GoString() string {
+	return s.String()
 }
 
 type UploadSigningCertificateInput struct {
@@ -8440,6 +10822,16 @@ type metadataUploadSigningCertificateInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UploadSigningCertificateInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UploadSigningCertificateInput) GoString() string {
+	return s.String()
+}
+
 // Contains the response to a successful UploadSigningCertificate request.
 type UploadSigningCertificateOutput struct {
 	// Information about the certificate.
@@ -8450,6 +10842,16 @@ type UploadSigningCertificateOutput struct {
 
 type metadataUploadSigningCertificateOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UploadSigningCertificateOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UploadSigningCertificateOutput) GoString() string {
+	return s.String()
 }
 
 // Contains information about an IAM user entity.
@@ -8465,7 +10867,7 @@ type User struct {
 	// The Amazon Resource Name (ARN) that identifies the user. For more information
 	// about ARNs and how to use ARNs in policies, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	ARN *string `locationName:"Arn" type:"string" required:"true"`
+	Arn *string `type:"string" required:"true"`
 
 	// The date and time, in ISO 8601 date-time format (http://www.iso.org/iso/iso8601),
 	// when the user was created.
@@ -8476,12 +10878,17 @@ type User struct {
 	// a list of AWS websites that capture a user's last sign-in time, see the Credential
 	// Reports (http://docs.aws.amazon.com/IAM/latest/UserGuide/credential-reports.html)
 	// topic in the Using IAM guide. If a password is used more than once in a five-minute
-	// span, only the first use is returned in this field. When the user does not
-	// have a password, this field is null (not present). When a user's password
-	// exists but has never been used, or when there is no sign-in data associated
-	// with the user, this field is null (not present).
+	// span, only the first use is returned in this field. This field is null (not
+	// present) when:
 	//
-	// This value is returned only in the GetUser and ListUsers actions.
+	//   The user does not have a password
+	//
+	//   The password exists but has never been used (at least not since IAM started
+	// tracking this information on October 20th, 2014
+	//
+	//   there is no sign-in data associated with the user
+	//
+	//   This value is returned only in the GetUser and ListUsers actions.
 	PasswordLastUsed *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// The path to the user. For more information about paths, see IAM Identifiers
@@ -8492,7 +10899,7 @@ type User struct {
 	// The stable and unique string identifying the user. For more information about
 	// IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	UserID *string `locationName:"UserId" type:"string" required:"true"`
+	UserId *string `type:"string" required:"true"`
 
 	// The friendly name identifying the user.
 	UserName *string `type:"string" required:"true"`
@@ -8502,6 +10909,16 @@ type User struct {
 
 type metadataUser struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s User) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s User) GoString() string {
+	return s.String()
 }
 
 // Contains information about an IAM user, including all the user's policies
@@ -8515,7 +10932,7 @@ type UserDetail struct {
 	// For more information about ARNs, go to Amazon Resource Names (ARNs) and
 	// AWS Service Namespaces (http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)
 	// in the AWS General Reference.
-	ARN *string `locationName:"Arn" type:"string"`
+	Arn *string `type:"string"`
 
 	// A list of the managed policies attached to the user.
 	AttachedManagedPolicies []*AttachedPolicy `type:"list"`
@@ -8535,7 +10952,7 @@ type UserDetail struct {
 	// The stable and unique string identifying the user. For more information about
 	// IDs, see IAM Identifiers (http://docs.aws.amazon.com/IAM/latest/UserGuide/Using_Identifiers.html)
 	// in the Using IAM guide.
-	UserID *string `locationName:"UserId" type:"string"`
+	UserId *string `type:"string"`
 
 	// The friendly name identifying the user.
 	UserName *string `type:"string"`
@@ -8548,6 +10965,16 @@ type UserDetail struct {
 
 type metadataUserDetail struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UserDetail) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UserDetail) GoString() string {
+	return s.String()
 }
 
 // Contains information about a virtual MFA device.
@@ -8585,3 +11012,125 @@ type VirtualMFADevice struct {
 type metadataVirtualMFADevice struct {
 	SDKShapeTraits bool `type:"structure"`
 }
+
+// String returns the string representation
+func (s VirtualMFADevice) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s VirtualMFADevice) GoString() string {
+	return s.String()
+}
+
+const (
+	// @enum EntityType
+	EntityTypeUser = "User"
+	// @enum EntityType
+	EntityTypeRole = "Role"
+	// @enum EntityType
+	EntityTypeGroup = "Group"
+	// @enum EntityType
+	EntityTypeLocalManagedPolicy = "LocalManagedPolicy"
+	// @enum EntityType
+	EntityTypeAwsmanagedPolicy = "AWSManagedPolicy"
+)
+
+const (
+	// @enum ReportFormatType
+	ReportFormatTypeTextCsv = "text/csv"
+)
+
+const (
+	// @enum ReportStateType
+	ReportStateTypeStarted = "STARTED"
+	// @enum ReportStateType
+	ReportStateTypeInprogress = "INPROGRESS"
+	// @enum ReportStateType
+	ReportStateTypeComplete = "COMPLETE"
+)
+
+const (
+	// @enum assignmentStatusType
+	AssignmentStatusTypeAssigned = "Assigned"
+	// @enum assignmentStatusType
+	AssignmentStatusTypeUnassigned = "Unassigned"
+	// @enum assignmentStatusType
+	AssignmentStatusTypeAny = "Any"
+)
+
+const (
+	// @enum encodingType
+	EncodingTypeSsh = "SSH"
+	// @enum encodingType
+	EncodingTypePem = "PEM"
+)
+
+const (
+	// @enum policyScopeType
+	PolicyScopeTypeAll = "All"
+	// @enum policyScopeType
+	PolicyScopeTypeAws = "AWS"
+	// @enum policyScopeType
+	PolicyScopeTypeLocal = "Local"
+)
+
+const (
+	// @enum statusType
+	StatusTypeActive = "Active"
+	// @enum statusType
+	StatusTypeInactive = "Inactive"
+)
+
+const (
+	// @enum summaryKeyType
+	SummaryKeyTypeUsers = "Users"
+	// @enum summaryKeyType
+	SummaryKeyTypeUsersQuota = "UsersQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeGroups = "Groups"
+	// @enum summaryKeyType
+	SummaryKeyTypeGroupsQuota = "GroupsQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeServerCertificates = "ServerCertificates"
+	// @enum summaryKeyType
+	SummaryKeyTypeServerCertificatesQuota = "ServerCertificatesQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeUserPolicySizeQuota = "UserPolicySizeQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeGroupPolicySizeQuota = "GroupPolicySizeQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeGroupsPerUserQuota = "GroupsPerUserQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeSigningCertificatesPerUserQuota = "SigningCertificatesPerUserQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeAccessKeysPerUserQuota = "AccessKeysPerUserQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeMfadevices = "MFADevices"
+	// @enum summaryKeyType
+	SummaryKeyTypeMfadevicesInUse = "MFADevicesInUse"
+	// @enum summaryKeyType
+	SummaryKeyTypeAccountMfaenabled = "AccountMFAEnabled"
+	// @enum summaryKeyType
+	SummaryKeyTypeAccountAccessKeysPresent = "AccountAccessKeysPresent"
+	// @enum summaryKeyType
+	SummaryKeyTypeAccountSigningCertificatesPresent = "AccountSigningCertificatesPresent"
+	// @enum summaryKeyType
+	SummaryKeyTypeAttachedPoliciesPerGroupQuota = "AttachedPoliciesPerGroupQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeAttachedPoliciesPerRoleQuota = "AttachedPoliciesPerRoleQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeAttachedPoliciesPerUserQuota = "AttachedPoliciesPerUserQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypePolicies = "Policies"
+	// @enum summaryKeyType
+	SummaryKeyTypePoliciesQuota = "PoliciesQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypePolicySizeQuota = "PolicySizeQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypePolicyVersionsInUse = "PolicyVersionsInUse"
+	// @enum summaryKeyType
+	SummaryKeyTypePolicyVersionsInUseQuota = "PolicyVersionsInUseQuota"
+	// @enum summaryKeyType
+	SummaryKeyTypeVersionsPerPolicyQuota = "VersionsPerPolicyQuota"
+)

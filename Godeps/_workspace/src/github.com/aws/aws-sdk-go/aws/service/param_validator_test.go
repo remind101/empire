@@ -1,15 +1,16 @@
-package aws_test
+package service
 
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/stretchr/testify/assert"
 )
 
-var service = func() *aws.Service {
-	s := &aws.Service{
+var testSvc = func() *Service {
+	s := &Service{
 		Config:      &aws.Config{},
 		ServiceName: "mock-service",
 		APIVersion:  "2015-01-01",
@@ -41,22 +42,22 @@ func TestNoErrors(t *testing.T) {
 	input := &StructShape{
 		RequiredList: []*ConditionalStructShape{},
 		RequiredMap: map[string]*ConditionalStructShape{
-			"key1": &ConditionalStructShape{Name: aws.String("Name")},
-			"key2": &ConditionalStructShape{Name: aws.String("Name")},
+			"key1": {Name: aws.String("Name")},
+			"key2": {Name: aws.String("Name")},
 		},
-		RequiredBool:   aws.Boolean(true),
+		RequiredBool:   aws.Bool(true),
 		OptionalStruct: &ConditionalStructShape{Name: aws.String("Name")},
 	}
 
-	req := aws.NewRequest(service, &aws.Operation{}, input, nil)
-	aws.ValidateParameters(req)
+	req := NewRequest(testSvc, &Operation{}, input, nil)
+	ValidateParameters(req)
 	assert.NoError(t, req.Error)
 }
 
 func TestMissingRequiredParameters(t *testing.T) {
 	input := &StructShape{}
-	req := aws.NewRequest(service, &aws.Operation{}, input, nil)
-	aws.ValidateParameters(req)
+	req := NewRequest(testSvc, &Operation{}, input, nil)
+	ValidateParameters(req)
 
 	assert.Error(t, req.Error)
 	assert.Equal(t, "InvalidParameter", req.Error.(awserr.Error).Code())
@@ -65,17 +66,17 @@ func TestMissingRequiredParameters(t *testing.T) {
 
 func TestNestedMissingRequiredParameters(t *testing.T) {
 	input := &StructShape{
-		RequiredList: []*ConditionalStructShape{&ConditionalStructShape{}},
+		RequiredList: []*ConditionalStructShape{{}},
 		RequiredMap: map[string]*ConditionalStructShape{
-			"key1": &ConditionalStructShape{Name: aws.String("Name")},
-			"key2": &ConditionalStructShape{},
+			"key1": {Name: aws.String("Name")},
+			"key2": {},
 		},
-		RequiredBool:   aws.Boolean(true),
+		RequiredBool:   aws.Bool(true),
 		OptionalStruct: &ConditionalStructShape{},
 	}
 
-	req := aws.NewRequest(service, &aws.Operation{}, input, nil)
-	aws.ValidateParameters(req)
+	req := NewRequest(testSvc, &Operation{}, input, nil)
+	ValidateParameters(req)
 
 	assert.Error(t, req.Error)
 	assert.Equal(t, "InvalidParameter", req.Error.(awserr.Error).Code())
