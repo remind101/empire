@@ -72,7 +72,7 @@ func (c *Client) ListAppTasks(ctx context.Context, appID string, input *ecs.List
 		return nil, err
 	}
 
-	for _, s := range resp.ServiceARNs {
+	for _, s := range resp.ServiceArns {
 		id, err := arn.ResourceID(*s)
 		if err != nil {
 			return nil, err
@@ -86,15 +86,15 @@ func (c *Client) ListAppTasks(ctx context.Context, appID string, input *ecs.List
 			return nil, err
 		}
 
-		if len(t.TaskARNs) == 0 {
+		if len(t.TaskArns) == 0 {
 			continue
 		}
 
-		arns = append(arns, t.TaskARNs...)
+		arns = append(arns, t.TaskArns...)
 	}
 
 	return &ecs.ListTasksOutput{
-		TaskARNs: arns,
+		TaskArns: arns,
 	}, nil
 }
 
@@ -106,7 +106,7 @@ func (c *Client) ListAppServices(ctx context.Context, appID string, input *ecs.L
 	}
 
 	var arns []*string
-	for _, a := range resp.ServiceARNs {
+	for _, a := range resp.ServiceArns {
 		if a == nil {
 			continue
 		}
@@ -124,7 +124,7 @@ func (c *Client) ListAppServices(ctx context.Context, appID string, input *ecs.L
 	}
 
 	return &ecs.ListServicesOutput{
-		ServiceARNs: arns,
+		ServiceArns: arns,
 	}, nil
 }
 

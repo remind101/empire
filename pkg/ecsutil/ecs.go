@@ -91,7 +91,7 @@ func (c *ecsClient) DescribeTaskDefinition(ctx context.Context, input *ecs.Descr
 func (c *ecsClient) ListServices(ctx context.Context, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.ListServices(input)
-	done(err, "ListServices", "services", len(resp.ServiceARNs))
+	done(err, "ListServices", "services", len(resp.ServiceArns))
 	return resp, err
 }
 
@@ -160,7 +160,7 @@ func (c *autoPaginatedClient) ListServices(ctx context.Context, input *ecs.ListS
 			return resp, err
 		}
 
-		arns = append(arns, resp.ServiceARNs...)
+		arns = append(arns, resp.ServiceArns...)
 
 		nextMarker = resp.NextToken
 		if nextMarker == nil || *nextMarker == "" {
@@ -170,7 +170,7 @@ func (c *autoPaginatedClient) ListServices(ctx context.Context, input *ecs.ListS
 	}
 
 	return &ecs.ListServicesOutput{
-		ServiceARNs: arns,
+		ServiceArns: arns,
 	}, nil
 }
 
@@ -190,7 +190,7 @@ func (c *autoPaginatedClient) ListTasks(ctx context.Context, input *ecs.ListTask
 			return nil, err
 		}
 
-		arns = append(arns, resp.TaskARNs...)
+		arns = append(arns, resp.TaskArns...)
 
 		nextMarker = resp.NextToken
 		if nextMarker == nil || *nextMarker == "" {
@@ -200,7 +200,7 @@ func (c *autoPaginatedClient) ListTasks(ctx context.Context, input *ecs.ListTask
 	}
 
 	return &ecs.ListTasksOutput{
-		TaskARNs: arns,
+		TaskArns: arns,
 	}, nil
 }
 
