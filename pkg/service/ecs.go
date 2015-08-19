@@ -331,7 +331,7 @@ func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Proc
 
 	resp, err := m.ecs.CreateAppService(ctx, app.ID, &ecs.CreateServiceInput{
 		Cluster:        aws.String(m.cluster),
-		DesiredCount:   aws.Long(int64(p.Instances)),
+		DesiredCount:   aws.Int64(int64(p.Instances)),
 		ServiceName:    aws.String(p.Type),
 		TaskDefinition: aws.String(p.Type),
 		LoadBalancers:  loadBalancers,
@@ -344,7 +344,7 @@ func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Proc
 func (m *ecsProcessManager) updateService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
 	resp, err := m.ecs.UpdateAppService(ctx, app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
-		DesiredCount:   aws.Long(int64(p.Instances)),
+		DesiredCount:   aws.Int64(int64(p.Instances)),
 		Service:        aws.String(p.Type),
 		TaskDefinition: aws.String(p.Type),
 	})
@@ -434,7 +434,7 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 func (m *ecsProcessManager) Scale(ctx context.Context, app string, process string, instances uint) error {
 	_, err := m.ecs.UpdateAppService(ctx, app, &ecs.UpdateServiceInput{
 		Cluster:      aws.String(m.cluster),
-		DesiredCount: aws.Long(int64(instances)),
+		DesiredCount: aws.Int64(int64(instances)),
 		Service:      aws.String(process),
 	})
 	return err
@@ -476,11 +476,11 @@ func taskDefinitionInput(p *Process) (*ecs.RegisterTaskDefinitionInput, error) {
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			&ecs.ContainerDefinition{
 				Name:         aws.String(p.Type),
-				CPU:          aws.Long(int64(p.CPUShares)),
+				CPU:          aws.Int64(int64(p.CPUShares)),
 				Command:      command,
 				Image:        aws.String(p.Image.String()),
-				Essential:    aws.Boolean(true),
-				Memory:       aws.Long(int64(p.MemoryLimit / MB)),
+				Essential:    aws.Bool(true),
+				Memory:       aws.Int64(int64(p.MemoryLimit / MB)),
 				Environment:  environment,
 				PortMappings: ports,
 			},

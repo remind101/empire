@@ -80,11 +80,11 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 	if _, err := m.elb.ModifyLoadBalancerAttributes(&elb.ModifyLoadBalancerAttributesInput{
 		LoadBalancerAttributes: &elb.LoadBalancerAttributes{
 			ConnectionDraining: &elb.ConnectionDraining{
-				Enabled: aws.Boolean(true),
-				Timeout: aws.Long(defaultConnectionDrainingTimeout),
+				Enabled: aws.Bool(true),
+				Timeout: aws.Int64(defaultConnectionDrainingTimeout),
 			},
 			CrossZoneLoadBalancing: &elb.CrossZoneLoadBalancing{
-				Enabled: aws.Boolean(true),
+				Enabled: aws.Bool(true),
 			},
 		},
 		LoadBalancerName: input.LoadBalancerName,
@@ -121,7 +121,7 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 	for {
 		out, err := m.elb.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{
 			Marker:   nextMarker,
-			PageSize: aws.Long(20), // Set this to 20, because DescribeTags has a limit of 20 on the LoadBalancerNames attribute.
+			PageSize: aws.Int64(20), // Set this to 20, because DescribeTags has a limit of 20 on the LoadBalancerNames attribute.
 		})
 		if err != nil {
 			return nil, err
@@ -210,8 +210,8 @@ func newName() string {
 func elbListeners(port int64, certID string) []*elb.Listener {
 	listeners := []*elb.Listener{
 		{
-			InstancePort:     aws.Long(port),
-			LoadBalancerPort: aws.Long(80),
+			InstancePort:     aws.Int64(port),
+			LoadBalancerPort: aws.Int64(80),
 			Protocol:         aws.String("http"),
 			InstanceProtocol: aws.String("http"),
 		},
@@ -219,8 +219,8 @@ func elbListeners(port int64, certID string) []*elb.Listener {
 
 	if certID != "" {
 		listeners = append(listeners, &elb.Listener{
-			InstancePort:     aws.Long(port),
-			LoadBalancerPort: aws.Long(443),
+			InstancePort:     aws.Int64(port),
+			LoadBalancerPort: aws.Int64(443),
 			SSLCertificateID: aws.String(certID),
 			Protocol:         aws.String("https"),
 			InstanceProtocol: aws.String("http"),

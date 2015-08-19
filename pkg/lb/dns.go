@@ -89,7 +89,7 @@ func newCNAMERecordSet(cname string, target string, ttl int64) *route53.Resource
 				Value: aws.String(target),
 			},
 		},
-		TTL: aws.Long(ttl),
+		TTL: aws.Int64(ttl),
 	}
 }
 
