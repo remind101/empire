@@ -316,12 +316,11 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
 	m := NewELBManager(
-		aws.DefaultConfig.Merge(&aws.Config{
+		aws.NewConfig().Merge(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-			Endpoint:    s.URL,
-			Region:      "localhost",
-			LogLevel:    0,
-		}),
+			Endpoint:    aws.String(s.URL),
+			Region:      aws.String("localhost"),
+		}).WithLogLevel(0),
 	)
 	m.newName = func() string {
 		return "acme-inc"

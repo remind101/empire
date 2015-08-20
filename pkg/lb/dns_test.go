@@ -182,8 +182,8 @@ func TestRoute53_zone(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if *zone.ID != "/hostedzone/FAKEZONE" {
-			t.Fatalf("Got wrong zone ID: %s\n", *zone.ID)
+		if *zone.Id != "/hostedzone/FAKEZONE" {
+			t.Fatalf("Got wrong zone ID: %s\n", *zone.Id)
 		}
 	}
 }
@@ -192,12 +192,11 @@ func newTestRoute53Nameserver(h http.Handler, zoneID string) (*Route53Nameserver
 	s := httptest.NewServer(h)
 
 	n := NewRoute53Nameserver(
-		aws.DefaultConfig.Merge(&aws.Config{
+		aws.NewConfig().Merge(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-			Endpoint:    s.URL,
-			Region:      "localhost",
-			LogLevel:    0,
-		}),
+			Endpoint:    aws.String(s.URL),
+			Region:      aws.String("localhost"),
+		}).WithLogLevel(0),
 	)
 	n.ZoneID = zoneID
 

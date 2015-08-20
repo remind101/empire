@@ -156,8 +156,8 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 				if len(elb.ListenerDescriptions) > 0 {
 					instancePort = *elb.ListenerDescriptions[0].Listener.InstancePort
 					for _, ld := range elb.ListenerDescriptions {
-						if ld.Listener.SSLCertificateID != nil {
-							sslCert = *ld.Listener.SSLCertificateID
+						if ld.Listener.SSLCertificateId != nil {
+							sslCert = *ld.Listener.SSLCertificateId
 						}
 					}
 				}
@@ -221,7 +221,7 @@ func elbListeners(port int64, certID string) []*elb.Listener {
 		listeners = append(listeners, &elb.Listener{
 			InstancePort:     aws.Int64(port),
 			LoadBalancerPort: aws.Int64(443),
-			SSLCertificateID: aws.String(certID),
+			SSLCertificateId: aws.String(certID),
 			Protocol:         aws.String("https"),
 			InstanceProtocol: aws.String("http"),
 		})
