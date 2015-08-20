@@ -36,7 +36,7 @@ func (m *IAMManager) Add(name string, cert string, key string) (string, error) {
 		return "", err
 	}
 
-	return *output.ServerCertificateMetadata.ARN, nil
+	return *output.ServerCertificateMetadata.Arn, nil
 }
 
 func (m *IAMManager) Remove(name string) error {
@@ -54,8 +54,8 @@ func (m *IAMManager) MetaData(name string) (map[string]string, error) {
 		return data, err
 	}
 
-	if out.ServerCertificate.ServerCertificateMetadata.ARN != nil {
-		data["ARN"] = *out.ServerCertificate.ServerCertificateMetadata.ARN
+	if out.ServerCertificate.ServerCertificateMetadata.Arn != nil {
+		data["ARN"] = *out.ServerCertificate.ServerCertificateMetadata.Arn
 	}
 
 	return data, nil

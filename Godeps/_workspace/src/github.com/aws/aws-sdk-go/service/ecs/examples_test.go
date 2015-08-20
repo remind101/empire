@@ -26,61 +26,61 @@ func ExampleECS_CreateCluster() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_CreateService() {
 	svc := ecs.New(nil)
 
 	params := &ecs.CreateServiceInput{
-		ServiceName:  aws.String("String"), // Required
-		ClientToken:  aws.String("String"),
-		Cluster:      aws.String("String"),
-		DesiredCount: aws.Long(1),
+		DesiredCount:   aws.Int64(1),         // Required
+		ServiceName:    aws.String("String"), // Required
+		TaskDefinition: aws.String("String"), // Required
+		ClientToken:    aws.String("String"),
+		Cluster:        aws.String("String"),
 		LoadBalancers: []*ecs.LoadBalancer{
-			&ecs.LoadBalancer{ // Required
+			{ // Required
 				ContainerName:    aws.String("String"),
-				ContainerPort:    aws.Long(1),
+				ContainerPort:    aws.Int64(1),
 				LoadBalancerName: aws.String("String"),
 			},
 			// More values...
 		},
-		Role:           aws.String("String"),
-		TaskDefinition: aws.String("String"),
+		Role: aws.String("String"),
 	}
 	resp, err := svc.CreateService(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DeleteCluster() {
@@ -93,21 +93,21 @@ func ExampleECS_DeleteCluster() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DeleteService() {
@@ -121,21 +121,21 @@ func ExampleECS_DeleteService() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DeregisterContainerInstance() {
@@ -144,27 +144,27 @@ func ExampleECS_DeregisterContainerInstance() {
 	params := &ecs.DeregisterContainerInstanceInput{
 		ContainerInstance: aws.String("String"), // Required
 		Cluster:           aws.String("String"),
-		Force:             aws.Boolean(true),
+		Force:             aws.Bool(true),
 	}
 	resp, err := svc.DeregisterContainerInstance(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DeregisterTaskDefinition() {
@@ -177,21 +177,21 @@ func ExampleECS_DeregisterTaskDefinition() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DescribeClusters() {
@@ -207,21 +207,21 @@ func ExampleECS_DescribeClusters() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DescribeContainerInstances() {
@@ -238,21 +238,21 @@ func ExampleECS_DescribeContainerInstances() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DescribeServices() {
@@ -269,21 +269,21 @@ func ExampleECS_DescribeServices() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DescribeTaskDefinition() {
@@ -296,21 +296,21 @@ func ExampleECS_DescribeTaskDefinition() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DescribeTasks() {
@@ -327,21 +327,21 @@ func ExampleECS_DescribeTasks() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_DiscoverPollEndpoint() {
@@ -355,49 +355,49 @@ func ExampleECS_DiscoverPollEndpoint() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_ListClusters() {
 	svc := ecs.New(nil)
 
 	params := &ecs.ListClustersInput{
-		MaxResults: aws.Long(1),
+		MaxResults: aws.Int64(1),
 		NextToken:  aws.String("String"),
 	}
 	resp, err := svc.ListClusters(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_ListContainerInstances() {
@@ -405,28 +405,28 @@ func ExampleECS_ListContainerInstances() {
 
 	params := &ecs.ListContainerInstancesInput{
 		Cluster:    aws.String("String"),
-		MaxResults: aws.Long(1),
+		MaxResults: aws.Int64(1),
 		NextToken:  aws.String("String"),
 	}
 	resp, err := svc.ListContainerInstances(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_ListServices() {
@@ -434,28 +434,28 @@ func ExampleECS_ListServices() {
 
 	params := &ecs.ListServicesInput{
 		Cluster:    aws.String("String"),
-		MaxResults: aws.Long(1),
+		MaxResults: aws.Int64(1),
 		NextToken:  aws.String("String"),
 	}
 	resp, err := svc.ListServices(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_ListTaskDefinitionFamilies() {
@@ -463,28 +463,28 @@ func ExampleECS_ListTaskDefinitionFamilies() {
 
 	params := &ecs.ListTaskDefinitionFamiliesInput{
 		FamilyPrefix: aws.String("String"),
-		MaxResults:   aws.Long(1),
+		MaxResults:   aws.Int64(1),
 		NextToken:    aws.String("String"),
 	}
 	resp, err := svc.ListTaskDefinitionFamilies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_ListTaskDefinitions() {
@@ -492,28 +492,30 @@ func ExampleECS_ListTaskDefinitions() {
 
 	params := &ecs.ListTaskDefinitionsInput{
 		FamilyPrefix: aws.String("String"),
-		MaxResults:   aws.Long(1),
+		MaxResults:   aws.Int64(1),
 		NextToken:    aws.String("String"),
+		Sort:         aws.String("SortOrder"),
+		Status:       aws.String("TaskDefinitionStatus"),
 	}
 	resp, err := svc.ListTaskDefinitions(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_ListTasks() {
@@ -522,8 +524,9 @@ func ExampleECS_ListTasks() {
 	params := &ecs.ListTasksInput{
 		Cluster:           aws.String("String"),
 		ContainerInstance: aws.String("String"),
+		DesiredStatus:     aws.String("DesiredStatus"),
 		Family:            aws.String("String"),
-		MaxResults:        aws.Long(1),
+		MaxResults:        aws.Int64(1),
 		NextToken:         aws.String("String"),
 		ServiceName:       aws.String("String"),
 		StartedBy:         aws.String("String"),
@@ -532,21 +535,21 @@ func ExampleECS_ListTasks() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_RegisterContainerInstance() {
@@ -554,13 +557,14 @@ func ExampleECS_RegisterContainerInstance() {
 
 	params := &ecs.RegisterContainerInstanceInput{
 		Cluster:                           aws.String("String"),
+		ContainerInstanceArn:              aws.String("String"),
 		InstanceIdentityDocument:          aws.String("String"),
 		InstanceIdentityDocumentSignature: aws.String("String"),
 		TotalResources: []*ecs.Resource{
-			&ecs.Resource{ // Required
-				DoubleValue:  aws.Double(1.0),
-				IntegerValue: aws.Long(1),
-				LongValue:    aws.Long(1),
+			{ // Required
+				DoubleValue:  aws.Float64(1.0),
+				IntegerValue: aws.Int64(1),
+				LongValue:    aws.Int64(1),
 				Name:         aws.String("String"),
 				StringSetValue: []*string{
 					aws.String("String"), // Required
@@ -580,21 +584,21 @@ func ExampleECS_RegisterContainerInstance() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_RegisterTaskDefinition() {
@@ -602,49 +606,50 @@ func ExampleECS_RegisterTaskDefinition() {
 
 	params := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{ // Required
-			&ecs.ContainerDefinition{ // Required
-				CPU: aws.Long(1),
+			{ // Required
 				Command: []*string{
 					aws.String("String"), // Required
 					// More values...
 				},
+				Cpu: aws.Int64(1),
 				EntryPoint: []*string{
 					aws.String("String"), // Required
 					// More values...
 				},
 				Environment: []*ecs.KeyValuePair{
-					&ecs.KeyValuePair{ // Required
+					{ // Required
 						Name:  aws.String("String"),
 						Value: aws.String("String"),
 					},
 					// More values...
 				},
-				Essential: aws.Boolean(true),
+				Essential: aws.Bool(true),
 				Image:     aws.String("String"),
 				Links: []*string{
 					aws.String("String"), // Required
 					// More values...
 				},
-				Memory: aws.Long(1),
+				Memory: aws.Int64(1),
 				MountPoints: []*ecs.MountPoint{
-					&ecs.MountPoint{ // Required
+					{ // Required
 						ContainerPath: aws.String("String"),
-						ReadOnly:      aws.Boolean(true),
+						ReadOnly:      aws.Bool(true),
 						SourceVolume:  aws.String("String"),
 					},
 					// More values...
 				},
 				Name: aws.String("String"),
 				PortMappings: []*ecs.PortMapping{
-					&ecs.PortMapping{ // Required
-						ContainerPort: aws.Long(1),
-						HostPort:      aws.Long(1),
+					{ // Required
+						ContainerPort: aws.Int64(1),
+						HostPort:      aws.Int64(1),
+						Protocol:      aws.String("TransportProtocol"),
 					},
 					// More values...
 				},
 				VolumesFrom: []*ecs.VolumeFrom{
-					&ecs.VolumeFrom{ // Required
-						ReadOnly:        aws.Boolean(true),
+					{ // Required
+						ReadOnly:        aws.Bool(true),
 						SourceContainer: aws.String("String"),
 					},
 					// More values...
@@ -654,7 +659,7 @@ func ExampleECS_RegisterTaskDefinition() {
 		},
 		Family: aws.String("String"), // Required
 		Volumes: []*ecs.Volume{
-			&ecs.Volume{ // Required
+			{ // Required
 				Host: &ecs.HostVolumeProperties{
 					SourcePath: aws.String("String"),
 				},
@@ -667,21 +672,21 @@ func ExampleECS_RegisterTaskDefinition() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_RunTask() {
@@ -690,12 +695,19 @@ func ExampleECS_RunTask() {
 	params := &ecs.RunTaskInput{
 		TaskDefinition: aws.String("String"), // Required
 		Cluster:        aws.String("String"),
-		Count:          aws.Long(1),
+		Count:          aws.Int64(1),
 		Overrides: &ecs.TaskOverride{
 			ContainerOverrides: []*ecs.ContainerOverride{
-				&ecs.ContainerOverride{ // Required
+				{ // Required
 					Command: []*string{
 						aws.String("String"), // Required
+						// More values...
+					},
+					Environment: []*ecs.KeyValuePair{
+						{ // Required
+							Name:  aws.String("String"),
+							Value: aws.String("String"),
+						},
 						// More values...
 					},
 					Name: aws.String("String"),
@@ -709,21 +721,21 @@ func ExampleECS_RunTask() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_StartTask() {
@@ -738,9 +750,16 @@ func ExampleECS_StartTask() {
 		Cluster:        aws.String("String"),
 		Overrides: &ecs.TaskOverride{
 			ContainerOverrides: []*ecs.ContainerOverride{
-				&ecs.ContainerOverride{ // Required
+				{ // Required
 					Command: []*string{
 						aws.String("String"), // Required
+						// More values...
+					},
+					Environment: []*ecs.KeyValuePair{
+						{ // Required
+							Name:  aws.String("String"),
+							Value: aws.String("String"),
+						},
 						// More values...
 					},
 					Name: aws.String("String"),
@@ -754,21 +773,21 @@ func ExampleECS_StartTask() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_StopTask() {
@@ -782,21 +801,21 @@ func ExampleECS_StopTask() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_SubmitContainerStateChange() {
@@ -805,12 +824,13 @@ func ExampleECS_SubmitContainerStateChange() {
 	params := &ecs.SubmitContainerStateChangeInput{
 		Cluster:       aws.String("String"),
 		ContainerName: aws.String("String"),
-		ExitCode:      aws.Long(1),
+		ExitCode:      aws.Int64(1),
 		NetworkBindings: []*ecs.NetworkBinding{
-			&ecs.NetworkBinding{ // Required
+			{ // Required
 				BindIP:        aws.String("String"),
-				ContainerPort: aws.Long(1),
-				HostPort:      aws.Long(1),
+				ContainerPort: aws.Int64(1),
+				HostPort:      aws.Int64(1),
+				Protocol:      aws.String("TransportProtocol"),
 			},
 			// More values...
 		},
@@ -822,21 +842,21 @@ func ExampleECS_SubmitContainerStateChange() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_SubmitTaskStateChange() {
@@ -852,21 +872,49 @@ func ExampleECS_SubmitTaskStateChange() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
+}
+
+func ExampleECS_UpdateContainerAgent() {
+	svc := ecs.New(nil)
+
+	params := &ecs.UpdateContainerAgentInput{
+		ContainerInstance: aws.String("String"), // Required
+		Cluster:           aws.String("String"),
+	}
+	resp, err := svc.UpdateContainerAgent(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleECS_UpdateService() {
@@ -875,26 +923,26 @@ func ExampleECS_UpdateService() {
 	params := &ecs.UpdateServiceInput{
 		Service:        aws.String("String"), // Required
 		Cluster:        aws.String("String"),
-		DesiredCount:   aws.Long(1),
+		DesiredCount:   aws.Int64(1),
 		TaskDefinition: aws.String("String"),
 	}
 	resp, err := svc.UpdateService(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }

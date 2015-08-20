@@ -244,9 +244,9 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 
 	opts.Docker.Socket = c.String(FlagDockerSocket)
 	opts.Docker.CertPath = c.String(FlagDockerCert)
-	opts.AWSConfig = aws.DefaultConfig
+	opts.AWSConfig = aws.NewConfig()
 	if c.Bool(FlagAWSDebug) {
-		opts.AWSConfig.LogLevel = 1
+		opts.AWSConfig.WithLogLevel(1)
 	}
 	opts.ECS.Cluster = c.String(FlagECSCluster)
 	opts.ECS.ServiceRole = c.String(FlagECSServiceRole)

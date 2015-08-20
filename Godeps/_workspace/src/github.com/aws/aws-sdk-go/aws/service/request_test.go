@@ -1,4 +1,4 @@
-package aws
+package service
 
 import (
 	"bytes"
@@ -7,13 +7,12 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/internal/apierr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,12 +35,12 @@ func unmarshal(req *Request) {
 func unmarshalError(req *Request) {
 	bodyBytes, err := ioutil.ReadAll(req.HTTPResponse.Body)
 	if err != nil {
-		req.Error = apierr.New("UnmarshaleError", req.HTTPResponse.Status, err)
+		req.Error = awserr.New("UnmarshaleError", req.HTTPResponse.Status, err)
 		return
 	}
 	if len(bodyBytes) == 0 {
-		req.Error = apierr.NewRequestError(
-			apierr.New("UnmarshaleError", req.HTTPResponse.Status, fmt.Errorf("empty body")),
+		req.Error = awserr.NewRequestFailure(
+			awserr.New("UnmarshaleError", req.HTTPResponse.Status, fmt.Errorf("empty body")),
 			req.HTTPResponse.StatusCode,
 			"",
 		)
@@ -49,11 +48,11 @@ func unmarshalError(req *Request) {
 	}
 	var jsonErr jsonErrorResponse
 	if err := json.Unmarshal(bodyBytes, &jsonErr); err != nil {
-		req.Error = apierr.New("UnmarshaleError", "JSON unmarshal", err)
+		req.Error = awserr.New("UnmarshaleError", "JSON unmarshal", err)
 		return
 	}
-	req.Error = apierr.NewRequestError(
-		apierr.New(jsonErr.Code, jsonErr.Message, nil),
+	req.Error = awserr.NewRequestFailure(
+		awserr.New(jsonErr.Code, jsonErr.Message, nil),
 		req.HTTPResponse.StatusCode,
 		"",
 	)
@@ -68,12 +67,12 @@ type jsonErrorResponse struct {
 func TestRequestRecoverRetry5xx(t *testing.T) {
 	reqNum := 0
 	reqs := []http.Response{
-		http.Response{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
-		http.Response{StatusCode: 501, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
-		http.Response{StatusCode: 200, Body: body(`{"data":"valid"}`)},
+		{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
+		{StatusCode: 501, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
+		{StatusCode: 200, Body: body(`{"data":"valid"}`)},
 	}
 
-	s := NewService(&Config{MaxRetries: 10})
+	s := NewService(aws.NewConfig().WithMaxRetries(10))
 	s.Handlers.Validate.Clear()
 	s.Handlers.Unmarshal.PushBack(unmarshal)
 	s.Handlers.UnmarshalError.PushBack(unmarshalError)
@@ -94,12 +93,12 @@ func TestRequestRecoverRetry5xx(t *testing.T) {
 func TestRequestRecoverRetry4xxRetryable(t *testing.T) {
 	reqNum := 0
 	reqs := []http.Response{
-		http.Response{StatusCode: 400, Body: body(`{"__type":"Throttling","message":"Rate exceeded."}`)},
-		http.Response{StatusCode: 429, Body: body(`{"__type":"ProvisionedThroughputExceededException","message":"Rate exceeded."}`)},
-		http.Response{StatusCode: 200, Body: body(`{"data":"valid"}`)},
+		{StatusCode: 400, Body: body(`{"__type":"Throttling","message":"Rate exceeded."}`)},
+		{StatusCode: 429, Body: body(`{"__type":"ProvisionedThroughputExceededException","message":"Rate exceeded."}`)},
+		{StatusCode: 200, Body: body(`{"data":"valid"}`)},
 	}
 
-	s := NewService(&Config{MaxRetries: 10})
+	s := NewService(aws.NewConfig().WithMaxRetries(10))
 	s.Handlers.Validate.Clear()
 	s.Handlers.Unmarshal.PushBack(unmarshal)
 	s.Handlers.UnmarshalError.PushBack(unmarshalError)
@@ -118,7 +117,7 @@ func TestRequestRecoverRetry4xxRetryable(t *testing.T) {
 
 // test that retries don't occur for 4xx status codes with a response type that can't be retried
 func TestRequest4xxUnretryable(t *testing.T) {
-	s := NewService(&Config{MaxRetries: 10})
+	s := NewService(aws.NewConfig().WithMaxRetries(10))
 	s.Handlers.Validate.Clear()
 	s.Handlers.Unmarshal.PushBack(unmarshal)
 	s.Handlers.UnmarshalError.PushBack(unmarshalError)
@@ -148,13 +147,13 @@ func TestRequestExhaustRetries(t *testing.T) {
 
 	reqNum := 0
 	reqs := []http.Response{
-		http.Response{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
-		http.Response{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
-		http.Response{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
-		http.Response{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
+		{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
+		{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
+		{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
+		{StatusCode: 500, Body: body(`{"__type":"UnknownError","message":"An error occurred."}`)},
 	}
 
-	s := NewService(&Config{MaxRetries: -1})
+	s := NewService(aws.NewConfig().WithMaxRetries(aws.DefaultRetries))
 	s.Handlers.Validate.Clear()
 	s.Handlers.Unmarshal.PushBack(unmarshal)
 	s.Handlers.UnmarshalError.PushBack(unmarshalError)
@@ -174,18 +173,25 @@ func TestRequestExhaustRetries(t *testing.T) {
 	assert.Equal(t, "UnknownError", err.(awserr.Error).Code())
 	assert.Equal(t, "An error occurred.", err.(awserr.Error).Message())
 	assert.Equal(t, 3, int(r.RetryCount))
-	assert.True(t, reflect.DeepEqual([]time.Duration{30 * time.Millisecond, 60 * time.Millisecond, 120 * time.Millisecond}, delays))
+
+	expectDelays := []struct{ min, max time.Duration }{{30, 59}, {60, 118}, {120, 236}}
+	for i, v := range delays {
+		min := expectDelays[i].min * time.Millisecond
+		max := expectDelays[i].max * time.Millisecond
+		assert.True(t, min <= v && v <= max,
+			"Expect delay to be within range, i:%d, v:%s, min:%s, max:%s", i, v, min, max)
+	}
 }
 
 // test that the request is retried after the credentials are expired.
 func TestRequestRecoverExpiredCreds(t *testing.T) {
 	reqNum := 0
 	reqs := []http.Response{
-		http.Response{StatusCode: 400, Body: body(`{"__type":"ExpiredTokenException","message":"expired token"}`)},
-		http.Response{StatusCode: 200, Body: body(`{"data":"valid"}`)},
+		{StatusCode: 400, Body: body(`{"__type":"ExpiredTokenException","message":"expired token"}`)},
+		{StatusCode: 200, Body: body(`{"data":"valid"}`)},
 	}
 
-	s := NewService(&Config{MaxRetries: 10, Credentials: credentials.NewStaticCredentials("AKID", "SECRET", "")})
+	s := NewService(&aws.Config{MaxRetries: aws.Int(10), Credentials: credentials.NewStaticCredentials("AKID", "SECRET", "")})
 	s.Handlers.Validate.Clear()
 	s.Handlers.Unmarshal.PushBack(unmarshal)
 	s.Handlers.UnmarshalError.PushBack(unmarshalError)

@@ -21,27 +21,27 @@ func ExampleIAM_AddClientIDToOpenIDConnectProvider() {
 
 	params := &iam.AddClientIDToOpenIDConnectProviderInput{
 		ClientID:                 aws.String("clientIDType"), // Required
-		OpenIDConnectProviderARN: aws.String("arnType"),      // Required
+		OpenIDConnectProviderArn: aws.String("arnType"),      // Required
 	}
 	resp, err := svc.AddClientIDToOpenIDConnectProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_AddRoleToInstanceProfile() {
@@ -55,21 +55,21 @@ func ExampleIAM_AddRoleToInstanceProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_AddUserToGroup() {
@@ -83,21 +83,21 @@ func ExampleIAM_AddUserToGroup() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_AttachGroupPolicy() {
@@ -105,83 +105,83 @@ func ExampleIAM_AttachGroupPolicy() {
 
 	params := &iam.AttachGroupPolicyInput{
 		GroupName: aws.String("groupNameType"), // Required
-		PolicyARN: aws.String("arnType"),       // Required
+		PolicyArn: aws.String("arnType"),       // Required
 	}
 	resp, err := svc.AttachGroupPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_AttachRolePolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.AttachRolePolicyInput{
-		PolicyARN: aws.String("arnType"),      // Required
+		PolicyArn: aws.String("arnType"),      // Required
 		RoleName:  aws.String("roleNameType"), // Required
 	}
 	resp, err := svc.AttachRolePolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_AttachUserPolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.AttachUserPolicyInput{
-		PolicyARN: aws.String("arnType"),      // Required
+		PolicyArn: aws.String("arnType"),      // Required
 		UserName:  aws.String("userNameType"), // Required
 	}
 	resp, err := svc.AttachUserPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ChangePassword() {
@@ -195,21 +195,21 @@ func ExampleIAM_ChangePassword() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateAccessKey() {
@@ -222,21 +222,21 @@ func ExampleIAM_CreateAccessKey() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateAccountAlias() {
@@ -249,21 +249,21 @@ func ExampleIAM_CreateAccountAlias() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateGroup() {
@@ -277,21 +277,21 @@ func ExampleIAM_CreateGroup() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateInstanceProfile() {
@@ -305,21 +305,21 @@ func ExampleIAM_CreateInstanceProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateLoginProfile() {
@@ -328,27 +328,27 @@ func ExampleIAM_CreateLoginProfile() {
 	params := &iam.CreateLoginProfileInput{
 		Password:              aws.String("passwordType"), // Required
 		UserName:              aws.String("userNameType"), // Required
-		PasswordResetRequired: aws.Boolean(true),
+		PasswordResetRequired: aws.Bool(true),
 	}
 	resp, err := svc.CreateLoginProfile(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateOpenIDConnectProvider() {
@@ -359,7 +359,7 @@ func ExampleIAM_CreateOpenIDConnectProvider() {
 			aws.String("thumbprintType"), // Required
 			// More values...
 		},
-		URL: aws.String("OpenIDConnectProviderUrlType"), // Required
+		Url: aws.String("OpenIDConnectProviderUrlType"), // Required
 		ClientIDList: []*string{
 			aws.String("clientIDType"), // Required
 			// More values...
@@ -369,21 +369,21 @@ func ExampleIAM_CreateOpenIDConnectProvider() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreatePolicy() {
@@ -399,50 +399,50 @@ func ExampleIAM_CreatePolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreatePolicyVersion() {
 	svc := iam.New(nil)
 
 	params := &iam.CreatePolicyVersionInput{
-		PolicyARN:      aws.String("arnType"),            // Required
+		PolicyArn:      aws.String("arnType"),            // Required
 		PolicyDocument: aws.String("policyDocumentType"), // Required
-		SetAsDefault:   aws.Boolean(true),
+		SetAsDefault:   aws.Bool(true),
 	}
 	resp, err := svc.CreatePolicyVersion(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateRole() {
@@ -457,21 +457,21 @@ func ExampleIAM_CreateRole() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateSAMLProvider() {
@@ -485,21 +485,21 @@ func ExampleIAM_CreateSAMLProvider() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateUser() {
@@ -513,21 +513,21 @@ func ExampleIAM_CreateUser() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_CreateVirtualMFADevice() {
@@ -541,21 +541,21 @@ func ExampleIAM_CreateVirtualMFADevice() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeactivateMFADevice() {
@@ -569,49 +569,49 @@ func ExampleIAM_DeactivateMFADevice() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteAccessKey() {
 	svc := iam.New(nil)
 
 	params := &iam.DeleteAccessKeyInput{
-		AccessKeyID: aws.String("accessKeyIdType"), // Required
+		AccessKeyId: aws.String("accessKeyIdType"), // Required
 		UserName:    aws.String("existingUserNameType"),
 	}
 	resp, err := svc.DeleteAccessKey(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteAccountAlias() {
@@ -624,21 +624,21 @@ func ExampleIAM_DeleteAccountAlias() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteAccountPasswordPolicy() {
@@ -649,21 +649,21 @@ func ExampleIAM_DeleteAccountPasswordPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteGroup() {
@@ -676,21 +676,21 @@ func ExampleIAM_DeleteGroup() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteGroupPolicy() {
@@ -704,21 +704,21 @@ func ExampleIAM_DeleteGroupPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteInstanceProfile() {
@@ -731,21 +731,21 @@ func ExampleIAM_DeleteInstanceProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteLoginProfile() {
@@ -758,103 +758,103 @@ func ExampleIAM_DeleteLoginProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteOpenIDConnectProvider() {
 	svc := iam.New(nil)
 
 	params := &iam.DeleteOpenIDConnectProviderInput{
-		OpenIDConnectProviderARN: aws.String("arnType"), // Required
+		OpenIDConnectProviderArn: aws.String("arnType"), // Required
 	}
 	resp, err := svc.DeleteOpenIDConnectProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeletePolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.DeletePolicyInput{
-		PolicyARN: aws.String("arnType"), // Required
+		PolicyArn: aws.String("arnType"), // Required
 	}
 	resp, err := svc.DeletePolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeletePolicyVersion() {
 	svc := iam.New(nil)
 
 	params := &iam.DeletePolicyVersionInput{
-		PolicyARN: aws.String("arnType"),             // Required
-		VersionID: aws.String("policyVersionIdType"), // Required
+		PolicyArn: aws.String("arnType"),             // Required
+		VersionId: aws.String("policyVersionIdType"), // Required
 	}
 	resp, err := svc.DeletePolicyVersion(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteRole() {
@@ -867,21 +867,21 @@ func ExampleIAM_DeleteRole() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteRolePolicy() {
@@ -895,48 +895,76 @@ func ExampleIAM_DeleteRolePolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteSAMLProvider() {
 	svc := iam.New(nil)
 
 	params := &iam.DeleteSAMLProviderInput{
-		SAMLProviderARN: aws.String("arnType"), // Required
+		SAMLProviderArn: aws.String("arnType"), // Required
 	}
 	resp, err := svc.DeleteSAMLProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
+}
+
+func ExampleIAM_DeleteSSHPublicKey() {
+	svc := iam.New(nil)
+
+	params := &iam.DeleteSSHPublicKeyInput{
+		SSHPublicKeyId: aws.String("publicKeyIdType"), // Required
+		UserName:       aws.String("userNameType"),    // Required
+	}
+	resp, err := svc.DeleteSSHPublicKey(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteServerCertificate() {
@@ -949,49 +977,49 @@ func ExampleIAM_DeleteServerCertificate() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteSigningCertificate() {
 	svc := iam.New(nil)
 
 	params := &iam.DeleteSigningCertificateInput{
-		CertificateID: aws.String("certificateIdType"), // Required
+		CertificateId: aws.String("certificateIdType"), // Required
 		UserName:      aws.String("existingUserNameType"),
 	}
 	resp, err := svc.DeleteSigningCertificate(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteUser() {
@@ -1004,21 +1032,21 @@ func ExampleIAM_DeleteUser() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteUserPolicy() {
@@ -1032,21 +1060,21 @@ func ExampleIAM_DeleteUserPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DeleteVirtualMFADevice() {
@@ -1059,21 +1087,21 @@ func ExampleIAM_DeleteVirtualMFADevice() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DetachGroupPolicy() {
@@ -1081,83 +1109,83 @@ func ExampleIAM_DetachGroupPolicy() {
 
 	params := &iam.DetachGroupPolicyInput{
 		GroupName: aws.String("groupNameType"), // Required
-		PolicyARN: aws.String("arnType"),       // Required
+		PolicyArn: aws.String("arnType"),       // Required
 	}
 	resp, err := svc.DetachGroupPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DetachRolePolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.DetachRolePolicyInput{
-		PolicyARN: aws.String("arnType"),      // Required
+		PolicyArn: aws.String("arnType"),      // Required
 		RoleName:  aws.String("roleNameType"), // Required
 	}
 	resp, err := svc.DetachRolePolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_DetachUserPolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.DetachUserPolicyInput{
-		PolicyARN: aws.String("arnType"),      // Required
+		PolicyArn: aws.String("arnType"),      // Required
 		UserName:  aws.String("userNameType"), // Required
 	}
 	resp, err := svc.DetachUserPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_EnableMFADevice() {
@@ -1173,21 +1201,21 @@ func ExampleIAM_EnableMFADevice() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GenerateCredentialReport() {
@@ -1198,48 +1226,48 @@ func ExampleIAM_GenerateCredentialReport() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetAccessKeyLastUsed() {
 	svc := iam.New(nil)
 
 	params := &iam.GetAccessKeyLastUsedInput{
-		AccessKeyID: aws.String("accessKeyIdType"), // Required
+		AccessKeyId: aws.String("accessKeyIdType"), // Required
 	}
 	resp, err := svc.GetAccessKeyLastUsed(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetAccountAuthorizationDetails() {
@@ -1251,27 +1279,27 @@ func ExampleIAM_GetAccountAuthorizationDetails() {
 			// More values...
 		},
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 	}
 	resp, err := svc.GetAccountAuthorizationDetails(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetAccountPasswordPolicy() {
@@ -1282,21 +1310,21 @@ func ExampleIAM_GetAccountPasswordPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetAccountSummary() {
@@ -1307,21 +1335,21 @@ func ExampleIAM_GetAccountSummary() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetCredentialReport() {
@@ -1332,21 +1360,21 @@ func ExampleIAM_GetCredentialReport() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetGroup() {
@@ -1355,27 +1383,27 @@ func ExampleIAM_GetGroup() {
 	params := &iam.GetGroupInput{
 		GroupName: aws.String("groupNameType"), // Required
 		Marker:    aws.String("markerType"),
-		MaxItems:  aws.Long(1),
+		MaxItems:  aws.Int64(1),
 	}
 	resp, err := svc.GetGroup(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetGroupPolicy() {
@@ -1389,21 +1417,21 @@ func ExampleIAM_GetGroupPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetInstanceProfile() {
@@ -1416,21 +1444,21 @@ func ExampleIAM_GetInstanceProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetLoginProfile() {
@@ -1443,103 +1471,103 @@ func ExampleIAM_GetLoginProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetOpenIDConnectProvider() {
 	svc := iam.New(nil)
 
 	params := &iam.GetOpenIDConnectProviderInput{
-		OpenIDConnectProviderARN: aws.String("arnType"), // Required
+		OpenIDConnectProviderArn: aws.String("arnType"), // Required
 	}
 	resp, err := svc.GetOpenIDConnectProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetPolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.GetPolicyInput{
-		PolicyARN: aws.String("arnType"), // Required
+		PolicyArn: aws.String("arnType"), // Required
 	}
 	resp, err := svc.GetPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetPolicyVersion() {
 	svc := iam.New(nil)
 
 	params := &iam.GetPolicyVersionInput{
-		PolicyARN: aws.String("arnType"),             // Required
-		VersionID: aws.String("policyVersionIdType"), // Required
+		PolicyArn: aws.String("arnType"),             // Required
+		VersionId: aws.String("policyVersionIdType"), // Required
 	}
 	resp, err := svc.GetPolicyVersion(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetRole() {
@@ -1552,21 +1580,21 @@ func ExampleIAM_GetRole() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetRolePolicy() {
@@ -1580,48 +1608,77 @@ func ExampleIAM_GetRolePolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetSAMLProvider() {
 	svc := iam.New(nil)
 
 	params := &iam.GetSAMLProviderInput{
-		SAMLProviderARN: aws.String("arnType"), // Required
+		SAMLProviderArn: aws.String("arnType"), // Required
 	}
 	resp, err := svc.GetSAMLProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
+}
+
+func ExampleIAM_GetSSHPublicKey() {
+	svc := iam.New(nil)
+
+	params := &iam.GetSSHPublicKeyInput{
+		Encoding:       aws.String("encodingType"),    // Required
+		SSHPublicKeyId: aws.String("publicKeyIdType"), // Required
+		UserName:       aws.String("userNameType"),    // Required
+	}
+	resp, err := svc.GetSSHPublicKey(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetServerCertificate() {
@@ -1634,21 +1691,21 @@ func ExampleIAM_GetServerCertificate() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetUser() {
@@ -1661,21 +1718,21 @@ func ExampleIAM_GetUser() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_GetUserPolicy() {
@@ -1689,21 +1746,21 @@ func ExampleIAM_GetUserPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListAccessKeys() {
@@ -1711,28 +1768,28 @@ func ExampleIAM_ListAccessKeys() {
 
 	params := &iam.ListAccessKeysInput{
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 		UserName: aws.String("existingUserNameType"),
 	}
 	resp, err := svc.ListAccessKeys(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListAccountAliases() {
@@ -1740,27 +1797,27 @@ func ExampleIAM_ListAccountAliases() {
 
 	params := &iam.ListAccountAliasesInput{
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 	}
 	resp, err := svc.ListAccountAliases(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListAttachedGroupPolicies() {
@@ -1769,28 +1826,28 @@ func ExampleIAM_ListAttachedGroupPolicies() {
 	params := &iam.ListAttachedGroupPoliciesInput{
 		GroupName:  aws.String("groupNameType"), // Required
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("policyPathType"),
 	}
 	resp, err := svc.ListAttachedGroupPolicies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListAttachedRolePolicies() {
@@ -1799,28 +1856,28 @@ func ExampleIAM_ListAttachedRolePolicies() {
 	params := &iam.ListAttachedRolePoliciesInput{
 		RoleName:   aws.String("roleNameType"), // Required
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("policyPathType"),
 	}
 	resp, err := svc.ListAttachedRolePolicies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListAttachedUserPolicies() {
@@ -1829,59 +1886,59 @@ func ExampleIAM_ListAttachedUserPolicies() {
 	params := &iam.ListAttachedUserPoliciesInput{
 		UserName:   aws.String("userNameType"), // Required
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("policyPathType"),
 	}
 	resp, err := svc.ListAttachedUserPolicies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListEntitiesForPolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.ListEntitiesForPolicyInput{
-		PolicyARN:    aws.String("arnType"), // Required
+		PolicyArn:    aws.String("arnType"), // Required
 		EntityFilter: aws.String("EntityType"),
 		Marker:       aws.String("markerType"),
-		MaxItems:     aws.Long(1),
+		MaxItems:     aws.Int64(1),
 		PathPrefix:   aws.String("pathType"),
 	}
 	resp, err := svc.ListEntitiesForPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListGroupPolicies() {
@@ -1890,27 +1947,27 @@ func ExampleIAM_ListGroupPolicies() {
 	params := &iam.ListGroupPoliciesInput{
 		GroupName: aws.String("groupNameType"), // Required
 		Marker:    aws.String("markerType"),
-		MaxItems:  aws.Long(1),
+		MaxItems:  aws.Int64(1),
 	}
 	resp, err := svc.ListGroupPolicies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListGroups() {
@@ -1918,28 +1975,28 @@ func ExampleIAM_ListGroups() {
 
 	params := &iam.ListGroupsInput{
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("pathPrefixType"),
 	}
 	resp, err := svc.ListGroups(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListGroupsForUser() {
@@ -1948,27 +2005,27 @@ func ExampleIAM_ListGroupsForUser() {
 	params := &iam.ListGroupsForUserInput{
 		UserName: aws.String("existingUserNameType"), // Required
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 	}
 	resp, err := svc.ListGroupsForUser(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListInstanceProfiles() {
@@ -1976,28 +2033,28 @@ func ExampleIAM_ListInstanceProfiles() {
 
 	params := &iam.ListInstanceProfilesInput{
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("pathPrefixType"),
 	}
 	resp, err := svc.ListInstanceProfiles(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListInstanceProfilesForRole() {
@@ -2006,27 +2063,27 @@ func ExampleIAM_ListInstanceProfilesForRole() {
 	params := &iam.ListInstanceProfilesForRoleInput{
 		RoleName: aws.String("roleNameType"), // Required
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 	}
 	resp, err := svc.ListInstanceProfilesForRole(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListMFADevices() {
@@ -2034,28 +2091,28 @@ func ExampleIAM_ListMFADevices() {
 
 	params := &iam.ListMFADevicesInput{
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 		UserName: aws.String("existingUserNameType"),
 	}
 	resp, err := svc.ListMFADevices(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListOpenIDConnectProviders() {
@@ -2066,21 +2123,21 @@ func ExampleIAM_ListOpenIDConnectProviders() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListPolicies() {
@@ -2088,8 +2145,8 @@ func ExampleIAM_ListPolicies() {
 
 	params := &iam.ListPoliciesInput{
 		Marker:       aws.String("markerType"),
-		MaxItems:     aws.Long(1),
-		OnlyAttached: aws.Boolean(true),
+		MaxItems:     aws.Int64(1),
+		OnlyAttached: aws.Bool(true),
 		PathPrefix:   aws.String("policyPathType"),
 		Scope:        aws.String("policyScopeType"),
 	}
@@ -2097,50 +2154,50 @@ func ExampleIAM_ListPolicies() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListPolicyVersions() {
 	svc := iam.New(nil)
 
 	params := &iam.ListPolicyVersionsInput{
-		PolicyARN: aws.String("arnType"), // Required
+		PolicyArn: aws.String("arnType"), // Required
 		Marker:    aws.String("markerType"),
-		MaxItems:  aws.Long(1),
+		MaxItems:  aws.Int64(1),
 	}
 	resp, err := svc.ListPolicyVersions(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListRolePolicies() {
@@ -2149,27 +2206,27 @@ func ExampleIAM_ListRolePolicies() {
 	params := &iam.ListRolePoliciesInput{
 		RoleName: aws.String("roleNameType"), // Required
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 	}
 	resp, err := svc.ListRolePolicies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListRoles() {
@@ -2177,28 +2234,28 @@ func ExampleIAM_ListRoles() {
 
 	params := &iam.ListRolesInput{
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("pathPrefixType"),
 	}
 	resp, err := svc.ListRoles(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListSAMLProviders() {
@@ -2209,21 +2266,50 @@ func ExampleIAM_ListSAMLProviders() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
+}
+
+func ExampleIAM_ListSSHPublicKeys() {
+	svc := iam.New(nil)
+
+	params := &iam.ListSSHPublicKeysInput{
+		Marker:   aws.String("markerType"),
+		MaxItems: aws.Int64(1),
+		UserName: aws.String("userNameType"),
+	}
+	resp, err := svc.ListSSHPublicKeys(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListServerCertificates() {
@@ -2231,28 +2317,28 @@ func ExampleIAM_ListServerCertificates() {
 
 	params := &iam.ListServerCertificatesInput{
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("pathPrefixType"),
 	}
 	resp, err := svc.ListServerCertificates(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListSigningCertificates() {
@@ -2260,28 +2346,28 @@ func ExampleIAM_ListSigningCertificates() {
 
 	params := &iam.ListSigningCertificatesInput{
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 		UserName: aws.String("existingUserNameType"),
 	}
 	resp, err := svc.ListSigningCertificates(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListUserPolicies() {
@@ -2290,27 +2376,27 @@ func ExampleIAM_ListUserPolicies() {
 	params := &iam.ListUserPoliciesInput{
 		UserName: aws.String("existingUserNameType"), // Required
 		Marker:   aws.String("markerType"),
-		MaxItems: aws.Long(1),
+		MaxItems: aws.Int64(1),
 	}
 	resp, err := svc.ListUserPolicies(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListUsers() {
@@ -2318,28 +2404,28 @@ func ExampleIAM_ListUsers() {
 
 	params := &iam.ListUsersInput{
 		Marker:     aws.String("markerType"),
-		MaxItems:   aws.Long(1),
+		MaxItems:   aws.Int64(1),
 		PathPrefix: aws.String("pathPrefixType"),
 	}
 	resp, err := svc.ListUsers(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ListVirtualMFADevices() {
@@ -2348,27 +2434,27 @@ func ExampleIAM_ListVirtualMFADevices() {
 	params := &iam.ListVirtualMFADevicesInput{
 		AssignmentStatus: aws.String("assignmentStatusType"),
 		Marker:           aws.String("markerType"),
-		MaxItems:         aws.Long(1),
+		MaxItems:         aws.Int64(1),
 	}
 	resp, err := svc.ListVirtualMFADevices(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_PutGroupPolicy() {
@@ -2383,21 +2469,21 @@ func ExampleIAM_PutGroupPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_PutRolePolicy() {
@@ -2412,21 +2498,21 @@ func ExampleIAM_PutRolePolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_PutUserPolicy() {
@@ -2441,21 +2527,21 @@ func ExampleIAM_PutUserPolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_RemoveClientIDFromOpenIDConnectProvider() {
@@ -2463,27 +2549,27 @@ func ExampleIAM_RemoveClientIDFromOpenIDConnectProvider() {
 
 	params := &iam.RemoveClientIDFromOpenIDConnectProviderInput{
 		ClientID:                 aws.String("clientIDType"), // Required
-		OpenIDConnectProviderARN: aws.String("arnType"),      // Required
+		OpenIDConnectProviderArn: aws.String("arnType"),      // Required
 	}
 	resp, err := svc.RemoveClientIDFromOpenIDConnectProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_RemoveRoleFromInstanceProfile() {
@@ -2497,21 +2583,21 @@ func ExampleIAM_RemoveRoleFromInstanceProfile() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_RemoveUserFromGroup() {
@@ -2525,21 +2611,21 @@ func ExampleIAM_RemoveUserFromGroup() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_ResyncMFADevice() {
@@ -2555,56 +2641,56 @@ func ExampleIAM_ResyncMFADevice() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_SetDefaultPolicyVersion() {
 	svc := iam.New(nil)
 
 	params := &iam.SetDefaultPolicyVersionInput{
-		PolicyARN: aws.String("arnType"),             // Required
-		VersionID: aws.String("policyVersionIdType"), // Required
+		PolicyArn: aws.String("arnType"),             // Required
+		VersionId: aws.String("policyVersionIdType"), // Required
 	}
 	resp, err := svc.SetDefaultPolicyVersion(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateAccessKey() {
 	svc := iam.New(nil)
 
 	params := &iam.UpdateAccessKeyInput{
-		AccessKeyID: aws.String("accessKeyIdType"), // Required
+		AccessKeyId: aws.String("accessKeyIdType"), // Required
 		Status:      aws.String("statusType"),      // Required
 		UserName:    aws.String("existingUserNameType"),
 	}
@@ -2612,56 +2698,56 @@ func ExampleIAM_UpdateAccessKey() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateAccountPasswordPolicy() {
 	svc := iam.New(nil)
 
 	params := &iam.UpdateAccountPasswordPolicyInput{
-		AllowUsersToChangePassword: aws.Boolean(true),
-		HardExpiry:                 aws.Boolean(true),
-		MaxPasswordAge:             aws.Long(1),
-		MinimumPasswordLength:      aws.Long(1),
-		PasswordReusePrevention:    aws.Long(1),
-		RequireLowercaseCharacters: aws.Boolean(true),
-		RequireNumbers:             aws.Boolean(true),
-		RequireSymbols:             aws.Boolean(true),
-		RequireUppercaseCharacters: aws.Boolean(true),
+		AllowUsersToChangePassword: aws.Bool(true),
+		HardExpiry:                 aws.Bool(true),
+		MaxPasswordAge:             aws.Int64(1),
+		MinimumPasswordLength:      aws.Int64(1),
+		PasswordReusePrevention:    aws.Int64(1),
+		RequireLowercaseCharacters: aws.Bool(true),
+		RequireNumbers:             aws.Bool(true),
+		RequireSymbols:             aws.Bool(true),
+		RequireUppercaseCharacters: aws.Bool(true),
 	}
 	resp, err := svc.UpdateAccountPasswordPolicy(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateAssumeRolePolicy() {
@@ -2675,21 +2761,21 @@ func ExampleIAM_UpdateAssumeRolePolicy() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateGroup() {
@@ -2704,21 +2790,21 @@ func ExampleIAM_UpdateGroup() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateLoginProfile() {
@@ -2727,34 +2813,34 @@ func ExampleIAM_UpdateLoginProfile() {
 	params := &iam.UpdateLoginProfileInput{
 		UserName:              aws.String("userNameType"), // Required
 		Password:              aws.String("passwordType"),
-		PasswordResetRequired: aws.Boolean(true),
+		PasswordResetRequired: aws.Bool(true),
 	}
 	resp, err := svc.UpdateLoginProfile(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateOpenIDConnectProviderThumbprint() {
 	svc := iam.New(nil)
 
 	params := &iam.UpdateOpenIDConnectProviderThumbprintInput{
-		OpenIDConnectProviderARN: aws.String("arnType"), // Required
+		OpenIDConnectProviderArn: aws.String("arnType"), // Required
 		ThumbprintList: []*string{ // Required
 			aws.String("thumbprintType"), // Required
 			// More values...
@@ -2764,21 +2850,21 @@ func ExampleIAM_UpdateOpenIDConnectProviderThumbprint() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateSAMLProvider() {
@@ -2786,27 +2872,56 @@ func ExampleIAM_UpdateSAMLProvider() {
 
 	params := &iam.UpdateSAMLProviderInput{
 		SAMLMetadataDocument: aws.String("SAMLMetadataDocumentType"), // Required
-		SAMLProviderARN:      aws.String("arnType"),                  // Required
+		SAMLProviderArn:      aws.String("arnType"),                  // Required
 	}
 	resp, err := svc.UpdateSAMLProvider(params)
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
+}
+
+func ExampleIAM_UpdateSSHPublicKey() {
+	svc := iam.New(nil)
+
+	params := &iam.UpdateSSHPublicKeyInput{
+		SSHPublicKeyId: aws.String("publicKeyIdType"), // Required
+		Status:         aws.String("statusType"),      // Required
+		UserName:       aws.String("userNameType"),    // Required
+	}
+	resp, err := svc.UpdateSSHPublicKey(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateServerCertificate() {
@@ -2821,28 +2936,28 @@ func ExampleIAM_UpdateServerCertificate() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateSigningCertificate() {
 	svc := iam.New(nil)
 
 	params := &iam.UpdateSigningCertificateInput{
-		CertificateID: aws.String("certificateIdType"), // Required
+		CertificateId: aws.String("certificateIdType"), // Required
 		Status:        aws.String("statusType"),        // Required
 		UserName:      aws.String("existingUserNameType"),
 	}
@@ -2850,21 +2965,21 @@ func ExampleIAM_UpdateSigningCertificate() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UpdateUser() {
@@ -2879,21 +2994,49 @@ func ExampleIAM_UpdateUser() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
+}
+
+func ExampleIAM_UploadSSHPublicKey() {
+	svc := iam.New(nil)
+
+	params := &iam.UploadSSHPublicKeyInput{
+		SSHPublicKeyBody: aws.String("publicKeyMaterialType"), // Required
+		UserName:         aws.String("userNameType"),          // Required
+	}
+	resp, err := svc.UploadSSHPublicKey(params)
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			// Generic AWS error with Code, Message, and original error (if any)
+			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
+			if reqErr, ok := err.(awserr.RequestFailure); ok {
+				// A service error occurred
+				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
+			}
+		} else {
+			// This case should never be hit, the SDK should always return an
+			// error which satisfies the awserr.Error interface.
+			fmt.Println(err.Error())
+		}
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UploadServerCertificate() {
@@ -2910,21 +3053,21 @@ func ExampleIAM_UploadServerCertificate() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }
 
 func ExampleIAM_UploadSigningCertificate() {
@@ -2938,19 +3081,19 @@ func ExampleIAM_UploadSigningCertificate() {
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Generic AWS Error with Code, Message, and original error (if any)
+			// Generic AWS error with Code, Message, and original error (if any)
 			fmt.Println(awsErr.Code(), awsErr.Message(), awsErr.OrigErr())
 			if reqErr, ok := err.(awserr.RequestFailure); ok {
 				// A service error occurred
 				fmt.Println(reqErr.Code(), reqErr.Message(), reqErr.StatusCode(), reqErr.RequestID())
 			}
 		} else {
-			// This case should never be hit, The SDK should alwsy return an
+			// This case should never be hit, the SDK should always return an
 			// error which satisfies the awserr.Error interface.
 			fmt.Println(err.Error())
 		}
 	}
 
 	// Pretty-print the response data.
-	fmt.Println(awsutil.StringValue(resp))
+	fmt.Println(awsutil.Prettify(resp))
 }

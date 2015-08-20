@@ -430,7 +430,7 @@ var fakeApp = &App{
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,
 			Ports: []PortMap{
-				{aws.Long(8080), aws.Long(8080)},
+				{aws.Int64(8080), aws.Int64(8080)},
 			},
 			Exposure: ExposePrivate,
 		},
@@ -441,10 +441,10 @@ func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
 	m, err := NewECSManager(ECSConfig{
-		AWS: aws.DefaultConfig.Merge(&aws.Config{
+		AWS: aws.NewConfig().Merge(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-			Endpoint:    s.URL,
-			Region:      "localhost",
+			Endpoint:    aws.String(s.URL),
+			Region:      aws.String("localhost"),
 		}),
 		Cluster: "empire",
 	})

@@ -17,7 +17,7 @@ test: build/emp
 	godep go test ./... && godep go vet ./...
 
 build/emp:
-	go get github.com/remind101/emp
+	go get -f -u github.com/remind101/emp
 	go build -o build/emp github.com/remind101/emp # Vendor the emp command for tests
 
 bump:

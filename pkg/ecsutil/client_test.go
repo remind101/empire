@@ -37,7 +37,7 @@ func TestListAppServices(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := len(resp.ServiceARNs); got != 1 {
+	if got := len(resp.ServiceArns); got != 1 {
 		t.Fatalf("Expected 1 service returned; got %d", got)
 	}
 }
@@ -78,7 +78,7 @@ func TestListAppServices_Pagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := len(resp.ServiceARNs); got != 2 {
+	if got := len(resp.ServiceArns); got != 2 {
 		t.Fatalf("Expected 2 services returned; got %d", got)
 	}
 }
@@ -119,7 +119,7 @@ func TestListAppTasks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := len(resp.TaskARNs); got != 1 {
+	if got := len(resp.TaskArns); got != 1 {
 		t.Fatalf("Expected 1 tasks returned; got %d", got)
 	}
 }
@@ -172,7 +172,7 @@ func TestListAppTasks_Paginate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := len(resp.TaskARNs); got != 2 {
+	if got := len(resp.TaskArns); got != 2 {
 		t.Fatalf("Expected 2 tasks returned; got %d", got)
 	}
 }
@@ -180,9 +180,9 @@ func TestListAppTasks_Paginate(t *testing.T) {
 func newTestClient(h http.Handler) (*Client, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	return NewClient(aws.DefaultConfig.Merge(&aws.Config{
+	return NewClient(aws.NewConfig().Merge(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-		Endpoint:    s.URL,
-		Region:      "localhost",
+		Endpoint:    aws.String(s.URL),
+		Region:      aws.String("localhost"),
 	})), s
 }

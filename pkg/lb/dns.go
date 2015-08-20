@@ -52,7 +52,7 @@ func (n *Route53Nameserver) CreateCNAME(cname, record string) error {
 				},
 			},
 		},
-		HostedZoneID: zone.ID,
+		HostedZoneId: zone.Id,
 	}
 	_, err = n.route53.ChangeResourceRecordSets(input)
 	return err
@@ -74,7 +74,7 @@ func (n *Route53Nameserver) DeleteCNAME(cname, record string) error {
 				},
 			},
 		},
-		HostedZoneID: zone.ID,
+		HostedZoneId: zone.Id,
 	}
 	_, err = n.route53.ChangeResourceRecordSets(input)
 	return err
@@ -89,7 +89,7 @@ func newCNAMERecordSet(cname string, target string, ttl int64) *route53.Resource
 				Value: aws.String(target),
 			},
 		},
-		TTL: aws.Long(ttl),
+		TTL: aws.Int64(ttl),
 	}
 }
 
@@ -105,7 +105,7 @@ func fixHostedZoneIDPrefix(zoneID string) *string {
 // zone returns the HostedZone for the ZoneID.
 func (n *Route53Nameserver) zone() (*route53.HostedZone, error) {
 	zid := fixHostedZoneIDPrefix(n.ZoneID)
-	out, err := n.route53.GetHostedZone(&route53.GetHostedZoneInput{ID: zid})
+	out, err := n.route53.GetHostedZone(&route53.GetHostedZoneInput{Id: zid})
 	if err != nil {
 		return nil, err
 	}
