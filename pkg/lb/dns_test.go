@@ -42,7 +42,7 @@ func TestRoute53_CNAME(t *testing.T) {
 		},
 		{
 			Request: awsutil.Request{
-				RequestURI: `/2013-04-01/hostedzone/FAKEZONE/rrset`,
+				RequestURI: `/2013-04-01/hostedzone/FAKEZONE/rrset/`,
 				Body:       `ignore`,
 			},
 			Response: awsutil.Response{
@@ -92,7 +92,7 @@ func TestRoute53_DeleteCNAME(t *testing.T) {
 		},
 		{
 			Request: awsutil.Request{
-				RequestURI: `/2013-04-01/hostedzone/FAKEZONE/rrset`,
+				RequestURI: `/2013-04-01/hostedzone/FAKEZONE/rrset/`,
 				Body:       `ignore`,
 			},
 			Response: awsutil.Response{
