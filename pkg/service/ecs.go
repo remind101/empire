@@ -215,13 +215,13 @@ func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*Instance, 
 
 	for _, t := range tasks {
 		resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
-			TaskDefinition: t.TaskDefinitionARN,
+			TaskDefinition: t.TaskDefinitionArn,
 		})
 		if err != nil {
 			return instances, err
 		}
 
-		id, err := arn.ResourceID(*t.TaskARN)
+		id, err := arn.ResourceID(*t.TaskArn)
 		if err != nil {
 			return instances, err
 		}
@@ -250,13 +250,13 @@ func (m *ECSManager) describeAppTasks(ctx context.Context, appID string) ([]*ecs
 		return nil, err
 	}
 
-	if len(resp.TaskARNs) == 0 {
+	if len(resp.TaskArns) == 0 {
 		return []*ecs.Task{}, nil
 	}
 
 	tasks, err := m.ecs.DescribeTasks(ctx, &ecs.DescribeTasksInput{
 		Cluster: aws.String(m.cluster),
-		Tasks:   resp.TaskARNs,
+		Tasks:   resp.TaskArns,
 	})
 	return tasks.Tasks, err
 }
@@ -381,13 +381,13 @@ func (m *ecsProcessManager) Processes(ctx context.Context, appID string) ([]*Pro
 		return processes, err
 	}
 
-	if len(list.ServiceARNs) == 0 {
+	if len(list.ServiceArns) == 0 {
 		return processes, nil
 	}
 
 	desc, err := m.ecs.DescribeServices(ctx, &ecs.DescribeServicesInput{
 		Cluster:  aws.String(m.cluster),
-		Services: list.ServiceARNs,
+		Services: list.ServiceArns,
 	})
 	if err != nil {
 		return processes, err
@@ -476,7 +476,7 @@ func taskDefinitionInput(p *Process) (*ecs.RegisterTaskDefinitionInput, error) {
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			&ecs.ContainerDefinition{
 				Name:         aws.String(p.Type),
-				CPU:          aws.Int64(int64(p.CPUShares)),
+				Cpu:          aws.Int64(int64(p.CPUShares)),
 				Command:      command,
 				Image:        aws.String(p.Image.String()),
 				Essential:    aws.Bool(true),
@@ -545,7 +545,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*Process, error) {
 		Type:        safeString(container.Name),
 		Command:     strings.Join(command, " "),
 		Env:         env,
-		CPUShares:   uint(*container.CPU),
+		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * MB,
 	}, nil
 }
