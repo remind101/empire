@@ -149,7 +149,7 @@ type limitedClient struct {
 	ECS
 }
 
-const describeServiceLimit = 10
+const describeServicesLimit = 10
 
 // TODO: Parallelize this.
 func (c *limitedClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
@@ -160,9 +160,9 @@ func (c *limitedClient) DescribeServices(ctx context.Context, input *ecs.Describ
 	)
 
 	// Slice off chunks of 10 arns.
-	for i := 0; true; i += describeServiceLimit {
+	for i := 0; true; i += describeServicesLimit {
 		// End point for this chunk.
-		e := i + describeServiceLimit
+		e := i + describeServicesLimit
 		if e >= max {
 			e = max
 		}
@@ -187,5 +187,45 @@ func (c *limitedClient) DescribeServices(ctx context.Context, input *ecs.Describ
 
 	return &ecs.DescribeServicesOutput{
 		Services: services,
+	}, nil
+}
+
+const describeTasksLimit = 100
+
+func (c *limitedClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
+	var (
+		arns  = input.Tasks
+		max   = len(arns)
+		tasks []*ecs.Task
+	)
+
+	// Slice off chunks of 100 arns.
+	for i := 0; true; i += describeTasksLimit {
+		// End point for this chunk.
+		e := i + describeTasksLimit
+		if e >= max {
+			e = max
+		}
+
+		chunk := arns[i:e]
+
+		resp, err := c.ECS.DescribeTasks(ctx, &ecs.DescribeTasksInput{
+			Cluster: input.Cluster,
+			Tasks:   chunk,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, resp.Tasks...)
+
+		// No more chunks.
+		if max == e {
+			break
+		}
+	}
+
+	return &ecs.DescribeTasksOutput{
+		Tasks: tasks,
 	}, nil
 }
