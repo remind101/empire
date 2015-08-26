@@ -10,13 +10,12 @@ checkout:
 dependencies:
   pre:
     - sudo pip install awscli
-    - sudo service docker stop; sudo curl -L -o /usr/bin/docker 'http://s3-external-1.amazonaws.com/circle-downloads/docker-1.6.0-circleci'; sudo chmod 0755 /usr/bin/docker; sudo service docker start; true
     - go install -a -race std
     - go get github.com/tools/godep
     - go version
     - cd ~/.go_workspace/src/github.com/remind101/empire && make bootstrap
   override:
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make build
+    - /bin/true
 
 test:
   override:
@@ -27,7 +26,4 @@ deployment:
   hub: 
     branch: master
     commands:
-      - make build
-      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push remind101/empire
       - AWS_REGION=us-east-1 aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read 

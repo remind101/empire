@@ -442,7 +442,7 @@
           },
           {
             "Name": "empire",
-            "Image": "remind101/empire:latest",
+            "Image": "remind101/empire:master",
             "Cpu": 512,
             "Memory": 256,
             "EntryPoint": [],
