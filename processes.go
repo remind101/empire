@@ -292,6 +292,7 @@ func processesUpdate(db *gorm.DB, process *Process) error {
 // ProcessState represents the state of a Process.
 type ProcessState struct {
 	Name        string
+	Type        string
 	Command     string
 	State       string
 	UpdatedAt   time.Time
@@ -333,6 +334,7 @@ func processStateFromInstance(i *service.Instance) *ProcessState {
 
 	return &ProcessState{
 		Name:    fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
+		Type:    string(i.Process.Type),
 		Command: i.Process.Command,
 		Constraints: Constraints{
 			CPUShare: constraints.CPUShare(i.Process.CPUShares),
