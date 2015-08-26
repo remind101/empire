@@ -18,8 +18,9 @@ type Dyno heroku.Dyno
 
 func newDyno(j *empire.ProcessState) *Dyno {
 	return &Dyno{
-		Command:   string(j.Command),
-		Name:      string(j.Name),
+		Command:   j.Command,
+		Type:      j.Type,
+		Name:      j.Name,
 		State:     j.State,
 		Size:      j.Constraints.String(),
 		UpdatedAt: j.UpdatedAt,
