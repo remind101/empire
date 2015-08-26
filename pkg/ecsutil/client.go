@@ -72,25 +72,29 @@ func (c *Client) ListAppTasks(ctx context.Context, appID string, input *ecs.List
 		return nil, err
 	}
 
+	// TODO(ejholmes): Parallelize the calls to list the tasks.
 	for _, s := range resp.ServiceArns {
 		id, err := arn.ResourceID(*s)
 		if err != nil {
 			return nil, err
 		}
 
-		t, err := c.ListTasks(ctx, &ecs.ListTasksInput{
+		var taskArns []*string
+		if err := c.ListTasksPages(ctx, &ecs.ListTasksInput{
 			Cluster:     input.Cluster,
 			ServiceName: aws.String(id),
-		})
-		if err != nil {
+		}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
+			taskArns = append(taskArns, resp.TaskArns...)
+			return true
+		}); err != nil {
 			return nil, err
 		}
 
-		if len(t.TaskArns) == 0 {
+		if len(taskArns) == 0 {
 			continue
 		}
 
-		arns = append(arns, t.TaskArns...)
+		arns = append(arns, taskArns...)
 	}
 
 	return &ecs.ListTasksOutput{
@@ -100,20 +104,23 @@ func (c *Client) ListAppTasks(ctx context.Context, appID string, input *ecs.List
 
 // ListAppServices lists all services for the app.
 func (c *Client) ListAppServices(ctx context.Context, appID string, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
-	resp, err := c.ListServices(ctx, input)
-	if err != nil {
-		return resp, err
+	var serviceArns []*string
+	if err := c.ListServicesPages(ctx, input, func(resp *ecs.ListServicesOutput, lastPage bool) bool {
+		serviceArns = append(serviceArns, resp.ServiceArns...)
+		return true
+	}); err != nil {
+		return nil, err
 	}
 
 	var arns []*string
-	for _, a := range resp.ServiceArns {
+	for _, a := range serviceArns {
 		if a == nil {
 			continue
 		}
 
 		id, err := arn.ResourceID(*a)
 		if err != nil {
-			return resp, err
+			return nil, err
 		}
 
 		appName, _ := c.split(&id)

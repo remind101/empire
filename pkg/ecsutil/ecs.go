@@ -20,11 +20,11 @@ type ECS interface {
 	CreateService(context.Context, *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error)
 	DeleteService(context.Context, *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
 	UpdateService(context.Context, *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
-	ListServices(context.Context, *ecs.ListServicesInput) (*ecs.ListServicesOutput, error)
+	ListServicesPages(context.Context, *ecs.ListServicesInput, func(*ecs.ListServicesOutput, bool) bool) error
 	DescribeServices(context.Context, *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 
 	// Tasks
-	ListTasks(context.Context, *ecs.ListTasksInput) (*ecs.ListTasksOutput, error)
+	ListTasksPages(context.Context, *ecs.ListTasksInput, func(*ecs.ListTasksOutput, bool) bool) error
 	StopTask(context.Context, *ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	DescribeTasks(context.Context, *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
 }
@@ -32,7 +32,7 @@ type ECS interface {
 // newECSClient builds a new ECS client with autopagination and tracing.
 func newECSClient(config *aws.Config) ECS {
 	ecs := ecs.New(config)
-	return &autoPaginatedClient{
+	return &limitedClient{
 		ECS: &ecsClient{ECS: ecs},
 	}
 }
@@ -88,11 +88,11 @@ func (c *ecsClient) DescribeTaskDefinition(ctx context.Context, input *ecs.Descr
 	return resp, err
 }
 
-func (c *ecsClient) ListServices(ctx context.Context, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
+func (c *ecsClient) ListServicesPages(ctx context.Context, input *ecs.ListServicesInput, fn func(*ecs.ListServicesOutput, bool) bool) error {
 	ctx, done := trace.Trace(ctx)
-	resp, err := c.ECS.ListServices(input)
-	done(err, "ListServices", "services", len(resp.ServiceArns))
-	return resp, err
+	err := c.ECS.ListServicesPages(input, fn)
+	done(err, "ListServicesPages")
+	return err
 }
 
 func (c *ecsClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
@@ -102,14 +102,18 @@ func (c *ecsClient) DescribeServices(ctx context.Context, input *ecs.DescribeSer
 	return resp, err
 }
 
-func (c *ecsClient) ListTasks(ctx context.Context, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+func (c *ecsClient) ListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(*ecs.ListTasksOutput, bool) bool) error {
 	ctx, done := trace.Trace(ctx)
-	resp, err := c.ECS.ListTasks(input)
-	done(err, "ListTasks")
-	return resp, err
+	err := c.ECS.ListTasksPages(input, fn)
+	done(err, "ListTasksPages")
+	return err
 }
 
 func (c *ecsClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
+	return c.describeTasks(ctx, input)
+}
+
+func (c *ecsClient) describeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.DescribeTasks(input)
 	done(err, "DescribeTasks", "tasks", len(input.Tasks))
@@ -139,75 +143,16 @@ func intField(v *int64) string {
 	return "<nil>"
 }
 
-// autoPaginatedClient is an ECS implementation that will autopaginate
-// responses.
-type autoPaginatedClient struct {
+// limitedClient is an ECS client that will handle limits in certain service
+// calls.
+type limitedClient struct {
 	ECS
-}
-
-func (c *autoPaginatedClient) ListServices(ctx context.Context, input *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
-	var (
-		nextMarker *string
-		arns       []*string
-	)
-
-	for {
-		resp, err := c.ECS.ListServices(ctx, &ecs.ListServicesInput{
-			Cluster:   input.Cluster,
-			NextToken: nextMarker,
-		})
-		if err != nil {
-			return resp, err
-		}
-
-		arns = append(arns, resp.ServiceArns...)
-
-		nextMarker = resp.NextToken
-		if nextMarker == nil || *nextMarker == "" {
-			// No more items
-			break
-		}
-	}
-
-	return &ecs.ListServicesOutput{
-		ServiceArns: arns,
-	}, nil
-}
-
-func (c *autoPaginatedClient) ListTasks(ctx context.Context, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
-	var (
-		nextMarker *string
-		arns       []*string
-	)
-
-	for {
-		resp, err := c.ECS.ListTasks(ctx, &ecs.ListTasksInput{
-			Cluster:     input.Cluster,
-			ServiceName: input.ServiceName,
-			NextToken:   nextMarker,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		arns = append(arns, resp.TaskArns...)
-
-		nextMarker = resp.NextToken
-		if nextMarker == nil || *nextMarker == "" {
-			// No more items
-			break
-		}
-	}
-
-	return &ecs.ListTasksOutput{
-		TaskArns: arns,
-	}, nil
 }
 
 const describeServiceLimit = 10
 
 // TODO: Parallelize this.
-func (c *autoPaginatedClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
+func (c *limitedClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
 	var (
 		arns     = input.Services
 		max      = len(arns)
