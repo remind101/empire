@@ -292,7 +292,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 	env["EMPIRE_PROCESS"] = string(p.Type)
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
 	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
-	env["SOURCE"] = fmt.Sprintf("%s.v%d.%s", release.App.Name, release.Version, p.Type)
+	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
 
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
