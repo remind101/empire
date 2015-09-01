@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
+	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +19,8 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
-	h.StreamLogs(a, w)
+	rw := streamhttp.StreamingResponseWriter(w)
+	h.StreamLogs(a, rw)
 
 	return nil
 }
