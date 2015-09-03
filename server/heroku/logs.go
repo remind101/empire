@@ -18,7 +18,7 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json; boundary=NL")
+	w.Header().Set("Content-Type", "text/plain; boundary=NL")
 	rw := streamhttp.StreamingResponseWriter(w)
 	h.StreamLogs(a, rw)
 
