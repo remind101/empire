@@ -20,7 +20,10 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 
 	w.Header().Set("Content-Type", "text/plain; boundary=NL")
 	rw := streamhttp.StreamingResponseWriter(w)
-	h.StreamLogs(a, rw)
+	err = h.StreamLogs(a, rw)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

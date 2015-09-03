@@ -21,6 +21,8 @@ func (e *Empire) StreamLogs(a *App, w io.Writer) error {
 	for {
 		rec := <-k.Records()
 		msg := append(rec.Data(), '\n')
-		w.Write(msg)
+		if _, err := w.Write(msg); err != nil {
+			return err
+		}
 	}
 }
