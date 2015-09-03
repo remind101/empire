@@ -18,9 +18,7 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	w.Header().Set("Content-Type", "text/plain; boundary=NL")
-	rw := streamhttp.StreamingResponseWriter(w)
-	err = h.StreamLogs(a, rw)
+	err = h.StreamLogs(a, streamhttp.StreamingResponseWriter(w))
 	if err != nil {
 		return err
 	}
