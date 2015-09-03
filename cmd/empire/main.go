@@ -48,9 +48,10 @@ const (
 
 	FlagRoute53InternalZoneID = "route53.zoneid.internal"
 
-	FlagSecret   = "secret"
-	FlagReporter = "reporter"
-	FlagRunner   = "runner"
+	FlagSecret       = "secret"
+	FlagReporter     = "reporter"
+	FlagRunner       = "runner"
+	FlagLogsStreamer = "logs.streamer"
 )
 
 // Commands are the subcommands that are available.
@@ -227,6 +228,12 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The route53 zone ID of the internal 'empire.' zone.",
 		EnvVar: "EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
 	},
+	cli.StringFlag{
+		Name:   FlagLogsStreamer,
+		Value:  "",
+		Usage:  "The location of the logs to stream",
+		EnvVar: "EMPIRE_LOGS_STREAMER",
+	},
 }
 
 func main() {
@@ -257,6 +264,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	opts.ELB.InternalZoneID = c.String(FlagRoute53InternalZoneID)
 	opts.DB = c.String(FlagDB)
 	opts.Secret = c.String(FlagSecret)
+	opts.LogsStreamer = c.String(FlagLogsStreamer)
 
 	auth, err := dockerAuth(c.String(FlagDockerAuth))
 	if err != nil {

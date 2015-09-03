@@ -6,8 +6,21 @@ import (
 	"github.com/remind101/kinesumer"
 )
 
-func (e *Empire) StreamLogs(a *App, w io.Writer) error {
-	k, err := kinesumer.NewDefault(a.ID)
+type LogsStreamer interface {
+	StreamLogs(*App, io.Writer) error
+}
+
+type nullLogsStreamer struct{}
+
+func (s *nullLogsStreamer) StreamLogs(app *App, w io.Writer) error {
+	io.WriteString(w, "Logs are disabled\n")
+	return nil
+}
+
+type kinesisLogsStreamer struct{}
+
+func (s *kinesisLogsStreamer) StreamLogs(app *App, w io.Writer) error {
+	k, err := kinesumer.NewDefault(app.ID)
 	if err != nil {
 		return err
 	}
