@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/remind101/empire"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
@@ -18,7 +19,12 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	err = h.StreamLogs(a, streamhttp.StreamingResponseWriter(w))
+	rw := streamhttp.StreamingResponseWriter(w)
+
+	// Prevent the ELB idle connection timeout to close the connection.
+	defer close(streamhttp.Heartbeat(rw, 10*time.Second))
+
+	err = h.StreamLogs(a, rw)
 	if err != nil {
 		return err
 	}
