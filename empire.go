@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"io"
 	"log"
 	"os"
 
@@ -83,6 +84,9 @@ type Options struct {
 
 	// Database connection string.
 	DB string
+
+	// Location of the app logs
+	LogsStreamer string
 }
 
 // Empire is a context object that contains a collection of services.
@@ -107,6 +111,7 @@ type Empire struct {
 	scaler       *scaler
 	restarter    *restarter
 	runner       *runnerService
+	logs         LogsStreamer
 }
 
 // New returns a new Empire instance.
@@ -204,6 +209,13 @@ func New(options Options) (*Empire, error) {
 		releaser: releaser,
 	}
 
+	runnerService := &runnerService{
+		store:   store,
+		manager: manager,
+	}
+
+	logs := newLogStreamer(options.LogsStreamer)
+
 	return &Empire{
 		Logger:       newLogger(),
 		store:        store,
@@ -216,11 +228,9 @@ func New(options Options) (*Empire, error) {
 		jobStates:    jobStates,
 		scaler:       scaler,
 		restarter:    restarter,
-		runner: &runnerService{
-			store:   store,
-			manager: manager,
-		},
-		releases: releases,
+		runner:       runnerService,
+		releases:     releases,
+		logs:         logs,
 	}, nil
 }
 
@@ -362,6 +372,11 @@ func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantit
 	return e.scaler.Scale(ctx, app, t, quantity, c)
 }
 
+// Streamlogs streams logs from an app.
+func (e *Empire) StreamLogs(app *App, w io.Writer) error {
+	return e.logs.StreamLogs(app, w)
+}
+
 // Reset resets empire.
 func (e *Empire) Reset() error {
 	return e.store.Reset()
@@ -468,4 +483,12 @@ func newResolver(o DockerOptions) (Resolver, error) {
 
 	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
 	return newDockerResolver(c), err
+}
+
+func newLogStreamer(logsStreamer string) LogsStreamer {
+	if logsStreamer == "kinesis" {
+		return &kinesisLogsStreamer{}
+	}
+
+	return &nullLogsStreamer{}
 }
