@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestECSManager_Submit(t *testing.T) {
+func TestScheduler_Submit(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -76,7 +76,7 @@ func TestECSManager_Submit(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if err := m.Submit(context.Background(), fakeApp); err != nil {
@@ -84,7 +84,7 @@ func TestECSManager_Submit(t *testing.T) {
 	}
 }
 
-func TestECSManager_Scale(t *testing.T) {
+func TestScheduler_Scale(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -98,7 +98,7 @@ func TestECSManager_Scale(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if err := m.Scale(context.Background(), "1234", "web", 10); err != nil {
@@ -106,7 +106,7 @@ func TestECSManager_Scale(t *testing.T) {
 	}
 }
 
-func TestECSManager_Instances(t *testing.T) {
+func TestScheduler_Instances(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -156,7 +156,7 @@ func TestECSManager_Instances(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	instances, err := m.Instances(context.Background(), "1234")
@@ -183,7 +183,7 @@ func TestECSManager_Instances(t *testing.T) {
 	}
 }
 
-func TestECSManager_Remove(t *testing.T) {
+func TestScheduler_Remove(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -245,7 +245,7 @@ func TestECSManager_Remove(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if err := m.Remove(context.Background(), "1234"); err != nil {
@@ -253,7 +253,7 @@ func TestECSManager_Remove(t *testing.T) {
 	}
 }
 
-func TestECSManager_Processes(t *testing.T) {
+func TestScheduler_Processes(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -385,7 +385,7 @@ func TestECSManager_Processes(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if _, err := m.Processes(context.Background(), "1234"); err != nil {
@@ -438,10 +438,10 @@ var fakeApp = &scheduler.App{
 	},
 }
 
-func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
+func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	m, err := NewECSManager(ECSConfig{
+	m, err := NewScheduler(Config{
 		AWS: aws.NewConfig().Merge(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    aws.String(s.URL),

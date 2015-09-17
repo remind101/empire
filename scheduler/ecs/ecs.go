@@ -23,7 +23,7 @@ import (
 
 var DefaultDelimiter = "-"
 
-// ProcessManager is a layer level interface than Manager, that provides direct
+// ProcessManager is a lower level interface than Scheduler, that provides direct
 // control over individual processes.
 type ProcessManager interface {
 	scheduler.Scaler
@@ -39,18 +39,18 @@ type ProcessManager interface {
 	Processes(ctx context.Context, app string) ([]*scheduler.Process, error)
 }
 
-// ECSManager is an implementation of the ServiceManager interface that
+// Scheduler is an implementation of the ServiceManager interface that
 // is backed by Amazon ECS.
-type ECSManager struct {
+type Scheduler struct {
 	ProcessManager
 
 	cluster string
 	ecs     *ecsutil.Client
 }
 
-// ECSConfig holds configuration for generating a new ECS backed Manager
+// Config holds configuration for generating a new ECS backed Scheduler
 // implementation.
-type ECSConfig struct {
+type Config struct {
 	// The ECS cluster to create services and task definitions in.
 	Cluster string
 
@@ -79,39 +79,39 @@ type ECSConfig struct {
 	AWS *aws.Config
 }
 
-// NewECSManager returns a new Manager implementation that:
+// NewScheduler returns a new Scehduler implementation that:
 //
 // * Creates services with ECS.
-func NewECSManager(config ECSConfig) (*ECSManager, error) {
+func NewScheduler(config Config) (*Scheduler, error) {
 	c := ecsutil.NewClient(config.AWS)
 
-	// Create the ECS Manager
+	// Create the ECS Scheduler
 	var pm ProcessManager = &ecsProcessManager{
 		cluster:     config.Cluster,
 		serviceRole: config.ServiceRole,
 		ecs:         c,
 	}
 
-	return &ECSManager{
+	return &Scheduler{
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
 	}, nil
 }
 
-// NewLoadBalancedECSManager returns a new Manager implementation that:
+// NewLoadBalancedScheduler returns a new Scheduler instance that:
 //
 // * Creates services with ECS.
 // * Creates internal or external ELBs for ECS services.
 // * Creates a CNAME record in route53 under the internal TLD.
-func NewLoadBalancedECSManager(config ECSConfig) (*ECSManager, error) {
+func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 	if err := validateLoadBalancedConfig(config); err != nil {
 		return nil, err
 	}
 
 	c := ecsutil.NewClient(config.AWS)
 
-	// Create the ECS Manager
+	// Create the ECS Scheduler
 	var pm ProcessManager = &ecsProcessManager{
 		cluster:     config.Cluster,
 		serviceRole: config.ServiceRole,
@@ -139,14 +139,14 @@ func NewLoadBalancedECSManager(config ECSConfig) (*ECSManager, error) {
 		lb:             lbm,
 	}
 
-	return &ECSManager{
+	return &Scheduler{
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
 	}, nil
 }
 
-func validateLoadBalancedConfig(c ECSConfig) error {
+func validateLoadBalancedConfig(c Config) error {
 	r := func(n string) error {
 		return errors.New(fmt.Sprintf("%s is required", n))
 	}
@@ -184,7 +184,7 @@ func validateLoadBalancedConfig(c ECSConfig) error {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *ECSManager) Submit(ctx context.Context, app *scheduler.App) error {
+func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
@@ -207,7 +207,7 @@ func (m *ECSManager) Submit(ctx context.Context, app *scheduler.App) error {
 }
 
 // Remove removes any ECS services that belong to this app.
-func (m *ECSManager) Remove(ctx context.Context, appID string) error {
+func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 	processes, err := m.Processes(ctx, appID)
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (m *ECSManager) Remove(ctx context.Context, appID string) error {
 
 // Instances returns all instances that are currently running, pending or
 // draining.
-func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*scheduler.Instance, error) {
+func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.Instance, error) {
 	var instances []*scheduler.Instance
 
 	tasks, err := m.describeAppTasks(ctx, appID)
@@ -261,7 +261,7 @@ func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*scheduler.
 	return instances, nil
 }
 
-func (m *ECSManager) describeAppTasks(ctx context.Context, appID string) ([]*ecs.Task, error) {
+func (m *Scheduler) describeAppTasks(ctx context.Context, appID string) ([]*ecs.Task, error) {
 	resp, err := m.ecs.ListAppTasks(ctx, appID, &ecs.ListTasksInput{
 		Cluster: aws.String(m.cluster),
 	})
@@ -280,7 +280,7 @@ func (m *ECSManager) describeAppTasks(ctx context.Context, appID string) ([]*ecs
 	return tasks.Tasks, err
 }
 
-func (m *ECSManager) Stop(ctx context.Context, instanceID string) error {
+func (m *Scheduler) Stop(ctx context.Context, instanceID string) error {
 	_, err := m.ecs.StopTask(ctx, &ecs.StopTaskInput{
 		Cluster: aws.String(m.cluster),
 		Task:    aws.String(instanceID),

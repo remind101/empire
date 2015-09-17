@@ -413,10 +413,10 @@ const (
 func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (scheduler.Scheduler, error) {
 	if config == nil {
 		log.Println("warn: AWS not configured, ECS service management disabled.")
-		return scheduler.NewFakeManager(), nil
+		return scheduler.NewFakeScheduler(), nil
 	}
 
-	s, err := ecs.NewLoadBalancedECSManager(ecs.ECSConfig{
+	s, err := ecs.NewLoadBalancedScheduler(ecs.Config{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
