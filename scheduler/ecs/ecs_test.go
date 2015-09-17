@@ -1,4 +1,4 @@
-package service
+package ecs
 
 import (
 	"net/http"
@@ -10,10 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/remind101/empire/pkg/awsutil"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/scheduler"
 	"golang.org/x/net/context"
 )
 
-func TestECSManager_Submit(t *testing.T) {
+func TestScheduler_Submit(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -75,7 +76,7 @@ func TestECSManager_Submit(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if err := m.Submit(context.Background(), fakeApp); err != nil {
@@ -83,7 +84,7 @@ func TestECSManager_Submit(t *testing.T) {
 	}
 }
 
-func TestECSManager_Scale(t *testing.T) {
+func TestScheduler_Scale(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -97,7 +98,7 @@ func TestECSManager_Scale(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if err := m.Scale(context.Background(), "1234", "web", 10); err != nil {
@@ -105,7 +106,7 @@ func TestECSManager_Scale(t *testing.T) {
 	}
 }
 
-func TestECSManager_Instances(t *testing.T) {
+func TestScheduler_Instances(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -155,7 +156,7 @@ func TestECSManager_Instances(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	instances, err := m.Instances(context.Background(), "1234")
@@ -182,7 +183,7 @@ func TestECSManager_Instances(t *testing.T) {
 	}
 }
 
-func TestECSManager_Remove(t *testing.T) {
+func TestScheduler_Remove(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -244,7 +245,7 @@ func TestECSManager_Remove(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if err := m.Remove(context.Background(), "1234"); err != nil {
@@ -252,7 +253,7 @@ func TestECSManager_Remove(t *testing.T) {
 	}
 }
 
-func TestECSManager_Processes(t *testing.T) {
+func TestScheduler_Processes(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -384,7 +385,7 @@ func TestECSManager_Processes(t *testing.T) {
 			},
 		},
 	})
-	m, s := newTestECSManager(h)
+	m, s := newTestScheduler(h)
 	defer s.Close()
 
 	if _, err := m.Processes(context.Background(), "1234"); err != nil {
@@ -394,13 +395,13 @@ func TestECSManager_Processes(t *testing.T) {
 
 func TestDiffProcessTypes(t *testing.T) {
 	tests := []struct {
-		old, new []*Process
+		old, new []*scheduler.Process
 		out      []string
 	}{
 		{nil, nil, []string{}},
-		{[]*Process{{Type: "web"}}, []*Process{{Type: "web"}}, []string{}},
-		{[]*Process{{Type: "web"}}, nil, []string{"web"}},
-		{[]*Process{{Type: "web"}, {Type: "worker"}}, []*Process{{Type: "web"}}, []string{"worker"}},
+		{[]*scheduler.Process{{Type: "web"}}, []*scheduler.Process{{Type: "web"}}, []string{}},
+		{[]*scheduler.Process{{Type: "web"}}, nil, []string{"web"}},
+		{[]*scheduler.Process{{Type: "web"}, {Type: "worker"}}, []*scheduler.Process{{Type: "web"}}, []string{"worker"}},
 	}
 
 	for i, tt := range tests {
@@ -417,10 +418,10 @@ func TestDiffProcessTypes(t *testing.T) {
 }
 
 // fake app for testing.
-var fakeApp = &App{
+var fakeApp = &scheduler.App{
 	ID: "1234",
-	Processes: []*Process{
-		&Process{
+	Processes: []*scheduler.Process{
+		&scheduler.Process{
 			Type:    "web",
 			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 			Command: "acme-inc web '--port 80'",
@@ -429,18 +430,18 @@ var fakeApp = &App{
 			},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,
-			Ports: []PortMap{
+			Ports: []scheduler.PortMap{
 				{aws.Int64(8080), aws.Int64(8080)},
 			},
-			Exposure: ExposePrivate,
+			Exposure: scheduler.ExposePrivate,
 		},
 	},
 }
 
-func newTestECSManager(h http.Handler) (*ECSManager, *httptest.Server) {
+func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	m, err := NewECSManager(ECSConfig{
+	m, err := NewScheduler(Config{
 		AWS: aws.NewConfig().Merge(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    aws.String(s.URL),

@@ -6,7 +6,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
-	"github.com/remind101/empire/pkg/service"
+	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -243,15 +243,15 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 }
 
 type releaser struct {
-	store   *store
-	manager service.Manager
+	store     *store
+	scheduler scheduler.Scheduler
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (r *releaser) Release(ctx context.Context, release *Release) error {
 	a := newServiceApp(release)
-	return r.manager.Submit(ctx, a)
+	return r.scheduler.Submit(ctx, a)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -268,22 +268,22 @@ func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
 	return r.Release(ctx, release)
 }
 
-func newServiceApp(release *Release) *service.App {
-	var processes []*service.Process
+func newServiceApp(release *Release) *scheduler.App {
+	var processes []*scheduler.Process
 
 	for _, p := range release.Processes {
 		processes = append(processes, newServiceProcess(release, p))
 	}
 
-	return &service.App{
+	return &scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
 		Processes: processes,
 	}
 }
 
-func newServiceProcess(release *Release, p *Process) *service.Process {
-	var procExp service.Exposure
+func newServiceProcess(release *Release, p *Process) *scheduler.Process {
+	var procExp scheduler.Exposure
 	ports := newServicePorts(int64(p.Port))
 
 	env := environment(release.Config.Vars)
@@ -303,7 +303,7 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 
 	cert := serviceSSLCertName(release.App.Certificates)
 
-	return &service.Process{
+	return &scheduler.Process{
 		Type:        string(p.Type),
 		Env:         env,
 		Command:     string(p.Command),
@@ -317,13 +317,13 @@ func newServiceProcess(release *Release, p *Process) *service.Process {
 	}
 }
 
-func newServicePorts(hostPort int64) []service.PortMap {
-	var ports []service.PortMap
+func newServicePorts(hostPort int64) []scheduler.PortMap {
+	var ports []scheduler.PortMap
 	if hostPort != 0 {
 		// TODO: We can just map the same host port as the container port, as we make it
 		// available as $PORT in the env vars.
 		port := int64(WebPort)
-		ports = append(ports, service.PortMap{
+		ports = append(ports, scheduler.PortMap{
 			Host:      &hostPort,
 			Container: &port,
 		})
@@ -342,14 +342,14 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func serviceExposure(appExp string) (exp service.Exposure) {
+func serviceExposure(appExp string) (exp scheduler.Exposure) {
 	switch appExp {
 	case ExposePrivate:
-		exp = service.ExposePrivate
+		exp = scheduler.ExposePrivate
 	case ExposePublic:
-		exp = service.ExposePublic
+		exp = scheduler.ExposePublic
 	default:
-		exp = service.ExposeNone
+		exp = scheduler.ExposeNone
 	}
 
 	return exp

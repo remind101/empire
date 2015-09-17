@@ -11,7 +11,7 @@ import (
 	"github.com/lib/pq/hstore"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
-	"github.com/remind101/empire/pkg/service"
+	"github.com/remind101/empire/scheduler"
 	"golang.org/x/net/context"
 )
 
@@ -300,13 +300,13 @@ type ProcessState struct {
 }
 
 type processStatesService struct {
-	manager service.Manager
+	scheduler scheduler.Scheduler
 }
 
 func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
 	var states []*ProcessState
 
-	instances, err := s.manager.Instances(ctx, app.ID)
+	instances, err := s.scheduler.Instances(ctx, app.ID)
 	if err != nil {
 		return states, err
 	}
@@ -318,10 +318,10 @@ func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]
 	return states, nil
 }
 
-// processStateFromInstance converts a service.Instance into a ProcessState.
+// processStateFromInstance converts a scheduler.Instance into a ProcessState.
 // It pulls some of its data from empire specific environment variables if they have been set.
 // Once ECS supports this data natively, we can stop doing this.
-func processStateFromInstance(i *service.Instance) *ProcessState {
+func processStateFromInstance(i *scheduler.Instance) *ProcessState {
 	createdAt := i.UpdatedAt
 	if t, err := time.Parse(time.RFC3339, i.Process.Env["EMPIRE_CREATED_AT"]); err == nil {
 		createdAt = t

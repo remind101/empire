@@ -1,9 +1,10 @@
-package service
+package ecs
 
 import (
 	"fmt"
 
 	"github.com/remind101/empire/pkg/lb"
+	"github.com/remind101/empire/scheduler"
 	"golang.org/x/net/context"
 )
 
@@ -22,8 +23,8 @@ type LBProcessManager struct {
 // * If the load balancer's External attribute doesn't match what we want. Delete the process, also deleting the load balancer.
 // * Create the load balancer
 // * Attach it to the process.
-func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) error {
-	if p.Exposure > ExposeNone {
+func (m *LBProcessManager) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
+	if p.Exposure > scheduler.ExposeNone {
 		// Attempt to find an existing load balancer for this app.
 		l, err := m.findLoadBalancer(ctx, app.ID, p.Type)
 		if err != nil {
@@ -48,7 +49,7 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *App, p *Proce
 
 			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
 				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
-				External:     p.Exposure == ExposePublic,
+				External:     p.Exposure == scheduler.ExposePublic,
 				SSLCert:      p.SSLCert,
 				Tags:         tags,
 			})
@@ -108,7 +109,7 @@ func lbTags(app string, process string) map[string]string {
 
 // LoadBalancerExposureError is returned when the exposure of the process in the data store does not match the exposure of the ELB
 type LoadBalancerExposureError struct {
-	proc *Process
+	proc *scheduler.Process
 	lb   *lb.LoadBalancer
 }
 
@@ -125,7 +126,7 @@ func (e *LoadBalancerExposureError) Error() string {
 
 // LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
 type LoadBalancerPortMismatchError struct {
-	proc *Process
+	proc *scheduler.Process
 	lb   *lb.LoadBalancer
 }
 
@@ -135,7 +136,7 @@ func (e *LoadBalancerPortMismatchError) Error() string {
 
 // SslCertMismatchError is returned when the ssl cert in the data store does not match the ssl cert on the ELB
 type SslCertMismatchError struct {
-	proc *Process
+	proc *scheduler.Process
 	lb   *lb.LoadBalancer
 }
 
@@ -144,12 +145,12 @@ func (e *SslCertMismatchError) Error() string {
 }
 
 // lbOk checks if the load balancer is suitable for the process.
-func lbOk(p *Process, lb *lb.LoadBalancer) error {
-	if p.Exposure == ExposePublic && !lb.External {
+func lbOk(p *scheduler.Process, lb *lb.LoadBalancer) error {
+	if p.Exposure == scheduler.ExposePublic && !lb.External {
 		return &LoadBalancerExposureError{p, lb}
 	}
 
-	if p.Exposure == ExposePrivate && lb.External {
+	if p.Exposure == scheduler.ExposePrivate && lb.External {
 		return &LoadBalancerExposureError{p, lb}
 	}
 

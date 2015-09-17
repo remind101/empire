@@ -1,4 +1,4 @@
-package service
+package scheduler
 
 import (
 	"fmt"
@@ -8,22 +8,22 @@ import (
 	"golang.org/x/net/context"
 )
 
-type FakeManager struct {
+type FakeScheduler struct {
 	apps map[string]*App
 }
 
-func NewFakeManager() *FakeManager {
-	return &FakeManager{
+func NewFakeScheduler() *FakeScheduler {
+	return &FakeScheduler{
 		apps: make(map[string]*App),
 	}
 }
 
-func (m *FakeManager) Submit(ctx context.Context, app *App) error {
+func (m *FakeScheduler) Submit(ctx context.Context, app *App) error {
 	m.apps[app.ID] = app
 	return nil
 }
 
-func (m *FakeManager) Scale(ctx context.Context, app string, ptype string, instances uint) error {
+func (m *FakeScheduler) Scale(ctx context.Context, app string, ptype string, instances uint) error {
 	if a, ok := m.apps[app]; ok {
 		var process *Process
 		for _, p := range a.Processes {
@@ -39,12 +39,12 @@ func (m *FakeManager) Scale(ctx context.Context, app string, ptype string, insta
 	return nil
 }
 
-func (m *FakeManager) Remove(ctx context.Context, appID string) error {
+func (m *FakeScheduler) Remove(ctx context.Context, appID string) error {
 	delete(m.apps, appID)
 	return nil
 }
 
-func (m *FakeManager) Instances(ctx context.Context, appID string) ([]*Instance, error) {
+func (m *FakeScheduler) Instances(ctx context.Context, appID string) ([]*Instance, error) {
 	var instances []*Instance
 	if a, ok := m.apps[appID]; ok {
 		for _, p := range a.Processes {
@@ -61,11 +61,11 @@ func (m *FakeManager) Instances(ctx context.Context, appID string) ([]*Instance,
 	return instances, nil
 }
 
-func (m *FakeManager) Stop(ctx context.Context, instanceID string) error {
+func (m *FakeScheduler) Stop(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-func (m *FakeManager) Run(ctx context.Context, app *App, p *Process, in io.Reader, out io.Writer) error {
+func (m *FakeScheduler) Run(ctx context.Context, app *App, p *Process, in io.Reader, out io.Writer) error {
 	if out != nil {
 		fmt.Fprintf(out, "Fake output for `%s` on %s\n", p.Command, app.Name)
 	}

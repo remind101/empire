@@ -1,4 +1,4 @@
-package service
+package scheduler
 
 import (
 	"io"
@@ -10,7 +10,7 @@ import (
 // AttachedRunner wraps a Manager to run attached processes using docker
 // directly to get access to stdin and stdout.
 type AttachedRunner struct {
-	Manager
+	Scheduler
 	Runner *runner.Runner
 }
 
@@ -26,5 +26,5 @@ func (m *AttachedRunner) Run(ctx context.Context, app *App, p *Process, in io.Re
 		})
 	}
 
-	return m.Manager.Run(ctx, app, p, in, out)
+	return m.Scheduler.Run(ctx, app, p, in, out)
 }

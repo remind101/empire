@@ -12,8 +12,9 @@ import (
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/runner"
-	"github.com/remind101/empire/pkg/service"
 	"github.com/remind101/empire/pkg/sslcert"
+	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -138,7 +139,7 @@ func New(options Options) (*Empire, error) {
 		return nil, err
 	}
 
-	manager, err := newManager(
+	scheduler, err := newManager(
 		runner,
 		options.ECS,
 		options.ELB,
@@ -153,27 +154,27 @@ func New(options Options) (*Empire, error) {
 	}
 
 	apps := &appsService{
-		store:   store,
-		manager: manager,
+		store:     store,
+		scheduler: scheduler,
 	}
 
 	jobStates := &processStatesService{
-		manager: manager,
+		scheduler: scheduler,
 	}
 
 	scaler := &scaler{
-		store:   store,
-		manager: manager,
+		store:     store,
+		scheduler: scheduler,
 	}
 
 	releaser := &releaser{
-		store:   store,
-		manager: manager,
+		store:     store,
+		scheduler: scheduler,
 	}
 
 	restarter := &restarter{
-		releaser: releaser,
-		manager:  manager,
+		releaser:  releaser,
+		scheduler: scheduler,
 	}
 
 	releases := &releasesService{
@@ -210,8 +211,8 @@ func New(options Options) (*Empire, error) {
 	}
 
 	runnerService := &runnerService{
-		store:   store,
-		manager: manager,
+		store:     store,
+		scheduler: scheduler,
 	}
 
 	logs := newLogStreamer(options.LogsStreamer)
@@ -409,13 +410,13 @@ const (
 	UserKey key = 0
 )
 
-func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (service.Manager, error) {
+func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (scheduler.Scheduler, error) {
 	if config == nil {
 		log.Println("warn: AWS not configured, ECS service management disabled.")
-		return service.NewFakeManager(), nil
+		return scheduler.NewFakeScheduler(), nil
 	}
 
-	m, err := service.NewLoadBalancedECSManager(service.ECSConfig{
+	s, err := ecs.NewLoadBalancedScheduler(ecs.Config{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
@@ -429,9 +430,9 @@ func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config
 		return nil, err
 	}
 
-	return &service.AttachedRunner{
-		Manager: m,
-		Runner:  r,
+	return &scheduler.AttachedRunner{
+		Scheduler: s,
+		Runner:    r,
 	}, nil
 }
 
