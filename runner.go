@@ -3,7 +3,8 @@ package empire
 import (
 	"io"
 
-	"github.com/remind101/empire/pkg/service"
+	"github.com/remind101/empire/scheduler"
+
 	"golang.org/x/net/context"
 )
 
@@ -21,8 +22,8 @@ type ProcessRunOpts struct {
 }
 
 type runnerService struct {
-	store   *store
-	manager service.Manager
+	store     *store
+	scheduler scheduler.Scheduler
 }
 
 func (r *runnerService) Run(ctx context.Context, app *App, opts ProcessRunOpts) error {
@@ -38,5 +39,5 @@ func (r *runnerService) Run(ctx context.Context, app *App, opts ProcessRunOpts) 
 		p.Env[k] = v
 	}
 
-	return r.manager.Run(ctx, a, p, opts.Input, opts.Output)
+	return r.scheduler.Run(ctx, a, p, opts.Input, opts.Output)
 }

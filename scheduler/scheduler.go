@@ -1,6 +1,6 @@
-// A Go package that provides a layer of abstraction above ECS to introduce the
-// concept of Apps, which have are a collection of services.
-package service
+// Package scheduler provides the core interface that Empire uses when
+// interacting with a cluster of machines to run tasks.
+package scheduler
 
 import (
 	"io"
@@ -110,8 +110,8 @@ type Runner interface {
 	Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error
 }
 
-// Manager is an interface for interfacing with Services.
-type Manager interface {
+// Scheduler is an interface for interfacing with Services.
+type Scheduler interface {
 	Scaler
 	Runner
 
