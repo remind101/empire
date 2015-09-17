@@ -128,19 +128,3 @@ type Scheduler interface {
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
 }
-
-// ProcessManager is a layer level interface than Manager, that provides direct
-// control over individual processes.
-type ProcessManager interface {
-	Scaler
-	Runner
-
-	// CreateProcess creates a process for the app.
-	CreateProcess(ctx context.Context, app *App, process *Process) error
-
-	// RemoveProcess removes a process for the app.
-	RemoveProcess(ctx context.Context, app string, process string) error
-
-	// Processes returns all processes for the app.
-	Processes(ctx context.Context, app string) ([]*Process, error)
-}

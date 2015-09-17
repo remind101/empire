@@ -1,4 +1,6 @@
-package scheduler
+// Pacakge ecs provides an implementation of the Scheduler interface that uses
+// Amazon EC2 Container Service.
+package ecs
 
 import (
 	"errors"
@@ -14,11 +16,28 @@ import (
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/pkg/lb"
+	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 
 var DefaultDelimiter = "-"
+
+// ProcessManager is a layer level interface than Manager, that provides direct
+// control over individual processes.
+type ProcessManager interface {
+	scheduler.Scaler
+	scheduler.Runner
+
+	// CreateProcess creates a process for the app.
+	CreateProcess(ctx context.Context, app *scheduler.App, process *scheduler.Process) error
+
+	// RemoveProcess removes a process for the app.
+	RemoveProcess(ctx context.Context, app string, process string) error
+
+	// Processes returns all processes for the app.
+	Processes(ctx context.Context, app string) ([]*scheduler.Process, error)
+}
 
 // ECSManager is an implementation of the ServiceManager interface that
 // is backed by Amazon ECS.
@@ -165,7 +184,7 @@ func validateLoadBalancedConfig(c ECSConfig) error {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *ECSManager) Submit(ctx context.Context, app *App) error {
+func (m *ECSManager) Submit(ctx context.Context, app *scheduler.App) error {
 	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
@@ -205,8 +224,8 @@ func (m *ECSManager) Remove(ctx context.Context, appID string) error {
 
 // Instances returns all instances that are currently running, pending or
 // draining.
-func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*Instance, error) {
-	var instances []*Instance
+func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*scheduler.Instance, error) {
+	var instances []*scheduler.Instance
 
 	tasks, err := m.describeAppTasks(ctx, appID)
 	if err != nil {
@@ -231,7 +250,7 @@ func (m *ECSManager) Instances(ctx context.Context, appID string) ([]*Instance, 
 			return instances, err
 		}
 
-		instances = append(instances, &Instance{
+		instances = append(instances, &scheduler.Instance{
 			Process:   p,
 			State:     safeString(t.LastStatus),
 			ID:        id,
@@ -280,7 +299,7 @@ type ecsProcessManager struct {
 }
 
 // CreateProcess creates an ECS service for the process.
-func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Process) error {
+func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
 	if _, err := m.createTaskDefinition(ctx, app, p); err != nil {
 		return err
 	}
@@ -289,7 +308,7 @@ func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *App, p *Proc
 	return err
 }
 
-func (m *ecsProcessManager) Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error {
+func (m *ecsProcessManager) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
 	attachment := "detached"
 	if out != nil {
 		attachment = "attached"
@@ -303,7 +322,7 @@ func (m *ecsProcessManager) Run(ctx context.Context, app *App, process *Process,
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
-func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *App, process *Process) (*ecs.TaskDefinition, error) {
+func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process) (*ecs.TaskDefinition, error) {
 	taskDef, err := taskDefinitionInput(process)
 	if err != nil {
 		return nil, err
@@ -314,7 +333,7 @@ func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *App, 
 }
 
 // createService creates a Service in ECS for the service.
-func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
+func (m *ecsProcessManager) createService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
 	var role *string
 	var loadBalancers []*ecs.LoadBalancer
 
@@ -341,7 +360,7 @@ func (m *ecsProcessManager) createService(ctx context.Context, app *App, p *Proc
 }
 
 // updateService updates an existing Service in ECS.
-func (m *ecsProcessManager) updateService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
+func (m *ecsProcessManager) updateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
 	resp, err := m.ecs.UpdateAppService(ctx, app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Int64(int64(p.Instances)),
@@ -358,7 +377,7 @@ func (m *ecsProcessManager) updateService(ctx context.Context, app *App, p *Proc
 }
 
 // updateCreateService will perform an upsert for the service in ECS.
-func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *App, p *Process) (*ecs.Service, error) {
+func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
 	s, err := m.updateService(ctx, app, p)
 	if err != nil {
 		return nil, err
@@ -371,8 +390,8 @@ func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *App, p
 	return m.createService(ctx, app, p)
 }
 
-func (m *ecsProcessManager) Processes(ctx context.Context, appID string) ([]*Process, error) {
-	var processes []*Process
+func (m *ecsProcessManager) Processes(ctx context.Context, appID string) ([]*scheduler.Process, error) {
+	var processes []*scheduler.Process
 
 	list, err := m.ecs.ListAppServices(ctx, appID, &ecs.ListServicesInput{
 		Cluster: aws.String(m.cluster),
@@ -442,7 +461,7 @@ func (m *ecsProcessManager) Scale(ctx context.Context, app string, process strin
 
 // taskDefinitionInput returns an ecs.RegisterTaskDefinitionInput suitable for
 // creating a task definition from a Process.
-func taskDefinitionInput(p *Process) (*ecs.RegisterTaskDefinitionInput, error) {
+func taskDefinitionInput(p *scheduler.Process) (*ecs.RegisterTaskDefinitionInput, error) {
 	args, err := shellwords.Parse(p.Command)
 	if err != nil {
 		return nil, err
@@ -520,7 +539,7 @@ func noService(err error) bool {
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
 // Process.
-func taskDefinitionToProcess(td *ecs.TaskDefinition) (*Process, error) {
+func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error) {
 	// If this task definition has no container definitions, then something
 	// funky is up.
 	if len(td.ContainerDefinitions) == 0 {
@@ -541,7 +560,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*Process, error) {
 		}
 	}
 
-	return &Process{
+	return &scheduler.Process{
 		Type:        safeString(container.Name),
 		Command:     strings.Join(command, " "),
 		Env:         env,
@@ -550,7 +569,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*Process, error) {
 	}, nil
 }
 
-func diffProcessTypes(old, new []*Process) []string {
+func diffProcessTypes(old, new []*scheduler.Process) []string {
 	var types []string
 
 	om := processTypes(old)
@@ -565,7 +584,7 @@ func diffProcessTypes(old, new []*Process) []string {
 	return types
 }
 
-func processTypes(processes []*Process) map[string]struct{} {
+func processTypes(processes []*scheduler.Process) map[string]struct{} {
 	m := make(map[string]struct{})
 
 	for _, p := range processes {

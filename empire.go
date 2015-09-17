@@ -14,6 +14,7 @@ import (
 	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/pkg/sslcert"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -415,7 +416,7 @@ func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config
 		return scheduler.NewFakeManager(), nil
 	}
 
-	s, err := scheduler.NewLoadBalancedECSManager(scheduler.ECSConfig{
+	s, err := ecs.NewLoadBalancedECSManager(ecs.ECSConfig{
 		Cluster:                 ecsOpts.Cluster,
 		ServiceRole:             ecsOpts.ServiceRole,
 		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
