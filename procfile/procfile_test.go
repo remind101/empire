@@ -10,13 +10,14 @@ import (
 
 var parseTests = []struct {
 	in  io.Reader
-	out Procfile
+	out []ProcessDefinition
 }{
 	// Simple standard Procfile.
 	{
 		strings.NewReader(`web: ./bin/web`),
-		Procfile{
-			"web": ProcessDefinition{
+		[]ProcessDefinition{
+			{
+				Name:    "web",
 				Command: "./bin/web",
 			},
 		},
@@ -31,8 +32,9 @@ var parseTests = []struct {
       path: /health
       timeout: 10
       interval: 30`),
-		Procfile{
-			"web": ProcessDefinition{
+		[]ProcessDefinition{
+			{
+				Name:    "web",
 				Command: "./bin/web",
 				HealthChecks: []HealthCheck{
 					HTTPHealthCheck{
@@ -51,8 +53,9 @@ var parseTests = []struct {
   command: ./bin/web
   health_checks:
     - type: tcp`),
-		Procfile{
-			"web": ProcessDefinition{
+		[]ProcessDefinition{
+			{
+				Name:    "web",
 				Command: "./bin/web",
 				HealthChecks: []HealthCheck{
 					TCPHealthCheck{},
@@ -64,6 +67,7 @@ var parseTests = []struct {
 
 func TestParse(t *testing.T) {
 	for _, tt := range parseTests {
+		t.Log(tt.in)
 		p, err := Parse(tt.in)
 		assert.NoError(t, err)
 		assert.Equal(t, tt.out, p)
