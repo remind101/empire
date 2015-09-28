@@ -14,7 +14,8 @@ var parseTests = []struct {
 }{
 	// Simple standard Procfile.
 	{
-		strings.NewReader(`web: ./bin/web`),
+		strings.NewReader(`---
+web: ./bin/web`),
 		[]ProcessDefinition{
 			{
 				Name:    "web",
@@ -25,7 +26,8 @@ var parseTests = []struct {
 
 	// Extended Procfile with health checks and http exposure.
 	{
-		strings.NewReader(`web:
+		strings.NewReader(`---
+web:
   command: ./bin/web
   health_checks:
     - type: http
@@ -49,7 +51,8 @@ var parseTests = []struct {
 
 	// Extended Procfile with health checks and http exposure.
 	{
-		strings.NewReader(`web:
+		strings.NewReader(`---
+web:
   command: ./bin/web
   health_checks:
     - type: tcp`),
