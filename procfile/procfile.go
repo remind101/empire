@@ -14,17 +14,23 @@ import (
 // ErrBadProcfile is returned by Parse when the given procfile is invalid.
 var ErrBadProcfile = errors.New("procfile: unknown Procfile format")
 
+// Procfile represents the decoded Go representation of a Procfile.
+type Procfile map[string]ProcessDefinition
+
 // StandardProcfile represents the standard Procfile format, without extended
 // atrributes.
 type StandardProcfile map[string]string
 
-func (p StandardProcfile) ProcessDefinitions() (definitions []ProcessDefinition, err error) {
+func (p StandardProcfile) Procfile() (procfile Procfile, err error) {
+	procfile = make(Procfile)
+
 	for k, command := range p {
-		definitions = append(definitions, ProcessDefinition{
+		procfile[k] = ProcessDefinition{
 			Name:    k,
 			Command: command,
-		})
+		}
 	}
+
 	return
 }
 
@@ -35,7 +41,9 @@ type ExtendedProcfile map[string]struct {
 	HealthChecks []map[string]interface{} `yaml:"health_checks"`
 }
 
-func (p ExtendedProcfile) ProcessDefinitions() (definitions []ProcessDefinition, err error) {
+func (p ExtendedProcfile) Procfile() (procfile Procfile, err error) {
+	procfile = make(Procfile)
+
 	for k, pd := range p {
 		var healthChecks []HealthCheck
 		for _, v := range pd.HealthChecks {
@@ -56,11 +64,11 @@ func (p ExtendedProcfile) ProcessDefinitions() (definitions []ProcessDefinition,
 			}
 		}
 
-		definitions = append(definitions, ProcessDefinition{
+		procfile[k] = ProcessDefinition{
 			Name:         k,
 			Command:      pd.Command,
 			HealthChecks: healthChecks,
-		})
+		}
 	}
 	return
 }
@@ -118,7 +126,7 @@ func (hc TCPHealthCheck) Type() string {
 //
 // 1. Try to parse the Standard procfile format.
 // 2. Try to parse the Extended procfile format.
-func Parse(r io.Reader) ([]ProcessDefinition, error) {
+func Parse(r io.Reader) (Procfile, error) {
 	raw, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -126,12 +134,12 @@ func Parse(r io.Reader) ([]ProcessDefinition, error) {
 
 	var std StandardProcfile
 	if err := yaml.Unmarshal(raw, &std); err == nil {
-		return std.ProcessDefinitions()
+		return std.Procfile()
 	}
 
 	var extd ExtendedProcfile
 	if err := yaml.Unmarshal(raw, &extd); err == nil {
-		return extd.ProcessDefinitions()
+		return extd.Procfile()
 	}
 
 	return nil, ErrBadProcfile

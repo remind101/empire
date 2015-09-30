@@ -10,14 +10,14 @@ import (
 
 var parseTests = []struct {
 	in  io.Reader
-	out []ProcessDefinition
+	out Procfile
 }{
 	// Simple standard Procfile.
 	{
 		strings.NewReader(`---
 web: ./bin/web`),
-		[]ProcessDefinition{
-			{
+		Procfile{
+			"web": ProcessDefinition{
 				Name:    "web",
 				Command: "./bin/web",
 			},
@@ -34,8 +34,8 @@ web:
       path: /health
       timeout: 10
       interval: 30`),
-		[]ProcessDefinition{
-			{
+		Procfile{
+			"web": ProcessDefinition{
 				Name:    "web",
 				Command: "./bin/web",
 				HealthChecks: []HealthCheck{
@@ -56,8 +56,8 @@ web:
   command: ./bin/web
   health_checks:
     - type: tcp`),
-		[]ProcessDefinition{
-			{
+		Procfile{
+			"web": ProcessDefinition{
 				Name:    "web",
 				Command: "./bin/web",
 				HealthChecks: []HealthCheck{
