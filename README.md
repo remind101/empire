@@ -100,11 +100,11 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 
    Also check that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./docs/cloudformation.json): https://github.com/remind101/empire/blob/master/docs/cloudformation.json#L20
 
-3. Run boot2docker and export the environment variables so Empire can connect:
+3. Run docker-machine and export the environment variables so Empire can connect:
 
    ```console
-   $ boot2docker start
-   $ $(boot2docker shellinit)
+   $ docker-machine start default
+   $ eval "$(docker-machine env default)"
    ```
 4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
 
@@ -124,10 +124,10 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
    $ go get -u github.com/remind101/emp
    ```
 
-Empire will be available at `http://$(boot2docker ip):8080` and you can point the CLI there.
+Empire will be available at `http://$(docker-machine ip default):8080` and you can point the CLI there.
 
 ```console
-$ export EMPIRE_API_URL=http://$(boot2docker ip):8080
+$ export EMPIRE_API_URL=http://$(docker-machine ip default):8080
 $ emp deploy remind101/acme-inc
 ```
 
