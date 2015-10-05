@@ -9,6 +9,11 @@
       "AllowedValues": [ "t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
+    "EmpireVersion": {
+      "Type": "String",
+      "Default": "master",
+      "Description": "Docker tag to specify the version of Empire to run."
+    },
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "AMI Id. Defaults to the official ECS Optimized Linux.",
@@ -442,7 +447,7 @@
           },
           {
             "Name": "empire",
-            "Image": "remind101/empire:master",
+            "Image": { "Fn::Join": [":", ["remind101/empire", { "Ref": "EmpireVersion" }]] },
             "Cpu": 512,
             "Memory": 256,
             "EntryPoint": [],
