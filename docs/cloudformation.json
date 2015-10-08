@@ -17,7 +17,7 @@
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "AMI Id. Defaults to the official ECS Optimized Linux.",
-      "Default": "ami-e1c33f8a"
+      "Default": "ami-5943023c"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
