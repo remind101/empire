@@ -4,7 +4,7 @@ pages:
   - 'Introduction': 'index.md'
   - Overview:
     - "Features & Design Goals - TODO": "features_and_design_goals.md"
-    - "Known Limitations - TODO": "known_limitations.md"
+    - "Known Limitations": "known_limitations.md"
     - "Roadmap - TODO": "roadmap.md"
     - "FAQ - TODO": "faq.md"
   - Getting Started:
