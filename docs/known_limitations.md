@@ -17,3 +17,7 @@ You can only have a single exposed process per app, the `web` app.
 Due to a [bug](https://github.com/remind101/empire/issues/498) in
 the way that ELBs are setup, it's not possible to modify an ELB once
 it is created.
+
+## Unable to use non-standard registry
+
+See [https://github.com/remind101/empire/issues/624][https://github.com/remind101/empire/issues/624]
