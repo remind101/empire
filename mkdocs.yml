@@ -17,6 +17,7 @@ pages:
     - "Process Management - TODO": "process_management.md"
     - "Exposing an app publicly": "exposing_an_app_publicly.md"
     - "SSL Certs - TODO": "ssl_certs.md"
+    - "Activate log streaming": "log_streaming.md"
   - Hacking on Empire:
     - "Running Tests - TODO": "running_tests.md"
     - "Running Empire Locally - TODO": "running_empire_locally.md"
