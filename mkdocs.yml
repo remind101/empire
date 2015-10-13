@@ -15,7 +15,7 @@ pages:
   - Users Guide:
     - "Deploying an Application": "deploying_an_application.md"
     - "Process Management - TODO": "process_management.md"
-    - "Exposing an app publicly - TODO": "exposing_an_app_publicly.md"
+    - "Exposing an app publicly": "exposing_an_app_publicly.md"
     - "SSL Certs - TODO": "ssl_certs.md"
   - Hacking on Empire:
     - "Running Tests - TODO": "running_tests.md"
