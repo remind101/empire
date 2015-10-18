@@ -77,3 +77,37 @@ func TestMergeVars(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseDesc(t *testing.T) {
+	configVal := "test"
+
+	tests := []struct {
+		in  Vars
+		out string
+	}{
+		{
+			Vars{"FOO": &configVal},
+			"Set FOO config var",
+		},
+		{
+			Vars{"FOO": &configVal, "BAR": &configVal},
+			"Set BAR, FOO config vars",
+		},
+		{
+			Vars{"FOO": nil},
+			"Unset FOO config var",
+		},
+		{
+			Vars{"FOO": nil, "BAR": nil},
+			"Unset BAR, FOO config vars",
+		},
+	}
+
+	for _, tt := range tests {
+		d := configsApplyReleaseDesc(tt.in)
+
+		if got, want := d, tt.out; got != want {
+			t.Errorf("configsApplyReleaseDesc => want %v; got %v", want, got)
+		}
+	}
+}
