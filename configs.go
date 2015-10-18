@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -143,19 +144,12 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 		return c, err
 	}
 
-	keys := make([]string, 0, len(vars))
-	for k := range vars {
-		keys = append(keys, string(k))
-	}
-
-	desc := fmt.Sprintf("Set %s config vars", strings.Join(keys, ","))
-
 	// Create new release based on new config and old slug
 	_, err = s.releases.ReleasesCreate(ctx, &Release{
 		App:         release.App,
 		Config:      c,
 		Slug:        release.Slug,
-		Description: desc,
+		Description: configsApplyReleaseDesc(vars),
 	})
 	return c, err
 }
@@ -204,4 +198,24 @@ func mergeVars(old, new Vars) Vars {
 	}
 
 	return vars
+}
+
+// configsApplyReleaseDesc formats a release description based on the config variables
+// being applied.
+func configsApplyReleaseDesc(vars Vars) string {
+	verb := "Set"
+	plural := ""
+	if len(vars) > 1 {
+		plural = "s"
+	}
+
+	keys := make(sort.StringSlice, 0, len(vars))
+	for k, v := range vars {
+		keys = append(keys, string(k))
+		if v == nil {
+			verb = "Unset"
+		}
+	}
+	keys.Sort()
+	return fmt.Sprintf("%s %s config var%s", verb, strings.Join(keys, ", "), plural)
 }
