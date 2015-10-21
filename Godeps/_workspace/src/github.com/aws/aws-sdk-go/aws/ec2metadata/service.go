@@ -2,12 +2,16 @@ package ec2metadata
 
 import (
 	"io/ioutil"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/service"
+	"github.com/aws/aws-sdk-go/aws/service/serviceinfo"
 )
 
 // DefaultRetries states the default number of times the service client will
@@ -56,10 +60,12 @@ type Client struct {
 // with the defaults package and credentials EC2 Role Provider.
 func New(config *Config) *Client {
 	service := &service.Service{
-		Config:      copyConfig(config),
-		ServiceName: "Client",
-		Endpoint:    "http://169.254.169.254/latest",
-		APIVersion:  "latest",
+		ServiceInfo: serviceinfo.ServiceInfo{
+			Config:      copyConfig(config),
+			ServiceName: "Client",
+			Endpoint:    "http://169.254.169.254/latest",
+			APIVersion:  "latest",
+		},
 	}
 	service.Initialize()
 	service.Handlers.Unmarshal.PushBack(unmarshalHandler)
@@ -84,7 +90,19 @@ func copyConfig(config *Config) *aws.Config {
 	}
 
 	if c.HTTPClient == nil {
-		c.HTTPClient = http.DefaultClient
+		c.HTTPClient = &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				Dial: (&net.Dialer{
+					// use a shorter timeout than default because the metadata
+					// service is local if it is running, and to fail faster
+					// if not running on an ec2 instance.
+					Timeout:   5 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).Dial,
+				TLSHandshakeTimeout: 10 * time.Second,
+			},
+		}
 	}
 	if c.Logger == nil {
 		c.Logger = aws.NewDefaultLogger()
@@ -103,7 +121,7 @@ type metadataOutput struct {
 	Content string
 }
 
-func unmarshalHandler(r *service.Request) {
+func unmarshalHandler(r *request.Request) {
 	defer r.HTTPResponse.Body.Close()
 	b, err := ioutil.ReadAll(r.HTTPResponse.Body)
 	if err != nil {
@@ -114,7 +132,7 @@ func unmarshalHandler(r *service.Request) {
 	data.Content = string(b)
 }
 
-func unmarshalError(r *service.Request) {
+func unmarshalError(r *request.Request) {
 	defer r.HTTPResponse.Body.Close()
 	_, err := ioutil.ReadAll(r.HTTPResponse.Body)
 	if err != nil {
@@ -124,8 +142,8 @@ func unmarshalError(r *service.Request) {
 	// TODO extract the error...
 }
 
-func validateEndpointHandler(r *service.Request) {
+func validateEndpointHandler(r *request.Request) {
 	if r.Service.Endpoint == "" {
-		r.Error = service.ErrMissingEndpoint
+		r.Error = aws.ErrMissingEndpoint
 	}
 }

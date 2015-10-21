@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
 	"reflect"
@@ -14,7 +15,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/service"
+	"github.com/aws/aws-sdk-go/aws/request"
 )
 
 // RFC822 returns an RFC822 formatted timestamp for AWS protocols
@@ -22,6 +23,8 @@ const RFC822 = "Mon, 2 Jan 2006 15:04:05 GMT"
 
 // Whether the byte value can be sent without escaping in AWS URLs
 var noEscape [256]bool
+
+var errValueNotSet = fmt.Errorf("value not set")
 
 func init() {
 	for i := 0; i < len(noEscape); i++ {
@@ -37,7 +40,7 @@ func init() {
 }
 
 // Build builds the REST component of a service request.
-func Build(r *service.Request) {
+func Build(r *request.Request) {
 	if r.ParamsFilled() {
 		v := reflect.ValueOf(r.Params).Elem()
 		buildLocationElements(r, v)
@@ -45,7 +48,7 @@ func Build(r *service.Request) {
 	}
 }
 
-func buildLocationElements(r *service.Request, v reflect.Value) {
+func buildLocationElements(r *request.Request, v reflect.Value) {
 	query := r.HTTPRequest.URL.Query()
 
 	for i := 0; i < v.NumField(); i++ {
@@ -67,16 +70,18 @@ func buildLocationElements(r *service.Request, v reflect.Value) {
 				continue
 			}
 
+			var err error
 			switch field.Tag.Get("location") {
 			case "headers": // header maps
-				buildHeaderMap(r, m, field.Tag.Get("locationName"))
+				err = buildHeaderMap(&r.HTTPRequest.Header, m, field.Tag.Get("locationName"))
 			case "header":
-				buildHeader(r, m, name)
+				err = buildHeader(&r.HTTPRequest.Header, m, name)
 			case "uri":
-				buildURI(r, m, name)
+				err = buildURI(r.HTTPRequest.URL, m, name)
 			case "querystring":
-				buildQueryString(r, m, name, query)
+				err = buildQueryString(query, m, name)
 			}
+			r.Error = err
 		}
 		if r.Error != nil {
 			return
@@ -87,7 +92,7 @@ func buildLocationElements(r *service.Request, v reflect.Value) {
 	updatePath(r.HTTPRequest.URL, r.HTTPRequest.URL.Path)
 }
 
-func buildBody(r *service.Request, v reflect.Value) {
+func buildBody(r *request.Request, v reflect.Value) {
 	if field, ok := v.Type().FieldByName("SDKShapeTraits"); ok {
 		if payloadName := field.Tag.Get("payload"); payloadName != "" {
 			pfield, _ := v.Type().FieldByName(payloadName)
@@ -112,45 +117,77 @@ func buildBody(r *service.Request, v reflect.Value) {
 	}
 }
 
-func buildHeader(r *service.Request, v reflect.Value, name string) {
+func buildHeader(header *http.Header, v reflect.Value, name string) error {
 	str, err := convertType(v)
-	if err != nil {
-		r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
-	} else if str != nil {
-		r.HTTPRequest.Header.Add(name, *str)
+	if err == errValueNotSet {
+		return nil
+	} else if err != nil {
+		return awserr.New("SerializationError", "failed to encode REST request", err)
 	}
+
+	header.Add(name, str)
+
+	return nil
 }
 
-func buildHeaderMap(r *service.Request, v reflect.Value, prefix string) {
+func buildHeaderMap(header *http.Header, v reflect.Value, prefix string) error {
 	for _, key := range v.MapKeys() {
 		str, err := convertType(v.MapIndex(key))
-		if err != nil {
-			r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
-		} else if str != nil {
-			r.HTTPRequest.Header.Add(prefix+key.String(), *str)
+		if err == errValueNotSet {
+			continue
+		} else if err != nil {
+			return awserr.New("SerializationError", "failed to encode REST request", err)
+
 		}
+
+		header.Add(prefix+key.String(), str)
 	}
+	return nil
 }
 
-func buildURI(r *service.Request, v reflect.Value, name string) {
+func buildURI(u *url.URL, v reflect.Value, name string) error {
 	value, err := convertType(v)
-	if err != nil {
-		r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
-	} else if value != nil {
-		uri := r.HTTPRequest.URL.Path
-		uri = strings.Replace(uri, "{"+name+"}", EscapePath(*value, true), -1)
-		uri = strings.Replace(uri, "{"+name+"+}", EscapePath(*value, false), -1)
-		r.HTTPRequest.URL.Path = uri
+	if err == errValueNotSet {
+		return nil
+	} else if err != nil {
+		return awserr.New("SerializationError", "failed to encode REST request", err)
 	}
+
+	uri := u.Path
+	uri = strings.Replace(uri, "{"+name+"}", EscapePath(value, true), -1)
+	uri = strings.Replace(uri, "{"+name+"+}", EscapePath(value, false), -1)
+	u.Path = uri
+
+	return nil
 }
 
-func buildQueryString(r *service.Request, v reflect.Value, name string, query url.Values) {
-	str, err := convertType(v)
-	if err != nil {
-		r.Error = awserr.New("SerializationError", "failed to encode REST request", err)
-	} else if str != nil {
-		query.Set(name, *str)
+func buildQueryString(query url.Values, v reflect.Value, name string) error {
+	switch value := v.Interface().(type) {
+	case []*string:
+		for _, item := range value {
+			query.Add(name, *item)
+		}
+	case map[string]*string:
+		for key, item := range value {
+			query.Add(key, *item)
+		}
+	case map[string][]*string:
+		for key, items := range value {
+			for _, item := range items {
+				query.Add(key, *item)
+			}
+		}
+	default:
+		str, err := convertType(v)
+		if err == errValueNotSet {
+			return nil
+		} else if err != nil {
+			return awserr.New("SerializationError", "failed to encode REST request", err)
+		}
+		query.Set(name, str)
 	}
+
+	return nil
 }
 
 func updatePath(url *url.URL, urlPath string) {
@@ -189,10 +226,10 @@ func EscapePath(path string, encodeSep bool) string {
 	return buf.String()
 }
 
-func convertType(v reflect.Value) (*string, error) {
+func convertType(v reflect.Value) (string, error) {
 	v = reflect.Indirect(v)
 	if !v.IsValid() {
-		return nil, nil
+		return "", errValueNotSet
 	}
 
 	var str string
@@ -211,7 +248,7 @@ func convertType(v reflect.Value) (*string, error) {
 		str = value.UTC().Format(RFC822)
 	default:
 		err := fmt.Errorf("Unsupported value for param %v (%s)", v.Interface(), v.Type())
-		return nil, err
+		return "", err
 	}
-	return &str, nil
+	return str, nil
 }
