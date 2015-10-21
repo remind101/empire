@@ -490,6 +490,11 @@ func taskDefinitionInput(p *scheduler.Process) (*ecs.RegisterTaskDefinitionInput
 		})
 	}
 
+	labels := make(map[string]*string)
+	for k, v := range p.Labels {
+		labels[k] = aws.String(v)
+	}
+
 	return &ecs.RegisterTaskDefinitionInput{
 		Family: aws.String(p.Type),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
@@ -502,6 +507,7 @@ func taskDefinitionInput(p *scheduler.Process) (*ecs.RegisterTaskDefinitionInput
 				Memory:       aws.Int64(int64(p.MemoryLimit / MB)),
 				Environment:  environment,
 				PortMappings: ports,
+				DockerLabels: labels,
 			},
 		},
 	}, nil

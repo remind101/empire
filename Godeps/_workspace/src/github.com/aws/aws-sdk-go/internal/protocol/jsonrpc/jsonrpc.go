@@ -11,14 +11,15 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/service"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/internal/protocol/json/jsonutil"
+	"github.com/aws/aws-sdk-go/internal/protocol/rest"
 )
 
 var emptyJSON = []byte("{}")
 
 // Build builds a JSON payload for a JSON RPC request.
-func Build(req *service.Request) {
+func Build(req *request.Request) {
 	var buf []byte
 	var err error
 	if req.ParamsFilled() {
@@ -46,7 +47,7 @@ func Build(req *service.Request) {
 }
 
 // Unmarshal unmarshals a response for a JSON RPC service.
-func Unmarshal(req *service.Request) {
+func Unmarshal(req *request.Request) {
 	defer req.HTTPResponse.Body.Close()
 	if req.DataFilled() {
 		err := jsonutil.UnmarshalJSON(req.Data, req.HTTPResponse.Body)
@@ -58,12 +59,12 @@ func Unmarshal(req *service.Request) {
 }
 
 // UnmarshalMeta unmarshals headers from a response for a JSON RPC service.
-func UnmarshalMeta(req *service.Request) {
-	req.RequestID = req.HTTPResponse.Header.Get("x-amzn-requestid")
+func UnmarshalMeta(req *request.Request) {
+	rest.UnmarshalMeta(req)
 }
 
 // UnmarshalError unmarshals an error response for a JSON RPC service.
-func UnmarshalError(req *service.Request) {
+func UnmarshalError(req *request.Request) {
 	defer req.HTTPResponse.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(req.HTTPResponse.Body)
 	if err != nil {
@@ -88,7 +89,7 @@ func UnmarshalError(req *service.Request) {
 	req.Error = awserr.NewRequestFailure(
 		awserr.New(codes[len(codes)-1], jsonErr.Message, nil),
 		req.HTTPResponse.StatusCode,
-		"",
+		req.RequestID,
 	)
 }
 

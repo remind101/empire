@@ -56,7 +56,7 @@ func TestScheduler_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -427,6 +427,10 @@ var fakeApp = &scheduler.App{
 			Command: "acme-inc web '--port 80'",
 			Env: map[string]string{
 				"USER": "foo",
+			},
+			Labels: map[string]string{
+				"label1": "foo",
+				"label2": "bar",
 			},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,

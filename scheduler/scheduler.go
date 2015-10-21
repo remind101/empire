@@ -63,6 +63,9 @@ type Process struct {
 	// Environment variables to set.
 	Env map[string]string
 
+	// Labels to set on the container.
+	Labels map[string]string
+
 	// Mapping of host -> container port mappings.
 	Ports []PortMap
 
