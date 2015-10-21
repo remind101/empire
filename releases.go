@@ -295,10 +295,10 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
 
 	labels := map[string]string{
-		"com.empire.appid":   release.App.ID,
-		"com.empire.appname": release.App.Name,
-		"com.empire.process": string(p.Type),
-		"com.empire.release": fmt.Sprintf("v%d", release.Version),
+		"empire.app.id":      release.App.ID,
+		"empire.app.name":    release.App.Name,
+		"empire.app.process": string(p.Type),
+		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
 	if len(ports) > 0 {
