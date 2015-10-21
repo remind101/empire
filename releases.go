@@ -294,6 +294,13 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
 	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
 
+	labels := map[string]string{
+		"com.empire.appid":   release.App.ID,
+		"com.empire.appname": release.App.Name,
+		"com.empire.process": string(p.Type),
+		"com.empire.release": fmt.Sprintf("v%d", release.Version),
+	}
+
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
 
@@ -306,6 +313,7 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 	return &scheduler.Process{
 		Type:        string(p.Type),
 		Env:         env,
+		Labels:      labels,
 		Command:     string(p.Command),
 		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),
