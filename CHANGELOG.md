@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.2 (2015-10-27)
+
+**Documentation**
+
+* Added doc on enabling log tailing #671.
+* Added doc on deploying an application #642.
+* Added doc on exposing an app publicly #668.
+* Added doc on known limitations #672.
+
+**Features**
+
+* Added log tailing from Kinesis #651.
+* Added AWS API errors exposition when deploying #628.
+* Added CrossZoneLoadBalancing to ELBs #641.
+* Added the process type in the get processes endpoint #649.
+* Reversed process and version in SOURCE environment variable #652.
+* Set empire.* labels on containers #679.
+
+**Bugs**
+
+* Added more specific load balancer error messages #629
+* Update aws-sdk-go to v0.9.15. Fixed ThrottlingExceptions during restart #645.
+* Fixed pagination when listing processes (tasks) #648.
+* Fixed release description for config updates (`set` and `unset` env variables) #678.
+
 ## 0.9.1 (2015-07-31)
 
 **Documentation**
@@ -18,7 +43,7 @@
 
 **Bugs**
 
-* Fixes a bug that caused containers launched by one-off tasks to stay around if the client disconnected. #589.
+* Fixed a bug that caused containers launched by one-off tasks to stay around if the client disconnected. #589.
 * Fixed an issue where deploying an app to an AWS account with no ELB's would cause an infinite loop #623.
 * Fixed a bug that prevented scaling a processes memory to more than 1GB #593.
 
