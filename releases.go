@@ -279,6 +279,7 @@ func newServiceApp(release *Release) *scheduler.App {
 		ID:        release.App.ID,
 		Name:      release.App.Name,
 		Processes: processes,
+		Version:   release.Version,
 	}
 }
 

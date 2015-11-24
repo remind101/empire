@@ -146,8 +146,29 @@ type appsService struct {
 	scheduler scheduler.Scheduler
 }
 
+// AppsDestroy will destroy an app from the database and remove it from the
+// scheduler.
 func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
-	if err := s.scheduler.Remove(ctx, app.ID); err != nil {
+	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
+	if err != nil && err != gorm.RecordNotFound {
+		return err
+	}
+
+	// we may have created an app but never deployed it.
+	if err == gorm.RecordNotFound {
+		return s.store.AppsDestroy(app)
+	}
+
+	// if deployed, we want to remove if from the scheduler.
+	sApp := &scheduler.App{
+		ID:        app.ID,
+		Name:      app.Name,
+		Processes: nil,
+		Version:   release.Version,
+	}
+
+	err = s.scheduler.Remove(ctx, sApp)
+	if err != nil {
 		return err
 	}
 

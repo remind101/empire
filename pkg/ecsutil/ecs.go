@@ -14,6 +14,7 @@ import (
 type ECS interface {
 	// Task Definitions
 	RegisterTaskDefinition(context.Context, *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
+	DeregisterTaskDefinition(context.Context, *ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error)
 	DescribeTaskDefinition(context.Context, *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error)
 
 	// Services
@@ -78,6 +79,20 @@ func (c *ecsClient) RegisterTaskDefinition(ctx context.Context, input *ecs.Regis
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.RegisterTaskDefinition(input)
 	done(err, "RegisterTaskDefinition", "family", stringField(input.Family))
+	return resp, err
+}
+
+func (c *ecsClient) DeregisterTaskDefinition(ctx context.Context, input *ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error) {
+	if c.tdThrottle == nil {
+		// Only allow 1 task definition per second.
+		c.tdThrottle = time.NewTicker(time.Second)
+	}
+
+	<-c.tdThrottle.C
+
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.DeregisterTaskDefinition(input)
+	done(err, "DeregisterTaskDefinition", "task-definition", stringField(input.TaskDefinition))
 	return resp, err
 }
 

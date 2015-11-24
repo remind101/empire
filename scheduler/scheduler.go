@@ -40,6 +40,9 @@ type App struct {
 
 	// Process that belong to this app.
 	Processes []*Process
+
+	// The version of the app.
+	Version int
 }
 
 type PortMap struct {
@@ -122,7 +125,7 @@ type Scheduler interface {
 	Submit(context.Context, *App) error
 
 	// Remove removes the App.
-	Remove(ctx context.Context, app string) error
+	Remove(context.Context, *App) error
 
 	// Instance lists the instances of a Process for an app.
 	Instances(ctx context.Context, app string) ([]*Instance, error)

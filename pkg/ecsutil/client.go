@@ -55,10 +55,16 @@ func (c *Client) UpdateAppService(ctx context.Context, app string, input *ecs.Up
 	return c.ECS.UpdateService(ctx, input)
 }
 
-// RegisterAppTaskDefinition register a task definition for the app.
+// RegisterAppTaskDefinition registers a task definition for the app.
 func (c *Client) RegisterAppTaskDefinition(ctx context.Context, app string, input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
 	input.Family = c.prefix(app, input.Family)
 	return c.ECS.RegisterTaskDefinition(ctx, input)
+}
+
+// DeregisterAppTaskDefinition deregisters a task definition for the app.
+func (c *Client) DeregisterAppTaskDefinition(ctx context.Context, app string, input *ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error) {
+	input.TaskDefinition = c.prefix(app, input.TaskDefinition)
+	return c.ECS.DeregisterTaskDefinition(ctx, input)
 }
 
 // ListAppTasks lists all the tasks for the app.

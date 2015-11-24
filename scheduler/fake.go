@@ -39,8 +39,8 @@ func (m *FakeScheduler) Scale(ctx context.Context, app string, ptype string, ins
 	return nil
 }
 
-func (m *FakeScheduler) Remove(ctx context.Context, appID string) error {
-	delete(m.apps, appID)
+func (m *FakeScheduler) Remove(ctx context.Context, app *App) error {
+	delete(m.apps, app.ID)
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -194,11 +195,21 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 		if err := m.CreateProcess(ctx, app, p); err != nil {
 			return err
 		}
+
+		if app.Version != 1 {
+			if err := m.deregisterTaskDefinition(ctx, app.ID, p.Type, app.Version-1); err != nil {
+				return err
+			}
+		}
 	}
 
 	toRemove := diffProcessTypes(processes, app.Processes)
 	for _, p := range toRemove {
 		if err := m.RemoveProcess(ctx, app.ID, p); err != nil {
+			return err
+		}
+
+		if err := m.deregisterTaskDefinition(ctx, app.ID, p, app.Version-1); err != nil {
 			return err
 		}
 	}
@@ -207,16 +218,32 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 }
 
 // Remove removes any ECS services that belong to this app.
-func (m *Scheduler) Remove(ctx context.Context, appID string) error {
-	processes, err := m.Processes(ctx, appID)
+func (m *Scheduler) Remove(ctx context.Context, app *scheduler.App) error {
+	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
 	}
 
 	for t, _ := range processTypes(processes) {
-		if err := m.RemoveProcess(ctx, appID, t); err != nil {
+		if err := m.RemoveProcess(ctx, app.ID, t); err != nil {
 			return err
 		}
+
+		if err := m.deregisterTaskDefinition(ctx, app.ID, t, app.Version); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *Scheduler) deregisterTaskDefinition(ctx context.Context, appID string, process string, version int) error {
+	_, err := m.ecs.DeregisterAppTaskDefinition(ctx, appID, &ecs.DeregisterTaskDefinitionInput{
+		TaskDefinition: aws.String(process + ":" + strconv.Itoa(version)),
+	})
+
+	if err != nil {
+		return err
 	}
 
 	return nil

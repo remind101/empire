@@ -75,6 +75,18 @@ func TestScheduler_Submit(t *testing.T) {
 				Body:       `{"service": {}}`,
 			},
 		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DeregisterTaskDefinition",
+				Body:       `{"taskDefinition":"1234--web:1"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
+		},
 	})
 	m, s := newTestScheduler(h)
 	defer s.Close()
@@ -244,11 +256,23 @@ func TestScheduler_Remove(t *testing.T) {
 				Body:       ``,
 			},
 		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DeregisterTaskDefinition",
+				Body:       `{"taskDefinition":"1234--web:2"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
+		},
 	})
 	m, s := newTestScheduler(h)
 	defer s.Close()
 
-	if err := m.Remove(context.Background(), "1234"); err != nil {
+	if err := m.Remove(context.Background(), fakeApp); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -417,6 +441,7 @@ func TestDiffProcessTypes(t *testing.T) {
 	}
 }
 
+// might be interesting
 // fake app for testing.
 var fakeApp = &scheduler.App{
 	ID: "1234",
@@ -440,6 +465,7 @@ var fakeApp = &scheduler.App{
 			Exposure: scheduler.ExposePrivate,
 		},
 	},
+	Version: 2,
 }
 
 func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
