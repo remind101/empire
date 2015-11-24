@@ -20,7 +20,7 @@ const (
 	FlagGithubApiURL       = "github.api.url"
 
 	FlagGithubWebhooksSecret           = "github.webhooks.secret"
-	FlagGithubDeploymentsEnvironment   = "github.deployments.environment"
+	FlagGithubDeploymentsEnvironments  = "github.deployments.environment"
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
 
@@ -105,9 +105,9 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_GITHUB_WEBHOOKS_SECRET",
 			},
 			cli.StringFlag{
-				Name:   FlagGithubDeploymentsEnvironment,
+				Name:   FlagGithubDeploymentsEnvironments,
 				Value:  "",
-				Usage:  "If provided, only github deployments to the specified environment will be handled.",
+				Usage:  "If provided, only github deployments to the specified environments will be handled.",
 				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_ENVIRONMENT",
 			},
 			cli.StringFlag{
