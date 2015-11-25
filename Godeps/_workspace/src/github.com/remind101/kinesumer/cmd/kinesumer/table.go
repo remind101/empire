@@ -47,9 +47,9 @@ func (t *Table) Done() {
 	for _, row := range t.Rows {
 		for col, cell := range row.Cells {
 			if row.Header {
-				cell.Color.Printf("%s%s ", strings.ToUpper(cell.Text), strings.Repeat("_", widths[col]-len(cell.Text)))
+				cell.Color.Printf("%s%s  ", strings.ToUpper(cell.Text), strings.Repeat(" ", widths[col]-len(cell.Text)))
 			} else {
-				cell.Color.Printf("%s%s ", cell.Text, strings.Repeat(" ", widths[col]-len(cell.Text)))
+				cell.Color.Printf("%s%s  ", cell.Text, strings.Repeat(" ", widths[col]-len(cell.Text)))
 			}
 		}
 		fmt.Println()

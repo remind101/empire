@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/remind101/kinesumer/checkpointers/empty"
 	k "github.com/remind101/kinesumer/interface"
@@ -50,7 +51,7 @@ var DefaultOptions = Options{
 
 func NewDefault(stream string) (*Kinesumer, error) {
 	return New(
-		kinesis.New(&aws.Config{}),
+		kinesis.New(session.New()),
 		nil,
 		nil,
 		nil,
@@ -184,15 +185,15 @@ func (kin *Kinesumer) LaunchShardWorker(shards []*kinesis.Shard) (int, *ShardWor
 	return 0, nil, errors.New("No unlocked keys")
 }
 
-func (kin *Kinesumer) Begin() ([]*ShardWorker, error) {
+func (kin *Kinesumer) Begin() (int, error) {
 	shards, err := kin.GetShards()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	err = kin.Checkpointer.Begin()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	n := kin.Options.MaxShardWorkers
@@ -222,7 +223,7 @@ func (kin *Kinesumer) Begin() ([]*ShardWorker, error) {
 
 	kin.Options.ErrHandler(NewError(EInfo, fmt.Sprintf("%v/%v workers started", kin.nRunning, n), nil))
 
-	return workers, nil
+	return len(workers), nil
 }
 
 func (kin *Kinesumer) End() {

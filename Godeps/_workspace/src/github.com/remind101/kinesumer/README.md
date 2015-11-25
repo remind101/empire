@@ -31,7 +31,7 @@ import (
 )
 
 func main() {
-	k, err := kinesumer.NewDefaultKinesumer(
+	k, err := kinesumer.NewDefault(
 		"Stream",
 	)
 	if err != nil {

@@ -1,22 +1,23 @@
 package mocks
 
+import "github.com/stretchr/testify/mock"
+
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/service"
-	"github.com/aws/aws-sdk-go/service/kinesis"
-	"github.com/stretchr/testify/mock"
+	"github.com/aws/aws-sdk-go/aws/request"
 )
+import "github.com/aws/aws-sdk-go/service/kinesis"
 
 type Kinesis struct {
 	mock.Mock
 }
 
-func (m *Kinesis) AddTagsToStreamRequest(_a0 *kinesis.AddTagsToStreamInput) (*service.Request, *kinesis.AddTagsToStreamOutput) {
+func (m *Kinesis) AddTagsToStreamRequest(_a0 *kinesis.AddTagsToStreamInput) (*request.Request, *kinesis.AddTagsToStreamOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.AddTagsToStreamOutput
 	if ret.Get(1) != nil {
@@ -36,12 +37,12 @@ func (m *Kinesis) AddTagsToStream(_a0 *kinesis.AddTagsToStreamInput) (*kinesis.A
 
 	return r0, r1
 }
-func (m *Kinesis) CreateStreamRequest(_a0 *kinesis.CreateStreamInput) (*service.Request, *kinesis.CreateStreamOutput) {
+func (m *Kinesis) CreateStreamRequest(_a0 *kinesis.CreateStreamInput) (*request.Request, *kinesis.CreateStreamOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.CreateStreamOutput
 	if ret.Get(1) != nil {
@@ -61,12 +62,37 @@ func (m *Kinesis) CreateStream(_a0 *kinesis.CreateStreamInput) (*kinesis.CreateS
 
 	return r0, r1
 }
-func (m *Kinesis) DeleteStreamRequest(_a0 *kinesis.DeleteStreamInput) (*service.Request, *kinesis.DeleteStreamOutput) {
+func (m *Kinesis) DecreaseStreamRetentionPeriodRequest(_a0 *kinesis.DecreaseStreamRetentionPeriodInput) (*request.Request, *kinesis.DecreaseStreamRetentionPeriodOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
+	}
+	var r1 *kinesis.DecreaseStreamRetentionPeriodOutput
+	if ret.Get(1) != nil {
+		r1 = ret.Get(1).(*kinesis.DecreaseStreamRetentionPeriodOutput)
+	}
+
+	return r0, r1
+}
+func (m *Kinesis) DecreaseStreamRetentionPeriod(_a0 *kinesis.DecreaseStreamRetentionPeriodInput) (*kinesis.DecreaseStreamRetentionPeriodOutput, error) {
+	ret := m.Called(_a0)
+
+	var r0 *kinesis.DecreaseStreamRetentionPeriodOutput
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*kinesis.DecreaseStreamRetentionPeriodOutput)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
+func (m *Kinesis) DeleteStreamRequest(_a0 *kinesis.DeleteStreamInput) (*request.Request, *kinesis.DeleteStreamOutput) {
+	ret := m.Called(_a0)
+
+	var r0 *request.Request
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.DeleteStreamOutput
 	if ret.Get(1) != nil {
@@ -86,12 +112,12 @@ func (m *Kinesis) DeleteStream(_a0 *kinesis.DeleteStreamInput) (*kinesis.DeleteS
 
 	return r0, r1
 }
-func (m *Kinesis) DescribeStreamRequest(_a0 *kinesis.DescribeStreamInput) (*service.Request, *kinesis.DescribeStreamOutput) {
+func (m *Kinesis) DescribeStreamRequest(_a0 *kinesis.DescribeStreamInput) (*request.Request, *kinesis.DescribeStreamOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.DescribeStreamOutput
 	if ret.Get(1) != nil {
@@ -164,12 +190,12 @@ func (m *Kinesis) DescribeStreamPages(_a0 *kinesis.DescribeStreamInput, _a1 func
 
 	return r0
 }
-func (m *Kinesis) GetRecordsRequest(_a0 *kinesis.GetRecordsInput) (*service.Request, *kinesis.GetRecordsOutput) {
+func (m *Kinesis) GetRecordsRequest(_a0 *kinesis.GetRecordsInput) (*request.Request, *kinesis.GetRecordsOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.GetRecordsOutput
 	if ret.Get(1) != nil {
@@ -189,12 +215,12 @@ func (m *Kinesis) GetRecords(_a0 *kinesis.GetRecordsInput) (*kinesis.GetRecordsO
 
 	return r0, r1
 }
-func (m *Kinesis) GetShardIteratorRequest(_a0 *kinesis.GetShardIteratorInput) (*service.Request, *kinesis.GetShardIteratorOutput) {
+func (m *Kinesis) GetShardIteratorRequest(_a0 *kinesis.GetShardIteratorInput) (*request.Request, *kinesis.GetShardIteratorOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.GetShardIteratorOutput
 	if ret.Get(1) != nil {
@@ -214,12 +240,37 @@ func (m *Kinesis) GetShardIterator(_a0 *kinesis.GetShardIteratorInput) (*kinesis
 
 	return r0, r1
 }
-func (m *Kinesis) ListStreamsRequest(_a0 *kinesis.ListStreamsInput) (*service.Request, *kinesis.ListStreamsOutput) {
+func (m *Kinesis) IncreaseStreamRetentionPeriodRequest(_a0 *kinesis.IncreaseStreamRetentionPeriodInput) (*request.Request, *kinesis.IncreaseStreamRetentionPeriodOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
+	}
+	var r1 *kinesis.IncreaseStreamRetentionPeriodOutput
+	if ret.Get(1) != nil {
+		r1 = ret.Get(1).(*kinesis.IncreaseStreamRetentionPeriodOutput)
+	}
+
+	return r0, r1
+}
+func (m *Kinesis) IncreaseStreamRetentionPeriod(_a0 *kinesis.IncreaseStreamRetentionPeriodInput) (*kinesis.IncreaseStreamRetentionPeriodOutput, error) {
+	ret := m.Called(_a0)
+
+	var r0 *kinesis.IncreaseStreamRetentionPeriodOutput
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*kinesis.IncreaseStreamRetentionPeriodOutput)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
+func (m *Kinesis) ListStreamsRequest(_a0 *kinesis.ListStreamsInput) (*request.Request, *kinesis.ListStreamsOutput) {
+	ret := m.Called(_a0)
+
+	var r0 *request.Request
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.ListStreamsOutput
 	if ret.Get(1) != nil {
@@ -256,12 +307,12 @@ func (m *Kinesis) ListStreamsPages(_a0 *kinesis.ListStreamsInput, _a1 func(*kine
 
 	return r0
 }
-func (m *Kinesis) ListTagsForStreamRequest(_a0 *kinesis.ListTagsForStreamInput) (*service.Request, *kinesis.ListTagsForStreamOutput) {
+func (m *Kinesis) ListTagsForStreamRequest(_a0 *kinesis.ListTagsForStreamInput) (*request.Request, *kinesis.ListTagsForStreamOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.ListTagsForStreamOutput
 	if ret.Get(1) != nil {
@@ -281,12 +332,12 @@ func (m *Kinesis) ListTagsForStream(_a0 *kinesis.ListTagsForStreamInput) (*kines
 
 	return r0, r1
 }
-func (m *Kinesis) MergeShardsRequest(_a0 *kinesis.MergeShardsInput) (*service.Request, *kinesis.MergeShardsOutput) {
+func (m *Kinesis) MergeShardsRequest(_a0 *kinesis.MergeShardsInput) (*request.Request, *kinesis.MergeShardsOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.MergeShardsOutput
 	if ret.Get(1) != nil {
@@ -306,12 +357,12 @@ func (m *Kinesis) MergeShards(_a0 *kinesis.MergeShardsInput) (*kinesis.MergeShar
 
 	return r0, r1
 }
-func (m *Kinesis) PutRecordRequest(_a0 *kinesis.PutRecordInput) (*service.Request, *kinesis.PutRecordOutput) {
+func (m *Kinesis) PutRecordRequest(_a0 *kinesis.PutRecordInput) (*request.Request, *kinesis.PutRecordOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.PutRecordOutput
 	if ret.Get(1) != nil {
@@ -331,12 +382,12 @@ func (m *Kinesis) PutRecord(_a0 *kinesis.PutRecordInput) (*kinesis.PutRecordOutp
 
 	return r0, r1
 }
-func (m *Kinesis) PutRecordsRequest(_a0 *kinesis.PutRecordsInput) (*service.Request, *kinesis.PutRecordsOutput) {
+func (m *Kinesis) PutRecordsRequest(_a0 *kinesis.PutRecordsInput) (*request.Request, *kinesis.PutRecordsOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.PutRecordsOutput
 	if ret.Get(1) != nil {
@@ -356,12 +407,12 @@ func (m *Kinesis) PutRecords(_a0 *kinesis.PutRecordsInput) (*kinesis.PutRecordsO
 
 	return r0, r1
 }
-func (m *Kinesis) RemoveTagsFromStreamRequest(_a0 *kinesis.RemoveTagsFromStreamInput) (*service.Request, *kinesis.RemoveTagsFromStreamOutput) {
+func (m *Kinesis) RemoveTagsFromStreamRequest(_a0 *kinesis.RemoveTagsFromStreamInput) (*request.Request, *kinesis.RemoveTagsFromStreamOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.RemoveTagsFromStreamOutput
 	if ret.Get(1) != nil {
@@ -381,12 +432,12 @@ func (m *Kinesis) RemoveTagsFromStream(_a0 *kinesis.RemoveTagsFromStreamInput) (
 
 	return r0, r1
 }
-func (m *Kinesis) SplitShardRequest(_a0 *kinesis.SplitShardInput) (*service.Request, *kinesis.SplitShardOutput) {
+func (m *Kinesis) SplitShardRequest(_a0 *kinesis.SplitShardInput) (*request.Request, *kinesis.SplitShardOutput) {
 	ret := m.Called(_a0)
 
-	var r0 *service.Request
+	var r0 *request.Request
 	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*service.Request)
+		r0 = ret.Get(0).(*request.Request)
 	}
 	var r1 *kinesis.SplitShardOutput
 	if ret.Get(1) != nil {

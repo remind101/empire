@@ -16,19 +16,12 @@ var cmdStatus = cli.Command{
 	Aliases: []string{"s"},
 	Usage:   "Gets the status of a kinesis stream",
 	Action:  runStatus,
-	Flags: append(
-		[]cli.Flag{
-			cli.StringFlag{
-				Name:  "stream, s",
-				Usage: "The Kinesis stream to tail",
-			},
-		}, flagsRedis...,
-	),
+	Flags:   append(flagsStream, flagsRedis...),
 }
 
 func runStatus(ctx *cli.Context) {
 	k, err := kinesumer.NewDefault(
-		ctx.String("stream"),
+		getStream(ctx),
 	)
 	if err != nil {
 		panic(err)
