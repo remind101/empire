@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/remind101/empire/pkg/awsutil"
 	"golang.org/x/net/context"
 )
@@ -315,13 +316,14 @@ func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
 func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	m := NewELBManager(
-		aws.NewConfig().Merge(&aws.Config{
-			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-			Endpoint:    aws.String(s.URL),
-			Region:      aws.String("localhost"),
-		}).WithLogLevel(0),
-	)
+	config := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(" ", " ", " "),
+		Endpoint:    aws.String(s.URL),
+		Region:      aws.String("localhost"),
+	}
+	config.WithLogLevel(0)
+
+	m := NewELBManager(session.New(config))
 	m.newName = func() string {
 		return "acme-inc"
 	}

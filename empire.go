@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
@@ -79,7 +79,7 @@ type Options struct {
 	ELB    ELBOptions
 
 	// AWS Configuration
-	AWSConfig *aws.Config
+	AWSConfig client.ConfigProvider
 
 	Secret string
 
@@ -410,7 +410,7 @@ const (
 	UserKey key = 0
 )
 
-func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config *aws.Config) (scheduler.Scheduler, error) {
+func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config client.ConfigProvider) (scheduler.Scheduler, error) {
 	if config == nil {
 		log.Println("warn: AWS not configured, ECS service management disabled.")
 		return scheduler.NewFakeScheduler(), nil
@@ -436,7 +436,7 @@ func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config
 	}, nil
 }
 
-func newCertManager(config *aws.Config) sslcert.Manager {
+func newCertManager(config client.ConfigProvider) sslcert.Manager {
 	if config == nil {
 		log.Println("warn: AWS not configured, IAM server certificate management disabled.")
 		return sslcert.NewFakeManager()

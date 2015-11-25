@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/route53"
 )
 
@@ -30,9 +31,9 @@ type Route53Nameserver struct {
 
 // NewRoute53Nameserver returns a Route53Nameserver instance with a configured
 // route53 client.
-func NewRoute53Nameserver(c *aws.Config) *Route53Nameserver {
+func NewRoute53Nameserver(p client.ConfigProvider) *Route53Nameserver {
 	return &Route53Nameserver{
-		route53: route53.New(c),
+		route53: route53.New(p),
 	}
 }
 
