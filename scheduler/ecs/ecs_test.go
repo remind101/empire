@@ -5,9 +5,11 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/remind101/empire/pkg/awsutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
@@ -140,7 +142,7 @@ func TestScheduler_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web","lastStatus":"RUNNING"}]}`,
+				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web","lastStatus":"RUNNING","startedAt": 1448419193}]}`,
 			},
 		},
 
@@ -172,6 +174,10 @@ func TestScheduler_Instances(t *testing.T) {
 
 	if got, want := i.State, "RUNNING"; got != want {
 		t.Fatalf("State => %s; want %s", got, want)
+	}
+
+	if got, want := i.UpdatedAt, time.Unix(1448419193, 0).UTC(); got != want {
+		t.Fatalf("UpdatedAt => %s; want %s", got, want)
 	}
 
 	if got, want := i.Process.Command, "acme-inc web --port 80"; got != want {
@@ -446,7 +452,7 @@ func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 	s := httptest.NewServer(h)
 
 	m, err := NewScheduler(Config{
-		AWS: aws.NewConfig().Merge(&aws.Config{
+		AWS: session.New(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    aws.String(s.URL),
 			Region:      aws.String("localhost"),

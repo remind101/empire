@@ -60,6 +60,10 @@ func TestCheckpointerBeginEnd(t *testing.T) {
 		t.Error(err)
 	}
 	r.End()
+
+	if len(r.heads) > 0 {
+		t.Error("Begin should not fetch state from redis")
+	}
 }
 
 func TestCheckpointerGetStartSequence(t *testing.T) {
@@ -76,14 +80,49 @@ func TestCheckpointerGetStartSequence(t *testing.T) {
 func TestCheckpointerSync(t *testing.T) {
 	r := makeCheckpointerWithSamples()
 	r.Begin()
-	r.heads["shard1"] = "1001"
-	r.heads["shard2"] = "2001"
+	r.DoneC() <- &FakeRecord{shardId: "shard2", sequenceNumber: "2001"}
 	r.Sync()
 	r.End()
 	r, _ = makeCheckpointer()
 	r.Begin()
+	r.DoneC() <- &FakeRecord{shardId: "shard1", sequenceNumber: "1002"}
+	r.Sync()
 	r.End()
-	if r.heads["shard1"] != "1001" {
+	if r.heads["shard1"] != "1002" {
 		t.Error("Expected sequence number to be written")
 	}
+	if r.GetStartSequence("shard2") != "2001" {
+		t.Error("Expected sequence number to be written by first checkpointer")
+	}
+	if len(r.heads) != 1 {
+		t.Error("Heads should not know about any other shards")
+	}
+}
+
+type FakeRecord struct {
+	sequenceNumber string
+	shardId        string
+}
+
+func (r *FakeRecord) Data() []byte {
+	return nil
+}
+
+func (r *FakeRecord) PartitionKey() string {
+	return ""
+}
+
+func (r *FakeRecord) SequenceNumber() string {
+	return r.sequenceNumber
+}
+
+func (r *FakeRecord) ShardId() string {
+	return r.shardId
+}
+
+func (r *FakeRecord) MillisBehindLatest() int64 {
+	return -1
+}
+
+func (r *FakeRecord) Done() {
 }

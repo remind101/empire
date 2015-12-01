@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/remind101/empire/pkg/awsutil"
 )
 
@@ -191,13 +192,14 @@ func TestRoute53_zone(t *testing.T) {
 func newTestRoute53Nameserver(h http.Handler, zoneID string) (*Route53Nameserver, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	n := NewRoute53Nameserver(
-		aws.NewConfig().Merge(&aws.Config{
-			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-			Endpoint:    aws.String(s.URL),
-			Region:      aws.String("localhost"),
-		}).WithLogLevel(0),
-	)
+	config := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(" ", " ", " "),
+		Endpoint:    aws.String(s.URL),
+		Region:      aws.String("localhost"),
+	}
+	config.WithLogLevel(0)
+
+	n := NewRoute53Nameserver(session.New(config))
 	n.ZoneID = zoneID
 
 	return n, s

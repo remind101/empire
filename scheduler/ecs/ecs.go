@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/arn"
@@ -17,7 +19,6 @@ import (
 	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/pkg/lb"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 
@@ -76,7 +77,7 @@ type Config struct {
 	ExternalSubnetIDs []string
 
 	// AWS configuration.
-	AWS *aws.Config
+	AWS client.ConfigProvider
 }
 
 // NewScheduler returns a new Scehduler implementation that:
@@ -250,11 +251,22 @@ func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.I
 			return instances, err
 		}
 
+		state := safeString(t.LastStatus)
+		var updatedAt time.Time
+		switch state {
+		case "PENDING":
+			updatedAt = *t.CreatedAt
+		case "RUNNING":
+			updatedAt = *t.StartedAt
+		case "STOPPED":
+			updatedAt = *t.StoppedAt
+		}
+
 		instances = append(instances, &scheduler.Instance{
 			Process:   p,
-			State:     safeString(t.LastStatus),
+			State:     state,
 			ID:        id,
-			UpdatedAt: timex.Now(),
+			UpdatedAt: updatedAt,
 		})
 	}
 

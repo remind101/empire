@@ -322,11 +322,6 @@ func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]
 // It pulls some of its data from empire specific environment variables if they have been set.
 // Once ECS supports this data natively, we can stop doing this.
 func processStateFromInstance(i *scheduler.Instance) *ProcessState {
-	createdAt := i.UpdatedAt
-	if t, err := time.Parse(time.RFC3339, i.Process.Env["EMPIRE_CREATED_AT"]); err == nil {
-		createdAt = t
-	}
-
 	version := i.Process.Env["EMPIRE_RELEASE"]
 	if version == "" {
 		version = "v0"
@@ -341,6 +336,6 @@ func processStateFromInstance(i *scheduler.Instance) *ProcessState {
 			Memory:   constraints.Memory(i.Process.MemoryLimit),
 		},
 		State:     i.State,
-		UpdatedAt: createdAt, // This is the best data we have, until ECS gives us UpdatedAt
+		UpdatedAt: i.UpdatedAt,
 	}
 }

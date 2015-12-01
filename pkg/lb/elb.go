@@ -5,6 +5,7 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/elb"
 	"golang.org/x/net/context"
 )
@@ -39,9 +40,9 @@ type ELBManager struct {
 }
 
 // NewELBManager returns a new ELBManager backed by the aws config.
-func NewELBManager(c *aws.Config) *ELBManager {
+func NewELBManager(p client.ConfigProvider) *ELBManager {
 	return &ELBManager{
-		elb:     elb.New(c),
+		elb:     elb.New(p),
 		newName: newName,
 	}
 }

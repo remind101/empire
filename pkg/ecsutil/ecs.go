@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/pkg/trace"
 	"golang.org/x/net/context"
@@ -30,8 +30,8 @@ type ECS interface {
 }
 
 // newECSClient builds a new ECS client with autopagination and tracing.
-func newECSClient(config *aws.Config) ECS {
-	ecs := ecs.New(config)
+func newECSClient(p client.ConfigProvider) ECS {
+	ecs := ecs.New(p)
 	return &limitedClient{
 		ECS: &ecsClient{ECS: ecs},
 	}

@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/pkg/arn"
 )
@@ -29,9 +30,9 @@ type Client struct {
 }
 
 // NewClient returns a new Client instance using the provided aws.Config.
-func NewClient(config *aws.Config) *Client {
+func NewClient(p client.ConfigProvider) *Client {
 	return &Client{
-		ECS: newECSClient(config),
+		ECS: newECSClient(p),
 	}
 }
 

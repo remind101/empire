@@ -9,12 +9,13 @@ type Kinesumer struct {
 	mock.Mock
 }
 
-func (m *Kinesumer) Begin() error {
+func (m *Kinesumer) Begin() (int, error) {
 	ret := m.Called()
 
-	r0 := ret.Error(0)
+	r0 := ret.Int(0)
+	r1 := ret.Error(1)
 
-	return r0
+	return r0, r1
 }
 func (m *Kinesumer) End() {
 	m.Called()

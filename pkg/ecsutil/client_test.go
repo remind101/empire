@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/pkg/awsutil"
 )
@@ -180,9 +181,10 @@ func TestListAppTasks_Paginate(t *testing.T) {
 func newTestClient(h http.Handler) (*Client, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	return NewClient(aws.NewConfig().Merge(&aws.Config{
+	config := &aws.Config{
 		Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 		Endpoint:    aws.String(s.URL),
 		Region:      aws.String("localhost"),
-	})), s
+	}
+	return NewClient(session.New(config)), s
 }

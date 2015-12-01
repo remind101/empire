@@ -7,38 +7,38 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/aws",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/endpoints",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/json/jsonutil",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/json/jsonutil",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/jsonrpc",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/jsonrpc",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"ImportPath": "github.com/aws/aws-sdk-go/private/protocol/rest",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/rest",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"ImportPath": "github.com/aws/aws-sdk-go/private/signer/v4",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
-			"ImportPath": "github.com/aws/aws-sdk-go/internal/signer/v4",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"ImportPath": "github.com/aws/aws-sdk-go/private/waiter",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/kinesis",
-			"Comment": "v0.9.0rc1-6-g1ba5d88",
-			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
@@ -47,16 +47,26 @@
 		},
 		{
 			"ImportPath": "github.com/fatih/color",
-			"Comment": "v0.1-5-gf773d4c",
-			"Rev": "f773d4c806cc8e4a5749d6a35e2a4bbcd71443d6"
+			"Comment": "v0.1-8-g76d4231",
+			"Rev": "76d423163af754ff6423d2d9be0057fbf03c57c2"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "9d4db5d1dbeff473d50e1bb82f5405c8cca0f0ac"
+			"Rev": "a1be60a4bbcb30fef4d7aeddad2475b448aba068"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "9d4db5d1dbeff473d50e1bb82f5405c8cca0f0ac"
+			"Rev": "a1be60a4bbcb30fef4d7aeddad2475b448aba068"
+		},
+		{
+			"ImportPath": "github.com/go-ini/ini",
+			"Comment": "v0-56-g03e0e7d",
+			"Rev": "03e0e7d51a13a91c765d8d0161246bc14a38001a"
+		},
+		{
+			"ImportPath": "github.com/jmespath/go-jmespath",
+			"Comment": "0.2.2",
+			"Rev": "3433f3ea46d9f8019119e7dd41274e112a2359a9"
 		},
 		{
 			"ImportPath": "github.com/joho/godotenv",
@@ -69,7 +79,7 @@
 		},
 		{
 			"ImportPath": "github.com/pborman/uuid",
-			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
+			"Rev": "cccd189d45f7ac3368a0d127efb7f4d08ae0b655"
 		},
 		{
 			"ImportPath": "github.com/shiena/ansicolor",
@@ -81,17 +91,13 @@
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.0-21-gf552045",
-			"Rev": "f5520455607c0233cb6d7b056f71b22c1d265ef1"
+			"Comment": "v1.0-38-g64623bb",
+			"Rev": "64623bb83275e45ae2c5671d459ead640b3ff60c"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/mock",
-			"Comment": "v1.0-21-gf552045",
-			"Rev": "f5520455607c0233cb6d7b056f71b22c1d265ef1"
-		},
-		{
-			"ImportPath": "github.com/vaughan0/go-ini",
-			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
+			"Comment": "v1.0-38-g64623bb",
+			"Rev": "64623bb83275e45ae2c5671d459ead640b3ff60c"
 		}
 	]
 }

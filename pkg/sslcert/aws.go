@@ -3,6 +3,7 @@ package sslcert
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/iam"
 )
 
@@ -11,7 +12,7 @@ type IAMManager struct {
 	path string
 }
 
-func NewIAMManager(config *aws.Config, path string) *IAMManager {
+func NewIAMManager(config client.ConfigProvider, path string) *IAMManager {
 	return &IAMManager{
 		iam:  iam.New(config),
 		path: path,

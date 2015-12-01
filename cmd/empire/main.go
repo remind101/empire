@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire"
@@ -251,9 +252,11 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 
 	opts.Docker.Socket = c.String(FlagDockerSocket)
 	opts.Docker.CertPath = c.String(FlagDockerCert)
-	opts.AWSConfig = aws.NewConfig()
+	opts.AWSConfig = session.New()
 	if c.Bool(FlagAWSDebug) {
-		opts.AWSConfig.WithLogLevel(1)
+		config := &aws.Config{}
+		config.WithLogLevel(1)
+		opts.AWSConfig = session.New(config)
 	}
 	opts.ECS.Cluster = c.String(FlagECSCluster)
 	opts.ECS.ServiceRole = c.String(FlagECSServiceRole)

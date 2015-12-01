@@ -116,14 +116,6 @@ loop:
 }
 
 func (r *Checkpointer) Begin() error {
-	conn := r.pool.Get()
-	defer conn.Close()
-	res, err := conn.Do("HGETALL", r.redisPrefix+".sequence")
-	r.heads, err = redis.StringMap(res, err)
-	if err != nil {
-		return err
-	}
-
 	r.wg.Add(1)
 	go r.RunCheckpointer()
 	return nil
@@ -135,9 +127,15 @@ func (r *Checkpointer) End() {
 }
 
 func (r *Checkpointer) GetStartSequence(shardID string) string {
-	val, ok := r.heads[shardID]
-	if ok {
-		return val
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	var seq string
+	res, err := conn.Do("HGET", r.redisPrefix+".sequence", shardID)
+	seq, err = redis.String(res, err)
+
+	if err == nil {
+		return seq
 	} else {
 		return ""
 	}
