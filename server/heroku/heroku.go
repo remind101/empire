@@ -6,7 +6,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/headerutil"
-	"github.com/remind101/empire/server/authorization"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
 )
@@ -16,46 +16,46 @@ import (
 const AcceptHeader = "application/vnd.heroku+json; version=3"
 
 // New creates the API routes and returns a new http.Handler to serve them.
-func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
+func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 	r := httpx.NewRouter()
 
 	// Apps
-	r.Handle("/apps", Authenticate(e, &GetApps{e})).Methods("GET")                  // hk apps
-	r.Handle("/apps/{app}", Authenticate(e, &GetAppInfo{e})).Methods("GET")         // hk info
-	r.Handle("/apps/{app}", Authenticate(e, &DeleteApp{e})).Methods("DELETE")       // hk destroy
-	r.Handle("/apps/{app}/deploys", Authenticate(e, &DeployApp{e})).Methods("POST") // Deploy an image to an app
-	r.Handle("/apps", Authenticate(e, &PostApps{e})).Methods("POST")                // hk create
-	r.Handle("/organizations/apps", Authenticate(e, &PostApps{e})).Methods("POST")  // hk create
+	r.Handle("/apps", &GetApps{e}).Methods("GET")                  // hk apps
+	r.Handle("/apps/{app}", &GetAppInfo{e}).Methods("GET")         // hk info
+	r.Handle("/apps/{app}", &DeleteApp{e}).Methods("DELETE")       // hk destroy
+	r.Handle("/apps/{app}/deploys", &DeployApp{e}).Methods("POST") // Deploy an image to an app
+	r.Handle("/apps", &PostApps{e}).Methods("POST")                // hk create
+	r.Handle("/organizations/apps", &PostApps{e}).Methods("POST")  // hk create
 
 	// Domains
-	r.Handle("/apps/{app}/domains", Authenticate(e, &GetDomains{e})).Methods("GET")                 // hk domains
-	r.Handle("/apps/{app}/domains", Authenticate(e, &PostDomains{e})).Methods("POST")               // hk domain-add
-	r.Handle("/apps/{app}/domains/{hostname}", Authenticate(e, &DeleteDomain{e})).Methods("DELETE") // hk domain-remove
+	r.Handle("/apps/{app}/domains", &GetDomains{e}).Methods("GET")                 // hk domains
+	r.Handle("/apps/{app}/domains", &PostDomains{e}).Methods("POST")               // hk domain-add
+	r.Handle("/apps/{app}/domains/{hostname}", &DeleteDomain{e}).Methods("DELETE") // hk domain-remove
 
 	// Deploys
-	r.Handle("/deploys", Authenticate(e, &PostDeploys{e})).Methods("POST") // Deploy an app
+	r.Handle("/deploys", &PostDeploys{e}).Methods("POST") // Deploy an app
 
 	// Releases
-	r.Handle("/apps/{app}/releases", Authenticate(e, &GetReleases{e})).Methods("GET")          // hk releases
-	r.Handle("/apps/{app}/releases/{version}", Authenticate(e, &GetRelease{e})).Methods("GET") // hk release-info
-	r.Handle("/apps/{app}/releases", Authenticate(e, &PostReleases{e})).Methods("POST")        // hk rollback
+	r.Handle("/apps/{app}/releases", &GetReleases{e}).Methods("GET")          // hk releases
+	r.Handle("/apps/{app}/releases/{version}", &GetRelease{e}).Methods("GET") // hk release-info
+	r.Handle("/apps/{app}/releases", &PostReleases{e}).Methods("POST")        // hk rollback
 
 	// Configs
-	r.Handle("/apps/{app}/config-vars", Authenticate(e, &GetConfigs{e})).Methods("GET")     // hk env, hk get
-	r.Handle("/apps/{app}/config-vars", Authenticate(e, &PatchConfigs{e})).Methods("PATCH") // hk set, hk unset
+	r.Handle("/apps/{app}/config-vars", &GetConfigs{e}).Methods("GET")     // hk env, hk get
+	r.Handle("/apps/{app}/config-vars", &PatchConfigs{e}).Methods("PATCH") // hk set, hk unset
 
 	// Processes
-	r.Handle("/apps/{app}/dynos", Authenticate(e, &GetProcesses{e})).Methods("GET")                     // hk dynos
-	r.Handle("/apps/{app}/dynos", Authenticate(e, &PostProcess{e})).Methods("POST")                     // hk run
-	r.Handle("/apps/{app}/dynos", Authenticate(e, &DeleteProcesses{e})).Methods("DELETE")               // hk restart
-	r.Handle("/apps/{app}/dynos/{ptype}.{pid}", Authenticate(e, &DeleteProcesses{e})).Methods("DELETE") // hk restart web.1
-	r.Handle("/apps/{app}/dynos/{pid}", Authenticate(e, &DeleteProcesses{e})).Methods("DELETE")         // hk restart web
+	r.Handle("/apps/{app}/dynos", &GetProcesses{e}).Methods("GET")                     // hk dynos
+	r.Handle("/apps/{app}/dynos", &PostProcess{e}).Methods("POST")                     // hk run
+	r.Handle("/apps/{app}/dynos", &DeleteProcesses{e}).Methods("DELETE")               // hk restart
+	r.Handle("/apps/{app}/dynos/{ptype}.{pid}", &DeleteProcesses{e}).Methods("DELETE") // hk restart web.1
+	r.Handle("/apps/{app}/dynos/{pid}", &DeleteProcesses{e}).Methods("DELETE")         // hk restart web
 
 	// Formations
-	r.Handle("/apps/{app}/formation", Authenticate(e, &PatchFormation{e})).Methods("PATCH") // hk scale
+	r.Handle("/apps/{app}/formation", &PatchFormation{e}).Methods("PATCH") // hk scale
 
 	// OAuth
-	r.Handle("/oauth/authorizations", &PostAuthorizations{e, auth}).Methods("POST")
+	r.Handle("/oauth/authorizations", &PostAuthorizations{e}).Methods("POST")
 
 	// SSL
 	r.Handle("/apps/{app}/ssl-endpoints", &GetSSLEndpoints{e}).Methods("GET")             // hk ssl
@@ -70,7 +70,9 @@ func New(e *empire.Empire, auth authorization.Authorizer) httpx.Handler {
 		Error(w, err, http.StatusInternalServerError)
 	}
 
-	return middleware.HandleError(r, errorHandler)
+	api := Authenticate(r, authenticator)
+
+	return middleware.HandleError(api, errorHandler)
 }
 
 // Encode json encodes v into w.

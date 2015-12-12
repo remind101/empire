@@ -4,8 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/server/authorization"
-	githubauth "github.com/remind101/empire/server/authorization/github"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
@@ -15,16 +14,11 @@ import (
 
 var (
 	DefaultOptions = Options{}
-
-	// DefaultGitHubScopes is the default oauth scopes to obtain when getting an
-	// authorization from GitHub.
-	DefaultGitHubScopes = []string{
-		"repo_deployment", // For creating deployment statuses.
-		"read:org",        // For reading organization memberships.
-	}
 )
 
 type Options struct {
+	Authenticator auth.Authenticator
+
 	GitHub struct {
 		ClientID     string
 		ClientSecret string
@@ -46,13 +40,6 @@ type Options struct {
 func New(e *empire.Empire, options Options) http.Handler {
 	r := httpx.NewRouter()
 
-	auth := NewAuthorizer(
-		options.GitHub.ClientID,
-		options.GitHub.ClientSecret,
-		options.GitHub.Organization,
-		options.GitHub.ApiURL,
-	)
-
 	if options.GitHub.Webhooks.Secret != "" {
 		// Mount GitHub webhooks
 		g := github.New(e, github.Options{
@@ -65,7 +52,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 	}
 
 	// Mount the heroku api
-	h := heroku.New(e, auth)
+	h := heroku.New(e, options.Authenticator)
 	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
 
 	// Mount health endpoint
@@ -108,21 +95,4 @@ func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWrite
 	w.WriteHeader(status)
 
 	return nil
-}
-
-// NewAuthorizer returns a new Authorizer. If the client id is present, it will
-// return a real Authorizer that talks to GitHub. If an empty string is
-// provided, then it will just return a fake authorizer.
-func NewAuthorizer(clientID, clientSecret, organization string, apiURL string) authorization.Authorizer {
-	if clientID == "" {
-		return &authorization.Fake{}
-	}
-
-	return &githubauth.Authorizer{
-		Scopes:       DefaultGitHubScopes,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Organization: organization,
-		ApiURL:       apiURL,
-	}
 }

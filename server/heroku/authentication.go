@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
@@ -12,9 +13,7 @@ import (
 
 // Middleware for handling authentication.
 type Authentication struct {
-	// findAccessToken is a function that, given a string token, will return
-	// an empire.AccessToken
-	findAccessToken func(string) (*empire.AccessToken, error)
+	authenticator auth.Authenticator
 
 	// handler is the wrapped httpx.Handler. This handler is called when the
 	// user is authenticated.
@@ -23,32 +22,40 @@ type Authentication struct {
 
 // Authenticat wraps an httpx.Handler in the Authentication middleware to authenticate
 // the request.
-func Authenticate(e *empire.Empire, h httpx.Handler) httpx.Handler {
+func Authenticate(h httpx.Handler, auth auth.Authenticator) httpx.Handler {
 	return &Authentication{
-		findAccessToken: e.AccessTokensFind,
-		handler:         h,
+		authenticator: auth,
+		handler:       h,
 	}
 }
 
 // ServeHTTPContext implements the httpx.Handler interface. It will ensure that
 // there is a Bearer token present and that it is valid.
 func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	token, ok := extractToken(r)
+	username, password, ok := r.BasicAuth()
 	if !ok {
 		return ErrUnauthorized
 	}
 
-	at, err := h.findAccessToken(token)
+	user, err := h.authenticator.Authenticate(username, password, r.Header.Get(HeaderTwoFactor))
 	if err != nil {
-		return err
-	}
+		switch err {
+		case auth.ErrTwoFactor:
+			return ErrTwoFactor
+		case auth.ErrForbidden:
+			return ErrUnauthorized
+		}
 
-	// Token is invalid or not found.
-	if at == nil {
-		return ErrUnauthorized
-	}
+		if err, ok := err.(*auth.UnauthorizedError); ok {
+			return errUnauthorized(err)
+		}
 
-	user := at.User
+		return &ErrorResource{
+			Status:  http.StatusForbidden,
+			ID:      "forbidden",
+			Message: err.Error(),
+		}
+	}
 
 	// Embed the associated user into the context.
 	ctx = empire.WithUser(ctx, user)
@@ -61,14 +68,4 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	reporter.AddContext(ctx, "user", user.Name)
 
 	return h.handler.ServeHTTPContext(ctx, w, r)
-}
-
-// extractToken extracts an AccessToken Token from a request.
-func extractToken(r *http.Request) (string, bool) {
-	_, pass, ok := r.BasicAuth()
-	if !ok {
-		return "", false
-	}
-
-	return pass, true
 }

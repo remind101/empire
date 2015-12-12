@@ -5,6 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/auth"
 )
 
 // Named matching heroku's error codes. See
@@ -72,5 +73,13 @@ func errNotImplemented(message string) *ErrorResource {
 		Status:  http.StatusNotImplemented,
 		ID:      "not_implemented",
 		Message: message,
+	}
+}
+
+func errUnauthorized(err *auth.UnauthorizedError) *ErrorResource {
+	return &ErrorResource{
+		Status:  http.StatusUnauthorized,
+		ID:      "unauthorized",
+		Message: err.Reason,
 	}
 }
