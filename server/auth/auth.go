@@ -51,6 +51,12 @@ type Authorizer interface {
 	Authorize(*empire.User) error
 }
 
+type AuthorizerFunc func(*empire.User) error
+
+func (fn AuthorizerFunc) Authorize(user *empire.User) error {
+	return fn(user)
+}
+
 // StaticAuthenticator returns an Authenticator that returns the provided user
 // when the given credentials are provided.
 func StaticAuthenticator(username, password, otp string, user *empire.User) Authenticator {

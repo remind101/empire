@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -74,10 +75,17 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 	// try access token before falling back to github.
 	authenticator := auth.MultiAuthenticator(authenticators...)
 
+	// After the user is authenticated, check their GitHub Organization membership.
 	if org := c.String(FlagGithubOrg); org != "" {
 		authorizer := github.NewOrganizationAuthorizer(client)
 		authorizer.Organization = org
-		authenticator = auth.WithAuthorization(authenticator, authorizer)
+
+		return auth.WithAuthorization(
+			authenticator,
+			// Cache the organization check for 30 minutes since
+			// it's pretty slow.
+			auth.CacheAuthorization(authorizer, 30*time.Minute),
+		)
 	}
 
 	return authenticator
