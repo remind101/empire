@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/remind101/empire",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
@@ -227,6 +227,10 @@
 			"Rev": "f4e566c536cf69158e808ec28ef4182a37fdc981"
 		},
 		{
+			"ImportPath": "github.com/pmylund/go-cache",
+			"Rev": "93d85800f2fa6bd0a739e7bd612bfa3bc008b72d"
+		},
+		{
 			"ImportPath": "github.com/remind101/kinesumer",
 			"Rev": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
 		},
@@ -260,8 +264,26 @@
 			"Rev": "26c5f5ca2a0098a94b9335c805e3cbbc2636a46f"
 		},
 		{
+			"ImportPath": "github.com/stretchr/objx",
+			"Rev": "cbeaeb16a013161a98496fad62933b1d21786672"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0-51-gf3960ab",
+			"Rev": "f3960ab1f9664ecc4e27c78af27cc9063d745a43"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/mock",
+			"Comment": "v1.0-51-gf3960ab",
+			"Rev": "f3960ab1f9664ecc4e27c78af27cc9063d745a43"
+		},
+		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "8914e5017ca260f2a3a1575b1e6868874050d95e"
 		},
 		{
 			"ImportPath": "gopkg.in/gorp.v1",
