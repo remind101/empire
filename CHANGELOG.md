@@ -1,5 +1,11 @@
 # Changelog
 
+## Head
+
+**Features**
+
+* `emp ps` now shows the correct uptime of the process thanks to ECS support [#683](https://github.com/remind101/empire/pull/683).
+
 ## 0.9.2 (2015-10-27)
 
 **Documentation**
