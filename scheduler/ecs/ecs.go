@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	shellwords "github.com/mattn/go-shellwords"
-	"github.com/remind101/empire/pkg/arn"
+	"github.com/remind101/empire/pkg/aws/arn"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/pkg/lb"
