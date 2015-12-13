@@ -6,6 +6,10 @@
 
 * `emp ps` now shows the correct uptime of the process thanks to ECS support [#683](https://github.com/remind101/empire/pull/683).
 
+**Bugs**
+
+* Allow floating point numbers to be provided when scaling the memory on a process [#694](https://github.com/remind101/empire/pull/694).
+
 ## 0.9.2 (2015-10-27)
 
 **Documentation**
