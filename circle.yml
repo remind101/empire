@@ -1,6 +1,3 @@
-machine:
-  timezone: America/Los_Angeles
-
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/remind101
