@@ -42,6 +42,8 @@ func TestMemory_ParseMemory(t *testing.T) {
 		{"1KB", 1024, nil},
 		{"1MB", 1048576, nil},
 		{"1GB", 1073741824, nil},
+		{"1.00GB", 1073741824, nil},
+		{"1.25GB", 1342177280, nil},
 
 		{"1kB", 1024, nil},
 		{"1kb", 1024, nil},

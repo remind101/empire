@@ -59,7 +59,7 @@ func ParseCPUShare(s string) (CPUShare, error) {
 }
 
 // memRegex parses the number of units from a string.
-var memRegex = regexp.MustCompile(`(\d+)(\S*)?`)
+var memRegex = regexp.MustCompile(`([\d\.]+)(\S*)?`)
 
 // Memory represents a memory limit.
 type Memory uint
@@ -116,7 +116,7 @@ func parseMemory(s string) (uint, error) {
 
 	var (
 		// n is the number part of the memory
-		n uint
+		n float64
 		// u is the units parts
 		u string
 		// mult is a number that will be used to
@@ -125,15 +125,13 @@ func parseMemory(s string) (uint, error) {
 	)
 
 	if len(p) == 0 {
-		return n, ErrInvalidMemory
+		return 0, ErrInvalidMemory
 	}
 
-	i, err := strconv.Atoi(p[1])
+	n, err := strconv.ParseFloat(p[1], 32)
 	if err != nil {
-		return n, err
+		return 0, err
 	}
-
-	n = uint(i)
 
 	if len(p) > 2 {
 		u = strings.ToUpper(p[2])
@@ -151,10 +149,10 @@ func parseMemory(s string) (uint, error) {
 	case "TB":
 		mult = TB
 	default:
-		return n, ErrInvalidMemory
+		return 0, ErrInvalidMemory
 	}
 
-	return n * mult, nil
+	return uint(n * float64(mult)), nil
 }
 
 // Constraints is a composition of CPUShares and Memory constraints.
