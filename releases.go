@@ -140,8 +140,7 @@ func (s *store) attachPorts(r *Release) error {
 
 // releasesService is a service for creating and rolling back a Release.
 type releasesService struct {
-	store    *store
-	releaser *releaser
+	*Empire
 }
 
 // ReleasesCreate creates the release, then sets the current process formation on the release.
@@ -243,15 +242,14 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 }
 
 type releaser struct {
-	store     *store
-	scheduler scheduler.Scheduler
+	*Empire
 }
 
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (r *releaser) Release(ctx context.Context, release *Release) error {
 	a := newServiceApp(release)
-	return r.scheduler.Submit(ctx, a)
+	return r.Scheduler.Submit(ctx, a)
 }
 
 // ReleaseApp will find the last release for an app and release it.

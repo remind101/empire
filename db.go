@@ -7,7 +7,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func newDB(uri string) (*gorm.DB, error) {
+// NewDB returns a new gorm.DB instance.
+func NewDB(uri string) (*gorm.DB, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
 		return nil, err

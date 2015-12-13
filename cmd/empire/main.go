@@ -1,19 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"net/url"
 	"os"
 	"path"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
-	"github.com/remind101/pkg/reporter"
-	"github.com/remind101/pkg/reporter/hb"
 )
 
 const (
@@ -245,78 +238,6 @@ func main() {
 	app.Commands = Commands
 
 	app.Run(os.Args)
-}
-
-func newEmpire(c *cli.Context) (*empire.Empire, error) {
-	opts := empire.Options{}
-
-	opts.Docker.Socket = c.String(FlagDockerSocket)
-	opts.Docker.CertPath = c.String(FlagDockerCert)
-	opts.AWSConfig = session.New()
-	if c.Bool(FlagAWSDebug) {
-		config := &aws.Config{}
-		config.WithLogLevel(1)
-		opts.AWSConfig = session.New(config)
-	}
-	opts.ECS.Cluster = c.String(FlagECSCluster)
-	opts.ECS.ServiceRole = c.String(FlagECSServiceRole)
-	opts.ELB.InternalSecurityGroupID = c.String(FlagELBSGPrivate)
-	opts.ELB.ExternalSecurityGroupID = c.String(FlagELBSGPublic)
-	opts.ELB.InternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPrivate)
-	opts.ELB.ExternalSubnetIDs = c.StringSlice(FlagEC2SubnetsPublic)
-	opts.ELB.InternalZoneID = c.String(FlagRoute53InternalZoneID)
-	opts.DB = c.String(FlagDB)
-	opts.Secret = c.String(FlagSecret)
-	opts.LogsStreamer = c.String(FlagLogsStreamer)
-
-	auth, err := dockerAuth(c.String(FlagDockerAuth))
-	if err != nil {
-		return nil, err
-	}
-
-	opts.Docker.Auth = auth
-
-	e, err := empire.New(opts)
-	if err != nil {
-		return e, err
-	}
-
-	reporter, err := newReporter(c.String(FlagReporter))
-	if err != nil {
-		return e, err
-	}
-
-	e.Reporter = reporter
-
-	return e, nil
-}
-
-func newReporter(u string) (reporter.Reporter, error) {
-	if u == "" {
-		return empire.DefaultReporter, nil
-	}
-
-	uri, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-
-	switch uri.Scheme {
-	case "hb":
-		q := uri.Query()
-		return newHBReporter(q.Get("key"), q.Get("environment"))
-	default:
-		panic(fmt.Errorf("unknown reporter: %s", u))
-	}
-}
-
-func newHBReporter(key, env string) (reporter.Reporter, error) {
-	r := hb.NewReporter(key)
-	r.Environment = env
-
-	// Append here because `go vet` will complain about unkeyed fields,
-	// since it thinks MultiReporter is a struct literal.
-	return append(reporter.MultiReporter{}, empire.DefaultReporter, r), nil
 }
 
 func dockerAuth(path string) (*docker.AuthConfigurations, error) {

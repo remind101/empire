@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -142,12 +141,11 @@ func AppID(id string) func(*gorm.DB) *gorm.DB {
 }
 
 type appsService struct {
-	store     *store
-	scheduler scheduler.Scheduler
+	*Empire
 }
 
 func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
-	if err := s.scheduler.Remove(ctx, app.ID); err != nil {
+	if err := s.Scheduler.Remove(ctx, app.ID); err != nil {
 		return err
 	}
 
@@ -204,8 +202,7 @@ func appsDestroy(db *gorm.DB, app *App) error {
 
 // scaler is a small service for scaling an apps process.
 type scaler struct {
-	store     *store
-	scheduler scheduler.Scheduler
+	*Empire
 }
 
 func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int, c *Constraints) (*Process, error) {
@@ -228,7 +225,7 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	if err := s.scheduler.Scale(ctx, release.AppID, string(p.Type), uint(quantity)); err != nil {
+	if err := s.Scheduler.Scale(ctx, release.AppID, string(p.Type), uint(quantity)); err != nil {
 		return nil, err
 	}
 
@@ -243,13 +240,12 @@ func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity in
 
 // restarter is a small service for restarting an apps processes.
 type restarter struct {
-	scheduler scheduler.Scheduler
-	releaser  *releaser
+	*Empire
 }
 
 func (s *restarter) Restart(ctx context.Context, app *App, id string) error {
 	if id != "" {
-		return s.scheduler.Stop(ctx, id)
+		return s.Scheduler.Stop(ctx, id)
 	}
 
 	return s.releaser.ReleaseApp(ctx, app)

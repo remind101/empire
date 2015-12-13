@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/empire/pkg/sslcert"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -37,13 +36,11 @@ func (c *Certificate) BeforeUpdate() error {
 }
 
 type certificatesService struct {
-	store    *store
-	manager  sslcert.Manager
-	releaser *releaser
+	*Empire
 }
 
 func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	id, err := s.manager.Add(certName(cert), cert.CertificateChain, cert.PrivateKey)
+	id, err := s.CertManager.Add(certName(cert), cert.CertificateChain, cert.PrivateKey)
 	if err != nil {
 		return cert, err
 	}
@@ -53,10 +50,10 @@ func (s *certificatesService) CertificatesCreate(ctx context.Context, cert *Cert
 }
 
 func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	if err := s.manager.Remove(certName(cert)); err != nil {
+	if err := s.CertManager.Remove(certName(cert)); err != nil {
 		return cert, err
 	}
-	id, err := s.manager.Add(certName(cert), cert.CertificateChain, cert.PrivateKey)
+	id, err := s.CertManager.Add(certName(cert), cert.CertificateChain, cert.PrivateKey)
 	if err != nil {
 		return cert, err
 	}
@@ -66,7 +63,7 @@ func (s *certificatesService) CertificatesUpdate(ctx context.Context, cert *Cert
 }
 
 func (s *certificatesService) CertificatesDestroy(ctx context.Context, cert *Certificate) error {
-	if err := s.manager.Remove(certName(cert)); err != nil {
+	if err := s.CertManager.Remove(certName(cert)); err != nil {
 		return err
 	}
 	return s.store.CertificatesDestroy(cert)

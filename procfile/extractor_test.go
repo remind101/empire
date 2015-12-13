@@ -1,4 +1,4 @@
-package empire
+package procfile
 
 import (
 	"archive/tar"
@@ -13,24 +13,7 @@ import (
 	"github.com/remind101/empire/pkg/image"
 )
 
-func TestFakeExtractor(t *testing.T) {
-	e := fakeExtractor{}
-
-	got, err := e.Extract(image.Image{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := CommandMap{
-		ProcessType("web"): Command("./bin/web"),
-	}
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Extract() => %q; want %q", got, want)
-	}
-}
-
-func TestCmdExtractor(t *testing.T) {
+func TestCMDExtractor(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
 		"GET /images/remind101:acme-inc/json",
 		200, `{ "Config": { "Cmd": ["/go/bin/app","server"] } }`,
@@ -39,7 +22,7 @@ func TestCmdExtractor(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	e := cmdExtractor{
+	e := CMDExtractor{
 		client: c,
 	}
 
@@ -51,8 +34,8 @@ func TestCmdExtractor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := CommandMap{
-		ProcessType("web"): Command("/go/bin/app server"),
+	want := Procfile{
+		"web": "/go/bin/app server",
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -78,7 +61,7 @@ func TestProcfileExtractor(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	e := procfileExtractor{
+	e := FileExtractor{
 		client: c,
 	}
 
@@ -90,8 +73,8 @@ func TestProcfileExtractor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := CommandMap{
-		ProcessType("web"): Command("rails server"),
+	want := Procfile{
+		"web": "rails server",
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -121,7 +104,10 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	e := newProcfileFallbackExtractor(c)
+	e := MultiExtractor(
+		NewFileExtractor(c),
+		NewCMDExtractor(c),
+	)
 
 	got, err := e.Extract(image.Image{
 		Tag:        "acme-inc",
@@ -131,8 +117,8 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := CommandMap{
-		ProcessType("web"): Command("/go/bin/app server"),
+	want := Procfile{
+		"web": "/go/bin/app server",
 	}
 
 	if !reflect.DeepEqual(got, want) {
