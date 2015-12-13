@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -298,9 +299,14 @@ func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
 	)
 
 	return ProcfileExtractor(func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+		repo := img.Repository
+		if img.Registry != "" {
+			repo = fmt.Sprintf("%s/%s", img.Registry, img.Repository)
+		}
+
 		if err := c.PullImage(ctx, docker.PullImageOptions{
 			Registry:      img.Registry,
-			Repository:    img.Repository,
+			Repository:    repo,
 			Tag:           img.Tag,
 			OutputStream:  w,
 			RawJSONStream: true,
