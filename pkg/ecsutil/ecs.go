@@ -27,6 +27,7 @@ type ECS interface {
 	ListTasksPages(context.Context, *ecs.ListTasksInput, func(*ecs.ListTasksOutput, bool) bool) error
 	StopTask(context.Context, *ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	DescribeTasks(context.Context, *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
+	RunTask(context.Context, *ecs.RunTaskInput) (*ecs.RunTaskOutput, error)
 }
 
 // newECSClient builds a new ECS client with autopagination and tracing.
@@ -124,6 +125,13 @@ func (c *ecsClient) StopTask(ctx context.Context, input *ecs.StopTaskInput) (*ec
 	ctx, done := trace.Trace(ctx)
 	resp, err := c.ECS.StopTask(input)
 	done(err, "StopTask", "task", stringField(input.Task))
+	return resp, err
+}
+
+func (c *ecsClient) RunTask(ctx context.Context, input *ecs.RunTaskInput) (*ecs.RunTaskOutput, error) {
+	ctx, done := trace.Trace(ctx)
+	resp, err := c.ECS.RunTask(input)
+	done(err, "RunTask", "taskDefinition", stringField(input.TaskDefinition))
 	return resp, err
 }
 
