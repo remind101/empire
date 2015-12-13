@@ -1,0 +1,54 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Stack for 12factor ECS scheduler integration tests",
+
+  "Resources": {
+    "Cluster": {
+      "Type": "AWS::ECS::Cluster"
+    },
+
+    "User": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "Policies": [{
+          "PolicyName": "ecs",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Resource": ["*"],
+                "Action": [
+                  "ecs:*"
+                ]
+              }
+            ]
+          }
+        }]
+      }
+    },
+
+    "AccessKey": {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "Status": "Active",
+        "UserName": { "Ref": "User" }
+      }
+    }
+  },
+
+  "Outputs": {
+    "AwsAccessKeyId": {
+      "Description": "AWS_ACCESS_KEY_ID",
+      "Value": { "Ref": "AccessKey" }
+    },
+    "AwsSecretAccessKey": {
+      "Description": "AWS_SECRET_ACCESS_KEY",
+      "Value": { "Fn::GetAtt": [ "AccessKey", "SecretAccessKey" ] }
+    },
+    "AwsRegion": {
+      "Description": "AWS_REGION",
+      "Value": { "Ref": "AWS::Region" }
+    }
+  }
+}

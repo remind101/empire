@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/remind101/empire/pkg/arn"
+	"github.com/remind101/empire/pkg/aws/arn"
 )
 
 var (
