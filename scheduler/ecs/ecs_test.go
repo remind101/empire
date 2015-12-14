@@ -137,6 +137,18 @@ func TestScheduler_Instances(t *testing.T) {
 		awsutil.Cycle{
 			Request: awsutil.Request{
 				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
+				Body:       `{"cluster":"empire","startedBy":"1234"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskArns":[]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTasks",
 				Body:       `{"cluster":"empire","tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
 			},
@@ -395,6 +407,54 @@ func TestScheduler_Processes(t *testing.T) {
 	defer s.Close()
 
 	if _, err := m.Processes(context.Background(), "1234"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestScheduler_Run(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"run"}],"family":"1234--run"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--run"}}`,
+			},
+		},
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.RunTask",
+				Body:       `{"cluster":"empire","count":1,"startedBy":"1234","taskDefinition":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--run"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       ``,
+			},
+		},
+	})
+	m, s := newTestScheduler(h)
+	defer s.Close()
+
+	app := &scheduler.App{ID: "1234"}
+	process := &scheduler.Process{
+		Type:    "run",
+		Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+		Command: "acme-inc web '--port 80'",
+		Env: map[string]string{
+			"USER": "foo",
+		},
+		Labels: map[string]string{
+			"label1": "foo",
+			"label2": "bar",
+		},
+		MemoryLimit: 134217728, // 128
+		CPUShares:   128,
+	}
+	if err := m.Run(context.Background(), app, process, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -64,6 +64,44 @@ func (c *Client) RegisterAppTaskDefinition(ctx context.Context, app string, inpu
 
 // ListAppTasks lists all the tasks for the app.
 func (c *Client) ListAppTasks(ctx context.Context, appID string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	var taskArns []*string
+
+	resp, err := c.listAppServiceTasks(ctx, appID, input)
+	if err != nil {
+		return nil, err
+	}
+	taskArns = append(taskArns, resp.TaskArns...)
+
+	resp, err = c.listAppRunTasks(ctx, appID, input)
+	if err != nil {
+		return nil, err
+	}
+	taskArns = append(taskArns, resp.TaskArns...)
+
+	return &ecs.ListTasksOutput{
+		TaskArns: taskArns,
+	}, nil
+}
+
+func (c *Client) listAppRunTasks(ctx context.Context, appID string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	var taskArns []*string
+
+	if err := c.ListTasksPages(ctx, &ecs.ListTasksInput{
+		Cluster:   input.Cluster,
+		StartedBy: aws.String(appID),
+	}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
+		taskArns = append(taskArns, resp.TaskArns...)
+		return true
+	}); err != nil {
+		return nil, err
+	}
+
+	return &ecs.ListTasksOutput{
+		TaskArns: taskArns,
+	}, nil
+}
+
+func (c *Client) listAppServiceTasks(ctx context.Context, appID string, input *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
 	var arns []*string
 
 	resp, err := c.ListAppServices(ctx, appID, &ecs.ListServicesInput{

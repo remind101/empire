@@ -109,6 +109,18 @@ func TestListAppTasks(t *testing.T) {
 				Body:       `{"taskArns":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
 			},
 		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
+				Body:       `{"cluster":"cluster","startedBy":"ae69bb4c-3903-4844-82fe-548ac5b74570"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskArns":[]}`,
+			},
+		},
 	})
 	m, s := newTestClient(h)
 	defer s.Close()
@@ -160,6 +172,18 @@ func TestListAppTasks_Paginate(t *testing.T) {
 			Response: awsutil.Response{
 				StatusCode: 200,
 				Body:       `{"taskArns":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListTasks",
+				Body:       `{"cluster":"cluster","startedBy":"ae69bb4c-3903-4844-82fe-548ac5b74570"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskArns":[]}`,
 			},
 		},
 	})
