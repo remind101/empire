@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -54,18 +55,27 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 	// authentication backend. Otherwise, we'll just use a static username
 	// and password backend.
 	if c.String(FlagGithubClient) == "" {
+		log.Println("Using static authentication backend")
 		// Fake authentication password where the user is "fake" and
 		// password is blank.
 		authenticators = append(authenticators, auth.StaticAuthenticator("fake", "", "", &empire.User{
 			Name: "fake",
 		}))
 	} else {
-		client = github.NewClient(&oauth2.Config{
+		config := &oauth2.Config{
 			ClientID:     c.String(FlagGithubClient),
 			ClientSecret: c.String(FlagGithubClientSecret),
 			Scopes:       []string{"repo_deployment", "read:org"},
-		})
+		}
+
+		client = github.NewClient(config)
 		client.URL = c.String(FlagGithubApiURL)
+
+		log.Println("Using GitHub authentication backend with the following configuration:")
+		log.Println(fmt.Sprintf("  ClientID: %v", config.ClientID))
+		log.Println(fmt.Sprintf("  ClientSecret: ****"))
+		log.Println(fmt.Sprintf("  Scopes: %v", config.Scopes))
+		log.Println(fmt.Sprintf("  GitHubAPI: %v", client.URL))
 
 		// an authenticator for authenticating requests with a users github
 		// credentials.
@@ -79,6 +89,9 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 	if org := c.String(FlagGithubOrg); org != "" {
 		authorizer := github.NewOrganizationAuthorizer(client)
 		authorizer.Organization = org
+
+		log.Println("Adding GitHub Organization authorizer with the following configuration:")
+		log.Println(fmt.Sprintf("  Organization: %v ", org))
 
 		return auth.WithAuthorization(
 			authenticator,
