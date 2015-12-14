@@ -10,6 +10,8 @@ type LogsStreamer interface {
 	StreamLogs(*App, io.Writer) error
 }
 
+var logsDisabled = &nullLogsStreamer{}
+
 type nullLogsStreamer struct{}
 
 func (s *nullLogsStreamer) StreamLogs(app *App, w io.Writer) error {
@@ -17,9 +19,13 @@ func (s *nullLogsStreamer) StreamLogs(app *App, w io.Writer) error {
 	return nil
 }
 
-type kinesisLogsStreamer struct{}
+type KinesisLogsStreamer struct{}
 
-func (s *kinesisLogsStreamer) StreamLogs(app *App, w io.Writer) error {
+func NewKinesisLogsStreamer() *KinesisLogsStreamer {
+	return &KinesisLogsStreamer{}
+}
+
+func (s *KinesisLogsStreamer) StreamLogs(app *App, w io.Writer) error {
 	k, err := kinesumer.NewDefault(app.ID)
 	if err != nil {
 		return err

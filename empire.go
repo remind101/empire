@@ -1,20 +1,20 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"fmt"
 	"io"
-	"log"
-	"os"
+	"io/ioutil"
 
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
+	"github.com/jinzhu/gorm"
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/runner"
+	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/pkg/sslcert"
+	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -36,58 +36,12 @@ const (
 	WebProcessType = "web"
 )
 
-// DockerOptions is a set of options to configure a docker api client.
-type DockerOptions struct {
-	// The unix socket to connect to the docker api.
-	Socket string
-
-	// Path to a certificate to use for TLS connections.
-	CertPath string
-
-	// A set of docker registry credentials.
-	Auth *docker.AuthConfigurations
-}
-
-// ECSOptions is a set of options to configure ECS.
-type ECSOptions struct {
-	Cluster     string
-	ServiceRole string
-}
-
-// ELBOptions is a set of options to configure ELB.
-type ELBOptions struct {
-	// The Security Group ID to assign when creating internal load balancers.
-	InternalSecurityGroupID string
-
-	// The Security Group ID to assign when creating external load balancers.
-	ExternalSecurityGroupID string
-
-	// The Subnet IDs to assign when creating internal load balancers.
-	InternalSubnetIDs []string
-
-	// The Subnet IDs to assign when creating external load balancers.
-	ExternalSubnetIDs []string
-
-	// Zone ID of the internal zone to add cnames for each elb
-	InternalZoneID string
-}
+// ProcfileExtractor is a function that can extract a Procfile from an image.
+type ProcfileExtractor func(context.Context, image.Image, io.Writer) (procfile.Procfile, error)
 
 // Options is provided to New to configure the Empire services.
 type Options struct {
-	Docker DockerOptions
-	ECS    ECSOptions
-	ELB    ELBOptions
-
-	// AWS Configuration
-	AWSConfig client.ConfigProvider
-
 	Secret string
-
-	// Database connection string.
-	DB string
-
-	// Location of the app logs
-	LogsStreamer string
 }
 
 // Empire is a context object that contains a collection of services.
@@ -108,131 +62,49 @@ type Empire struct {
 	domains      *domainsService
 	jobStates    *processStatesService
 	releases     *releasesService
-	deployer     deployer
+	releaser     *releaser
+	deployer     *deployerService
 	scaler       *scaler
 	restarter    *restarter
 	runner       *runnerService
-	logs         LogsStreamer
+	slugs        *slugsService
+
+	// Scheduler is the backend scheduler used to run applications.
+	Scheduler scheduler.Scheduler
+
+	// CertManager is the backend used to store SSL/TLS certificates.
+	CertManager sslcert.Manager
+
+	// LogsStreamer is the backend used to stream application logs.
+	LogsStreamer LogsStreamer
+
+	// ExtractProcfile is called during deployments to extract the Procfile
+	// from the newly deployed image.
+	ExtractProcfile ProcfileExtractor
 }
 
 // New returns a new Empire instance.
-func New(options Options) (*Empire, error) {
-	db, err := newDB(options.DB)
-	if err != nil {
-		return nil, err
+func New(db *gorm.DB, options Options) *Empire {
+	e := &Empire{
+		Logger:       nullLogger(),
+		LogsStreamer: logsDisabled,
+		store:        &store{db: db},
 	}
 
-	store := &store{db: db}
-
-	extractor, err := newExtractor(options.Docker)
-	if err != nil {
-		return nil, err
-	}
-
-	resolver, err := newResolver(options.Docker)
-	if err != nil {
-		return nil, err
-	}
-
-	runner, err := newRunner(options.Docker)
-	if err != nil {
-		return nil, err
-	}
-
-	scheduler, err := newManager(
-		runner,
-		options.ECS,
-		options.ELB,
-		options.AWSConfig,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	accessTokens := &accessTokensService{
-		Secret: []byte(options.Secret),
-	}
-
-	apps := &appsService{
-		store:     store,
-		scheduler: scheduler,
-	}
-
-	jobStates := &processStatesService{
-		scheduler: scheduler,
-	}
-
-	scaler := &scaler{
-		store:     store,
-		scheduler: scheduler,
-	}
-
-	releaser := &releaser{
-		store:     store,
-		scheduler: scheduler,
-	}
-
-	restarter := &restarter{
-		releaser:  releaser,
-		scheduler: scheduler,
-	}
-
-	releases := &releasesService{
-		store:    store,
-		releaser: releaser,
-	}
-
-	configs := &configsService{
-		store:    store,
-		releases: releases,
-	}
-
-	domains := &domainsService{
-		store: store,
-	}
-
-	slugs := &slugsService{
-		store:     store,
-		extractor: extractor,
-		resolver:  resolver,
-	}
-
-	deployer := &deployerService{
-		appsService:     apps,
-		configsService:  configs,
-		slugsService:    slugs,
-		releasesService: releases,
-	}
-
-	certs := &certificatesService{
-		store:    store,
-		manager:  newCertManager(options.AWSConfig),
-		releaser: releaser,
-	}
-
-	runnerService := &runnerService{
-		store:     store,
-		scheduler: scheduler,
-	}
-
-	logs := newLogStreamer(options.LogsStreamer)
-
-	return &Empire{
-		Logger:       newLogger(),
-		store:        store,
-		accessTokens: accessTokens,
-		apps:         apps,
-		certs:        certs,
-		configs:      configs,
-		deployer:     deployer,
-		domains:      domains,
-		jobStates:    jobStates,
-		scaler:       scaler,
-		restarter:    restarter,
-		runner:       runnerService,
-		releases:     releases,
-		logs:         logs,
-	}, nil
+	e.accessTokens = &accessTokensService{Secret: []byte(options.Secret)}
+	e.apps = &appsService{Empire: e}
+	e.certs = &certificatesService{Empire: e}
+	e.configs = &configsService{Empire: e}
+	e.deployer = &deployerService{Empire: e}
+	e.domains = &domainsService{Empire: e}
+	e.slugs = &slugsService{Empire: e}
+	e.jobStates = &processStatesService{Empire: e}
+	e.scaler = &scaler{Empire: e}
+	e.restarter = &restarter{Empire: e}
+	e.runner = &runnerService{Empire: e}
+	e.releases = &releasesService{Empire: e}
+	e.releaser = &releaser{Empire: e}
+	return e
 }
 
 // AccessTokensFind finds an access token.
@@ -359,15 +231,6 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 	return e.deployer.Deploy(ctx, opts)
 }
 
-func newJSONMessageError(err error) jsonmessage.JSONMessage {
-	return jsonmessage.JSONMessage{
-		ErrorMessage: err.Error(),
-		Error: &jsonmessage.JSONError{
-			Message: err.Error(),
-		},
-	}
-}
-
 // AppsScale scales an apps process.
 func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantity int, c *Constraints) (*Process, error) {
 	return e.scaler.Scale(ctx, app, t, quantity, c)
@@ -375,7 +238,7 @@ func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantit
 
 // Streamlogs streams logs from an app.
 func (e *Empire) StreamLogs(app *App, w io.Writer) error {
-	return e.logs.StreamLogs(app, w)
+	return e.LogsStreamer.StreamLogs(app, w)
 }
 
 // Reset resets empire.
@@ -410,86 +273,47 @@ const (
 	UserKey key = 0
 )
 
-func newManager(r *runner.Runner, ecsOpts ECSOptions, elbOpts ELBOptions, config client.ConfigProvider) (scheduler.Scheduler, error) {
-	if config == nil {
-		log.Println("warn: AWS not configured, ECS service management disabled.")
-		return scheduler.NewFakeScheduler(), nil
+func newJSONMessageError(err error) jsonmessage.JSONMessage {
+	return jsonmessage.JSONMessage{
+		ErrorMessage: err.Error(),
+		Error: &jsonmessage.JSONError{
+			Message: err.Error(),
+		},
 	}
-
-	s, err := ecs.NewLoadBalancedScheduler(ecs.Config{
-		Cluster:                 ecsOpts.Cluster,
-		ServiceRole:             ecsOpts.ServiceRole,
-		InternalSecurityGroupID: elbOpts.InternalSecurityGroupID,
-		ExternalSecurityGroupID: elbOpts.ExternalSecurityGroupID,
-		InternalSubnetIDs:       elbOpts.InternalSubnetIDs,
-		ExternalSubnetIDs:       elbOpts.ExternalSubnetIDs,
-		AWS:                     config,
-		ZoneID:                  elbOpts.InternalZoneID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &scheduler.AttachedRunner{
-		Scheduler: s,
-		Runner:    r,
-	}, nil
 }
 
-func newCertManager(config client.ConfigProvider) sslcert.Manager {
-	if config == nil {
-		log.Println("warn: AWS not configured, IAM server certificate management disabled.")
-		return sslcert.NewFakeManager()
-	}
-
-	return sslcert.NewIAMManager(config, "/empire/certs/")
-}
-
-func newRunner(o DockerOptions) (*runner.Runner, error) {
-	if o.Socket == "" {
-		return nil, nil
-	}
-
-	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return runner.NewRunner(c), nil
-}
-
-func newLogger() log15.Logger {
+func nullLogger() log15.Logger {
 	l := log15.New()
-	h := log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
-	//h = log15.CallerStackHandler("%+n", h)
-	l.SetHandler(log15.LazyHandler(h))
+	h := log15.StreamHandler(ioutil.Discard, log15.LogfmtFormat())
+	l.SetHandler(h)
 	return l
 }
 
-func newExtractor(o DockerOptions) (Extractor, error) {
-	if o.Socket == "" {
-		log.Println("warn: docker socket not configured, docker command extractor disabled.")
-		return &fakeExtractor{}, nil
-	}
+// PullAndExtract returns a ProcfileExtractor that will pull the image using the
+// docker client, then attempt to extract the Procfile from the WORKDIR, or
+// fallback to the CMD directive in the Procfile.
+func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
+	e := procfile.MultiExtractor(
+		procfile.NewFileExtractor(c.Client),
+		procfile.NewCMDExtractor(c.Client),
+	)
 
-	c, err := dockerutil.NewDockerClient(o.Socket, o.CertPath)
-	return newProcfileFallbackExtractor(c), err
-}
+	return ProcfileExtractor(func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+		repo := img.Repository
+		if img.Registry != "" {
+			repo = fmt.Sprintf("%s/%s", img.Registry, img.Repository)
+		}
 
-func newResolver(o DockerOptions) (Resolver, error) {
-	if o.Socket == "" {
-		log.Println("warn: docker socket not configured, docker image puller disabled.")
-		return &fakeResolver{}, nil
-	}
+		if err := c.PullImage(ctx, docker.PullImageOptions{
+			Registry:      img.Registry,
+			Repository:    repo,
+			Tag:           img.Tag,
+			OutputStream:  w,
+			RawJSONStream: true,
+		}); err != nil {
+			return nil, err
+		}
 
-	c, err := dockerutil.NewClient(o.Auth, o.Socket, o.CertPath)
-	return newDockerResolver(c), err
-}
-
-func newLogStreamer(logsStreamer string) LogsStreamer {
-	if logsStreamer == "kinesis" {
-		return &kinesisLogsStreamer{}
-	}
-
-	return &nullLogsStreamer{}
+		return e.Extract(img)
+	})
 }

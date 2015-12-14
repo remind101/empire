@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq/hstore"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
+	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"golang.org/x/net/context"
 )
@@ -100,6 +101,14 @@ func NewProcess(t ProcessType, cmd Command) *Process {
 
 // CommandMap maps a process ProcessType to a Command.
 type CommandMap map[ProcessType]Command
+
+func commandMapFromProcfile(p procfile.Procfile) CommandMap {
+	cm := make(CommandMap)
+	for n, c := range p {
+		cm[ProcessType(n)] = Command(c)
+	}
+	return cm
+}
 
 // Scan implements the sql.Scanner interface.
 func (cm *CommandMap) Scan(src interface{}) error {
@@ -300,13 +309,13 @@ type ProcessState struct {
 }
 
 type processStatesService struct {
-	scheduler scheduler.Scheduler
+	*Empire
 }
 
 func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
 	var states []*ProcessState
 
-	instances, err := s.scheduler.Instances(ctx, app.ID)
+	instances, err := s.Scheduler.Instances(ctx, app.ID)
 	if err != nil {
 		return states, err
 	}

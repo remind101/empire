@@ -120,8 +120,7 @@ func configsCreate(db *gorm.DB, config *Config) (*Config, error) {
 }
 
 type configsService struct {
-	store    *store
-	releases *releasesService
+	*Empire
 }
 
 func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {

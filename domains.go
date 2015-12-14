@@ -31,7 +31,7 @@ func (d *Domain) BeforeCreate() error {
 }
 
 type domainsService struct {
-	store *store
+	*Empire
 }
 
 func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {

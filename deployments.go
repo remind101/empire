@@ -34,19 +34,10 @@ type DeploymentsCreateOpts struct {
 	Output io.Writer
 }
 
-// deployer is an interface that represents something that can perform a
-// deployment.
-type deployer interface {
-	Deploy(context.Context, DeploymentsCreateOpts) (*Release, error)
-}
-
 // deployerService is an implementation of the deployer interface that performs
 // the core business logic to deploy.
 type deployerService struct {
-	*appsService
-	*configsService
-	*slugsService
-	*releasesService
+	*Empire
 }
 
 // doDeploy does the actual deployment
@@ -57,14 +48,14 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 	// images repository, or create it if not found.
 	if app == nil {
 		var err error
-		app, err = s.appsService.AppsFindOrCreateByRepo(img.Repository)
+		app, err = s.apps.AppsFindOrCreateByRepo(img.Repository)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// If the app doesn't already have a repo attached to it, we'll attach
 		// this image's repo.
-		if err := s.appsService.AppsEnsureRepo(app, img.Repository); err != nil {
+		if err := s.apps.AppsEnsureRepo(app, img.Repository); err != nil {
 			return nil, err
 		}
 	}
@@ -76,7 +67,7 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 	}
 
 	// Create a new slug for the docker image.
-	slug, err := s.SlugsCreateByImage(ctx, img, opts.Output)
+	slug, err := s.slugs.SlugsCreateByImage(ctx, img, opts.Output)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +76,7 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", img.String())
 
-	r, err := s.ReleasesCreate(ctx, &Release{
+	r, err := s.releases.ReleasesCreate(ctx, &Release{
 		App:         app,
 		Config:      config,
 		Slug:        slug,
