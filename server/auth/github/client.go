@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -38,15 +41,32 @@ const (
 	HeaderTwoFactor = "X-GitHub-OTP"
 )
 
-// CreateAuthorizationOpts is a set of options used when creating a GitHub
+// CreateAuthorizationOptions is a set of options used when creating a GitHub
 // authorization.
-type CreateAuthorizationOpts struct {
-	Scopes       []string
-	ClientID     string
-	ClientSecret string
-	Username     string
-	Password     string
-	TwoFactor    string
+type CreateAuthorizationOptions struct {
+	Username string
+	Password string
+	OTP      string
+}
+
+// Client is a github client implementation for creating authorizations, and
+// checking organization membership.
+type Client struct {
+	// URL for the GitHub API. This can be changed if you're using GitHub
+	// Enterprise. The zero value is DefaultURL.
+	URL string
+
+	// OAuth configuration.
+	*oauth2.Config
+
+	client interface {
+		Do(*http.Request) (*http.Response, error)
+	}
+}
+
+// NewClient returns a new Client instance that uses the given oauth2 config.
+func NewClient(config *oauth2.Config) *Client {
+	return &Client{Config: config}
 }
 
 // Authorization represents a GitHub Authorization. See http://goo.gl/bs9I3o for
@@ -59,26 +79,18 @@ type User struct {
 	Login string `json:"login"`
 }
 
-// Client is a github client.
-type Client struct {
-	// The github api url. The zero value is https://api.github.com.
-	URL string
-
-	client *http.Client
-}
-
 // CreateAuthorization creates a new GitHub authorization (or returns the
 // existing authorization if present) for the GitHub OAuth application. See
 // http://goo.gl/bs9I3o.
-func (c *Client) CreateAuthorization(opts CreateAuthorizationOpts) (*Authorization, error) {
+func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authorization, error) {
 	f := struct {
 		Scopes       []string `json:"scopes"`
 		ClientID     string   `json:"client_id"`
 		ClientSecret string   `json:"client_secret"`
 	}{
-		Scopes:       opts.Scopes,
-		ClientID:     opts.ClientID,
-		ClientSecret: opts.ClientSecret,
+		Scopes:       c.Scopes,
+		ClientID:     c.ClientID,
+		ClientSecret: c.ClientSecret,
 	}
 
 	req, err := c.NewRequest("POST", "/authorizations", f)
@@ -90,8 +102,8 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOpts) (*Authorizati
 
 	// If a two factor auth code is present, set the `X-GitHub-OTP` header
 	// value. See http://goo.gl/Lumn6s.
-	if opts.TwoFactor != "" {
-		req.Header.Set(HeaderTwoFactor, opts.TwoFactor)
+	if opts.OTP != "" {
+		req.Header.Set(HeaderTwoFactor, opts.OTP)
 	}
 
 	var a Authorization
@@ -121,7 +133,7 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOpts) (*Authorizati
 	return &a, nil
 }
 
-// GetUser makes an authenticated request to /user and returns the User.
+// GetUser makes an authenticated request to /user and returns the GitHub User.
 func (c *Client) GetUser(token string) (*User, error) {
 	req, err := c.NewRequest("GET", "/user", nil)
 	if err != nil {
@@ -162,10 +174,15 @@ func (c *Client) IsMember(organization, token string) (bool, error) {
 }
 
 func (c *Client) NewRequest(method, path string, v interface{}) (*http.Request, error) {
-	buf := new(bytes.Buffer)
+	var r io.Reader
+	if v != nil {
+		buf := new(bytes.Buffer)
 
-	if err := json.NewEncoder(buf).Encode(v); err != nil {
-		return nil, err
+		if err := json.NewEncoder(buf).Encode(v); err != nil {
+			return nil, err
+		}
+
+		r = buf
 	}
 
 	url := c.URL
@@ -173,7 +190,7 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*http.Request, 
 		url = DefaultURL
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", url, path), buf)
+	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", url, path), r)
 	if err != nil {
 		return req, err
 	}

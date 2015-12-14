@@ -11,6 +11,10 @@
 
 * Allow floating point numbers to be provided when scaling the memory on a process [#694](https://github.com/remind101/empire/pull/694).
 
+**Security**
+
+* GitHub Organization membership is now checked on every request, not just at access token creation time [#687](https://github.com/remind101/empire/pull/687).
+
 ## 0.9.2 (2015-10-27)
 
 **Documentation**

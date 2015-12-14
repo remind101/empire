@@ -7,7 +7,7 @@ cmd:
 	godep go build -o build/empire ./cmd/empire
 
 bootstrap: cmd build/emp
-	createdb empire
+	createdb empire || true
 	./build/empire migrate
 
 build: Dockerfile

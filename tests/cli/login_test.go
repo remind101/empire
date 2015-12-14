@@ -1,15 +1,21 @@
 package cli_test
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/empire/server"
+	"github.com/remind101/empire/server/auth"
 )
 
 func TestLogin(t *testing.T) {
 	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
+	s := httptest.NewServer(server.New(e, server.Options{
+		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
+	}))
 	defer s.Close()
 
 	input := "fake\nbar\n"
@@ -29,7 +35,9 @@ func TestLogin(t *testing.T) {
 
 func TestLoginUnauthorized(t *testing.T) {
 	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
+	s := httptest.NewServer(server.New(e, server.Options{
+		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
+	}))
 	defer s.Close()
 
 	input := "foo\nbar\n"
@@ -49,7 +57,9 @@ func TestLoginUnauthorized(t *testing.T) {
 
 func TestLoginTwoFactor(t *testing.T) {
 	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
+	s := httptest.NewServer(server.New(e, server.Options{
+		Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
+	}))
 	defer s.Close()
 
 	input := "twofactor\nbar\ncode\n"

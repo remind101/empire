@@ -18,6 +18,7 @@ import (
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/server"
+	"github.com/remind101/empire/server/auth"
 )
 
 var (
@@ -55,6 +56,7 @@ func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
 
 	server.DefaultOptions.GitHub.Webhooks.Secret = "abcd"
 	server.DefaultOptions.GitHub.Deployments.Environment = "test"
+	server.DefaultOptions.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
 	return httptest.NewServer(server.New(e, server.DefaultOptions))
 }
 
