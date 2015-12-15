@@ -37,7 +37,13 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	// Create the response object
 	var resp []*Formation
 	for _, up := range form.Updates {
-		p, err := h.AppsScale(ctx, app, up.Process, up.Quantity, up.Size)
+		p, err := h.Scale(ctx, empire.ScaleOpts{
+			User:        UserFromContext(ctx),
+			App:         app,
+			Process:     up.Process,
+			Quantity:    up.Quantity,
+			Constraints: up.Size,
+		})
 		if err != nil {
 			return err
 		}

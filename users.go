@@ -1,10 +1,6 @@
 package empire
 
-import (
-	"net/http"
-
-	"golang.org/x/net/context"
-)
+import "net/http"
 
 // User represents a user of Empire.
 type User struct {
@@ -20,17 +16,6 @@ func (u *User) GitHubClient() *http.Client {
 			Token: u.GitHubToken,
 		},
 	}
-}
-
-// WithUser adds a user to the context.Context.
-func WithUser(ctx context.Context, u *User) context.Context {
-	return context.WithValue(ctx, UserKey, u)
-}
-
-// UserFromContext returns a user from a context.Context if one is present.
-func UserFromContext(ctx context.Context) (*User, bool) {
-	u, ok := ctx.Value(UserKey).(*User)
-	return u, ok
 }
 
 // githubTransport is an http.RoundTripper that will automatically set an oauth

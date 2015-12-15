@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	FlagPort        = "port"
-	FlagAutoMigrate = "automigrate"
+	FlagPort          = "port"
+	FlagAutoMigrate   = "automigrate"
+	FlagEventsBackend = "events.backend"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -42,6 +43,8 @@ const (
 
 	FlagRoute53InternalZoneID = "route53.zoneid.internal"
 
+	FlagSNSTopic = "sns.topic"
+
 	FlagSecret       = "secret"
 	FlagReporter     = "reporter"
 	FlagRunner       = "runner"
@@ -64,6 +67,12 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
+			},
+			cli.StringFlag{
+				Name:   FlagEventsBackend,
+				Value:  "",
+				Usage:  "The backend implementation to use to send event notifactions",
+				EnvVar: "EMPIRE_EVENTS_BACKEND",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,
@@ -227,6 +236,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "The location of the logs to stream",
 		EnvVar: "EMPIRE_LOGS_STREAMER",
+	},
+	cli.StringFlag{
+		Name:   FlagSNSTopic,
+		Value:  "",
+		Usage:  "When using the SNS events backend, this is the SNS topic that gets published to",
+		EnvVar: "EMPIRE_SNS_TOPIC",
 	},
 }
 

@@ -31,13 +31,8 @@ type PostAuthorizations struct {
 }
 
 func (h *PostAuthorizations) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	user, ok := empire.UserFromContext(ctx)
-	if !ok {
-		panic("User should be set")
-	}
-
 	at, err := h.Empire.AccessTokensCreate(&empire.AccessToken{
-		User: user,
+		User: UserFromContext(ctx),
 	})
 	if err != nil {
 		return err

@@ -77,6 +77,9 @@ type Empire struct {
 	// ExtractProcfile is called during deployments to extract the Procfile
 	// from the newly deployed image.
 	ExtractProcfile ProcfileExtractor
+
+	// EventStream service for publishing Empire events.
+	EventStream EventStream
 }
 
 // New returns a new Empire instance.
@@ -84,6 +87,7 @@ func New(db *gorm.DB, options Options) *Empire {
 	e := &Empire{
 		Logger:       nullLogger(),
 		LogsStreamer: logsDisabled,
+		EventStream:  NullEventStream,
 		store:        &store{db: db},
 	}
 
@@ -170,15 +174,80 @@ func (e *Empire) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState,
 	return e.jobStates.JobStatesByApp(ctx, app)
 }
 
-// ProcessesRestart restarts processes matching the given prefix for the given Release.
-// If the prefix is empty, it will match all processes for the release.
-func (e *Empire) ProcessesRestart(ctx context.Context, app *App, id string) error {
-	return e.restarter.Restart(ctx, app, id)
+// RestartOpts are options provided when restarting an app.
+type RestartOpts struct {
+	// User performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	// If provided, a PID that will be killed. Generally used for killing
+	// detached processes.
+	PID string
 }
 
-// ProcessesRun runs a one-off process for a given App and command.
-func (e *Empire) ProcessesRun(ctx context.Context, app *App, opts ProcessRunOpts) error {
-	return e.runner.Run(ctx, app, opts)
+func (opts RestartOpts) Event() Event {
+	return RestartEvent{
+		User: opts.User.Name,
+		App:  opts.App.Name,
+		PID:  opts.PID,
+	}
+}
+
+// Restart restarts processes matching the given prefix for the given Release.
+// If the prefix is empty, it will match all processes for the release.
+func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
+	if err := e.restarter.Restart(ctx, opts); err != nil {
+		return err
+	}
+
+	return e.EventStream.PublishEvent(opts.Event())
+
+}
+
+// RunOpts are options provided when running an attached/detached process.
+type RunOpts struct {
+	// User performing this action.
+	User *User
+
+	// Related app.
+	App *App
+
+	// The command to run.
+	Command string
+
+	// If provided, input will be read from this.
+	Input io.Reader
+
+	// If provided, output will be written to this.
+	Output io.Writer
+
+	// Extra environment variables to set.
+	Env map[string]string
+}
+
+func (opts RunOpts) Event() Event {
+	var attached bool
+	if opts.Output != nil {
+		attached = true
+	}
+
+	return RunEvent{
+		User:     opts.User.Name,
+		App:      opts.App.Name,
+		Command:  opts.Command,
+		Attached: attached,
+	}
+}
+
+// Run runs a one-off process for a given App and command.
+func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
+	if err := e.runner.Run(ctx, opts); err != nil {
+		return err
+	}
+
+	return e.EventStream.PublishEvent(opts.Event())
 }
 
 // Releases returns all Releases for a given App.
@@ -196,20 +265,110 @@ func (e *Empire) ReleasesLast(app *App) (*Release, error) {
 	return e.store.ReleasesFirst(ReleasesQuery{App: app})
 }
 
-// ReleasesRollback rolls an app back to a specific release version. Returns a
+// RollbackOpts are options provided when rolling back to an old release.
+type RollbackOpts struct {
+	// The user performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	// The release version to rollback to.
+	Version int
+}
+
+func (opts RollbackOpts) Event() Event {
+	return RollbackEvent{
+		User:    opts.User.Name,
+		App:     opts.App.Name,
+		Version: opts.Version,
+	}
+}
+
+// Rollback rolls an app back to a specific release version. Returns a
 // new release.
-func (e *Empire) ReleasesRollback(ctx context.Context, app *App, version int) (*Release, error) {
-	return e.releases.ReleasesRollback(ctx, app, version)
+func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
+	r, err := e.releases.Rollback(ctx, opts)
+	if err != nil {
+		return r, err
+	}
+
+	return r, e.EventStream.PublishEvent(opts.Event())
+}
+
+// DeploymentsCreateOpts represents options that can be passed when deploying to
+// an application.
+type DeploymentsCreateOpts struct {
+	// User the user that is triggering the deployment.
+	User *User
+
+	// App is the app that is being deployed to.
+	App *App
+
+	// Image is the image that's being deployed.
+	Image image.Image
+
+	// Output is an io.Writer where deployment output and events will be
+	// streamed in jsonmessage format.
+	Output io.Writer
+}
+
+func (opts DeploymentsCreateOpts) Event() Event {
+	e := DeployEvent{
+		User:  opts.User.Name,
+		Image: opts.Image.String(),
+	}
+	if opts.App != nil {
+		e.App = opts.App.Name
+	}
+	return e
 }
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
-	return e.deployer.Deploy(ctx, opts)
+	r, err := e.deployer.Deploy(ctx, opts)
+	if err != nil {
+		return r, err
+	}
+
+	return r, e.EventStream.PublishEvent(opts.Event())
 }
 
-// AppsScale scales an apps process.
-func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantity int, c *Constraints) (*Process, error) {
-	return e.scaler.Scale(ctx, app, t, quantity, c)
+// ScaleOpts are options provided when scaling a process.
+type ScaleOpts struct {
+	// User that's performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	// The process type to scale.
+	Process ProcessType
+
+	// The desired quantity of processes.
+	Quantity int
+
+	// If provided, new memory and CPU constraints for the process.
+	Constraints *Constraints
+}
+
+func (opts ScaleOpts) Event() Event {
+	return ScaleEvent{
+		User:     opts.User.Name,
+		App:      opts.App.Name,
+		Process:  string(opts.Process),
+		Quantity: opts.Quantity,
+	}
+}
+
+// Scale scales an apps process.
+func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
+	p, err := e.scaler.Scale(ctx, opts)
+	if err != nil {
+		return p, err
+	}
+
+	return p, e.EventStream.PublishEvent(opts.Event())
 }
 
 // Streamlogs streams logs from an app.
@@ -246,13 +405,6 @@ type ValidationError struct {
 func (e *ValidationError) Error() string {
 	return e.Err.Error()
 }
-
-// key used to store context values from within this package.
-type key int
-
-const (
-	UserKey key = 0
-)
 
 func newJSONMessageError(err error) jsonmessage.JSONMessage {
 	return jsonmessage.JSONMessage{

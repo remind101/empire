@@ -119,7 +119,11 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	release, err := h.ReleasesRollback(ctx, app, version)
+	release, err := h.Rollback(ctx, empire.RollbackOpts{
+		User:    UserFromContext(ctx),
+		App:     app,
+		Version: version,
+	})
 	if err != nil {
 		return err
 	}

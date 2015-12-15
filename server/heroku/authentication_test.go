@@ -125,11 +125,7 @@ func (m *mockAuthenticator) Authenticate(username, password, otp string) (*empir
 // user isn't set in the context.
 func ensureUserInContext(t testing.TB) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		_, ok := empire.UserFromContext(ctx)
-		if !ok {
-			t.Fatal("Expected a user to be present in the context")
-		}
-
+		UserFromContext(ctx) // Panics if user is not set.
 		return nil
 	})
 }

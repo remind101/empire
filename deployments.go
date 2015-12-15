@@ -3,36 +3,10 @@ package empire
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
-
-// Deployment statuses.
-const (
-	StatusPending = "pending"
-	StatusFailed  = "failed"
-	StatusSuccess = "success"
-)
-
-// DeploymentsCreateOpts represents options that can be passed when creating a
-// new Deployment.
-type DeploymentsCreateOpts struct {
-	// App is the app that is being deployed to.
-	App *App
-
-	// Image is the image that's being deployed.
-	Image image.Image
-
-	// User the user that is triggering the deployment.
-	User *User
-
-	// Output is an io.Writer where deployment output and events will be
-	// streamed in jsonmessage format.
-	Output io.Writer
-}
 
 // deployerService is an implementation of the deployer interface that performs
 // the core business logic to deploy.

@@ -8,6 +8,7 @@
 * `emp run` now supports the `-d` flag for detached processes [#695](https://github.com/remind101/empire/pull/695).
 * You can now deploy images from unofficial Docker registries, such as Quay.io [#692](https://github.com/remind101/empire/pull/692).
 * Empire now allows you to "attach" existing IAM certificates. This replaces the old `ssl-*` commands in the `emp` CLI [#701](https://github.com/remind101/empire/pull/701).
+* You can now have Empire publish events to an SNS topic [#698](https://github.com/remind101/empire/pull/698).
 
 **Bugs**
 

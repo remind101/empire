@@ -23,6 +23,11 @@
       "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "The name of the key pair to use to allow SSH access."
     },
+    "EventsBackend": {
+      "Type": "String",
+      "Description": "The backend to use to publish Empire events to. Set this to SNS to create an SNS topic and publish events there.",
+      "Default": "sns"
+    },
     "DockerRegistry": {
       "Type": "String",
       "Description": "Docker private registry url",
@@ -68,7 +73,8 @@
 
   "Conditions": {
     "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "1"]},
-    "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]}
+    "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]},
+    "SNSEvents": {"Fn::Equals": [{"Ref": "EventsBackend"}, "sns"]}
   },
 
   "Resources": {
@@ -297,7 +303,8 @@
                 "iam:PassRole",
                 "iam:UploadServerCertificate",
                 "iam:DeleteServerCertificate",
-                "route53:*"
+                "route53:*",
+                "sns:*"
               ],
               "Resource": [
                 "*"
@@ -488,10 +495,17 @@
                 "Name": "EMPIRE_ECS_SERVICE_ROLE",
                 "Value": { "Ref": "ServiceRole" }
               },
-
               {
                 "Name": "EMPIRE_EC2_SUBNETS_PUBLIC",
                 "Value": { "Fn::Join": [ ",", [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }] ] }
+              },
+              {
+                "Name": "EMPIRE_EVENTS_BACKEND",
+                "Value": "sns"
+              },
+              {
+                "Name": "EMPIRE_SNS_TOPIC",
+                "Value": { "Ref": "EventsTopic" }
               }
             ],
             "Command": ["server", "-automigrate=true"],
@@ -553,6 +567,15 @@
         ],
         "Role" : { "Ref": "ServiceRole" },
         "TaskDefinition" : { "Ref": "TaskDefinition" }
+      }
+    },
+
+    "EventsTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Condition": "SNSEvents",
+      "Properties": {
+        "DisplayName": "Empire Events",
+        "TopicName" : "events"
       }
     }
   },
