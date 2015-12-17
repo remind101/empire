@@ -103,7 +103,22 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 }
 
 func (m *ELBManager) UpdateLoadBalancer(ctx context.Context, opts UpdateLoadBalancerOpts) error {
+	if opts.SSLCert != nil {
+		if err := m.updateSSLCert(ctx, opts.Name, *opts.SSLCert); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (m *ELBManager) updateSSLCert(ctx context.Context, name, certID string) error {
+	_, err := m.elb.SetLoadBalancerListenerSSLCertificate(&elb.SetLoadBalancerListenerSSLCertificateInput{
+		LoadBalancerName: aws.String(name),
+		LoadBalancerPort: aws.Int64(443),
+		SSLCertificateId: aws.String(certID),
+	})
+	return err
 }
 
 // DestroyLoadBalancer destroys an ELB.
