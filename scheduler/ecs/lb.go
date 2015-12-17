@@ -121,7 +121,7 @@ func (e *LoadBalancerExposureError) Error() string {
 		lbExposure = "public"
 	}
 
-	return fmt.Sprintf("Process %s is %s, but load balancer is %s.", e.proc.Type, e.proc.Exposure, lbExposure)
+	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, e.proc.Exposure, lbExposure)
 }
 
 // LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
