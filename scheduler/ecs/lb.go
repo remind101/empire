@@ -35,8 +35,15 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *scheduler.App
 		// want, we'll return an error. Users should manually destroy
 		// the app and re-create it with the proper exposure.
 		if l != nil {
-			if err = lbOk(p, l); err != nil {
+			if err = canUpdate(p, l); err != nil {
 				return err
+			}
+
+			if opts := updateOpts(p, l); opts != nil {
+				opts.Name = l.Name
+				if err = m.lb.UpdateLoadBalancer(ctx, *opts); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -124,28 +131,8 @@ func (e *LoadBalancerExposureError) Error() string {
 	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, e.proc.Exposure, lbExposure)
 }
 
-// LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
-type LoadBalancerPortMismatchError struct {
-	proc *scheduler.Process
-	lb   *lb.LoadBalancer
-}
-
-func (e *LoadBalancerPortMismatchError) Error() string {
-	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, e.proc.Ports[0].Host, e.lb.InstancePort)
-}
-
-// SslCertMismatchError is returned when the ssl cert in the data store does not match the ssl cert on the ELB
-type SslCertMismatchError struct {
-	proc *scheduler.Process
-	lb   *lb.LoadBalancer
-}
-
-func (e *SslCertMismatchError) Error() string {
-	return fmt.Sprintf("Process ssl certificate (%s) does not match load balancer ssl certificate (%s).", e.proc.SSLCert, e.lb.SSLCert)
-}
-
-// lbOk checks if the load balancer is suitable for the process.
-func lbOk(p *scheduler.Process, lb *lb.LoadBalancer) error {
+// canUpdate checks if the load balancer is suitable for the process.
+func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == scheduler.ExposePublic && !lb.External {
 		return &LoadBalancerExposureError{p, lb}
 	}
@@ -154,13 +141,23 @@ func lbOk(p *scheduler.Process, lb *lb.LoadBalancer) error {
 		return &LoadBalancerExposureError{p, lb}
 	}
 
-	if *p.Ports[0].Host != lb.InstancePort {
-		return &LoadBalancerPortMismatchError{p, lb}
-	}
-
-	if p.SSLCert != lb.SSLCert {
-		return &SslCertMismatchError{p, lb}
-	}
-
 	return nil
+}
+
+func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) *lb.UpdateLoadBalancerOpts {
+	var opts lb.UpdateLoadBalancerOpts
+
+	if p.SSLCert != b.SSLCert {
+		opts.SSLCert = &p.SSLCert
+	}
+
+	if *p.Ports[0].Host != b.InstancePort {
+		opts.InstancePort = p.Ports[0].Host
+	}
+
+	if opts.SSLCert == nil && opts.InstancePort == nil {
+		return nil
+	}
+
+	return &opts
 }

@@ -102,6 +102,10 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 	}, nil
 }
 
+func (m *ELBManager) UpdateLoadBalancer(ctx context.Context, opts UpdateLoadBalancerOpts) error {
+	return nil
+}
+
 // DestroyLoadBalancer destroys an ELB.
 func (m *ELBManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
 	_, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{

@@ -163,8 +163,52 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer_NewCert(t *testing.
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
-		{Name: "lbname", External: true, SSLCert: "oldcert"},
+		{Name: "lbname", External: true, SSLCert: "oldcert", InstancePort: port},
 	}, nil)
+	newcert := "newcert"
+	l.On("UpdateLoadBalancer", lb.UpdateLoadBalancerOpts{
+		Name:    "lbname",
+		SSLCert: &newcert,
+	}).Return(nil)
+	p.On("CreateProcess", app, process).Return(nil)
+
+	err := m.CreateProcess(context.Background(), app, process)
+	assert.NoError(t, err)
+
+	p.AssertExpectations(t)
+	l.AssertExpectations(t)
+}
+
+func TestLBProcessManager_CreateProcess_ExistingLoadBalancer_NewPort(t *testing.T) {
+	p := new(mockProcessManager)
+	l := new(mockLBManager)
+	m := &LBProcessManager{
+		ProcessManager: p,
+		lb:             l,
+	}
+
+	oldport := int64(8080)
+	newport := int64(8081)
+	app := &scheduler.App{
+		ID:   "appid",
+		Name: "appname",
+	}
+	process := &scheduler.Process{
+		Type:     "web",
+		Exposure: scheduler.ExposePublic,
+		Ports: []scheduler.PortMap{
+			{Host: &newport},
+		},
+	}
+
+	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
+		{Name: "lbname", External: true, InstancePort: oldport},
+	}, nil)
+	l.On("UpdateLoadBalancer", lb.UpdateLoadBalancerOpts{
+		Name:         "lbname",
+		InstancePort: &newport,
+	}).Return(nil)
+	p.On("CreateProcess", app, process).Return(nil)
 
 	err := m.CreateProcess(context.Background(), app, process)
 	assert.NoError(t, err)
@@ -190,6 +234,11 @@ type mockLBManager struct {
 func (m *mockLBManager) CreateLoadBalancer(ctx context.Context, opts lb.CreateLoadBalancerOpts) (*lb.LoadBalancer, error) {
 	args := m.Called(opts)
 	return args.Get(0).(*lb.LoadBalancer), args.Error(1)
+}
+
+func (m *mockLBManager) UpdateLoadBalancer(ctx context.Context, opts lb.UpdateLoadBalancerOpts) error {
+	args := m.Called(opts)
+	return args.Error(0)
 }
 
 func (m *mockLBManager) DestroyLoadBalancer(ctx context.Context, lb *lb.LoadBalancer) error {

@@ -21,6 +21,19 @@ type CreateLoadBalancerOpts struct {
 	SSLCert string
 }
 
+// UpdateLoadBalancerOpts are options that can be provided when updating an
+// existing load balancer.
+type UpdateLoadBalancerOpts struct {
+	// The name of the load balancer.
+	Name string
+
+	// The SSL Certificate
+	SSLCert *string
+
+	// The port to route requests to on the hosts.
+	InstancePort *int64
+}
+
 // LoadBalancer represents a load balancer.
 type LoadBalancer struct {
 	// The name of the load balancer.
@@ -48,6 +61,9 @@ type LoadBalancer struct {
 type Manager interface {
 	// CreateLoadBalancer creates a new LoadBalancer with the given options.
 	CreateLoadBalancer(context.Context, CreateLoadBalancerOpts) (*LoadBalancer, error)
+
+	// UpdateLoadBalancer updates an existing load balancer.
+	UpdateLoadBalancer(context.Context, UpdateLoadBalancerOpts) error
 
 	// DestroyLoadBalancer destroys a load balancer by name.
 	DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error
