@@ -43,10 +43,11 @@ type App struct {
 
 	Repo *string
 
-	Certificates []*Certificate
-
 	// Valid values are empire.ExposePrivate and empire.ExposePublic.
 	Exposure string
+
+	// The name of an SSL cert for the web process of this app.
+	Cert string
 
 	CreatedAt *time.Time
 }
@@ -106,7 +107,6 @@ func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
 // AppsFirst returns the first matching release.
 func (s *store) AppsFirst(scope Scope) (*App, error) {
 	var app App
-	scope = ComposedScope{scope, Preload("Certificates")}
 	return &app, s.First(scope, &app)
 }
 

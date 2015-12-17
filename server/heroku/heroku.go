@@ -23,6 +23,7 @@ func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 	r.Handle("/apps", &GetApps{e}).Methods("GET")                  // hk apps
 	r.Handle("/apps/{app}", &GetAppInfo{e}).Methods("GET")         // hk info
 	r.Handle("/apps/{app}", &DeleteApp{e}).Methods("DELETE")       // hk destroy
+	r.Handle("/apps/{app}", &PatchApp{e}).Methods("PATCH")         // hk destroy
 	r.Handle("/apps/{app}/deploys", &DeployApp{e}).Methods("POST") // Deploy an image to an app
 	r.Handle("/apps", &PostApps{e}).Methods("POST")                // hk create
 	r.Handle("/organizations/apps", &PostApps{e}).Methods("POST")  // hk create
@@ -58,10 +59,11 @@ func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 	r.Handle("/oauth/authorizations", &PostAuthorizations{e}).Methods("POST")
 
 	// SSL
-	r.Handle("/apps/{app}/ssl-endpoints", &GetSSLEndpoints{e}).Methods("GET")             // hk ssl
-	r.Handle("/apps/{app}/ssl-endpoints", &PostSSLEndpoints{e}).Methods("POST")           // hk ssl-cert-add
-	r.Handle("/apps/{app}/ssl-endpoints/{cert}", &PatchSSLEndpoint{e}).Methods("PATCH")   // hk ssl-cert-add, hk ssl-cert-rollback
-	r.Handle("/apps/{app}/ssl-endpoints/{cert}", &DeleteSSLEndpoint{e}).Methods("DELETE") // hk ssl-destroy
+	sslRemoved := errHandler(ErrSSLRemoved)
+	r.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("GET")           // hk ssl
+	r.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("POST")          // hk ssl-cert-add
+	r.Handle("/apps/{app}/ssl-endpoints/{cert}", sslRemoved).Methods("PATCH")  // hk ssl-cert-add, hk ssl-cert-rollback
+	r.Handle("/apps/{app}/ssl-endpoints/{cert}", sslRemoved).Methods("DELETE") // hk ssl-destroy
 
 	// Logs
 	r.Handle("/apps/{app}/log-sessions", &PostLogs{e}).Methods("POST") // hk log

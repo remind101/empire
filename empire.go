@@ -12,7 +12,6 @@ import (
 	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/empire/pkg/sslcert"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/reporter"
@@ -57,7 +56,6 @@ type Empire struct {
 
 	accessTokens *accessTokensService
 	apps         *appsService
-	certs        *certificatesService
 	configs      *configsService
 	domains      *domainsService
 	jobStates    *processStatesService
@@ -68,12 +66,10 @@ type Empire struct {
 	restarter    *restarter
 	runner       *runnerService
 	slugs        *slugsService
+	certs        *certsService
 
 	// Scheduler is the backend scheduler used to run applications.
 	Scheduler scheduler.Scheduler
-
-	// CertManager is the backend used to store SSL/TLS certificates.
-	CertManager sslcert.Manager
 
 	// LogsStreamer is the backend used to stream application logs.
 	LogsStreamer LogsStreamer
@@ -93,7 +89,6 @@ func New(db *gorm.DB, options Options) *Empire {
 
 	e.accessTokens = &accessTokensService{Secret: []byte(options.Secret)}
 	e.apps = &appsService{Empire: e}
-	e.certs = &certificatesService{Empire: e}
 	e.configs = &configsService{Empire: e}
 	e.deployer = &deployerService{Empire: e}
 	e.domains = &domainsService{Empire: e}
@@ -104,6 +99,7 @@ func New(db *gorm.DB, options Options) *Empire {
 	e.runner = &runnerService{Empire: e}
 	e.releases = &releasesService{Empire: e}
 	e.releaser = &releaser{Empire: e}
+	e.certs = &certsService{Empire: e}
 	return e
 }
 
@@ -135,26 +131,6 @@ func (e *Empire) AppsCreate(app *App) (*App, error) {
 // AppsDestroy destroys the app.
 func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
 	return e.apps.AppsDestroy(ctx, app)
-}
-
-// CertificatesFirst returns a certificate for the given ID
-func (e *Empire) CertificatesFirst(ctx context.Context, q CertificatesQuery) (*Certificate, error) {
-	return e.store.CertificatesFirst(q)
-}
-
-// CertificatesCreate creates a certificate.
-func (e *Empire) CertificatesCreate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	return e.certs.CertificatesCreate(ctx, cert)
-}
-
-// CertificatesUpdate updates a certificate.
-func (e *Empire) CertificatesUpdate(ctx context.Context, cert *Certificate) (*Certificate, error) {
-	return e.certs.CertificatesUpdate(ctx, cert)
-}
-
-// CertificatesDestroy destroys a certificate.
-func (e *Empire) CertificatesDestroy(ctx context.Context, cert *Certificate) error {
-	return e.certs.CertificatesDestroy(ctx, cert)
 }
 
 // ConfigsCurrent returns the current Config for a given app.
@@ -239,6 +215,11 @@ func (e *Empire) AppsScale(ctx context.Context, app *App, t ProcessType, quantit
 // Streamlogs streams logs from an app.
 func (e *Empire) StreamLogs(app *App, w io.Writer) error {
 	return e.LogsStreamer.StreamLogs(app, w)
+}
+
+// CertsAttach attaches an SSL certificate to the app.
+func (e *Empire) CertsAttach(ctx context.Context, app *App, cert string) error {
+	return e.certs.CertsAttach(ctx, app, cert)
 }
 
 // Reset resets empire.

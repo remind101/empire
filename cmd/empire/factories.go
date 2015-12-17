@@ -15,7 +15,6 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/runner"
-	"github.com/remind101/empire/pkg/sslcert"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/pkg/reporter"
@@ -51,11 +50,6 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	certManager, err := newCertManager(c)
-	if err != nil {
-		return nil, err
-	}
-
 	logs, err := newLogsStreamer(c)
 	if err != nil {
 		return nil, err
@@ -66,7 +60,6 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	})
 	e.Reporter = reporter
 	e.Scheduler = scheduler
-	e.CertManager = certManager
 	e.LogsStreamer = logs
 	e.ExtractProcfile = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
@@ -148,16 +141,6 @@ func newDockerClient(c *cli.Context) (*dockerutil.Client, error) {
 	}
 
 	return dockerutil.NewClient(auth, socket, certPath)
-}
-
-// CertManager =========================
-
-func newCertManager(c *cli.Context) (sslcert.Manager, error) {
-	return newIAMCertManager(c)
-}
-
-func newIAMCertManager(c *cli.Context) (sslcert.Manager, error) {
-	return sslcert.NewIAMManager(newConfigProvider(c), "/empire/certs/"), nil
 }
 
 // LogStreamer =========================

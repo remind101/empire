@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/bgentry/heroku-go"
+	"github.com/remind101/empire/pkg/heroku"
 )
 
 type DeployForm struct {

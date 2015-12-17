@@ -14,7 +14,6 @@ import (
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/empire/pkg/sslcert"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/server"
@@ -37,7 +36,6 @@ func NewEmpire(t testing.TB) *empire.Empire {
 
 	e := empire.New(db, empire.DefaultOptions)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.CertManager = sslcert.NewFakeManager()
 	e.ExtractProcfile = ExtractProcfile
 
 	if err := e.Reset(); err != nil {

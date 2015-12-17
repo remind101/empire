@@ -3,9 +3,12 @@ package heroku
 import (
 	"net/http"
 
+	"golang.org/x/net/context"
+
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
+	"github.com/remind101/pkg/httpx"
 )
 
 // Named matching heroku's error codes. See
@@ -35,6 +38,12 @@ var (
 		Status:  http.StatusUnauthorized,
 		ID:      "two_factor",
 		Message: "Two factor code is required.",
+	}
+	ErrSSLRemoved = &ErrorResource{
+		Status:  http.StatusNotFound,
+		ID:      "not_found",
+		Message: "Support for uploading SSL certificates through Empire has been removed and replaced with certificate attachments.",
+		URL:     "http://empire.readthedocs.org/en/latest/ssl_certs/",
 	}
 )
 
@@ -82,4 +91,11 @@ func errUnauthorized(err *auth.UnauthorizedError) *ErrorResource {
 		ID:      "unauthorized",
 		Message: err.Reason,
 	}
+}
+
+// errHandler returns an httpx.Handler that responds with the given error.
+func errHandler(err error) httpx.Handler {
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		return err
+	})
 }

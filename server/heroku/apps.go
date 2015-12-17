@@ -3,8 +3,8 @@ package heroku
 import (
 	"net/http"
 
-	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -17,6 +17,7 @@ func newApp(a *empire.App) *App {
 		Id:        a.ID,
 		Name:      a.Name,
 		CreatedAt: *a.CreatedAt,
+		Cert:      a.Cert,
 	}
 }
 
@@ -120,6 +121,31 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	w.WriteHeader(201)
+	return Encode(w, newApp(a))
+}
+
+type PatchApp struct {
+	*empire.Empire
+}
+
+func (h *PatchApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	var form heroku.AppUpdateOpts
+
+	if err := Decode(r, &form); err != nil {
+		return err
+	}
+
+	if form.Cert != nil {
+		if err := h.CertsAttach(ctx, a, *form.Cert); err != nil {
+			return err
+		}
+	}
+
 	return Encode(w, newApp(a))
 }
 

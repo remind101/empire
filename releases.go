@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
+
+var ErrNoReleases = errors.New("no releases")
 
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.
@@ -94,9 +97,7 @@ func (q ReleasesQuery) DefaultRange() headerutil.Range {
 // ReleasesFirst returns the first matching release.
 func (s *store) ReleasesFirst(scope Scope) (*Release, error) {
 	var release Release
-	// TODO: Wrap the store with this. Gorm blows up when preloading
-	// App.Certificates on a collection of releases.
-	scope = ComposedScope{scope, Preload("App.Certificates")}
+
 	if err := s.First(scope, &release); err != nil {
 		return &release, err
 	}
@@ -256,6 +257,10 @@ func (r *releaser) Release(ctx context.Context, release *Release) error {
 func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
 	release, err := r.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
+		if err == gorm.RecordNotFound {
+			return ErrNoReleases
+		}
+
 		return err
 	}
 
@@ -306,8 +311,6 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		procExp = serviceExposure(release.App.Exposure)
 	}
 
-	cert := serviceSSLCertName(release.App.Certificates)
-
 	return &scheduler.Process{
 		Type:        string(p.Type),
 		Env:         env,
@@ -319,7 +322,7 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		CPUShares:   uint(p.Constraints.CPUShare),
 		Ports:       ports,
 		Exposure:    procExp,
-		SSLCert:     cert,
+		SSLCert:     release.App.Cert,
 	}
 }
 
@@ -359,11 +362,4 @@ func serviceExposure(appExp string) (exp scheduler.Exposure) {
 	}
 
 	return exp
-}
-
-func serviceSSLCertName(certs []*Certificate) (name string) {
-	if len(certs) > 0 {
-		name = certs[0].Name
-	}
-	return name
 }

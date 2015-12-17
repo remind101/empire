@@ -64,6 +64,9 @@ type App struct {
 
 	// web URL of app
 	WebURL string `json:"web_url"`
+
+	// certificate for the app
+	Cert string `json:"cert,omitempty"`
 }
 
 // Create a new app.
@@ -132,4 +135,6 @@ type AppUpdateOpts struct {
 	Maintenance *bool `json:"maintenance,omitempty"`
 	// unique name of app
 	Name *string `json:"name,omitempty"`
+	// certificate for the app
+	Cert *string `json:"cert,omitempty"`
 }

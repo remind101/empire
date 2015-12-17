@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bgentry/heroku-go"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
