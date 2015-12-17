@@ -29,9 +29,6 @@ type UpdateLoadBalancerOpts struct {
 
 	// The SSL Certificate
 	SSLCert *string
-
-	// The port to route requests to on the hosts.
-	InstancePort *int64
 }
 
 // LoadBalancer represents a load balancer.

@@ -132,6 +132,16 @@ func (e *LoadBalancerExposureError) Error() string {
 	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, e.proc.Exposure, lbExposure)
 }
 
+// LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
+type LoadBalancerPortMismatchError struct {
+	proc *scheduler.Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *LoadBalancerPortMismatchError) Error() string {
+	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, *e.proc.Ports[0].Host, e.lb.InstancePort)
+}
+
 // canUpdate checks if the load balancer is suitable for the process.
 func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == scheduler.ExposePublic && !lb.External {
@@ -140,6 +150,10 @@ func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 
 	if p.Exposure == scheduler.ExposePrivate && lb.External {
 		return &LoadBalancerExposureError{p, lb}
+	}
+
+	if *p.Ports[0].Host != lb.InstancePort {
+		return &LoadBalancerPortMismatchError{p, lb}
 	}
 
 	return nil
@@ -161,13 +175,8 @@ func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) (*lb.UpdateLoadBalance
 		opts.SSLCert = &p.SSLCert
 	}
 
-	// Requires an update to the InstancePort.
-	if *p.Ports[0].Host != b.InstancePort {
-		opts.InstancePort = p.Ports[0].Host
-	}
-
 	// Load balancer doesn't require an update.
-	if opts.SSLCert == nil && opts.InstancePort == nil {
+	if opts.SSLCert == nil {
 		return nil, nil
 	}
 

@@ -204,14 +204,9 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer_NewPort(t *testing.
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
 		{Name: "lbname", External: true, InstancePort: oldport},
 	}, nil)
-	l.On("UpdateLoadBalancer", lb.UpdateLoadBalancerOpts{
-		Name:         "lbname",
-		InstancePort: &newport,
-	}).Return(nil)
-	p.On("CreateProcess", app, process).Return(nil)
 
 	err := m.CreateProcess(context.Background(), app, process)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "Process web instance port is 8081, but load balancer instance port is 8080.")
 
 	p.AssertExpectations(t)
 	l.AssertExpectations(t)
