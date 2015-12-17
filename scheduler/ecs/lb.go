@@ -35,12 +35,13 @@ func (m *LBProcessManager) CreateProcess(ctx context.Context, app *scheduler.App
 		// want, we'll return an error. Users should manually destroy
 		// the app and re-create it with the proper exposure.
 		if l != nil {
-			if err = canUpdate(p, l); err != nil {
+			var opts *lb.UpdateLoadBalancerOpts
+			opts, err = updateOpts(p, l)
+			if err != nil {
 				return err
 			}
 
-			if opts := updateOpts(p, l); opts != nil {
-				opts.Name = l.Name
+			if opts != nil {
 				if err = m.lb.UpdateLoadBalancer(ctx, *opts); err != nil {
 					return err
 				}
@@ -144,20 +145,31 @@ func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 	return nil
 }
 
-func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) *lb.UpdateLoadBalancerOpts {
-	var opts lb.UpdateLoadBalancerOpts
+func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) (*lb.UpdateLoadBalancerOpts, error) {
+	// This load balancer can't be updated to make it work for the process.
+	// Return an error.
+	if err := canUpdate(p, b); err != nil {
+		return nil, err
+	}
 
+	opts := lb.UpdateLoadBalancerOpts{
+		Name: b.Name,
+	}
+
+	// Requires an update to the Cert.
 	if p.SSLCert != b.SSLCert {
 		opts.SSLCert = &p.SSLCert
 	}
 
+	// Requires an update to the InstancePort.
 	if *p.Ports[0].Host != b.InstancePort {
 		opts.InstancePort = p.Ports[0].Host
 	}
 
+	// Load balancer doesn't require an update.
 	if opts.SSLCert == nil && opts.InstancePort == nil {
-		return nil
+		return nil, nil
 	}
 
-	return &opts
+	return &opts, nil
 }
