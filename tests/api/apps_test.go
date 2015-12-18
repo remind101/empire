@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/bgentry/heroku-go"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAppCreate(t *testing.T) {
@@ -20,6 +21,26 @@ func TestAppCreate(t *testing.T) {
 	if got, want := app.Name, "acme-inc"; got != want {
 		t.Fatalf("Name => %s; want %s", got, want)
 	}
+}
+
+func TestAttachCert(t *testing.T) {
+	c, s := NewTestClient(t)
+	defer s.Close()
+
+	appName := "acme-inc"
+	mustAppCreate(t, c, empire.App{
+		Name: appName,
+	})
+
+	cert := "serverCertificate"
+	app, err := c.AppUpdate(appName, &heroku.AppUpdateOpts{
+		Cert: &cert,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, cert, app.Cert)
 }
 
 func TestAppList(t *testing.T) {

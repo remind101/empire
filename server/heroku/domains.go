@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bgentry/heroku-go"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/remind101/pkg/httpx"

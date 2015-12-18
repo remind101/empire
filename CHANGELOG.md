@@ -6,6 +6,7 @@
 
 * `emp ps` now shows the correct uptime of the process thanks to ECS support [#683](https://github.com/remind101/empire/pull/683).
 * You can now deploy images from unofficial Docker registries, such as Quay.io [#692](https://github.com/remind101/empire/pull/692).
+* Empire now allows you to "attach" existing IAM certificates. This replaces the old `ssl-*` commands in the `emp` CLI [#701](https://github.com/remind101/empire/pull/701).
 
 **Bugs**
 

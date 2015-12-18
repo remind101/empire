@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bgentry/heroku-go"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/httpx"
