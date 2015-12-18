@@ -26,7 +26,7 @@ func TestApps(t *testing.T) {
 		},
 		{
 			"apps",
-			"acme-inc      Dec 31 17:01",
+			"acme-inc    Dec 31 17:01",
 		},
 	})
 }
