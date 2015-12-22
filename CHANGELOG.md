@@ -12,6 +12,7 @@
 **Bugs**
 
 * Allow floating point numbers to be provided when scaling the memory on a process [#694](https://github.com/remind101/empire/pull/694).
+* Empire will now update the SSL certificate on the associated ELB if it changes from `emp cert-attach` [#700](https://github.com/remind101/empire/pull/700).
 
 **Security**
 
