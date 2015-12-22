@@ -3,7 +3,6 @@ package heroku
 import (
 	"net/http"
 
-	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
@@ -58,7 +57,7 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	}
 
 	// Embed the associated user into the context.
-	ctx = empire.WithUser(ctx, user)
+	ctx = WithUser(ctx, user)
 
 	logger.Info(ctx,
 		"authenticated",

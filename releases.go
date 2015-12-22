@@ -180,7 +180,8 @@ func (s *releasesService) createFormation(release *Release) error {
 }
 
 // Rolls back to a specific release version.
-func (s *releasesService) ReleasesRollback(ctx context.Context, app *App, version int) (*Release, error) {
+func (s *releasesService) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
+	app, version := opts.App, opts.Version
 	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app, Version: &version})
 	if err != nil {
 		return nil, err

@@ -205,7 +205,9 @@ type scaler struct {
 	*Empire
 }
 
-func (s *scaler) Scale(ctx context.Context, app *App, t ProcessType, quantity int, c *Constraints) (*Process, error) {
+func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
+	app, t, quantity, c := opts.App, opts.Process, opts.Quantity, opts.Constraints
+
 	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
 		return nil, err
@@ -243,10 +245,10 @@ type restarter struct {
 	*Empire
 }
 
-func (s *restarter) Restart(ctx context.Context, app *App, id string) error {
-	if id != "" {
-		return s.Scheduler.Stop(ctx, id)
+func (s *restarter) Restart(ctx context.Context, opts RestartOpts) error {
+	if opts.PID != "" {
+		return s.Scheduler.Stop(ctx, opts.PID)
 	}
 
-	return s.releaser.ReleaseApp(ctx, app)
+	return s.releaser.ReleaseApp(ctx, opts.App)
 }

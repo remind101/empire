@@ -36,3 +36,60 @@ After adding the webhook, you should see a successful ping event.
 **Step 3 - Create GitHub Deployments**
 
 Now you can create GitHub Deployments on the GitHub repository using a tool like the [deploy CLI](https://github.com/remind101/deploy) or [hubot-deploy](https://github.com/remind101/hubot-deploy).
+
+### SNS Event Stream
+
+Empire can publish internal events to an SNS topic, so that you can create consumers that publish them to, for example, a datadog event stream or a slack channel. Empire currently publishes the following events:
+
+1. **deploy**: Triggered whenever a successful deployment completes.
+2. **run**: Triggered whenever starts a one-off process.
+3. **restart**: Triggered whenever an application is restarted.
+4. **rollback**: Triggered when an application is rolled back to a previous version.
+5. **scale**: Triggered whenever a process is scaled to a new size.
+
+To enable publishing to an SNS topic, set the following environment variables:
+
+Environment Variable | Description
+---------------------|------------
+`EMPIRE_EVENTS_BACKEND` | This should be set to `sns`
+`EMPIRE_SNS_TOPIC` | The full AWS ARN for the SNS topic to publish to.
+
+You should ensure that Empire has access to `sns:PublishEvent` in the IAM policy.
+
+Here's an example AWS Lambda function that can be used to publish Empire events to a slack channel:
+
+```javascript
+console.log('Loading function');
+
+const https = require('https');
+const url = require('url');
+// to get the slack hook url, go into slack admin and create a new "Incoming Webhook" integration
+const slack_url = 'https://hooks.slack.com/services/.../...';
+const slack_req_opts = url.parse(slack_url);
+slack_req_opts.method = 'POST';
+slack_req_opts.headers = {'Content-Type': 'application/json'};
+
+exports.handler = function(event, context) {
+  (event.Records || []).forEach(function (rec) {
+    if (rec.Sns) {
+      var req = https.request(slack_req_opts, function (res) {
+        if (res.statusCode === 200) {
+          context.succeed('posted to slack');
+        } else {
+          context.fail('status code: ' + res.statusCode);
+        }
+      });
+      
+      req.on('error', function(e) {
+        console.log('problem with request: ' + e.message);
+        context.fail(e.message);
+      });
+      
+      var message = JSON.parse(rec.Sns.Message);
+      req.write(JSON.stringify({text: message.Message})); // for testing: , channel: '@vadim'
+      
+      req.end();
+    }
+  });
+};
+```

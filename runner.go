@@ -1,30 +1,13 @@
 package empire
 
-import (
-	"io"
-
-	"golang.org/x/net/context"
-)
-
-type ProcessRunOpts struct {
-	Command string
-
-	// If provided, input will be read from this.
-	Input io.Reader
-
-	// If provided, output will be written to this.
-	Output io.Writer
-
-	// Extra environment variables to set.
-	Env map[string]string
-}
+import "golang.org/x/net/context"
 
 type runnerService struct {
 	*Empire
 }
 
-func (r *runnerService) Run(ctx context.Context, app *App, opts ProcessRunOpts) error {
-	release, err := r.store.ReleasesFirst(ReleasesQuery{App: app})
+func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
+	release, err := r.store.ReleasesFirst(ReleasesQuery{App: opts.App})
 	if err != nil {
 		return err
 	}

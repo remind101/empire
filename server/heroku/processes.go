@@ -80,7 +80,9 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	opts := empire.ProcessRunOpts{
+	opts := empire.RunOpts{
+		User:    UserFromContext(ctx),
+		App:     a,
 		Command: form.Command,
 		Env:     form.Env,
 	}
@@ -100,12 +102,12 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		opts.Input = inStream
 		opts.Output = outStream
 
-		if err := h.ProcessesRun(ctx, a, opts); err != nil {
+		if err := h.Run(ctx, opts); err != nil {
 			fmt.Fprintf(outStream, "%v", err)
 			return nil
 		}
 	} else {
-		if err := h.ProcessesRun(ctx, a, opts); err != nil {
+		if err := h.Run(ctx, opts); err != nil {
 			return err
 		}
 
@@ -139,8 +141,11 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 		return err
 	}
 
-	err = h.ProcessesRestart(ctx, a, pid)
-	if err != nil {
+	if err := h.Restart(ctx, empire.RestartOpts{
+		User: UserFromContext(ctx),
+		App:  a,
+		PID:  pid,
+	}); err != nil {
 		return err
 	}
 

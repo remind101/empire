@@ -86,6 +86,11 @@
 			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/sns",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
 			"ImportPath": "github.com/bgentry/testnet",
 			"Rev": "05450cdcf16c84d5b08dc9bb617250aa7b63c8ff"
 		},

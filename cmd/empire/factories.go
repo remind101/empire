@@ -13,6 +13,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/scheduler"
@@ -55,12 +56,18 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
+	events, err := newEventStream(c)
+	if err != nil {
+		return nil, err
+	}
+
 	e := empire.New(db, empire.Options{
 		Secret: c.String(FlagSecret),
 	})
 	e.Reporter = reporter
 	e.Scheduler = scheduler
 	e.LogsStreamer = logs
+	e.EventStream = empire.AsyncEvents(events)
 	e.ExtractProcfile = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
 
@@ -158,6 +165,27 @@ func newLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
 func newKinesisLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
 	log.Println("Using Kinesis backend for log streaming")
 	return empire.NewKinesisLogsStreamer(), nil
+}
+
+// Events ==============================
+
+func newEventStream(c *cli.Context) (empire.EventStream, error) {
+	switch c.String(FlagEventsBackend) {
+	case "sns":
+		return newSNSEventStream(c)
+	default:
+		return empire.NullEventStream, nil
+	}
+}
+
+func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {
+	e := sns.NewEventStream(newConfigProvider(c))
+	e.TopicARN = c.String(FlagSNSTopic)
+
+	log.Println("Using SNS events backend with the following configuration:")
+	log.Println(fmt.Sprintf("  TopicARN: %s", e.TopicARN))
+
+	return e, nil
 }
 
 // Logger ==============================

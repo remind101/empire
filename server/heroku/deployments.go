@@ -46,12 +46,10 @@ func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *h
 		form.Image.Tag = "latest"
 	}
 
-	user, _ := empire.UserFromContext(ctx)
-
 	opts := empire.DeploymentsCreateOpts{
+		User:   UserFromContext(ctx),
 		Image:  form.Image,
 		Output: streamhttp.StreamingResponseWriter(w),
-		User:   user,
 	}
 	return &opts, nil
 }
