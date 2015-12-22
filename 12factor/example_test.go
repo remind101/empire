@@ -33,7 +33,7 @@ func Example() {
 	scheduler := ecs.NewScheduler(session.New())
 
 	// Bring up the application. Creates ECS services as necessary.
-	err := scheduler.Run(m)
+	err := scheduler.Up(m)
 	if err != nil {
 		log.Fatal(err)
 	}
