@@ -41,7 +41,7 @@ func TestScheduler(t *testing.T) {
 		}
 	}()
 
-	if err := s.Run(manifest); err != nil {
+	if err := s.Up(manifest); err != nil {
 		t.Fatal(err)
 	}
 

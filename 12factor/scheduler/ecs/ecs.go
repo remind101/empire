@@ -2,6 +2,7 @@
 package ecs
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -53,9 +54,9 @@ func NewScheduler(config client.ConfigProvider) *Scheduler {
 	}
 }
 
-// Run creates or updates the associated ECS services for the individual
+// Up creates or updates the associated ECS services for the individual
 // processes within the application and runs them.
-func (s *Scheduler) Run(manifest twelvefactor.Manifest) error {
+func (s *Scheduler) Up(manifest twelvefactor.Manifest) error {
 	return s.stackBuilder.Build(manifest)
 }
 
@@ -64,25 +65,51 @@ func (s *Scheduler) Remove(app string) error {
 	return s.stackBuilder.Remove(app)
 }
 
+// Restart restarts all ECS services for this application.
+func (s *Scheduler) Restart(app string) error {
+	return s.stackBuilder.Restart(app)
+}
+
+// Restart restarts an the ECS service associated with the given process.
+func (s *Scheduler) RestartProcess(app string, process string) error {
+	return errors.New("not implemented")
+}
+
+// StopTask stops an ECS task.
+func (s *Scheduler) StopTask(taskID string) error {
+	return errors.New("not implemented")
+}
+
 // ScaleProcess scales the associated ECS service for the given app and process
 // name.
 func (s *Scheduler) ScaleProcess(app, process string, desired int) error {
-	services, err := s.stackBuilder.Services(app)
+	service, err := s.Service(app, process)
 	if err != nil {
 		return err
-	}
-
-	// If there's no matching ECS service for this process, return an error.
-	if _, ok := services[process]; !ok {
-		return &ProcessNotFoundError{Process: process}
 	}
 
 	_, err = s.ecs.UpdateService(&ecs.UpdateServiceInput{
 		Cluster:      aws.String(s.Cluster),
 		DesiredCount: aws.Int64(int64(desired)),
-		Service:      aws.String(services[process]),
+		Service:      aws.String(service),
 	})
 	return err
+}
+
+// Service returns the name of the ECS service for the given process.
+func (s *Scheduler) Service(app, process string) (string, error) {
+	services, err := s.stackBuilder.Services(app)
+	if err != nil {
+		return "", err
+	}
+
+	// If there's no matching ECS service for this process, return an error.
+	service, ok := services[process]
+	if !ok {
+		return service, &ProcessNotFoundError{Process: process}
+	}
+
+	return service, nil
 }
 
 // Tasks returns the RUNNING and PENDING ECS tasks for the ECS services.

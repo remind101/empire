@@ -10,7 +10,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestScheduler_Run(t *testing.T) {
+// Ensure that we implement the Scheduler interface.
+var _ twelvefactor.Scheduler = (*Scheduler)(nil)
+
+func TestScheduler_Up(t *testing.T) {
 	b := new(mockStackBuilder)
 	s := &Scheduler{
 		stackBuilder: b,
@@ -18,7 +21,7 @@ func TestScheduler_Run(t *testing.T) {
 
 	manifest := twelvefactor.Manifest{}
 	b.On("Build", manifest).Return(nil)
-	err := s.Run(manifest)
+	err := s.Up(manifest)
 	assert.NoError(t, err)
 }
 
@@ -109,6 +112,20 @@ func TestScheduler_Tasks(t *testing.T) {
 			State: "RUNNING",
 		},
 	})
+}
+
+func TestScheduler_Restart(t *testing.T) {
+	b := new(mockStackBuilder)
+	c := new(mockECSClient)
+	s := &Scheduler{
+		Cluster:      "cluster",
+		stackBuilder: b,
+		ecs:          c,
+	}
+
+	b.On("Restart", "app").Return(nil)
+	err := s.Restart("app")
+	assert.NoError(t, err)
 }
 
 // mockECSClient is an implementation of the ecsClient interface for testing.
