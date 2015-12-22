@@ -64,6 +64,33 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	}
 }
 
+func TestELB_UpdateLoadBalancer(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=SetLoadBalancerListenerSSLCertificate&LoadBalancerName=loadbalancer&LoadBalancerPort=443&SSLCertificateId=newcert&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<?xml version="1.0"?>
+<UpdateLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+</UpdateLoadBalancerResponse>`,
+			},
+		},
+	})
+	m, s := newTestELBManager(h)
+	defer s.Close()
+
+	err := m.UpdateLoadBalancer(context.Background(), UpdateLoadBalancerOpts{
+		Name:    "loadbalancer",
+		SSLCert: aws.String("newcert"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func buildLoadBalancerForDestroy() (*ELBManager, *httptest.Server, *LoadBalancer) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		{
