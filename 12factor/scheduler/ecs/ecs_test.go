@@ -16,7 +16,7 @@ var _ twelvefactor.Scheduler = (*Scheduler)(nil)
 func TestScheduler_Up(t *testing.T) {
 	b := new(mockStackBuilder)
 	s := &Scheduler{
-		stackBuilder: b,
+		StackBuilder: b,
 	}
 
 	manifest := twelvefactor.Manifest{}
@@ -28,7 +28,7 @@ func TestScheduler_Up(t *testing.T) {
 func TestScheduler_Remove(t *testing.T) {
 	b := new(mockStackBuilder)
 	s := &Scheduler{
-		stackBuilder: b,
+		StackBuilder: b,
 	}
 
 	b.On("Remove", "app").Return(nil)
@@ -41,7 +41,7 @@ func TestScheduler_ScaleProcess(t *testing.T) {
 	c := new(mockECSClient)
 	s := &Scheduler{
 		Cluster:      "cluster",
-		stackBuilder: b,
+		StackBuilder: b,
 		ecs:          c,
 	}
 
@@ -62,7 +62,7 @@ func TestScheduler_ScaleProcess_NotFound(t *testing.T) {
 	c := new(mockECSClient)
 	s := &Scheduler{
 		Cluster:      "cluster",
-		stackBuilder: b,
+		StackBuilder: b,
 		ecs:          c,
 	}
 
@@ -76,7 +76,7 @@ func TestScheduler_Tasks(t *testing.T) {
 	c := new(mockECSClient)
 	s := &Scheduler{
 		Cluster:      "cluster",
-		stackBuilder: b,
+		StackBuilder: b,
 		ecs:          c,
 	}
 
@@ -119,7 +119,7 @@ func TestScheduler_Restart(t *testing.T) {
 	c := new(mockECSClient)
 	s := &Scheduler{
 		Cluster:      "cluster",
-		stackBuilder: b,
+		StackBuilder: b,
 		ecs:          c,
 	}
 
@@ -133,7 +133,7 @@ func TestScheduler_StopTask(t *testing.T) {
 	c := new(mockECSClient)
 	s := &Scheduler{
 		Cluster:      "cluster",
-		stackBuilder: b,
+		StackBuilder: b,
 		ecs:          c,
 	}
 

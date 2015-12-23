@@ -3,7 +3,9 @@
 package cloudformation
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"text/template"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,6 +14,13 @@ import (
 	"github.com/remind101/empire/12factor"
 )
 
+// BasicTemplate is a basic Template that creates a cloudformation stack.
+var BasicTemplate = YAMLTemplate(template.Must(template.New("stack").Parse(`
+Resources: {{range .Processes}}
+  {{.Name}}:
+    Type: AWS::ECS::Cluster{{end}}
+`)))
+
 const ecsServiceType = "AWS::ECS::Service"
 
 type cloudformationClient interface {
@@ -19,10 +28,16 @@ type cloudformationClient interface {
 	DeleteStack(input *cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error)
 	ListStackResourcesPages(*cloudformation.ListStackResourcesInput, func(*cloudformation.ListStackResourcesOutput, bool) bool) error
 	DescribeStackResource(input *cloudformation.DescribeStackResourceInput) (*cloudformation.DescribeStackResourceOutput, error)
+	WaitUntilStackCreateComplete(input *cloudformation.DescribeStacksInput) error
 }
 
 type serviceMetadata struct {
 	Name string `json:"name"`
+}
+
+// Template represents something that can generate a stack body.
+type Template interface {
+	Execute(io.Writer, interface{}) error
 }
 
 // StackBuilder is an implementation of the ecs.StackBuilder interface that
@@ -31,7 +46,7 @@ type StackBuilder struct {
 	// Template is a text/template that will be executed using the
 	// twelvefactor.Manifest as data. This template should return a valid
 	// CloudFormation JSON manifest.
-	Template *template.Template
+	Template Template
 
 	// stackName returns the name of the stack for the app.
 	stackName func(app string) string
@@ -48,7 +63,31 @@ func NewStackBuilder(config client.ConfigProvider) *StackBuilder {
 }
 
 // Build builds the CloudFormation stack for the App.
-func (b *StackBuilder) Build(app twelvefactor.App) error {
+func (b *StackBuilder) Build(m twelvefactor.Manifest) error {
+	stack := b.stackName(m.ID)
+
+	buf := new(bytes.Buffer)
+	if err := b.Template.Execute(buf, m); err != nil {
+		return err
+	}
+
+	if _, err := b.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+		StackName:    aws.String(stack),
+		TemplateBody: aws.String(buf.String()),
+	}); err != nil {
+		return err
+	}
+
+	if err := b.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stack),
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *StackBuilder) Remove(app string) error {
 	return nil
 }
 

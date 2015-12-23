@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/12factor/scheduler/ecs"
+	"github.com/remind101/empire/12factor/scheduler/ecs/cloudformation"
 	"github.com/remind101/empire/pkg/bytesize"
 )
 
@@ -60,13 +61,18 @@ func TestScheduler(t *testing.T) {
 }
 
 func newScheduler(t testing.TB) *ecs.Scheduler {
-	t.Skip("TODO")
-
 	creds := &credentials.EnvProvider{}
 	if _, err := creds.Retrieve(); err != nil {
 		t.Skip("Skipping ECS test because AWS_ environment variables are not present.")
 	}
 
 	config := aws.NewConfig().WithCredentials(credentials.NewCredentials(creds))
-	return ecs.NewScheduler(session.New(config))
+
+	b := cloudformation.NewStackBuilder(session.New(config))
+	b.Template = cloudformation.BasicTemplate
+
+	s := ecs.NewScheduler(session.New(config))
+	s.StackBuilder = b
+
+	return s
 }
