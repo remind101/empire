@@ -128,6 +128,27 @@ func TestScheduler_Restart(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestScheduler_StopTask(t *testing.T) {
+	b := new(mockStackBuilder)
+	c := new(mockECSClient)
+	s := &Scheduler{
+		Cluster:      "cluster",
+		stackBuilder: b,
+		ecs:          c,
+	}
+
+	c.On("StopTask", &ecs.StopTaskInput{
+		Cluster: aws.String("cluster"),
+		Task:    aws.String("uuid"),
+	}).Return(&ecs.StopTaskOutput{}, nil)
+
+	err := s.StopTask("uuid")
+	assert.NoError(t, err)
+
+	b.AssertExpectations(t)
+	c.AssertExpectations(t)
+}
+
 // mockECSClient is an implementation of the ecsClient interface for testing.
 type mockECSClient struct {
 	mock.Mock
@@ -146,6 +167,11 @@ func (c *mockECSClient) ListTasks(input *ecs.ListTasksInput) (*ecs.ListTasksOutp
 func (c *mockECSClient) DescribeTasks(input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
 	args := c.Called(input)
 	return args.Get(0).(*ecs.DescribeTasksOutput), args.Error(1)
+}
+
+func (c *mockECSClient) StopTask(input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error) {
+	args := c.Called(input)
+	return args.Get(0).(*ecs.StopTaskOutput), args.Error(1)
 }
 
 // mockStackBuilder is an implementation of the StackBuilder interface for

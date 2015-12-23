@@ -13,7 +13,4 @@ type StackBuilder interface {
 
 	// Services returns a mapping of process name to ECS service name.
 	Services(app string) (map[string]string, error)
-
-	// Restart restarts all ECS services in the stack.
-	Restart(app string) error
 }

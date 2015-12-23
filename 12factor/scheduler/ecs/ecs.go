@@ -2,7 +2,6 @@
 package ecs
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -29,6 +28,7 @@ type ecsClient interface {
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 	ListTasks(*ecs.ListTasksInput) (*ecs.ListTasksOutput, error)
 	DescribeTasks(*ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
+	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 }
 
 // Scheduler is an implementation of the twelvefactor.Scheduler interface that
@@ -67,17 +67,26 @@ func (s *Scheduler) Remove(app string) error {
 
 // Restart restarts all ECS services for this application.
 func (s *Scheduler) Restart(app string) error {
-	return s.stackBuilder.Restart(app)
+	return nil
 }
 
 // Restart restarts an the ECS service associated with the given process.
 func (s *Scheduler) RestartProcess(app string, process string) error {
-	return errors.New("not implemented")
+	// TODO:
+	// DescribeService
+	// DescribeTaskDefinition
+	// RegisterTaskDefinition (Copy)
+	// UpdateService
+	return nil
 }
 
 // StopTask stops an ECS task.
 func (s *Scheduler) StopTask(taskID string) error {
-	return errors.New("not implemented")
+	_, err := s.ecs.StopTask(&ecs.StopTaskInput{
+		Task:    aws.String(taskID),
+		Cluster: aws.String(s.Cluster),
+	})
+	return err
 }
 
 // ScaleProcess scales the associated ECS service for the given app and process
