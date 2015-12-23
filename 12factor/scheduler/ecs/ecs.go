@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/12factor"
-	"github.com/remind101/empire/12factor/scheduler/ecs/builders/raw"
+	"github.com/remind101/empire/12factor/scheduler/ecs/raw"
 	"github.com/remind101/empire/pkg/aws/arn"
 )
 
