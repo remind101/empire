@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"golang.org/x/net/context"
@@ -25,12 +26,14 @@ type Context struct {
 }
 
 func (c *Context) String(key string) string { return c.CLIContext.String(key) }
+func (c *Context) Args() []string           { return c.CLIContext.Args() }
 
 // Empire mocks out the public interface for Empire.
 type Empire interface {
 	AppsFirst(empire.AppsQuery) (*empire.App, error)
 	Restart(context.Context, empire.RestartOpts) error
 	Tasks(context.Context, *empire.App) ([]*empire.Task, error)
+	Run(context.Context, empire.RunOpts) error
 }
 
 // CLI represents a CLI interface to Empire.
@@ -71,19 +74,32 @@ func (c *CLI) Run(ctx context.Context, stdout io.Writer, args []string) (err err
 	app.Writer = stdout
 	app.Commands = []cli.Command{
 		{
-			Name:   "tasks",
-			Usage:  "list tasks for an application",
-			Action: wrap(c.Tasks),
+			Name:    "tasks",
+			Aliases: []string{"ps"},
+			Usage:   "Lists tasks for an application",
+			Action:  wrap(c.Tasks),
 			Flags: []cli.Flag{
 				appFlag,
 			},
 		},
 		{
 			Name:   "restart",
-			Usage:  "restart an application",
+			Usage:  "Restarts an application",
 			Action: wrap(c.Restart),
 			Flags: []cli.Flag{
 				appFlag,
+			},
+		},
+		{
+			Name:   "run",
+			Usage:  "Run a one off task",
+			Action: wrap(c.RunTask),
+			Flags: []cli.Flag{
+				appFlag,
+				cli.BoolFlag{
+					Name:  "detached, d",
+					Usage: "Run in detached mode instead of attached to terminal",
+				},
 			},
 		},
 	}
@@ -130,6 +146,26 @@ func (c *CLI) Restart(ctx *Context, stdout io.Writer) error {
 	}
 
 	fmt.Fprintf(stdout, "Restarted %s\n", app.Name)
+	return nil
+}
+
+// RunTask runs the `run` subcommand, which starts a one off task.
+func (c *CLI) RunTask(ctx *Context, stdout io.Writer) error {
+	app, err := c.findApp(ctx)
+	if err != nil {
+		return err
+	}
+
+	command := strings.Join(ctx.Args(), " ")
+	if err := c.Empire.Run(ctx, empire.RunOpts{
+		User:    empire.UserFromContext(ctx),
+		App:     app,
+		Command: command,
+	}); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(stdout, "Ran `%s` on %s, detached\n", command, app.Name)
 	return nil
 }
 

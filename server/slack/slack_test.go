@@ -21,13 +21,15 @@ func TestCLIHandler(t *testing.T) {
 		"web=2",
 		"-a",
 		"acme-inc",
-	}).Return(nil)
+	}).Return("Scaling", nil)
 
 	r := slashtest.NewRecorder()
 	err := h.ServeCommand(context.Background(), r, slash.Command{
-		Text: `scale web=2 -a acme-inc`,
+		Command: "/emp",
+		Text:    `scale web=2 -a acme-inc`,
 	})
 	assert.NoError(t, err)
+	assert.Equal(t, "/emp scale web=2 -a acme-inc:\n```Scaling```", (<-r.Responses).Text)
 
 	c.AssertExpectations(t)
 }
@@ -42,13 +44,19 @@ func TestCLIHandler_ShellWords(t *testing.T) {
 		"sleep 60",
 		"-a",
 		"acme-inc",
-	}).Return(nil)
+	}).Return("", nil)
 
 	r := slashtest.NewRecorder()
 	err := h.ServeCommand(context.Background(), r, slash.Command{
 		Text: `run "sleep 60" -a acme-inc`,
 	})
 	assert.NoError(t, err)
+
+	select {
+	case <-r.Responses:
+		t.Fatal("Expected no response")
+	default:
+	}
 
 	c.AssertExpectations(t)
 }
@@ -57,7 +65,8 @@ type mockCLI struct {
 	mock.Mock
 }
 
-func (m *mockCLI) Run(_ context.Context, _ io.Writer, args []string) error {
+func (m *mockCLI) Run(_ context.Context, w io.Writer, args []string) error {
 	margs := m.Called(args)
-	return margs.Error(0)
+	io.WriteString(w, margs.String(0))
+	return margs.Error(1)
 }

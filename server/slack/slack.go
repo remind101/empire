@@ -3,6 +3,7 @@ package slack
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/ejholmes/slash"
@@ -43,17 +44,24 @@ type CLIHandler struct {
 }
 
 func (h *CLIHandler) ServeCommand(ctx context.Context, r slash.Responder, c slash.Command) error {
+	// TODO: Wrap with middleware that authenticates the Slack user.
+	ctx = empire.WithUser(ctx, &empire.User{Name: "Slack"})
+
 	args, err := shellwords.Parse(c.Text)
 	if err != nil {
 		return err
 	}
 
 	w := new(bytes.Buffer)
-	io.WriteString(w, "```")
 	if err := h.Run(ctx, w, append([]string{""}, args...)); err != nil {
 		return err
 	}
-	io.WriteString(w, "```")
 
-	return r.Respond(slash.Say(w.String()))
+	// Only respond if there was output.
+	if w.Len() > 0 {
+		// Wrap the response in a code block for formatting.
+		return r.Respond(slash.Say(fmt.Sprintf("%s %s:\n```%s```", c.Command, c.Text, w.String())))
+	}
+
+	return nil
 }

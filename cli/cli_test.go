@@ -91,6 +91,31 @@ func TestCLI_Restart(t *testing.T) {
 	assert.Equal(t, "Restarted acme-inc\n", w.String())
 }
 
+func TestCLI_Run(t *testing.T) {
+	e := new(mockEmpire)
+	w := new(bytes.Buffer)
+	c := newTestCLI(t, e)
+
+	appName := "acme-inc"
+	app := &empire.App{Name: "acme-inc"}
+	user := &empire.User{}
+
+	e.On("AppsFirst", empire.AppsQuery{
+		Name: &appName,
+	}).Return(app, nil)
+
+	e.On("Run", empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: "sleep 60",
+	}).Return(nil)
+
+	ctx := empire.WithUser(context.Background(), user)
+	err := c.Run(ctx, w, []string{"emp", "run", "sleep", "60", "-a", "acme-inc"})
+	assert.NoError(t, err)
+	assert.Equal(t, "Ran `sleep 60` on acme-inc, detached\n", w.String())
+}
+
 func newTestCLI(t testing.TB, e *mockEmpire) *CLI {
 	c := NewCLI(e)
 	return c
@@ -120,4 +145,9 @@ func (m *mockEmpire) Restart(ctx context.Context, opts empire.RestartOpts) error
 func (m *mockEmpire) Tasks(ctx context.Context, app *empire.App) ([]*empire.Task, error) {
 	args := m.Called(app)
 	return args.Get(0).([]*empire.Task), args.Error(1)
+}
+
+func (m *mockEmpire) Run(ctx context.Context, opts empire.RunOpts) error {
+	args := m.Called(opts)
+	return args.Error(0)
 }
