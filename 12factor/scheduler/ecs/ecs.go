@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/12factor"
-	"github.com/remind101/empire/12factor/scheduler/ecs/raw"
 	"github.com/remind101/empire/pkg/aws/arn"
 )
 
@@ -38,31 +37,30 @@ type Scheduler struct {
 	// value is the "default" cluster.
 	Cluster string
 
-	ecs ecsClient
-
-	// stackBuilder is the StackBuilder that will be used to provision AWS
+	// StackBuilder is the StackBuilder that will be used to provision AWS
 	// resources.
-	stackBuilder StackBuilder
+	StackBuilder StackBuilder
+
+	ecs ecsClient
 }
 
 // NewScheduler builds a new Scheduler instance backed by an ECS client
 // that's configured with the given config.
 func NewScheduler(config client.ConfigProvider) *Scheduler {
 	return &Scheduler{
-		ecs:          ecs.New(config),
-		stackBuilder: raw.NewStackBuilder(config),
+		ecs: ecs.New(config),
 	}
 }
 
 // Up creates or updates the associated ECS services for the individual
 // processes within the application and runs them.
 func (s *Scheduler) Up(manifest twelvefactor.Manifest) error {
-	return s.stackBuilder.Build(manifest)
+	return s.StackBuilder.Build(manifest)
 }
 
 // Remove removes the app and it's associated AWS resources.
 func (s *Scheduler) Remove(app string) error {
-	return s.stackBuilder.Remove(app)
+	return s.StackBuilder.Remove(app)
 }
 
 // Restart restarts all ECS services for this application.
@@ -107,7 +105,7 @@ func (s *Scheduler) ScaleProcess(app, process string, desired int) error {
 
 // Service returns the name of the ECS service for the given process.
 func (s *Scheduler) Service(app, process string) (string, error) {
-	services, err := s.stackBuilder.Services(app)
+	services, err := s.StackBuilder.Services(app)
 	if err != nil {
 		return "", err
 	}
@@ -123,7 +121,7 @@ func (s *Scheduler) Service(app, process string) (string, error) {
 
 // Tasks returns the RUNNING and PENDING ECS tasks for the ECS services.
 func (s *Scheduler) Tasks(app string) ([]twelvefactor.Task, error) {
-	services, err := s.stackBuilder.Services(app)
+	services, err := s.StackBuilder.Services(app)
 	if err != nil {
 		return nil, err
 	}

@@ -2,12 +2,41 @@ package cloudformation
 
 import (
 	"testing"
+	"text/template"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/remind101/empire/12factor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestStackBuilder_Build(t *testing.T) {
+	c := new(mockCloudformationClient)
+	b := &StackBuilder{
+		cloudformation: c,
+		stackName:      stackName,
+		Template:       template.Must(template.New("stack").Parse("{{.ID}}")),
+	}
+
+	m := twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID: "app",
+		},
+	}
+
+	c.On("CreateStack", &cloudformation.CreateStackInput{
+		StackName:    aws.String("app"),
+		TemplateBody: aws.String("app"),
+	}).Return(&cloudformation.CreateStackOutput{}, nil)
+
+	c.On("WaitUntilStackCreateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("app"),
+	}).Return(nil)
+
+	err := b.Build(m)
+	assert.NoError(t, err)
+}
 
 func TestStackBuilder_Services(t *testing.T) {
 	c := new(mockCloudformationClient)
@@ -83,4 +112,9 @@ func (c *mockCloudformationClient) ListStackResourcesPages(input *cloudformation
 func (c *mockCloudformationClient) DescribeStackResource(input *cloudformation.DescribeStackResourceInput) (*cloudformation.DescribeStackResourceOutput, error) {
 	args := c.Called(input)
 	return args.Get(0).(*cloudformation.DescribeStackResourceOutput), args.Error(1)
+}
+
+func (c *mockCloudformationClient) WaitUntilStackCreateComplete(input *cloudformation.DescribeStacksInput) error {
+	args := c.Called(input)
+	return args.Error(0)
 }
