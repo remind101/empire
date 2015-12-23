@@ -96,8 +96,8 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-26-gf7ebb76",
-			"Rev": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
+			"Comment": "1.2.0-187-gc31a797",
+			"Rev": "c31a7975863e7810c92e2e288a9ab074f9a88f29"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
@@ -131,6 +131,10 @@
 		{
 			"ImportPath": "github.com/ejholmes/hookshot",
 			"Rev": "4802bea385193a8f3268b38a2918d46049931d6b"
+		},
+		{
+			"ImportPath": "github.com/ejholmes/slash",
+			"Rev": "bf98cf37cde31b2c749b705296d0f34b005485eb"
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",

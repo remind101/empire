@@ -1,6 +1,10 @@
 package empire
 
-import "net/http"
+import (
+	"net/http"
+
+	"golang.org/x/net/context"
+)
 
 // User represents a user of Empire.
 type User struct {
@@ -33,4 +37,25 @@ func (t *githubTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.SetBasicAuth(t.Token, "x-oauth-basic")
 
 	return t.Transport.RoundTrip(req)
+}
+
+// key used to store context values from within this package.
+type key int
+
+const (
+	userKey key = 0
+)
+
+// WithUser adds a user to the context.Context.
+func WithUser(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, userKey, u)
+}
+
+// UserFromContext returns a user from a context.Context if one is present.
+func UserFromContext(ctx context.Context) *User {
+	u, ok := ctx.Value(userKey).(*User)
+	if !ok {
+		panic("expected user to be authenticated")
+	}
+	return u
 }

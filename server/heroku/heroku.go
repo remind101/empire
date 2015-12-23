@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"golang.org/x/net/context"
-
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/server/auth"
@@ -146,23 +144,7 @@ func RangeHeader(r *http.Request) (headerutil.Range, error) {
 	return *rangeHeader, nil
 }
 
-// key used to store context values from within this package.
-type key int
-
-const (
-	userKey key = 0
+var (
+	WithUser        = empire.WithUser
+	UserFromContext = empire.UserFromContext
 )
-
-// WithUser adds a user to the context.Context.
-func WithUser(ctx context.Context, u *empire.User) context.Context {
-	return context.WithValue(ctx, userKey, u)
-}
-
-// UserFromContext returns a user from a context.Context if one is present.
-func UserFromContext(ctx context.Context) *empire.User {
-	u, ok := ctx.Value(userKey).(*empire.User)
-	if !ok {
-		panic("expected user to be authenticated")
-	}
-	return u
-}

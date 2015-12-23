@@ -8,6 +8,7 @@ import (
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
+	"github.com/remind101/empire/server/slack"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -20,11 +21,6 @@ type Options struct {
 	Authenticator auth.Authenticator
 
 	GitHub struct {
-		ClientID     string
-		ClientSecret string
-		Organization string
-		ApiURL       string
-
 		// Deployments
 		Webhooks struct {
 			Secret string
@@ -34,6 +30,10 @@ type Options struct {
 			ImageTemplate string
 			TugboatURL    string
 		}
+	}
+
+	Slack struct {
+		VerificationToken string
 	}
 }
 
@@ -50,6 +50,9 @@ func New(e *empire.Empire, options Options) http.Handler {
 		})
 		r.Match(githubWebhook, g)
 	}
+
+	// Mount the slack slash commands
+	r.Handle("/slack", slack.NewServer(e)).Methods("POST")
 
 	// Mount the heroku api
 	h := heroku.New(e, options.Authenticator)

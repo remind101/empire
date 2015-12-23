@@ -11,6 +11,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+var Background = middleware.BackgroundContext
+
 type CommonOpts struct {
 	// A Reporter to use to report errors and panics.
 	Reporter reporter.Reporter
