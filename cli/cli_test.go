@@ -21,7 +21,7 @@ func TestCLI_Error(t *testing.T) {
 	app := &empire.App{Name: "acme-inc"}
 	errBoom := errors.New("boom")
 
-	e.On("AppsFirst", empire.AppsQuery{
+	e.On("AppsFind", empire.AppsQuery{
 		Name: &appName,
 	}).Return(app, errBoom)
 
@@ -41,7 +41,7 @@ func TestCLI_Tasks(t *testing.T) {
 	appName := "acme-inc"
 	app := &empire.App{Name: "acme-inc"}
 
-	e.On("AppsFirst", empire.AppsQuery{
+	e.On("AppsFind", empire.AppsQuery{
 		Name: &appName,
 	}).Return(app, nil)
 
@@ -76,7 +76,7 @@ func TestCLI_Restart(t *testing.T) {
 	app := &empire.App{Name: "acme-inc"}
 	user := &empire.User{}
 
-	e.On("AppsFirst", empire.AppsQuery{
+	e.On("AppsFind", empire.AppsQuery{
 		Name: &appName,
 	}).Return(app, nil)
 
@@ -100,7 +100,7 @@ func TestCLI_Run(t *testing.T) {
 	app := &empire.App{Name: "acme-inc"}
 	user := &empire.User{}
 
-	e.On("AppsFirst", empire.AppsQuery{
+	e.On("AppsFind", empire.AppsQuery{
 		Name: &appName,
 	}).Return(app, nil)
 
@@ -132,7 +132,7 @@ type mockEmpire struct {
 	mock.Mock
 }
 
-func (m *mockEmpire) AppsFirst(q empire.AppsQuery) (*empire.App, error) {
+func (m *mockEmpire) AppsFind(q empire.AppsQuery) (*empire.App, error) {
 	args := m.Called(q)
 	return args.Get(0).(*empire.App), args.Error(1)
 }

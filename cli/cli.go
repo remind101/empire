@@ -30,7 +30,7 @@ func (c *Context) Args() []string           { return c.CLIContext.Args() }
 
 // Empire mocks out the public interface for Empire.
 type Empire interface {
-	AppsFirst(empire.AppsQuery) (*empire.App, error)
+	AppsFind(empire.AppsQuery) (*empire.App, error)
 	Restart(context.Context, empire.RestartOpts) error
 	Tasks(context.Context, *empire.App) ([]*empire.Task, error)
 	Run(context.Context, empire.RunOpts) error
@@ -171,7 +171,7 @@ func (c *CLI) RunTask(ctx *Context, stdout io.Writer) error {
 
 func (c *CLI) findApp(ctx *Context) (*empire.App, error) {
 	name := ctx.String("app")
-	a, err := c.Empire.AppsFirst(empire.AppsQuery{Name: &name})
+	a, err := c.Empire.AppsFind(empire.AppsQuery{Name: &name})
 	return a, err
 }
 
