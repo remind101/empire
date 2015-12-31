@@ -23,24 +23,29 @@ func NewServer(e *empire.Empire) httpx.Handler {
 // NewHandler returns a new slash.Handler that serves the Empire public API over
 // slack slash commands.
 func NewHandler(e *empire.Empire) slash.Handler {
-	cli := cli.NewCLI(e)
-	return NewCLIHandler(cli)
+	return &CLIHandler{
+		NewCLI: newCLI(e),
+	}
 }
 
-// NewCLIHandler returns a new slash.Handler that adapts the empire CLI to be
-// served over slack slash commands.
-func NewCLIHandler(cli *cli.CLI) slash.Handler {
-	return &CLIHandler{CLI: cli}
+func newCLI(e *empire.Empire) func(io.Writer) CLI {
+	return func(w io.Writer) CLI {
+		c := cli.New(e)
+		c.Writer = w
+		return c
+	}
 }
 
 // Interface for running a CLI command.
 type CLI interface {
-	Run(ctx context.Context, stdout io.Writer, args []string) error
+	Run(ctx context.Context, args []string) error
 }
 
 // CLIHandler is a slash.Handler that serves a CLI over slack slash commands.
 type CLIHandler struct {
-	CLI
+	// NewCLI is a function that generates a new CLI instance that will
+	// write its output to w.
+	NewCLI func(io.Writer) CLI
 }
 
 func (h *CLIHandler) ServeCommand(ctx context.Context, r slash.Responder, c slash.Command) error {
@@ -53,7 +58,7 @@ func (h *CLIHandler) ServeCommand(ctx context.Context, r slash.Responder, c slas
 	}
 
 	w := new(bytes.Buffer)
-	if err := h.Run(ctx, w, append([]string{""}, args...)); err != nil {
+	if err := h.NewCLI(w).Run(ctx, append([]string{""}, args...)); err != nil {
 		return err
 	}
 

@@ -16,6 +16,7 @@ func TestCLI_Error(t *testing.T) {
 	e := new(mockEmpire)
 	w := new(bytes.Buffer)
 	c := newTestCLI(t, e)
+	c.Writer = w
 
 	appName := "acme-inc"
 	app := &empire.App{Name: "acme-inc"}
@@ -29,7 +30,7 @@ func TestCLI_Error(t *testing.T) {
 		App: app,
 	}).Return(nil)
 
-	err := c.Run(context.Background(), w, []string{"emp", "restart", "-a", "acme-inc"})
+	err := c.Run(context.Background(), []string{"emp", "restart", "-a", "acme-inc"})
 	assert.Equal(t, errBoom, err)
 }
 
@@ -37,6 +38,7 @@ func TestCLI_Tasks(t *testing.T) {
 	e := new(mockEmpire)
 	w := new(bytes.Buffer)
 	c := newTestCLI(t, e)
+	c.Writer = w
 
 	appName := "acme-inc"
 	app := &empire.App{Name: "acme-inc"}
@@ -60,7 +62,7 @@ func TestCLI_Tasks(t *testing.T) {
 		},
 	}, nil)
 
-	err := c.Run(context.Background(), w, []string{"emp", "tasks", "-a", "acme-inc"})
+	err := c.Run(context.Background(), []string{"emp", "tasks", "-a", "acme-inc"})
 	assert.NoError(t, err)
 	assert.Equal(t, `v1.web.uuid  1X  RUNNING
 v2.web.uuid  2X  PENDING
@@ -71,6 +73,7 @@ func TestCLI_Restart(t *testing.T) {
 	e := new(mockEmpire)
 	w := new(bytes.Buffer)
 	c := newTestCLI(t, e)
+	c.Writer = w
 
 	appName := "acme-inc"
 	app := &empire.App{Name: "acme-inc"}
@@ -86,7 +89,7 @@ func TestCLI_Restart(t *testing.T) {
 	}).Return(nil)
 
 	ctx := empire.WithUser(context.Background(), user)
-	err := c.Run(ctx, w, []string{"emp", "restart", "-a", "acme-inc"})
+	err := c.Run(ctx, []string{"emp", "restart", "-a", "acme-inc"})
 	assert.NoError(t, err)
 	assert.Equal(t, "Restarted acme-inc\n", w.String())
 }
@@ -95,6 +98,7 @@ func TestCLI_Run(t *testing.T) {
 	e := new(mockEmpire)
 	w := new(bytes.Buffer)
 	c := newTestCLI(t, e)
+	c.Writer = w
 
 	appName := "acme-inc"
 	app := &empire.App{Name: "acme-inc"}
@@ -111,14 +115,13 @@ func TestCLI_Run(t *testing.T) {
 	}).Return(nil)
 
 	ctx := empire.WithUser(context.Background(), user)
-	err := c.Run(ctx, w, []string{"emp", "run", "sleep", "60", "-a", "acme-inc"})
+	err := c.Run(ctx, []string{"emp", "run", "sleep", "60", "-a", "acme-inc"})
 	assert.NoError(t, err)
 	assert.Equal(t, "Ran `sleep 60` on acme-inc, detached\n", w.String())
 }
 
 func newTestCLI(t testing.TB, e *mockEmpire) *CLI {
-	c := NewCLI(e)
-	return c
+	return New(e)
 }
 
 // fatal returns an error handler that calls t.Fatal.
