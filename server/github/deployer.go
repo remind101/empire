@@ -24,7 +24,6 @@ func newDeployer(e *empire.Empire, opts Options) deployer {
 	var d deployer
 	d = newEmpireDeployer(e, opts.ImageTemplate)
 	d = &prettyDeployer{deployer: d}
-	d = &tracedDeployer{d}
 
 	if opts.TugboatURL != "" {
 		d = newTugboatDeployer(d, opts.TugboatURL)
