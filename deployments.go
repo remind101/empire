@@ -35,7 +35,7 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 	}
 
 	// Grab the latest config.
-	config, err := s.ConfigsCurrent(app)
+	config, err := s.Config(app)
 	if err != nil {
 		return nil, err
 	}

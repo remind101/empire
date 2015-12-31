@@ -124,7 +124,7 @@ type configsService struct {
 }
 
 func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
-	old, err := s.ConfigsCurrent(app)
+	old, err := s.Config(app)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 }
 
 // Returns configs for latest release or the latest configs if there are no releases.
-func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
+func (s *configsService) Config(app *App) (*Config, error) {
 	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {

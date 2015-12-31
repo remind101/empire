@@ -137,9 +137,9 @@ func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
 	return e.apps.AppsDestroy(ctx, app)
 }
 
-// ConfigsCurrent returns the current Config for a given app.
-func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
-	return e.configs.ConfigsCurrent(app)
+// Config returns the current Config for a given app.
+func (e *Empire) Config(app *App) (*Config, error) {
+	return e.configs.Config(app)
 }
 
 // ConfigsApply applies the new config vars to the apps current Config,

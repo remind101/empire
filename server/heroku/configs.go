@@ -17,7 +17,7 @@ func (h *GetConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 		return err
 	}
 
-	c, err := h.ConfigsCurrent(a)
+	c, err := h.Config(a)
 	if err != nil {
 		return err
 	}
