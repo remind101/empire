@@ -116,6 +116,7 @@ func (d *tugboatDeployer) Deploy(ctx context.Context, p events.Deployment, out i
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
+		io.WriteString(w, "Starting")
 		// If tugboat is running on something like Heroku, we need to
 		// send some occasional heartbeats.
 		defer close(streamhttp.Heartbeat(w, time.Second*30))
