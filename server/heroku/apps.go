@@ -69,7 +69,10 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	if err := h.AppsDestroy(ctx, a); err != nil {
+	if err := h.Destroy(ctx, empire.DestroyOpts{
+		User: UserFromContext(ctx),
+		App:  a,
+	}); err != nil {
 		return err
 	}
 
@@ -96,8 +99,7 @@ func (h *DeployApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 }
 
 type PostAppsForm struct {
-	Name string  `json:"name"`
-	Repo *string `json:"repo"`
+	Name string `json:"name"`
 }
 
 type PostApps struct {
@@ -111,11 +113,10 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	app := &empire.App{
+	a, err := h.Create(ctx, empire.CreateOpts{
+		User: UserFromContext(ctx),
 		Name: form.Name,
-		Repo: form.Repo,
-	}
-	a, err := h.AppsCreate(app)
+	})
 	if err != nil {
 		return err
 	}
@@ -150,12 +151,12 @@ func (h *PatchApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 }
 
 func findApp(ctx context.Context, e interface {
-	AppsFirst(empire.AppsQuery) (*empire.App, error)
+	AppsFind(empire.AppsQuery) (*empire.App, error)
 }) (*empire.App, error) {
 	vars := httpx.Vars(ctx)
 	name := vars["app"]
 
-	a, err := e.AppsFirst(empire.AppsQuery{Name: &name})
+	a, err := e.AppsFind(empire.AppsQuery{Name: &name})
 	reporter.AddContext(ctx, "app", a.Name)
 	return a, err
 }

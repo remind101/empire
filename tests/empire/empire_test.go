@@ -23,7 +23,8 @@ func TestEmpire_CertsAttach(t *testing.T) {
 	s := new(mockScheduler)
 	e.Scheduler = s
 
-	app, err := e.AppsCreate(&empire.App{
+	app, err := e.Create(context.Background(), empire.CreateOpts{
+		User: &empire.User{Name: "ejholmes"},
 		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
@@ -32,7 +33,7 @@ func TestEmpire_CertsAttach(t *testing.T) {
 	err = e.CertsAttach(context.Background(), app, cert)
 	assert.NoError(t, err)
 
-	app, err = e.AppsFirst(empire.AppsQuery{ID: &app.ID})
+	app, err = e.AppsFind(empire.AppsQuery{ID: &app.ID})
 	assert.NoError(t, err)
 	assert.Equal(t, cert, app.Cert)
 }

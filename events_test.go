@@ -28,6 +28,15 @@ func TestEvents_String(t *testing.T) {
 
 		// RollbackEvent
 		{RollbackEvent{User: "ejholmes", App: "acme-inc", Version: 1}, "ejholmes rolled back acme-inc to v1"},
+
+		// SetEvent
+		{SetEvent{User: "ejholmes", App: "acme-inc", Changed: []string{"RAILS_ENV"}}, "ejholmes changed environment variables on acme-inc (RAILS_ENV)"},
+
+		// CreateEvent
+		{CreateEvent{User: "ejholmes", Name: "acme-inc"}, "ejholmes created acme-inc"},
+
+		// DestroyEvent
+		{DestroyEvent{User: "ejholmes", App: "acme-inc"}, "ejholmes destroyed acme-inc"},
 	}
 
 	for _, tt := range tests {

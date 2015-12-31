@@ -3,6 +3,7 @@ package empire
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 // RunEvent is triggered when a user starts a one off process.
@@ -92,6 +93,50 @@ func (e RollbackEvent) Event() string {
 
 func (e RollbackEvent) String() string {
 	return fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
+}
+
+// SetEvent is triggered when environment variables are changed on an
+// application.
+type SetEvent struct {
+	User    string
+	App     string
+	Changed []string
+}
+
+func (e SetEvent) Event() string {
+	return "set"
+}
+
+func (e SetEvent) String() string {
+	return fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
+}
+
+// CreateEvent is triggered when a user creates a new application.
+type CreateEvent struct {
+	User string
+	Name string
+}
+
+func (e CreateEvent) Event() string {
+	return "create"
+}
+
+func (e CreateEvent) String() string {
+	return fmt.Sprintf("%s created %s", e.User, e.Name)
+}
+
+// DestroyEvent is triggered when a user destroys an application.
+type DestroyEvent struct {
+	User string
+	App  string
+}
+
+func (e DestroyEvent) Event() string {
+	return "destroy"
+}
+
+func (e DestroyEvent) String() string {
+	return fmt.Sprintf("%s destroyed %s", e.User, e.App)
 }
 
 // Event represents an event triggered within Empire.

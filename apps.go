@@ -104,8 +104,8 @@ func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
 	return scope.Scope(db)
 }
 
-// AppsFirst returns the first matching release.
-func (s *store) AppsFirst(scope Scope) (*App, error) {
+// AppsFind returns the first matching release.
+func (s *store) AppsFind(scope Scope) (*App, error) {
 	var app App
 	return &app, s.First(scope, &app)
 }
@@ -167,7 +167,7 @@ func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
 // creating a new app.
 func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
 	n := AppNameFromRepo(repo)
-	a, err := s.store.AppsFirst(AppsQuery{Name: &n})
+	a, err := s.store.AppsFind(AppsQuery{Name: &n})
 	if err != nil && err != gorm.RecordNotFound {
 		return a, err
 	}
@@ -208,7 +208,7 @@ type scaler struct {
 func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
 	app, t, quantity, c := opts.App, opts.Process, opts.Quantity, opts.Constraints
 
-	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
+	release, err := s.store.ReleasesFind(ReleasesQuery{App: app})
 	if err != nil {
 		return nil, err
 	}

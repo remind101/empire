@@ -123,8 +123,10 @@ type configsService struct {
 	*Empire
 }
 
-func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
-	old, err := s.ConfigsCurrent(app)
+func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	app, vars := opts.App, opts.Vars
+
+	old, err := s.Config(app)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +136,7 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 		return c, err
 	}
 
-	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
+	release, err := s.store.ReleasesFind(ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			err = nil
@@ -154,8 +156,8 @@ func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) 
 }
 
 // Returns configs for latest release or the latest configs if there are no releases.
-func (s *configsService) ConfigsCurrent(app *App) (*Config, error) {
-	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
+func (s *configsService) Config(app *App) (*Config, error) {
+	r, err := s.store.ReleasesFind(ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			// It's possible to have config without releases, this handles that.

@@ -35,7 +35,7 @@ type domainsService struct {
 }
 
 func (s *domainsService) DomainsCreate(domain *Domain) (*Domain, error) {
-	d, err := s.store.DomainsFirst(DomainsQuery{Hostname: &domain.Hostname})
+	d, err := s.store.DomainsFind(DomainsQuery{Hostname: &domain.Hostname})
 	if err != nil && err != gorm.RecordNotFound {
 		return domain, err
 	}
@@ -81,7 +81,7 @@ func (s *domainsService) DomainsDestroy(domain *Domain) error {
 }
 
 func (s *domainsService) makePublic(appID string) error {
-	a, err := s.store.AppsFirst(AppsQuery{ID: &appID})
+	a, err := s.store.AppsFind(AppsQuery{ID: &appID})
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (s *domainsService) makePublic(appID string) error {
 }
 
 func (s *domainsService) makePrivate(appID string) error {
-	a, err := s.store.AppsFirst(AppsQuery{ID: &appID})
+	a, err := s.store.AppsFind(AppsQuery{ID: &appID})
 	if err != nil {
 		return err
 	}
@@ -133,8 +133,8 @@ func (q DomainsQuery) Scope(db *gorm.DB) *gorm.DB {
 	return scope.Scope(db)
 }
 
-// DomainsFirst returns the first matching domain.
-func (s *store) DomainsFirst(scope Scope) (*Domain, error) {
+// DomainsFind returns the first matching domain.
+func (s *store) DomainsFind(scope Scope) (*Domain, error) {
 	var domain Domain
 	return &domain, s.First(scope, &domain)
 }

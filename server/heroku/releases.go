@@ -52,7 +52,7 @@ func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 		return err
 	}
 
-	rel, err := h.ReleasesFirst(empire.ReleasesQuery{App: a, Version: &vers})
+	rel, err := h.ReleasesFind(empire.ReleasesQuery{App: a, Version: &vers})
 	if err != nil {
 		return err
 	}

@@ -58,7 +58,7 @@ type Empire struct {
 	apps         *appsService
 	configs      *configsService
 	domains      *domainsService
-	jobStates    *processStatesService
+	tasks        *tasksService
 	releases     *releasesService
 	releaser     *releaser
 	deployer     *deployerService
@@ -97,7 +97,7 @@ func New(db *gorm.DB, options Options) *Empire {
 	e.deployer = &deployerService{Empire: e}
 	e.domains = &domainsService{Empire: e}
 	e.slugs = &slugsService{Empire: e}
-	e.jobStates = &processStatesService{Empire: e}
+	e.tasks = &tasksService{Empire: e}
 	e.scaler = &scaler{Empire: e}
 	e.restarter = &restarter{Empire: e}
 	e.runner = &runnerService{Empire: e}
@@ -117,9 +117,9 @@ func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, err
 	return e.accessTokens.AccessTokensCreate(accessToken)
 }
 
-// AppsFirst finds the first app matching the query.
-func (e *Empire) AppsFirst(q AppsQuery) (*App, error) {
-	return e.store.AppsFirst(q)
+// AppsFind finds the first app matching the query.
+func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
+	return e.store.AppsFind(q)
 }
 
 // Apps returns all Apps.
@@ -127,31 +127,102 @@ func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
 	return e.store.Apps(q)
 }
 
-// AppsCreate creates a new app.
-func (e *Empire) AppsCreate(app *App) (*App, error) {
-	return e.store.AppsCreate(app)
+// CreateOpts are options that are provided when creating a new application.
+type CreateOpts struct {
+	// User performing the action.
+	User *User
+
+	// Name of the application.
+	Name string
 }
 
-// AppsDestroy destroys the app.
-func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
-	return e.apps.AppsDestroy(ctx, app)
+func (opts CreateOpts) Event() Event {
+	return CreateEvent{
+		User: opts.User.Name,
+		Name: opts.Name,
+	}
 }
 
-// ConfigsCurrent returns the current Config for a given app.
-func (e *Empire) ConfigsCurrent(app *App) (*Config, error) {
-	return e.configs.ConfigsCurrent(app)
+// Create creates a new app.
+func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+	a, err := e.store.AppsCreate(&App{Name: opts.Name})
+	if err != nil {
+		return a, err
+	}
+
+	return a, e.EventStream.PublishEvent(opts.Event())
 }
 
-// ConfigsApply applies the new config vars to the apps current Config,
-// returning a new Config. If the app has a running release, a new release will
-// be created and run.
-func (e *Empire) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
-	return e.configs.ConfigsApply(ctx, app, vars)
+// DestroyOpts are options provided when destroying an application.
+type DestroyOpts struct {
+	// User performing the action.
+	User *User
+
+	// The associated app.
+	App *App
 }
 
-// DomainsFirst returns the first domain matching the query.
-func (e *Empire) DomainsFirst(q DomainsQuery) (*Domain, error) {
-	return e.store.DomainsFirst(q)
+func (opts DestroyOpts) Event() Event {
+	return DestroyEvent{
+		User: opts.User.Name,
+		App:  opts.App.Name,
+	}
+}
+
+// Destroy destroys an app.
+func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
+	if err := e.apps.AppsDestroy(ctx, opts.App); err != nil {
+		return err
+	}
+
+	return e.EventStream.PublishEvent(opts.Event())
+}
+
+// Config returns the current Config for a given app.
+func (e *Empire) Config(app *App) (*Config, error) {
+	return e.configs.Config(app)
+}
+
+// SetOpts are options provided when setting new config vars on an app.
+type SetOpts struct {
+	// User performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	// The new vars to merge into the old config.
+	Vars Vars
+}
+
+func (opts SetOpts) Event() Event {
+	var changed []string
+	for k := range opts.Vars {
+		changed = append(changed, string(k))
+	}
+
+	return SetEvent{
+		User:    opts.User.Name,
+		App:     opts.App.Name,
+		Changed: changed,
+	}
+}
+
+// Set applies the new config vars to the apps current Config, returning the new
+// Config. If the app has a running release, a new release will be created and
+// run.
+func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	c, err := e.configs.Set(ctx, opts)
+	if err != nil {
+		return c, err
+	}
+
+	return c, e.EventStream.PublishEvent(opts.Event())
+}
+
+// DomainsFind returns the first domain matching the query.
+func (e *Empire) DomainsFind(q DomainsQuery) (*Domain, error) {
+	return e.store.DomainsFind(q)
 }
 
 // Domains returns all domains matching the query.
@@ -169,9 +240,9 @@ func (e *Empire) DomainsDestroy(domain *Domain) error {
 	return e.domains.DomainsDestroy(domain)
 }
 
-// JobStatesByApp returns the JobStates for the given app.
-func (e *Empire) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
-	return e.jobStates.JobStatesByApp(ctx, app)
+// Tasks returns the Tasks for the given app.
+func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
+	return e.tasks.Tasks(ctx, app)
 }
 
 // RestartOpts are options provided when restarting an app.
@@ -255,14 +326,9 @@ func (e *Empire) Releases(q ReleasesQuery) ([]*Release, error) {
 	return e.store.Releases(q)
 }
 
-// ReleasesFirst returns the first releases for a given App.
-func (e *Empire) ReleasesFirst(q ReleasesQuery) (*Release, error) {
-	return e.store.ReleasesFirst(q)
-}
-
-// ReleasesLast returns the last release for an App.
-func (e *Empire) ReleasesLast(app *App) (*Release, error) {
-	return e.store.ReleasesFirst(ReleasesQuery{App: app})
+// ReleasesFind returns the first releases for a given App.
+func (e *Empire) ReleasesFind(q ReleasesQuery) (*Release, error) {
+	return e.store.ReleasesFind(q)
 }
 
 // RollbackOpts are options provided when rolling back to an old release.
