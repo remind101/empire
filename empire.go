@@ -127,9 +127,30 @@ func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
 	return e.store.Apps(q)
 }
 
-// AppsCreate creates a new app.
-func (e *Empire) AppsCreate(app *App) (*App, error) {
-	return e.store.AppsCreate(app)
+// CreateOpts are options that are provided when creating a new application.
+type CreateOpts struct {
+	// User performing the action.
+	User *User
+
+	// Name of the application.
+	Name string
+}
+
+func (opts CreateOpts) Event() Event {
+	return CreateEvent{
+		User: opts.User.Name,
+		Name: opts.Name,
+	}
+}
+
+// Create creates a new app.
+func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+	a, err := e.store.AppsCreate(&App{Name: opts.Name})
+	if err != nil {
+		return a, err
+	}
+
+	return a, e.EventStream.PublishEvent(opts.Event())
 }
 
 // AppsDestroy destroys the app.

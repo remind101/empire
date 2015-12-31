@@ -96,8 +96,7 @@ func (h *DeployApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 }
 
 type PostAppsForm struct {
-	Name string  `json:"name"`
-	Repo *string `json:"repo"`
+	Name string `json:"name"`
 }
 
 type PostApps struct {
@@ -111,11 +110,10 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	app := &empire.App{
+	a, err := h.Create(ctx, empire.CreateOpts{
+		User: UserFromContext(ctx),
 		Name: form.Name,
-		Repo: form.Repo,
-	}
-	a, err := h.AppsCreate(app)
+	})
 	if err != nil {
 		return err
 	}

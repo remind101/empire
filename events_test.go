@@ -31,6 +31,9 @@ func TestEvents_String(t *testing.T) {
 
 		// SetEvent
 		{SetEvent{User: "ejholmes", App: "acme-inc", Changed: []string{"RAILS_ENV"}}, "ejholmes changed environment variables on acme-inc (RAILS_ENV)"},
+
+		// CreateEvent
+		{CreateEvent{User: "ejholmes", Name: "acme-inc"}, "ejholmes created acme-inc"},
 	}
 
 	for _, tt := range tests {

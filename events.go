@@ -111,6 +111,20 @@ func (e RollbackEvent) String() string {
 	return fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
 }
 
+// CreateEvent is triggered when a user creates a new application.
+type CreateEvent struct {
+	User string
+	Name string
+}
+
+func (e CreateEvent) Event() string {
+	return "create"
+}
+
+func (e CreateEvent) String() string {
+	return fmt.Sprintf("%s created %s", e.User, e.Name)
+}
+
 // Event represents an event triggered within Empire.
 type Event interface {
 	// Returns the name of the event.
