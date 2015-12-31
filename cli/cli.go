@@ -18,6 +18,10 @@ type CLI struct {
 	io.Writer
 }
 
+func NewInternal(e *empire.Empire) *CLI {
+	return New(e)
+}
+
 // New returns a new CLI instance.
 func New(e Empire) *CLI {
 	return &CLI{
@@ -44,10 +48,12 @@ type ctx context.Context
 
 // Empire mocks out the public interface for Empire.
 type Empire interface {
+	Apps(empire.AppsQuery) ([]*empire.App, error)
 	AppsFind(empire.AppsQuery) (*empire.App, error)
 	Restart(context.Context, empire.RestartOpts) error
 	Tasks(context.Context, *empire.App) ([]*empire.Task, error)
 	Run(context.Context, empire.RunOpts) error
+	Scale(context.Context, empire.ScaleOpts) (*empire.Process, error)
 }
 
 // Run runs the command.
@@ -116,6 +122,62 @@ func (c *CLI) RunTask(ctx *Context) error {
 	return nil
 }
 
+// Apps runs the `apps` subcommand, which lists applications.
+func (c *CLI) Apps(ctx *Context) error {
+	all := empire.AppsQuery{}
+	apps, err := c.Empire.Apps(all)
+	if err != nil {
+		return err
+	}
+
+	w := tabwriter.NewWriter(c, 1, 2, 2, ' ', 0)
+	defer w.Flush()
+
+	for _, app := range apps {
+		listRec(w, app.Name)
+	}
+
+	return nil
+}
+
+// Scale runs the `scale` subcommand, which scales processes.
+func (c *CLI) Scale(ctx *Context) error {
+	app, err := c.findApp(ctx)
+	if err != nil {
+		return err
+	}
+
+	var todo []empire.ScaleOpts
+	types := make(map[string]bool)
+	for _, arg := range ctx.Args() {
+		pstype, qty, _, err := parseScaleArg(arg)
+		if err != nil {
+			return err
+		}
+
+		if _, exists := types[pstype]; exists {
+			return fmt.Errorf("process type '%s' specified more than once", pstype)
+		}
+		types[pstype] = true
+
+		todo = append(todo, empire.ScaleOpts{
+			User:     empire.UserFromContext(ctx),
+			App:      app,
+			Process:  empire.ProcessType(pstype),
+			Quantity: qty,
+		})
+	}
+
+	for _, opts := range todo {
+		if _, err := c.Empire.Scale(ctx, opts); err != nil {
+			return err
+		}
+	}
+
+	fmt.Fprintf(c, "Scaled %s", app.Name)
+	return nil
+}
+
 func (c *CLI) findApp(ctx *Context) (*empire.App, error) {
 	name := ctx.String("app")
 	a, err := c.Empire.AppsFind(empire.AppsQuery{Name: &name})
@@ -175,6 +237,19 @@ func run(ctx context.Context, c *CLI, args []string) (err error) {
 					Name:  "detached, d",
 					Usage: "Run in detached mode instead of attached to terminal",
 				},
+			},
+		},
+		{
+			Name:   "apps",
+			Usage:  "Lists applications",
+			Action: wrap(c.Apps),
+		},
+		{
+			Name:   "scale",
+			Usage:  "Change process quantities and sizes",
+			Action: wrap(c.Scale),
+			Flags: []cli.Flag{
+				appFlag,
 			},
 		},
 	}

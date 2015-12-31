@@ -30,7 +30,7 @@ func NewHandler(e *empire.Empire) slash.Handler {
 
 func newCLI(e *empire.Empire) func(io.Writer) CLI {
 	return func(w io.Writer) CLI {
-		c := cli.New(e)
+		c := cli.NewInternal(e)
 		c.Writer = w
 		return c
 	}
