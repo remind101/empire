@@ -94,7 +94,9 @@ POST /deployments/:id/status
 
 ## Setup
 
-**TODO**
+1. Git clone this repo into `$GOPATH/src/github.com/remind101/tugboat`
+2. Run the `before_install` steps in `.travis.yml` to set up dependencies and env.
+3. Run the `script` steps in `.travis.yml` to test your setup.
 
 ## Roadmap
 

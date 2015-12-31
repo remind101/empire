@@ -9,6 +9,8 @@
       <th>Environment</th>
       <th>Provider</th>
       <th>Status</th>
+      <th>Started At</th>
+      <th>Completed At</th>
     </tr>
   </thead>
   <tbody>
@@ -22,6 +24,8 @@
     <td ng-bind="job.environment" title="{{ job.environment }}"></td>
     <td ng-bind="job.provider" title="{{ job.provider }}"></td>
     <td ng-bind="job.status"></td>
+    <td ng-bind="job.startedAt"></td>
+    <td ng-bind="job.completedAt"></td>
   </tr>
   </tbody>
 </table>

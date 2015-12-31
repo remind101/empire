@@ -260,8 +260,8 @@
 		},
 		{
 			"ImportPath": "github.com/remind101/tugboat",
-			"Comment": "v0.0.1-275-g26c5f5c",
-			"Rev": "26c5f5ca2a0098a94b9335c805e3cbbc2636a46f"
+			"Comment": "v0.0.1-283-g3db4293",
+			"Rev": "3db4293668426d1a185153e1dd794d744c331542"
 		},
 		{
 			"ImportPath": "github.com/stretchr/objx",

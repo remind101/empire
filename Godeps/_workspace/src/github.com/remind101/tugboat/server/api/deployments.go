@@ -4,23 +4,27 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/remind101/tugboat"
 )
 
 type Deployment struct {
-	ID          string `json:"id"`
-	GitHubID    int64  `json:"github_id"`
-	User        string `json:"user"`
-	Repo        string `json:"repo"`
-	Sha         string `json:"sha"`
-	Ref         string `json:"ref"`
-	Environment string `json:"environment"`
-	Status      string `json:"status"`
-	Output      string `json:"output"`
-	Error       string `json:"error"`
-	Provider    string `json:"provider"`
+	ID          string     `json:"id"`
+	GitHubID    int64      `json:"github_id"`
+	User        string     `json:"user"`
+	Repo        string     `json:"repo"`
+	Sha         string     `json:"sha"`
+	Ref         string     `json:"ref"`
+	Environment string     `json:"environment"`
+	Status      string     `json:"status"`
+	Output      string     `json:"output"`
+	Error       string     `json:"error"`
+	Provider    string     `json:"provider"`
+	CreatedAt   time.Time  `json:"createdAt"` // always set
+	StartedAt   *time.Time `json:"startedAt"` // nil until started
+	CompletedAt *time.Time `json:"completedAt"`
 }
 
 func newDeployment(d *tugboat.Deployment) *Deployment {
@@ -35,6 +39,9 @@ func newDeployment(d *tugboat.Deployment) *Deployment {
 		Status:      d.Status.String(),
 		Error:       d.Error,
 		Provider:    d.Provider,
+		CreatedAt:   d.CreatedAt,
+		StartedAt:   d.StartedAt,
+		CompletedAt: d.CompletedAt,
 	}
 }
 

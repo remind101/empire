@@ -431,6 +431,8 @@ module.run(['$templateCache', function($templateCache) {
     '      <th>Environment</th>\n' +
     '      <th>Provider</th>\n' +
     '      <th>Status</th>\n' +
+    '      <th>Started At</th>\n' +
+    '      <th>Completed At</th>\n' +
     '    </tr>\n' +
     '  </thead>\n' +
     '  <tbody>\n' +
@@ -444,6 +446,8 @@ module.run(['$templateCache', function($templateCache) {
     '    <td ng-bind="job.environment" title="{{ job.environment }}"></td>\n' +
     '    <td ng-bind="job.provider" title="{{ job.provider }}"></td>\n' +
     '    <td ng-bind="job.status"></td>\n' +
+    '    <td ng-bind="job.startedAt"></td>\n' +
+    '    <td ng-bind="job.completedAt"></td>\n' +
     '  </tr>\n' +
     '  </tbody>\n' +
     '</table>\n' +

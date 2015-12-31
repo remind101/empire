@@ -42,6 +42,14 @@ func TestDeploymentsCreate(t *testing.T) {
 	if got, want := d.Provider, "heroku"; got != want {
 		t.Fatalf("Provider => %s; want %s", got, want)
 	}
+
+	if d.StartedAt == nil {
+		t.Fatalf("expected StartedAt to not be nil")
+	}
+
+	if d.CompletedAt != nil {
+		t.Fatalf("expected CompletedAt to be nil")
+	}
 }
 
 func TestDeploymentsCreate_Unauthorized(t *testing.T) {

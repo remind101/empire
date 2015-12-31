@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	"code.google.com/p/goauth2/oauth"
 	"github.com/google/go-github/github"
@@ -229,9 +228,11 @@ func deploy(ctx context.Context, opts DeployOpts, p Provider, t client) (deploym
 
 	logsDone := make(chan struct{}, 1)
 	go func() {
-		// we're ignoring err here.
-		werr := t.WriteLogs(deployment, r)
-		log.Printf("write error: %v\n", werr)
+		if werr := t.WriteLogs(deployment, r); werr != nil {
+			// If there was an error writing the logs, close the
+			// Write side of the pipe.
+			r.CloseWithError(err)
+		}
 		close(logsDone)
 	}()
 

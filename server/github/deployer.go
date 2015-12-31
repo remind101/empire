@@ -2,13 +2,11 @@ package github
 
 import (
 	"io"
-	"time"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
-	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
@@ -116,24 +114,11 @@ func (d *tugboatDeployer) Deploy(ctx context.Context, p events.Deployment, out i
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
-		io.WriteString(w, "Starting")
-		// If tugboat is running on something like Heroku, we need to
-		// send some occasional heartbeats.
-		defer close(streamhttp.Heartbeat(w, time.Second*30))
-
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
 		w = io.MultiWriter(w, out)
-
-		if err := d.deployer.Deploy(ctx, p, w); err != nil {
-			// If we got a deployment error, write the error to
-			// tugboat and return tugboat.ErrFailed to indicate the
-			// failure.
-			io.WriteString(w, err.Error())
-			return tugboat.ErrFailed
-		}
-
-		return nil
+		err := d.deployer.Deploy(ctx, p, w)
+		return err
 	}))
 
 	return err
