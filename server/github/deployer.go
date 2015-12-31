@@ -22,8 +22,9 @@ type deployer interface {
 // depending on the options.
 func newDeployer(e *empire.Empire, opts Options) deployer {
 	var d deployer
-	d = &tracedDeployer{newEmpireDeployer(e, opts.ImageTemplate)}
+	d = newEmpireDeployer(e, opts.ImageTemplate)
 	d = &prettyDeployer{deployer: d}
+	d = &tracedDeployer{d}
 
 	if opts.TugboatURL != "" {
 		d = newTugboatDeployer(d, opts.TugboatURL)
