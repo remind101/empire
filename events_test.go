@@ -28,6 +28,9 @@ func TestEvents_String(t *testing.T) {
 
 		// RollbackEvent
 		{RollbackEvent{User: "ejholmes", App: "acme-inc", Version: 1}, "ejholmes rolled back acme-inc to v1"},
+
+		// SetEvent
+		{SetEvent{User: "ejholmes", App: "acme-inc", Changed: []string{"RAILS_ENV"}}, "ejholmes changed environment variables on acme-inc (RAILS_ENV)"},
 	}
 
 	for _, tt := range tests {

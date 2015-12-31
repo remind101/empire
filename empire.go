@@ -142,11 +142,41 @@ func (e *Empire) Config(app *App) (*Config, error) {
 	return e.configs.Config(app)
 }
 
-// ConfigsApply applies the new config vars to the apps current Config,
-// returning a new Config. If the app has a running release, a new release will
-// be created and run.
-func (e *Empire) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
-	return e.configs.ConfigsApply(ctx, app, vars)
+// SetOpts are options provided when setting new config vars on an app.
+type SetOpts struct {
+	// User performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	// The new vars to merge into the old config.
+	Vars Vars
+}
+
+func (opts SetOpts) Event() Event {
+	var changed []string
+	for k := range opts.Vars {
+		changed = append(changed, string(k))
+	}
+
+	return SetEvent{
+		User:    opts.User.Name,
+		App:     opts.App.Name,
+		Changed: changed,
+	}
+}
+
+// Set applies the new config vars to the apps current Config, returning the new
+// Config. If the app has a running release, a new release will be created and
+// run.
+func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	c, err := e.configs.Set(ctx, opts)
+	if err != nil {
+		return c, err
+	}
+
+	return c, e.EventStream.PublishEvent(opts.Event())
 }
 
 // DomainsFirst returns the first domain matching the query.

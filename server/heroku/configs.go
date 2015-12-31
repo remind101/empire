@@ -43,7 +43,11 @@ func (h *PatchConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 
 	// Update the config
-	c, err := h.ConfigsApply(ctx, a, configVars)
+	c, err := h.Set(ctx, empire.SetOpts{
+		User: UserFromContext(ctx),
+		App:  a,
+		Vars: configVars,
+	})
 	if err != nil {
 		return err
 	}

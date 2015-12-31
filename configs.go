@@ -123,7 +123,9 @@ type configsService struct {
 	*Empire
 }
 
-func (s *configsService) ConfigsApply(ctx context.Context, app *App, vars Vars) (*Config, error) {
+func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	app, vars := opts.App, opts.Vars
+
 	old, err := s.Config(app)
 	if err != nil {
 		return nil, err

@@ -3,6 +3,7 @@ package empire
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 // RunEvent is triggered when a user starts a one off process.
@@ -77,6 +78,22 @@ func (e DeployEvent) String() string {
 	}
 
 	return fmt.Sprintf("%s deployed %s to %s", e.User, e.Image, e.App)
+}
+
+// SetEvent is triggered when environment variables are changed on an
+// application.
+type SetEvent struct {
+	User    string
+	App     string
+	Changed []string
+}
+
+func (e SetEvent) Event() string {
+	return "set"
+}
+
+func (e SetEvent) String() string {
+	return fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
 }
 
 // RollbackEvent is triggered when a user rolls back to an old version.
