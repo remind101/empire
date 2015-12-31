@@ -331,11 +331,6 @@ func (e *Empire) ReleasesFirst(q ReleasesQuery) (*Release, error) {
 	return e.store.ReleasesFirst(q)
 }
 
-// ReleasesLast returns the last release for an App.
-func (e *Empire) ReleasesLast(app *App) (*Release, error) {
-	return e.store.ReleasesFirst(ReleasesQuery{App: app})
-}
-
 // RollbackOpts are options provided when rolling back to an old release.
 type RollbackOpts struct {
 	// The user performing the action.
