@@ -16,7 +16,7 @@ Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31 17:01  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 		},
 		{
 			"deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
@@ -30,7 +30,7 @@ Status: Created new release v2 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31 17:01  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2\nv2    Dec 31 17:01  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2\nv2    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 		},
 		{
 			"create my-app",
@@ -48,7 +48,7 @@ Status: Created new release v1 for my-app`,
 		},
 		{
 			"releases -a my-app",
-			"v1    Dec 31 17:01  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
 		},
 	})
 }
@@ -67,7 +67,7 @@ Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31 17:01  Deploy remind101/acme-inc:latest",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest",
 		},
 	})
 }

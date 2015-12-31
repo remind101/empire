@@ -16,10 +16,10 @@ func TestRollback(t *testing.T) {
 		},
 		{
 			"releases -a acme-inc",
-			`v1    Dec 31 17:01  Deploy remind101/acme-inc:latest
-v2    Dec 31 17:01  Deploy remind101/acme-inc:latest
-v3    Dec 31 17:01  Set FOO config var
-v4    Dec 31 17:01  Rollback to v1`,
+			`v1    Dec 31  2014  Deploy remind101/acme-inc:latest
+v2    Dec 31  2014  Deploy remind101/acme-inc:latest
+v3    Dec 31  2014  Set FOO config var
+v4    Dec 31  2014  Rollback to v1`,
 		},
 		{
 			"env -a acme-inc",
