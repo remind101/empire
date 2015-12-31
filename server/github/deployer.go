@@ -2,7 +2,6 @@ package github
 
 import (
 	"io"
-	"log"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
@@ -117,14 +116,13 @@ func (d *tugboatDeployer) Deploy(ctx context.Context, p events.Deployment, out i
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
-		combined := io.MultiWriter(w, out)
+		w = io.MultiWriter(w, out)
 
-		if err := d.deployer.Deploy(ctx, p, combined); err != nil {
+		if err := d.deployer.Deploy(ctx, p, w); err != nil {
 			// If we got a deployment error, write the error to
 			// tugboat and return tugboat.ErrFailed to indicate the
 			// failure.
-			_, werr := io.WriteString(w, err.Error())
-			log.Printf("write error: %v\n", werr)
+			io.WriteString(w, err.Error())
 			return tugboat.ErrFailed
 		}
 
