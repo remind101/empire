@@ -58,7 +58,7 @@ type Empire struct {
 	apps         *appsService
 	configs      *configsService
 	domains      *domainsService
-	jobStates    *processStatesService
+	tasks        *tasksService
 	releases     *releasesService
 	releaser     *releaser
 	deployer     *deployerService
@@ -97,7 +97,7 @@ func New(db *gorm.DB, options Options) *Empire {
 	e.deployer = &deployerService{Empire: e}
 	e.domains = &domainsService{Empire: e}
 	e.slugs = &slugsService{Empire: e}
-	e.jobStates = &processStatesService{Empire: e}
+	e.tasks = &tasksService{Empire: e}
 	e.scaler = &scaler{Empire: e}
 	e.restarter = &restarter{Empire: e}
 	e.runner = &runnerService{Empire: e}
@@ -169,9 +169,9 @@ func (e *Empire) DomainsDestroy(domain *Domain) error {
 	return e.domains.DomainsDestroy(domain)
 }
 
-// JobStatesByApp returns the JobStates for the given app.
-func (e *Empire) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
-	return e.jobStates.JobStatesByApp(ctx, app)
+// Tasks returns the Tasks for the given app.
+func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
+	return e.tasks.Tasks(ctx, app)
 }
 
 // RestartOpts are options provided when restarting an app.

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/timex"
@@ -16,22 +16,22 @@ import (
 
 type Dyno heroku.Dyno
 
-func newDyno(j *empire.ProcessState) *Dyno {
+func newDyno(task *empire.Task) *Dyno {
 	return &Dyno{
-		Command:   j.Command,
-		Type:      j.Type,
-		Name:      j.Name,
-		State:     j.State,
-		Size:      j.Constraints.String(),
-		UpdatedAt: j.UpdatedAt,
+		Command:   task.Command,
+		Type:      task.Type,
+		Name:      task.Name,
+		State:     task.State,
+		Size:      task.Constraints.String(),
+		UpdatedAt: task.UpdatedAt,
 	}
 }
 
-func newDynos(js []*empire.ProcessState) []*Dyno {
-	dynos := make([]*Dyno, len(js))
+func newDynos(tasks []*empire.Task) []*Dyno {
+	dynos := make([]*Dyno, len(tasks))
 
-	for i := 0; i < len(js); i++ {
-		dynos[i] = newDyno(js[i])
+	for i := 0; i < len(tasks); i++ {
+		dynos[i] = newDyno(tasks[i])
 	}
 
 	return dynos
@@ -47,8 +47,8 @@ func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	// Retrieve job states
-	js, err := h.JobStatesByApp(ctx, a)
+	// Retrieve tasks
+	js, err := h.Tasks(ctx, a)
 	if err != nil {
 		return err
 	}

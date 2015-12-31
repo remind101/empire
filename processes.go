@@ -5,15 +5,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/procfile"
-	"github.com/remind101/empire/scheduler"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -296,55 +293,4 @@ func processesCreate(db *gorm.DB, process *Process) (*Process, error) {
 // ProcessesUpdate updates an existing process into the database.
 func processesUpdate(db *gorm.DB, process *Process) error {
 	return db.Save(process).Error
-}
-
-// ProcessState represents the state of a Process.
-type ProcessState struct {
-	Name        string
-	Type        string
-	Command     string
-	State       string
-	UpdatedAt   time.Time
-	Constraints Constraints
-}
-
-type processStatesService struct {
-	*Empire
-}
-
-func (s *processStatesService) JobStatesByApp(ctx context.Context, app *App) ([]*ProcessState, error) {
-	var states []*ProcessState
-
-	instances, err := s.Scheduler.Instances(ctx, app.ID)
-	if err != nil {
-		return states, err
-	}
-
-	for _, i := range instances {
-		states = append(states, processStateFromInstance(i))
-	}
-
-	return states, nil
-}
-
-// processStateFromInstance converts a scheduler.Instance into a ProcessState.
-// It pulls some of its data from empire specific environment variables if they have been set.
-// Once ECS supports this data natively, we can stop doing this.
-func processStateFromInstance(i *scheduler.Instance) *ProcessState {
-	version := i.Process.Env["EMPIRE_RELEASE"]
-	if version == "" {
-		version = "v0"
-	}
-
-	return &ProcessState{
-		Name:    fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
-		Type:    string(i.Process.Type),
-		Command: i.Process.Command,
-		Constraints: Constraints{
-			CPUShare: constraints.CPUShare(i.Process.CPUShares),
-			Memory:   constraints.Memory(i.Process.MemoryLimit),
-		},
-		State:     i.State,
-		UpdatedAt: i.UpdatedAt,
-	}
 }
