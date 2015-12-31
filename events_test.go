@@ -34,6 +34,9 @@ func TestEvents_String(t *testing.T) {
 
 		// CreateEvent
 		{CreateEvent{User: "ejholmes", Name: "acme-inc"}, "ejholmes created acme-inc"},
+
+		// DestroyEvent
+		{DestroyEvent{User: "ejholmes", App: "acme-inc"}, "ejholmes destroyed acme-inc"},
 	}
 
 	for _, tt := range tests {

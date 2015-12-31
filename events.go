@@ -80,6 +80,21 @@ func (e DeployEvent) String() string {
 	return fmt.Sprintf("%s deployed %s to %s", e.User, e.Image, e.App)
 }
 
+// RollbackEvent is triggered when a user rolls back to an old version.
+type RollbackEvent struct {
+	User    string
+	App     string
+	Version int
+}
+
+func (e RollbackEvent) Event() string {
+	return "rollback"
+}
+
+func (e RollbackEvent) String() string {
+	return fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
+}
+
 // SetEvent is triggered when environment variables are changed on an
 // application.
 type SetEvent struct {
@@ -96,21 +111,6 @@ func (e SetEvent) String() string {
 	return fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
 }
 
-// RollbackEvent is triggered when a user rolls back to an old version.
-type RollbackEvent struct {
-	User    string
-	App     string
-	Version int
-}
-
-func (e RollbackEvent) Event() string {
-	return "rollback"
-}
-
-func (e RollbackEvent) String() string {
-	return fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
-}
-
 // CreateEvent is triggered when a user creates a new application.
 type CreateEvent struct {
 	User string
@@ -123,6 +123,20 @@ func (e CreateEvent) Event() string {
 
 func (e CreateEvent) String() string {
 	return fmt.Sprintf("%s created %s", e.User, e.Name)
+}
+
+// DestroyEvent is triggered when a user destroys an application.
+type DestroyEvent struct {
+	User string
+	App  string
+}
+
+func (e DestroyEvent) Event() string {
+	return "destroy"
+}
+
+func (e DestroyEvent) String() string {
+	return fmt.Sprintf("%s destroyed %s", e.User, e.App)
 }
 
 // Event represents an event triggered within Empire.

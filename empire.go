@@ -153,9 +153,29 @@ func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
 	return a, e.EventStream.PublishEvent(opts.Event())
 }
 
-// AppsDestroy destroys the app.
-func (e *Empire) AppsDestroy(ctx context.Context, app *App) error {
-	return e.apps.AppsDestroy(ctx, app)
+// DestroyOpts are options provided when destroying an application.
+type DestroyOpts struct {
+	// User performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+}
+
+func (opts DestroyOpts) Event() Event {
+	return DestroyEvent{
+		User: opts.User.Name,
+		App:  opts.App.Name,
+	}
+}
+
+// Destroy destroys an app.
+func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
+	if err := e.apps.AppsDestroy(ctx, opts.App); err != nil {
+		return err
+	}
+
+	return e.EventStream.PublishEvent(opts.Event())
 }
 
 // Config returns the current Config for a given app.
