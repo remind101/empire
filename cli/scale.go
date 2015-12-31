@@ -8,6 +8,10 @@ import (
 
 var errInvalidScaleArg = errors.New("invalid argument")
 
+// This is a direct copy paste from
+// https://github.com/remind101/emp/blob/6fc34ef0633f5a26217023ede86b866bf4f17cc4/scale.go#L127-L168.
+//
+// TODO: Actually write some tests for this and make it less crazy.
 func parseScaleArg(arg string) (pstype string, qty int, size string, err error) {
 	qty = -1
 	iEquals := strings.IndexRune(arg, '=')
