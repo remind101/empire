@@ -136,7 +136,7 @@ func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error)
 		return c, err
 	}
 
-	release, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
+	release, err := s.store.ReleasesFind(ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			err = nil
@@ -157,7 +157,7 @@ func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error)
 
 // Returns configs for latest release or the latest configs if there are no releases.
 func (s *configsService) Config(app *App) (*Config, error) {
-	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app})
+	r, err := s.store.ReleasesFind(ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			// It's possible to have config without releases, this handles that.

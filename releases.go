@@ -94,8 +94,8 @@ func (q ReleasesQuery) DefaultRange() headerutil.Range {
 	}
 }
 
-// ReleasesFirst returns the first matching release.
-func (s *store) ReleasesFirst(scope Scope) (*Release, error) {
+// ReleasesFind returns the first matching release.
+func (s *store) ReleasesFind(scope Scope) (*Release, error) {
 	var release Release
 
 	if err := s.First(scope, &release); err != nil {
@@ -164,7 +164,7 @@ func (s *releasesService) createFormation(release *Release) error {
 	var existing Formation
 
 	// Get the old release, so we can copy the Formation.
-	last, err := s.store.ReleasesFirst(ReleasesQuery{App: release.App})
+	last, err := s.store.ReleasesFind(ReleasesQuery{App: release.App})
 	if err != nil {
 		if err != gorm.RecordNotFound {
 			return err
@@ -182,7 +182,7 @@ func (s *releasesService) createFormation(release *Release) error {
 // Rolls back to a specific release version.
 func (s *releasesService) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
 	app, version := opts.App, opts.Version
-	r, err := s.store.ReleasesFirst(ReleasesQuery{App: app, Version: &version})
+	r, err := s.store.ReleasesFind(ReleasesQuery{App: app, Version: &version})
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (r *releaser) Release(ctx context.Context, release *Release) error {
 
 // ReleaseApp will find the last release for an app and release it.
 func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
-	release, err := r.store.ReleasesFirst(ReleasesQuery{App: app})
+	release, err := r.store.ReleasesFind(ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			return ErrNoReleases

@@ -91,7 +91,7 @@ func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	vars := httpx.Vars(ctx)
 	name := vars["hostname"]
 
-	d, err := h.DomainsFirst(empire.DomainsQuery{Hostname: &name, App: a})
+	d, err := h.DomainsFind(empire.DomainsQuery{Hostname: &name, App: a})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			return &ErrorResource{

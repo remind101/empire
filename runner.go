@@ -7,7 +7,7 @@ type runnerService struct {
 }
 
 func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
-	release, err := r.store.ReleasesFirst(ReleasesQuery{App: opts.App})
+	release, err := r.store.ReleasesFind(ReleasesQuery{App: opts.App})
 	if err != nil {
 		return err
 	}

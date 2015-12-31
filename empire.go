@@ -117,9 +117,9 @@ func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, err
 	return e.accessTokens.AccessTokensCreate(accessToken)
 }
 
-// AppsFirst finds the first app matching the query.
-func (e *Empire) AppsFirst(q AppsQuery) (*App, error) {
-	return e.store.AppsFirst(q)
+// AppsFind finds the first app matching the query.
+func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
+	return e.store.AppsFind(q)
 }
 
 // Apps returns all Apps.
@@ -220,9 +220,9 @@ func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
 	return c, e.EventStream.PublishEvent(opts.Event())
 }
 
-// DomainsFirst returns the first domain matching the query.
-func (e *Empire) DomainsFirst(q DomainsQuery) (*Domain, error) {
-	return e.store.DomainsFirst(q)
+// DomainsFind returns the first domain matching the query.
+func (e *Empire) DomainsFind(q DomainsQuery) (*Domain, error) {
+	return e.store.DomainsFind(q)
 }
 
 // Domains returns all domains matching the query.
@@ -326,9 +326,9 @@ func (e *Empire) Releases(q ReleasesQuery) ([]*Release, error) {
 	return e.store.Releases(q)
 }
 
-// ReleasesFirst returns the first releases for a given App.
-func (e *Empire) ReleasesFirst(q ReleasesQuery) (*Release, error) {
-	return e.store.ReleasesFirst(q)
+// ReleasesFind returns the first releases for a given App.
+func (e *Empire) ReleasesFind(q ReleasesQuery) (*Release, error) {
+	return e.store.ReleasesFind(q)
 }
 
 // RollbackOpts are options provided when rolling back to an old release.

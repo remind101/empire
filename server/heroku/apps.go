@@ -151,12 +151,12 @@ func (h *PatchApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 }
 
 func findApp(ctx context.Context, e interface {
-	AppsFirst(empire.AppsQuery) (*empire.App, error)
+	AppsFind(empire.AppsQuery) (*empire.App, error)
 }) (*empire.App, error) {
 	vars := httpx.Vars(ctx)
 	name := vars["app"]
 
-	a, err := e.AppsFirst(empire.AppsQuery{Name: &name})
+	a, err := e.AppsFind(empire.AppsQuery{Name: &name})
 	reporter.AddContext(ctx, "app", a.Name)
 	return a, err
 }
