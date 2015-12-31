@@ -195,11 +195,19 @@ func listRec(w io.Writer, a ...interface{}) {
 	}
 }
 
+func newApp(w io.Writer) *cli.App {
+	app := cli.NewApp()
+	app.Name = "emp"
+	app.HelpName = "emp"
+	app.Usage = "CLI for Empire"
+	app.Version = empire.Version
+	app.Writer = w
+	return app
+}
+
 // run runs a CLI command.
 func run(ctx context.Context, c *CLI, args []string) (err error) {
-	app := cli.NewApp()
-	app.Usage = "CLI for Empire"
-	app.Writer = c
+	app := newApp(c)
 
 	wrap := func(fn func(*Context) error) func(*cli.Context) {
 		return func(clictx *cli.Context) {

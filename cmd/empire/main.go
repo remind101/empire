@@ -24,6 +24,8 @@ const (
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
 
+	FlagSlackVerificationToken = "slack.verification_token"
+
 	FlagDBPath = "path"
 	FlagDB     = "db"
 
@@ -67,12 +69,6 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
-			},
-			cli.StringFlag{
-				Name:   FlagEventsBackend,
-				Value:  "",
-				Usage:  "The backend implementation to use to send event notifactions",
-				EnvVar: "EMPIRE_EVENTS_BACKEND",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,
@@ -124,6 +120,29 @@ var Commands = []cli.Command{
 			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
+	},
+	{
+		Name:  "slack",
+		Usage: "Run the http server to handle slack slash commands",
+		Flags: append([]cli.Flag{
+			cli.StringFlag{
+				Name:   FlagPort,
+				Value:  "8080",
+				Usage:  "The port to run the server on",
+				EnvVar: "EMPIRE_PORT",
+			},
+			cli.BoolFlag{
+				Name:  FlagAutoMigrate,
+				Usage: "Whether to run the migrations at startup or not",
+			},
+			cli.StringFlag{
+				Name:   FlagSlackVerificationToken,
+				Value:  "",
+				Usage:  "The token shared between Empire and Slack to verify that the request came from Slack.",
+				EnvVar: "EMPIRE_SLACK_VERIFICATION_TOKEN",
+			},
+		}, append(EmpireFlags, DBFlags...)...),
+		Action: runSlack,
 	},
 	{
 		Name:   "migrate",
@@ -242,6 +261,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "When using the SNS events backend, this is the SNS topic that gets published to",
 		EnvVar: "EMPIRE_SNS_TOPIC",
+	},
+	cli.StringFlag{
+		Name:   FlagEventsBackend,
+		Value:  "",
+		Usage:  "The backend implementation to use to send event notifactions",
+		EnvVar: "EMPIRE_EVENTS_BACKEND",
 	},
 }
 

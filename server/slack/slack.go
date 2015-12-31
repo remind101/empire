@@ -15,9 +15,9 @@ import (
 )
 
 // NewServer returns a new httpx.Handler that serves the slack slash commands.
-func NewServer(e *empire.Empire) httpx.Handler {
+func NewServer(e *empire.Empire, token string) httpx.Handler {
 	h := NewHandler(e)
-	return slash.NewServer(h)
+	return slash.NewServer(slash.ValidateToken(h, token))
 }
 
 // NewHandler returns a new slash.Handler that serves the Empire public API over

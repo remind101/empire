@@ -31,10 +31,6 @@ type Options struct {
 			TugboatURL    string
 		}
 	}
-
-	Slack struct {
-		VerificationToken string
-	}
 }
 
 func New(e *empire.Empire, options Options) http.Handler {
@@ -51,9 +47,6 @@ func New(e *empire.Empire, options Options) http.Handler {
 		r.Match(githubWebhook, g)
 	}
 
-	// Mount the slack slash commands
-	r.Handle("/slack", slack.NewServer(e)).Methods("POST")
-
 	// Mount the heroku api
 	h := heroku.New(e, options.Authenticator)
 	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
@@ -62,6 +55,14 @@ func New(e *empire.Empire, options Options) http.Handler {
 	r.Handle("/health", NewHealthHandler(e))
 
 	return middleware.Common(r, middleware.CommonOpts{
+		Reporter: e.Reporter,
+		Logger:   e.Logger,
+	})
+}
+
+func NewSlack(e *empire.Empire, token string) http.Handler {
+	s := slack.NewServer(e, token)
+	return middleware.Common(s, middleware.CommonOpts{
 		Reporter: e.Reporter,
 		Logger:   e.Logger,
 	})
