@@ -131,7 +131,7 @@ func (t *Tugboat) UpdateStatus(d *Deployment, update StatusUpdate) error {
 	case StatusErrored:
 		var err error
 		if update.Error != nil {
-			err = *update.Error
+			err = errors.New(*update.Error)
 		} else {
 			err = errors.New("no error provided")
 		}
@@ -274,8 +274,9 @@ func statusUpdate(fn func() error) (update StatusUpdate) {
 		if err == ErrFailed {
 			update.Status = StatusFailed
 		} else {
+			msg := err.Error()
 			update.Status = StatusErrored
-			update.Error = &err
+			update.Error = &msg
 		}
 	}()
 
