@@ -39,6 +39,12 @@ type Process struct {
 	// Generally this would be something like "web" or "worker.
 	Name string
 
+	// Exposure is used by schedulers to determine if the process exposes any
+	// TCP/HTTP/HTTPS services. Schedulers can use the Protocol method or
+	// perform a type assertion to determine the exposure and settings for
+	// the exposure.
+	Exposure Exposure
+
 	// The command to run when running this process.
 	Command []string
 
@@ -83,6 +89,36 @@ type Task struct {
 	// The time that this state was recorded at.
 	Time time.Time
 }
+
+// Exposure represents a service that a process exposes, like HTTP/HTTPS/TCP or
+// SSL.
+type Exposure interface {
+	Protocol() string
+}
+
+var (
+	// The zero value for Exposure. No services.
+	ExposeNone Exposure = nil
+)
+
+// HTTPExposure represents an HTTP exposure.
+type HTTPExposure struct {
+	// External means that this http service should be exposed to internal
+	// traffic if possible.
+	External bool
+}
+
+func (e *HTTPExposure) Protocol() string { return "http" }
+
+// HTTPSExposure represents an HTTPS exposure
+type HTTPSExposure struct {
+	HTTPExposure
+
+	// The certificate to attach to the process.
+	Cert string
+}
+
+func (e *HTTPSExposure) Protocol() string { return "https" }
 
 // ProcessEnv merges the App environment with any environment variables provided
 // in the process.
