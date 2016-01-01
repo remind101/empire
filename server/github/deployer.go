@@ -3,10 +3,9 @@ package github
 import (
 	"io"
 
-	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/docker/docker/pkg/term"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
@@ -29,7 +28,6 @@ func (fn deployerFunc) Deploy(ctx context.Context, event events.Deployment, w io
 func newDeployer(e *empire.Empire, opts Options) deployer {
 	var d deployer
 	d = newEmpireDeployer(e, opts.ImageTemplate)
-	d = &prettyDeployer{deployer: d}
 
 	if opts.TugboatURL != "" {
 		d = newTugboatDeployer(d, opts.TugboatURL)
@@ -38,32 +36,6 @@ func newDeployer(e *empire.Empire, opts Options) deployer {
 	return &asyncDeployer{
 		deployer: &tracedDeployer{deployer: d},
 	}
-}
-
-// prettyDeployer is a deployer implementation that converts the raw json stream
-// into pretty output using the jsonmessage package.
-type prettyDeployer struct {
-	deployer
-}
-
-func (d *prettyDeployer) Deploy(ctx context.Context, p events.Deployment, out io.Writer) error {
-	r, w := io.Pipe()
-
-	errCh := make(chan error, 1)
-	go func() {
-		err := d.deployer.Deploy(ctx, p, w)
-		errCh <- err
-		w.Close()
-	}()
-
-	outFd, _ := term.GetFdInfo(out)
-	if err := jsonmessage.DisplayJSONMessagesStream(r, out, outFd, false); err != nil {
-		w.Close()
-		return err
-	}
-
-	err := <-errCh
-	return err
 }
 
 // Empire mocks the Empire interface we use.
@@ -117,18 +89,29 @@ func newTugboatDeployer(d deployer, url string) *tugboatDeployer {
 	}
 }
 
-func (d *tugboatDeployer) Deploy(ctx context.Context, p events.Deployment, out io.Writer) error {
-	opts := tugboat.NewDeployOptsFromEvent(p)
+func (d *tugboatDeployer) Deploy(ctx context.Context, event events.Deployment, out io.Writer) error {
+	opts := tugboat.NewDeployOptsFromEvent(event)
 
 	// Perform the deployment, wrapped in Deploy. This will automatically
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
+		// What we send to tugboat should be a plain text stream.
+		p := dockerutil.DecodeJSONMessageStream(w)
+
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
-		w = io.MultiWriter(w, out)
-		err := d.deployer.Deploy(ctx, p, w)
-		return err
+		w = io.MultiWriter(p, out)
+
+		if err := d.deployer.Deploy(ctx, event, w); err != nil {
+			return err
+		}
+
+		if err := p.Err(); err != nil {
+			return err
+		}
+
+		return nil
 	}))
 
 	return err

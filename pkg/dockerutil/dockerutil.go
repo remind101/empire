@@ -1,11 +1,13 @@
 package dockerutil
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 
 	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/term"
 	"github.com/remind101/empire/pkg/image"
 )
 
@@ -29,4 +31,43 @@ func FakePull(img image.Image, w io.Writer) error {
 	}
 
 	return nil
+}
+
+// DecodeJSONMessageStream wraps an io.Writer to decode a jsonmessage stream into
+// plain text. Bytes written to w represent the decoded plain text stream.
+func DecodeJSONMessageStream(w io.Writer) *DecodedJSONMessageWriter {
+	outFd, _ := term.GetFdInfo(w)
+	return &DecodedJSONMessageWriter{
+		w:  w,
+		fd: outFd,
+	}
+}
+
+// DecodedJSONMessageWriter is an io.Writer that decodes a jsonmessage stream.
+type DecodedJSONMessageWriter struct {
+	// The wrapped io.Writer. The plain text stream will be written here.
+	w  io.Writer
+	fd uintptr
+
+	// err holds the error returned after the jsonmessage stream is
+	// completely read.
+	err error
+}
+
+// Write decodes the jsonmessage stream in the bytes, and writes the decoded
+// plain text to the underlying io.Writer.
+func (w *DecodedJSONMessageWriter) Write(b []byte) (int, error) {
+	err := jsonmessage.DisplayJSONMessagesStream(bytes.NewReader(b), w.w, w.fd, false)
+	if err != nil {
+		if err, ok := err.(*jsonmessage.JSONError); ok {
+			w.err = err
+			return len(b), nil
+		}
+	}
+	return len(b), err
+}
+
+// Err returns the jsonmessage.Error that occurred, if any.
+func (w *DecodedJSONMessageWriter) Err() error {
+	return w.err
 }
