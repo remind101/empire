@@ -10,10 +10,10 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	"github.com/mattes/migrate/migrate"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
@@ -69,7 +69,7 @@ type Empire struct {
 	certs        *certsService
 
 	// Scheduler is the backend scheduler used to run applications.
-	Scheduler scheduler.Scheduler
+	Scheduler twelvefactor.Scheduler
 
 	// LogsStreamer is the backend used to stream application logs.
 	LogsStreamer LogsStreamer

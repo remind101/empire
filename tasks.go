@@ -26,7 +26,7 @@ type tasksService struct {
 func (s *tasksService) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 	var tasks []*Task
 
-	instances, err := s.Scheduler.Instances(ctx, app.ID)
+	instances, err := s.Scheduler.Tasks(app.ID)
 	if err != nil {
 		return tasks, err
 	}

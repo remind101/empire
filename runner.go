@@ -12,12 +12,14 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	a := newServiceApp(release)
-	p := newServiceProcess(release, NewProcess("run", Command(opts.Command)))
+	a := newApp(release)
+	p := newProcess(release, NewProcess("run", Command(opts.Command)))
+	p.Stdout = opts.Output
+	p.Stdin = opts.Input
 
 	for k, v := range opts.Env {
 		p.Env[k] = v
 	}
 
-	return r.Scheduler.Run(ctx, a, p, opts.Input, opts.Output)
+	return r.Scheduler.Run(a, p)
 }

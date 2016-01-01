@@ -145,7 +145,7 @@ type appsService struct {
 }
 
 func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
-	if err := s.Scheduler.Remove(ctx, app.ID); err != nil {
+	if err := s.Scheduler.Remove(app.ID); err != nil {
 		return err
 	}
 
@@ -227,7 +227,7 @@ func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
 		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	if err := s.Scheduler.Scale(ctx, release.AppID, string(p.Type), uint(quantity)); err != nil {
+	if err := s.Scheduler.ScaleProcess(release.AppID, string(p.Type), quantity); err != nil {
 		return nil, err
 	}
 
@@ -247,7 +247,7 @@ type restarter struct {
 
 func (s *restarter) Restart(ctx context.Context, opts RestartOpts) error {
 	if opts.PID != "" {
-		return s.Scheduler.Stop(ctx, opts.PID)
+		return s.Scheduler.StopTask(opts.PID)
 	}
 
 	return s.releaser.ReleaseApp(ctx, opts.App)

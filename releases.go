@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/headerutil"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -250,8 +250,8 @@ type releaser struct {
 // ScheduleRelease creates jobs for every process and instance count and
 // schedules them onto the cluster.
 func (r *releaser) Release(ctx context.Context, release *Release) error {
-	a := newServiceApp(release)
-	return r.Scheduler.Submit(ctx, a)
+	m := newManifest(release)
+	return r.Scheduler.Up(m)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -272,73 +272,78 @@ func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
 	return r.Release(ctx, release)
 }
 
-func newServiceApp(release *Release) *scheduler.App {
-	var processes []*scheduler.Process
+// newManifest turns a release into a twelvefactor.Manifest.
+func newManifest(release *Release) twelvefactor.Manifest {
+	app := newApp(release)
 
+	var processes []twelvefactor.process
 	for _, p := range release.Processes {
-		processes = append(processes, newServiceProcess(release, p))
+		processes = append(processes, newProcess(release, p))
 	}
 
-	return &scheduler.App{
-		ID:        release.App.ID,
-		Name:      release.App.Name,
+	return twelvefactor.Manifest{
+		App:       app,
 		Processes: processes,
 	}
 }
 
-func newServiceProcess(release *Release, p *Process) *scheduler.Process {
-	var procExp scheduler.Exposure
-	ports := newServicePorts(int64(p.Port))
-
+func newApp(release *Release) twelvefactor.App {
 	env := environment(release.Config.Vars)
 	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
-	env["EMPIRE_PROCESS"] = string(p.Type)
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
 	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
-	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
 
 	labels := map[string]string{
 		"empire.app.id":      release.App.ID,
 		"empire.app.name":    release.App.Name,
-		"empire.app.process": string(p.Type),
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
-	if len(ports) > 0 {
-		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
-
-		// If we have exposed ports, set process exposure to apps exposure
-		procExp = serviceExposure(release.App.Exposure)
-	}
-
-	return &scheduler.Process{
-		Type:        string(p.Type),
-		Env:         env,
-		Labels:      labels,
-		Command:     string(p.Command),
-		Image:       release.Slug.Image,
-		Instances:   uint(p.Quantity),
-		MemoryLimit: uint(p.Constraints.Memory),
-		CPUShares:   uint(p.Constraints.CPUShare),
-		Ports:       ports,
-		Exposure:    procExp,
-		SSLCert:     release.App.Cert,
+	return twelvefactor.App{
+		ID:    release.App.ID,
+		Name:  release.App.Name,
+		Env:   environment(release.Config.Vars),
+		Image: release.Slug.Image.String(),
 	}
 }
 
-func newServicePorts(hostPort int64) []scheduler.PortMap {
-	var ports []scheduler.PortMap
-	if hostPort != 0 {
-		// TODO: We can just map the same host port as the container port, as we make it
-		// available as $PORT in the env vars.
-		port := int64(WebPort)
-		ports = append(ports, scheduler.PortMap{
-			Host:      &hostPort,
-			Container: &port,
-		})
+func newProcess(release *Release, p *Process) twelvefactor.Process {
+	return twelvefactor.Process{
+		Exposure: newExposure(release, p),
+		Env: map[string]string{
+			"EMPIRE_PROCESS": string(p.Type),
+		},
+		Labels: map[string]string{
+			"empire.app.process": string(p.Type),
+		},
+		Name: string(p.Type),
+		// TODO:
+		// Command:      string(p.Command),
+		DesiredCount: p.Quantity,
+		Memory:       int(p.Constraints.Memory),
+		CPUShares:    int(p.Constraints.CPUShare),
 	}
-	return ports
+}
+
+func newExposure(release *Release, p *Process) twelvefactor.Exposure {
+	switch p.Type {
+	case "web":
+		exposure := &twelvefactor.HTTPExposure{
+			External: release.App.Exposure == ExposePublic,
+		}
+
+		if cert := release.App.Cert; cert != "" {
+			return &twelvefactor.HTTPSExposure{
+				HTTPExposure: *exposure,
+				Cert:         cert,
+			}
+		}
+
+		return exposure
+	default:
+		return nil
+	}
 }
 
 // environment coerces a Vars into a map[string]string.
@@ -350,17 +355,4 @@ func environment(vars Vars) map[string]string {
 	}
 
 	return env
-}
-
-func serviceExposure(appExp string) (exp scheduler.Exposure) {
-	switch appExp {
-	case ExposePrivate:
-		exp = scheduler.ExposePrivate
-	case ExposePublic:
-		exp = scheduler.ExposePublic
-	default:
-		exp = scheduler.ExposeNone
-	}
-
-	return exp
 }
