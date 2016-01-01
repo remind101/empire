@@ -18,6 +18,12 @@ type deployer interface {
 	Deploy(context.Context, events.Deployment, io.Writer) error
 }
 
+type deployerFunc func(context.Context, events.Deployment, io.Writer) error
+
+func (fn deployerFunc) Deploy(ctx context.Context, event events.Deployment, w io.Writer) error {
+	return fn(ctx, event, w)
+}
+
 // newDeployer is a factory method that generates a composed deployer instance
 // depending on the options.
 func newDeployer(e *empire.Empire, opts Options) deployer {
@@ -60,10 +66,15 @@ func (d *prettyDeployer) Deploy(ctx context.Context, p events.Deployment, out io
 	return err
 }
 
+// Empire mocks the Empire interface we use.
+type Empire interface {
+	Deploy(context.Context, empire.DeploymentsCreateOpts) (*empire.Release, error)
+}
+
 // empireDeployer is a deployer implementation that uses the Deploy method in
 // Empire to perform the deployment.
 type empireDeployer struct {
-	*empire.Empire
+	Empire
 	imageTmpl string
 }
 
