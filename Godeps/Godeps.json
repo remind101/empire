@@ -66,6 +66,11 @@
 			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/cloudformation",
+			"Comment": "v1.0.2",
+			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/ecs",
 			"Comment": "v1.0.2",
 			"Rev": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
@@ -135,6 +140,10 @@
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
 			"Rev": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"ImportPath": "github.com/ghodss/yaml",
+			"Rev": "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
 		},
 		{
 			"ImportPath": "github.com/go-ini/ini",
