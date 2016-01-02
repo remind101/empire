@@ -1,0 +1,596 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"comment": "null-12",
+			"path": "code.google.com/p/go-uuid/uuid",
+			"revision": "7dda39b2e7d5e265014674c5af696ba4186679e9"
+		},
+		{
+			"comment": "weekly-56",
+			"path": "code.google.com/p/goauth2/oauth",
+			"revision": "afe77d958c701557ec5dc56f6936fcc194d15520"
+		},
+		{
+			"comment": "weekly-56",
+			"path": "code.google.com/p/goauth2/oauth/jwt",
+			"revision": "afe77d958c701557ec5dc56f6936fcc194d15520"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/awserr",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/awsutil",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/client",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/client/metadata",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/corehandlers",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/credentials",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/defaults",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/ec2metadata",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/request",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/aws/session",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/endpoints",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/json/jsonutil",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/jsonrpc",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/query",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/query/queryutil",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/rest",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/restxml",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/signer/v4",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/private/waiter",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/service/ecs",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/service/elb",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/service/kinesis",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/service/kinesis/kinesisiface",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/service/route53",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"comment": "v1.0.2",
+			"path": "github.com/aws/aws-sdk-go/service/sns",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"path": "github.com/bgentry/testnet",
+			"revision": "05450cdcf16c84d5b08dc9bb617250aa7b63c8ff"
+		},
+		{
+			"comment": "1.2.0-26-gf7ebb76",
+			"path": "github.com/codegangsta/cli",
+			"revision": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
+		},
+		{
+			"comment": "v2.0.0-3-gc0da491",
+			"path": "github.com/dgrijalva/jwt-go",
+			"revision": "c0da49162251c81124e34f3e7885527a091dacd5"
+		},
+		{
+			"comment": "v1.4.1-3107-g5221fd2",
+			"path": "github.com/docker/docker/pkg/jsonmessage",
+			"revision": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"comment": "v1.4.1-3107-g5221fd2",
+			"path": "github.com/docker/docker/pkg/term",
+			"revision": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"comment": "v1.4.1-3107-g5221fd2",
+			"path": "github.com/docker/docker/pkg/term/winconsole",
+			"revision": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"comment": "v1.4.1-3107-g5221fd2",
+			"path": "github.com/docker/docker/pkg/timeutils",
+			"revision": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"comment": "v1.4.1-3107-g5221fd2",
+			"path": "github.com/docker/docker/pkg/units",
+			"revision": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"path": "github.com/ejholmes/flock",
+			"revision": "3c37e99d21fd913bd81c35b3c2f661cd04f2b1e8"
+		},
+		{
+			"path": "github.com/ejholmes/hookshot",
+			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
+		},
+		{
+			"path": "github.com/ejholmes/hookshot/events",
+			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
+		},
+		{
+			"path": "github.com/ejholmes/hookshot/hooker",
+			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/Sirupsen/logrus",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/opts",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/archive",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/fileutils",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/homedir",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/ioutils",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/mflag",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/parsers",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/pools",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/promise",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/stdcopy",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/system",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/ulimit",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/docker/pkg/units",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"path": "github.com/fsouza/go-dockerclient/vendor/github.com/docker/libcontainer/user",
+			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
+		},
+		{
+			"comment": "v0-56-g03e0e7d",
+			"path": "github.com/go-ini/ini",
+			"revision": "03e0e7d51a13a91c765d8d0161246bc14a38001a"
+		},
+		{
+			"comment": "v1.2-86-g7d52f0f",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "7d52f0fc9e81d12e0d0a2f8b6749fb96058d73d4"
+		},
+		{
+			"comment": "1st_gen_framing-130-gec1f562",
+			"path": "github.com/gocql/gocql",
+			"revision": "ec1f5626d6984ebe4da69779317a76f3a6698381"
+		},
+		{
+			"path": "github.com/golang/groupcache/lru",
+			"revision": "8b25adc0f62632c810997cb38c21111a3f256bf4"
+		},
+		{
+			"path": "github.com/golang/snappy/snappy",
+			"revision": "a911026e1ffa84898778ccb0363930485e0aa880"
+		},
+		{
+			"path": "github.com/google/go-github/github",
+			"revision": "34fb8ee07214d23c3035c95691fe9069705814d6"
+		},
+		{
+			"path": "github.com/google/go-querystring/query",
+			"revision": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
+		},
+		{
+			"path": "github.com/gorilla/context",
+			"revision": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"path": "github.com/gorilla/mux",
+			"revision": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"comment": "v2.3-38-g352fceb",
+			"path": "github.com/inconshreveable/log15",
+			"revision": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
+		},
+		{
+			"comment": "v2.3-38-g352fceb",
+			"path": "github.com/inconshreveable/log15/stack",
+			"revision": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
+		},
+		{
+			"comment": "v2.3-38-g352fceb",
+			"path": "github.com/inconshreveable/log15/term",
+			"revision": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
+		},
+		{
+			"path": "github.com/jinzhu/gorm",
+			"revision": "3c2915a9dfaaeaeb1e049436ae9291f5e84c95fa"
+		},
+		{
+			"comment": "0.2.2",
+			"path": "github.com/jmespath/go-jmespath",
+			"revision": "3433f3ea46d9f8019119e7dd41274e112a2359a9"
+		},
+		{
+			"path": "github.com/joshk/pusher",
+			"revision": "011114c803b3adb8dab3c66f3d4648e8b9513bd9"
+		},
+		{
+			"comment": "go1.0-cutoff-22-g73672c2",
+			"path": "github.com/lib/pq",
+			"revision": "73672c22431294bd2d012742dfc488523cc631bd"
+		},
+		{
+			"comment": "go1.0-cutoff-22-g73672c2",
+			"path": "github.com/lib/pq/hstore",
+			"revision": "73672c22431294bd2d012742dfc488523cc631bd"
+		},
+		{
+			"comment": "go1.0-cutoff-22-g73672c2",
+			"path": "github.com/lib/pq/oid",
+			"revision": "73672c22431294bd2d012742dfc488523cc631bd"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/driver",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/driver/bash",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/driver/cassandra",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/driver/mysql",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/driver/postgres",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/file",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/migrate",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/migrate/direction",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"comment": "v1.2.0",
+			"path": "github.com/mattes/migrate/pipe",
+			"revision": "bbc885c280e9063210bbf1d0482db87e5045725c"
+		},
+		{
+			"path": "github.com/mattn/go-colorable",
+			"revision": "d67e0b7d1797975196499f79bcc322c08b9f218b"
+		},
+		{
+			"path": "github.com/mattn/go-shellwords",
+			"revision": "f4e566c536cf69158e808ec28ef4182a37fdc981"
+		},
+		{
+			"path": "github.com/pmylund/go-cache",
+			"revision": "93d85800f2fa6bd0a739e7bd612bfa3bc008b72d"
+		},
+		{
+			"path": "github.com/remind101/kinesumer",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/checkpointers/empty",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/checkpointers/redis",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/interface",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/mocks",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/provisioners/empty",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/provisioners/redis",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/kinesumer/redispool",
+			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+		},
+		{
+			"path": "github.com/remind101/newrelic",
+			"revision": "04b4810fa8c0ae0978c2d8e8c7ddc7e811d92d70"
+		},
+		{
+			"path": "github.com/remind101/newrelic/sdk",
+			"revision": "04b4810fa8c0ae0978c2d8e8c7ddc7e811d92d70"
+		},
+		{
+			"path": "github.com/remind101/pkg/httpx",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/httpx/middleware",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/logger",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/reporter",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/reporter/hb",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/reporter/util",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/timex",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"path": "github.com/remind101/pkg/trace",
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/frontend",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/pkg/heroku",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/pkg/pusherauth",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/provider/empire",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/provider/heroku",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/server",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/server/api",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"comment": "v0.0.1-275-g26c5f5c",
+			"path": "github.com/remind101/tugboat/server/github",
+			"revision": "9655efe1fc24323ec3155fe43e7446dc2264e00c",
+			"revisionTime": "2016-01-06T04:51:11+07:00"
+		},
+		{
+			"path": "github.com/stretchr/objx",
+			"revision": "cbeaeb16a013161a98496fad62933b1d21786672"
+		},
+		{
+			"comment": "v1.0-51-gf3960ab",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "f3960ab1f9664ecc4e27c78af27cc9063d745a43"
+		},
+		{
+			"comment": "v1.0-51-gf3960ab",
+			"path": "github.com/stretchr/testify/mock",
+			"revision": "f3960ab1f9664ecc4e27c78af27cc9063d745a43"
+		},
+		{
+			"path": "golang.org/x/net/context",
+			"revision": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
+		},
+		{
+			"path": "golang.org/x/oauth2",
+			"revision": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"path": "golang.org/x/oauth2/google",
+			"revision": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"path": "golang.org/x/oauth2/internal",
+			"revision": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"path": "golang.org/x/oauth2/jws",
+			"revision": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"path": "golang.org/x/oauth2/jwt",
+			"revision": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"comment": "v1.7.1",
+			"path": "gopkg.in/gorp.v1",
+			"revision": "c87af80f3cc5036b55b83d77171e156791085e2e"
+		},
+		{
+			"path": "gopkg.in/yaml.v2",
+			"revision": "5d6f7e02b7cdad63b06ab3877915532cd30073b4"
+		},
+		{
+			"path": "speter.net/go/exp/math/dec/inf",
+			"revision": "42ca6cd68aa922bc3f32f1e056e61b65945d9ad7"
+		}
+	]
+}
