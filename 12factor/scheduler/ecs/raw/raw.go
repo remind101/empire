@@ -2,7 +2,6 @@
 package raw
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -50,6 +49,7 @@ func NewStackBuilder(config client.ConfigProvider) *StackBuilder {
 
 // Build creates or updates ECS services for the app.
 func (b *StackBuilder) Build(manifest twelvefactor.Manifest) error {
+	// TODO: Remove old services not in the manifest
 	for _, process := range manifest.Processes {
 		if err := b.CreateService(manifest.App, process); err != nil {
 			return err
@@ -61,7 +61,7 @@ func (b *StackBuilder) Build(manifest twelvefactor.Manifest) error {
 
 // CreateService creates an ECS service for the Process.
 func (b *StackBuilder) CreateService(app twelvefactor.App, process twelvefactor.Process) error {
-	name := strings.Join([]string{app.ID, process.Name}, b.delimiter())
+	name := b.ServiceName(app, process)
 
 	taskDefinition, err := b.RegisterTaskDefinition(app, process)
 	if err != nil {
@@ -79,7 +79,7 @@ func (b *StackBuilder) CreateService(app twelvefactor.App, process twelvefactor.
 }
 
 func (b *StackBuilder) RegisterTaskDefinition(app twelvefactor.App, process twelvefactor.Process) (string, error) {
-	family := strings.Join([]string{app.ID, process.Name}, b.delimiter())
+	family := b.TaskDefinitionName(app, process)
 
 	var command []*string
 	for _, s := range process.Command {
@@ -113,7 +113,7 @@ func (b *StackBuilder) RegisterTaskDefinition(app twelvefactor.App, process twel
 		return "", err
 	}
 
-	return fmt.Sprintf("%s:%d", *resp.TaskDefinition.Family, *resp.TaskDefinition.Revision), nil
+	return *resp.TaskDefinition.TaskDefinitionArn, nil
 }
 
 // Iterates through all of the ECS services for this app and removes them.
@@ -169,6 +169,14 @@ func (b *StackBuilder) Services(app string) (map[string]string, error) {
 	}
 
 	return services, nil
+}
+
+func (b *StackBuilder) ServiceName(app twelvefactor.App, process twelvefactor.Process) string {
+	return strings.Join([]string{app.ID, process.Name}, b.delimiter())
+}
+
+func (b *StackBuilder) TaskDefinitionName(app twelvefactor.App, process twelvefactor.Process) string {
+	return strings.Join([]string{app.ID, process.Name}, b.delimiter())
 }
 
 func (b *StackBuilder) split(service string) (app, process string, ok bool) {

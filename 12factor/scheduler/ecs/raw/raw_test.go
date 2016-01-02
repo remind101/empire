@@ -54,8 +54,7 @@ func TestStackBuilder_Build(t *testing.T) {
 		},
 	}).Return(&ecs.RegisterTaskDefinitionOutput{
 		TaskDefinition: &ecs.TaskDefinition{
-			Family:   aws.String("app--web"),
-			Revision: aws.Int64(1),
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:1"),
 		},
 	}, nil)
 	c.On("CreateService", &ecs.CreateServiceInput{
@@ -63,7 +62,7 @@ func TestStackBuilder_Build(t *testing.T) {
 		DesiredCount:   aws.Int64(0),
 		Role:           aws.String(""),
 		ServiceName:    aws.String("app--web"),
-		TaskDefinition: aws.String("app--web:1"),
+		TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:1"),
 	}).Return(&ecs.CreateServiceOutput{}, nil)
 	err := b.Build(manifest)
 	assert.NoError(t, err)
