@@ -86,7 +86,8 @@ using the postgres client connection defaults.
 To run the tests:
 
 ```console
-$ godep go test ./...
+$ export GO15VENDOREXPERIMENT=1
+$ go test ./...
 ```
 
 ## Development
@@ -129,6 +130,16 @@ Empire will be available at `http://$(docker-machine ip default):8080` and you c
 ```console
 $ export EMPIRE_API_URL=http://$(docker-machine ip default):8080
 $ emp deploy remind101/acme-inc
+```
+
+### Vendoring
+
+Empire follows Go's convention of vendoring third party dependencies. We use the Go 1.5+ [vendor expirement](https://blog.gopheracademy.com/advent-2015/vendor-folder/), and manage the `./vendor/` directory via [govendor](https://github.com/kardianos/govendor).
+
+When you add a new dependency, be sure to vendor it with govendor:
+
+```console
+$ govendor add <package>
 ```
 
 ## Community

@@ -4,7 +4,7 @@ REPO = remind101/empire
 TYPE = patch
 
 cmd:
-	godep go build -o build/empire ./cmd/empire
+	go build -o build/empire ./cmd/empire
 
 bootstrap: cmd build/emp
 	createdb empire || true
@@ -13,8 +13,13 @@ bootstrap: cmd build/emp
 build: Dockerfile
 	docker build -t ${REPO} .
 
+ci: cmd test vet
+
 test: build/emp
-	godep go test ./... && godep go vet ./...
+	go test $(shell go list ./... | grep -v /vendor/)
+
+vet:
+	go vet $(shell go list ./... | grep -v /vendor/)
 
 build/emp:
 	go get -f -u github.com/remind101/emp
