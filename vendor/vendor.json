@@ -158,6 +158,21 @@
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"path": "github.com/bgentry/go-netrc/netrc",
+			"revision": "9fd32a8b3d3d3f9d43c341bfe098430e07609480",
+			"revisionTime": "2014-04-22T10:41:19-07:00"
+		},
+		{
+			"path": "github.com/bgentry/pflag",
+			"revision": "b008717215c7236e20ca2faaf805e54ba6c1d208",
+			"revisionTime": "2014-03-24T10:45:40+01:00"
+		},
+		{
+			"path": "github.com/bgentry/speakeasy",
+			"revision": "48b5b9e3fedbde05cdb5f97c0b0930bda49e5e7a",
+			"revisionTime": "2014-04-28T15:48:49-07:00"
+		},
+		{
 			"path": "github.com/bgentry/testnet",
 			"revision": "05450cdcf16c84d5b08dc9bb617250aa7b63c8ff"
 		},
@@ -410,6 +425,11 @@
 		{
 			"path": "github.com/mattn/go-shellwords",
 			"revision": "f4e566c536cf69158e808ec28ef4182a37fdc981"
+		},
+		{
+			"path": "github.com/mgutz/ansi",
+			"revision": "376eb392d7d7e2ae025da0037c73cf8c20a428d8",
+			"revisionTime": "2013-05-14T23:54:47-07:00"
 		},
 		{
 			"path": "github.com/pmylund/go-cache",

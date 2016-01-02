@@ -30,7 +30,7 @@ As an example, you can use the `hk` CLI with Empire like this:
 $ HEROKU_API_URL=<empire_url> hk ...
 ```
 
-However, the best user experience will be by using the [emp](https://github.com/remind101/emp) command, which is a fork of `hk` with Empire specific features.
+However, the best user experience will be by using the [emp](https://github.com/remind101/empire/cmd/emp) command, which is a fork of `hk` with Empire specific features.
 
 ### Routing
 
@@ -122,7 +122,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 6. Install the emp CLI.
 
    ```console
-   $ go get -u github.com/remind101/emp
+   $ go get -u github.com/remind101/empire/cmd/emp
    ```
 
 Empire will be available at `http://$(docker-machine ip default):8080` and you can point the CLI there.

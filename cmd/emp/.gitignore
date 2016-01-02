@@ -1,0 +1,7 @@
+emp
+*.exe
+*.*~
+*.swp
+.env*
+
+build/

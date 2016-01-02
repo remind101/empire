@@ -85,7 +85,7 @@ right tarball for your architecture, and install the resulting binary called
 If you have a working Go environment you can also install with `go get`:
 
 ```console
-$ go get -u github.com/remind101/emp
+$ go get -u github.com/remind101/empire/cmd/emp
 ```
 
 [awscli]: http://aws.amazon.com/cli/
