@@ -114,7 +114,7 @@ func TestScheduler_Tasks(t *testing.T) {
 	})
 }
 
-func TestScheduler_Restart(t *testing.T) {
+func TestScheduler_RestartProcess(t *testing.T) {
 	b := new(mockStackBuilder)
 	c := new(mockECSClient)
 	s := &Scheduler{
@@ -123,9 +123,39 @@ func TestScheduler_Restart(t *testing.T) {
 		ecs:          c,
 	}
 
-	b.On("Restart", "app").Return(nil)
-	err := s.Restart("app")
+	b.On("Services", "app").Return(map[string]string{"web": "app--web", "worker": "app--worker"}, nil)
+	c.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("app--web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:1")},
+		},
+	}, nil)
+	c.On("DescribeTaskDefinition", &ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:1"),
+	}).Return(&ecs.DescribeTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			Family: aws.String("app--web"),
+		},
+	}, nil)
+	c.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("app--web"),
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:2"),
+		},
+	}, nil)
+	c.On("UpdateService", &ecs.UpdateServiceInput{
+		Cluster:        aws.String("cluster"),
+		TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:2"),
+	}).Return(&ecs.UpdateServiceOutput{}, nil)
+
+	err := s.RestartProcess("app", "web")
 	assert.NoError(t, err)
+
+	b.AssertExpectations(t)
+	c.AssertExpectations(t)
 }
 
 func TestScheduler_StopTask(t *testing.T) {
@@ -154,6 +184,11 @@ type mockECSClient struct {
 	mock.Mock
 }
 
+func (c *mockECSClient) DescribeServices(input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
+	args := c.Called(input)
+	return args.Get(0).(*ecs.DescribeServicesOutput), args.Error(1)
+}
+
 func (c *mockECSClient) UpdateService(input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
 	args := c.Called(input)
 	return args.Get(0).(*ecs.UpdateServiceOutput), args.Error(1)
@@ -172,6 +207,16 @@ func (c *mockECSClient) DescribeTasks(input *ecs.DescribeTasksInput) (*ecs.Descr
 func (c *mockECSClient) StopTask(input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error) {
 	args := c.Called(input)
 	return args.Get(0).(*ecs.StopTaskOutput), args.Error(1)
+}
+
+func (c *mockECSClient) DescribeTaskDefinition(input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
+	args := c.Called(input)
+	return args.Get(0).(*ecs.DescribeTaskDefinitionOutput), args.Error(1)
+}
+
+func (c *mockECSClient) RegisterTaskDefinition(input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+	args := c.Called(input)
+	return args.Get(0).(*ecs.RegisterTaskDefinitionOutput), args.Error(1)
 }
 
 // mockStackBuilder is an implementation of the StackBuilder interface for

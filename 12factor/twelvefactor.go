@@ -87,7 +87,7 @@ type Task struct {
 	State string
 
 	// The time that this state was recorded at.
-	Time time.Time
+	UpdatedAt time.Time
 }
 
 // Exposure represents a service that a process exposes, like HTTP/HTTPS/TCP or

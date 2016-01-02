@@ -24,10 +24,13 @@ func (e *ProcessNotFoundError) Error() string {
 
 // ecsClient represents a client for interacting with ECS.
 type ecsClient interface {
+	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 	ListTasks(*ecs.ListTasksInput) (*ecs.ListTasksOutput, error)
 	DescribeTasks(*ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
+	DescribeTaskDefinition(*ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error)
+	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 }
 
 // Scheduler is an implementation of the twelvefactor.Scheduler interface that
@@ -65,17 +68,29 @@ func (s *Scheduler) Remove(app string) error {
 
 // Restart restarts all ECS services for this application.
 func (s *Scheduler) Restart(app string) error {
+	services, err := s.StackBuilder.Services(app)
+	if err != nil {
+		return err
+	}
+
+	for _, service := range services {
+		// TODO: Parallelize
+		if err := s.RestartService(service); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // Restart restarts an the ECS service associated with the given process.
 func (s *Scheduler) RestartProcess(app string, process string) error {
-	// TODO:
-	// DescribeService
-	// DescribeTaskDefinition
-	// RegisterTaskDefinition (Copy)
-	// UpdateService
-	return nil
+	service, err := s.Service(app, process)
+	if err != nil {
+		return err
+	}
+
+	return s.RestartService(service)
 }
 
 // StopTask stops an ECS task.
@@ -103,22 +118,6 @@ func (s *Scheduler) ScaleProcess(app, process string, desired int) error {
 	return err
 }
 
-// Service returns the name of the ECS service for the given process.
-func (s *Scheduler) Service(app, process string) (string, error) {
-	services, err := s.StackBuilder.Services(app)
-	if err != nil {
-		return "", err
-	}
-
-	// If there's no matching ECS service for this process, return an error.
-	service, ok := services[process]
-	if !ok {
-		return service, &ProcessNotFoundError{Process: process}
-	}
-
-	return service, nil
-}
-
 // Tasks returns the RUNNING and PENDING ECS tasks for the ECS services.
 func (s *Scheduler) Tasks(app string) ([]twelvefactor.Task, error) {
 	services, err := s.StackBuilder.Services(app)
@@ -136,6 +135,79 @@ func (s *Scheduler) Tasks(app string) ([]twelvefactor.Task, error) {
 	}
 
 	return tasks, nil
+}
+
+// RestartService "restarts" the given service. We fake a restart by creating a
+// new task definition from the current one, and updating the service with it.
+func (s *Scheduler) RestartService(service string) error {
+	taskDefinition, err := s.CopyTaskDefinition(service)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.ecs.UpdateService(&ecs.UpdateServiceInput{
+		Cluster:        aws.String(s.Cluster),
+		TaskDefinition: taskDefinition.TaskDefinitionArn,
+	})
+	return err
+}
+
+// CopyTaskDefinition copies a task definition for an ECS service, returning the
+// new task definition.
+func (s *Scheduler) CopyTaskDefinition(service string) (*ecs.TaskDefinition, error) {
+	taskDefinition, err := s.TaskDefinition(service)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+		ContainerDefinitions: taskDefinition.ContainerDefinitions,
+		Family:               taskDefinition.Family,
+		Volumes:              taskDefinition.Volumes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.TaskDefinition, nil
+}
+
+// TaskDefinition returns the task definition for an ECS service.
+func (s *Scheduler) TaskDefinition(service string) (*ecs.TaskDefinition, error) {
+	serviceResp, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+		Cluster:  aws.String(s.Cluster),
+		Services: []*string{aws.String(service)},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	taskDefinition := serviceResp.Services[0].TaskDefinition
+	descResp, err := s.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: taskDefinition,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Handle Failures
+	return descResp.TaskDefinition, nil
+}
+
+// Service returns the name of the ECS service for the given process.
+func (s *Scheduler) Service(app, process string) (string, error) {
+	services, err := s.StackBuilder.Services(app)
+	if err != nil {
+		return "", err
+	}
+
+	// If there's no matching ECS service for this process, return an error.
+	service, ok := services[process]
+	if !ok {
+		return service, &ProcessNotFoundError{Process: process}
+	}
+
+	return service, nil
 }
 
 // ServiceTasks returns the Tasks running for the given ECS service.
