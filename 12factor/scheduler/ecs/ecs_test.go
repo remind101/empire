@@ -149,6 +149,7 @@ func TestScheduler_RestartProcess(t *testing.T) {
 	c.On("UpdateService", &ecs.UpdateServiceInput{
 		Cluster:        aws.String("cluster"),
 		TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:2"),
+		Service:        aws.String("app--web"),
 	}).Return(&ecs.UpdateServiceOutput{}, nil)
 
 	err := s.RestartProcess("app", "web")

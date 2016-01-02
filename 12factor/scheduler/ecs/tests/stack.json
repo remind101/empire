@@ -17,10 +17,35 @@
             "Statement": [
               {
                 "Effect": "Allow",
+                "Action": [
+                  "ecs:DescribeTaskDefinition",
+                  "ecs:RegisterTaskDefinition",
+                  "ecs:CreateService",
+                  "ecs:UpdateService",
+                  "ecs:DescribeServices",
+                  "ecs:ListServices",
+                  "ecs:DeleteService"
+                ],
+                "Resource": [
+                  "*"
+                ]
+              },
+              {
+                "Effect": "Allow",
                 "Resource": ["*"],
                 "Action": [
-                  "ecs:*"
-                ]
+                  "ecs:DescribeTasks",
+                  "ecs:ListTasks",
+                  "ecs:StopTask",
+                  "ecs:RunTask"
+                ],
+                "Condition": {
+                  "ArnEquals": {
+                    "ecs:cluster": {
+                      "Fn::Join": ["", ["arn:aws:ecs:us-east-1:", { "Ref": "AWS::AccountId" }, ":cluster/", { "Ref": "Cluster" }]]
+                    }
+                  }
+                }
               }
             ]
           }
@@ -49,6 +74,10 @@
     "AwsRegion": {
       "Description": "AWS_REGION",
       "Value": { "Ref": "AWS::Region" }
+    },
+    "Cluster": {
+      "Description": "ECS_CLUSTER",
+      "Value": { "Ref": "Cluster" }
     }
   }
 }

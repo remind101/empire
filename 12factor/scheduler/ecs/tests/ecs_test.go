@@ -1,6 +1,7 @@
 package ecs_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -8,8 +9,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/12factor/scheduler/ecs"
-	"github.com/remind101/empire/12factor/scheduler/ecs/cloudformation"
+	"github.com/remind101/empire/12factor/scheduler/ecs/raw"
 	"github.com/remind101/empire/pkg/bytesize"
+	"github.com/stretchr/testify/assert"
 )
 
 // manifest is our test application. This is a valid application that will be run
@@ -37,32 +39,27 @@ var manifest = twelvefactor.Manifest{
 func TestScheduler(t *testing.T) {
 	s := newScheduler(t)
 	defer func() {
-		if err := s.Remove(manifest.ID); err != nil {
-			t.Fatal(err)
-		}
+		err := s.Remove(manifest.ID)
+		assert.NoError(t, err)
 	}()
 
-	if err := s.Up(manifest); err != nil {
-		t.Fatal(err)
-	}
+	err := s.Up(manifest)
+	assert.NoError(t, err)
 
-	if err := s.ScaleProcess(manifest.ID, "web", 1); err != nil {
-		t.Fatal(err)
-	}
+	err = s.ScaleProcess(manifest.ID, "web", 1)
+	assert.NoError(t, err)
 
-	_, err := s.Tasks(manifest.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, err = s.Tasks(manifest.ID)
+	assert.NoError(t, err)
 
-	if err := s.ScaleProcess(manifest.ID, "web", 0); err != nil {
-		t.Fatal(err)
-	}
+	err = s.Restart(manifest.ID)
+	assert.NoError(t, err)
 }
 
 func newScheduler(t testing.TB) *ecs.Scheduler {
-	// TODO: Don't skip
-	t.Skip("skipping")
+	if testing.Short() {
+		t.Skip("skipping ECS scheduler integration tests in short mode")
+	}
 
 	creds := &credentials.EnvProvider{}
 	if _, err := creds.Retrieve(); err != nil {
@@ -71,11 +68,14 @@ func newScheduler(t testing.TB) *ecs.Scheduler {
 
 	config := aws.NewConfig().WithCredentials(credentials.NewCredentials(creds))
 
-	b := cloudformation.NewStackBuilder(session.New(config))
-	b.Template = cloudformation.BasicTemplate
+	cluster := os.Getenv("ECS_CLUSTER")
+
+	b := raw.NewStackBuilder(session.New(config))
+	b.Cluster = cluster
 
 	s := ecs.NewScheduler(session.New(config))
 	s.StackBuilder = b
+	s.Cluster = cluster
 
 	return s
 }

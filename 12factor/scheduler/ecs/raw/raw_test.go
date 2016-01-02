@@ -84,6 +84,11 @@ func TestStackBuilder_Remove(t *testing.T) {
 			},
 		},
 	})
+	c.On("UpdateService", &ecs.UpdateServiceInput{
+		Cluster:      aws.String("cluster"),
+		Service:      aws.String("app--web"),
+		DesiredCount: aws.Int64(0),
+	}).Return(&ecs.UpdateServiceOutput{}, nil)
 	c.On("DeleteService", &ecs.DeleteServiceInput{
 		Cluster: aws.String("cluster"),
 		Service: aws.String("app--web"),
@@ -197,4 +202,9 @@ func (c *mockECSClient) RegisterTaskDefinition(input *ecs.RegisterTaskDefinition
 func (c *mockECSClient) CreateService(input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
 	args := c.Called(input)
 	return args.Get(0).(*ecs.CreateServiceOutput), args.Error(1)
+}
+
+func (c *mockECSClient) UpdateService(input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
+	args := c.Called(input)
+	return args.Get(0).(*ecs.UpdateServiceOutput), args.Error(1)
 }

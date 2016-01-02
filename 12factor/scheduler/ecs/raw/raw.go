@@ -21,6 +21,7 @@ type ecsClient interface {
 	DeleteService(*ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
 	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	CreateService(*ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error)
+	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 }
 
 // StackBuilder implements the StackBuilder interface for the ECS scheduler.
@@ -124,12 +125,34 @@ func (b *StackBuilder) Remove(app string) error {
 	}
 
 	for _, service := range services {
-		if _, err := b.ecs.DeleteService(&ecs.DeleteServiceInput{
-			Cluster: aws.String(b.Cluster),
-			Service: aws.String(service),
-		}); err != nil {
+		// TODO: Parallelize
+		if err := b.RemoveService(service); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// RemoveService scales an ECS service to 0, waits for it to become stable, then
+// removes it.
+func (b *StackBuilder) RemoveService(service string) error {
+	if _, err := b.ecs.UpdateService(&ecs.UpdateServiceInput{
+		Cluster:      aws.String(b.Cluster),
+		Service:      aws.String(service),
+		DesiredCount: aws.Int64(0),
+	}); err != nil {
+		return err
+	}
+
+	// TODO: Wait until https://github.com/aws/aws-sdk-go/issues/457 is
+	// resolved.
+
+	if _, err := b.ecs.DeleteService(&ecs.DeleteServiceInput{
+		Cluster: aws.String(b.Cluster),
+		Service: aws.String(service),
+	}); err != nil {
+		return err
 	}
 
 	return nil

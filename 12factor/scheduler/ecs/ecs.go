@@ -148,6 +148,7 @@ func (s *Scheduler) RestartService(service string) error {
 	_, err = s.ecs.UpdateService(&ecs.UpdateServiceInput{
 		Cluster:        aws.String(s.Cluster),
 		TaskDefinition: taskDefinition.TaskDefinitionArn,
+		Service:        aws.String(service),
 	})
 	return err
 }
