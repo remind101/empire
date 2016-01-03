@@ -15,12 +15,7 @@ type Slug struct {
 	ProcessTypes CommandMap
 }
 
-// SlugsCreate persists the slug.
-func (s *store) SlugsCreate(slug *Slug) (*Slug, error) {
-	return slugsCreate(s.db, slug)
-}
-
-// SlugsCreate inserts a Slug into the database.
+// slugsCreate inserts a Slug into the database.
 func slugsCreate(db *gorm.DB, slug *Slug) (*Slug, error) {
 	return slug, db.Create(slug).Error
 }
@@ -31,20 +26,20 @@ type slugsService struct {
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) SlugsCreateByImage(ctx context.Context, img image.Image, out io.Writer) (*Slug, error) {
-	return slugsCreateByImage(ctx, s.store, s.ExtractProcfile, img, out)
+func (s *slugsService) Create(ctx context.Context, db *gorm.DB, img image.Image, out io.Writer) (*Slug, error) {
+	return slugsCreateByImage(ctx, db, s.ExtractProcfile, img, out)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(ctx context.Context, store *store, e ProcfileExtractor, img image.Image, out io.Writer) (*Slug, error) {
+func slugsCreateByImage(ctx context.Context, db *gorm.DB, e ProcfileExtractor, img image.Image, out io.Writer) (*Slug, error) {
 	slug, err := slugsExtract(ctx, e, img, out)
 	if err != nil {
 		return slug, err
 	}
 
-	return store.SlugsCreate(slug)
+	return slugsCreate(db, slug)
 }
 
 // SlugsExtract extracts the process types from the image, then returns a new

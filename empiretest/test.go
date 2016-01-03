@@ -27,9 +27,16 @@ var (
 // NewEmpire returns a new Empire instance suitable for testing. It ensures that
 // the database is clean before returning.
 func NewEmpire(t testing.TB) *empire.Empire {
-	db, err := empire.NewDB(DatabaseURL)
+	db, err := empire.OpenDB(DatabaseURL)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// TODO: Run db.MigrateUp once migrations are in the binary.
+
+	// Log queries if verbose mode is set.
+	if testing.Verbose() {
+		db.Debug()
 	}
 
 	e := empire.New(db, empire.DefaultOptions)

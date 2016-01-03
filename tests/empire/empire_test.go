@@ -1,6 +1,8 @@
 package empire_test
 
 import (
+	"errors"
+	"io"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -10,13 +12,12 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-const fakeUUID = "01234567-89ab-cdef-0123-456789abcdef"
 
 var fakeNow = time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
 
@@ -114,6 +115,92 @@ func TestEmpire_Deploy(t *testing.T) {
 		Image:  img,
 	})
 	assert.NoError(t, err)
+
+	s.AssertExpectations(t)
+}
+
+func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+	s := new(mockScheduler)
+	e.Scheduler = s
+	e.ExtractProcfile = func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+		return nil, errors.New("image not found")
+	}
+
+	// Deploying an image to an app that doesn't exist will create a new
+	// app.
+	_, err := e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+		User:   &empire.User{Name: "ejholmes"},
+		Output: ioutil.Discard,
+		Image:  image.Image{Repository: "remind101/acme-inc"},
+	})
+	assert.Error(t, err)
+
+	// If there's an error deploying, then the transaction should be rolled
+	// backed and no apps should exist.
+	apps, err := e.Apps(empire.AppsQuery{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(apps))
+
+	s.AssertExpectations(t)
+}
+
+func TestEmpire_Deploy_Concurrent(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+	s := new(mockScheduler)
+	e.Scheduler = scheduler.NewFakeScheduler()
+	e.ExtractProcfile = func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+		return nil, nil
+	}
+
+	user := &empire.User{Name: "ejholmes"}
+
+	// Create the first release for this app.
+	r, err := e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+		User:   user,
+		Output: ioutil.Discard,
+		Image:  image.Image{Repository: "remind101/acme-inc"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, r.Version)
+
+	// We'll use the procfile extractor to synchronize two concurrent
+	// deployments.
+	v2Started, v3Started := make(chan struct{}), make(chan struct{})
+	e.ExtractProcfile = func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+		switch img.Tag {
+		case "v2":
+			close(v2Started)
+			<-v3Started
+		case "v3":
+			close(v3Started)
+		}
+		return nil, nil
+	}
+
+	v2Done := make(chan struct{})
+	go func() {
+		r, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+			User:   user,
+			Output: ioutil.Discard,
+			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, r.Version)
+		close(v2Done)
+	}()
+
+	<-v2Started
+
+	r, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+		User:   user,
+		Output: ioutil.Discard,
+		Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v3"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, r.Version)
+
+	<-v2Done
 
 	s.AssertExpectations(t)
 }

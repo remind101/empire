@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 )
 
@@ -14,34 +15,34 @@ type deployerService struct {
 	*Empire
 }
 
-// doDeploy does the actual deployment
-func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+// deploy does the actual deployment
+func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeploymentsCreateOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this
 	// images repository, or create it if not found.
 	if app == nil {
 		var err error
-		app, err = s.apps.AppsFindOrCreateByRepo(img.Repository)
+		app, err = appsFindOrCreateByRepo(db, img.Repository)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// If the app doesn't already have a repo attached to it, we'll attach
 		// this image's repo.
-		if err := s.apps.AppsEnsureRepo(app, img.Repository); err != nil {
+		if err := appsEnsureRepo(db, app, img.Repository); err != nil {
 			return nil, err
 		}
 	}
 
 	// Grab the latest config.
-	config, err := s.Config(app)
+	config, err := s.configs.Config(db, app)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a new slug for the docker image.
-	slug, err := s.slugs.SlugsCreateByImage(ctx, img, opts.Output)
+	slug, err := s.slugs.Create(ctx, db, img, opts.Output)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", img.String())
 
-	r, err := s.releases.ReleasesCreate(ctx, &Release{
+	r, err := s.releases.Create(ctx, db, &Release{
 		App:         app,
 		Config:      config,
 		Slug:        slug,
@@ -60,11 +61,12 @@ func (s *deployerService) doDeploy(ctx context.Context, opts DeploymentsCreateOp
 	return r, err
 }
 
-// Deploy is a thin wrapper around doDeploy to handle errors & output more cleanly
-func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+// Deploy is a thin wrapper around deploy to that adds the error to the
+// jsonmessage stream.
+func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeploymentsCreateOpts) (*Release, error) {
 	var msg jsonmessage.JSONMessage
 
-	r, err := s.doDeploy(ctx, opts)
+	r, err := s.deploy(ctx, db, opts)
 	if err != nil {
 		msg = newJSONMessageError(err)
 	} else {
@@ -75,5 +77,5 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeploymentsCreateOpts
 		return r, err
 	}
 
-	return r, nil
+	return r, err
 }

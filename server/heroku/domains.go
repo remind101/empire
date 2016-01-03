@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/remind101/empire/pkg/heroku"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -64,7 +64,7 @@ func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		AppID:    a.ID,
 		Hostname: form.Hostname,
 	}
-	d, err := h.DomainsCreate(domain)
+	d, err := h.DomainsCreate(ctx, domain)
 	if err != nil {
 		if err == empire.ErrDomainInUse {
 			return fmt.Errorf("%s is currently in use by another app.", domain.Hostname)
@@ -103,7 +103,7 @@ func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	if err = h.DomainsDestroy(d); err != nil {
+	if err = h.DomainsDestroy(ctx, d); err != nil {
 		return err
 	}
 
