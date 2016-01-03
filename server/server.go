@@ -8,6 +8,7 @@ import (
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
+	"github.com/remind101/empire/server/slack"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -20,11 +21,6 @@ type Options struct {
 	Authenticator auth.Authenticator
 
 	GitHub struct {
-		ClientID     string
-		ClientSecret string
-		Organization string
-		ApiURL       string
-
 		// Deployments
 		Webhooks struct {
 			Secret string
@@ -59,6 +55,14 @@ func New(e *empire.Empire, options Options) http.Handler {
 	r.Handle("/health", NewHealthHandler(e))
 
 	return middleware.Common(r, middleware.CommonOpts{
+		Reporter: e.Reporter,
+		Logger:   e.Logger,
+	})
+}
+
+func NewSlack(e *empire.Empire, token string) http.Handler {
+	s := slack.NewServer(e, token)
+	return middleware.Common(s, middleware.CommonOpts{
 		Reporter: e.Reporter,
 		Logger:   e.Logger,
 	})
