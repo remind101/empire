@@ -20,6 +20,10 @@
 
 * GitHub Organization membership is now checked on every request, not just at access token creation time [#687](https://github.com/remind101/empire/pull/687).
 
+**Internal**
+
+* The `emp` CLI has been moved to the primary [remind101/empire](https://github.com/remind101/empire/tree/master/cmd/emp) repo [#712](https://github.com/remind101/empire/pull/712).
+
 ## 0.9.2 (2015-10-27)
 
 **Documentation**
