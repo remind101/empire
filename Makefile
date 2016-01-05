@@ -1,29 +1,30 @@
-.PHONY: cmd build test bootstrap
+.PHONY: build test bootstrap
 
 REPO = remind101/empire
 TYPE = patch
 
-cmd:
+build/empire:
 	go build -o build/empire ./cmd/empire
 
-bootstrap: cmd build/emp
+build/emp:
+	go build -o build/emp ./cmd/emp
+
+cmds: build/empire build/emp
+
+bootstrap: cmds
 	createdb empire || true
 	./build/empire migrate
 
 build: Dockerfile
 	docker build -t ${REPO} .
 
-ci: cmd test vet
+ci: cmds test vet
 
 test: build/emp
 	go test $(shell go list ./... | grep -v /vendor/)
 
 vet:
 	go vet $(shell go list ./... | grep -v /vendor/)
-
-build/emp:
-	go get -f -u github.com/remind101/emp
-	go build -o build/emp github.com/remind101/emp # Vendor the emp command for tests
 
 bump:
 	pip install --upgrade bumpversion
