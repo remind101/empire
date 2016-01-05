@@ -7,7 +7,7 @@ import (
 )
 
 func TestUpdateStatus(t *testing.T) {
-	boom := errors.New("boom")
+	boom := "boom"
 
 	tests := []struct {
 		fn     func() error
@@ -31,7 +31,7 @@ func TestUpdateStatus(t *testing.T) {
 		},
 		{
 			fn: func() error {
-				return boom
+				return errors.New(boom)
 			},
 			status: StatusUpdate{
 				Status: StatusErrored,

@@ -131,7 +131,7 @@ func (t *Tugboat) UpdateStatus(d *Deployment, update StatusUpdate) error {
 	case StatusErrored:
 		var err error
 		if update.Error != nil {
-			err = *update.Error
+			err = errors.New(*update.Error)
 		} else {
 			err = errors.New("no error provided")
 		}
@@ -228,8 +228,11 @@ func deploy(ctx context.Context, opts DeployOpts, p Provider, t client) (deploym
 
 	logsDone := make(chan struct{}, 1)
 	go func() {
-		// we're ignoring err here.
-		_ = t.WriteLogs(deployment, r)
+		if werr := t.WriteLogs(deployment, r); werr != nil {
+			// If there was an error writing the logs, close the
+			// Write side of the pipe.
+			r.CloseWithError(err)
+		}
 		close(logsDone)
 	}()
 
@@ -271,8 +274,9 @@ func statusUpdate(fn func() error) (update StatusUpdate) {
 		if err == ErrFailed {
 			update.Status = StatusFailed
 		} else {
+			msg := err.Error()
 			update.Status = StatusErrored
-			update.Error = &err
+			update.Error = &msg
 		}
 	}()
 

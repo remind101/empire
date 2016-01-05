@@ -3,10 +3,9 @@ package github
 import (
 	"io"
 
-	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/docker/docker/pkg/term"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
@@ -18,12 +17,17 @@ type deployer interface {
 	Deploy(context.Context, events.Deployment, io.Writer) error
 }
 
+type deployerFunc func(context.Context, events.Deployment, io.Writer) error
+
+func (fn deployerFunc) Deploy(ctx context.Context, event events.Deployment, w io.Writer) error {
+	return fn(ctx, event, w)
+}
+
 // newDeployer is a factory method that generates a composed deployer instance
 // depending on the options.
 func newDeployer(e *empire.Empire, opts Options) deployer {
 	var d deployer
-	d = &tracedDeployer{newEmpireDeployer(e, opts.ImageTemplate)}
-	d = &prettyDeployer{deployer: d}
+	d = newEmpireDeployer(e, opts.ImageTemplate)
 
 	if opts.TugboatURL != "" {
 		d = newTugboatDeployer(d, opts.TugboatURL)
@@ -34,36 +38,15 @@ func newDeployer(e *empire.Empire, opts Options) deployer {
 	}
 }
 
-// prettyDeployer is a deployer implementation that converts the raw json stream
-// into pretty output using the jsonmessage package.
-type prettyDeployer struct {
-	deployer
-}
-
-func (d *prettyDeployer) Deploy(ctx context.Context, p events.Deployment, out io.Writer) error {
-	r, w := io.Pipe()
-
-	errCh := make(chan error, 1)
-	go func() {
-		err := d.deployer.Deploy(ctx, p, w)
-		errCh <- err
-		w.Close()
-	}()
-
-	outFd, _ := term.GetFdInfo(out)
-	if err := jsonmessage.DisplayJSONMessagesStream(r, out, outFd, false); err != nil {
-		w.Close()
-		return err
-	}
-
-	err := <-errCh
-	return err
+// Empire mocks the Empire interface we use.
+type Empire interface {
+	Deploy(context.Context, empire.DeploymentsCreateOpts) (*empire.Release, error)
 }
 
 // empireDeployer is a deployer implementation that uses the Deploy method in
 // Empire to perform the deployment.
 type empireDeployer struct {
-	*empire.Empire
+	Empire
 	imageTmpl string
 }
 
@@ -106,23 +89,26 @@ func newTugboatDeployer(d deployer, url string) *tugboatDeployer {
 	}
 }
 
-func (d *tugboatDeployer) Deploy(ctx context.Context, p events.Deployment, out io.Writer) error {
-	opts := tugboat.NewDeployOptsFromEvent(p)
+func (d *tugboatDeployer) Deploy(ctx context.Context, event events.Deployment, out io.Writer) error {
+	opts := tugboat.NewDeployOptsFromEvent(event)
 
 	// Perform the deployment, wrapped in Deploy. This will automatically
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
+		// What we send to tugboat should be a plain text stream.
+		p := dockerutil.DecodeJSONMessageStream(w)
+
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
-		w = io.MultiWriter(w, out)
+		w = io.MultiWriter(p, out)
 
-		if err := d.deployer.Deploy(ctx, p, w); err != nil {
-			// If we got a deployment error, write the error to
-			// tugboat and return tugboat.ErrFailed to indicate the
-			// failure.
-			io.WriteString(w, err.Error())
-			return tugboat.ErrFailed
+		if err := d.deployer.Deploy(ctx, event, w); err != nil {
+			return err
+		}
+
+		if err := p.Err(); err != nil {
+			return err
 		}
 
 		return nil

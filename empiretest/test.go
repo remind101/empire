@@ -1,8 +1,6 @@
 package empiretest
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http/httptest"
 	"os"
@@ -10,9 +8,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
@@ -75,24 +73,7 @@ func Run(m *testing.M) {
 
 // ExtractProcfile extracts a fake procfile.
 func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
-	messages := []jsonmessage.JSONMessage{
-		{Status: fmt.Sprintf("Pulling repository %s", img.Repository)},
-		{Status: fmt.Sprintf("Pulling image (%s) from %s", img.Tag, img.Repository), Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
-		{Status: fmt.Sprintf("Pulling image (%s) from %s, endpoint: https://registry-1.docker.io/v1/", img.Tag, img.Repository), Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
-		{Status: "Pulling dependent layers", Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
-		{Status: "Download complete", Progress: &jsonmessage.JSONProgress{}, ID: "a1dd7097a8e8"},
-		{Status: fmt.Sprintf("Status: Image is up to date for %s", img)},
-	}
-
-	enc := json.NewEncoder(w)
-
-	for _, m := range messages {
-		if err := enc.Encode(&m); err != nil {
-			return nil, err
-		}
-	}
-
 	return procfile.Procfile{
 		"web": "./bin/web",
-	}, nil
+	}, dockerutil.FakePull(img, w)
 }

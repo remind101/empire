@@ -2,10 +2,11 @@
 
 set -e
 
-echo "@edge http://dl-4.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
-packages="curl git go@edge"
+echo "hosts: files dns" >> /etc/nsswitch.conf
+echo "@edge-community http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
+packages="curl git go@edge-community"
 
-apk add --update curl git go@edge
+apk add --update $packages
 
 GOPATH=/go go get github.com/tools/godep
 cd /go/src/github.com/remind101/tugboat

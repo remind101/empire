@@ -70,7 +70,7 @@ func NewDeployOptsFromReader(r io.Reader) (DeployOpts, error) {
 // StatusUpdate is used to update the status of a Deployment.
 type StatusUpdate struct {
 	Status DeploymentStatus
-	Error  *error
+	Error  *string
 }
 
 // DeploymentStatus represents the status of a deployment.
