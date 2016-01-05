@@ -1,3 +1,7 @@
+machine:
+  environment:
+    GO15VENDOREXPERIMENT: 1
+
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/remind101
@@ -8,7 +12,6 @@ dependencies:
   pre:
     - sudo pip install awscli
     - go install -a -race std
-    - go get github.com/tools/godep
     - go version
     - cd ~/.go_workspace/src/github.com/remind101/empire && make bootstrap
   override:
@@ -16,8 +19,7 @@ dependencies:
 
 test:
   override:
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make cmd
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make test
+    - cd ~/.go_workspace/src/github.com/remind101/empire && make ci
 
 deployment:
   hub: 

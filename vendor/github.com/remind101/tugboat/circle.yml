@@ -1,0 +1,24 @@
+machine:
+  timezone: America/Los_Angeles
+  services:
+    - postgresql
+
+checkout:
+  post:
+    - rm -rf ~/.go_workspace/src/github.com/remind101
+    - mkdir -p ~/.go_workspace/src/github.com/remind101
+    - cp -R ~/tugboat ~/.go_workspace/src/github.com/remind101/tugboat
+
+dependencies:
+  pre:
+    - go install -a -race std
+    - go get github.com/tools/godep
+    - createdb tugboat
+    - cd ~/.go_workspace/src/github.com/remind101/tugboat && godep go install ./cmd/...
+    - cd ~/.go_workspace/src/github.com/remind101/tugboat && tugboat migrate
+
+
+test:
+  override:
+    - cd ~/.go_workspace/src/github.com/remind101/tugboat && make cmd
+    - cd ~/.go_workspace/src/github.com/remind101/tugboat && godep go test -race ./...

@@ -1,0 +1,6 @@
+machine api.heroku.com
+  login user@test.com
+  password faketestpassword
+machine api.otherheroku.com
+  login devuser@test.com
+  password fakedevpassword

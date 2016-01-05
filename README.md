@@ -30,7 +30,7 @@ As an example, you can use the `hk` CLI with Empire like this:
 $ HEROKU_API_URL=<empire_url> hk ...
 ```
 
-However, the best user experience will be by using the [emp](https://github.com/remind101/emp) command, which is a fork of `hk` with Empire specific features.
+However, the best user experience will be by using the [emp](https://github.com/remind101/empire/cmd/emp) command, which is a fork of `hk` with Empire specific features.
 
 ### Routing
 
@@ -77,6 +77,7 @@ There is also a `tests` directory that contains integration and functional tests
 To get started, run:
 
 ```console
+$ export GO15VENDOREXPERIMENT=1
 $ make bootstrap
 ```
 
@@ -86,7 +87,7 @@ using the postgres client connection defaults.
 To run the tests:
 
 ```console
-$ godep go test ./...
+$ go test ./...
 ```
 
 ## Development
@@ -121,7 +122,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 6. Install the emp CLI.
 
    ```console
-   $ go get -u github.com/remind101/emp
+   $ go get -u github.com/remind101/empire/cmd/emp
    ```
 
 Empire will be available at `http://$(docker-machine ip default):8080` and you can point the CLI there.
@@ -129,6 +130,16 @@ Empire will be available at `http://$(docker-machine ip default):8080` and you c
 ```console
 $ export EMPIRE_API_URL=http://$(docker-machine ip default):8080
 $ emp deploy remind101/acme-inc
+```
+
+### Vendoring
+
+Empire follows Go's convention of vendoring third party dependencies. We use the Go 1.5+ [vendor expirement](https://blog.gopheracademy.com/advent-2015/vendor-folder/), and manage the `./vendor/` directory via [govendor](https://github.com/kardianos/govendor).
+
+When you add a new dependency, be sure to vendor it with govendor:
+
+```console
+$ govendor add <package>
 ```
 
 ## Community

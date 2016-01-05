@@ -78,14 +78,14 @@ This is a very simple stack that will:
 ## Step 4 - Get the emp client
 
 The last thing you need to do is download the empire client **emp**. To do so
-grab the latest release from the [emp releases page][empreleases]. Find the
+grab the latest release from the [empire releases page][empirereleases]. Find the
 right tarball for your architecture, and install the resulting binary called
 **emp** somewhere in your *PATH*.
 
 If you have a working Go environment you can also install with `go get`:
 
 ```console
-$ go get -u github.com/remind101/emp
+$ go get -u github.com/remind101/empire/cmd/emp
 ```
 
 [awscli]: http://aws.amazon.com/cli/
@@ -94,4 +94,4 @@ $ go get -u github.com/remind101/emp
 [amiterms]: https://aws.amazon.com/marketplace/ordering?productId=4ce33fd9-63ff-4f35-8d3a-939b641f1931&ref_=dtl_psb_continue&region=us-east-1
 [democloud]: https://github.com/remind101/empire/blob/master/docs/cloudformation.json#L15
 [ecsagent]: https://github.com/aws/amazon-ecs-agent
-[empreleases]: https://github.com/remind101/emp/releases
+[empirereleases]: https://github.com/remind101/empire/releases
