@@ -77,6 +77,7 @@ There is also a `tests` directory that contains integration and functional tests
 To get started, run:
 
 ```console
+$ export GO15VENDOREXPERIMENT=1
 $ make bootstrap
 ```
 
@@ -86,7 +87,6 @@ using the postgres client connection defaults.
 To run the tests:
 
 ```console
-$ export GO15VENDOREXPERIMENT=1
 $ go test ./...
 ```
 
