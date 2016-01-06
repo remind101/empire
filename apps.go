@@ -231,13 +231,20 @@ func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
 		return nil, err
 	}
 
+	event := opts.Event()
+	event.PreviousQuantity = p.Quantity
+
 	// Update quantity for this process in the formation
 	p.Quantity = quantity
 	if c != nil {
 		p.Constraints = *c
 	}
 
-	return p, s.store.ProcessesUpdate(p)
+	if err := s.store.ProcessesUpdate(p); err != nil {
+		return nil, err
+	}
+
+	return p, s.PublishEvent(event)
 }
 
 // restarter is a small service for restarting an apps processes.

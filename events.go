@@ -47,10 +47,11 @@ func (e RestartEvent) String() string {
 
 // ScaleEvent is triggered when a manual scaling event happens.
 type ScaleEvent struct {
-	User     string
-	App      string
-	Process  string
-	Quantity int
+	User             string
+	App              string
+	Process          string
+	Quantity         int
+	PreviousQuantity int
 }
 
 func (e ScaleEvent) Event() string {
@@ -58,7 +59,8 @@ func (e ScaleEvent) Event() string {
 }
 
 func (e ScaleEvent) String() string {
-	return fmt.Sprintf("%s scaled `%s` on %s to %d", e.User, e.Process, e.App, e.Quantity)
+	delta := e.Quantity - e.PreviousQuantity
+	return fmt.Sprintf("%s scaled `%s` on %s from %d to %d (%s)", e.User, e.Process, e.App, e.PreviousQuantity, e.Quantity, prettyDelta{delta: delta})
 }
 
 // DeployEvent is triggered when a user deploys a new image to an app.
@@ -212,4 +214,23 @@ func (e *AsyncEventStream) publishEvent(event Event) (err error) {
 
 	err = e.EventStream.PublishEvent(event)
 	return
+}
+
+// prettyDelta is a fmt.Stringer that formats a delta by prefixing it with a `+`
+// or `-`.
+type prettyDelta struct {
+	delta int
+}
+
+// String implements the fmt.Stringer interface.
+func (d prettyDelta) String() string {
+	if d.delta > 0 {
+		return fmt.Sprintf("+%d", d.delta)
+	}
+
+	if d.delta < 0 {
+		return fmt.Sprintf("-%d", d.delta*-1)
+	}
+
+	return fmt.Sprintf("no change")
 }
