@@ -20,7 +20,8 @@ func TestEvents_String(t *testing.T) {
 		{RestartEvent{User: "ejholmes", App: "acme-inc", PID: "abcd"}, "ejholmes restarted `abcd` on acme-inc"},
 
 		// ScaleEvent
-		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 1}, "ejholmes scaled `web` on acme-inc to 1"},
+		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 10, PreviousQuantity: 5}, "ejholmes scaled `web` on acme-inc from 5 to 10 (+5)"},
+		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 5, PreviousQuantity: 10}, "ejholmes scaled `web` on acme-inc from 10 to 5 (-5)"},
 
 		// DeployEvent
 		{DeployEvent{User: "ejholmes", App: "acme-inc", Image: "remind101/acme-inc:master"}, "ejholmes deployed remind101/acme-inc:master to acme-inc"},

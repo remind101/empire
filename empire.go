@@ -79,7 +79,7 @@ type Empire struct {
 	ExtractProcfile ProcfileExtractor
 
 	// EventStream service for publishing Empire events.
-	EventStream EventStream
+	EventStream
 }
 
 // New returns a new Empire instance.
@@ -136,7 +136,7 @@ type CreateOpts struct {
 	Name string
 }
 
-func (opts CreateOpts) Event() Event {
+func (opts CreateOpts) Event() CreateEvent {
 	return CreateEvent{
 		User: opts.User.Name,
 		Name: opts.Name,
@@ -150,7 +150,7 @@ func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
 		return a, err
 	}
 
-	return a, e.EventStream.PublishEvent(opts.Event())
+	return a, e.PublishEvent(opts.Event())
 }
 
 // DestroyOpts are options provided when destroying an application.
@@ -162,7 +162,7 @@ type DestroyOpts struct {
 	App *App
 }
 
-func (opts DestroyOpts) Event() Event {
+func (opts DestroyOpts) Event() DestroyEvent {
 	return DestroyEvent{
 		User: opts.User.Name,
 		App:  opts.App.Name,
@@ -175,7 +175,7 @@ func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
 		return err
 	}
 
-	return e.EventStream.PublishEvent(opts.Event())
+	return e.PublishEvent(opts.Event())
 }
 
 // Config returns the current Config for a given app.
@@ -195,7 +195,7 @@ type SetOpts struct {
 	Vars Vars
 }
 
-func (opts SetOpts) Event() Event {
+func (opts SetOpts) Event() SetEvent {
 	var changed []string
 	for k := range opts.Vars {
 		changed = append(changed, string(k))
@@ -217,7 +217,7 @@ func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
 		return c, err
 	}
 
-	return c, e.EventStream.PublishEvent(opts.Event())
+	return c, e.PublishEvent(opts.Event())
 }
 
 // DomainsFind returns the first domain matching the query.
@@ -258,7 +258,7 @@ type RestartOpts struct {
 	PID string
 }
 
-func (opts RestartOpts) Event() Event {
+func (opts RestartOpts) Event() RestartEvent {
 	return RestartEvent{
 		User: opts.User.Name,
 		App:  opts.App.Name,
@@ -273,7 +273,7 @@ func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
 		return err
 	}
 
-	return e.EventStream.PublishEvent(opts.Event())
+	return e.PublishEvent(opts.Event())
 
 }
 
@@ -298,7 +298,7 @@ type RunOpts struct {
 	Env map[string]string
 }
 
-func (opts RunOpts) Event() Event {
+func (opts RunOpts) Event() RunEvent {
 	var attached bool
 	if opts.Output != nil {
 		attached = true
@@ -318,7 +318,7 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	return e.EventStream.PublishEvent(opts.Event())
+	return e.PublishEvent(opts.Event())
 }
 
 // Releases returns all Releases for a given App.
@@ -343,7 +343,7 @@ type RollbackOpts struct {
 	Version int
 }
 
-func (opts RollbackOpts) Event() Event {
+func (opts RollbackOpts) Event() RollbackEvent {
 	return RollbackEvent{
 		User:    opts.User.Name,
 		App:     opts.App.Name,
@@ -359,7 +359,7 @@ func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, err
 		return r, err
 	}
 
-	return r, e.EventStream.PublishEvent(opts.Event())
+	return r, e.PublishEvent(opts.Event())
 }
 
 // DeploymentsCreateOpts represents options that can be passed when deploying to
@@ -379,7 +379,7 @@ type DeploymentsCreateOpts struct {
 	Output io.Writer
 }
 
-func (opts DeploymentsCreateOpts) Event() Event {
+func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	e := DeployEvent{
 		User:  opts.User.Name,
 		Image: opts.Image.String(),
@@ -397,7 +397,7 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 		return r, err
 	}
 
-	return r, e.EventStream.PublishEvent(opts.Event())
+	return r, e.PublishEvent(opts.Event())
 }
 
 // ScaleOpts are options provided when scaling a process.
@@ -418,7 +418,7 @@ type ScaleOpts struct {
 	Constraints *Constraints
 }
 
-func (opts ScaleOpts) Event() Event {
+func (opts ScaleOpts) Event() ScaleEvent {
 	return ScaleEvent{
 		User:     opts.User.Name,
 		App:      opts.App.Name,
@@ -429,12 +429,7 @@ func (opts ScaleOpts) Event() Event {
 
 // Scale scales an apps process.
 func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
-	p, err := e.scaler.Scale(ctx, opts)
-	if err != nil {
-		return p, err
-	}
-
-	return p, e.EventStream.PublishEvent(opts.Event())
+	return e.scaler.Scale(ctx, opts)
 }
 
 // Streamlogs streams logs from an app.
