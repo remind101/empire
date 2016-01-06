@@ -30,7 +30,7 @@ As an example, you can use the `hk` CLI with Empire like this:
 $ HEROKU_API_URL=<empire_url> hk ...
 ```
 
-However, the best user experience will be by using the [emp](https://github.com/remind101/empire/cmd/emp) command, which is a fork of `hk` with Empire specific features.
+However, the best user experience will be by using the [emp](https://github.com/remind101/empire/tree/master/cmd/emp) command, which is a fork of `hk` with Empire specific features.
 
 ### Routing
 
