@@ -15,6 +15,8 @@
 * Allow floating point numbers to be provided when scaling the memory on a process [#694](https://github.com/remind101/empire/pull/694).
 * Empire will now update the SSL certificate on the associated ELB if it changes from `emp cert-attach` [#700](https://github.com/remind101/empire/pull/700).
 * The Tugboat integration now updates the deployment status with any errors that occurred [#709](https://github.com/remind101/empire/pull/709).
+* Deploying a non-existent docker image to Empire will no longer create an app [#713](https://github.com/remind101/empire/pull/713).
+* It's no longer necessary to re-deploy an application when scaling a process with new CPU or memory constraints [#713](https://github.com/remind101/empire/pull/713).
 
 **Security**
 

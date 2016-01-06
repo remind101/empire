@@ -10,17 +10,6 @@ import (
 	"github.com/remind101/empire/pkg/constraints"
 )
 
-func TestProcessesQuery(t *testing.T) {
-	release := &Release{ID: "1234"}
-
-	tests := scopeTests{
-		{ProcessesQuery{}, "", []interface{}{}},
-		{ProcessesQuery{Release: release}, "WHERE (release_id = $1)", []interface{}{release.ID}},
-	}
-
-	tests.Run(t)
-}
-
 func TestNewFormation(t *testing.T) {
 	tests := []struct {
 		f  Formation

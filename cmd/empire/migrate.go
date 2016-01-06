@@ -5,14 +5,16 @@ import (
 	"log"
 
 	"github.com/codegangsta/cli"
-	"github.com/remind101/empire"
 )
 
 func runMigrate(c *cli.Context) {
-	path := c.String(FlagDBPath)
-	db := c.String(FlagDB)
+	db, err := newDB(c)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	errors, ok := empire.Migrate(db, path)
+	path := c.String(FlagDBPath)
+	errors, ok := db.MigrateUp(path)
 	if !ok {
 		log.Fatal(errors)
 	}

@@ -102,16 +102,11 @@ func (q ConfigsQuery) Scope(db *gorm.DB) *gorm.DB {
 	return scope.Scope(db)
 }
 
-// ConfigsFirst returns the first matching config.
-func (s *store) ConfigsFirst(scope Scope) (*Config, error) {
+// configsFind returns the first matching config.
+func configsFind(db *gorm.DB, scope Scope) (*Config, error) {
 	var config Config
 	scope = ComposedScope{Order("created_at desc"), scope}
-	return &config, s.First(scope, &config)
-}
-
-// ConfigsCreate persists the Config.
-func (s *store) ConfigsCreate(config *Config) (*Config, error) {
-	return configsCreate(s.db, config)
+	return &config, first(db, scope, &config)
 }
 
 // ConfigsCreate inserts a Config in the database.
@@ -123,20 +118,20 @@ type configsService struct {
 	*Empire
 }
 
-func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*Config, error) {
 	app, vars := opts.App, opts.Vars
 
-	old, err := s.Config(app)
+	old, err := s.Config(db, app)
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := s.store.ConfigsCreate(NewConfig(old, vars))
+	c, err := configsCreate(db, NewConfig(old, vars))
 	if err != nil {
 		return c, err
 	}
 
-	release, err := s.store.ReleasesFind(ReleasesQuery{App: app})
+	release, err := releasesFind(db, ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			err = nil
@@ -146,7 +141,7 @@ func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error)
 	}
 
 	// Create new release based on new config and old slug
-	_, err = s.releases.ReleasesCreate(ctx, &Release{
+	_, err = s.releases.Create(ctx, db, &Release{
 		App:         release.App,
 		Config:      c,
 		Slug:        release.Slug,
@@ -156,18 +151,20 @@ func (s *configsService) Set(ctx context.Context, opts SetOpts) (*Config, error)
 }
 
 // Returns configs for latest release or the latest configs if there are no releases.
-func (s *configsService) Config(app *App) (*Config, error) {
-	r, err := s.store.ReleasesFind(ReleasesQuery{App: app})
+func (s *configsService) Config(db *gorm.DB, app *App) (*Config, error) {
+	r, err := releasesFind(db, ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
 			// It's possible to have config without releases, this handles that.
-			c, err := s.store.ConfigsFirst(ConfigsQuery{App: app})
+			c, err := configsFind(db, ConfigsQuery{App: app})
 			if err != nil {
 				if err == gorm.RecordNotFound {
-					return s.store.ConfigsCreate(&Config{
-						App:  app,
-						Vars: make(Vars),
-					})
+					// Return an empty config.
+					return &Config{
+						AppID: app.ID,
+						App:   app,
+						Vars:  make(Vars),
+					}, nil
 				}
 				return nil, err
 			}

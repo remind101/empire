@@ -104,35 +104,6 @@ func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
 	return scope.Scope(db)
 }
 
-// AppsFind returns the first matching release.
-func (s *store) AppsFind(scope Scope) (*App, error) {
-	var app App
-	return &app, s.First(scope, &app)
-}
-
-// Apps returns all apps matching the scope.
-func (s *store) Apps(scope Scope) ([]*App, error) {
-	var apps []*App
-	// Default to ordering by name.
-	scope = ComposedScope{Order("name"), scope}
-	return apps, s.Find(scope, &apps)
-}
-
-// AppsCreate persists an app.
-func (s *store) AppsCreate(app *App) (*App, error) {
-	return appsCreate(s.db, app)
-}
-
-// AppsUpdate updates an app.
-func (s *store) AppsUpdate(app *App) error {
-	return appsUpdate(s.db, app)
-}
-
-// AppsDestroy destroys an app.
-func (s *store) AppsDestroy(app *App) error {
-	return appsDestroy(s.db, app)
-}
-
 // AppID returns a scope to find an app by id.
 func AppID(id string) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
@@ -144,71 +115,27 @@ type appsService struct {
 	*Empire
 }
 
-func (s *appsService) AppsDestroy(ctx context.Context, app *App) error {
-	if err := s.Scheduler.Remove(ctx, app.ID); err != nil {
+// Destroy destroys removes an app from the scheduler, then destroys it here.
+func (s *appsService) Destroy(ctx context.Context, db *gorm.DB, app *App) error {
+	if err := appsDestroy(db, app); err != nil {
 		return err
 	}
 
-	return s.store.AppsDestroy(app)
+	return s.Scheduler.Remove(ctx, app.ID)
 }
 
-// AppsEnsureRepo will set the repo if it's not set.
-func (s *appsService) AppsEnsureRepo(app *App, repo string) error {
-	if app.Repo != nil {
-		return nil
+func (s *appsService) Restart(ctx context.Context, db *gorm.DB, opts RestartOpts) error {
+	if opts.PID != "" {
+		return s.Scheduler.Stop(ctx, opts.PID)
 	}
 
-	app.Repo = &repo
-
-	return s.store.AppsUpdate(app)
+	return s.releases.ReleaseApp(ctx, db, opts.App)
 }
 
-// AppsFindOrCreateByRepo first attempts to find an app by repo, falling back to
-// creating a new app.
-func (s *appsService) AppsFindOrCreateByRepo(repo string) (*App, error) {
-	n := AppNameFromRepo(repo)
-	a, err := s.store.AppsFind(AppsQuery{Name: &n})
-	if err != nil && err != gorm.RecordNotFound {
-		return a, err
-	}
-
-	// If the app wasn't found, create a new app.
-	if err != gorm.RecordNotFound {
-		return a, s.AppsEnsureRepo(a, repo)
-	}
-
-	a = &App{
-		Name: n,
-		Repo: &repo,
-	}
-
-	return s.store.AppsCreate(a)
-}
-
-// AppsCreate inserts the app into the database.
-func appsCreate(db *gorm.DB, app *App) (*App, error) {
-	return app, db.Create(app).Error
-}
-
-// AppsUpdate updates an app.
-func appsUpdate(db *gorm.DB, app *App) error {
-	return db.Save(app).Error
-}
-
-// AppsDestroy destroys an app.
-func appsDestroy(db *gorm.DB, app *App) error {
-	return db.Delete(app).Error
-}
-
-// scaler is a small service for scaling an apps process.
-type scaler struct {
-	*Empire
-}
-
-func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
+func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*Process, error) {
 	app, t, quantity, c := opts.App, opts.Process, opts.Quantity, opts.Constraints
 
-	release, err := s.store.ReleasesFind(ReleasesQuery{App: app})
+	release, err := releasesFind(db, ReleasesQuery{App: app})
 	if err != nil {
 		return nil, err
 	}
@@ -217,13 +144,8 @@ func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
 		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
-	f, err := s.store.Formation(ProcessesQuery{Release: release})
-	if err != nil {
-		return nil, err
-	}
-
-	p, ok := f[t]
-	if !ok {
+	p := release.Process(t)
+	if p == nil {
 		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
@@ -240,22 +162,83 @@ func (s *scaler) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
 		p.Constraints = *c
 	}
 
-	if err := s.store.ProcessesUpdate(p); err != nil {
+	if err := processesUpdate(db, p); err != nil {
 		return nil, err
+	}
+
+	// If there are no changes to the process size, we can do a quick scale
+	// up, otherwise, we will resubmit the release to the scheduler.
+	if c == nil {
+		err = s.Scheduler.Scale(ctx, release.AppID, string(p.Type), uint(quantity))
+	} else {
+		err = s.releases.Release(ctx, release)
+	}
+
+	if err != nil {
+		return p, err
 	}
 
 	return p, s.PublishEvent(event)
 }
 
-// restarter is a small service for restarting an apps processes.
-type restarter struct {
-	*Empire
-}
-
-func (s *restarter) Restart(ctx context.Context, opts RestartOpts) error {
-	if opts.PID != "" {
-		return s.Scheduler.Stop(ctx, opts.PID)
+// appsEnsureRepo will set the repo if it's not set.
+func appsEnsureRepo(db *gorm.DB, app *App, repo string) error {
+	if app.Repo != nil {
+		return nil
 	}
 
-	return s.releaser.ReleaseApp(ctx, opts.App)
+	app.Repo = &repo
+
+	return appsUpdate(db, app)
+}
+
+// appsFindOrCreateByRepo first attempts to find an app by repo, falling back to
+// creating a new app.
+func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
+	n := AppNameFromRepo(repo)
+	a, err := appsFind(db, AppsQuery{Name: &n})
+	if err != nil && err != gorm.RecordNotFound {
+		return a, err
+	}
+
+	// If the app wasn't found, create a new app.
+	if err != gorm.RecordNotFound {
+		return a, appsEnsureRepo(db, a, repo)
+	}
+
+	a = &App{
+		Name: n,
+		Repo: &repo,
+	}
+
+	return appsCreate(db, a)
+}
+
+// appsFind finds a single app given the scope.
+func appsFind(db *gorm.DB, scope Scope) (*App, error) {
+	var app App
+	return &app, first(db, scope, &app)
+}
+
+// apps finds all apps matching the scope.
+func apps(db *gorm.DB, scope Scope) ([]*App, error) {
+	var apps []*App
+	// Default to ordering by name.
+	scope = ComposedScope{Order("name"), scope}
+	return apps, find(db, scope, &apps)
+}
+
+// appsCreate inserts the app into the database.
+func appsCreate(db *gorm.DB, app *App) (*App, error) {
+	return app, db.Create(app).Error
+}
+
+// appsUpdate updates an app.
+func appsUpdate(db *gorm.DB, app *App) error {
+	return db.Save(app).Error
+}
+
+// appsDestroy destroys an app.
+func appsDestroy(db *gorm.DB, app *App) error {
+	return db.Delete(app).Error
 }

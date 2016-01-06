@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/codegangsta/cli"
 	"github.com/inconshreveable/log15"
-	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/pkg/dockerutil"
@@ -24,8 +23,8 @@ import (
 
 // DB ===================================
 
-func newDB(c *cli.Context) (*gorm.DB, error) {
-	return empire.NewDB(c.String(FlagDB))
+func newDB(c *cli.Context) (*empire.DB, error) {
+	return empire.OpenDB(c.String(FlagDB))
 }
 
 // Empire ===============================

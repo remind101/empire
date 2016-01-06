@@ -75,15 +75,13 @@ func (c Command) Value() (driver.Value, error) {
 
 // Process holds configuration information about a Process Type.
 type Process struct {
-	ID       string
-	Type     ProcessType
-	Quantity int
-	Command  Command
-	Port     int `sql:"-"`
-	Constraints
-
 	ReleaseID string
-	Release   *Release
+	ID        string
+	Type      ProcessType
+	Quantity  int
+	Command   Command
+	Port      int `sql:"-"`
+	Constraints
 }
 
 // NewProcess returns a new Process instance.
@@ -242,55 +240,7 @@ func (f Formation) Processes() []*Process {
 	return processes
 }
 
-// ProcessesQuery is a Scope implementation for common things to filter
-// processes by.
-type ProcessesQuery struct {
-	// If provided, finds only processes belonging to the given release.
-	Release *Release
-}
-
-// Scope implements the Scope interface.
-func (q ProcessesQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
-
-	if q.Release != nil {
-		scope = append(scope, FieldEquals("release_id", q.Release.ID))
-	}
-
-	return scope.Scope(db)
-}
-
-// Processes returns all processes matching the scope.
-func (s *store) Processes(scope Scope) ([]*Process, error) {
-	var processes []*Process
-	return processes, s.Find(scope, &processes)
-}
-
-// Formation returns a Formation for the processes matching the scope.
-func (s *store) Formation(scope Scope) (Formation, error) {
-	p, err := s.Processes(scope)
-	if err != nil {
-		return nil, err
-	}
-	return newFormation(p), nil
-}
-
-// ProcessesCreate persists the process.
-func (s *store) ProcessesCreate(process *Process) (*Process, error) {
-	return processesCreate(s.db, process)
-}
-
-// ProcessesUpdate updates the process.
-func (s *store) ProcessesUpdate(process *Process) error {
-	return processesUpdate(s.db, process)
-}
-
-// ProcessesCreate inserts a process into the database.
-func processesCreate(db *gorm.DB, process *Process) (*Process, error) {
-	return process, db.Create(process).Error
-}
-
-// ProcessesUpdate updates an existing process into the database.
+// processesUpdate updates an existing process into the database.
 func processesUpdate(db *gorm.DB, process *Process) error {
 	return db.Save(process).Error
 }

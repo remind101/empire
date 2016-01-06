@@ -44,6 +44,17 @@ func (r *Release) Formation() Formation {
 	return f
 }
 
+// Process return the Process with the given type.
+func (r *Release) Process(t ProcessType) *Process {
+	for _, p := range r.Processes {
+		if p.Type == t {
+			return p
+		}
+	}
+
+	return nil
+}
+
 // BeforeCreate sets created_at before inserting.
 func (r *Release) BeforeCreate() error {
 	t := timex.Now()
@@ -78,9 +89,6 @@ func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
 
 	scope = append(scope, Range(q.Range.WithDefaults(q.DefaultRange())))
 
-	// Preload all the things.
-	scope = append(scope, Preload("App", "Config", "Slug", "Processes"))
-
 	return scope.Scope(db)
 }
 
@@ -94,42 +102,106 @@ func (q ReleasesQuery) DefaultRange() headerutil.Range {
 	}
 }
 
-// ReleasesFind returns the first matching release.
-func (s *store) ReleasesFind(scope Scope) (*Release, error) {
+// releasesService is a service for creating and rolling back a Release.
+type releasesService struct {
+	*Empire
+}
+
+// Create creates a new release then submits it to the scheduler.
+func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (*Release, error) {
+	// Lock all releases for the given application to ensure that the
+	// release version is updated automically.
+	if err := db.Exec(`select 1 from releases where app_id = ? for update`, r.App.ID).Error; err != nil {
+		return r, err
+	}
+
+	// Create a new formation for this release.
+	if err := createFormation(db, r); err != nil {
+		return r, err
+	}
+
+	r, err := releasesCreate(db, r)
+	if err != nil {
+		return r, err
+	}
+
+	// Schedule the new release onto the cluster.
+	return r, s.Release(ctx, r)
+}
+
+// Rolls back to a specific release version.
+func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts RollbackOpts) (*Release, error) {
+	app, version := opts.App, opts.Version
+	r, err := releasesFind(db, ReleasesQuery{App: app, Version: &version})
+	if err != nil {
+		return nil, err
+	}
+
+	desc := fmt.Sprintf("Rollback to v%d", version)
+	return s.Create(ctx, db, &Release{
+		App:         app,
+		Config:      r.Config,
+		Slug:        r.Slug,
+		Description: desc,
+	})
+}
+
+// Release submits a release to the scheduler.
+func (s *releasesService) Release(ctx context.Context, release *Release) error {
+	a := newServiceApp(release)
+	return s.Scheduler.Submit(ctx, a)
+}
+
+// ReleaseApp will find the last release for an app and release it.
+func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App) error {
+	release, err := releasesFind(db, ReleasesQuery{App: app})
+	if err != nil {
+		if err == gorm.RecordNotFound {
+			return ErrNoReleases
+		}
+
+		return err
+	}
+
+	if release == nil {
+		return nil
+	}
+
+	return s.Release(ctx, release)
+}
+
+// These associations are always available on a Release.
+var releasesPreload = Preload("App", "Config", "Slug", "Processes")
+
+// releasesFind returns the first matching release.
+func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
 	var release Release
 
-	if err := s.First(scope, &release); err != nil {
+	scope = ComposedScope{releasesPreload, scope}
+	if err := first(db, scope, &release); err != nil {
 		return &release, err
 	}
 
-	if err := s.attachPorts(&release); err != nil {
+	if err := attachPorts(db, &release); err != nil {
 		return &release, err
 	}
 
 	return &release, nil
 }
 
-// Releases returns all releases matching the scope.
-func (s *store) Releases(scope Scope) ([]*Release, error) {
+// releases returns all releases matching the scope.
+func releases(db *gorm.DB, scope Scope) ([]*Release, error) {
 	var releases []*Release
-	return releases, s.Find(scope, &releases)
-}
-
-// ReleasesCreate persists a release.
-func (s *store) ReleasesCreate(r *Release) (*Release, error) {
-	if err := s.attachPorts(r); err != nil {
-		return r, err
-	}
-
-	return releasesCreate(s.db, r)
+	scope = ComposedScope{releasesPreload, scope}
+	return releases, find(db, scope, &releases)
 }
 
 // attachPorts returns a map of ports for a release. It will allocate new ports to an app if need be.
-func (s *store) attachPorts(r *Release) error {
+func attachPorts(db *gorm.DB, r *Release) error {
 	for _, p := range r.Processes {
 		if p.Type == WebProcessType {
 			// TODO: Support a port per process, allowing more than one process to expose a port.
-			port, err := s.PortsFindOrCreateByApp(r.App)
+			port, err := portsFindOrCreateByApp(db, r.App)
 			if err != nil {
 				return err
 			}
@@ -139,32 +211,11 @@ func (s *store) attachPorts(r *Release) error {
 	return nil
 }
 
-// releasesService is a service for creating and rolling back a Release.
-type releasesService struct {
-	*Empire
-}
-
-// ReleasesCreate creates the release, then sets the current process formation on the release.
-func (s *releasesService) ReleasesCreate(ctx context.Context, r *Release) (*Release, error) {
-	// Create a new formation for this release.
-	if err := s.createFormation(r); err != nil {
-		return nil, err
-	}
-
-	r, err := s.store.ReleasesCreate(r)
-	if err != nil {
-		return r, err
-	}
-
-	// Schedule the new release onto the cluster.
-	return r, s.releaser.Release(ctx, r)
-}
-
-func (s *releasesService) createFormation(release *Release) error {
+func createFormation(db *gorm.DB, release *Release) error {
 	var existing Formation
 
 	// Get the old release, so we can copy the Formation.
-	last, err := s.store.ReleasesFind(ReleasesQuery{App: release.App})
+	last, err := releasesFind(db, ReleasesQuery{App: release.App})
 	if err != nil {
 		if err != gorm.RecordNotFound {
 			return err
@@ -179,30 +230,11 @@ func (s *releasesService) createFormation(release *Release) error {
 	return nil
 }
 
-// Rolls back to a specific release version.
-func (s *releasesService) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
-	app, version := opts.App, opts.Version
-	r, err := s.store.ReleasesFind(ReleasesQuery{App: app, Version: &version})
-	if err != nil {
-		return nil, err
-	}
-
-	desc := fmt.Sprintf("Rollback to v%d", version)
-	return s.ReleasesCreate(ctx, &Release{
-		App:         app,
-		Config:      r.Config,
-		Slug:        r.Slug,
-		Description: desc,
-	})
-}
-
-// ReleasesLastVersion returns the last ReleaseVersion for the given App. This
-// function also ensures that the last release is locked until the transaction
-// is commited, so the release version can be incremented atomically.
+// ReleasesLastVersion returns the last ReleaseVersion for the given App.
 func releasesLastVersion(db *gorm.DB, appID string) (int, error) {
 	var version int
 
-	rows, err := db.Raw(`select version from releases where app_id = ? order by version desc for update`, appID).Rows()
+	rows, err := db.Raw(`select version from releases where app_id = ? order by version desc`, appID).Rows()
 	if err != nil {
 		return version, err
 	}
@@ -218,58 +250,24 @@ func releasesLastVersion(db *gorm.DB, appID string) (int, error) {
 
 // releasesCreate creates a new Release and inserts it into the database.
 func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
-	t := db.Begin()
+	if err := attachPorts(db, release); err != nil {
+		return release, err
+	}
 
 	// Get the last release version for this app.
-	v, err := releasesLastVersion(t, release.App.ID)
+	v, err := releasesLastVersion(db, release.App.ID)
 	if err != nil {
-		t.Rollback()
 		return release, err
 	}
 
 	// Increment the release version.
 	release.Version = v + 1
 
-	if err := t.Create(release).Error; err != nil {
-		t.Rollback()
-		return release, err
-	}
-
-	if err := t.Commit().Error; err != nil {
-		t.Rollback()
+	if err := db.Create(release).Error; err != nil {
 		return release, err
 	}
 
 	return release, nil
-}
-
-type releaser struct {
-	*Empire
-}
-
-// ScheduleRelease creates jobs for every process and instance count and
-// schedules them onto the cluster.
-func (r *releaser) Release(ctx context.Context, release *Release) error {
-	a := newServiceApp(release)
-	return r.Scheduler.Submit(ctx, a)
-}
-
-// ReleaseApp will find the last release for an app and release it.
-func (r *releaser) ReleaseApp(ctx context.Context, app *App) error {
-	release, err := r.store.ReleasesFind(ReleasesQuery{App: app})
-	if err != nil {
-		if err == gorm.RecordNotFound {
-			return ErrNoReleases
-		}
-
-		return err
-	}
-
-	if release == nil {
-		return nil
-	}
-
-	return r.Release(ctx, release)
 }
 
 func newServiceApp(release *Release) *scheduler.App {
