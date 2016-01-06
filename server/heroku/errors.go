@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -65,6 +66,12 @@ func newError(err error) *ErrorResource {
 		return err
 	case *empire.ValidationError:
 		return ErrBadRequest
+	case *empire.MaintenanceMode:
+		return &ErrorResource{
+			Status:  http.StatusBadRequest,
+			ID:      "maintenance_mode",
+			Message: fmt.Sprintf("The API is currently in maintenance mode: %s", err.Reason),
+		}
 	default:
 		return &ErrorResource{
 			Message: err.Error(),
