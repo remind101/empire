@@ -119,11 +119,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
    ```
 
    **NOTE**: You might need to run this twice the first time you start it up, to give the postgres container time to initialize.
-6. Install the emp CLI.
-
-   ```console
-   $ go get -u github.com/remind101/empire/cmd/emp
-   ```
+6. [Install the emp CLI](./cmd/emp#installation).
 
 Empire will be available at `http://$(docker-machine ip default):8080` and you can point the CLI there.
 
