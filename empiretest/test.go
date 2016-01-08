@@ -58,8 +58,8 @@ func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
 	}
 
 	server.DefaultOptions.GitHub.Webhooks.Secret = "abcd"
-	server.DefaultOptions.GitHub.Deployments.Environment = "test"
 	server.DefaultOptions.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
+	server.DefaultOptions.GitHub.Deployments.Environments = []string{"test"}
 	return httptest.NewServer(server.New(e, server.DefaultOptions))
 }
 
