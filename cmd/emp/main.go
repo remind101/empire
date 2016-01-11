@@ -72,6 +72,10 @@ func (c *Command) Runnable() bool {
 	return c.Run != nil
 }
 
+func (c *Command) Visible() bool {
+	return c.Runnable() && !c.Hidden
+}
+
 const extra = " (extra)"
 
 func (c *Command) List() bool {
