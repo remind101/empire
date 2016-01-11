@@ -6,14 +6,15 @@ If you've created an Empire CloudFormation stack and deployed an app to it, you 
 
 ## Launching Empire
 
-If you're using the [empire stacker](https://github.com/remind101/stacker/tree/master/conf/empire), and you get an errors like the one below when running emp commands:
+If you're using the [empire stacker](https://github.com/remind101/stacker/tree/master/conf/empire), and you get an error like below when running emp commands:
 ```
 $ emp apps
 error: Get https://empire.acme-inc.com/apps: EOF
 ```
 
-This most likeley means empire had trouble launching.
-To view the ansible logs, SSH into the bastion, then one of the empire controllers and check the output of the following file:
+This most likely means empire had trouble launching.
+The ansible upstart log in the empire controllers should give pointers to what went wrong.
+SSH into the bastion, then one of the empire controllers and check the output of the following file:
 ```
 root@ip-10-128-10-40:~# cat /var/log/upstart/ansible.log
 ```
