@@ -2,16 +2,11 @@
 
 Empire allows you to attach IAM server certificates to an applications web process. Follow these steps to attach an SSL certificate.
 
-First, [upload a certificate to IAM](http://docs.aws.amazon.com/cli/latest/reference/iam/upload-server-certificate.html):
+Upload the certificate using the command below.
+The .pem file should contain a full chain of the public certificate and any root certificates.
 
-```console
-$ aws iam upload-server-certificate --server-certificate-name myServerCertificate --certificate-body file://public_key_cert_file.pem --private-key file://my_private_key.pem --certificate-chain file://my_certificate_chain_file.pem
+```
+emp ssl-cert-add -a <app> cert.pem cert.key
 ```
 
-Then attach it to the application:
-
-```console
-$ emp certs-attach arn:aws:iam::<accountId>:server-certificate/myServerCertificate -a <app>
-```
-
-**Caveat**: Currently, attaching SSL certificates must happen before you deploy anything to the application (e.g. `emp create` then `emp certs-attach` immediately after).
+**Caveat**: Currently, attaching SSL certificates must happen before you deploy anything to the application (e.g. `emp create` then `emp ssl-cert-add` immediately after).
