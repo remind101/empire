@@ -5,7 +5,6 @@ import (
 	"path"
 
 	"github.com/codegangsta/cli"
-	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
 )
@@ -254,14 +253,4 @@ func main() {
 	app.Commands = Commands
 
 	app.Run(os.Args)
-}
-
-func dockerAuth(path string) (*docker.AuthConfigurations, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	return docker.NewAuthConfigurations(f)
 }

@@ -9,10 +9,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/codegangsta/cli"
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/sns"
+	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/scheduler"
@@ -141,12 +143,12 @@ func newDockerRunner(c *cli.Context) (*runner.Runner, error) {
 func newDockerClient(c *cli.Context) (*dockerutil.Client, error) {
 	socket := c.String(FlagDockerSocket)
 	certPath := c.String(FlagDockerCert)
-	auth, err := dockerAuth(c.String(FlagDockerAuth))
+	authProvider, err := newAuthProvider(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return dockerutil.NewClient(auth, socket, certPath)
+	return dockerutil.NewClient(authProvider, socket, certPath)
 }
 
 // LogStreamer =========================
@@ -226,4 +228,29 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 	// Append here because `go vet` will complain about unkeyed fields,
 	// since it thinks MultiReporter is a struct literal.
 	return append(reporter.MultiReporter{}, empire.DefaultReporter, r), nil
+}
+
+// Auth provider =======================
+
+func newAuthProvider(c *cli.Context) (dockerauth.AuthProvider, error) {
+	provider := dockerauth.NewMultiAuthProvider()
+	provider.AddProvider(dockerauth.NewECRAuthProvider(ecr.New(newConfigProvider(c))))
+
+	if dockerConfigPath := c.String(FlagDockerAuth); dockerConfigPath != "" {
+		dockerConfigFile, err := os.Open(dockerConfigPath)
+		if err != nil {
+			return nil, err
+		}
+
+		defer dockerConfigFile.Close()
+
+		dockerConfigProvider, err := dockerauth.NewDockerConfigAuthProvider(dockerConfigFile)
+		if err != nil {
+			return nil, err
+		}
+
+		provider.AddProvider(dockerConfigProvider)
+	}
+
+	return provider, nil
 }

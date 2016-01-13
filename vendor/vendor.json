@@ -128,6 +128,11 @@
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"path": "github.com/aws/aws-sdk-go/service/ecr",
+			"revision": "b7b1a098eeebcdf7db0af5818e255dc8569b88ce",
+			"revisionTime": "2016-01-09T10:09:47-08:00"
+		},
+		{
 			"comment": "v1.0.2",
 			"path": "github.com/aws/aws-sdk-go/service/ecs",
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
