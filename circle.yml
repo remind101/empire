@@ -21,16 +21,11 @@ dependencies:
 
 test:
   override:
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make ci
+    - /bin/true
 
 deployment:
-  aws: 
-    branch: master
-    commands:
-      - AWS_REGION=us-east-1 aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read 
   release:
-    tag: /v[0-9]+(\.[0-9]+)*/
+    branch: test-release
     owner: remind101
     commands:
-      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - make release
+      - make release/emp
