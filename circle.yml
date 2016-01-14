@@ -28,4 +28,4 @@ deployment:
     branch: test-release
     owner: remind101
     commands:
-      - make release/emp
+      - cd ~/.go_workspace/src/github.com/remind101/empire && make release/emp
