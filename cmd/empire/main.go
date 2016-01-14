@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
 )
 
@@ -249,7 +250,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "empire"
 	app.Usage = "Platform as a Binary"
-	app.Version = Version
+	app.Version = empire.Version
 	app.Commands = Commands
 
 	app.Run(os.Args)
