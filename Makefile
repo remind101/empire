@@ -40,7 +40,7 @@ release/docker::
 	# Wait for the `master` branch to build on CircleCI before running this. We'll
 	# pull that image and tag it with the new version.
 	docker pull ${REPO}:${CIRCLE_SHA1}
-	docker tag ${REPO} ${REPO}:$(shell cat VERSION)
+	docker tag ${REPO}:${CIRCLE_SHA1} ${REPO}:$(shell cat VERSION)
 	docker push ${REPO}:$(shell cat VERSION)
 
 release/emp: release/emp-Linux-x86_64 release/emp-Darwin-x86_64
