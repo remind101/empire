@@ -138,6 +138,21 @@ When you add a new dependency, be sure to vendor it with govendor:
 $ govendor add <package>
 ```
 
+### Releasing
+
+Perform the following steps when releasing a new version:
+
+1. Create a new branch `release-VERSION`.
+2. Bump the version number with `make bump` (this will add a commit to the branch).
+3. Change `HEAD` -> `VERSION` in [CHANGELOG.md][./CHANGELOG.md]
+4. Open a PR to review.
+5. Once merged into master, wait for the Conveyor build to complete.
+6. Finally, tag the commit with the version as `v<VERSION>`. This will trigger CircleCI to:
+   * Tag the image in Docker Hub with the version.
+   * Build Linux and OS X versions of the CLI and Daemon.
+   * Create a new GitHub Release and upload the artifacts.
+7. Finally, update the new GitHub Release to be human readable.
+
 ## Community
 
 We have a google group, [empire-dev][empire-dev], where you can ask questions and engage with the Empire community.
