@@ -47,11 +47,11 @@ release/emp: release/emp-Linux-x86_64 release/emp-Darwin-x86_64
 release/empire: release/empire-Linux-x86_64 release/empire-Darwin-x86_64
 
 release/emp-Linux-x86_64:
-	env GOOS=linux go build -o release/emp-Linux-x86_64 ./cmd/emp
+	env GOOS=linux go build -o $@ ./cmd/emp
 release/emp-Darwin-x86_64:
-	env GOOS=darwin go build -o release/emp-Linux-x86_64 ./cmd/emp
+	env GOOS=darwin go build -o $@ ./cmd/emp
 
 release/empire-Linux-x86_64:
-	env GOOS=linux go build -o release/empire-Linux-x86_64 ./cmd/empire
+	env GOOS=linux go build -o $@ ./cmd/empire
 release/empire-Darwin-x86_64:
-	env GOOS=darwin go build -o release/empire-Linux-x86_64 ./cmd/empire
+	env GOOS=darwin go build -o $@ ./cmd/empire
