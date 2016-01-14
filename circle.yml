@@ -4,24 +4,16 @@ machine:
   services:
     - docker
 
-checkout:
-  post:
-    - rm -rf ~/.go_workspace/src/github.com/remind101
-    - mkdir -p ~/.go_workspace/src/github.com/remind101
-    - cp -R ~/empire ~/.go_workspace/src/github.com/remind101/empire
-
 dependencies:
   pre:
     - sudo pip install awscli
     - go install -a -race std
     - go version
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make bootstrap
-  override:
-    - /bin/true
+    - make bootstrap
 
 test:
   override:
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make ci
+    - make ci
 
 deployment:
   aws: 
@@ -33,4 +25,4 @@ deployment:
     owner: remind101
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - cd ~/.go_workspace/src/github.com/remind101/empire && make release
+      - make release
