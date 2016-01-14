@@ -1,6 +1,8 @@
 machine:
   environment:
     GO15VENDOREXPERIMENT: 1
+  services:
+    - docker
 
 checkout:
   post:
