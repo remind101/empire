@@ -47,6 +47,7 @@ type Scheduler struct {
 
 	cluster string
 	ecs     *ecsutil.Client
+	config  Config
 }
 
 // Config holds configuration for generating a new ECS backed Scheduler
@@ -78,6 +79,9 @@ type Config struct {
 
 	// AWS configuration.
 	AWS client.ConfigProvider
+
+	// Log driver to use when starting ECS tasks. Maps to the --log-driver docker cli arg
+	LogDriver string
 }
 
 // NewScheduler returns a new Scehduler implementation that:
@@ -91,12 +95,14 @@ func NewScheduler(config Config) (*Scheduler, error) {
 		cluster:     config.Cluster,
 		serviceRole: config.ServiceRole,
 		ecs:         c,
+		config:      config,
 	}
 
 	return &Scheduler{
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
+		config:         config,
 	}, nil
 }
 
@@ -117,6 +123,7 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 		cluster:     config.Cluster,
 		serviceRole: config.ServiceRole,
 		ecs:         c,
+		config:      config,
 	}
 
 	// Create the ELB Manager
@@ -144,6 +151,7 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
+		config:         config,
 	}, nil
 }
 
@@ -308,6 +316,7 @@ type ecsProcessManager struct {
 	cluster     string
 	serviceRole string
 	ecs         *ecsutil.Client
+	config      Config
 }
 
 // CreateProcess creates an ECS service for the process.
@@ -341,7 +350,7 @@ func (m *ecsProcessManager) Run(ctx context.Context, app *scheduler.App, process
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process) (*ecs.TaskDefinition, error) {
-	taskDef, err := taskDefinitionInput(process)
+	taskDef, err := taskDefinitionInput(process, m.config)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +488,7 @@ func (m *ecsProcessManager) Scale(ctx context.Context, app string, process strin
 
 // taskDefinitionInput returns an ecs.RegisterTaskDefinitionInput suitable for
 // creating a task definition from a Process.
-func taskDefinitionInput(p *scheduler.Process) (*ecs.RegisterTaskDefinitionInput, error) {
+func taskDefinitionInput(p *scheduler.Process, config Config) (*ecs.RegisterTaskDefinitionInput, error) {
 	args, err := shellwords.Parse(p.Command)
 	if err != nil {
 		return nil, err
@@ -513,19 +522,24 @@ func taskDefinitionInput(p *scheduler.Process) (*ecs.RegisterTaskDefinitionInput
 		labels[k] = aws.String(v)
 	}
 
+	logConfig := &ecs.LogConfiguration{
+		LogDriver: aws.String(config.LogDriver),
+	}
+
 	return &ecs.RegisterTaskDefinitionInput{
 		Family: aws.String(p.Type),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			&ecs.ContainerDefinition{
-				Name:         aws.String(p.Type),
-				Cpu:          aws.Int64(int64(p.CPUShares)),
-				Command:      command,
-				Image:        aws.String(p.Image.String()),
-				Essential:    aws.Bool(true),
-				Memory:       aws.Int64(int64(p.MemoryLimit / MB)),
-				Environment:  environment,
-				PortMappings: ports,
-				DockerLabels: labels,
+				Name:             aws.String(p.Type),
+				Cpu:              aws.Int64(int64(p.CPUShares)),
+				Command:          command,
+				Image:            aws.String(p.Image.String()),
+				Essential:        aws.Bool(true),
+				Memory:           aws.Int64(int64(p.MemoryLimit / MB)),
+				Environment:      environment,
+				LogConfiguration: logConfig,
+				PortMappings:     ports,
+				DockerLabels:     labels,
 			},
 		},
 	}, nil

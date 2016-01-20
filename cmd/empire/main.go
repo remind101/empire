@@ -27,9 +27,10 @@ const (
 	FlagDBPath = "path"
 	FlagDB     = "db"
 
-	FlagDockerSocket = "docker.socket"
-	FlagDockerCert   = "docker.cert"
-	FlagDockerAuth   = "docker.auth"
+	FlagDockerSocket    = "docker.socket"
+	FlagDockerCert      = "docker.cert"
+	FlagDockerAuth      = "docker.auth"
+	FlagDockerLogDriver = "docker.logdriver"
 
 	FlagAWSDebug       = "aws.debug"
 	FlagECSCluster     = "ecs.cluster"
@@ -165,6 +166,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  path.Join(os.Getenv("HOME"), ".dockercfg"),
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
+	},
+	cli.StringFlag{
+		Name:   FlagDockerLogDriver,
+		Value:  "json-file",
+		Usage:  "Log driver to use when running containers. Maps to the --log-driver docker cli arg.",
+		EnvVar: "DOCKER_LOG_DRIVER",
 	},
 	cli.BoolFlag{
 		Name:   FlagAWSDebug,
