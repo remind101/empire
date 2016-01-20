@@ -89,7 +89,8 @@ func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 		InternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPrivate),
 		ExternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPublic),
 		ZoneID:                  c.String(FlagRoute53InternalZoneID),
-		LogDriver:               c.String(FlagDockerLogDriver),
+		LogDriver:               c.String(FlagECSLogDriver),
+		LogOpts:                 c.StringSlice(FlagECSLogOpts),
 	}
 
 	s, err := ecs.NewLoadBalancedScheduler(config)
@@ -111,6 +112,7 @@ func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 	log.Println(fmt.Sprintf("  ExternalSubnetIDs: %v", config.ExternalSubnetIDs))
 	log.Println(fmt.Sprintf("  ZoneID: %v", config.ZoneID))
 	log.Println(fmt.Sprintf("  LogDriver: %v", config.LogDriver))
+	log.Println(fmt.Sprintf("  LogOpts: %v", config.LogOpts))
 
 	return &scheduler.AttachedRunner{
 		Scheduler: s,

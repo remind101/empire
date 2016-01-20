@@ -2,8 +2,10 @@ package ecsutil
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/pkg/trace"
@@ -236,4 +238,21 @@ func (c *limitedClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTa
 	return &ecs.DescribeTasksOutput{
 		Tasks: tasks,
 	}, nil
+}
+
+func NewLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfiguration {
+
+	logOptions := make(map[string]*string)
+
+	for _, opt := range logOpts {
+		logOpt := strings.SplitN(opt, "=", 2)
+		if len(logOpt) == 2 {
+			logOptions[logOpt[0]] = &logOpt[1]
+		}
+	}
+
+	return &ecs.LogConfiguration{
+		LogDriver: aws.String(logDriver),
+		Options:   logOptions,
+	}
 }

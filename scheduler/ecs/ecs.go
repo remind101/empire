@@ -47,7 +47,6 @@ type Scheduler struct {
 
 	cluster string
 	ecs     *ecsutil.Client
-	config  Config
 }
 
 // Config holds configuration for generating a new ECS backed Scheduler
@@ -82,6 +81,9 @@ type Config struct {
 
 	// Log driver to use when starting ECS tasks. Maps to the --log-driver docker cli arg
 	LogDriver string
+
+	// Log options to use when starting ECS tasks. Maps to the --log-opt docker cli arg
+	LogOpts []string
 }
 
 // NewScheduler returns a new Scehduler implementation that:
@@ -89,20 +91,20 @@ type Config struct {
 // * Creates services with ECS.
 func NewScheduler(config Config) (*Scheduler, error) {
 	c := ecsutil.NewClient(config.AWS)
+	l := ecsutil.NewLogConfiguration(config.LogDriver, config.LogOpts)
 
 	// Create the ECS Scheduler
 	var pm ProcessManager = &ecsProcessManager{
-		cluster:     config.Cluster,
-		serviceRole: config.ServiceRole,
-		ecs:         c,
-		config:      config,
+		cluster:          config.Cluster,
+		serviceRole:      config.ServiceRole,
+		ecs:              c,
+		logConfiguration: l,
 	}
 
 	return &Scheduler{
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
-		config:         config,
 	}, nil
 }
 
@@ -117,13 +119,14 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 	}
 
 	c := ecsutil.NewClient(config.AWS)
+	l := ecsutil.NewLogConfiguration(config.LogDriver, config.LogOpts)
 
 	// Create the ECS Scheduler
 	var pm ProcessManager = &ecsProcessManager{
-		cluster:     config.Cluster,
-		serviceRole: config.ServiceRole,
-		ecs:         c,
-		config:      config,
+		cluster:          config.Cluster,
+		serviceRole:      config.ServiceRole,
+		ecs:              c,
+		logConfiguration: l,
 	}
 
 	// Create the ELB Manager
@@ -151,7 +154,6 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 		cluster:        config.Cluster,
 		ProcessManager: pm,
 		ecs:            c,
-		config:         config,
 	}, nil
 }
 
@@ -313,10 +315,10 @@ var _ ProcessManager = &ecsProcessManager{}
 // ecsProcessManager is an implementation of the ProcessManager interface that
 // creates ECS services for Processes.
 type ecsProcessManager struct {
-	cluster     string
-	serviceRole string
-	ecs         *ecsutil.Client
-	config      Config
+	cluster          string
+	serviceRole      string
+	ecs              *ecsutil.Client
+	logConfiguration *ecs.LogConfiguration
 }
 
 // CreateProcess creates an ECS service for the process.
@@ -350,7 +352,7 @@ func (m *ecsProcessManager) Run(ctx context.Context, app *scheduler.App, process
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process) (*ecs.TaskDefinition, error) {
-	taskDef, err := taskDefinitionInput(process, m.config)
+	taskDef, err := taskDefinitionInput(process, m.logConfiguration)
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +490,7 @@ func (m *ecsProcessManager) Scale(ctx context.Context, app string, process strin
 
 // taskDefinitionInput returns an ecs.RegisterTaskDefinitionInput suitable for
 // creating a task definition from a Process.
-func taskDefinitionInput(p *scheduler.Process, config Config) (*ecs.RegisterTaskDefinitionInput, error) {
+func taskDefinitionInput(p *scheduler.Process, logConfiguration *ecs.LogConfiguration) (*ecs.RegisterTaskDefinitionInput, error) {
 	args, err := shellwords.Parse(p.Command)
 	if err != nil {
 		return nil, err
@@ -522,10 +524,6 @@ func taskDefinitionInput(p *scheduler.Process, config Config) (*ecs.RegisterTask
 		labels[k] = aws.String(v)
 	}
 
-	logConfig := &ecs.LogConfiguration{
-		LogDriver: aws.String(config.LogDriver),
-	}
-
 	return &ecs.RegisterTaskDefinitionInput{
 		Family: aws.String(p.Type),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
@@ -537,7 +535,7 @@ func taskDefinitionInput(p *scheduler.Process, config Config) (*ecs.RegisterTask
 				Essential:        aws.Bool(true),
 				Memory:           aws.Int64(int64(p.MemoryLimit / MB)),
 				Environment:      environment,
-				LogConfiguration: logConfig,
+				LogConfiguration: logConfiguration,
 				PortMappings:     ports,
 				DockerLabels:     labels,
 			},
