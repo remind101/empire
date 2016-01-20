@@ -3,13 +3,16 @@
 REPO = remind101/empire
 TYPE = patch
 
+cmds: build/empire build/emp
+
+clean:
+	rm -rf build/*
+
 build/empire:
 	go build -o build/empire ./cmd/empire
 
 build/emp:
 	go build -o build/emp ./cmd/emp
-
-cmds: build/empire build/emp
 
 bootstrap: cmds
 	createdb empire || true

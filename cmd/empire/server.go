@@ -5,13 +5,15 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
-	"github.com/remind101/empire/server/auth/github"
+	githubauth "github.com/remind101/empire/server/auth/github"
+	"github.com/remind101/empire/server/github"
 	"golang.org/x/oauth2"
 )
 
@@ -37,10 +39,15 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts.Authenticator = newAuthenticator(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
 	opts.GitHub.Deployments.Environments = strings.Split(c.String(FlagGithubDeploymentsEnvironments), ",")
-	opts.GitHub.Deployments.ImageTemplate = c.String(FlagGithubDeploymentsImageTemplate)
+	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	return server.New(e, opts)
+}
+
+func newImageBuilder(c *cli.Context) github.ImageBuilder {
+	tmpl := template.Must(template.New("image").Parse(c.String(FlagGithubDeploymentsImageTemplate)))
+	return github.ImageFromTemplate(tmpl)
 }
 
 func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
@@ -50,7 +57,7 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 		auth.NewAccessTokenAuthenticator(e),
 	}
 
-	var client *github.Client
+	var client *githubauth.Client
 	// If a GitHub client id is provided, we'll use GitHub as an
 	// authentication backend. Otherwise, we'll just use a static username
 	// and password backend.
@@ -68,7 +75,7 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 			Scopes:       []string{"repo_deployment", "read:org"},
 		}
 
-		client = github.NewClient(config)
+		client = githubauth.NewClient(config)
 		client.URL = c.String(FlagGithubApiURL)
 
 		log.Println("Using GitHub authentication backend with the following configuration:")
@@ -79,7 +86,7 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 
 		// an authenticator for authenticating requests with a users github
 		// credentials.
-		authenticators = append(authenticators, github.NewAuthenticator(client))
+		authenticators = append(authenticators, githubauth.NewAuthenticator(client))
 	}
 
 	// try access token before falling back to github.
@@ -87,7 +94,7 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 
 	// After the user is authenticated, check their GitHub Organization membership.
 	if org := c.String(FlagGithubOrg); org != "" {
-		authorizer := github.NewOrganizationAuthorizer(client)
+		authorizer := githubauth.NewOrganizationAuthorizer(client)
 		authorizer.Organization = org
 
 		log.Println("Adding GitHub Organization authorizer with the following configuration:")

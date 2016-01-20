@@ -20,19 +20,14 @@ type Options struct {
 	Authenticator auth.Authenticator
 
 	GitHub struct {
-		ClientID     string
-		ClientSecret string
-		Organization string
-		ApiURL       string
-
 		// Deployments
 		Webhooks struct {
 			Secret string
 		}
 		Deployments struct {
-			Environments  []string
-			ImageTemplate string
-			TugboatURL    string
+			Environments []string
+			ImageBuilder github.ImageBuilder
+			TugboatURL   string
 		}
 	}
 }
@@ -43,10 +38,9 @@ func New(e *empire.Empire, options Options) http.Handler {
 	if options.GitHub.Webhooks.Secret != "" {
 		// Mount GitHub webhooks
 		g := github.New(e, github.Options{
-			Secret:        options.GitHub.Webhooks.Secret,
-			Environments:  options.GitHub.Deployments.Environments,
-			ImageTemplate: options.GitHub.Deployments.ImageTemplate,
-			TugboatURL:    options.GitHub.Deployments.TugboatURL,
+			Secret:       options.GitHub.Webhooks.Secret,
+			Environments: options.GitHub.Deployments.Environments,
+			Deployer:     newDeployer(e, options),
 		})
 		r.Match(githubWebhook, g)
 	}
@@ -95,4 +89,28 @@ func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWrite
 	w.WriteHeader(status)
 
 	return nil
+}
+
+// newDeployer generates a new github.Deployer implementation for the given
+// options.
+func newDeployer(e *empire.Empire, options Options) github.Deployer {
+	ed := github.NewEmpireDeployer(e)
+	ed.ImageBuilder = options.GitHub.Deployments.ImageBuilder
+
+	var d github.Deployer = ed
+
+	// Enables the Tugboat integration, which will send logs to a Tugboat
+	// instance.
+	if url := options.GitHub.Deployments.TugboatURL; url != "" {
+		d = github.NotifyTugboat(d, url)
+	}
+
+	// Add tracing information so we know about errors.
+	d = github.TraceDeploy(d)
+
+	// Perform the deployment within a go routine so we don't timeout
+	// githubs webhook requests.
+	d = github.DeployAsync(d)
+
+	return d
 }

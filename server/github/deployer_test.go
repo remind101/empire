@@ -15,8 +15,9 @@ import (
 
 func TestEmpireDeployer_Deploy(t *testing.T) {
 	e := new(mockEmpire)
-	d := &empireDeployer{
-		Empire: e,
+	d := &EmpireDeployer{
+		empire:       e,
+		ImageBuilder: ImageFromTemplate(defaultTemplate),
 	}
 
 	var event events.Deployment
