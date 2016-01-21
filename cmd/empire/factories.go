@@ -14,6 +14,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/pkg/dockerutil"
+	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
@@ -80,6 +81,11 @@ func newScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 }
 
 func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
+
+	logDriver := c.String(FlagECSLogDriver)
+	logOpts := c.StringSlice(FlagECSLogOpts)
+	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
+
 	config := ecs.Config{
 		AWS:                     newConfigProvider(c),
 		Cluster:                 c.String(FlagECSCluster),
@@ -89,8 +95,7 @@ func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 		InternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPrivate),
 		ExternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPublic),
 		ZoneID:                  c.String(FlagRoute53InternalZoneID),
-		LogDriver:               c.String(FlagECSLogDriver),
-		LogOpts:                 c.StringSlice(FlagECSLogOpts),
+		LogConfiguration:        logConfiguration,
 	}
 
 	s, err := ecs.NewLoadBalancedScheduler(config)
@@ -111,8 +116,7 @@ func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 	log.Println(fmt.Sprintf("  InternalSubnetIDs: %v", config.InternalSubnetIDs))
 	log.Println(fmt.Sprintf("  ExternalSubnetIDs: %v", config.ExternalSubnetIDs))
 	log.Println(fmt.Sprintf("  ZoneID: %v", config.ZoneID))
-	log.Println(fmt.Sprintf("  LogDriver: %v", config.LogDriver))
-	log.Println(fmt.Sprintf("  LogOpts: %v", config.LogOpts))
+	log.Println(fmt.Sprintf("  LogConfiguration: %v", logConfiguration))
 
 	return &scheduler.AttachedRunner{
 		Scheduler: s,

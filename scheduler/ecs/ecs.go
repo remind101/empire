@@ -79,11 +79,8 @@ type Config struct {
 	// AWS configuration.
 	AWS client.ConfigProvider
 
-	// Log driver to use when starting ECS tasks. Maps to the --log-driver docker cli arg
-	LogDriver string
-
-	// Log options to use when starting ECS tasks. Maps to the --log-opt docker cli arg
-	LogOpts []string
+	// Log configuraton for ECS tasks
+	LogConfiguration *ecs.LogConfiguration
 }
 
 // NewScheduler returns a new Scehduler implementation that:
@@ -91,14 +88,13 @@ type Config struct {
 // * Creates services with ECS.
 func NewScheduler(config Config) (*Scheduler, error) {
 	c := ecsutil.NewClient(config.AWS)
-	l := ecsutil.NewLogConfiguration(config.LogDriver, config.LogOpts)
 
 	// Create the ECS Scheduler
 	var pm ProcessManager = &ecsProcessManager{
 		cluster:          config.Cluster,
 		serviceRole:      config.ServiceRole,
 		ecs:              c,
-		logConfiguration: l,
+		logConfiguration: config.LogConfiguration,
 	}
 
 	return &Scheduler{
@@ -119,14 +115,13 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 	}
 
 	c := ecsutil.NewClient(config.AWS)
-	l := ecsutil.NewLogConfiguration(config.LogDriver, config.LogOpts)
 
 	// Create the ECS Scheduler
 	var pm ProcessManager = &ecsProcessManager{
 		cluster:          config.Cluster,
 		serviceRole:      config.ServiceRole,
 		ecs:              c,
-		logConfiguration: l,
+		logConfiguration: config.LogConfiguration,
 	}
 
 	// Create the ELB Manager

@@ -240,6 +240,11 @@ func (c *limitedClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTa
 	}, nil
 }
 
+var validLogDrivers = map[string]bool{
+	"json-file": true,
+	"syslog":    true,
+}
+
 func NewLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfiguration {
 
 	logOptions := make(map[string]*string)
@@ -249,6 +254,11 @@ func NewLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfigurati
 		if len(logOpt) == 2 {
 			logOptions[logOpt[0]] = &logOpt[1]
 		}
+	}
+
+	_, ok := validLogDrivers[logDriver]
+	if !ok {
+		logDriver = "json-file"
 	}
 
 	return &ecs.LogConfiguration{
