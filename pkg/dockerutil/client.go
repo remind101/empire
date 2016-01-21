@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/pkg/trace"
 )
 
@@ -31,53 +32,46 @@ func NewDockerClientFromEnv() (*docker.Client, error) {
 type Client struct {
 	*docker.Client
 
-	// Auth is the docker.AuthConfiguration that will be used for pulling
+	// AuthProvider is the dockerauth.AuthProvider that will be used for pulling
 	// images.
-	Auth *docker.AuthConfigurations
+	AuthProvider dockerauth.AuthProvider
 }
 
 // NewClient returns a new Client instance.
-func NewClient(auth *docker.AuthConfigurations, socket, certPath string) (*Client, error) {
+func NewClient(authProvider dockerauth.AuthProvider, socket, certPath string) (*Client, error) {
 	c, err := NewDockerClient(socket, certPath)
 	if err != nil {
 		return nil, err
 	}
-	return newClient(auth, c), nil
+	return newClient(authProvider, c), nil
 }
 
 // NewClientFromEnv returns a new Client instance configured by the DOCKER_*
 // environment variables.
-func NewClientFromEnv(auth *docker.AuthConfigurations) (*Client, error) {
+func NewClientFromEnv(authProvider dockerauth.AuthProvider) (*Client, error) {
 	c, err := NewDockerClientFromEnv()
 	if err != nil {
 		return nil, err
 	}
-	return newClient(auth, c), nil
+	return newClient(authProvider, c), nil
 }
 
-func newClient(auth *docker.AuthConfigurations, c *docker.Client) *Client {
-	if auth == nil {
-		auth = &docker.AuthConfigurations{}
+func newClient(authProvider dockerauth.AuthProvider, c *docker.Client) *Client {
+	if authProvider == nil {
+		authProvider = dockerauth.NewMultiAuthProvider()
 	}
-	return &Client{Auth: auth, Client: c}
+	return &Client{AuthProvider: authProvider, Client: c}
 }
 
 // PullImage wraps the docker clients PullImage to handle authentication.
 func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) error {
-	var a docker.AuthConfiguration
-
-	reg := opts.Registry
-
-	if reg == "" {
-		reg = "https://index.docker.io/v1/"
-	}
-
-	if c, ok := c.Auth.Configs[reg]; ok {
-		a = c
+	authConf, err := authConfiguration(c.AuthProvider, opts.Registry)
+	if err != nil {
+		return err
 	}
 
 	ctx, done := trace.Trace(ctx)
-	err := c.Client.PullImage(opts, a)
+	err = c.Client.PullImage(opts, authConf)
 	done(err, "PullImage", "registry", opts.Registry, "repository", opts.Repository, "tag", opts.Tag)
 	return err
 }
@@ -115,4 +109,17 @@ func (c *Client) RemoveContainer(ctx context.Context, opts docker.RemoveContaine
 	err := c.Client.RemoveContainer(opts)
 	done(err, "RemoveContainer", "id", opts.ID)
 	return err
+}
+
+func authConfiguration(provider dockerauth.AuthProvider, registry string) (docker.AuthConfiguration, error) {
+	authConf, err := provider.AuthConfiguration(registry)
+	if err != nil {
+		return docker.AuthConfiguration{}, err
+	}
+
+	if authConf != nil {
+		return *authConf, nil
+	}
+
+	return docker.AuthConfiguration{}, nil
 }
