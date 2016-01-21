@@ -306,9 +306,6 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 	if len(ports) > 0 {
 		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
 
-		// gliderlabs registrator
-		labels[fmt.Sprintf("SERVICE_%d_NAME", *ports[0].Container)] = release.App.Name
-
 		// If we have exposed ports, set process exposure to apps exposure
 		procExp = serviceExposure(release.App.Exposure)
 	}
