@@ -1,5 +1,11 @@
 # Changelog
 
+## HEAD
+
+**Security**
+
+* Empire is now built with Go 1.5.3 to address [CVE-2015-8618](https://groups.google.com/forum/#!topic/golang-announce/MEATuOi_ei4) [#737](https://github.com/remind101/empire/pull/737).
+
 ## 0.10.0 (2016-01-13)
 
 **Features**
