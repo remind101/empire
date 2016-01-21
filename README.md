@@ -90,7 +90,7 @@ using the postgres client connection defaults.
 To run the tests:
 
 ```console
-$ go test ./...
+$ make test
 ```
 
 ## Development
