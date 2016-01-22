@@ -1,6 +1,20 @@
 # Changelog
 
-## Head
+## HEAD
+
+**Features**
+
+* Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
+
+**Bugs**
+
+* `emp run` now works with unofficial Docker registries [#740](https://github.com/remind101/empire/pull/740).
+
+**Security**
+
+* Empire is now built with Go 1.5.3 to address [CVE-2015-8618](https://groups.google.com/forum/#!topic/golang-announce/MEATuOi_ei4) [#737](https://github.com/remind101/empire/pull/737).
+
+## 0.10.0 (2016-01-13)
 
 **Features**
 
@@ -9,6 +23,7 @@
 * You can now deploy images from unofficial Docker registries, such as Quay.io [#692](https://github.com/remind101/empire/pull/692).
 * Empire now allows you to "attach" existing IAM certificates. This replaces the old `ssl-*` commands in the `emp` CLI [#701](https://github.com/remind101/empire/pull/701).
 * You can now have Empire publish events to an SNS topic [#698](https://github.com/remind101/empire/pull/698).
+* Empire now supports environement aliases for Github Deployments [#681](https://github.com/remind101/empire/pull/681)
 
 **Bugs**
 

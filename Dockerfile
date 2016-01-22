@@ -1,7 +1,7 @@
-FROM golang:1.5.1
+FROM golang:1.5.3
 MAINTAINER Eric Holmes <eric@remind101.com>
 
-LABEL version 0.9.2
+LABEL version 0.10.0
 
 ADD . /go/src/github.com/remind101/empire
 WORKDIR /go/src/github.com/remind101/empire

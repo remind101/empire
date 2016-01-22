@@ -10,7 +10,7 @@ production environments.
 This guide assumes that you have the following installed:
 
 * **AWS CLI**: You can find the instructions at
-  [http://aws.amazon.com/cli/][cli]. You'll need a fairly recent version of the
+  [http://aws.amazon.com/cli/][awscli]. You'll need a fairly recent version of the
   CLI that has support for ECS.
 
 ```console

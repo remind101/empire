@@ -30,7 +30,7 @@ type Options struct {
 			Secret string
 		}
 		Deployments struct {
-			Environment   string
+			Environments  []string
 			ImageTemplate string
 			TugboatURL    string
 		}
@@ -44,7 +44,7 @@ func New(e *empire.Empire, options Options) http.Handler {
 		// Mount GitHub webhooks
 		g := github.New(e, github.Options{
 			Secret:        options.GitHub.Webhooks.Secret,
-			Environment:   options.GitHub.Deployments.Environment,
+			Environments:  options.GitHub.Deployments.Environments,
 			ImageTemplate: options.GitHub.Deployments.ImageTemplate,
 			TugboatURL:    options.GitHub.Deployments.TugboatURL,
 		})

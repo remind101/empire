@@ -1,6 +1,8 @@
 machine:
   environment:
     GO15VENDOREXPERIMENT: 1
+  services:
+    - docker
 
 checkout:
   post:
@@ -22,7 +24,13 @@ test:
     - cd ~/.go_workspace/src/github.com/remind101/empire && make ci
 
 deployment:
-  hub: 
+  aws: 
     branch: master
     commands:
       - AWS_REGION=us-east-1 aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read 
+  release:
+    tag: /v[0-9]+(\.[0-9]+)*/
+    owner: remind101
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - cd ~/.go_workspace/src/github.com/remind101/empire && make release

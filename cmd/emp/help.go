@@ -111,7 +111,7 @@ func runHelp(cmd *Command, args []string) {
 	}
 
 	for _, cmd := range commands {
-		if cmd.Name() == args[0] && !cmd.Hidden {
+		if cmd.Name() == args[0] {
 			cmd.PrintLongUsage()
 			return
 		}
@@ -135,7 +135,7 @@ Usage: emp <command> [-a <app or remote>] [options] [arguments]
 
 
 Commands:
-{{range .Commands}}{{if .Runnable}}{{if .List}}
+{{range .Commands}}{{if .Visible}}{{if .List}}
     {{.Name | printf (print "%-" $.MaxRunListName "s")}}  {{.Short}}{{end}}{{end}}{{end}}
 
 Run 'emp help [command]' for details.

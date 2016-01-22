@@ -8,7 +8,7 @@ import (
 
 var cmdCertAttach = &Command{
 	Run:      runCertAttach,
-	Usage:    "cert-attach",
+	Usage:    "cert-attach <aws_cert_arn>",
 	NeedsApp: true,
 	Category: "certs",
 	Short:    "attach a certificate to an app",
@@ -20,7 +20,9 @@ Before running this command, you should upload your SSL certificate and key to I
 Examples:
 
     $ aws iam upload-server-certificate --server-certificate-name myServerCertificate --certificate-body file://public_key_cert_file.pem --private-key file://my_private_key.pem --certificate-chain file://my_certificate_chain_file.pem
-    $ emp cert-attach myServerCertificate -a
+	# ^^ The above command will return the ARN of the certificate, you'll need that for the command below
+	# Say it returns the arn arn:aws:iam::123456789012:server-certificate/myServerCertificate, you'd use that like this:
+	$ emp cert-attach arn:aws:iam::123456789012:server-certificate/myServerCertificate -a myapp
 `,
 }
 

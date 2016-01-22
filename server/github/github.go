@@ -25,7 +25,7 @@ type Options struct {
 
 	// If provided, specifies the environments that this Empire instance
 	// should handle deployments for.
-	Environment string
+	Environments []string
 
 	// ImageTemplate is used to determine the image to deploy.
 	ImageTemplate string
@@ -40,7 +40,7 @@ func New(e *empire.Empire, opts Options) httpx.Handler {
 
 	d := newDeployer(e, opts)
 	secret := opts.Secret
-	r.Handle("deployment", hookshot.Authorize(&DeploymentHandler{deployer: d, environment: opts.Environment}, secret))
+	r.Handle("deployment", hookshot.Authorize(&DeploymentHandler{deployer: d, environments: opts.Environments}, secret))
 	r.Handle("ping", hookshot.Authorize(http.HandlerFunc(Ping), secret))
 
 	return r
@@ -49,7 +49,7 @@ func New(e *empire.Empire, opts Options) httpx.Handler {
 // Deployment is an http.Handler for handling the `deployment` event.
 type DeploymentHandler struct {
 	deployer
-	environment string
+	environments []string
 }
 
 func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 		return nil
 	}
 
-	if p.Deployment.Environment != h.environment {
+	if !currentEnvironment(p.Deployment.Environment, h.environments) {
 		w.WriteHeader(http.StatusNoContent)
 		fmt.Fprintf(w, "Ignore deployment to environment: %s", p.Deployment.Environment)
 		return nil
@@ -77,6 +77,15 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 	w.WriteHeader(http.StatusAccepted)
 	io.WriteString(w, "Ok\n")
 	return nil
+}
+
+func currentEnvironment(eventEnv string, environments []string) bool {
+	for _, env := range environments {
+		if env == eventEnv {
+			return true
+		}
+	}
+	return false
 }
 
 func Ping(w http.ResponseWriter, r *http.Request) {

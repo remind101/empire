@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
-
-	"golang.org/x/oauth2"
 
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/auth/github"
+	"golang.org/x/oauth2"
 )
 
 func runServer(c *cli.Context) {
@@ -36,7 +36,7 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	var opts server.Options
 	opts.Authenticator = newAuthenticator(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
-	opts.GitHub.Deployments.Environment = c.String(FlagGithubDeploymentsEnvironment)
+	opts.GitHub.Deployments.Environments = strings.Split(c.String(FlagGithubDeploymentsEnvironments), ",")
 	opts.GitHub.Deployments.ImageTemplate = c.String(FlagGithubDeploymentsImageTemplate)
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 

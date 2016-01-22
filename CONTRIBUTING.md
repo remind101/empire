@@ -21,7 +21,7 @@ We want the development of Empire to be driven by the needs of the community, so
 
 When submitting a pull request, here are some things to keep in mind:
 
-* Is your change backwards compatible? Would this require any migration steps? Will any changes be required in the [CLI](https://github.com/remind101/emp)?
+* Is your change backwards compatible? Would this require any migration steps? Will any changes be required in the [CLI](https://github.com/remind101/empire/tree/master/cmd/emp)?
 * Does your change require changes to the documentation? Does the quickstart guide need to be updated?
 * Did you add appropriate test coverage? Submissions that add features or change core functionality will not be accepted without sufficient tests. We favor stability over anything else.
 * Did you update the CHANGELOG?

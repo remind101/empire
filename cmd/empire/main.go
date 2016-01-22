@@ -5,7 +5,7 @@ import (
 	"path"
 
 	"github.com/codegangsta/cli"
-	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
 )
 
@@ -20,7 +20,7 @@ const (
 	FlagGithubApiURL       = "github.api.url"
 
 	FlagGithubWebhooksSecret           = "github.webhooks.secret"
-	FlagGithubDeploymentsEnvironment   = "github.deployments.environment"
+	FlagGithubDeploymentsEnvironments  = "github.deployments.environment"
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
 
@@ -107,9 +107,9 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_GITHUB_WEBHOOKS_SECRET",
 			},
 			cli.StringFlag{
-				Name:   FlagGithubDeploymentsEnvironment,
+				Name:   FlagGithubDeploymentsEnvironments,
 				Value:  "",
-				Usage:  "If provided, only github deployments to the specified environment will be handled.",
+				Usage:  "If provided, only github deployments to the specified environments will be handled.",
 				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_ENVIRONMENT",
 			},
 			cli.StringFlag{
@@ -263,18 +263,8 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "empire"
 	app.Usage = "Platform as a Binary"
-	app.Version = Version
+	app.Version = empire.Version
 	app.Commands = Commands
 
 	app.Run(os.Args)
-}
-
-func dockerAuth(path string) (*docker.AuthConfigurations, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	return docker.NewAuthConfigurations(f)
 }
