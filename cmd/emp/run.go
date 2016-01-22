@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -127,30 +128,16 @@ func runRun(cmd *Command, args []string) {
 	u, err := url.Parse(apiURL)
 	must(err)
 
-	protocol := u.Scheme
-	address := u.Path
-	if protocol != "unix" {
-		protocol = "tcp"
-		parts := strings.SplitN(u.Host, ":", 2)
-		if len(parts) == 2 {
-			address = u.Host
-		} else {
-			if u.Scheme == "https" {
-				address = u.Host + ":443"
-			} else {
-				address = u.Host + ":80"
-			}
-		}
-	}
+	proto, address := dialParams(u)
 
 	var dial net.Conn
-	if u.Scheme == "https" {
-		dial, err = tlsDial(protocol, address, &tls.Config{})
+	if proto == "tls" {
+		dial, err = tlsDial("tcp", address, &tls.Config{})
 		if err != nil {
 			printFatal(err.Error())
 		}
 	} else {
-		dial, err = net.Dial(protocol, address)
+		dial, err = net.Dial(proto, address)
 		if err != nil {
 			printFatal(err.Error())
 		}
@@ -197,4 +184,37 @@ func runRun(cmd *Command, args []string) {
 	case err = <-errChanOut:
 		must(err)
 	}
+}
+
+func dialParams(u *url.URL) (proto, address string) {
+	// u.Host can be either host or host:port
+	host, port := splitHost(u.Host)
+
+	switch u.Scheme {
+	case "https":
+		proto = "tls"
+		if port == "" {
+			port = "443"
+		}
+	case "http":
+		proto = "tcp"
+		if port == "" {
+			port = "80"
+		}
+	default:
+		panic(fmt.Sprintf("I don't know what to do for the %v protocol", u.Scheme))
+	}
+
+	address = fmt.Sprintf("%s:%s", host, port)
+
+	return
+}
+
+func splitHost(hostPort string) (host, port string) {
+	parts := strings.SplitN(hostPort, ":", 2)
+	host = parts[0]
+	if len(parts) == 2 {
+		port = parts[1]
+	}
+	return
 }
