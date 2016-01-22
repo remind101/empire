@@ -411,7 +411,14 @@
         "LaunchConfigurationName": { "Ref": "LaunchConfiguration" },
         "MinSize": "1",
         "MaxSize": { "Ref": "MaxCapacity" },
-        "DesiredCapacity": { "Ref": "DesiredCapacity" }
+        "DesiredCapacity": { "Ref": "DesiredCapacity" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Empire minion",
+            "PropagateAtLaunch": "true"
+          }
+        ]
       }
     },
 

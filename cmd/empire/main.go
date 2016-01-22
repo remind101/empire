@@ -34,6 +34,8 @@ const (
 	FlagAWSDebug       = "aws.debug"
 	FlagECSCluster     = "ecs.cluster"
 	FlagECSServiceRole = "ecs.service.role"
+	FlagECSLogDriver   = "ecs.logdriver"
+	FlagECSLogOpts     = "ecs.logopt"
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
@@ -182,6 +184,18 @@ var EmpireFlags = []cli.Flag{
 		Value:  "ecsServiceRole",
 		Usage:  "The IAM Role to use for managing ECS",
 		EnvVar: "EMPIRE_ECS_SERVICE_ROLE",
+	},
+	cli.StringFlag{
+		Name:   FlagECSLogDriver,
+		Value:  "json-file",
+		Usage:  "Log driver to use when running containers. Maps to the --log-driver docker cli arg",
+		EnvVar: "EMPIRE_ECS_LOG_DRIVER",
+	},
+	cli.StringSliceFlag{
+		Name:   FlagECSLogOpts,
+		Value:  &cli.StringSlice{},
+		Usage:  "Log driver to options. Maps to the --log-opt docker cli arg",
+		EnvVar: "EMPIRE_ECS_LOG_OPT",
 	},
 	cli.StringFlag{
 		Name:   FlagELBSGPrivate,
