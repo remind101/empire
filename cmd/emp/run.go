@@ -131,11 +131,16 @@ func runRun(cmd *Command, args []string) {
 	address := u.Path
 	if protocol != "unix" {
 		protocol = "tcp"
-		address = u.Host + ":80"
-	}
-
-	if u.Scheme == "https" {
-		address = u.Host + ":443"
+		parts := strings.SplitN(u.Host, ":", 2)
+		if len(parts) == 2 {
+			address = u.Host
+		} else {
+			if u.Scheme == "https" {
+				address = u.Host + ":443"
+			} else {
+				address = u.Host + ":80"
+			}
+		}
 	}
 
 	var dial net.Conn
