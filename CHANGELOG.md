@@ -6,6 +6,10 @@
 
 * Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
 
+**Bugs**
+
+* `emp run` now works with unofficial Docker registries [#740](https://github.com/remind101/empire/pull/740).
+
 **Security**
 
 * Empire is now built with Go 1.5.3 to address [CVE-2015-8618](https://groups.google.com/forum/#!topic/golang-announce/MEATuOi_ei4) [#737](https://github.com/remind101/empire/pull/737).
