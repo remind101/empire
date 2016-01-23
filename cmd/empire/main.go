@@ -24,8 +24,7 @@ const (
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
 
-	FlagDBPath = "path"
-	FlagDB     = "db"
+	FlagDB = "db"
 
 	FlagDockerSocket = "docker.socket"
 	FlagDockerCert   = "docker.cert"
@@ -136,11 +135,6 @@ var Commands = []cli.Command{
 }
 
 var DBFlags = []cli.Flag{
-	cli.StringFlag{
-		Name:  FlagDBPath,
-		Value: "./migrations",
-		Usage: "Path to database migrations",
-	},
 	cli.StringFlag{
 		Name:   FlagDB,
 		Value:  "postgres://localhost/empire?sslmode=disable",

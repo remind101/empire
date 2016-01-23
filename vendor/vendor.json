@@ -567,6 +567,17 @@
 			"revisionTime": "2016-01-06T04:51:11+07:00"
 		},
 		{
+			"origin": "github.com/remind101/empire/vendor/github.com/rubenv/sql-migrate",
+			"path": "github.com/rubenv/sql-migrate",
+			"revision": "53184e1edfb4f9655b0fa8dd2c23e7763f452bda",
+			"revisionTime": "2015-07-13T16:07:51+02:00"
+		},
+		{
+			"path": "github.com/rubenv/sql-migrate/sqlparse",
+			"revision": "53184e1edfb4f9655b0fa8dd2c23e7763f452bda",
+			"revisionTime": "2015-07-13T16:07:51+02:00"
+		},
+		{
 			"path": "github.com/stretchr/objx",
 			"revision": "cbeaeb16a013161a98496fad62933b1d21786672"
 		},

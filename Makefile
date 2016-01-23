@@ -11,20 +11,25 @@ build/emp:
 
 cmds: build/empire build/emp
 
-bootstrap: cmds
+bootstrap:
 	createdb empire || true
-	./build/empire migrate
 
 build: Dockerfile
 	docker build -t ${REPO} .
 
-ci: cmds test vet
+ci: cmds test vet diffmigrations
 
 test: build/emp
 	go test $(shell go list ./... | grep -v /vendor/)
 
 vet:
 	go vet $(shell go list ./... | grep -v /vendor/)
+
+migrations/bindata.go: migrations/*.sql
+	go-bindata -pkg migrations -o migrations/bindata.go migrations/
+
+diffmigrations:
+	@test -z "$(shell git diff --name-only | grep migrations/bindata.go)" || echo "error: You added migrations but didn't run \"make migrations/bindata.go\"."
 
 bump:
 	pip install --upgrade bumpversion

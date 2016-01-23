@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE certificates (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   app_id uuid NOT NULL references apps(id) ON DELETE CASCADE,
@@ -8,3 +9,6 @@ CREATE TABLE certificates (
 );
 
 CREATE UNIQUE INDEX index_certificates_on_app_id ON certificates USING btree (app_id);
+
+-- +migrate Down
+DROP TABLE certificates CASCADE;
