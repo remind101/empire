@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -72,3 +73,12 @@ CREATE UNIQUE INDEX index_slugs_on_image ON slugs USING btree (image);
 CREATE UNIQUE INDEX index_releases_on_app_id_and_version ON releases USING btree (app_id, version);
 CREATE UNIQUE INDEX index_jobs_on_app_id_and_release_version_and_process_type_and_instance ON jobs (app_id, release_version, process_type, instance);
 CREATE INDEX index_configs_on_created_at ON configs (created_at);
+
+-- +migrate Down
+DROP TABLE apps CASCADE;
+DROP TABLE configs CASCADE;
+DROP TABLE slugs CASCADE;
+DROP TABLE releases CASCADE;
+DROP TABLE processes CASCADE;
+DROP TABLE jobs CASCADE;
+DROP TABLE deployments CASCADE;

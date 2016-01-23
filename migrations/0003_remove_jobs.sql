@@ -1,3 +1,7 @@
+-- +migrate Up
+DROP TABLE jobs;
+
+-- +migrate Down
 CREATE TABLE jobs (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   app_id text NOT NULL references apps(name) ON DELETE CASCADE,

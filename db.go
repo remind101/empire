@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/jinzhu/gorm"
-	"github.com/mattes/migrate/migrate"
+	"github.com/remind101/empire/migrations"
 	"github.com/remind101/empire/pkg/headerutil"
 )
 
@@ -14,7 +14,7 @@ import (
 type DB struct {
 	*gorm.DB
 
-	uri string
+	driver string
 }
 
 // OpenDB returns a new gorm.DB instance.
@@ -35,14 +35,19 @@ func OpenDB(uri string) (*DB, error) {
 	}
 
 	return &DB{
-		DB:  &db,
-		uri: uri,
+		DB:     &db,
+		driver: u.Scheme,
 	}, nil
 }
 
 // MigrateUp migrates the database to the latest version of the schema.
-func (db *DB) MigrateUp(path string) ([]error, bool) {
-	return migrate.UpSync(db.uri, path)
+func (db *DB) MigrateUp() error {
+	return migrations.Up(db.DB.DB(), db.driver)
+}
+
+// MigrateDown migrates the database down.
+func (db *DB) MigrateDown() error {
+	return migrations.Down(db.DB.DB(), db.driver)
 }
 
 // Reset resets the database to a pristine state.

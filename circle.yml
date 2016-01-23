@@ -12,6 +12,7 @@ checkout:
 
 dependencies:
   pre:
+    - go get -u github.com/jteeuwen/go-bindata/...
     - sudo pip install awscli
     - go install -a -race std
     - go version

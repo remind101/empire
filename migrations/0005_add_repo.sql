@@ -1,3 +1,10 @@
+-- +migrate Up
+ALTER TABLE apps DROP COLUMN docker_repo;
+ALTER TABLE apps DROP COLUMN github_repo;
+ALTER TABLE apps ADD COLUMN repo text;
+DROP TABLE deployments;
+
+-- +migrate Down
 ALTER TABLE apps DROP COLUMN repo;
 ALTER TABLE apps ADD COLUMN docker_repo text;
 ALTER TABLE apps ADD COLUMN github_repo text;

@@ -1,1 +1,0 @@
-ALTER TABLE apps REMOVE COLUMN exposure;

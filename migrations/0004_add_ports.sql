@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE ports (
   id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
   port integer,
@@ -6,3 +7,6 @@ CREATE TABLE ports (
 
 -- Insert 1000 ports
 INSERT INTO ports (port) (SELECT generate_series(9000,10000));
+
+-- +migrate Down
+DROP TABLE ports CASCADE;
