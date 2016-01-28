@@ -66,7 +66,7 @@ func TestOrganizationAuthorizer(t *testing.T) {
 		client:       c,
 	}
 
-	c.On("IsMember", "remind101", "access_token").Return(true, nil)
+	c.On("IsOrganizationMember", "remind101", "access_token").Return(true, nil)
 
 	err := a.Authorize(&empire.User{GitHubToken: "access_token"})
 	assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestOrganizationAuthorizer_Unauthorized(t *testing.T) {
 		client:       c,
 	}
 
-	c.On("IsMember", "remind101", "access_token").Return(false, nil)
+	c.On("IsOrganizationMember", "remind101", "access_token").Return(false, nil)
 
 	err := a.Authorize(&empire.User{
 		Name:        "ejholmes",
@@ -111,7 +111,7 @@ func (m *mockClient) GetUser(token string) (*User, error) {
 	return nil, args.Error(1)
 }
 
-func (m *mockClient) IsMember(organization, token string) (bool, error) {
+func (m *mockClient) IsOrganizationMember(organization, token string) (bool, error) {
 	args := m.Called(organization, token)
 	return args.Bool(0), args.Error(1)
 }

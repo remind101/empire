@@ -60,7 +60,7 @@ type OrganizationAuthorizer struct {
 	Organization string
 
 	client interface {
-		IsMember(organization, token string) (bool, error)
+		IsOrganizationMember(organization, token string) (bool, error)
 	}
 }
 
@@ -75,7 +75,7 @@ func (a *OrganizationAuthorizer) Authorize(user *empire.User) error {
 		panic("no organization set")
 	}
 
-	ok, err := a.client.IsMember(a.Organization, user.GitHubToken)
+	ok, err := a.client.IsOrganizationMember(a.Organization, user.GitHubToken)
 	if err != nil {
 		return err
 	}

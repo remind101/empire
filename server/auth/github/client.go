@@ -151,9 +151,9 @@ func (c *Client) GetUser(token string) (*User, error) {
 	return &u, nil
 }
 
-// IsMember returns true of the authenticated user is a member of the
+// IsOrganizationMember returns true of the authenticated user is a member of the
 // organization.
-func (c *Client) IsMember(organization, token string) (bool, error) {
+func (c *Client) IsOrganizationMember(organization, token string) (bool, error) {
 	req, err := c.NewRequest("HEAD", fmt.Sprintf("/user/memberships/orgs/%s", organization), nil)
 	if err != nil {
 		return false, err

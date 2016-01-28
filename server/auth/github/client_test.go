@@ -171,7 +171,7 @@ func TestClient_GetUser(t *testing.T) {
 	assert.Equal(t, "ejholmes", user.Login)
 }
 
-func TestClient_IsMember(t *testing.T) {
+func TestClient_IsOrganizationMember(t *testing.T) {
 	tests := []struct {
 		status int
 		member bool
@@ -198,7 +198,7 @@ func TestClient_IsMember(t *testing.T) {
 			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
 		}, nil)
 
-		ok, err := c.IsMember("remind101", "access_token")
+		ok, err := c.IsOrganizationMember("remind101", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
 	}
