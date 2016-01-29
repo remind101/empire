@@ -109,12 +109,12 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 	}
 
 	// After the user is authenticated, check their GitHub Team membership.
-	if teamId := c.String(FlagGithubTeam); teamId != "" {
+	if teamID := c.String(FlagGithubTeam); teamID != "" {
 		authorizer := githubauth.NewTeamAuthorizer(client)
-		authorizer.TeamId = teamId
+		authorizer.TeamID = teamID
 
 		log.Println("Adding GitHub Team authorizer with the following configuration:")
-		log.Println(fmt.Sprintf("  Team ID: %v ", teamId))
+		log.Println(fmt.Sprintf("  Team ID: %v ", teamID))
 
 		return auth.WithAuthorization(
 			authenticator,

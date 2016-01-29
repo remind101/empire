@@ -92,7 +92,7 @@ func TestOrganizationAuthorizer_Unauthorized(t *testing.T) {
 func TestTeamAuthorizer(t *testing.T) {
 	c := new(mockClient)
 	a := &TeamAuthorizer{
-		TeamId: "123",
+		TeamID: "123",
 		client: c,
 	}
 
@@ -108,7 +108,7 @@ func TestTeamAuthorizer(t *testing.T) {
 func TestTeamAuthorizer_Unauthorized(t *testing.T) {
 	c := new(mockClient)
 	a := &TeamAuthorizer{
-		TeamId: "123",
+		TeamID: "123",
 		client: c,
 	}
 
@@ -149,7 +149,7 @@ func (m *mockClient) IsOrganizationMember(organization, token string) (bool, err
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockClient) IsTeamMember(teamId, name string, token string) (bool, error) {
-	args := m.Called(teamId, name, token)
+func (m *mockClient) IsTeamMember(teamID, name string, token string) (bool, error) {
+	args := m.Called(teamID, name, token)
 	return args.Bool(0), args.Error(1)
 }

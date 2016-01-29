@@ -92,10 +92,10 @@ func (a *OrganizationAuthorizer) Authorize(user *empire.User) error {
 // TeamAuthorizer is an implementation of the auth.Authorizer interface that
 // checks that the user is a member of the given GitHub team.
 type TeamAuthorizer struct {
-	TeamId string
+	TeamID string
 
 	client interface {
-		IsTeamMember(teamId, name string, token string) (bool, error)
+		IsTeamMember(teamID, name string, token string) (bool, error)
 	}
 }
 
@@ -104,18 +104,18 @@ func NewTeamAuthorizer(c *Client) *TeamAuthorizer {
 }
 
 func (a *TeamAuthorizer) Authorize(user *empire.User) error {
-	if a.TeamId == "" {
+	if a.TeamID == "" {
 		panic("no team id set")
 	}
 
-	ok, err := a.client.IsTeamMember(a.TeamId, user.Name, user.GitHubToken)
+	ok, err := a.client.IsTeamMember(a.TeamID, user.Name, user.GitHubToken)
 	if err != nil {
 		return err
 	}
 
 	if !ok {
 		return &auth.UnauthorizedError{
-			Reason: fmt.Sprintf("%s is not a member of team %s.", user.Name, a.TeamId),
+			Reason: fmt.Sprintf("%s is not a member of team %s.", user.Name, a.TeamID),
 		}
 	}
 

@@ -178,8 +178,8 @@ func (c *Client) IsOrganizationMember(organization, token string) (bool, error) 
 }
 
 // IsTeamMember returns true if the given user is a member of the team.
-func (c *Client) IsTeamMember(teamId, name string, token string) (bool, error) {
-	req, err := c.NewRequest("GET", fmt.Sprintf("/teams/%s/memberships/%s", teamId, name), nil)
+func (c *Client) IsTeamMember(teamID, name string, token string) (bool, error) {
+	req, err := c.NewRequest("GET", fmt.Sprintf("/teams/%s/memberships/%s", teamID, name), nil)
 	if err != nil {
 		return false, err
 	}
