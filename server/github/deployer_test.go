@@ -1,13 +1,14 @@
 package github
 
 import (
-	"io/ioutil"
+	"bytes"
 	"testing"
 
 	"golang.org/x/net/context"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,7 +26,7 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 	event.Deployment.Sha = "abcd123"
 	event.Deployment.Creator.Login = "ejholmes"
 
-	w := ioutil.Discard
+	b := new(bytes.Buffer)
 
 	e.On("Deploy", empire.DeploymentsCreateOpts{
 		User: &empire.User{Name: "ejholmes"},
@@ -33,11 +34,17 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 			Repository: "remind101/acme-inc",
 			Tag:        "abcd123",
 		},
-		Output: w,
 	}).Return(nil)
 
-	err := d.Deploy(context.Background(), event, w)
+	err := d.Deploy(context.Background(), event, b)
 	assert.NoError(t, err)
+	assert.Equal(t, `Pulling repository remind101/acme-inc
+345c7524bc96: Pulling image (latest) from remind101/acme-inc
+345c7524bc96: Pulling image (latest) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
+345c7524bc96: Pulling dependent layers
+a1dd7097a8e8: Download complete
+Status: Image is up to date for remind101/acme-inc:latest
+`, b.String())
 }
 
 type mockEmpire struct {
@@ -45,6 +52,11 @@ type mockEmpire struct {
 }
 
 func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeploymentsCreateOpts) (*empire.Release, error) {
+	w := opts.Output
+	if err := dockerutil.FakePull(image.Image{Repository: "remind101/acme-inc", Tag: "latest"}, w); err != nil {
+		panic(err)
+	}
+	opts.Output = nil
 	args := m.Called(opts)
 	return nil, args.Error(0)
 }
