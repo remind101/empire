@@ -6,9 +6,9 @@ import (
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
+	"golang.org/x/net/trace"
 )
 
 // Deployer represents something that can deploy a github deployment.
@@ -127,14 +127,16 @@ func DeployAsync(d Deployer) Deployer {
 // TraceDeploy wraps a Deployer to perform tracing with package trace.
 func TraceDeploy(d Deployer) Deployer {
 	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) (err error) {
-		ctx, done := trace.Trace(ctx)
+		if tr, ok := trace.FromContext(ctx); ok {
+			tr.LazyPrintf("Starting GitHub Deployment")
+		}
 		err = d.Deploy(ctx, event, w)
-		done(err, "Deploy",
-			"repository", event.Repository.FullName,
-			"creator", event.Deployment.Creator.Login,
-			"ref", event.Deployment.Ref,
-			"sha", event.Deployment.Sha,
-		)
+		if tr, ok := trace.FromContext(ctx); ok {
+			tr.LazyPrintf("Finished GitHub Deployment")
+			if err != nil {
+				tr.SetError()
+			}
+		}
 		return err
 	})
 }

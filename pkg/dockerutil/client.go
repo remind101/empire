@@ -8,7 +8,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerauth"
-	"github.com/remind101/pkg/trace"
+	"github.com/remind101/empire/pkg/trace"
 )
 
 // NewDockerClient returns a new docker.Client using the given socket and certificate path.
@@ -78,44 +78,45 @@ func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) er
 		return err
 	}
 
-	ctx, done := trace.Trace(ctx)
+	trace.Location(ctx)
+	trace.Log(ctx, opts, false)
 	err = c.Client.PullImage(opts, authConf)
-	done(err, "PullImage", "registry", opts.Registry, "repository", opts.Repository, "tag", opts.Tag)
+	trace.SetError(ctx, err)
 	return err
 }
 
 func (c *Client) CreateContainer(ctx context.Context, opts docker.CreateContainerOptions) (*docker.Container, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.LazyPrintf(ctx, "opts=%#v", opts)
 	container, err := c.Client.CreateContainer(opts)
-	done(err, "CreateContainer", "image", opts.Config.Image)
+	trace.SetError(ctx, err)
 	return container, err
 }
 
 func (c *Client) StartContainer(ctx context.Context, id string, config *docker.HostConfig) error {
-	ctx, done := trace.Trace(ctx)
+	trace.LazyPrintf(ctx, "id=%s config=%#v", id, config)
 	err := c.Client.StartContainer(id, config)
-	done(err, "StartContainer", "id", id)
+	trace.SetError(ctx, err)
 	return err
 }
 
 func (c *Client) AttachToContainer(ctx context.Context, opts docker.AttachToContainerOptions) error {
-	ctx, done := trace.Trace(ctx)
+	trace.LazyPrintf(ctx, "opts=%#v", opts)
 	err := c.Client.AttachToContainer(opts)
-	done(err, "AttachToContainer", "container", opts.Container)
+	trace.SetError(ctx, err)
 	return err
 }
 
 func (c *Client) StopContainer(ctx context.Context, id string, timeout uint) error {
-	ctx, done := trace.Trace(ctx)
+	trace.LazyPrintf(ctx, "id=%s timeout=%d", id, timeout)
 	err := c.Client.StopContainer(id, timeout)
-	done(err, "StopContainer", "id", id, "timeout", timeout)
+	trace.SetError(ctx, err)
 	return err
 }
 
 func (c *Client) RemoveContainer(ctx context.Context, opts docker.RemoveContainerOptions) error {
-	ctx, done := trace.Trace(ctx)
+	trace.LazyPrintf(ctx, "opts=%#v", opts)
 	err := c.Client.RemoveContainer(opts)
-	done(err, "RemoveContainer", "id", opts.ID)
+	trace.SetError(ctx, err)
 	return err
 }
 

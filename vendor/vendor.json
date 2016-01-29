@@ -509,9 +509,6 @@
 			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
-			"path": "github.com/remind101/pkg/trace",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
-		},
 		{
 			"comment": "v0.0.1-275-g26c5f5c",
 			"path": "github.com/remind101/tugboat",
@@ -583,6 +580,11 @@
 		{
 			"path": "golang.org/x/net/context",
 			"revision": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
+		},
+		{
+			"path": "golang.org/x/net/trace",
+			"revision": "04b9de9b512f58addf28c9853d50ebef61c3953e",
+			"revisionTime": "2016-01-26T21:02:32Z"
 		},
 		{
 			"path": "golang.org/x/oauth2",

@@ -10,6 +10,7 @@ import (
 	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
+	"golang.org/x/net/trace"
 )
 
 var (
@@ -51,6 +52,13 @@ func New(e *empire.Empire, options Options) http.Handler {
 
 	// Mount health endpoint
 	r.Handle("/health", NewHealthHandler(e))
+
+	// Tracing
+	r.Handle("/debug/requests", httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		trace.Render(w, r, true)
+		return nil
+	}))
 
 	return middleware.Common(r, middleware.CommonOpts{
 		Reporter: e.Reporter,

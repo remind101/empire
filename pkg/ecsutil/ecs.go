@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/remind101/pkg/trace"
+	"github.com/remind101/empire/pkg/trace"
 	"golang.org/x/net/context"
 )
 
@@ -50,23 +50,23 @@ type ecsClient struct {
 }
 
 func (c *ecsClient) CreateService(ctx context.Context, input *ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.CreateService(input)
-	done(err, "CreateService", "service-name", stringField(input.ServiceName), "desired-count", intField(input.DesiredCount), "task-definition", stringField(input.TaskDefinition))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) DeleteService(ctx context.Context, input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.DeleteService(input)
-	done(err, "DeleteService", "service-name", stringField(input.Service))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) UpdateService(ctx context.Context, input *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.UpdateService(input)
-	done(err, "UpdateService", "service-name", stringField(input.Service), "desired-count", intField(input.DesiredCount), "task-definition", stringField(input.TaskDefinition))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
@@ -78,37 +78,37 @@ func (c *ecsClient) RegisterTaskDefinition(ctx context.Context, input *ecs.Regis
 
 	<-c.tdThrottle.C
 
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, true)
 	resp, err := c.ECS.RegisterTaskDefinition(input)
-	done(err, "RegisterTaskDefinition", "family", stringField(input.Family))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) DescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.DescribeTaskDefinition(input)
-	done(err, "DescribeTaskDefinition", "task-definition", stringField(input.TaskDefinition))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) ListServicesPages(ctx context.Context, input *ecs.ListServicesInput, fn func(*ecs.ListServicesOutput, bool) bool) error {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	err := c.ECS.ListServicesPages(input, fn)
-	done(err, "ListServicesPages")
+	trace.SetError(ctx, err)
 	return err
 }
 
 func (c *ecsClient) DescribeServices(ctx context.Context, input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.DescribeServices(input)
-	done(err, "DescribeServices", "services", len(input.Services))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) ListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(*ecs.ListTasksOutput, bool) bool) error {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	err := c.ECS.ListTasksPages(input, fn)
-	done(err, "ListTasksPages")
+	trace.SetError(ctx, err)
 	return err
 }
 
@@ -117,23 +117,23 @@ func (c *ecsClient) DescribeTasks(ctx context.Context, input *ecs.DescribeTasksI
 }
 
 func (c *ecsClient) describeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.DescribeTasks(input)
-	done(err, "DescribeTasks", "tasks", len(input.Tasks))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) StopTask(ctx context.Context, input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.StopTask(input)
-	done(err, "StopTask", "task", stringField(input.Task))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
 func (c *ecsClient) RunTask(ctx context.Context, input *ecs.RunTaskInput) (*ecs.RunTaskOutput, error) {
-	ctx, done := trace.Trace(ctx)
+	trace.Log(ctx, input, false)
 	resp, err := c.ECS.RunTask(input)
-	done(err, "RunTask", "taskDefinition", stringField(input.TaskDefinition))
+	trace.SetError(ctx, err)
 	return resp, err
 }
 
