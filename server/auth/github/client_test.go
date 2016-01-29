@@ -2,6 +2,7 @@ package github
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -171,7 +172,7 @@ func TestClient_GetUser(t *testing.T) {
 	assert.Equal(t, "ejholmes", user.Login)
 }
 
-func TestClient_IsMember(t *testing.T) {
+func TestClient_IsOrganizationMember(t *testing.T) {
 	tests := []struct {
 		status int
 		member bool
@@ -198,7 +199,51 @@ func TestClient_IsMember(t *testing.T) {
 			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
 		}, nil)
 
-		ok, err := c.IsMember("remind101", "access_token")
+		ok, err := c.IsOrganizationMember("remind101", "access_token")
+		assert.NoError(t, err)
+		assert.Equal(t, tt.member, ok)
+	}
+}
+
+func TestClient_IsTeamMember(t *testing.T) {
+	tests := []struct {
+		status int
+		state  string
+		member bool
+	}{
+		{200, "active", true},
+		{200, "pending", false},
+		{404, "", false},
+	}
+
+	for _, tt := range tests {
+		h := new(mockHTTPClient)
+		c := &Client{
+			Config: oauthConfig,
+			client: h,
+		}
+
+		req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.SetBasicAuth("access_token", "x-oauth-basic")
+
+		h.On("Do", req).Return(&http.Response{
+			Request:    req,
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
+		}, nil)
+
+		req, _ = http.NewRequest("GET", "https://api.github.com/teams/123/memberships/ejholmes", nil)
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.SetBasicAuth("access_token", "x-oauth-basic")
+
+		h.On("Do", req).Return(&http.Response{
+			Request:    req,
+			StatusCode: tt.status,
+			Body:       ioutil.NopCloser(bytes.NewBufferString(fmt.Sprintf("{\"state\": \"%s\"}", tt.state))),
+		}, nil)
+
+		ok, err := c.IsTeamMember("123", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
 	}

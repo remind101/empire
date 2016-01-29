@@ -79,6 +79,10 @@ type User struct {
 	Login string `json:"login"`
 }
 
+type TeamMembership struct {
+	State string `json:"state"`
+}
+
 // CreateAuthorization creates a new GitHub authorization (or returns the
 // existing authorization if present) for the GitHub OAuth application. See
 // http://goo.gl/bs9I3o.
@@ -151,9 +155,9 @@ func (c *Client) GetUser(token string) (*User, error) {
 	return &u, nil
 }
 
-// IsMember returns true of the authenticated user is a member of the
+// IsOrganizationMember returns true of the authenticated user is a member of the
 // organization.
-func (c *Client) IsMember(organization, token string) (bool, error) {
+func (c *Client) IsOrganizationMember(organization, token string) (bool, error) {
 	req, err := c.NewRequest("HEAD", fmt.Sprintf("/user/memberships/orgs/%s", organization), nil)
 	if err != nil {
 		return false, err
@@ -171,6 +175,34 @@ func (c *Client) IsMember(organization, token string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// IsTeamMember returns true if the given user is a member of the team.
+func (c *Client) IsTeamMember(teamID, token string) (bool, error) {
+	u, err := c.GetUser(token)
+	if err != nil {
+		return false, err
+	}
+
+	req, err := c.NewRequest("GET", fmt.Sprintf("/teams/%s/memberships/%s", teamID, u.Login), nil)
+	if err != nil {
+		return false, err
+	}
+
+	tokenAuth(req, token)
+
+	var t TeamMembership
+
+	resp, err := c.Do(req, &t)
+	if err != nil {
+		return false, err
+	}
+
+	if err := checkResponse(resp); err != nil {
+		return false, nil
+	}
+
+	return t.State == "active", nil
 }
 
 func (c *Client) NewRequest(method, path string, v interface{}) (*http.Request, error) {

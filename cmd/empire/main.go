@@ -18,6 +18,7 @@ const (
 	FlagGithubClientSecret = "github.client.secret"
 	FlagGithubOrg          = "github.organization"
 	FlagGithubApiURL       = "github.api.url"
+	FlagGithubTeam         = "github.team.id"
 
 	FlagGithubWebhooksSecret           = "github.webhooks.secret"
 	FlagGithubDeploymentsEnvironments  = "github.deployments.environment"
@@ -93,6 +94,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The organization to allow access to",
 				EnvVar: "EMPIRE_GITHUB_ORGANIZATION",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubTeam,
+				Value:  "",
+				Usage:  "The ID of the github team to allow access to",
+				EnvVar: "EMPIRE_GITHUB_TEAM_ID",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubApiURL,
