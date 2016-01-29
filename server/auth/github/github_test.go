@@ -89,6 +89,39 @@ func TestOrganizationAuthorizer_Unauthorized(t *testing.T) {
 	assert.EqualError(t, err, `ejholmes is not a member of the "remind101" organization`)
 }
 
+func TestTeamAuthorizer(t *testing.T) {
+	c := new(mockClient)
+	a := &TeamAuthorizer{
+		TeamId: "123",
+		client: c,
+	}
+
+	c.On("IsTeamMember", "123", "ejholmes", "access_token").Return(true, nil)
+
+	err := a.Authorize(&empire.User{
+		Name:        "ejholmes",
+		GitHubToken: "access_token",
+	})
+	assert.NoError(t, err)
+}
+
+func TestTeamAuthorizer_Unauthorized(t *testing.T) {
+	c := new(mockClient)
+	a := &TeamAuthorizer{
+		TeamId: "123",
+		client: c,
+	}
+
+	c.On("IsTeamMember", "123", "ejholmes", "access_token").Return(false, nil)
+
+	err := a.Authorize(&empire.User{
+		Name:        "ejholmes",
+		GitHubToken: "access_token",
+	})
+	assert.IsType(t, &auth.UnauthorizedError{}, err)
+	assert.EqualError(t, err, `ejholmes is not a member of team 123`)
+}
+
 type mockClient struct {
 	mock.Mock
 }
@@ -113,5 +146,10 @@ func (m *mockClient) GetUser(token string) (*User, error) {
 
 func (m *mockClient) IsOrganizationMember(organization, token string) (bool, error) {
 	args := m.Called(organization, token)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockClient) IsTeamMember(teamId, name string, token string) (bool, error) {
+	args := m.Called(teamId, name, token)
 	return args.Bool(0), args.Error(1)
 }
