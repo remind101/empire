@@ -11,85 +11,73 @@ import (
 	"golang.org/x/net/context"
 )
 
-// deployer represents something that can deploy a github deployment.
-type deployer interface {
+// Deployer represents something that can deploy a github deployment.
+type Deployer interface {
 	// Deploy performs the deployment, writing output to w.
 	Deploy(context.Context, events.Deployment, io.Writer) error
 }
 
-type deployerFunc func(context.Context, events.Deployment, io.Writer) error
+type DeployerFunc func(context.Context, events.Deployment, io.Writer) error
 
-func (fn deployerFunc) Deploy(ctx context.Context, event events.Deployment, w io.Writer) error {
+func (fn DeployerFunc) Deploy(ctx context.Context, event events.Deployment, w io.Writer) error {
 	return fn(ctx, event, w)
 }
 
-// newDeployer is a factory method that generates a composed deployer instance
-// depending on the options.
-func newDeployer(e *empire.Empire, opts Options) deployer {
-	var d deployer
-	d = newEmpireDeployer(e, opts.ImageTemplate)
-
-	if opts.TugboatURL != "" {
-		d = newTugboatDeployer(d, opts.TugboatURL)
-	}
-
-	return &asyncDeployer{
-		deployer: &tracedDeployer{deployer: d},
-	}
-}
-
-// Empire mocks the Empire interface we use.
-type Empire interface {
+// empire mocks the Empire interface we use.
+type empireClient interface {
 	Deploy(context.Context, empire.DeploymentsCreateOpts) (*empire.Release, error)
 }
 
-// empireDeployer is a deployer implementation that uses the Deploy method in
+// EmpireDeployer is a deployer implementation that uses the Deploy method in
 // Empire to perform the deployment.
-type empireDeployer struct {
-	Empire
-	imageTmpl string
+type EmpireDeployer struct {
+	empire empireClient
+	ImageBuilder
 }
 
-// newEmpireDeployer returns a new empireDeployer instance.
-func newEmpireDeployer(e *empire.Empire, imageTmpl string) *empireDeployer {
-	return &empireDeployer{
-		Empire:    e,
-		imageTmpl: imageTmpl,
+// NewEmpireDeployer returns a new EmpireDeployer instance.
+func NewEmpireDeployer(e *empire.Empire) *EmpireDeployer {
+	return &EmpireDeployer{
+		empire: e,
 	}
 }
 
-func (d *empireDeployer) Deploy(ctx context.Context, p events.Deployment, w io.Writer) error {
-	img, err := Image(d.imageTmpl, p)
+// Deploy builds/determines the docker image to deploy, then deploys it with
+// Empire.
+func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w io.Writer) error {
+	img, err := d.BuildImage(ctx, event)
 	if err != nil {
 		return err
 	}
 
-	_, err = d.Empire.Deploy(ctx, empire.DeploymentsCreateOpts{
+	_, err = d.empire.Deploy(ctx, empire.DeploymentsCreateOpts{
 		Image:  img,
 		Output: w,
-		User:   &empire.User{Name: p.Deployment.Creator.Login},
+		User:   &empire.User{Name: event.Deployment.Creator.Login},
 	})
 
 	return err
 }
 
-// tugboatDeployer is an implementtion of the deployer interface that sends logs
+// TugboatDeployer is an implementtion of the deployer interface that sends logs
 // and updates the status of the deployment within a Tugboat instance.
-type tugboatDeployer struct {
-	deployer
-	client *tugboat.Client
+type TugboatDeployer struct {
+	deployer Deployer
+	client   *tugboat.Client
 }
 
-func newTugboatDeployer(d deployer, url string) *tugboatDeployer {
+// NotifyTugboat wraps a Deployer to sent deployment logs and status updates to
+// a Tugboat instance.
+func NotifyTugboat(d Deployer, url string) *TugboatDeployer {
 	c := tugboat.NewClient(nil)
 	c.URL = url
-	return &tugboatDeployer{
+	return &TugboatDeployer{
 		deployer: d,
 		client:   c,
 	}
 }
 
-func (d *tugboatDeployer) Deploy(ctx context.Context, event events.Deployment, out io.Writer) error {
+func (d *TugboatDeployer) Deploy(ctx context.Context, event events.Deployment, out io.Writer) error {
 	opts := tugboat.NewDeployOptsFromEvent(event)
 
 	// Perform the deployment, wrapped in Deploy. This will automatically
@@ -128,32 +116,25 @@ func (fn provider) Deploy(ctx context.Context, d *tugboat.Deployment, w io.Write
 	return fn(ctx, d, w)
 }
 
-// tracedDeployer is an implementation of the deployer interface that calls
-// trace.Trace.
-type tracedDeployer struct {
-	deployer
+// DeployAsync wraps a Deployer to perform the Deploy within a goroutine.
+func DeployAsync(d Deployer) Deployer {
+	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) error {
+		go d.Deploy(ctx, event, w)
+		return nil
+	})
 }
 
-func (d *tracedDeployer) Deploy(ctx context.Context, p events.Deployment, w io.Writer) (err error) {
-	ctx, done := trace.Trace(ctx)
-	err = d.deployer.Deploy(ctx, p, w)
-	done(err, "Deploy",
-		"repository", p.Repository.FullName,
-		"creator", p.Deployment.Creator.Login,
-		"ref", p.Deployment.Ref,
-		"sha", p.Deployment.Sha,
-	)
-	return err
-}
-
-// asyncDeployer is a deployer implementation that runs the deployment in a
-// goroutine.
-type asyncDeployer struct {
-	// Should use a tracedDeployer so errors are propagated.
-	deployer *tracedDeployer
-}
-
-func (d *asyncDeployer) Deploy(ctx context.Context, p events.Deployment, w io.Writer) error {
-	go d.deployer.Deploy(ctx, p, w)
-	return nil
+// TraceDeploy wraps a Deployer to perform tracing with package trace.
+func TraceDeploy(d Deployer) Deployer {
+	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) (err error) {
+		ctx, done := trace.Trace(ctx)
+		err = d.Deploy(ctx, event, w)
+		done(err, "Deploy",
+			"repository", event.Repository.FullName,
+			"creator", event.Deployment.Creator.Login,
+			"ref", event.Deployment.Ref,
+			"sha", event.Deployment.Sha,
+		)
+		return err
+	})
 }

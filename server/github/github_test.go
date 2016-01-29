@@ -2,18 +2,25 @@ package github
 
 import (
 	"testing"
+	"text/template"
+
+	"golang.org/x/net/context"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestImage(t *testing.T) {
+var defaultTemplate = template.Must(template.New("image").Parse(DefaultTemplate))
+
+func TestDefaultTemplate(t *testing.T) {
+	b := ImageFromTemplate(defaultTemplate)
+
 	tests := []struct {
-		t   string
 		d   events.Deployment
 		out image.Image
 	}{
-		{DefaultTemplate, func() events.Deployment {
+		{func() events.Deployment {
 			var d events.Deployment
 			d.Repository.FullName = "remind101/acme-inc"
 			d.Deployment.Sha = "827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57"
@@ -22,13 +29,8 @@ func TestImage(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		img, err := Image(tt.t, tt.d)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if got, want := img, tt.out; got != want {
-			t.Fatalf("Image => %v; want %v", got, want)
-		}
+		img, err := b.BuildImage(context.Background(), tt.d)
+		assert.NoError(t, err)
+		assert.Equal(t, tt.out, img)
 	}
 }

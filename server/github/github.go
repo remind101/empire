@@ -1,23 +1,24 @@
 package github
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"text/template"
 
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
-var DefaultTemplate = `{{ .Repository.FullName }}:{{ .Deployment.Sha }}`
+var (
+	// DefaultTemplate is a text/template string that will be used to map a
+	// deployment event to a docker image to deploy.
+	DefaultTemplate = `{{ .Repository.FullName }}:{{ .Deployment.Sha }}`
+)
 
 type Options struct {
 	// The GitHub secret to ensure that the request was sent from GitHub.
@@ -27,20 +28,14 @@ type Options struct {
 	// should handle deployments for.
 	Environments []string
 
-	// ImageTemplate is used to determine the image to deploy.
-	ImageTemplate string
-
-	// TugboatURL can be provided if you want to send deployment logs to a
-	// Tugboat instance.
-	TugboatURL string
+	Deployer Deployer
 }
 
 func New(e *empire.Empire, opts Options) httpx.Handler {
 	r := hookshot.NewRouter()
 
-	d := newDeployer(e, opts)
 	secret := opts.Secret
-	r.Handle("deployment", hookshot.Authorize(&DeploymentHandler{deployer: d, environments: opts.Environments}, secret))
+	r.Handle("deployment", hookshot.Authorize(&DeploymentHandler{Deployer: opts.Deployer, environments: opts.Environments}, secret))
 	r.Handle("ping", hookshot.Authorize(http.HandlerFunc(Ping), secret))
 
 	return r
@@ -48,7 +43,7 @@ func New(e *empire.Empire, opts Options) httpx.Handler {
 
 // Deployment is an http.Handler for handling the `deployment` event.
 type DeploymentHandler struct {
-	deployer
+	Deployer
 	environments []string
 }
 
@@ -69,7 +64,7 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 		fmt.Fprintf(w, "Ignore deployment to environment: %s", p.Deployment.Environment)
 		return nil
 	}
-	if err := h.deployer.Deploy(ctx, p, os.Stdout); err != nil {
+	if err := h.Deploy(ctx, p, os.Stdout); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	}
@@ -90,23 +85,4 @@ func currentEnvironment(eventEnv string, environments []string) bool {
 
 func Ping(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Ok\n")
-}
-
-// Image returns an image.Image for the given deployment.
-func Image(t string, d events.Deployment) (image.Image, error) {
-	if t == "" {
-		t = DefaultTemplate
-	}
-
-	tmpl, err := template.New("image").Parse(t)
-	if err != nil {
-		return image.Image{}, err
-	}
-
-	buf := new(bytes.Buffer)
-	if err := tmpl.Execute(buf, d); err != nil {
-		return image.Image{}, err
-	}
-
-	return image.Decode(buf.String())
 }

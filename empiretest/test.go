@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"text/template"
 
 	"golang.org/x/net/context"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
+	"github.com/remind101/empire/server/github"
 )
 
 var (
@@ -60,6 +62,7 @@ func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
 	server.DefaultOptions.GitHub.Webhooks.Secret = "abcd"
 	server.DefaultOptions.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
 	server.DefaultOptions.GitHub.Deployments.Environments = []string{"test"}
+	server.DefaultOptions.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))
 	return httptest.NewServer(server.New(e, server.DefaultOptions))
 }
 

@@ -5,13 +5,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/empire/scheduler"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPing(t *testing.T) {
-	c, s := NewTestClient(t)
+	e := empiretest.NewEmpire(t)
+	c, s := NewTestClient(t, e)
 	defer s.Close()
 
 	if _, err := c.Ping(hooker.DefaultPing); err != nil {
@@ -20,8 +26,13 @@ func TestPing(t *testing.T) {
 }
 
 func TestDeployment(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	e := empiretest.NewEmpire(t)
+	s := new(mockScheduler)
+	s.image = make(chan string, 1)
+	e.Scheduler = s
+
+	c, sv := NewTestClient(t, e)
+	defer sv.Close()
 
 	var d events.Deployment
 	d.Repository.FullName = "remind101/acme-inc"
@@ -34,22 +45,13 @@ func TestDeployment(t *testing.T) {
 	d.Deployment.Creator.Login = "ejholmes"
 
 	resp, err := c.Trigger("deployment", &d)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	raw, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := resp.StatusCode, 202; got != want {
-		t.Fatalf("StatusCode => %d; want %d", got, want)
-	}
-
-	if got, want := string(raw), "Ok\n"; got != want {
-		t.Fatalf("Body => %q; want %q", got, want)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 202, resp.StatusCode)
+	assert.Equal(t, "Ok\n", string(raw))
+	assert.Equal(t, "remind101/acme-inc:827fecd2d36ebeaa2fd05aa8ef3eed1e56a8cd57", <-s.image)
 }
 
 // Run the tests with empiretest.Run, which will lock access to the database
@@ -60,8 +62,7 @@ func TestMain(m *testing.M) {
 
 // NewTestClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
-func NewTestClient(t testing.TB) (*hooker.Client, *httptest.Server) {
-	e := empiretest.NewEmpire(t)
+func NewTestClient(t testing.TB, e *empire.Empire) (*hooker.Client, *httptest.Server) {
 	s := empiretest.NewServer(t, e)
 
 	c := hooker.NewClient(nil)
@@ -69,4 +70,14 @@ func NewTestClient(t testing.TB) (*hooker.Client, *httptest.Server) {
 	c.Secret = "abcd"
 
 	return c, s
+}
+
+type mockScheduler struct {
+	scheduler.Scheduler
+	image chan string
+}
+
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
+	m.image <- app.Processes[0].Image.String()
+	return nil
 }
