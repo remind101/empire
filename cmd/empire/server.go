@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
@@ -46,8 +47,19 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 }
 
 func newImageBuilder(c *cli.Context) github.ImageBuilder {
-	tmpl := template.Must(template.New("image").Parse(c.String(FlagGithubDeploymentsImageTemplate)))
-	return github.ImageFromTemplate(tmpl)
+	builder := c.String(FlagGithubDeploymentsImageBuilder)
+
+	switch builder {
+	case "template":
+		tmpl := template.Must(template.New("image").Parse(c.String(FlagGithubDeploymentsImageTemplate)))
+		return github.ImageFromTemplate(tmpl)
+	case "conveyor":
+		s := conveyor.NewService(conveyor.DefaultClient)
+		s.URL = c.String(FlagConveyorURL)
+		return github.NewConveyorImageBuilder(s)
+	default:
+		panic(fmt.Sprintf("unknown image builder: %s", builder))
+	}
 }
 
 func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {

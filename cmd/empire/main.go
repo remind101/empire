@@ -22,8 +22,11 @@ const (
 
 	FlagGithubWebhooksSecret           = "github.webhooks.secret"
 	FlagGithubDeploymentsEnvironments  = "github.deployments.environment"
+	FlagGithubDeploymentsImageBuilder  = "github.deployments.image_builder"
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
+
+	FlagConveyorURL = "conveyor.url"
 
 	FlagDBPath = "path"
 	FlagDB     = "db"
@@ -120,9 +123,15 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_ENVIRONMENT",
 			},
 			cli.StringFlag{
+				Name:   FlagGithubDeploymentsImageBuilder,
+				Value:  "template",
+				Usage:  "Determines how the Docker image to deploy is determined when a GitHub Deployment event is received. Possible options are `template` and `conveyor`.",
+				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_IMAGE_BUILDER",
+			},
+			cli.StringFlag{
 				Name:   FlagGithubDeploymentsImageTemplate,
 				Value:  github.DefaultTemplate,
-				Usage:  "A Go text/template that will be used to determine the docker image to deploy.",
+				Usage:  "A Go text/template that will be used to determine the docker image to deploy. This flag is only used when `--" + FlagGithubDeploymentsImageBuilder + "` is set to `template`.",
 				EnvVar: "EMPIRE_GITHUB_DEPLOYMENTS_IMAGE_TEMPLATE",
 			},
 			cli.StringFlag{
@@ -130,6 +139,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "If provided, logs from deployments triggered via GitHub deployments will be sent to this tugboat instance.",
 				EnvVar: "EMPIRE_TUGBOAT_URL",
+			},
+			cli.StringFlag{
+				Name:   FlagConveyorURL,
+				Value:  "",
+				Usage:  "When combined with the `--" + FlagGithubDeploymentsImageBuilder + "` flag, this determines where the location of a Conveyor instance is to perform Docker image builds.",
+				EnvVar: "EMPIRE_CONVEYOR_URL",
 			},
 		}, append(EmpireFlags, DBFlags...)...),
 		Action: runServer,
