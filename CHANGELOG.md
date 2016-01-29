@@ -6,6 +6,7 @@
 
 * Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
 * The Docker logging driver that the ECS backend uses is now configurable via the `--ecs.logdriver` flag [#731](https://github.com/remind101/empire/pull/731).
+* It's now possible to lock down the GitHub authorization to a specific team via the `--github.team.id` flag [#745](https://github.com/remind101/empire/pull/745).
 
 **Bugs**
 
