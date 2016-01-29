@@ -3,7 +3,6 @@ package github
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"text/template"
 
 	"github.com/ejholmes/hookshot/events"
@@ -15,20 +14,20 @@ import (
 // ImageBuilder is an interface that represents something that can build and
 // return a Docker image from a GitHub commit.
 type ImageBuilder interface {
-	BuildImage(ctx context.Context, event events.Deployment) (image.Image, error)
+	BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error)
 }
 
-type ImageBuilderFunc func(context.Context, events.Deployment) (image.Image, error)
+type ImageBuilderFunc func(context.Context, io.Writer, events.Deployment) (image.Image, error)
 
-func (fn ImageBuilderFunc) BuildImage(ctx context.Context, event events.Deployment) (image.Image, error) {
-	return fn(ctx, event)
+func (fn ImageBuilderFunc) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error) {
+	return fn(ctx, w, event)
 }
 
 // ImageFromTemplate returns an ImageBuilder that will execute a template to
 // determine what docker image should be deployed. Note that this doesn't not
 // actually perform any "build".
 func ImageFromTemplate(t *template.Template) ImageBuilder {
-	return ImageBuilderFunc(func(ctx context.Context, event events.Deployment) (image.Image, error) {
+	return ImageBuilderFunc(func(ctx context.Context, _ io.Writer, event events.Deployment) (image.Image, error) {
 		buf := new(bytes.Buffer)
 		if err := t.Execute(buf, event); err != nil {
 			return image.Image{}, err
@@ -60,9 +59,7 @@ func NewConveyorImageBuilder(c *conveyor.Service) *ConveyorImageBuilder {
 	}
 }
 
-func (c *ConveyorImageBuilder) BuildImage(ctx context.Context, event events.Deployment) (image.Image, error) {
-	w := ioutil.Discard // TODO: Allow ImageBuilder implementations to write to the deployment logs?
-
+func (c *ConveyorImageBuilder) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error) {
 	a, err := c.client.Build(w, conveyor.BuildCreateOpts{
 		Repository: event.Repository.FullName,
 		Branch:     "", // TODO,

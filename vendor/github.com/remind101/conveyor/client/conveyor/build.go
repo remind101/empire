@@ -32,11 +32,15 @@ func (s *Service) Build(w io.Writer, o BuildCreateOpts) (*Artifact, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		io.WriteString(w, fmt.Sprintf("Build: %s\n", b.ID))
 	}
 
 	buildID := b.ID
 
-	// TODO: Stream the logs.
+	if err := s.LogsStream(w, buildID); err != nil {
+		return nil, err
+	}
 
 	for {
 		<-time.After(5 * time.Second)

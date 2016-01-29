@@ -25,7 +25,7 @@ import (
 const (
 	Version          = ""
 	DefaultUserAgent = "conveyor/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
-	DefaultURL       = "http://conveyor.local"
+	DefaultURL       = "http://localhost:8080"
 )
 
 // Service represents your API.

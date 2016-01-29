@@ -1,6 +1,7 @@
 package github
 
 import (
+	"io/ioutil"
 	"testing"
 	"text/template"
 
@@ -29,7 +30,7 @@ func TestDefaultTemplate(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		img, err := b.BuildImage(context.Background(), tt.d)
+		img, err := b.BuildImage(context.Background(), ioutil.Discard, tt.d)
 		assert.NoError(t, err)
 		assert.Equal(t, tt.out, img)
 	}

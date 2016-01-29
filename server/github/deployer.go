@@ -45,7 +45,7 @@ func NewEmpireDeployer(e *empire.Empire) *EmpireDeployer {
 // Deploy builds/determines the docker image to deploy, then deploys it with
 // Empire.
 func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w io.Writer) error {
-	img, err := d.BuildImage(ctx, event)
+	img, err := d.BuildImage(ctx, w, event)
 	if err != nil {
 		return err
 	}
