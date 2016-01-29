@@ -233,6 +233,11 @@
 			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
 		},
 		{
+			"path": "github.com/ernesto-jimenez/go-querystring/query",
+			"revision": "a9b7f983e384616b2a317c8f345701fb1688d061",
+			"revisionTime": "2014-11-09T01:42:17Z"
+		},
+		{
 			"path": "github.com/fsouza/go-dockerclient",
 			"revision": "f6e9f5396e0e8f34472efe443d0cb7f9af162b88"
 		},
@@ -439,6 +444,11 @@
 		{
 			"path": "github.com/pmylund/go-cache",
 			"revision": "93d85800f2fa6bd0a739e7bd612bfa3bc008b72d"
+		},
+		{
+			"path": "github.com/remind101/conveyor/client/conveyor",
+			"revision": "06423ea45ea9aee60c14c8c9f37335cda6601e49",
+			"revisionTime": "2016-01-29T11:20:58+07:00"
 		},
 		{
 			"path": "github.com/remind101/kinesumer",
