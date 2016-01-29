@@ -116,7 +116,11 @@ func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
 		log.Println("Adding GitHub Team authorizer with the following configuration:")
 		log.Println(fmt.Sprintf("  Team ID: %v ", teamId))
 
-		return auth.WithAuthorization(authenticator, authorizer)
+		return auth.WithAuthorization(
+			authenticator,
+			// Cache the team check for 30 minutes
+			auth.CacheAuthorization(authorizer, 30*time.Minute),
+		)
 	}
 
 	return authenticator
