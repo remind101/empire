@@ -95,7 +95,7 @@ type TeamAuthorizer struct {
 	TeamID string
 
 	client interface {
-		IsTeamMember(teamID, name string, token string) (bool, error)
+		IsTeamMember(teamID, token string) (bool, error)
 	}
 }
 
@@ -108,7 +108,7 @@ func (a *TeamAuthorizer) Authorize(user *empire.User) error {
 		panic("no team id set")
 	}
 
-	ok, err := a.client.IsTeamMember(a.TeamID, user.Name, user.GitHubToken)
+	ok, err := a.client.IsTeamMember(a.TeamID, user.GitHubToken)
 	if err != nil {
 		return err
 	}

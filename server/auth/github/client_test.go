@@ -223,7 +223,17 @@ func TestClient_IsTeamMember(t *testing.T) {
 			client: h,
 		}
 
-		req, _ := http.NewRequest("GET", "https://api.github.com/teams/123/memberships/ejholmes", nil)
+		req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.SetBasicAuth("access_token", "x-oauth-basic")
+
+		h.On("Do", req).Return(&http.Response{
+			Request:    req,
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
+		}, nil)
+
+		req, _ = http.NewRequest("GET", "https://api.github.com/teams/123/memberships/ejholmes", nil)
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
 		req.SetBasicAuth("access_token", "x-oauth-basic")
 
@@ -233,7 +243,7 @@ func TestClient_IsTeamMember(t *testing.T) {
 			Body:       ioutil.NopCloser(bytes.NewBufferString(fmt.Sprintf("{\"state\": \"%s\"}", tt.state))),
 		}, nil)
 
-		ok, err := c.IsTeamMember("123", "ejholmes", "access_token")
+		ok, err := c.IsTeamMember("123", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
 	}

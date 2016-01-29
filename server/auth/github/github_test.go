@@ -96,7 +96,7 @@ func TestTeamAuthorizer(t *testing.T) {
 		client: c,
 	}
 
-	c.On("IsTeamMember", "123", "ejholmes", "access_token").Return(true, nil)
+	c.On("IsTeamMember", "123", "access_token").Return(true, nil)
 
 	err := a.Authorize(&empire.User{
 		Name:        "ejholmes",
@@ -112,7 +112,7 @@ func TestTeamAuthorizer_Unauthorized(t *testing.T) {
 		client: c,
 	}
 
-	c.On("IsTeamMember", "123", "ejholmes", "access_token").Return(false, nil)
+	c.On("IsTeamMember", "123", "access_token").Return(false, nil)
 
 	err := a.Authorize(&empire.User{
 		Name:        "ejholmes",
@@ -149,7 +149,7 @@ func (m *mockClient) IsOrganizationMember(organization, token string) (bool, err
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockClient) IsTeamMember(teamID, name string, token string) (bool, error) {
-	args := m.Called(teamID, name, token)
+func (m *mockClient) IsTeamMember(teamID, token string) (bool, error) {
+	args := m.Called(teamID, token)
 	return args.Bool(0), args.Error(1)
 }
