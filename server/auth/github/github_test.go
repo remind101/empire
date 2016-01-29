@@ -86,7 +86,7 @@ func TestOrganizationAuthorizer_Unauthorized(t *testing.T) {
 		GitHubToken: "access_token"},
 	)
 	assert.IsType(t, &auth.UnauthorizedError{}, err)
-	assert.EqualError(t, err, `ejholmes is not a member of the "remind101" organization`)
+	assert.EqualError(t, err, `ejholmes is not a member of the "remind101" organization.`)
 }
 
 func TestTeamAuthorizer(t *testing.T) {
@@ -119,7 +119,7 @@ func TestTeamAuthorizer_Unauthorized(t *testing.T) {
 		GitHubToken: "access_token",
 	})
 	assert.IsType(t, &auth.UnauthorizedError{}, err)
-	assert.EqualError(t, err, `ejholmes is not a member of team 123`)
+	assert.EqualError(t, err, `ejholmes is not a member of team 123.`)
 }
 
 type mockClient struct {

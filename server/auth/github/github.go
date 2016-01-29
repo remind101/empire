@@ -82,7 +82,7 @@ func (a *OrganizationAuthorizer) Authorize(user *empire.User) error {
 
 	if !ok {
 		return &auth.UnauthorizedError{
-			Reason: fmt.Sprintf("%s is not a member of the \"%s\" organization", user.Name, a.Organization),
+			Reason: fmt.Sprintf("%s is not a member of the \"%s\" organization.", user.Name, a.Organization),
 		}
 	}
 
@@ -115,7 +115,7 @@ func (a *TeamAuthorizer) Authorize(user *empire.User) error {
 
 	if !ok {
 		return &auth.UnauthorizedError{
-			Reason: fmt.Sprintf("%s is not a member of team %s", user.Name, a.TeamId),
+			Reason: fmt.Sprintf("%s is not a member of team %s.", user.Name, a.TeamId),
 		}
 	}
 
