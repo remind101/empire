@@ -1,6 +1,7 @@
 package conveyor
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -10,7 +11,11 @@ import (
 // ArtifactInfo methods to ultimately return an Artifact and stream any
 // build logs.
 func (s *Service) Build(w io.Writer, o BuildCreateOpts) (*Artifact, error) {
-	repoSha := fmt.Sprintf("%s@%s", o.Repository, o.Sha)
+	if o.Sha == nil {
+		return nil, errors.New("cannot build without sha")
+	}
+
+	repoSha := fmt.Sprintf("%s@%s", o.Repository, *o.Sha)
 
 	a, err := s.ArtifactInfo(repoSha)
 	if err == nil {

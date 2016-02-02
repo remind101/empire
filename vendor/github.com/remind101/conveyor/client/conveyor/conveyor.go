@@ -232,16 +232,19 @@ type Build struct {
 	State       string     `json:"state" url:"state,key"`               // the current state of the build
 }
 type BuildCreateOpts struct {
-	Branch string `json:"branch" url:"branch,key"` // the branch within the GitHub repository that the build was triggered
+	Branch *string `json:"branch,omitempty" url:"branch,omitempty,key"` // the branch within the GitHub repository that the build was triggered
 	// from
-	Repository string `json:"repository" url:"repository,key"` // the GitHub repository that this build is for
-	Sha        string `json:"sha" url:"sha,key"`               // the git commit to build
+	Repository string  `json:"repository" url:"repository,key"`       // the GitHub repository that this build is for
+	Sha        *string `json:"sha,omitempty" url:"sha,omitempty,key"` // the git commit to build
 }
 
 // Create a new build and start it. Note that you cannot start a new
 // build for a sha that is already in a "pending" or "building" state.
 // You should cancel the existing build first, or wait for it to
-// complete.
+// complete. You must specify either a `branch` OR a `sha`. If you
+// provide a `branch` but no `sha`, Conveyor will use the GitHub API to
+// resolve the HEAD commit on that branch to a sha. If you provide a
+// `sha` but no `branch`, branch caching will be disabled.
 func (s *Service) BuildCreate(o BuildCreateOpts) (*Build, error) {
 	var build Build
 	return &build, s.Post(&build, fmt.Sprintf("/builds"), o)

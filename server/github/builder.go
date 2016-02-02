@@ -62,8 +62,7 @@ func NewConveyorImageBuilder(c *conveyor.Service) *ConveyorImageBuilder {
 func (c *ConveyorImageBuilder) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error) {
 	a, err := c.client.Build(w, conveyor.BuildCreateOpts{
 		Repository: event.Repository.FullName,
-		Branch:     "", // TODO,
-		Sha:        event.Deployment.Sha,
+		Sha:        &event.Deployment.Sha,
 	})
 	if err != nil {
 		return image.Image{}, err
