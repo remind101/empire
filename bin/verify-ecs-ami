@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+latest=$(aws ec2 describe-images \
+  --filters Name=name,Values='amzn-ami-2015.09.e-amazon-ecs-optimized*' \
+  --owners aws-marketplace \
+  --region us-east-1 \
+  --output text \
+  --profile eric@remind101.com \
+  --query 'Images[0].ImageId')
+
+if [ -z "$(cat docs/cloudformation.json | grep $latest)" ]; then
+  echo "docs/cloudformation.json does not include the latest ECS AMI"
+  echo "The most recent AMI is: $latest"
+  exit 1
+fi
