@@ -45,7 +45,7 @@ check_dep "aws"
 # ECS cluster.
 SUFFIX=""
 [ -x /sbin/md5 ] && SUFFIX=$(date | /sbin/md5 | head -c 8)
-[ -x /usr/bin/md5sum ] && SUFFIX=$(date | /usr/sbin/md5sum | head -c 8)
+[ -x /usr/bin/md5sum ] && SUFFIX=$(date | /usr/bin/md5sum | head -c 8)
 if [ -z ${SUFFIX} ]
 then
     echo "No /sbin/md5 or /usr/sbin/md5sum found on system, switching to default name"
