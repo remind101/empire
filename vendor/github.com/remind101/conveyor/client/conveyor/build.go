@@ -40,6 +40,15 @@ func (s *Service) Build(w io.Writer, o BuildCreateOpts) (*Artifact, error) {
 		}
 
 		io.WriteString(w, fmt.Sprintf("Build: %s\n", b.ID))
+	} else {
+		if b.State != "success" {
+			b, err = s.BuildCreate(o)
+			if err != nil {
+				return nil, err
+			}
+
+			io.WriteString(w, fmt.Sprintf("Build: %s\n", b.ID))
+		}
 	}
 
 	buildID := b.ID
