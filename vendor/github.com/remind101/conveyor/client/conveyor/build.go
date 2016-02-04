@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"time"
 )
 
@@ -44,7 +45,7 @@ func (s *Service) Build(w io.Writer, o BuildCreateOpts) (*Artifact, error) {
 	buildID := b.ID
 
 	if err := s.LogsStream(w, buildID); err != nil {
-		return nil, err
+		fmt.Fprintf(os.Stderr, "error streaming logs: %v\n", err)
 	}
 
 	for {

@@ -447,8 +447,8 @@
 		},
 		{
 			"path": "github.com/remind101/conveyor/client/conveyor",
-			"revision": "d4b0a42f084d1d148f508cf85c93b3c6182825f0",
-			"revisionTime": "2016-02-02T09:28:56+07:00"
+			"revision": "04d6b132604097631c5e9532937b393914007647",
+			"revisionTime": "2016-02-04T11:21:13+07:00"
 		},
 		{
 			"path": "github.com/remind101/kinesumer",
