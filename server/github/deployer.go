@@ -50,13 +50,20 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 		return err
 	}
 
+	// What we write to w should be plain text. `p` will get the jsonmessage
+	// stream.
+	p := dockerutil.DecodeJSONMessageStream(w)
+
 	_, err = d.empire.Deploy(ctx, empire.DeploymentsCreateOpts{
 		Image:  img,
-		Output: w,
+		Output: p,
 		User:   &empire.User{Name: event.Deployment.Creator.Login},
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	return p.Err()
 }
 
 // TugboatDeployer is an implementtion of the deployer interface that sends logs
@@ -84,22 +91,11 @@ func (d *TugboatDeployer) Deploy(ctx context.Context, event events.Deployment, o
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
-		// What we send to tugboat should be a plain text stream.
-		p := dockerutil.DecodeJSONMessageStream(w)
-
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
-		w = io.MultiWriter(p, out)
+		w = io.MultiWriter(w, out)
 
-		if err := d.deployer.Deploy(ctx, event, w); err != nil {
-			return err
-		}
-
-		if err := p.Err(); err != nil {
-			return err
-		}
-
-		return nil
+		return d.deployer.Deploy(ctx, event, w)
 	}))
 
 	return err
