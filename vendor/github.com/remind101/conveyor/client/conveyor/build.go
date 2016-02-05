@@ -41,7 +41,8 @@ func (s *Service) Build(w io.Writer, o BuildCreateOpts) (*Artifact, error) {
 
 		io.WriteString(w, fmt.Sprintf("Build: %s\n", b.ID))
 	} else {
-		if b.State != "success" {
+		// Create a new build if the existing build is failed.
+		if b.State == "failed" {
 			b, err = s.BuildCreate(o)
 			if err != nil {
 				return nil, err
