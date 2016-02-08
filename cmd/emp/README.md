@@ -7,7 +7,7 @@ A CLI for Empire.
 You can always download the latest version with:
 
 ```console
-$ curl -L https://github.com/remind101/empire/releases/download/latest/emp-`uname -s`-`uname -m` \
+$ curl -L https://github.com/remind101/empire/releases/download/v0.10.0/emp-`uname -s`-`uname -m` \
   > /usr/local/bin/emp
 ```
 
