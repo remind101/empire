@@ -1,10 +1,8 @@
 package empire
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 )
@@ -64,18 +62,12 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts Deployme
 // Deploy is a thin wrapper around deploy to that adds the error to the
 // jsonmessage stream.
 func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeploymentsCreateOpts) (*Release, error) {
-	var msg jsonmessage.JSONMessage
+	stream := opts.Output
 
 	r, err := s.deploy(ctx, db, opts)
 	if err != nil {
-		msg = newJSONMessageError(err)
-	} else {
-		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
+		return r, stream.Error(err)
 	}
 
-	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {
-		return r, err
-	}
-
-	return r, err
+	return r, stream.Status(fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name))
 }

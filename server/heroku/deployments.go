@@ -49,7 +49,7 @@ func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *h
 	opts := empire.DeploymentsCreateOpts{
 		User:   UserFromContext(ctx),
 		Image:  form.Image,
-		Output: streamhttp.StreamingResponseWriter(w),
+		Output: empire.NewJSONStream(streamhttp.StreamingResponseWriter(w)),
 	}
 	return &opts, nil
 }

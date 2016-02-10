@@ -58,7 +58,7 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 
 	_, err = d.empire.Deploy(ctx, empire.DeploymentsCreateOpts{
 		Image:  img,
-		Output: p,
+		Output: empire.NewJSONStream(p),
 		User:   &empire.User{Name: event.Deployment.Creator.Login},
 	})
 	if err != nil {

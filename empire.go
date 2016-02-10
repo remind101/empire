@@ -4,7 +4,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
@@ -425,9 +424,9 @@ type DeploymentsCreateOpts struct {
 	// Image is the image that's being deployed.
 	Image image.Image
 
-	// Output is an io.Writer where deployment output and events will be
-	// streamed in jsonmessage format.
-	Output io.Writer
+	// Output is a json message stream where deployment output and events
+	// will be logged.
+	Output *JSONStream
 }
 
 func (opts DeploymentsCreateOpts) Event() DeployEvent {
@@ -533,15 +532,6 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string {
 	return e.Err.Error()
-}
-
-func newJSONMessageError(err error) jsonmessage.JSONMessage {
-	return jsonmessage.JSONMessage{
-		ErrorMessage: err.Error(),
-		Error: &jsonmessage.JSONError{
-			Message: err.Error(),
-		},
-	}
 }
 
 func nullLogger() log15.Logger {
