@@ -28,6 +28,7 @@ func (fn DeployerFunc) Deploy(ctx context.Context, event events.Deployment, w io
 // empire mocks the Empire interface we use.
 type empireClient interface {
 	Deploy(context.Context, empire.DeploymentsCreateOpts) (*empire.Release, error)
+	GetEnvironment() string
 }
 
 // EmpireDeployer is a deployer implementation that uses the Deploy method in
@@ -60,7 +61,7 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 		Image:       img,
 		Output:      p,
 		User:        &empire.User{Name: event.Deployment.Creator.Login},
-		Environment: event.Deployment.Environment,
+		Environment: d.empire.GetEnvironment(),
 	})
 	if err != nil {
 		return err

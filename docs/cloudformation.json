@@ -475,6 +475,10 @@
                 "Value": { "Ref": "AWS::Region" }
               },
               {
+                "Name": "EMPIRE_ENVIRONMENT",
+                "Value": "demo"
+              },
+              {
                 "Name": "EMPIRE_DATABASE_URL",
                 "Value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
               },

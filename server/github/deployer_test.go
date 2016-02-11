@@ -34,6 +34,7 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 			Repository: "remind101/acme-inc",
 			Tag:        "abcd123",
 		},
+		Environment: e.GetEnvironment(),
 	}).Return(nil)
 
 	err := d.Deploy(context.Background(), event, b)
@@ -59,4 +60,8 @@ func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeploymentsCreateOp
 	opts.Output = nil
 	args := m.Called(opts)
 	return nil, args.Error(0)
+}
+
+func (m *mockEmpire) GetEnvironment() string {
+	return "production"
 }

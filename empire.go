@@ -74,6 +74,9 @@ type Empire struct {
 	// from the newly deployed image.
 	ExtractProcfile ProcfileExtractor
 
+	// Environment represents the environment this Empire server is responsible for
+	Environment string
+
 	// EventStream service for publishing Empire events.
 	EventStream
 }
@@ -284,6 +287,10 @@ func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
 	return nil
 }
 
+func (e *Empire) GetEnvironment() string {
+	return e.Environment
+}
+
 // Tasks returns the Tasks for the given app.
 func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 	return e.tasks.Tasks(ctx, app)
@@ -464,6 +471,10 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 
 	event := opts.Event()
 	event.Release = r.Version
+	// Deals with new app creation on first deploy
+	if event.App == "" && r.App != nil {
+		event.App = r.App.Name
+	}
 
 	return r, e.PublishEvent(event)
 }

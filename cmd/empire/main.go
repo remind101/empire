@@ -55,6 +55,8 @@ const (
 	FlagReporter     = "reporter"
 	FlagRunner       = "runner"
 	FlagLogsStreamer = "logs.streamer"
+
+	FlagEnvironment = "environment"
 )
 
 // Commands are the subcommands that are available.
@@ -278,6 +280,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "When using the SNS events backend, this is the SNS topic that gets published to",
 		EnvVar: "EMPIRE_SNS_TOPIC",
+	},
+	cli.StringFlag{
+		Name:   FlagEnvironment,
+		Value:  "",
+		Usage:  "Used to distinguish the environment this Empire is used to manage. Used for tagging of resources and annotating events.",
+		EnvVar: "EMPIRE_ENVIRONMENT",
 	},
 }
 
