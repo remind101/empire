@@ -57,9 +57,10 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 	p := dockerutil.DecodeJSONMessageStream(w)
 
 	_, err = d.empire.Deploy(ctx, empire.DeploymentsCreateOpts{
-		Image:  img,
-		Output: p,
-		User:   &empire.User{Name: event.Deployment.Creator.Login},
+		Image:       img,
+		Output:      p,
+		User:        &empire.User{Name: event.Deployment.Creator.Login},
+		Environment: event.Deployment.Environment,
 	})
 	if err != nil {
 		return err

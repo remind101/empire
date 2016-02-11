@@ -425,6 +425,9 @@ type DeploymentsCreateOpts struct {
 	// Image is the image that's being deployed.
 	Image image.Image
 
+	// Environment is the environment where the image is being deployed
+	Environment string
+
 	// Output is an io.Writer where deployment output and events will be
 	// streamed in jsonmessage format.
 	Output io.Writer
@@ -437,6 +440,10 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	}
 	if opts.App != nil {
 		e.App = opts.App.Name
+	}
+
+	if opts.Environment != "" {
+		e.Environment = opts.Environment
 	}
 	return e
 }
@@ -454,6 +461,9 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 	if err := tx.Commit().Error; err != nil {
 		return r, err
 	}
+
+	event := opts.Event()
+	event.Release = r.Version
 
 	return r, e.PublishEvent(opts.Event())
 }

@@ -65,9 +65,11 @@ func (e ScaleEvent) String() string {
 
 // DeployEvent is triggered when a user deploys a new image to an app.
 type DeployEvent struct {
-	User  string
-	App   string
-	Image string
+	User        string
+	App         string
+	Image       string
+	Environment string
+	Release     int
 }
 
 func (e DeployEvent) Event() string {
@@ -79,7 +81,7 @@ func (e DeployEvent) String() string {
 		return fmt.Sprintf("%s deployed %s", e.User, e.Image)
 	}
 
-	return fmt.Sprintf("%s deployed %s to %s", e.User, e.Image, e.App)
+	return fmt.Sprintf("%s deployed %s to %s %s (v%d)", e.User, e.Image, e.App, e.Environment, e.Release)
 }
 
 // RollbackEvent is triggered when a user rolls back to an old version.
