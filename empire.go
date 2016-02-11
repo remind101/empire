@@ -465,7 +465,7 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 	event := opts.Event()
 	event.Release = r.Version
 
-	return r, e.PublishEvent(opts.Event())
+	return r, e.PublishEvent(event)
 }
 
 // ScaleOpts are options provided when scaling a process.
