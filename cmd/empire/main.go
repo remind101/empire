@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	FlagPort          = "port"
-	FlagAutoMigrate   = "automigrate"
-	FlagEventsBackend = "events.backend"
+	FlagPort            = "port"
+	FlagAutoMigrate     = "automigrate"
+	FlagEventsBackend   = "events.backend"
+	FlagMaintenanceMode = "maintenance"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -73,12 +74,6 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
-			},
-			cli.StringFlag{
-				Name:   FlagEventsBackend,
-				Value:  "",
-				Usage:  "The backend implementation to use to send event notifactions",
-				EnvVar: "EMPIRE_EVENTS_BACKEND",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,
@@ -172,6 +167,12 @@ var DBFlags = []cli.Flag{
 }
 
 var EmpireFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   FlagMaintenanceMode,
+		Value:  "",
+		Usage:  "Set to enable maintenance (readonly) mode. The value should be a string that will be returned as an error to users",
+		EnvVar: "EMPIRE_MAINTENANCE",
+	},
 	cli.StringFlag{
 		Name:   FlagDockerSocket,
 		Value:  "unix:///var/run/docker.sock",
@@ -272,6 +273,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "The location of the logs to stream",
 		EnvVar: "EMPIRE_LOGS_STREAMER",
+	},
+	cli.StringFlag{
+		Name:   FlagEventsBackend,
+		Value:  "",
+		Usage:  "The backend implementation to use to send event notifactions",
+		EnvVar: "EMPIRE_EVENTS_BACKEND",
 	},
 	cli.StringFlag{
 		Name:   FlagSNSTopic,

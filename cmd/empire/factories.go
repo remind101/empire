@@ -73,6 +73,11 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	e.ExtractProcfile = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
 
+	// Put Empire in maintenance mode if the flag is provided.
+	if reason := c.String(FlagMaintenanceMode); reason != "" {
+		e.SetMaintenanceMode(reason)
+	}
+
 	return e, nil
 }
 
