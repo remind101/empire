@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -76,6 +77,9 @@ type Empire struct {
 
 	// EventStream service for publishing Empire events.
 	EventStream
+
+	// RunRecorder is used to record the logs from interactive runs.
+	RunRecorder RunRecorder
 }
 
 // New returns a new Empire instance.
@@ -358,11 +362,33 @@ func (opts RunOpts) Event() RunEvent {
 
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
+	event := opts.Event()
+
+	if opts.Input != nil && opts.Output != nil && e.RunRecorder != nil {
+		w, err := e.RunRecorder()
+		if err != nil {
+			return err
+		}
+
+		// Add the log url to the event, if there is one.
+		if w, ok := w.(interface {
+			URL() string
+		}); ok {
+			event.URL = w.URL()
+		}
+
+		io.WriteString(w, fmt.Sprintf("Running `%s` on %s as %s\n", opts.Command, opts.App.Name, opts.User.Name))
+
+		// Write output to both the original output as well as the
+		// record.
+		opts.Output = io.MultiWriter(w, opts.Output)
+	}
+
 	if err := e.runner.Run(ctx, opts); err != nil {
 		return err
 	}
 
-	return e.PublishEvent(opts.Event())
+	return e.PublishEvent(event)
 }
 
 // Releases returns all Releases for a given App.

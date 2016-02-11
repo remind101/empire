@@ -14,6 +14,7 @@ func TestEvents_String(t *testing.T) {
 		// RunEvent
 		{RunEvent{User: "ejholmes", App: "acme-inc", Command: "bash"}, "ejholmes ran `bash` (detached) on acme-inc"},
 		{RunEvent{User: "ejholmes", App: "acme-inc", Attached: true, Command: "bash"}, "ejholmes ran `bash` (attached) on acme-inc"},
+		{RunEvent{User: "ejholmes", App: "acme-inc", URL: "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=runs;stream=dac6eaff-6e0b-4708-9277-9f38aea2f528", Attached: true, Command: "bash"}, "ejholmes ran `bash` (attached) on acme-inc (<https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logEvent:group=runs;stream=dac6eaff-6e0b-4708-9277-9f38aea2f528|logs>)"},
 
 		// RestartEvent
 		{RestartEvent{User: "ejholmes", App: "acme-inc"}, "ejholmes restarted acme-inc"},
