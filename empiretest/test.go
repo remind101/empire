@@ -2,6 +2,7 @@ package empiretest
 
 import (
 	"io"
+	"io/ioutil"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -44,6 +45,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 	e := empire.New(db, empire.DefaultOptions)
 	e.Scheduler = scheduler.NewFakeScheduler()
 	e.ExtractProcfile = ExtractProcfile
+	e.RunRecorder = empire.RecordTo(ioutil.Discard)
 
 	if err := e.Reset(); err != nil {
 		t.Fatal(err)

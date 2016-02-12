@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	FlagPort          = "port"
-	FlagAutoMigrate   = "automigrate"
-	FlagEventsBackend = "events.backend"
+	FlagPort           = "port"
+	FlagAutoMigrate    = "automigrate"
+	FlagEventsBackend  = "events.backend"
+	FlagRunLogsBackend = "runlogs.backend"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -49,7 +50,8 @@ const (
 
 	FlagRoute53InternalZoneID = "route53.zoneid.internal"
 
-	FlagSNSTopic = "sns.topic"
+	FlagSNSTopic           = "sns.topic"
+	FlagCloudWatchLogGroup = "cloudwatch.loggroup"
 
 	FlagSecret       = "secret"
 	FlagReporter     = "reporter"
@@ -75,12 +77,6 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
-			},
-			cli.StringFlag{
-				Name:   FlagEventsBackend,
-				Value:  "",
-				Usage:  "The backend implementation to use to send event notifactions",
-				EnvVar: "EMPIRE_EVENTS_BACKEND",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,
@@ -276,6 +272,18 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_LOGS_STREAMER",
 	},
 	cli.StringFlag{
+		Name:   FlagEventsBackend,
+		Value:  "",
+		Usage:  "The backend implementation to use to send event notifactions",
+		EnvVar: "EMPIRE_EVENTS_BACKEND",
+	},
+	cli.StringFlag{
+		Name:   FlagRunLogsBackend,
+		Value:  "",
+		Usage:  "The backend implementation to use to record the logs from interactive runs. Current supports `cloudwatch` and `stdout`",
+		EnvVar: "EMPIRE_RUN_LOGS_BACKEND",
+	},
+	cli.StringFlag{
 		Name:   FlagSNSTopic,
 		Value:  "",
 		Usage:  "When using the SNS events backend, this is the SNS topic that gets published to",
@@ -286,6 +294,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "Used to distinguish the environment this Empire is used to manage. Used for tagging of resources and annotating events.",
 		EnvVar: "EMPIRE_ENVIRONMENT",
+	},
+	cli.StringFlag{
+		Name:   FlagCloudWatchLogGroup,
+		Value:  "",
+		Usage:  "When using the `cloudwatch` backend with the `--" + FlagRunLogsBackend + "` flag , this is the log group that CloudWatch log streams will be created in.",
+		EnvVar: "EMPIRE_CLOUDWATCH_LOG_GROUP",
 	},
 }
 

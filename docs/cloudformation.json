@@ -28,6 +28,11 @@
       "Description": "The backend to use to publish Empire events to. Set this to SNS to create an SNS topic and publish events there.",
       "Default": "sns"
     },
+    "RunLogsBackend": {
+      "Type": "String",
+      "Description": "The backend used to store logs from interactive runs.",
+      "Default": "cloudwatch"
+    },
     "DockerRegistry": {
       "Type": "String",
       "Description": "Docker private registry url",
@@ -74,7 +79,8 @@
   "Conditions": {
     "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "1"]},
     "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]},
-    "SNSEvents": {"Fn::Equals": [{"Ref": "EventsBackend"}, "sns"]}
+    "SNSEvents": {"Fn::Equals": [{"Ref": "EventsBackend"}, "sns"]},
+    "CloudWatchLogs": {"Fn::Equals": [{"Ref": "RunLogsBackend"}, "cloudwatch"]}
   },
 
   "Resources": {
@@ -308,7 +314,9 @@
                 "iam:UploadServerCertificate",
                 "iam:DeleteServerCertificate",
                 "route53:*",
-                "sns:*"
+                "sns:*",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
               ],
               "Resource": [
                 "*"
@@ -521,6 +529,14 @@
               {
                 "Name": "EMPIRE_SNS_TOPIC",
                 "Value": { "Ref": "EventsTopic" }
+              },
+              {
+                "Name": "EMPIRE_RUN_LOGS_BACKEND",
+                "Value": { "Ref": "RunLogsBackend" }
+              },
+              {
+                "Name": "EMPIRE_CLOUDWATCH_LOG_GROUP",
+                "Value": { "Ref": "LogGroup" }
               }
             ],
             "Command": ["server", "-automigrate=true"],
@@ -591,6 +607,14 @@
       "Properties": {
         "DisplayName": "Empire Events",
         "TopicName" : "events"
+      }
+    },
+
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Condition": "CloudWatchLogs",
+      "Properties": {
+        "RetentionInDays": 7
       }
     }
   },
