@@ -19,8 +19,6 @@ var (
 type Options struct {
 	Authenticator auth.Authenticator
 
-	Environment string
-
 	GitHub struct {
 		// Deployments
 		Webhooks struct {

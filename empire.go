@@ -449,9 +449,6 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 		e.App = opts.App.Name
 	}
 
-	if opts.Environment != "" {
-		e.Environment = opts.Environment
-	}
 	return e
 }
 
@@ -471,6 +468,7 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 
 	event := opts.Event()
 	event.Release = r.Version
+	event.Environment = e.Environment
 	// Deals with new app creation on first deploy
 	if event.App == "" && r.App != nil {
 		event.App = r.App.Name
