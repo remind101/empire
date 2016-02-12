@@ -278,7 +278,7 @@ var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   FlagRunLogsBackend,
 		Value:  "",
-		Usage:  "The backend implementation to use to record the logs from interactive runs",
+		Usage:  "The backend implementation to use to record the logs from interactive runs. Current supports `cloudwatch` and `stdout`",
 		EnvVar: "EMPIRE_RUN_LOGS_BACKEND",
 	},
 	cli.StringFlag{
@@ -290,7 +290,7 @@ var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   FlagCloudWatchLogGroup,
 		Value:  "",
-		Usage:  "When using the CloudWatch backend for run logs, this is the log group that CloudWatch log streams will be created in.",
+		Usage:  "When using the `cloudwatch` backend with the `--" + FlagRunLogsBackend + "` flag , this is the log group that CloudWatch log streams will be created in.",
 		EnvVar: "EMPIRE_CLOUDWATCH_LOG_GROUP",
 	},
 }

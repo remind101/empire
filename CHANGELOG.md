@@ -8,6 +8,7 @@
 * The Docker logging driver that the ECS backend uses is now configurable via the `--ecs.logdriver` flag [#731](https://github.com/remind101/empire/pull/731).
 * It's now possible to lock down the GitHub authorization to a specific team via the `--github.team.id` flag [#745](https://github.com/remind101/empire/pull/745).
 * Empire can now integrate with Conveyor to build Docker images on demand when using the GitHub Deployments integration [#747](https://github.com/remind101/empire/pull/747).
+* Stdout and Stdin from interactive run sessions can now be sent to CloudWatch Logs for longterm storage and auditing [#757](https://github.com/remind101/empire/pull/757).
 
 **Bugs**
 
