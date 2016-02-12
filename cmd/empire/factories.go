@@ -63,6 +63,11 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
+	runRecorder, err := newRunRecorder(c)
+	if err != nil {
+		return nil, err
+	}
+
 	e := empire.New(db, empire.Options{
 		Secret: c.String(FlagSecret),
 	})
@@ -72,6 +77,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	e.EventStream = empire.AsyncEvents(events)
 	e.ExtractProcfile = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
+	e.RunRecorder = runRecorder
 
 	return e, nil
 }
@@ -195,6 +201,26 @@ func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {
 	log.Println(fmt.Sprintf("  TopicARN: %s", e.TopicARN))
 
 	return e, nil
+}
+
+// RunRecorder =========================
+
+func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
+	backend := c.String(FlagRunLogsBackend)
+	switch backend {
+	case "cloudwatch":
+		group := c.String(FlagCloudWatchLogGroup)
+
+		log.Println("Using CloudWatch run logs backend with the following configuration:")
+		log.Println(fmt.Sprintf("  LogGroup: %s", group))
+
+		return empire.RecordToCloudWatch(group, newConfigProvider(c)), nil
+	case "stdout":
+		log.Println("Using Stdout run logs backend:")
+		return empire.RecordTo(os.Stdout), nil
+	default:
+		panic(fmt.Sprintf("unknown run logs backend: %v", backend))
+	}
 }
 
 // Logger ==============================

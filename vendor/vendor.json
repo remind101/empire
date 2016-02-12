@@ -128,6 +128,11 @@
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"path": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8",
+			"revisionTime": "2015-11-23T19:39:42-08:00"
+		},
+		{
 			"path": "github.com/aws/aws-sdk-go/service/ecr",
 			"revision": "b7b1a098eeebcdf7db0af5818e255dc8569b88ce",
 			"revisionTime": "2016-01-09T10:09:47-08:00"
@@ -215,6 +220,11 @@
 			"comment": "v1.4.1-3107-g5221fd2",
 			"path": "github.com/docker/docker/pkg/units",
 			"revision": "5221fd2ba5fbf78ad7a5d4edf039d54ae32141ef"
+		},
+		{
+			"path": "github.com/ejholmes/cloudwatch",
+			"revision": "301ca47d977c61ad2bf72d84a9429db0e063c15b",
+			"revisionTime": "2016-02-09T08:01:47+07:00"
 		},
 		{
 			"path": "github.com/ejholmes/flock",
