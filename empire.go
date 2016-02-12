@@ -287,10 +287,6 @@ func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
 	return nil
 }
 
-func (e *Empire) GetEnvironment() string {
-	return e.Environment
-}
-
 // Tasks returns the Tasks for the given app.
 func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 	return e.tasks.Tasks(ctx, app)
