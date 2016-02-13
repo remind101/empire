@@ -77,6 +77,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 	e.EventStream = empire.AsyncEvents(events)
 	e.ExtractProcfile = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
+	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 
 	return e, nil

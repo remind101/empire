@@ -75,6 +75,9 @@ type Empire struct {
 	// from the newly deployed image.
 	ExtractProcfile ProcfileExtractor
 
+	// Environment represents the environment this Empire server is responsible for
+	Environment string
+
 	// EventStream service for publishing Empire events.
 	EventStream
 
@@ -451,6 +454,9 @@ type DeploymentsCreateOpts struct {
 	// Image is the image that's being deployed.
 	Image image.Image
 
+	// Environment is the environment where the image is being deployed
+	Environment string
+
 	// Output is an io.Writer where deployment output and events will be
 	// streamed in jsonmessage format.
 	Output io.Writer
@@ -464,6 +470,7 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	if opts.App != nil {
 		e.App = opts.App.Name
 	}
+
 	return e
 }
 
@@ -481,7 +488,15 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 		return r, err
 	}
 
-	return r, e.PublishEvent(opts.Event())
+	event := opts.Event()
+	event.Release = r.Version
+	event.Environment = e.Environment
+	// Deals with new app creation on first deploy
+	if event.App == "" && r.App != nil {
+		event.App = r.App.Name
+	}
+
+	return r, e.PublishEvent(event)
 }
 
 // ScaleOpts are options provided when scaling a process.

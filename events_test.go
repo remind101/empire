@@ -25,7 +25,7 @@ func TestEvents_String(t *testing.T) {
 		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 5, PreviousQuantity: 10}, "ejholmes scaled `web` on acme-inc from 10 to 5 (-5)"},
 
 		// DeployEvent
-		{DeployEvent{User: "ejholmes", App: "acme-inc", Image: "remind101/acme-inc:master"}, "ejholmes deployed remind101/acme-inc:master to acme-inc"},
+		{DeployEvent{User: "ejholmes", App: "acme-inc", Image: "remind101/acme-inc:master", Environment: "production", Release: 32}, "ejholmes deployed remind101/acme-inc:master to acme-inc production (v32)"},
 		{DeployEvent{User: "ejholmes", Image: "remind101/acme-inc:master"}, "ejholmes deployed remind101/acme-inc:master"},
 
 		// RollbackEvent
