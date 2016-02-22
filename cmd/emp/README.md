@@ -11,7 +11,14 @@ $ curl -L https://github.com/remind101/empire/releases/download/v0.10.0/emp-`una
   > /usr/local/bin/emp
 ```
 
-Or, if you have a working Go 1.5+ environment, you can do the following:
+Or by using homebrew:
+
+```console
+$ brew update
+$ brew install emp
+```
+
+If you have a working Go 1.5+ environment, you can do the following:
 
 ```console
 $ export GO15VENDOREXPERIMENT=1 # Required for Go 1.5.x
