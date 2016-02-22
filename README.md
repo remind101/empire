@@ -154,7 +154,8 @@ Perform the following steps when releasing a new version:
    * Tag the image in Docker Hub with the version.
    * Build Linux and OS X versions of the CLI and Daemon.
    * Create a new GitHub Release and upload the artifacts.
-7. Finally, update the new GitHub Release to be human readable.
+7. Update the new GitHub Release to be human readable.
+8. Open a PR against Homebrew to update the emp CLI: https://github.com/Homebrew/homebrew/blob/master/Library/Formula/emp.rb
 
 ## Community
 
