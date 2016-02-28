@@ -6,7 +6,7 @@ There are a few key things which your applications, and overall architecture, wi
 
 For the impatient, there are two absolutes:
 
-- Your must create a `Procfile` which defines how to run your application
+- You must create a `Procfile` which defines how to run your application
 - If your application answers requests over the network, it must listen on port 8080, or better, on the `$PORT` environment variable. It's strongly suggested that you use the `$PORT` variable as port 8080 could change in future releases.
 
 To see an example application, you can look at [remind101/acme-inc]
@@ -15,12 +15,12 @@ To see an example application, you can look at [remind101/acme-inc]
 
 ## Procfile
 
-Empire was modeled after the Heroku API.  As such, many concepts and commands are similar.  One concept which has bled over and which is a requirement is that of a [Procfile][procfiles].  For your application to actually work, you must include a Procfile at the root level of your application.
+Empire was modeled after the Heroku API.  As such, many concepts and commands are similar.  One concept which has bled over and which is a requirement is that of a [Procfile][procfile].  For your application to actually work, you must include a Procfile at the root level of your application.
 
 Imagine a Python application which simply ran celery.  A `Procfile` for such a service could look like this:
 
 ```
-workerservice: celery -A tasks worker --loglevel=info 
+workerservice: celery -A tasks worker --loglevel=info
 ```
 
 The file would be named `Procfile`, and live at the directory root for your application.
@@ -30,14 +30,14 @@ $ tree .
 .
 ├── Dockerfile
 ├── Procfile
-├── myapplication/ 
+├── myapplication/
 
 ```
 
 
 ## Empire application types
 
-Empire treats "web" and "non-web" services different.  Here, a "web" process is defined as anything which needs to expose a port.  The way to differentiate the two types of processes is easy.  
+Empire treats "web" and "non-web" services different.  Here, a "web" process is defined as anything which needs to expose a port.  The way to differentiate the two types of processes is easy.
 
 ### Non-web processes
 
@@ -65,21 +65,21 @@ The routing to your application is handled as such inside of the VPC:
 
 ```
 
-     http://awesome-app/  
-              +           
-              |           
-              |           
-              v           
+     http://awesome-app/
+              +
+              |
+              |
+              v
              ELB: port 80
-              +           
-              |           
-              |           
-              v           
+              +
+              |
+              |
+              v
             Minion: port [9000-10000]
-              +           
-              |           
-              |           
-              v           
+              +
+              |
+              |
+              v
           Container: port $PORT
 
 ```
@@ -92,7 +92,7 @@ There are various things going on...let's break them down:
 - The container running on a minion will map a random port between 9000 and 10000 to the `$PORT` environment variable in your application.  Currently, `$PORT` defaults to 8080. The random port in the 9000-10000 range is managed by Empire.
 
 
-There are a few other environment variable which Empire will set for your running container, but `PORT` is the most important for now.  It's **strongly** suggested that you use `$PORT` rather than the default of 8080.  There are various ways to get your application listening on `$PORT`. One such way is to run your application from a shell script, which is in turn used in your `Procfile`
+There are a few other environment variables which Empire will set for your running container, but `$PORT` is the most important for now.  It's **strongly** suggested that you use `$PORT` rather than the default of 8080.  There are various ways to get your application listening on `$PORT`. One such way is to run your application from a shell script, which is in turn used in your `Procfile`
 
 `run.sh`
 
