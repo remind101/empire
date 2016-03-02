@@ -246,6 +246,10 @@ var validLogDrivers = map[string]bool{
 }
 
 func NewLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfiguration {
+	if logDriver == "" {
+		// Default to the docker daemon default logging driver.
+		return nil
+	}
 
 	logOptions := make(map[string]*string)
 
