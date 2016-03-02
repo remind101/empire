@@ -104,10 +104,13 @@ func TestConstraints_Parse(t *testing.T) {
 		out Constraints
 		err error
 	}{
-		{"512:1KB", Constraints{512, 1024}, nil},
+		{"512:1KB", Constraints{512, 1024, 0}, nil},
+		{"512:1KB:nproc=512", Constraints{512, 1024, 512}, nil},
 		{"1025:1KB", Constraints{}, ErrInvalidCPUShare},
 
 		{"1024", Constraints{}, ErrInvalidConstraint},
+		{"1024:1KB:nproc", Constraints{}, ErrInvalidConstraint},
+		{"1024:1KB:nporc=512", Constraints{}, ErrInvalidConstraint},
 	}
 
 	for i, tt := range tests {
