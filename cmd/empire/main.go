@@ -207,7 +207,7 @@ var EmpireFlags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:   FlagECSLogDriver,
-		Value:  "json-file",
+		Value:  "",
 		Usage:  "Log driver to use when running containers. Maps to the --log-driver docker cli arg",
 		EnvVar: "EMPIRE_ECS_LOG_DRIVER",
 	},
