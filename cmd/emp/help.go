@@ -14,6 +14,7 @@ import (
 
 var helpEnviron = &Command{
 	Usage:    "environ",
+	NoClient: true,
 	Category: "emp",
 	Short:    "environment variables used by emp",
 	Long: `
@@ -50,6 +51,7 @@ HKDEBUG
 var cmdVersion = &Command{
 	Run:      runVersion,
 	Usage:    "version",
+	NoClient: true,
 	Category: "emp",
 	Short:    "show emp version",
 	Long:     `Version shows the emp client version string.`,
@@ -61,12 +63,14 @@ func runVersion(cmd *Command, args []string) {
 
 var cmdHelp = &Command{
 	Usage:    "help [<topic>]",
+	NoClient: true,
 	Category: "emp",
 	Long:     `Help shows usage for a command or other topic.`,
 }
 
 var helpMore = &Command{
 	Usage:    "more",
+	NoClient: true,
 	Category: "emp",
 	Short:    "additional commands, less frequently used",
 	Long:     "(not displayed; see special case in runHelp)",
@@ -74,6 +78,7 @@ var helpMore = &Command{
 
 var helpCommands = &Command{
 	Usage:    "commands",
+	NoClient: true,
 	Category: "emp",
 	Short:    "list all commands with usage",
 	Long:     "(not displayed; see special case in runHelp)",
@@ -81,6 +86,7 @@ var helpCommands = &Command{
 
 var helpStyleGuide = &Command{
 	Usage:    "styleguide",
+	NoClient: true,
 	Category: "emp",
 	Short:    "generate an html styleguide for all commands with usage",
 	Long:     "(not displayed; see special case in runHelp)",

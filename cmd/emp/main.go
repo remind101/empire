@@ -29,6 +29,7 @@ type Command struct {
 	Flag        flag.FlagSet
 	NeedsApp    bool
 	OptionalApp bool
+	NoClient    bool
 
 	Usage    string // first word is the command name
 	Category string // i.e. "App", "Account", etc.
@@ -172,11 +173,13 @@ func main() {
 		ansi.DisableColors(true)
 	}
 
-	initClients()
-
 	for _, cmd := range commands {
 		if matchesCommand(cmd, args[0]) && cmd.Run != nil {
 			defer recoverPanic()
+
+			if !cmd.NoClient {
+				initClients()
+			}
 
 			cmd.Flag.SetDisableDuplicates(true) // disallow duplicate flag options
 			if !gitConfigBool("hk.strict-flag-ordering") {
