@@ -96,7 +96,11 @@ func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, e
 			Cmd:          cmd,
 			Env:          envKeys(opts.Env),
 		},
-		HostConfig: &docker.HostConfig{},
+		HostConfig: &docker.HostConfig{
+			LogConfig: docker.LogConfig{
+				Type: "json-file",
+			},
+		},
 	})
 }
 
