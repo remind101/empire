@@ -14,7 +14,6 @@ import (
 
 var helpEnviron = &Command{
 	Usage:    "environ",
-	NoClient: true,
 	Category: "emp",
 	Short:    "environment variables used by emp",
 	Long: `
@@ -70,7 +69,6 @@ var cmdHelp = &Command{
 
 var helpMore = &Command{
 	Usage:    "more",
-	NoClient: true,
 	Category: "emp",
 	Short:    "additional commands, less frequently used",
 	Long:     "(not displayed; see special case in runHelp)",
@@ -78,7 +76,6 @@ var helpMore = &Command{
 
 var helpCommands = &Command{
 	Usage:    "commands",
-	NoClient: true,
 	Category: "emp",
 	Short:    "list all commands with usage",
 	Long:     "(not displayed; see special case in runHelp)",
@@ -86,7 +83,6 @@ var helpCommands = &Command{
 
 var helpStyleGuide = &Command{
 	Usage:    "styleguide",
-	NoClient: true,
 	Category: "emp",
 	Short:    "generate an html styleguide for all commands with usage",
 	Long:     "(not displayed; see special case in runHelp)",
