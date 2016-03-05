@@ -50,6 +50,7 @@ HKDEBUG
 var cmdVersion = &Command{
 	Run:      runVersion,
 	Usage:    "version",
+	NoClient: true,
 	Category: "emp",
 	Short:    "show emp version",
 	Long:     `Version shows the emp client version string.`,
@@ -61,6 +62,7 @@ func runVersion(cmd *Command, args []string) {
 
 var cmdHelp = &Command{
 	Usage:    "help [<topic>]",
+	NoClient: true,
 	Category: "emp",
 	Long:     `Help shows usage for a command or other topic.`,
 }
