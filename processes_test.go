@@ -107,7 +107,8 @@ func TestConstraints_UnmarshalJSON(t *testing.T) {
 		out Constraints
 		err error
 	}{
-		{"512:1KB", Constraints{512, 1024}, nil},
+		{"512:1KB", Constraints{512, 1024, 0}, nil},
+		{"512:1KB:nproc=512", Constraints{512, 1024, 512}, nil},
 		{"1025:1KB", Constraints{}, constraints.ErrInvalidCPUShare},
 
 		{"1024", Constraints{}, constraints.ErrInvalidConstraint},
@@ -141,7 +142,8 @@ func TestConstraints_String(t *testing.T) {
 		{Constraints2X, "2X"},
 		{ConstraintsPX, "PX"},
 
-		{Constraints{100, constraints.Memory(1 * MB)}, "100:1.00mb"},
+		{Constraints{100, constraints.Memory(1 * MB), 0}, "100:1.00mb"},
+		{Constraints{100, constraints.Memory(1 * MB), 512}, "100:1.00mb:nproc=512"},
 	}
 
 	for _, tt := range tests {

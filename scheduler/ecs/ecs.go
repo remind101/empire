@@ -519,6 +519,17 @@ func taskDefinitionInput(p *scheduler.Process, logConfiguration *ecs.LogConfigur
 		labels[k] = aws.String(v)
 	}
 
+	var ulimits []*ecs.Ulimit
+	if p.Nproc != 0 {
+		ulimits = []*ecs.Ulimit{
+			&ecs.Ulimit{
+				Name:      aws.String("nproc"),
+				SoftLimit: aws.Int64(int64(p.Nproc)),
+				HardLimit: aws.Int64(int64(p.Nproc)),
+			},
+		}
+	}
+
 	return &ecs.RegisterTaskDefinitionInput{
 		Family: aws.String(p.Type),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
@@ -533,6 +544,7 @@ func taskDefinitionInput(p *scheduler.Process, logConfiguration *ecs.LogConfigur
 				LogConfiguration: logConfiguration,
 				PortMappings:     ports,
 				DockerLabels:     labels,
+				Ulimits:          ulimits,
 			},
 		},
 	}, nil
@@ -597,7 +609,22 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 		Env:         env,
 		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * MB,
+		Nproc:       uint(softLimit(container.Ulimits, "nproc")),
 	}, nil
+}
+
+func softLimit(ulimits []*ecs.Ulimit, name string) int64 {
+	if ulimits == nil {
+		return 0
+	}
+
+	for _, u := range ulimits {
+		if *u.Name == name {
+			return *u.SoftLimit
+		}
+	}
+
+	return 0
 }
 
 func diffProcessTypes(old, new []*scheduler.Process) []string {

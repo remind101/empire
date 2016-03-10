@@ -88,6 +88,7 @@ func TestEmpire_Deploy(t *testing.T) {
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
+				Nproc:       256,
 				SSLCert:     "",
 				Env: map[string]string{
 					"EMPIRE_APPID":      app.ID,
@@ -248,6 +249,7 @@ func TestEmpire_Set(t *testing.T) {
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
+				Nproc:       256,
 				SSLCert:     "",
 				Env: map[string]string{
 					"EMPIRE_APPID":      app.ID,
@@ -293,6 +295,7 @@ func TestEmpire_Set(t *testing.T) {
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
+				Nproc:       256,
 				SSLCert:     "",
 				Env: map[string]string{
 					"EMPIRE_APPID":      app.ID,

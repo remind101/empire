@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	Constraints1X = Constraints{constraints.CPUShare(256), constraints.Memory(512 * MB)}
-	Constraints2X = Constraints{constraints.CPUShare(512), constraints.Memory(1 * GB)}
-	ConstraintsPX = Constraints{constraints.CPUShare(1024), constraints.Memory(6 * GB)}
+	Constraints1X = Constraints{constraints.CPUShare(256), constraints.Memory(512 * MB), constraints.Nproc(256)}
+	Constraints2X = Constraints{constraints.CPUShare(512), constraints.Memory(1 * GB), constraints.Nproc(512)}
+	ConstraintsPX = Constraints{constraints.CPUShare(1024), constraints.Memory(6 * GB), 0}
 
 	// NamedConstraints maps a heroku dynos size to a Constraints.
 	NamedConstraints = map[string]Constraints{
@@ -189,7 +189,11 @@ func (c Constraints) String() string {
 		}
 	}
 
-	return fmt.Sprintf("%d:%s", c.CPUShare, c.Memory)
+	if c.Nproc == 0 {
+		return fmt.Sprintf("%d:%s", c.CPUShare, c.Memory)
+	} else {
+		return fmt.Sprintf("%d:%s:nproc=%d", c.CPUShare, c.Memory, c.Nproc)
+	}
 }
 
 // Formation maps a process ProcessType to a Process.

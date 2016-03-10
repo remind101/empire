@@ -54,6 +54,7 @@ func taskFromInstance(i *scheduler.Instance) *Task {
 		Constraints: Constraints{
 			CPUShare: constraints.CPUShare(i.Process.CPUShares),
 			Memory:   constraints.Memory(i.Process.MemoryLimit),
+			Nproc:    constraints.Nproc(i.Process.Nproc),
 		},
 		State:     i.State,
 		UpdatedAt: i.UpdatedAt,

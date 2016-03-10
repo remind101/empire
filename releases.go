@@ -319,6 +319,7 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		Instances:   uint(p.Quantity),
 		MemoryLimit: uint(p.Constraints.Memory),
 		CPUShares:   uint(p.Constraints.CPUShare),
+		Nproc:       uint(p.Constraints.Nproc),
 		Ports:       ports,
 		Exposure:    procExp,
 		SSLCert:     release.App.Cert,

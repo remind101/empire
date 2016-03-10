@@ -82,6 +82,9 @@ type Process struct {
 	// the --cpu-shares flag for docker.
 	CPUShares uint
 
+	// ulimit -u
+	Nproc uint
+
 	// A load balancer to attach to the process.
 	LoadBalancer string
 
