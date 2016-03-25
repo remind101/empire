@@ -155,6 +155,7 @@ func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*
 
 	event := opts.Event()
 	event.PreviousQuantity = p.Quantity
+	event.PreviousConstraints = p.Constraints
 
 	// Update quantity for this process in the formation
 	p.Quantity = quantity
