@@ -21,8 +21,10 @@ func TestEvents_String(t *testing.T) {
 		{RestartEvent{User: "ejholmes", App: "acme-inc", PID: "abcd"}, "ejholmes restarted `abcd` on acme-inc"},
 
 		// ScaleEvent
-		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 10, PreviousQuantity: 5}, "ejholmes scaled `web` on acme-inc from 5 to 10 (+5)"},
-		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 5, PreviousQuantity: 10}, "ejholmes scaled `web` on acme-inc from 10 to 5 (-5)"},
+		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 10, Constraints: Constraints{CPUShare: 1024, Memory: 1024}, PreviousQuantity: 5, PreviousConstraints: Constraints{CPUShare: 1024, Memory: 1024}}, "ejholmes scaled `web` on acme-inc from 5(1024:1.00kb) to 10(1024:1.00kb)"},
+		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 5, Constraints: Constraints{CPUShare: 1024, Memory: 1024}, PreviousQuantity: 10, PreviousConstraints: Constraints{CPUShare: 1024, Memory: 1024}}, "ejholmes scaled `web` on acme-inc from 10(1024:1.00kb) to 5(1024:1.00kb)"},
+		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 5, Constraints: Constraints{CPUShare: 1024, Memory: 1024}, PreviousQuantity: 5, PreviousConstraints: Constraints{CPUShare: 512, Memory: 1024}}, "ejholmes scaled `web` on acme-inc from 5(512:1.00kb) to 5(1024:1.00kb)"},
+		{ScaleEvent{User: "ejholmes", App: "acme-inc", Process: "web", Quantity: 10, PreviousQuantity: 5, PreviousConstraints: Constraints{CPUShare: 512, Memory: 1024}}, "ejholmes scaled `web` on acme-inc from 5(512:1.00kb) to 10(512:1.00kb)"},
 
 		// DeployEvent
 		{DeployEvent{User: "ejholmes", App: "acme-inc", Image: "remind101/acme-inc:master", Environment: "production", Release: 32}, "ejholmes deployed remind101/acme-inc:master to acme-inc production (v32)"},

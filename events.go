@@ -52,11 +52,13 @@ func (e RestartEvent) String() string {
 
 // ScaleEvent is triggered when a manual scaling event happens.
 type ScaleEvent struct {
-	User             string
-	App              string
-	Process          string
-	Quantity         int
-	PreviousQuantity int
+	User                string
+	App                 string
+	Process             string
+	Quantity            int
+	PreviousQuantity    int
+	Constraints         Constraints
+	PreviousConstraints Constraints
 }
 
 func (e ScaleEvent) Event() string {
@@ -64,8 +66,21 @@ func (e ScaleEvent) Event() string {
 }
 
 func (e ScaleEvent) String() string {
-	delta := e.Quantity - e.PreviousQuantity
-	return fmt.Sprintf("%s scaled `%s` on %s from %d to %d (%s)", e.User, e.Process, e.App, e.PreviousQuantity, e.Quantity, prettyDelta{delta: delta})
+	// Deal with no new constraints by copying previous constraint settings.
+	newConstraints := e.Constraints
+	if newConstraints.CPUShare == 0 {
+		newConstraints.CPUShare = e.PreviousConstraints.CPUShare
+	}
+
+	if newConstraints.Memory == 0 {
+		newConstraints.Memory = e.PreviousConstraints.Memory
+	}
+
+	if newConstraints.Nproc == 0 {
+		newConstraints.Nproc = e.PreviousConstraints.Nproc
+	}
+
+	return fmt.Sprintf("%s scaled `%s` on %s from %d(%s) to %d(%s)", e.User, e.Process, e.App, e.PreviousQuantity, e.PreviousConstraints, e.Quantity, newConstraints)
 }
 
 // DeployEvent is triggered when a user deploys a new image to an app.

@@ -519,10 +519,11 @@ type ScaleOpts struct {
 
 func (opts ScaleOpts) Event() ScaleEvent {
 	return ScaleEvent{
-		User:     opts.User.Name,
-		App:      opts.App.Name,
-		Process:  string(opts.Process),
-		Quantity: opts.Quantity,
+		User:        opts.User.Name,
+		App:         opts.App.Name,
+		Process:     string(opts.Process),
+		Quantity:    opts.Quantity,
+		Constraints: *opts.Constraints,
 	}
 }
 
