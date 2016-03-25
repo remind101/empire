@@ -518,13 +518,17 @@ type ScaleOpts struct {
 }
 
 func (opts ScaleOpts) Event() ScaleEvent {
-	return ScaleEvent{
-		User:        opts.User.Name,
-		App:         opts.App.Name,
-		Process:     string(opts.Process),
-		Quantity:    opts.Quantity,
-		Constraints: *opts.Constraints,
+	e := ScaleEvent{
+		User:     opts.User.Name,
+		App:      opts.App.Name,
+		Process:  string(opts.Process),
+		Quantity: opts.Quantity,
 	}
+
+	if opts.Constraints != nil {
+		e.Constraints = *opts.Constraints
+	}
+	return e
 }
 
 // Scale scales an apps process.
