@@ -10,6 +10,7 @@
 * Empire can now integrate with Conveyor to build Docker images on demand when using the GitHub Deployments integration [#747](https://github.com/remind101/empire/pull/747).
 * Stdout and Stdin from interactive run sessions can now be sent to CloudWatch Logs for longterm storage and auditing [#757](https://github.com/remind101/empire/pull/757).
 * Add `Environment` and `Release` to Deploy Events. `--environment` will likely be used for tagging resources later. [#758](https://github.com/remind101/empire/pull/758)
+* Add constraint changes to scale events [#773](https://github.com/remind101/empire/pull/773)
 
 **Bugs**
 
