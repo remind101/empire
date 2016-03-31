@@ -16,6 +16,10 @@ func TestScale(t *testing.T) {
 			"Scaled acme-inc to web=2:1X.",
 		},
 		{
+			"scale -l -a acme-inc",
+			"web=2:1X",
+		},
+		{
 			"dynos -a acme-inc",
 			`v1.web.1  1X  running   5d  "./bin/web"
 v1.web.2  1X  running   5d  "./bin/web"`,

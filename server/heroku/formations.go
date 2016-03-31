@@ -3,8 +3,8 @@ package heroku
 import (
 	"net/http"
 
-	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 	"golang.org/x/net/context"
 )
 
@@ -51,6 +51,36 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 			Type:     string(p.Type),
 			Quantity: p.Quantity,
 			Size:     p.Constraints.String(),
+		})
+	}
+
+	w.WriteHeader(200)
+	return Encode(w, resp)
+}
+
+// GetFormation returns the current Formation info for an App
+type GetFormation struct {
+	*empire.Empire
+}
+
+// ServeHTTPContext handles the http response
+func (h *GetFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	app, err := findApp(ctx, h)
+	if err != nil {
+		return err
+	}
+
+	formation, err := h.ListScale(ctx, app)
+	if err != nil {
+		return err
+	}
+
+	var resp []*Formation
+	for _, proc := range *formation {
+		resp = append(resp, &Formation{
+			Type:     string(proc.Type),
+			Quantity: proc.Quantity,
+			Size:     proc.Constraints.String(),
 		})
 	}
 
