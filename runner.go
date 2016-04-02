@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/ejholmes/cloudwatch"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 
 	"golang.org/x/net/context"
 )

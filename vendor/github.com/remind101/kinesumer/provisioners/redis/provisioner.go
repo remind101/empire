@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/pborman/uuid" // Exported from code.google.com/p/go-uuid/uuid
+	"github.com/pborman/uuid" // Exported from github.com/pborman/uuid
 )
 
 type Provisioner struct {
