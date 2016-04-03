@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 )
 
 var DefaultTransport = &Transport{}

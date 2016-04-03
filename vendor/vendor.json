@@ -3,11 +3,6 @@
 	"ignore": "",
 	"package": [
 		{
-			"comment": "null-12",
-			"path": "code.google.com/p/go-uuid/uuid",
-			"revision": "7dda39b2e7d5e265014674c5af696ba4186679e9"
-		},
-		{
 			"comment": "weekly-56",
 			"path": "code.google.com/p/goauth2/oauth",
 			"revision": "afe77d958c701557ec5dc56f6936fcc194d15520"
@@ -452,6 +447,13 @@
 			"revisionTime": "2013-05-14T23:54:47-07:00"
 		},
 		{
+			"checksumSHA1": "jam7OmzX4/mUJkR3iOPW5/+2IQ4=",
+			"comment": "null-12",
+			"path": "github.com/pborman/uuid",
+			"revision": "c55201b036063326c5b1b89ccfe45a184973d073",
+			"revisionTime": "2016-02-16T16:37:10Z"
+		},
+		{
 			"path": "github.com/pmylund/go-cache",
 			"revision": "93d85800f2fa6bd0a739e7bd612bfa3bc008b72d"
 		},
@@ -637,5 +639,6 @@
 			"path": "speter.net/go/exp/math/dec/inf",
 			"revision": "42ca6cd68aa922bc3f32f1e056e61b65945d9ad7"
 		}
-	]
+	],
+	"rootPath": "github.com/remind101/empire"
 }

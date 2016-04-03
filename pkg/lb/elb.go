@@ -3,10 +3,10 @@ package lb
 import (
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/elb"
+	"github.com/pborman/uuid"
 	"golang.org/x/net/context"
 )
 

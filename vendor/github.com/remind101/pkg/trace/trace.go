@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
