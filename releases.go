@@ -230,6 +230,17 @@ func createFormation(db *gorm.DB, release *Release) error {
 	return nil
 }
 
+// currentFormations gets the current formations for an app
+func currentFormation(db *gorm.DB, app *App) (Formation, error) {
+	// Get the current release
+	current, err := releasesFind(db, ReleasesQuery{App: app})
+	if err != nil {
+		return nil, err
+	}
+	f := current.Formation()
+	return f, nil
+}
+
 // ReleasesLastVersion returns the last ReleaseVersion for the given App.
 func releasesLastVersion(db *gorm.DB, appID string) (int, error) {
 	var version int

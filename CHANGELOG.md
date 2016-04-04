@@ -15,6 +15,7 @@
 **Bugs**
 
 * `emp run` now works with unofficial Docker registries [#740](https://github.com/remind101/empire/pull/740).
+* `emp scale -l` now lists configured scale, not the running processes [#769](https://github.com/remind101/empire/pull/769)
 
 **Security**
 

@@ -92,23 +92,10 @@ func runScale(cmd *Command, args []string) {
 }
 
 func listScale(appname string) {
-	formationsMap := make(map[string]*heroku.Formation)
-	dynos, err := client.DynoList(appname, nil)
+	f, err := client.FormationList(appname, nil)
 	must(err)
-	for _, d := range dynos {
-		if _, ok := formationsMap[d.Type]; !ok {
-			formationsMap[d.Type] = &heroku.Formation{Type: d.Type, Size: d.Size}
-		}
 
-		f := formationsMap[d.Type]
-		f.Quantity++
-	}
-
-	formations := make(formationsByType, 0)
-	for _, f := range formationsMap {
-		formations = append(formations, *f)
-	}
-
+	formations := formationsByType(f)
 	sort.Sort(formations)
 	results := formatResults(formations)
 	log.Println(strings.Join(results, " "))
@@ -119,7 +106,7 @@ func formatResults(formations []heroku.Formation) []string {
 	rindex := 0
 	for _, f := range formations {
 		results[rindex] = f.Type + "=" + strconv.Itoa(f.Quantity) + ":" + f.Size
-		rindex += 1
+		rindex++
 	}
 	return results
 }
