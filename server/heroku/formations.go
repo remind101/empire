@@ -76,7 +76,7 @@ func (h *GetFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 
 	var resp []*Formation
-	for _, proc := range *formation {
+	for _, proc := range formation {
 		resp = append(resp, &Formation{
 			Type:     string(proc.Type),
 			Quantity: proc.Quantity,

@@ -545,8 +545,8 @@ func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
 }
 
 // ListScale lists the current scale settings for a given App
-func (e *Empire) ListScale(ctx context.Context, app *App) (*Formation, error) {
-	return GetCurrentFormations(e.db, app)
+func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
+	return currentFormation(e.db, app)
 }
 
 // Streamlogs streams logs from an app.
