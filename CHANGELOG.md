@@ -16,6 +16,7 @@
 
 * `emp run` now works with unofficial Docker registries [#740](https://github.com/remind101/empire/pull/740).
 * `emp scale -l` now lists configured scale, not the running processes [#769](https://github.com/remind101/empire/pull/769)
+* Fixed a bug where it was previously possible to create a signed access token with an empty username [#780](https://github.com/remind101/empire/pull/780)
 
 **Security**
 
