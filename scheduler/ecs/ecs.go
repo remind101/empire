@@ -238,20 +238,30 @@ func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.I
 		return instances, err
 	}
 
+	taskDefinitions := make(map[string]*ecs.TaskDefinition)
 	for _, t := range tasks {
-		resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
-			TaskDefinition: t.TaskDefinitionArn,
-		})
-		if err != nil {
-			return instances, err
+		k := *t.TaskDefinitionArn
+
+		if _, ok := taskDefinitions[k]; !ok {
+			resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
+				TaskDefinition: t.TaskDefinitionArn,
+			})
+			if err != nil {
+				return instances, err
+			}
+			taskDefinitions[k] = resp.TaskDefinition
 		}
+	}
+
+	for _, t := range tasks {
+		taskDefinition := taskDefinitions[*t.TaskDefinitionArn]
 
 		id, err := arn.ResourceID(*t.TaskArn)
 		if err != nil {
 			return instances, err
 		}
 
-		p, err := taskDefinitionToProcess(resp.TaskDefinition)
+		p, err := taskDefinitionToProcess(taskDefinition)
 		if err != nil {
 			return instances, err
 		}
