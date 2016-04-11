@@ -34,6 +34,31 @@ func TestMain(m *testing.M) {
 	empiretest.Run(m)
 }
 
+func TestEmpire_AccessTokens(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+
+	token := &empire.AccessToken{
+		User: &empire.User{Name: "ejholmes"},
+	}
+	_, err := e.AccessTokensCreate(token)
+	assert.NoError(t, err)
+
+	token, err = e.AccessTokensFind(token.Token)
+	assert.NoError(t, err)
+	assert.NotNil(t, token)
+	assert.Equal(t, "ejholmes", token.User.Name)
+
+	token, err = e.AccessTokensFind("invalid")
+	assert.NoError(t, err)
+	assert.Nil(t, token)
+
+	token = &empire.AccessToken{
+		User: &empire.User{Name: ""},
+	}
+	_, err = e.AccessTokensCreate(token)
+	assert.Equal(t, empire.ErrUserName, err)
+}
+
 func TestEmpire_CertsAttach(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
