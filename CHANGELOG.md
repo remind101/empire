@@ -17,6 +17,10 @@
 * `emp run` now works with unofficial Docker registries [#740](https://github.com/remind101/empire/pull/740).
 * `emp scale -l` now lists configured scale, not the running processes [#769](https://github.com/remind101/empire/pull/769)
 
+**Performance**
+
+* `emp ps` should be significantly faster for services running a lot of processes [#781](https://github.com/remind101/empire/pull/781)
+
 **Security**
 
 * Empire is now built with Go 1.5.3 to address [CVE-2015-8618](https://groups.google.com/forum/#!topic/golang-announce/MEATuOi_ei4) [#737](https://github.com/remind101/empire/pull/737).
