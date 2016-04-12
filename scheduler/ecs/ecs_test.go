@@ -130,7 +130,7 @@ func TestScheduler_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskArns":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+				Body:       `{"taskArns":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74571"]}`,
 			},
 		},
 
@@ -150,11 +150,11 @@ func TestScheduler_Instances(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTasks",
-				Body:       `{"cluster":"empire","tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570"]}`,
+				Body:       `{"cluster":"empire","tasks":["arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74571"]}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web","lastStatus":"RUNNING","startedAt": 1448419193}]}`,
+				Body:       `{"tasks":[{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74570","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web","lastStatus":"RUNNING","startedAt": 1448419193},{"taskArn":"arn:aws:ecs:us-east-1:249285743859:task/ae69bb4c-3903-4844-82fe-548ac5b74571","taskDefinitionArn":"arn:aws:ecs:us-east-1:249285743859:task-definition/1234--web","lastStatus":"RUNNING","startedAt": 1448419193}]}`,
 			},
 		},
 
@@ -178,8 +178,8 @@ func TestScheduler_Instances(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(instances) != 1 {
-		t.Fatal("expected 1 instance")
+	if len(instances) != 2 {
+		t.Fatal("expected 2 instances")
 	}
 
 	i := instances[0]

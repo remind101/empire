@@ -18,6 +18,10 @@
 * `emp scale -l` now lists configured scale, not the running processes [#769](https://github.com/remind101/empire/pull/769)
 * Fixed a bug where it was previously possible to create a signed access token with an empty username [#780](https://github.com/remind101/empire/pull/780)
 
+**Performance**
+
+* `emp ps` should be significantly faster for services running a lot of processes [#781](https://github.com/remind101/empire/pull/781)
+
 **Security**
 
 * Empire is now built with Go 1.5.3 to address [CVE-2015-8618](https://groups.google.com/forum/#!topic/golang-announce/MEATuOi_ei4) [#737](https://github.com/remind101/empire/pull/737).
