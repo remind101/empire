@@ -238,19 +238,9 @@ func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.I
 		return instances, err
 	}
 
-	taskDefinitions := make(map[string]*ecs.TaskDefinition)
-	for _, t := range tasks {
-		k := *t.TaskDefinitionArn
-
-		if _, ok := taskDefinitions[k]; !ok {
-			resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
-				TaskDefinition: t.TaskDefinitionArn,
-			})
-			if err != nil {
-				return instances, err
-			}
-			taskDefinitions[k] = resp.TaskDefinition
-		}
+	taskDefinitions, err := m.describeTaskDefinitions(ctx, tasks)
+	if err != nil {
+		return instances, err
 	}
 
 	for _, t := range tasks {
@@ -286,6 +276,41 @@ func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.I
 	}
 
 	return instances, nil
+}
+
+func (m *Scheduler) describeTaskDefinitions(ctx context.Context, tasks []*ecs.Task) (map[string]*ecs.TaskDefinition, error) {
+	taskDefinitions := make(map[string]*ecs.TaskDefinition)
+
+	for _, t := range tasks {
+		k := *t.TaskDefinitionArn
+		taskDefinitions[k] = nil
+	}
+
+	ch := make(chan struct {
+		resp *ecs.DescribeTaskDefinitionOutput
+		err  error
+	}, len(taskDefinitions))
+	for arn := range taskDefinitions {
+		go func(arn string) {
+			resp, err := m.ecs.DescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
+				TaskDefinition: aws.String(arn),
+			})
+			ch <- struct {
+				resp *ecs.DescribeTaskDefinitionOutput
+				err  error
+			}{resp, err}
+		}(arn)
+	}
+
+	for arn := range taskDefinitions {
+		result := <-ch
+		if err := result.err; err != nil {
+			return nil, err
+		}
+		taskDefinitions[arn] = result.resp.TaskDefinition
+	}
+
+	return taskDefinitions, nil
 }
 
 func (m *Scheduler) describeAppTasks(ctx context.Context, appID string) ([]*ecs.Task, error) {
