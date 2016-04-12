@@ -12,6 +12,15 @@ type AccessToken struct {
 	User  *User
 }
 
+// IsValid returns nil if the AccessToken is valid.
+func (t *AccessToken) IsValid() error {
+	if err := t.User.IsValid(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type accessTokensService struct {
 	Secret []byte // Secret used to sign jwt tokens.
 }
@@ -26,7 +35,7 @@ func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessTok
 
 	token.Token = signed
 
-	return token, nil
+	return token, token.IsValid()
 }
 
 func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
@@ -44,7 +53,7 @@ func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, erro
 		at.Token = token
 	}
 
-	return at, nil
+	return at, at.IsValid()
 }
 
 // SignToken jwt signs the token and adds the signature to the Token field.
