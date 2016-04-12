@@ -50,8 +50,9 @@ func NewStackBuilder(config client.ConfigProvider) *StackBuilder {
 
 // Build creates or updates ECS services for the app.
 func (b *StackBuilder) Build(manifest twelvefactor.Manifest) error {
-	// TODO: Remove old services not in the manifest
+	// TODO(ejholmes): Remove old services not in the manifest
 	for _, process := range manifest.Processes {
+		// TODO(ejholmes): Parallize this.
 		if err := b.CreateService(manifest.App, process); err != nil {
 			return err
 		}
@@ -79,6 +80,8 @@ func (b *StackBuilder) CreateService(app twelvefactor.App, process twelvefactor.
 	return err
 }
 
+// RegisterTaskDefinition registers a new ECS task definition for the
+// app/process.
 func (b *StackBuilder) RegisterTaskDefinition(app twelvefactor.App, process twelvefactor.Process) (string, error) {
 	family := b.TaskDefinitionName(app, process)
 
@@ -125,7 +128,7 @@ func (b *StackBuilder) Remove(app string) error {
 	}
 
 	for _, service := range services {
-		// TODO: Parallelize
+		// TODO(ejholmes): Parallelize
 		if err := b.RemoveService(service); err != nil {
 			return err
 		}
@@ -145,7 +148,7 @@ func (b *StackBuilder) RemoveService(service string) error {
 		return err
 	}
 
-	// TODO: Wait until https://github.com/aws/aws-sdk-go/issues/457 is
+	// TODO(ejholmes): Wait until https://github.com/aws/aws-sdk-go/issues/457 is
 	// resolved.
 
 	if _, err := b.ecs.DeleteService(&ecs.DeleteServiceInput{

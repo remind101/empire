@@ -3,12 +3,14 @@ package ecs
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/aws/arn"
+	"github.com/remind101/empire/pkg/bytesize"
 )
 
 // ProcessNotFoundError is returned when attempting to operate on a process that
@@ -74,7 +76,7 @@ func (s *Scheduler) Restart(app string) error {
 	}
 
 	for _, service := range services {
-		// TODO: Parallelize
+		// TODO(ejholmes): Parallelize
 		if err := s.RestartService(service); err != nil {
 			return err
 		}
@@ -127,6 +129,7 @@ func (s *Scheduler) Tasks(app string) ([]twelvefactor.Task, error) {
 
 	var tasks []twelvefactor.Task
 	for _, service := range services {
+		// TODO(ejholmes): Parallelize this.
 		serviceTasks, err := s.ServiceTasks(service)
 		if err != nil {
 			return tasks, err
@@ -183,6 +186,7 @@ func (s *Scheduler) TaskDefinition(service string) (*ecs.TaskDefinition, error) 
 		return nil, err
 	}
 
+	// TODO(ejholmes): Handle unexpected length.
 	taskDefinition := serviceResp.Services[0].TaskDefinition
 	descResp, err := s.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: taskDefinition,
@@ -191,7 +195,7 @@ func (s *Scheduler) TaskDefinition(service string) (*ecs.TaskDefinition, error) 
 		return nil, err
 	}
 
-	// TODO: Handle Failures
+	// TODO(ejholmes): Handle Failures
 	return descResp.TaskDefinition, nil
 }
 
@@ -226,6 +230,11 @@ func (s *Scheduler) ServiceTasks(service string) ([]twelvefactor.Task, error) {
 		return nil, nil
 	}
 
+	taskDefinition, err := s.TaskDefinition(service)
+	if err != nil {
+		return nil, err
+	}
+
 	describeResp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: aws.String(s.Cluster),
 		Tasks:   listResp.TaskArns,
@@ -241,9 +250,33 @@ func (s *Scheduler) ServiceTasks(service string) ([]twelvefactor.Task, error) {
 			return nil, err
 		}
 
+		state := *task.LastStatus
+		var updatedAt time.Time
+		switch state {
+		case "PENDING":
+			updatedAt = *task.CreatedAt
+		case "RUNNING":
+			updatedAt = *task.StartedAt
+		case "STOPPED":
+			updatedAt = *task.StoppedAt
+		}
+
+		containerDefinition := *taskDefinition.ContainerDefinitions[0]
+
+		var command []string
+		for _, s := range containerDefinition.Command {
+			command = append(command, *s)
+		}
+
 		tasks = append(tasks, twelvefactor.Task{
-			ID:    id,
-			State: *task.LastStatus,
+			ID:        id,
+			Version:   "TODO",
+			State:     state,
+			UpdatedAt: updatedAt,
+			Process:   *containerDefinition.Name,
+			Command:   command,
+			Memory:    int(*containerDefinition.Memory) * int(bytesize.MB),
+			CPUShares: int(*containerDefinition.Cpu),
 		})
 	}
 

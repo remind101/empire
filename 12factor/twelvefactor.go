@@ -88,6 +88,15 @@ type Task struct {
 
 	// The time that this state was recorded at.
 	UpdatedAt time.Time
+
+	// The command that this task is running.
+	Command []string
+
+	// The amount of memory allocated to this task, in bytes.
+	Memory int
+
+	// The number of CPU Shares allocated to this task.
+	CPUShares int
 }
 
 // Exposure represents a service that a process exposes, like HTTP/HTTPS/TCP or

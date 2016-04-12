@@ -2,6 +2,7 @@ package ecs
 
 import (
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -91,6 +92,28 @@ func TestScheduler_Tasks(t *testing.T) {
 			aws.String("arn:aws:ecs:us-east-1:012345678910:task/0b69d5c0-d655-4695-98cd-5d2d526d9d5a"),
 		},
 	}, nil)
+	c.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("app--web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:1")},
+		},
+	}, nil)
+	c.On("DescribeTaskDefinition", &ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String("arn:aws:ecs:us-west-2:012345678910:task-definition/app--web:1"),
+	}).Return(&ecs.DescribeTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			ContainerDefinitions: []*ecs.ContainerDefinition{
+				{
+					Name:    aws.String("web"),
+					Command: []*string{aws.String("./bin/web")},
+					Memory:  aws.Int64(5),
+					Cpu:     aws.Int64(256),
+				},
+			},
+		},
+	}, nil)
 	c.On("DescribeTasks", &ecs.DescribeTasksInput{
 		Cluster: aws.String("cluster"),
 		Tasks: []*string{
@@ -101,6 +124,7 @@ func TestScheduler_Tasks(t *testing.T) {
 			{
 				TaskArn:    aws.String("arn:aws:ecs:us-east-1:012345678910:task/0b69d5c0-d655-4695-98cd-5d2d526d9d5a"),
 				LastStatus: aws.String("RUNNING"),
+				StartedAt:  aws.Time(time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)),
 			},
 		},
 	}, nil)
@@ -108,8 +132,14 @@ func TestScheduler_Tasks(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, tasks, []twelvefactor.Task{
 		{
-			ID:    "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
-			State: "RUNNING",
+			ID:        "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
+			Version:   "TODO",
+			Process:   "web",
+			State:     "RUNNING",
+			UpdatedAt: time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
+			Command:   []string{"./bin/web"},
+			Memory:    5242880,
+			CPUShares: 256,
 		},
 	})
 }

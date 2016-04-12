@@ -12,7 +12,7 @@ type Upper interface {
 }
 
 // ProcessRunner is an optional interface for running attached and detached
-// processes. This is usefuly for running attached processes like a rails
+// processes. This is useful for running attached processes like a rails
 // console or detached processes like database migrations.
 //
 // Attached vs Detached is determined from the Stdout stream.
