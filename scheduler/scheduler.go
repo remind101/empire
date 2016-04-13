@@ -85,9 +85,6 @@ type Process struct {
 	// ulimit -u
 	Nproc uint
 
-	// A load balancer to attach to the process.
-	LoadBalancer string
-
 	// An SSL Cert associated with this process.
 	SSLCert string
 }

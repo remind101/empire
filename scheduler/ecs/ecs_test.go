@@ -13,6 +13,9 @@ import (
 	"github.com/remind101/empire/pkg/awsutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/scheduler/ecs/lb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
 )
 
@@ -80,6 +83,13 @@ func TestScheduler_Submit(t *testing.T) {
 	})
 	m, s := newTestScheduler(h)
 	defer s.Close()
+
+	m.lb.(*mockLBManager).On("LoadBalancers", map[string]string{
+		"AppID":       "1234",
+		"ProcessType": "web",
+	}).Return([]*lb.LoadBalancer{
+		{Name: "lb-1234", InstancePort: 8080},
+	}, nil)
 
 	if err := m.Submit(context.Background(), fakeApp); err != nil {
 		t.Fatal(err)
@@ -265,6 +275,11 @@ func TestScheduler_Remove(t *testing.T) {
 	})
 	m, s := newTestScheduler(h)
 	defer s.Close()
+
+	m.lb.(*mockLBManager).On("LoadBalancers", map[string]string{
+		"AppID":       "1234",
+		"ProcessType": "web",
+	}).Return([]*lb.LoadBalancer{}, nil)
 
 	if err := m.Remove(context.Background(), "1234"); err != nil {
 		t.Fatal(err)
@@ -483,6 +498,206 @@ func TestDiffProcessTypes(t *testing.T) {
 	}
 }
 
+func TestScheduler_LoadBalancer_NoExposure(t *testing.T) {
+	l := new(mockLBManager)
+	s := &Scheduler{
+		lb: l,
+	}
+
+	app := &scheduler.App{}
+	process := &scheduler.Process{}
+
+	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
+	assert.NoError(t, err)
+	assert.Equal(t, "", loadBalancer)
+
+	l.AssertExpectations(t)
+}
+
+func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
+	l := new(mockLBManager)
+	s := &Scheduler{
+		lb: l,
+	}
+
+	port := int64(8080)
+	app := &scheduler.App{
+		ID:   "appid",
+		Name: "appname",
+	}
+	process := &scheduler.Process{
+		Type:     "web",
+		Exposure: scheduler.ExposePrivate,
+		Ports: []scheduler.PortMap{
+			{Host: &port},
+		},
+	}
+
+	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{}, nil)
+	l.On("CreateLoadBalancer", lb.CreateLoadBalancerOpts{
+		InstancePort: 8080,
+		Tags:         map[string]string{"AppID": "appid", "ProcessType": "web", "App": "appname"},
+		External:     false,
+	}).Return(&lb.LoadBalancer{
+		Name: "lbname",
+	}, nil)
+
+	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
+	assert.NoError(t, err)
+	assert.Equal(t, "lbname", loadBalancer)
+
+	l.AssertExpectations(t)
+}
+
+func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
+	l := new(mockLBManager)
+	s := &Scheduler{
+		lb: l,
+	}
+
+	port := int64(8080)
+	app := &scheduler.App{
+		ID:   "appid",
+		Name: "appname",
+	}
+	process := &scheduler.Process{
+		Type:     "web",
+		Exposure: scheduler.ExposePublic,
+		Ports: []scheduler.PortMap{
+			{Host: &port},
+		},
+	}
+
+	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
+		{Name: "lbname", InstancePort: 8080, External: true},
+	}, nil)
+
+	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
+	assert.NoError(t, err)
+	assert.Equal(t, "lbname", loadBalancer)
+
+	l.AssertExpectations(t)
+}
+
+func TestScheduler_LoadBalancer_ExistingLoadBalancer_MismatchedExposure(t *testing.T) {
+	l := new(mockLBManager)
+	s := &Scheduler{
+		lb: l,
+	}
+
+	port := int64(8080)
+	app := &scheduler.App{
+		ID:   "appid",
+		Name: "appname",
+	}
+	process := &scheduler.Process{
+		Type:     "web",
+		Exposure: scheduler.ExposePublic,
+		Ports: []scheduler.PortMap{
+			{Host: &port},
+		},
+	}
+
+	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
+		{Name: "lbname", External: false},
+	}, nil)
+
+	_, err := s.loadBalancer(context.Background(), app, process)
+	assert.EqualError(t, err, "Process web is public, but load balancer is private. An update would require me to delete the load balancer.")
+
+	l.AssertExpectations(t)
+}
+
+func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewCert(t *testing.T) {
+	l := new(mockLBManager)
+	s := &Scheduler{
+		lb: l,
+	}
+
+	port := int64(8080)
+	app := &scheduler.App{
+		ID:   "appid",
+		Name: "appname",
+	}
+	process := &scheduler.Process{
+		Type:     "web",
+		Exposure: scheduler.ExposePublic,
+		Ports: []scheduler.PortMap{
+			{Host: &port},
+		},
+		SSLCert: "newcert",
+	}
+
+	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
+		{Name: "lbname", External: true, SSLCert: "oldcert", InstancePort: port},
+	}, nil)
+	newcert := "newcert"
+	l.On("UpdateLoadBalancer", lb.UpdateLoadBalancerOpts{
+		Name:    "lbname",
+		SSLCert: &newcert,
+	}).Return(nil)
+
+	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
+	assert.NoError(t, err)
+	assert.Equal(t, "lbname", loadBalancer)
+
+	l.AssertExpectations(t)
+}
+
+func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewPort(t *testing.T) {
+	l := new(mockLBManager)
+	s := &Scheduler{
+		lb: l,
+	}
+
+	oldport := int64(8080)
+	newport := int64(8081)
+	app := &scheduler.App{
+		ID:   "appid",
+		Name: "appname",
+	}
+	process := &scheduler.Process{
+		Type:     "web",
+		Exposure: scheduler.ExposePublic,
+		Ports: []scheduler.PortMap{
+			{Host: &newport},
+		},
+	}
+
+	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
+		{Name: "lbname", External: true, InstancePort: oldport},
+	}, nil)
+
+	_, err := s.loadBalancer(context.Background(), app, process)
+	assert.EqualError(t, err, "Process web instance port is 8081, but load balancer instance port is 8080.")
+
+	l.AssertExpectations(t)
+}
+
+type mockLBManager struct {
+	mock.Mock
+}
+
+func (m *mockLBManager) CreateLoadBalancer(ctx context.Context, opts lb.CreateLoadBalancerOpts) (*lb.LoadBalancer, error) {
+	args := m.Called(opts)
+	return args.Get(0).(*lb.LoadBalancer), args.Error(1)
+}
+
+func (m *mockLBManager) UpdateLoadBalancer(ctx context.Context, opts lb.UpdateLoadBalancerOpts) error {
+	args := m.Called(opts)
+	return args.Error(0)
+}
+
+func (m *mockLBManager) DestroyLoadBalancer(ctx context.Context, lb *lb.LoadBalancer) error {
+	args := m.Called(lb)
+	return args.Error(0)
+}
+
+func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]string) ([]*lb.LoadBalancer, error) {
+	args := m.Called(tags)
+	return args.Get(0).([]*lb.LoadBalancer), args.Error(1)
+}
+
 // fake app for testing.
 var fakeApp = &scheduler.App{
 	ID: "1234",
@@ -511,7 +726,7 @@ var fakeApp = &scheduler.App{
 func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	m, err := NewScheduler(Config{
+	sched, err := NewScheduler(Config{
 		AWS: session.New(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    aws.String(s.URL),
@@ -519,10 +734,11 @@ func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 		}),
 		Cluster: "empire",
 	})
+	sched.lb = new(mockLBManager)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return m, s
+	return sched, s
 }
