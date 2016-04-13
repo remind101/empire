@@ -397,6 +397,8 @@ func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App,
 	return m.createService(ctx, app, p)
 }
 
+// loadBalancer creates (or updates) a a load balancer for the given process, if
+// the process is exposed. It returns the name of the load balancer.
 func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *scheduler.Process) (string, error) {
 	if p.Exposure > scheduler.ExposeNone {
 		// Attempt to find an existing load balancer for this app.
