@@ -13,6 +13,7 @@ import (
 	"github.com/remind101/empire/pkg/awsutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/scheduler/ecs/lb"
 	"golang.org/x/net/context"
 )
 
@@ -511,7 +512,7 @@ var fakeApp = &scheduler.App{
 func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 	s := httptest.NewServer(h)
 
-	m, err := NewScheduler(Config{
+	sched, err := NewScheduler(Config{
 		AWS: session.New(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(" ", " ", " "),
 			Endpoint:    aws.String(s.URL),
@@ -519,10 +520,29 @@ func newTestScheduler(h http.Handler) (*Scheduler, *httptest.Server) {
 		}),
 		Cluster: "empire",
 	})
+	sched.lb = new(mockLBManager)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return m, s
+	return sched, s
+}
+
+type mockLBManager struct{}
+
+func (m *mockLBManager) CreateLoadBalancer(context.Context, lb.CreateLoadBalancerOpts) (*lb.LoadBalancer, error) {
+	return nil, nil
+}
+
+func (m *mockLBManager) UpdateLoadBalancer(context.Context, lb.UpdateLoadBalancerOpts) error {
+	return nil
+}
+
+func (m *mockLBManager) DestroyLoadBalancer(ctx context.Context, lb *lb.LoadBalancer) error {
+	return nil
+}
+
+func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]string) ([]*lb.LoadBalancer, error) {
+	return nil, nil
 }

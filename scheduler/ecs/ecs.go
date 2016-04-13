@@ -17,36 +17,21 @@ import (
 	"github.com/remind101/empire/pkg/arn"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/ecsutil"
-	"github.com/remind101/empire/pkg/lb"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/scheduler/ecs/lb"
 	"golang.org/x/net/context"
 )
 
 var DefaultDelimiter = "-"
 
-// ProcessManager is a lower level interface than Scheduler, that provides direct
-// control over individual processes.
-type ProcessManager interface {
-	scheduler.Scaler
-	scheduler.Runner
-
-	// CreateProcess creates a process for the app.
-	CreateProcess(ctx context.Context, app *scheduler.App, process *scheduler.Process) error
-
-	// RemoveProcess removes a process for the app.
-	RemoveProcess(ctx context.Context, app string, process string) error
-
-	// Processes returns all processes for the app.
-	Processes(ctx context.Context, app string) ([]*scheduler.Process, error)
-}
-
 // Scheduler is an implementation of the ServiceManager interface that
 // is backed by Amazon ECS.
 type Scheduler struct {
-	ProcessManager
-
-	cluster string
-	ecs     *ecsutil.Client
+	cluster          string
+	serviceRole      string
+	ecs              *ecsutil.Client
+	logConfiguration *ecs.LogConfiguration
+	lb               lb.Manager
 }
 
 // Config holds configuration for generating a new ECS backed Scheduler
@@ -83,25 +68,22 @@ type Config struct {
 	LogConfiguration *ecs.LogConfiguration
 }
 
-// NewScheduler returns a new Scehduler implementation that:
-//
-// * Creates services with ECS.
-func NewScheduler(config Config) (*Scheduler, error) {
+func newScheduler(config Config) *Scheduler {
 	c := ecsutil.NewClient(config.AWS)
 
-	// Create the ECS Scheduler
-	var pm ProcessManager = &ecsProcessManager{
+	return &Scheduler{
 		cluster:          config.Cluster,
 		serviceRole:      config.ServiceRole,
 		ecs:              c,
 		logConfiguration: config.LogConfiguration,
 	}
+}
 
-	return &Scheduler{
-		cluster:        config.Cluster,
-		ProcessManager: pm,
-		ecs:            c,
-	}, nil
+// NewScheduler returns a new Scheduler implementation that:
+//
+// * Creates services with ECS.
+func NewScheduler(config Config) (*Scheduler, error) {
+	return newScheduler(config), nil
 }
 
 // NewLoadBalancedScheduler returns a new Scheduler instance that:
@@ -110,18 +92,19 @@ func NewScheduler(config Config) (*Scheduler, error) {
 // * Creates internal or external ELBs for ECS services.
 // * Creates a CNAME record in route53 under the internal TLD.
 func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
-	if err := validateLoadBalancedConfig(config); err != nil {
+	lb, err := newLBManager(config)
+	if err != nil {
 		return nil, err
 	}
 
-	c := ecsutil.NewClient(config.AWS)
+	s := newScheduler(config)
+	s.lb = lb
+	return s, nil
+}
 
-	// Create the ECS Scheduler
-	var pm ProcessManager = &ecsProcessManager{
-		cluster:          config.Cluster,
-		serviceRole:      config.ServiceRole,
-		ecs:              c,
-		logConfiguration: config.LogConfiguration,
+func newLBManager(config Config) (lb.Manager, error) {
+	if err := validateLoadBalancedConfig(config); err != nil {
+		return nil, err
 	}
 
 	// Create the ELB Manager
@@ -140,16 +123,7 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 	lbm = lb.WithCNAME(lbm, n)
 	lbm = lb.WithLogging(lbm)
 
-	pm = &LBProcessManager{
-		ProcessManager: pm,
-		lb:             lbm,
-	}
-
-	return &Scheduler{
-		cluster:        config.Cluster,
-		ProcessManager: pm,
-		ecs:            c,
-	}, nil
+	return lbm, nil
 }
 
 func validateLoadBalancedConfig(c Config) error {
@@ -315,19 +289,8 @@ func (m *Scheduler) Stop(ctx context.Context, instanceID string) error {
 	return err
 }
 
-var _ ProcessManager = &ecsProcessManager{}
-
-// ecsProcessManager is an implementation of the ProcessManager interface that
-// creates ECS services for Processes.
-type ecsProcessManager struct {
-	cluster          string
-	serviceRole      string
-	ecs              *ecsutil.Client
-	logConfiguration *ecs.LogConfiguration
-}
-
 // CreateProcess creates an ECS service for the process.
-func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
+func (m *Scheduler) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
 	if _, err := m.createTaskDefinition(ctx, app, p); err != nil {
 		return err
 	}
@@ -336,7 +299,7 @@ func (m *ecsProcessManager) CreateProcess(ctx context.Context, app *scheduler.Ap
 	return err
 }
 
-func (m *ecsProcessManager) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
 	if out != nil {
 		return errors.New("running an attached process is not implemented by the ECS manager.")
 	}
@@ -356,7 +319,7 @@ func (m *ecsProcessManager) Run(ctx context.Context, app *scheduler.App, process
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
-func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process) (*ecs.TaskDefinition, error) {
+func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process) (*ecs.TaskDefinition, error) {
 	taskDef, err := taskDefinitionInput(process, m.logConfiguration)
 	if err != nil {
 		return nil, err
@@ -367,16 +330,21 @@ func (m *ecsProcessManager) createTaskDefinition(ctx context.Context, app *sched
 }
 
 // createService creates a Service in ECS for the service.
-func (m *ecsProcessManager) createService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
+func (m *Scheduler) createService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
 	var role *string
 	var loadBalancers []*ecs.LoadBalancer
 
-	if p.LoadBalancer != "" {
+	loadBalancer, err := m.loadBalancer(ctx, app, p)
+	if err != nil {
+		return nil, err
+	}
+
+	if loadBalancer != "" {
 		loadBalancers = []*ecs.LoadBalancer{
 			{
 				ContainerName:    aws.String(p.Type),
 				ContainerPort:    p.Ports[0].Container,
-				LoadBalancerName: aws.String(p.LoadBalancer),
+				LoadBalancerName: aws.String(loadBalancer),
 			},
 		}
 		role = aws.String(m.serviceRole)
@@ -394,7 +362,7 @@ func (m *ecsProcessManager) createService(ctx context.Context, app *scheduler.Ap
 }
 
 // updateService updates an existing Service in ECS.
-func (m *ecsProcessManager) updateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
+func (m *Scheduler) updateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
 	resp, err := m.ecs.UpdateAppService(ctx, app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Int64(int64(p.Instances)),
@@ -411,7 +379,7 @@ func (m *ecsProcessManager) updateService(ctx context.Context, app *scheduler.Ap
 }
 
 // updateCreateService will perform an upsert for the service in ECS.
-func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
+func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
 	s, err := m.updateService(ctx, app, p)
 	if err != nil {
 		return nil, err
@@ -424,7 +392,83 @@ func (m *ecsProcessManager) updateCreateService(ctx context.Context, app *schedu
 	return m.createService(ctx, app, p)
 }
 
-func (m *ecsProcessManager) Processes(ctx context.Context, appID string) ([]*scheduler.Process, error) {
+func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *scheduler.Process) (string, error) {
+	if p.Exposure > scheduler.ExposeNone {
+		// Attempt to find an existing load balancer for this app.
+		l, err := m.findLoadBalancer(ctx, app.ID, p.Type)
+		if err != nil {
+			return "", err
+		}
+
+		// If the load balancer doesn't match the exposure that we
+		// want, we'll return an error. Users should manually destroy
+		// the app and re-create it with the proper exposure.
+		if l != nil {
+			var opts *lb.UpdateLoadBalancerOpts
+			opts, err = updateOpts(p, l)
+			if err != nil {
+				return "", err
+			}
+
+			if opts != nil {
+				if err = m.lb.UpdateLoadBalancer(ctx, *opts); err != nil {
+					return "", err
+				}
+			}
+		}
+
+		// If this app doesn't have a load balancer yet, create one.
+		if l == nil {
+			tags := lbTags(app.ID, p.Type)
+
+			// Add "App" tag so that a CNAME can be created.
+			tags[lb.AppTag] = app.Name
+
+			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
+				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
+				External:     p.Exposure == scheduler.ExposePublic,
+				SSLCert:      p.SSLCert,
+				Tags:         tags,
+			})
+			if err != nil {
+				return "", err
+			}
+		}
+
+		return l.Name, nil
+	}
+
+	return "", nil
+}
+
+func (m *Scheduler) removeLoadBalancer(ctx context.Context, app string, p string) error {
+	l, err := m.findLoadBalancer(ctx, app, p)
+	if err != nil {
+		// TODO: Maybe we shouldn't care here.
+		return err
+	}
+
+	if l != nil {
+		if err := m.lb.DestroyLoadBalancer(ctx, l); err != nil {
+			// TODO: Maybe we shouldn't care here.
+			return err
+		}
+	}
+
+	return nil
+}
+
+// findLoadBalancer attempts to find an existing load balancer for the app.
+func (m *Scheduler) findLoadBalancer(ctx context.Context, app string, process string) (*lb.LoadBalancer, error) {
+	lbs, err := m.lb.LoadBalancers(ctx, lbTags(app, process))
+	if err != nil || len(lbs) == 0 {
+		return nil, err
+	}
+
+	return lbs[0], nil
+}
+
+func (m *Scheduler) Processes(ctx context.Context, appID string) ([]*scheduler.Process, error) {
 	var processes []*scheduler.Process
 
 	list, err := m.ecs.ListAppServices(ctx, appID, &ecs.ListServicesInput{
@@ -465,7 +509,7 @@ func (m *ecsProcessManager) Processes(ctx context.Context, appID string) ([]*sch
 	return processes, nil
 }
 
-func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, process string) error {
+func (m *Scheduler) RemoveProcess(ctx context.Context, app string, process string) error {
 	if err := m.Scale(ctx, app, process, 0); noService(err) {
 		return nil
 	} else if err != nil {
@@ -480,11 +524,15 @@ func (m *ecsProcessManager) RemoveProcess(ctx context.Context, app string, proce
 		return nil
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return m.removeLoadBalancer(ctx, app, process)
 }
 
 // Scale scales an ECS service to the desired number of instances.
-func (m *ecsProcessManager) Scale(ctx context.Context, app string, process string, instances uint) error {
+func (m *Scheduler) Scale(ctx context.Context, app string, process string, instances uint) error {
 	_, err := m.ecs.UpdateAppService(ctx, app, &ecs.UpdateServiceInput{
 		Cluster:      aws.String(m.cluster),
 		DesiredCount: aws.Int64(int64(instances)),
@@ -660,4 +708,81 @@ func processTypes(processes []*scheduler.Process) map[string]struct{} {
 	}
 
 	return m
+}
+
+// lbTags returns the tags that should be attached to the load balancer so that
+// we can find it later.
+func lbTags(app string, process string) map[string]string {
+	return map[string]string{
+		"AppID":       app,
+		"ProcessType": process,
+	}
+}
+
+// LoadBalancerExposureError is returned when the exposure of the process in the data store does not match the exposure of the ELB
+type LoadBalancerExposureError struct {
+	proc *scheduler.Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *LoadBalancerExposureError) Error() string {
+	var lbExposure string
+	if !e.lb.External {
+		lbExposure = "private"
+	} else {
+		lbExposure = "public"
+	}
+
+	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, e.proc.Exposure, lbExposure)
+}
+
+// LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
+type LoadBalancerPortMismatchError struct {
+	proc *scheduler.Process
+	lb   *lb.LoadBalancer
+}
+
+func (e *LoadBalancerPortMismatchError) Error() string {
+	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, *e.proc.Ports[0].Host, e.lb.InstancePort)
+}
+
+// canUpdate checks if the load balancer is suitable for the process.
+func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
+	if p.Exposure == scheduler.ExposePublic && !lb.External {
+		return &LoadBalancerExposureError{p, lb}
+	}
+
+	if p.Exposure == scheduler.ExposePrivate && lb.External {
+		return &LoadBalancerExposureError{p, lb}
+	}
+
+	if *p.Ports[0].Host != lb.InstancePort {
+		return &LoadBalancerPortMismatchError{p, lb}
+	}
+
+	return nil
+}
+
+func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) (*lb.UpdateLoadBalancerOpts, error) {
+	// This load balancer can't be updated to make it work for the process.
+	// Return an error.
+	if err := canUpdate(p, b); err != nil {
+		return nil, err
+	}
+
+	opts := lb.UpdateLoadBalancerOpts{
+		Name: b.Name,
+	}
+
+	// Requires an update to the Cert.
+	if p.SSLCert != b.SSLCert {
+		opts.SSLCert = &p.SSLCert
+	}
+
+	// Load balancer doesn't require an update.
+	if opts.SSLCert == nil {
+		return nil, nil
+	}
+
+	return &opts, nil
 }
