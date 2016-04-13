@@ -363,6 +363,11 @@ func (m *Scheduler) createService(ctx context.Context, app *scheduler.App, p *sc
 
 // updateService updates an existing Service in ECS.
 func (m *Scheduler) updateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
+	_, err := m.loadBalancer(ctx, app, p)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := m.ecs.UpdateAppService(ctx, app.ID, &ecs.UpdateServiceInput{
 		Cluster:        aws.String(m.cluster),
 		DesiredCount:   aws.Int64(int64(p.Instances)),
