@@ -19,6 +19,16 @@ var defaultConnectionDrainingTimeout int64 = 30
 
 var _ Manager = &ELBManager{}
 
+// elbClient describes the interface from elb.ELB that we use.
+type elbClient interface {
+	CreateLoadBalancer(input *elb.CreateLoadBalancerInput) (*elb.CreateLoadBalancerOutput, error)
+	ModifyLoadBalancerAttributes(input *elb.ModifyLoadBalancerAttributesInput) (*elb.ModifyLoadBalancerAttributesOutput, error)
+	SetLoadBalancerListenerSSLCertificate(input *elb.SetLoadBalancerListenerSSLCertificateInput) (*elb.SetLoadBalancerListenerSSLCertificateOutput, error)
+	DeleteLoadBalancer(input *elb.DeleteLoadBalancerInput) (*elb.DeleteLoadBalancerOutput, error)
+	DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (*elb.DescribeLoadBalancersOutput, error)
+	DescribeTags(input *elb.DescribeTagsInput) (*elb.DescribeTagsOutput, error)
+}
+
 // ELBManager is an implementation of the Manager interface that creates Elastic
 // Load Balancers.
 type ELBManager struct {
@@ -34,7 +44,7 @@ type ELBManager struct {
 	// The Subnet IDs to assign when creating external load balancers.
 	ExternalSubnetIDs []string
 
-	elb *elb.ELB
+	elb elbClient
 
 	// Ports is the PortAllocator used to allocate ports to new load
 	// balancers.

@@ -1,156 +1,83 @@
 package lb
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/remind101/empire/pkg/awsutil"
+	"github.com/aws/aws-sdk-go/service/elb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
 )
 
 func TestELB_CreateLoadBalancer(t *testing.T) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=CreateLoadBalancer&Listeners.member.1.InstancePort=9000&Listeners.member.1.InstanceProtocol=http&Listeners.member.1.LoadBalancerPort=80&Listeners.member.1.Protocol=http&LoadBalancerName=acme-inc&Scheme=internet-facing&SecurityGroups.member.1=&Subnets.member.1=public-subnet&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<?xml version="1.0"?>
-<CreateLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
-	<DNSName>acme-inc.us-east-1.elb.amazonaws.com</DNSName>
-</CreateLoadBalancerResponse>`,
-			},
-		},
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=ModifyLoadBalancerAttributes&LoadBalancerAttributes.ConnectionDraining.Enabled=true&LoadBalancerAttributes.ConnectionDraining.Timeout=30&LoadBalancerAttributes.CrossZoneLoadBalancing.Enabled=true&LoadBalancerName=acme-inc&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<?xml version="1.0"?>
-<ModifyLoadBalancerAttributesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
-</ModifyLoadBalancerAttributesResponse>`,
+	c := new(mockELBClient)
+	m := newTestELBManager()
+	m.elb = c
+
+	c.On("CreateLoadBalancer", &elb.CreateLoadBalancerInput{
+		LoadBalancerName: aws.String("acme-inc"),
+		Scheme:           aws.String("internet-facing"),
+		SecurityGroups:   []*string{aws.String("")},
+		Subnets:          []*string{aws.String("public-subnet")},
+		Listeners: []*elb.Listener{
+			{
+				InstancePort:     aws.Int64(9000),
+				InstanceProtocol: aws.String("http"),
+				LoadBalancerPort: aws.Int64(80),
+				Protocol:         aws.String("http"),
 			},
 		},
-	})
-	m, s := newTestELBManager(h)
-	defer s.Close()
+	}).Return(&elb.CreateLoadBalancerOutput{
+		DNSName: aws.String("acme-inc.us-east-1.elb.amazonaws.com"),
+	}, nil)
+
+	c.On("ModifyLoadBalancerAttributes", &elb.ModifyLoadBalancerAttributesInput{
+		LoadBalancerName: aws.String("acme-inc"),
+		LoadBalancerAttributes: &elb.LoadBalancerAttributes{
+			ConnectionDraining: &elb.ConnectionDraining{
+				Enabled: aws.Bool(true),
+				Timeout: aws.Int64(30),
+			},
+			CrossZoneLoadBalancing: &elb.CrossZoneLoadBalancing{
+				Enabled: aws.Bool(true),
+			},
+		},
+	}).Return(&elb.ModifyLoadBalancerAttributesOutput{}, nil)
 
 	lb, err := m.CreateLoadBalancer(context.Background(), CreateLoadBalancerOpts{
 		External: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, lb)
 
-	expected := &LoadBalancer{
-		Name:         "acme-inc",
-		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
-		InstancePort: 9000,
-		External:     true,
-	}
-
-	if got, want := lb, expected; !reflect.DeepEqual(got, want) {
-		t.Fatalf("LoadBalancer => %v; want %v", got, want)
-	}
+	c.AssertExpectations(t)
 }
 
 func TestELB_UpdateLoadBalancer(t *testing.T) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=SetLoadBalancerListenerSSLCertificate&LoadBalancerName=loadbalancer&LoadBalancerPort=443&SSLCertificateId=newcert&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<?xml version="1.0"?>
-<UpdateLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
-</UpdateLoadBalancerResponse>`,
-			},
-		},
-	})
-	m, s := newTestELBManager(h)
-	defer s.Close()
+	c := new(mockELBClient)
+	m := newTestELBManager()
+	m.elb = c
+
+	c.On("SetLoadBalancerListenerSSLCertificate", &elb.SetLoadBalancerListenerSSLCertificateInput{
+		LoadBalancerName: aws.String("acme-inc"),
+		LoadBalancerPort: aws.Int64(443),
+		SSLCertificateId: aws.String("newcert"),
+	}).Return(&elb.SetLoadBalancerListenerSSLCertificateOutput{}, nil)
 
 	err := m.UpdateLoadBalancer(context.Background(), UpdateLoadBalancerOpts{
-		Name:    "loadbalancer",
+		Name:    "acme-inc",
 		SSLCert: aws.String("newcert"),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
 }
 
-func buildLoadBalancerForDestroy() (*ELBManager, *httptest.Server, *LoadBalancer) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&PageSize=20&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
-	  <DescribeLoadBalancersResult>
-	    <NextMarker>
-	      abcd
-	    </NextMarker>
-	    <LoadBalancerDescriptions>
-	      <member>
-	        <SecurityGroups>
-	          <member>sg-1</member>
-	        </SecurityGroups>
-	        <LoadBalancerName>foo</LoadBalancerName>
-		<DNSName>foo.us-east-1.elb.amazonaws.com</DNSName>
-	        <VPCId>vpc-1</VPCId>
-	        <ListenerDescriptions>
-	          <member>
-	            <PolicyNames/>
-	            <Listener>
-	              <Protocol>HTTP</Protocol>
-	              <LoadBalancerPort>80</LoadBalancerPort>
-	              <InstanceProtocol>HTTP</InstanceProtocol>
-	              <InstancePort>9000</InstancePort>
-	            </Listener>
-	          </member>
-	        </ListenerDescriptions>
-	        <AvailabilityZones>
-	          <member>us-east-1a</member>
-	        </AvailabilityZones>
-	        <Scheme>internal</Scheme>
-	        <Subnets>
-	          <member>subnet-1a</member>
-	        </Subnets>
-	      </member>
-	    </LoadBalancerDescriptions>
-	  </DescribeLoadBalancersResult>
-	</DescribeLoadBalancersResponse>`,
-			},
-		},
-
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DeleteLoadBalancer&LoadBalancerName=acme-inc&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<?xml version="1.0"?>
-<DeleteLoadBalancerResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
-</DeleteLoadBalancerResponse>`,
-			},
-		},
-	})
-	m, s := newTestELBManager(h)
+func TestELB_DestroyLoadBalancer(t *testing.T) {
+	c := new(mockELBClient)
+	m := newTestELBManager()
+	m.elb = c
 
 	lb := &LoadBalancer{
 		Name:         "acme-inc",
@@ -159,250 +86,207 @@ func buildLoadBalancerForDestroy() (*ELBManager, *httptest.Server, *LoadBalancer
 		External:     true,
 		Tags:         map[string]string{AppTag: "acme-inc"},
 	}
-	return m, s, lb
+
+	c.On("DescribeLoadBalancers", &elb.DescribeLoadBalancersInput{
+		LoadBalancerNames: []*string{aws.String("acme-inc")},
+	}).Return(&elb.DescribeLoadBalancersOutput{
+		LoadBalancerDescriptions: []*elb.LoadBalancerDescription{
+			{
+				ListenerDescriptions: []*elb.ListenerDescription{
+					{
+						Listener: &elb.Listener{
+							InstancePort: aws.Int64(9000),
+						},
+					},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("DeleteLoadBalancer", &elb.DeleteLoadBalancerInput{
+		LoadBalancerName: aws.String("acme-inc"),
+	}).Return(&elb.DeleteLoadBalancerOutput{}, nil)
+
+	err := m.DestroyLoadBalancer(context.Background(), lb)
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
 }
 
-func TestELB_DestroyLoadBalancer(t *testing.T) {
-	m, s, lb := buildLoadBalancerForDestroy()
-	defer s.Close()
+func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
+	c := new(mockELBClient)
+	m := newTestELBManager()
+	m.elb = c
 
-	if err := m.DestroyLoadBalancer(context.Background(), lb); err != nil {
-		t.Fatal(err)
+	ns := newTestNameserver("FAKEZONE")
+
+	m2 := WithCNAME(m, ns)
+
+	lb := &LoadBalancer{
+		Name:         "acme-inc",
+		DNSName:      "acme-inc.us-east-1.elb.amazonaws.com",
+		InstancePort: 9000,
+		External:     true,
+		Tags:         map[string]string{AppTag: "acme-inc"},
 	}
+
+	c.On("DescribeLoadBalancers", &elb.DescribeLoadBalancersInput{
+		LoadBalancerNames: []*string{aws.String("acme-inc")},
+	}).Return(&elb.DescribeLoadBalancersOutput{
+		LoadBalancerDescriptions: []*elb.LoadBalancerDescription{
+			{
+				ListenerDescriptions: []*elb.ListenerDescription{
+					{
+						Listener: &elb.Listener{
+							InstancePort: aws.Int64(9000),
+						},
+					},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("DeleteLoadBalancer", &elb.DeleteLoadBalancerInput{
+		LoadBalancerName: aws.String("acme-inc"),
+	}).Return(&elb.DeleteLoadBalancerOutput{}, nil)
+
+	err := m2.DestroyLoadBalancer(context.Background(), lb)
+	assert.NoError(t, err)
+	assert.True(t, ns.DeleteCNAMECalled)
+
+	c.AssertExpectations(t)
 }
 
 func TestELB_LoadBalancers(t *testing.T) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&PageSize=20&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
-	  <DescribeLoadBalancersResult>
-	    <NextMarker>
-	      abcd
-	    </NextMarker>
-	    <LoadBalancerDescriptions>
-	      <member>
-	        <SecurityGroups>
-	          <member>sg-1</member>
-	        </SecurityGroups>
-	        <LoadBalancerName>foo</LoadBalancerName>
-		<DNSName>foo.us-east-1.elb.amazonaws.com</DNSName>
-	        <VPCId>vpc-1</VPCId>
-	        <ListenerDescriptions>
-	          <member>
-	            <PolicyNames/>
-	            <Listener>
-	              <Protocol>HTTP</Protocol>
-	              <LoadBalancerPort>80</LoadBalancerPort>
-	              <InstanceProtocol>HTTP</InstanceProtocol>
-	              <InstancePort>9000</InstancePort>
-	            </Listener>
-	          </member>
-	        </ListenerDescriptions>
-	        <AvailabilityZones>
-	          <member>us-east-1a</member>
-	        </AvailabilityZones>
-	        <Scheme>internal</Scheme>
-	        <Subnets>
-	          <member>subnet-1a</member>
-	        </Subnets>
-	      </member>
-	    </LoadBalancerDescriptions>
-	  </DescribeLoadBalancersResult>
-	</DescribeLoadBalancersResponse>`,
+	c := new(mockELBClient)
+	m := newTestELBManager()
+	m.elb = c
+
+	c.On("DescribeLoadBalancers", &elb.DescribeLoadBalancersInput{
+		PageSize: aws.Int64(20),
+	}).Return(&elb.DescribeLoadBalancersOutput{
+		NextMarker: aws.String("abcd"),
+		LoadBalancerDescriptions: []*elb.LoadBalancerDescription{
+			{
+				LoadBalancerName:  aws.String("foo"),
+				DNSName:           aws.String("foo.us-east-1.elb.amazonaws.com"),
+				VPCId:             aws.String("vpc-1"),
+				SecurityGroups:    []*string{aws.String("sg-1")},
+				AvailabilityZones: []*string{aws.String("us-east-1a")},
+				Scheme:            aws.String("internal"),
+				Subnets:           []*string{aws.String("subnet-1a")},
+				ListenerDescriptions: []*elb.ListenerDescription{
+					{
+						Listener: &elb.Listener{
+							InstancePort:     aws.Int64(9000),
+							InstanceProtocol: aws.String("http"),
+							LoadBalancerPort: aws.Int64(80),
+							Protocol:         aws.String("http"),
+						},
+					},
+				},
 			},
 		},
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeTags&LoadBalancerNames.member.1=foo&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<DescribeTagsResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
-	  <DescribeTagsResult>
-	    <TagDescriptions>
-	      <member>
-	        <Tags>
-	          <member>
-	            <Key>AppName</Key>
-	            <Value>foo</Value>
-	          </member>
-	          <member>
-	            <Key>ProcessType</Key>
-	            <Value>web</Value>
-	          </member>
-	        </Tags>
-	        <LoadBalancerName>foo</LoadBalancerName>
-	      </member>
-	    </TagDescriptions>
-	  </DescribeTagsResult>
-	</DescribeTagsResponse>`,
+	}, nil)
+
+	c.On("DescribeTags", &elb.DescribeTagsInput{
+		LoadBalancerNames: []*string{aws.String("foo")},
+	}).Return(&elb.DescribeTagsOutput{
+		TagDescriptions: []*elb.TagDescription{
+			{
+				LoadBalancerName: aws.String("foo"),
+				Tags: []*elb.Tag{
+					{Key: aws.String("AppName"), Value: aws.String("foo")},
+					{Key: aws.String("ProcessType"), Value: aws.String("web")},
+				},
 			},
 		},
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&Marker=%0A%09++++++abcd%0A%09++++&PageSize=20&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
-	  <DescribeLoadBalancersResult>
-	    <NextMarker></NextMarker>
-	    <LoadBalancerDescriptions>
-	      <member>
-	        <SecurityGroups>
-	          <member>sg-1</member>
-	        </SecurityGroups>
-	        <LoadBalancerName>bar</LoadBalancerName>
-		<DNSName>bar.us-east-1.elb.amazonaws.com</DNSName>
-	        <VPCId>vpc-1</VPCId>
-	        <ListenerDescriptions>
-	          <member>
-	            <PolicyNames/>
-	            <Listener>
-	              <Protocol>HTTP</Protocol>
-	              <LoadBalancerPort>80</LoadBalancerPort>
-	              <InstanceProtocol>HTTP</InstanceProtocol>
-	              <InstancePort>9001</InstancePort>
-	            </Listener>
-	          </member>
-	        </ListenerDescriptions>
-	        <AvailabilityZones>
-	          <member>us-east-1a</member>
-	        </AvailabilityZones>
-	        <Scheme>internet-facing</Scheme>
-	        <Subnets>
-	          <member>subnet-1a</member>
-	        </Subnets>
-	      </member>
-	    </LoadBalancerDescriptions>
-	  </DescribeLoadBalancersResult>
-	</DescribeLoadBalancersResponse>`,
+	}, nil)
+
+	c.On("DescribeLoadBalancers", &elb.DescribeLoadBalancersInput{
+		Marker:   aws.String("abcd"),
+		PageSize: aws.Int64(20),
+	}).Return(&elb.DescribeLoadBalancersOutput{
+		LoadBalancerDescriptions: []*elb.LoadBalancerDescription{
+			{
+				LoadBalancerName:  aws.String("bar"),
+				DNSName:           aws.String("bar.us-east-1.elb.amazonaws.com"),
+				VPCId:             aws.String("vpc-1"),
+				SecurityGroups:    []*string{aws.String("sg-1")},
+				AvailabilityZones: []*string{aws.String("us-east-1a")},
+				Scheme:            aws.String("internet-facing"),
+				Subnets:           []*string{aws.String("subnet-1a")},
+				ListenerDescriptions: []*elb.ListenerDescription{
+					{
+						Listener: &elb.Listener{
+							InstancePort:     aws.Int64(9001),
+							InstanceProtocol: aws.String("http"),
+							LoadBalancerPort: aws.Int64(80),
+							Protocol:         aws.String("http"),
+						},
+					},
+				},
 			},
 		},
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeTags&LoadBalancerNames.member.1=bar&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<DescribeTagsResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
-	  <DescribeTagsResult>
-	    <TagDescriptions>
-	      <member>
-	        <Tags>
-	          <member>
-	            <Key>AppName</Key>
-	            <Value>bar</Value>
-	          </member>
-	          <member>
-	            <Key>ProcessType</Key>
-	            <Value>web</Value>
-	          </member>
-	        </Tags>
-	        <LoadBalancerName>bar</LoadBalancerName>
-	      </member>
-	    </TagDescriptions>
-	  </DescribeTagsResult>
-	</DescribeTagsResponse>`,
+	}, nil)
+
+	c.On("DescribeTags", &elb.DescribeTagsInput{
+		LoadBalancerNames: []*string{aws.String("bar")},
+	}).Return(&elb.DescribeTagsOutput{
+		TagDescriptions: []*elb.TagDescription{
+			{
+				LoadBalancerName: aws.String("bar"),
+				Tags: []*elb.Tag{
+					{Key: aws.String("AppName"), Value: aws.String("bar")},
+					{Key: aws.String("ProcessType"), Value: aws.String("web")},
+				},
 			},
 		},
-	})
-	m, s := newTestELBManager(h)
-	defer s.Close()
+	}, nil)
 
 	lbs, err := m.LoadBalancers(context.Background(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := len(lbs), 2; got != want {
-		t.Fatalf("%v load balancers; want %v", got, want)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(lbs))
 
 	expected := []*LoadBalancer{
 		{Name: "foo", DNSName: "foo.us-east-1.elb.amazonaws.com", InstancePort: 9000, Tags: map[string]string{"AppName": "foo", "ProcessType": "web"}},
 		{Name: "bar", DNSName: "bar.us-east-1.elb.amazonaws.com", External: true, InstancePort: 9001, Tags: map[string]string{"AppName": "bar", "ProcessType": "web"}},
 	}
 
-	if got, want := lbs, expected; !reflect.DeepEqual(got, want) {
-		t.Fatalf("LoadBalancers => %v; want %v", got, want)
+	for i := range expected {
+		assert.Equal(t, expected[i], lbs[i])
 	}
+
+	c.AssertExpectations(t)
 }
 
 func TestELB_EmptyLoadBalancers(t *testing.T) {
-	h := awsutil.NewHandler([]awsutil.Cycle{
-		{
-			Request: awsutil.Request{
-				RequestURI: "/",
-				Body:       `Action=DescribeLoadBalancers&PageSize=20&Version=2012-06-01`,
-			},
-			Response: awsutil.Response{
-				StatusCode: 200,
-				Body: `<DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
-	  <DescribeLoadBalancersResult>
-	    <LoadBalancerDescriptions/>
-	  </DescribeLoadBalancersResult>
-	</DescribeLoadBalancersResponse>`,
-			},
-		},
-	})
-	m, s := newTestELBManager(h)
-	defer s.Close()
+	c := new(mockELBClient)
+	m := newTestELBManager()
+	m.elb = c
+
+	c.On("DescribeLoadBalancers", &elb.DescribeLoadBalancersInput{
+		PageSize: aws.Int64(20),
+	}).Return(&elb.DescribeLoadBalancersOutput{
+		LoadBalancerDescriptions: []*elb.LoadBalancerDescription{},
+	}, nil)
 
 	lbs, err := m.LoadBalancers(context.Background(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got, want := len(lbs), 0; got != want {
-		t.Fatalf("%v load balancers; want %v", got, want)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(lbs))
+
+	c.AssertExpectations(t)
 }
 
-func TestELBwDNS_DestroyLoadBalancer(t *testing.T) {
-	m, s, lb := buildLoadBalancerForDestroy()
-	defer s.Close()
-	ns := newTestNameserver("FAKEZONE")
-
-	m2 := WithCNAME(m, ns)
-
-	if err := m2.DestroyLoadBalancer(context.Background(), lb); err != nil {
-		t.Fatal(err)
+func newTestELBManager() *ELBManager {
+	return &ELBManager{
+		InternalSubnetIDs: []string{"private-subnet"},
+		ExternalSubnetIDs: []string{"public-subnet"},
+		Ports:             newPortAllocator(9000, 1),
+		newName: func() string {
+			return "acme-inc"
+		},
 	}
-
-	if ok := ns.DeleteCNAMECalled; !ok {
-		t.Fatal("DeleteCNAME was not called.")
-	}
-
-}
-
-func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
-	s := httptest.NewServer(h)
-
-	config := &aws.Config{
-		Credentials: credentials.NewStaticCredentials(" ", " ", " "),
-		Endpoint:    aws.String(s.URL),
-		Region:      aws.String("localhost"),
-	}
-	config.WithLogLevel(0)
-
-	m := NewELBManager(session.New(config))
-	m.newName = func() string {
-		return "acme-inc"
-	}
-	m.InternalSubnetIDs = []string{"private-subnet"}
-	m.ExternalSubnetIDs = []string{"public-subnet"}
-	m.Ports = newPortAllocator(9000, 1)
-
-	return m, s
 }
 
 // fakeNameserver is a fake implementation of the Nameserver interface.
@@ -429,6 +313,41 @@ func newTestNameserver(zoneID string) *fakeNameserver {
 		CNAMECalled:       false,
 		DeleteCNAMECalled: false,
 	}
+}
+
+type mockELBClient struct {
+	elbClient
+	mock.Mock
+}
+
+func (m *mockELBClient) CreateLoadBalancer(input *elb.CreateLoadBalancerInput) (*elb.CreateLoadBalancerOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*elb.CreateLoadBalancerOutput), args.Error(1)
+}
+
+func (m *mockELBClient) ModifyLoadBalancerAttributes(input *elb.ModifyLoadBalancerAttributesInput) (*elb.ModifyLoadBalancerAttributesOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*elb.ModifyLoadBalancerAttributesOutput), args.Error(1)
+}
+
+func (m *mockELBClient) SetLoadBalancerListenerSSLCertificate(input *elb.SetLoadBalancerListenerSSLCertificateInput) (*elb.SetLoadBalancerListenerSSLCertificateOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*elb.SetLoadBalancerListenerSSLCertificateOutput), args.Error(1)
+}
+
+func (m *mockELBClient) DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (*elb.DescribeLoadBalancersOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*elb.DescribeLoadBalancersOutput), args.Error(1)
+}
+
+func (m *mockELBClient) DeleteLoadBalancer(input *elb.DeleteLoadBalancerInput) (*elb.DeleteLoadBalancerOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*elb.DeleteLoadBalancerOutput), args.Error(1)
+}
+
+func (m *mockELBClient) DescribeTags(input *elb.DescribeTagsInput) (*elb.DescribeTagsOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*elb.DescribeTagsOutput), args.Error(1)
 }
 
 type portAllocator struct {
