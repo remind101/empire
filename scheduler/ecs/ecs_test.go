@@ -53,7 +53,7 @@ func TestScheduler_Submit(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"},{"name":"PORT","value":"8080"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
 			},
 		},
 
@@ -61,7 +61,7 @@ func TestScheduler_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"},{"name":"PORT","value":"8080"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -509,7 +509,7 @@ func TestScheduler_LoadBalancer_NoExposure(t *testing.T) {
 
 	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
 	assert.NoError(t, err)
-	assert.Equal(t, "", loadBalancer)
+	assert.Nil(t, loadBalancer)
 
 	l.AssertExpectations(t)
 }
@@ -520,7 +520,6 @@ func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
 		lb: l,
 	}
 
-	port := int64(8080)
 	app := &scheduler.App{
 		ID:   "appid",
 		Name: "appname",
@@ -528,23 +527,19 @@ func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
 	process := &scheduler.Process{
 		Type:     "web",
 		Exposure: scheduler.ExposePrivate,
-		Ports: []scheduler.PortMap{
-			{Host: &port},
-		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{}, nil)
 	l.On("CreateLoadBalancer", lb.CreateLoadBalancerOpts{
-		InstancePort: 8080,
-		Tags:         map[string]string{"AppID": "appid", "ProcessType": "web", "App": "appname"},
-		External:     false,
+		Tags:     map[string]string{"AppID": "appid", "ProcessType": "web", "App": "appname"},
+		External: false,
 	}).Return(&lb.LoadBalancer{
 		Name: "lbname",
 	}, nil)
 
 	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
 	assert.NoError(t, err)
-	assert.Equal(t, "lbname", loadBalancer)
+	assert.Equal(t, "lbname", loadBalancer.Name)
 
 	l.AssertExpectations(t)
 }
@@ -555,7 +550,6 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
 		lb: l,
 	}
 
-	port := int64(8080)
 	app := &scheduler.App{
 		ID:   "appid",
 		Name: "appname",
@@ -563,9 +557,6 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
 	process := &scheduler.Process{
 		Type:     "web",
 		Exposure: scheduler.ExposePublic,
-		Ports: []scheduler.PortMap{
-			{Host: &port},
-		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
@@ -574,7 +565,7 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
 
 	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
 	assert.NoError(t, err)
-	assert.Equal(t, "lbname", loadBalancer)
+	assert.Equal(t, "lbname", loadBalancer.Name)
 
 	l.AssertExpectations(t)
 }
@@ -585,7 +576,6 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_MismatchedExposure(t *testi
 		lb: l,
 	}
 
-	port := int64(8080)
 	app := &scheduler.App{
 		ID:   "appid",
 		Name: "appname",
@@ -593,9 +583,6 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_MismatchedExposure(t *testi
 	process := &scheduler.Process{
 		Type:     "web",
 		Exposure: scheduler.ExposePublic,
-		Ports: []scheduler.PortMap{
-			{Host: &port},
-		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
@@ -622,10 +609,7 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewCert(t *testing.T) {
 	process := &scheduler.Process{
 		Type:     "web",
 		Exposure: scheduler.ExposePublic,
-		Ports: []scheduler.PortMap{
-			{Host: &port},
-		},
-		SSLCert: "newcert",
+		SSLCert:  "newcert",
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
@@ -639,37 +623,7 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewCert(t *testing.T) {
 
 	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
 	assert.NoError(t, err)
-	assert.Equal(t, "lbname", loadBalancer)
-
-	l.AssertExpectations(t)
-}
-
-func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewPort(t *testing.T) {
-	l := new(mockLBManager)
-	s := &Scheduler{
-		lb: l,
-	}
-
-	oldport := int64(8080)
-	newport := int64(8081)
-	app := &scheduler.App{
-		ID:   "appid",
-		Name: "appname",
-	}
-	process := &scheduler.Process{
-		Type:     "web",
-		Exposure: scheduler.ExposePublic,
-		Ports: []scheduler.PortMap{
-			{Host: &newport},
-		},
-	}
-
-	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
-		{Name: "lbname", External: true, InstancePort: oldport},
-	}, nil)
-
-	_, err := s.loadBalancer(context.Background(), app, process)
-	assert.EqualError(t, err, "Process web instance port is 8081, but load balancer instance port is 8080.")
+	assert.Equal(t, "lbname", loadBalancer.Name)
 
 	l.AssertExpectations(t)
 }
@@ -715,10 +669,7 @@ var fakeApp = &scheduler.App{
 			},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,
-			Ports: []scheduler.PortMap{
-				{aws.Int64(8080), aws.Int64(8080)},
-			},
-			Exposure: scheduler.ExposePrivate,
+			Exposure:    scheduler.ExposePrivate,
 		},
 	},
 }

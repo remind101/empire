@@ -96,20 +96,16 @@ func TestEmpire_Deploy(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	hostPort, containerPort := int64(9000), int64(8080)
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{
-				Type:     "web",
-				Image:    img,
-				Command:  "./bin/web",
-				Exposure: scheduler.ExposePrivate,
-				Ports: []scheduler.PortMap{
-					{Host: &hostPort, Container: &containerPort},
-				},
+				Type:        "web",
+				Image:       img,
+				Command:     "./bin/web",
+				Exposure:    scheduler.ExposePrivate,
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
@@ -121,7 +117,6 @@ func TestEmpire_Deploy(t *testing.T) {
 					"EMPIRE_PROCESS":    "web",
 					"EMPIRE_RELEASE":    "v1",
 					"SOURCE":            "acme-inc.web.v1",
-					"PORT":              "8080",
 					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
 				},
 				Labels: map[string]string{
@@ -257,20 +252,16 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Deploy a new image to the app.
-	hostPort, containerPort := int64(9000), int64(8080)
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{
-				Type:     "web",
-				Image:    img,
-				Command:  "./bin/web",
-				Exposure: scheduler.ExposePrivate,
-				Ports: []scheduler.PortMap{
-					{Host: &hostPort, Container: &containerPort},
-				},
+				Type:        "web",
+				Image:       img,
+				Command:     "./bin/web",
+				Exposure:    scheduler.ExposePrivate,
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
@@ -282,7 +273,6 @@ func TestEmpire_Set(t *testing.T) {
 					"EMPIRE_PROCESS":    "web",
 					"EMPIRE_RELEASE":    "v1",
 					"SOURCE":            "acme-inc.web.v1",
-					"PORT":              "8080",
 					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
 					"RAILS_ENV":         "production",
 				},
@@ -310,13 +300,10 @@ func TestEmpire_Set(t *testing.T) {
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{
-				Type:     "web",
-				Image:    img,
-				Command:  "./bin/web",
-				Exposure: scheduler.ExposePrivate,
-				Ports: []scheduler.PortMap{
-					{Host: &hostPort, Container: &containerPort},
-				},
+				Type:        "web",
+				Image:       img,
+				Command:     "./bin/web",
+				Exposure:    scheduler.ExposePrivate,
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
@@ -328,7 +315,6 @@ func TestEmpire_Set(t *testing.T) {
 					"EMPIRE_PROCESS":    "web",
 					"EMPIRE_RELEASE":    "v2",
 					"SOURCE":            "acme-inc.web.v2",
-					"PORT":              "8080",
 					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
 				},
 				Labels: map[string]string{

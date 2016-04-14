@@ -48,7 +48,7 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	scheduler, err := newScheduler(c)
+	scheduler, err := newScheduler(db, c)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +85,11 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 
 // Scheduler ============================
 
-func newScheduler(c *cli.Context) (scheduler.Scheduler, error) {
-	return newECSScheduler(c)
+func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
+	return newECSScheduler(db, c)
 }
 
-func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
-
+func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
@@ -107,7 +106,7 @@ func newECSScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 		LogConfiguration:        logConfiguration,
 	}
 
-	s, err := ecs.NewLoadBalancedScheduler(config)
+	s, err := ecs.NewLoadBalancedScheduler(db.DB.DB(), config)
 	if err != nil {
 		return nil, err
 	}

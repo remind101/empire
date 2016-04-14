@@ -8,9 +8,6 @@ const AppTag = "App"
 // CreateLoadBalancerOpts are options that can be provided when creating a
 // LoadBalancer.
 type CreateLoadBalancerOpts struct {
-	// The port to route requests to on the hosts.
-	InstancePort int64
-
 	// An arbitrary list of tags to assign to the load balancer.
 	Tags map[string]string
 

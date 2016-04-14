@@ -45,8 +45,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	defer s.Close()
 
 	lb, err := m.CreateLoadBalancer(context.Background(), CreateLoadBalancerOpts{
-		InstancePort: 9000,
-		External:     true,
+		External: true,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -93,6 +92,51 @@ func TestELB_UpdateLoadBalancer(t *testing.T) {
 
 func buildLoadBalancerForDestroy() (*ELBManager, *httptest.Server, *LoadBalancer) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
+		{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Body:       `Action=DescribeLoadBalancers&PageSize=20&Version=2012-06-01`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body: `<DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
+	  <DescribeLoadBalancersResult>
+	    <NextMarker>
+	      abcd
+	    </NextMarker>
+	    <LoadBalancerDescriptions>
+	      <member>
+	        <SecurityGroups>
+	          <member>sg-1</member>
+	        </SecurityGroups>
+	        <LoadBalancerName>foo</LoadBalancerName>
+		<DNSName>foo.us-east-1.elb.amazonaws.com</DNSName>
+	        <VPCId>vpc-1</VPCId>
+	        <ListenerDescriptions>
+	          <member>
+	            <PolicyNames/>
+	            <Listener>
+	              <Protocol>HTTP</Protocol>
+	              <LoadBalancerPort>80</LoadBalancerPort>
+	              <InstanceProtocol>HTTP</InstanceProtocol>
+	              <InstancePort>9000</InstancePort>
+	            </Listener>
+	          </member>
+	        </ListenerDescriptions>
+	        <AvailabilityZones>
+	          <member>us-east-1a</member>
+	        </AvailabilityZones>
+	        <Scheme>internal</Scheme>
+	        <Subnets>
+	          <member>subnet-1a</member>
+	        </Subnets>
+	      </member>
+	    </LoadBalancerDescriptions>
+	  </DescribeLoadBalancersResult>
+	</DescribeLoadBalancersResponse>`,
+			},
+		},
+
 		{
 			Request: awsutil.Request{
 				RequestURI: "/",
@@ -356,6 +400,7 @@ func newTestELBManager(h http.Handler) (*ELBManager, *httptest.Server) {
 	}
 	m.InternalSubnetIDs = []string{"private-subnet"}
 	m.ExternalSubnetIDs = []string{"public-subnet"}
+	m.Ports = newPortAllocator(9000, 1)
 
 	return m, s
 }
@@ -384,4 +429,40 @@ func newTestNameserver(zoneID string) *fakeNameserver {
 		CNAMECalled:       false,
 		DeleteCNAMECalled: false,
 	}
+}
+
+type portAllocator struct {
+	ports []int64
+	taken map[int64]bool
+}
+
+func newPortAllocator(start int64, count int64) *portAllocator {
+	var ports []int64
+	for i := int64(0); i < count; i++ {
+		ports = append(ports, i+start)
+	}
+	taken := make(map[int64]bool)
+	for _, port := range ports {
+		taken[port] = false
+	}
+	return &portAllocator{
+		ports: ports,
+		taken: taken,
+	}
+}
+
+func (a *portAllocator) Get() (int64, error) {
+	for _, port := range a.ports {
+		if !a.taken[port] {
+			a.taken[port] = true
+			return port, nil
+		}
+	}
+
+	panic("All ports taken")
+}
+
+func (a *portAllocator) Put(port int64) error {
+	a.taken[port] = false
+	return nil
 }

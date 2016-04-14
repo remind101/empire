@@ -182,10 +182,6 @@ func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
 		return &release, err
 	}
 
-	if err := attachPorts(db, &release); err != nil {
-		return &release, err
-	}
-
 	return &release, nil
 }
 
@@ -194,21 +190,6 @@ func releases(db *gorm.DB, scope Scope) ([]*Release, error) {
 	var releases []*Release
 	scope = ComposedScope{releasesPreload, scope}
 	return releases, find(db, scope, &releases)
-}
-
-// attachPorts returns a map of ports for a release. It will allocate new ports to an app if need be.
-func attachPorts(db *gorm.DB, r *Release) error {
-	for _, p := range r.Processes {
-		if p.Type == WebProcessType {
-			// TODO: Support a port per process, allowing more than one process to expose a port.
-			port, err := portsFindOrCreateByApp(db, r.App)
-			if err != nil {
-				return err
-			}
-			p.Port = port.Port
-		}
-	}
-	return nil
 }
 
 func createFormation(db *gorm.DB, release *Release) error {
@@ -261,10 +242,6 @@ func releasesLastVersion(db *gorm.DB, appID string) (int, error) {
 
 // releasesCreate creates a new Release and inserts it into the database.
 func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
-	if err := attachPorts(db, release); err != nil {
-		return release, err
-	}
-
 	// Get the last release version for this app.
 	v, err := releasesLastVersion(db, release.App.ID)
 	if err != nil {
@@ -296,9 +273,6 @@ func newServiceApp(release *Release) *scheduler.App {
 }
 
 func newServiceProcess(release *Release, p *Process) *scheduler.Process {
-	var procExp scheduler.Exposure
-	ports := newServicePorts(int64(p.Port))
-
 	env := environment(release.Config.Vars)
 	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
@@ -314,13 +288,6 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
-	if len(ports) > 0 {
-		env["PORT"] = fmt.Sprintf("%d", *ports[0].Container)
-
-		// If we have exposed ports, set process exposure to apps exposure
-		procExp = serviceExposure(release.App.Exposure)
-	}
-
 	return &scheduler.Process{
 		Type:        string(p.Type),
 		Env:         env,
@@ -331,24 +298,9 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		MemoryLimit: uint(p.Constraints.Memory),
 		CPUShares:   uint(p.Constraints.CPUShare),
 		Nproc:       uint(p.Constraints.Nproc),
-		Ports:       ports,
-		Exposure:    procExp,
+		Exposure:    processExposure(release.App.Exposure, p.Type),
 		SSLCert:     release.App.Cert,
 	}
-}
-
-func newServicePorts(hostPort int64) []scheduler.PortMap {
-	var ports []scheduler.PortMap
-	if hostPort != 0 {
-		// TODO: We can just map the same host port as the container port, as we make it
-		// available as $PORT in the env vars.
-		port := int64(WebPort)
-		ports = append(ports, scheduler.PortMap{
-			Host:      &hostPort,
-			Container: &port,
-		})
-	}
-	return ports
 }
 
 // environment coerces a Vars into a map[string]string.
@@ -362,7 +314,12 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func serviceExposure(appExp string) (exp scheduler.Exposure) {
+func processExposure(appExp string, process ProcessType) (exp scheduler.Exposure) {
+	// For now, only the `web` process can be exposed.
+	if process != WebProcessType {
+		return scheduler.ExposeNone
+	}
+
 	switch appExp {
 	case ExposePrivate:
 		exp = scheduler.ExposePrivate
