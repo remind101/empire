@@ -80,7 +80,6 @@ type Process struct {
 	Type      ProcessType
 	Quantity  int
 	Command   Command
-	Port      int `sql:"-"`
 	Constraints
 }
 
