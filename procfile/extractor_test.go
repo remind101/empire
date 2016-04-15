@@ -35,7 +35,7 @@ func TestCMDExtractor(t *testing.T) {
 	}
 
 	want := Procfile{
-		"web": "/go/bin/app server",
+		"web": []string{"/go/bin/app", "server"},
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -74,7 +74,7 @@ func TestProcfileExtractor(t *testing.T) {
 	}
 
 	want := Procfile{
-		"web": "rails server",
+		"web": []string{"rails", "server"},
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -118,7 +118,7 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 	}
 
 	want := Procfile{
-		"web": "/go/bin/app server",
+		"web": []string{"/go/bin/app", "server"},
 	}
 
 	if !reflect.DeepEqual(got, want) {

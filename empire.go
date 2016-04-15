@@ -337,7 +337,7 @@ type RunOpts struct {
 	App *App
 
 	// The command to run.
-	Command string
+	Command Command
 
 	// If provided, input will be read from this.
 	Input io.Reader

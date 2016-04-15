@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"strings"
 
 	"github.com/remind101/empire/pkg/image"
 
@@ -50,7 +49,7 @@ func (e *CMDExtractor) Extract(img image.Image) (Procfile, error) {
 		return pm, err
 	}
 
-	pm["web"] = strings.Join(i.Config.Cmd, " ")
+	pm["web"] = i.Config.Cmd
 
 	return pm, nil
 }

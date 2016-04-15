@@ -7,14 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	shellwords "github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/arn"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/ecsutil"
@@ -344,14 +342,9 @@ func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App
 }
 
 func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
-	args, err := shellwords.Parse(p.Command)
-	if err != nil {
-		return nil, err
-	}
-
 	// ecs.ContainerDefinition{Command} is expecting a []*string
 	var command []*string
-	for _, s := range args {
+	for _, s := range p.Command {
 		ss := s
 		command = append(command, &ss)
 	}
@@ -684,7 +677,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 
 	return &scheduler.Process{
 		Type:        safeString(container.Name),
-		Command:     strings.Join(command, " "),
+		Command:     command,
 		Env:         env,
 		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * MB,

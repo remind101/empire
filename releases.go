@@ -292,7 +292,7 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		Type:        string(p.Type),
 		Env:         env,
 		Labels:      labels,
-		Command:     string(p.Command),
+		Command:     []string(p.Command),
 		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),
 		MemoryLimit: uint(p.Constraints.Memory),

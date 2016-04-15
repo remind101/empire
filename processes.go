@@ -5,9 +5,11 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
+	shellwords "github.com/mattn/go-shellwords"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/procfile"
@@ -57,12 +59,22 @@ func (p ProcessType) Value() (driver.Value, error) {
 
 // Command represents the actual shell command that gets executed for a given
 // ProcessType.
-type Command string
+type Command []string
+
+// ParseCommand parses a string into a Command, taking quotes and other shell
+// words into account.
+func ParseCommand(command string) (Command, error) {
+	return shellwords.Parse(command)
+}
 
 // Scan implements the sql.Scanner interface.
 func (c *Command) Scan(src interface{}) error {
 	if src, ok := src.([]byte); ok {
-		*c = Command(src)
+		command, err := ParseCommand(string(src))
+		if err != nil {
+			return err
+		}
+		*c = command
 	}
 
 	return nil
@@ -70,7 +82,26 @@ func (c *Command) Scan(src interface{}) error {
 
 // Value implements the driver.Value interface.
 func (c Command) Value() (driver.Value, error) {
-	return driver.Value(string(c)), nil
+	// TODO(ejholmes): We really should be storing this as a postgres array,
+	// because stringifying it can cause information to be lost.
+	//
+	// For example, if we have the command:
+	//
+	//	Command{"echo", "hello world"}
+	//
+	// Then stringify it:
+	//
+	//	"echo hello world"
+	//
+	// Then parse it again:
+	//
+	//	Command{"echo", "hello", "world"}
+	return driver.Value(c.String()), nil
+}
+
+// String returns the string reprsentation of the command.
+func (c Command) String() string {
+	return strings.Join([]string(c), " ")
 }
 
 // Process holds configuration information about a Process Type.
@@ -114,7 +145,12 @@ func (cm *CommandMap) Scan(src interface{}) error {
 	m := make(CommandMap)
 
 	for k, v := range h.Map {
-		m[ProcessType(k)] = Command(v.String)
+		command, err := ParseCommand(v.String)
+		if err != nil {
+			return err
+		}
+
+		m[ProcessType(k)] = command
 	}
 
 	*cm = m
@@ -129,7 +165,7 @@ func (cm CommandMap) Value() (driver.Value, error) {
 	for k, v := range cm {
 		m[string(k)] = sql.NullString{
 			Valid:  true,
-			String: string(v),
+			String: v.String(),
 		}
 	}
 

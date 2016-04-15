@@ -18,7 +18,7 @@ type Dyno heroku.Dyno
 
 func newDyno(task *empire.Task) *Dyno {
 	return &Dyno{
-		Command:   task.Command,
+		Command:   task.Command.String(),
 		Type:      task.Type,
 		Name:      task.Name,
 		State:     task.State,
@@ -80,10 +80,15 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
+	command, err := empire.ParseCommand(form.Command)
+	if err != nil {
+		return err
+	}
+
 	opts := empire.RunOpts{
 		User:    UserFromContext(ctx),
 		App:     a,
-		Command: form.Command,
+		Command: command,
 		Env:     form.Env,
 	}
 

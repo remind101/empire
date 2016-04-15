@@ -9,7 +9,6 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/fsouza/go-dockerclient"
-	shellwords "github.com/mattn/go-shellwords"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
@@ -25,7 +24,7 @@ type RunOpts struct {
 	Image image.Image
 
 	// Command is the command to run.
-	Command string
+	Command []string
 
 	// Environment variables to set.
 	Env map[string]string
@@ -79,11 +78,6 @@ func (r *Runner) pull(ctx context.Context, img image.Image, out io.Writer) error
 }
 
 func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, error) {
-	cmd, err := shellwords.Parse(opts.Command)
-	if err != nil {
-		return nil, err
-	}
-
 	return r.client.CreateContainer(ctx, docker.CreateContainerOptions{
 		Name: uuid.New(),
 		Config: &docker.Config{
@@ -93,7 +87,7 @@ func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, e
 			AttachStderr: true,
 			OpenStdin:    true,
 			Image:        opts.Image.String(),
-			Cmd:          cmd,
+			Cmd:          opts.Command,
 			Env:          envKeys(opts.Env),
 		},
 		HostConfig: &docker.HostConfig{

@@ -10,7 +10,7 @@ import (
 type RunEvent struct {
 	User     string
 	App      string
-	Command  string
+	Command  Command
 	URL      string
 	Attached bool
 }
@@ -24,7 +24,7 @@ func (e RunEvent) String() string {
 	if e.Attached {
 		attachment = "attached"
 	}
-	msg := fmt.Sprintf("%s ran `%s` (%s) on %s", e.User, e.Command, attachment, e.App)
+	msg := fmt.Sprintf("%s ran `%s` (%s) on %s", e.User, e.Command.String(), attachment, e.App)
 	if e.URL != "" {
 		msg = fmt.Sprintf("%s (<%s|logs>)", msg, e.URL)
 	}

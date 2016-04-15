@@ -104,7 +104,7 @@ func TestEmpire_Deploy(t *testing.T) {
 			{
 				Type:        "web",
 				Image:       img,
-				Command:     "./bin/web",
+				Command:     []string{"./bin/web"},
 				Exposure:    scheduler.ExposePrivate,
 				Instances:   1,
 				MemoryLimit: 536870912,
@@ -260,7 +260,7 @@ func TestEmpire_Set(t *testing.T) {
 			{
 				Type:        "web",
 				Image:       img,
-				Command:     "./bin/web",
+				Command:     []string{"./bin/web"},
 				Exposure:    scheduler.ExposePrivate,
 				Instances:   1,
 				MemoryLimit: 536870912,
@@ -302,7 +302,7 @@ func TestEmpire_Set(t *testing.T) {
 			{
 				Type:        "web",
 				Image:       img,
-				Command:     "./bin/web",
+				Command:     []string{"./bin/web"},
 				Exposure:    scheduler.ExposePrivate,
 				Instances:   1,
 				MemoryLimit: 536870912,

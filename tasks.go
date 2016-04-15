@@ -13,7 +13,7 @@ import (
 type Task struct {
 	Name        string
 	Type        string
-	Command     string
+	Command     Command
 	State       string
 	UpdatedAt   time.Time
 	Constraints Constraints
@@ -50,7 +50,7 @@ func taskFromInstance(i *scheduler.Instance) *Task {
 	return &Task{
 		Name:    fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
 		Type:    string(i.Process.Type),
-		Command: i.Process.Command,
+		Command: Command(i.Process.Command),
 		Constraints: Constraints{
 			CPUShare: constraints.CPUShare(i.Process.CPUShares),
 			Memory:   constraints.Memory(i.Process.MemoryLimit),
