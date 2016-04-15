@@ -17,18 +17,20 @@ type ECR interface {
 	GetAuthorizationToken(*ecr.GetAuthorizationTokenInput) (*ecr.GetAuthorizationTokenOutput, error)
 }
 
+type ECRFactory func(region string) ECR
+
 type ecrAuthProvider struct {
-	svc ECR
+	svcFactory ECRFactory
 }
 
-func NewECRAuthProvider(svc ECR) *ecrAuthProvider {
+func NewECRAuthProvider(svcFactory ECRFactory) *ecrAuthProvider {
 	return &ecrAuthProvider{
-		svc: svc,
+		svcFactory: svcFactory,
 	}
 }
 
 func (p *ecrAuthProvider) AuthConfiguration(registry string) (*docker.AuthConfiguration, error) {
-	registryId, err := extractRegistryId(registry)
+	registryId, registryRegion, err := extractRegistryInfo(registry)
 	if err != nil {
 		return nil, nil
 	}
@@ -39,7 +41,8 @@ func (p *ecrAuthProvider) AuthConfiguration(registry string) (*docker.AuthConfig
 		},
 	}
 
-	output, err := p.svc.GetAuthorizationToken(input)
+	svc := p.svcFactory(registryRegion)
+	output, err := svc.GetAuthorizationToken(input)
 	if err != nil {
 		return nil, err
 	}
@@ -52,13 +55,13 @@ func (p *ecrAuthProvider) AuthConfiguration(registry string) (*docker.AuthConfig
 	return newAuthConfiguration(aws.StringValue(authData.AuthorizationToken), aws.StringValue(authData.ProxyEndpoint))
 }
 
-func extractRegistryId(registry string) (string, error) {
+func extractRegistryInfo(registry string) (string, string, error) {
 	matches := ecrRegistryExp.FindStringSubmatch(registry)
 	if len(matches) == 0 {
-		return "", fmt.Errorf("%q is not an ECR registry", registry)
+		return "", "", fmt.Errorf("%q is not an ECR registry", registry)
 	}
 
-	return matches[1], nil
+	return matches[1], matches[2], nil
 }
 
 func newAuthConfiguration(encodedToken string, endpoint string) (*docker.AuthConfiguration, error) {

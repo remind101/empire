@@ -267,8 +267,11 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 // Auth provider =======================
 
 func newAuthProvider(c *cli.Context) (dockerauth.AuthProvider, error) {
+	awsSession := newConfigProvider(c)
 	provider := dockerauth.NewMultiAuthProvider()
-	provider.AddProvider(dockerauth.NewECRAuthProvider(ecr.New(newConfigProvider(c))))
+	provider.AddProvider(dockerauth.NewECRAuthProvider(func(region string) dockerauth.ECR {
+		return ecr.New(awsSession, &aws.Config{Region: aws.String(region)})
+	}))
 
 	if dockerConfigPath := c.String(FlagDockerAuth); dockerConfigPath != "" {
 		dockerConfigFile, err := os.Open(dockerConfigPath)

@@ -12,15 +12,16 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestECRAuthProvider_extractRegistryId(t *testing.T) {
-	registryId, err := extractRegistryId("123456789012.dkr.ecr.us-east-1.amazonaws.com")
+func TestECRAuthProvider_extractRegistryInfo(t *testing.T) {
+	registryId, registryRegion, err := extractRegistryInfo("123456789012.dkr.ecr.us-east-1.amazonaws.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "123456789012", registryId)
+	assert.Equal(t, "us-east-1", registryRegion)
 
-	registryId, err = extractRegistryId("https://index.docker.io/v1")
+	_, _, err = extractRegistryInfo("https://index.docker.io/v1")
 	assert.EqualError(t, err, "\"https://index.docker.io/v1\" is not an ECR registry")
 
-	registryId, err = extractRegistryId("")
+	_, _, err = extractRegistryInfo("")
 	assert.EqualError(t, err, "\"\" is not an ECR registry")
 }
 
@@ -36,7 +37,10 @@ func TestECRAuthProvider_AuthConfiguration(t *testing.T) {
 	svc := new(mockECR)
 	svc.On("GetAuthorizationToken", newGetAuthorizationTokenInput("123456789012")).Return(newGetAuthorizationTokenOutput("123456789012", "us-east-1", "foo:bar"), nil)
 	svc.On("GetAuthorizationToken", newGetAuthorizationTokenInput("123456789013")).Return(&ecr.GetAuthorizationTokenOutput{}, nil)
-	provider := NewECRAuthProvider(svc)
+	provider := NewECRAuthProvider(func(region string) ECR {
+		assert.Equal(t, "us-east-1", region)
+		return svc
+	})
 	authConf, err := provider.AuthConfiguration("123456789012.dkr.ecr.us-east-1.amazonaws.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", authConf.Username)
