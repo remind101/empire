@@ -20,7 +20,7 @@
 
 **Performance**
 
-* `emp ps` should be significantly faster for services running a lot of processes [#781](https://github.com/remind101/empire/pull/781)
+* `emp ps` should be significantly faster for services running a lot of processes [#781](https://github.com/remind101/empire/pull/781), [#782](https://github.com/remind101/empire/pull/782)
 
 **Security**
 
