@@ -42,14 +42,6 @@ type App struct {
 	Processes []*Process
 }
 
-type PortMap struct {
-	// The Host port.
-	Host *int64
-
-	// The container port.
-	Container *int64
-}
-
 type Process struct {
 	// The type of process.
 	Type string
@@ -65,9 +57,6 @@ type Process struct {
 
 	// Labels to set on the container.
 	Labels map[string]string
-
-	// Mapping of host -> container port mappings.
-	Ports []PortMap
 
 	// Exposure is the level of exposure for this process.
 	Exposure Exposure

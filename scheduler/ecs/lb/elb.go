@@ -19,6 +19,16 @@ var defaultConnectionDrainingTimeout int64 = 30
 
 var _ Manager = &ELBManager{}
 
+// elbClient describes the interface from elb.ELB that we use.
+type elbClient interface {
+	CreateLoadBalancer(input *elb.CreateLoadBalancerInput) (*elb.CreateLoadBalancerOutput, error)
+	ModifyLoadBalancerAttributes(input *elb.ModifyLoadBalancerAttributesInput) (*elb.ModifyLoadBalancerAttributesOutput, error)
+	SetLoadBalancerListenerSSLCertificate(input *elb.SetLoadBalancerListenerSSLCertificateInput) (*elb.SetLoadBalancerListenerSSLCertificateOutput, error)
+	DeleteLoadBalancer(input *elb.DeleteLoadBalancerInput) (*elb.DeleteLoadBalancerOutput, error)
+	DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (*elb.DescribeLoadBalancersOutput, error)
+	DescribeTags(input *elb.DescribeTagsInput) (*elb.DescribeTagsOutput, error)
+}
+
 // ELBManager is an implementation of the Manager interface that creates Elastic
 // Load Balancers.
 type ELBManager struct {
@@ -34,7 +44,11 @@ type ELBManager struct {
 	// The Subnet IDs to assign when creating external load balancers.
 	ExternalSubnetIDs []string
 
-	elb *elb.ELB
+	elb elbClient
+
+	// Ports is the PortAllocator used to allocate ports to new load
+	// balancers.
+	Ports PortAllocator
 
 	newName func() string
 }
@@ -62,8 +76,14 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 		subnets = m.externalSubnets()
 	}
 
+	// Allocate a new instance port for this load balancer.
+	port, err := m.Ports.Get()
+	if err != nil {
+		return nil, err
+	}
+
 	input := &elb.CreateLoadBalancerInput{
-		Listeners:        elbListeners(o.InstancePort, o.SSLCert),
+		Listeners:        elbListeners(port, o.SSLCert),
 		LoadBalancerName: aws.String(m.newName()),
 		Scheme:           aws.String(scheme),
 		SecurityGroups:   []*string{aws.String(sg)},
@@ -98,7 +118,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 		DNSName:      *out.DNSName,
 		External:     o.External,
 		SSLCert:      o.SSLCert,
-		InstancePort: o.InstancePort,
+		InstancePort: port,
 	}, nil
 }
 
@@ -123,10 +143,35 @@ func (m *ELBManager) updateSSLCert(ctx context.Context, name, certID string) err
 
 // DestroyLoadBalancer destroys an ELB.
 func (m *ELBManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
+	if err := m.releasePorts(ctx, lb.Name); err != nil {
+		return nil
+	}
+
 	_, err := m.elb.DeleteLoadBalancer(&elb.DeleteLoadBalancerInput{
 		LoadBalancerName: aws.String(lb.Name),
 	})
+
 	return err
+}
+
+// releases any allocated ports for this load balancer.
+func (m *ELBManager) releasePorts(ctx context.Context, loadBalancer string) error {
+	resp, err := m.elb.DescribeLoadBalancers(&elb.DescribeLoadBalancersInput{
+		LoadBalancerNames: []*string{aws.String(loadBalancer)},
+	})
+	if err != nil {
+		return err
+	}
+
+	lb := resp.LoadBalancerDescriptions[0]
+
+	for _, ld := range lb.ListenerDescriptions {
+		if err := m.Ports.Put(*ld.Listener.InstancePort); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // LoadBalancers returns all load balancers. If tags are provided, then the
@@ -169,27 +214,10 @@ func (m *ELBManager) LoadBalancers(ctx context.Context, tags map[string]string) 
 		// Append matching load balancers to our result set.
 		for _, d := range out2.TagDescriptions {
 			if containsTags(tags, d.Tags) {
-				elb := descs[*d.LoadBalancerName]
-				var instancePort int64
-				var sslCert string
+				lb := loadBalancerFromDescription(descs[*d.LoadBalancerName])
+				lb.Tags = mapTags(d.Tags)
 
-				if len(elb.ListenerDescriptions) > 0 {
-					instancePort = *elb.ListenerDescriptions[0].Listener.InstancePort
-					for _, ld := range elb.ListenerDescriptions {
-						if ld.Listener.SSLCertificateId != nil {
-							sslCert = *ld.Listener.SSLCertificateId
-						}
-					}
-				}
-
-				lbs = append(lbs, &LoadBalancer{
-					Name:         *elb.LoadBalancerName,
-					DNSName:      *elb.DNSName,
-					External:     *elb.Scheme == schemeExternal,
-					SSLCert:      sslCert,
-					InstancePort: instancePort,
-					Tags:         mapTags(d.Tags),
-				})
+				lbs = append(lbs, lb)
 			}
 		}
 
@@ -209,6 +237,28 @@ func (m *ELBManager) internalSubnets() []*string {
 
 func (m *ELBManager) externalSubnets() []*string {
 	return awsStringSlice(m.ExternalSubnetIDs)
+}
+
+func loadBalancerFromDescription(elb *elb.LoadBalancerDescription) *LoadBalancer {
+	var instancePort int64
+	var sslCert string
+
+	if len(elb.ListenerDescriptions) > 0 {
+		instancePort = *elb.ListenerDescriptions[0].Listener.InstancePort
+		for _, ld := range elb.ListenerDescriptions {
+			if ld.Listener.SSLCertificateId != nil {
+				sslCert = *ld.Listener.SSLCertificateId
+			}
+		}
+	}
+
+	return &LoadBalancer{
+		Name:         *elb.LoadBalancerName,
+		DNSName:      *elb.DNSName,
+		External:     *elb.Scheme == schemeExternal,
+		SSLCert:      sslCert,
+		InstancePort: instancePort,
+	}
 }
 
 func awsStringSlice(ss []string) []*string {

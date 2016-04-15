@@ -3,6 +3,7 @@
 package ecs
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,12 @@ import (
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"golang.org/x/net/context"
 )
+
+// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
+// the container port. This is the port that processes within the container
+// should bind to. Tihs value is also exposed to the container through the PORT
+// environment variable.
+const ContainerPort = 8080
 
 var DefaultDelimiter = "-"
 
@@ -91,8 +98,9 @@ func NewScheduler(config Config) (*Scheduler, error) {
 // * Creates services with ECS.
 // * Creates internal or external ELBs for ECS services.
 // * Creates a CNAME record in route53 under the internal TLD.
-func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
-	lb, err := newLBManager(config)
+// * Allocates ports from the ports table.
+func NewLoadBalancedScheduler(db *sql.DB, config Config) (*Scheduler, error) {
+	lb, err := newLBManager(db, config)
 	if err != nil {
 		return nil, err
 	}
@@ -102,13 +110,14 @@ func NewLoadBalancedScheduler(config Config) (*Scheduler, error) {
 	return s, nil
 }
 
-func newLBManager(config Config) (lb.Manager, error) {
+func newLBManager(db *sql.DB, config Config) (lb.Manager, error) {
 	if err := validateLoadBalancedConfig(config); err != nil {
 		return nil, err
 	}
 
 	// Create the ELB Manager
 	elb := lb.NewELBManager(config.AWS)
+	elb.Ports = lb.NewDBPortAllocator(db)
 	elb.InternalSecurityGroupID = config.InternalSecurityGroupID
 	elb.ExternalSecurityGroupID = config.ExternalSecurityGroupID
 	elb.InternalSubnetIDs = config.InternalSubnetIDs
@@ -291,11 +300,16 @@ func (m *Scheduler) Stop(ctx context.Context, instanceID string) error {
 
 // CreateProcess creates an ECS service for the process.
 func (m *Scheduler) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
-	if _, err := m.createTaskDefinition(ctx, app, p); err != nil {
+	loadBalancer, err := m.loadBalancer(ctx, app, p)
+	if err != nil {
 		return err
 	}
 
-	_, err := m.updateCreateService(ctx, app, p)
+	if _, err := m.createTaskDefinition(ctx, app, p, loadBalancer); err != nil {
+		return err
+	}
+
+	_, err = m.updateCreateService(ctx, app, p, loadBalancer)
 	return err
 }
 
@@ -304,7 +318,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 		return errors.New("running an attached process is not implemented by the ECS manager.")
 	}
 
-	td, err := m.createTaskDefinition(ctx, app, process)
+	td, err := m.createTaskDefinition(ctx, app, process, nil)
 	if err != nil {
 		return err
 	}
@@ -319,8 +333,8 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
-func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process) (*ecs.TaskDefinition, error) {
-	taskDef, err := taskDefinitionInput(process, m.logConfiguration)
+func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.TaskDefinition, error) {
+	taskDef, err := m.taskDefinitionInput(process, loadBalancer)
 	if err != nil {
 		return nil, err
 	}
@@ -329,22 +343,89 @@ func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App
 	return resp.TaskDefinition, err
 }
 
-// createService creates a Service in ECS for the service.
-func (m *Scheduler) createService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
-	var role *string
-	var loadBalancers []*ecs.LoadBalancer
-
-	loadBalancer, err := m.loadBalancer(ctx, app, p)
+func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
+	args, err := shellwords.Parse(p.Command)
 	if err != nil {
 		return nil, err
 	}
 
-	if loadBalancer != "" {
+	// ecs.ContainerDefinition{Command} is expecting a []*string
+	var command []*string
+	for _, s := range args {
+		ss := s
+		command = append(command, &ss)
+	}
+
+	var environment []*ecs.KeyValuePair
+	for k, v := range p.Env {
+		environment = append(environment, &ecs.KeyValuePair{
+			Name:  aws.String(k),
+			Value: aws.String(v),
+		})
+	}
+
+	// If there's a load balancer attached, generate the port mappings and
+	// expose the container port to the process via the PORT environment
+	// variable.
+	var ports []*ecs.PortMapping
+	if loadBalancer != nil {
+		ports = append(ports, &ecs.PortMapping{
+			HostPort:      aws.Int64(loadBalancer.InstancePort),
+			ContainerPort: aws.Int64(ContainerPort),
+		})
+		environment = append(environment, &ecs.KeyValuePair{
+			Name:  aws.String("PORT"),
+			Value: aws.String(fmt.Sprintf("%d", ContainerPort)),
+		})
+	}
+
+	labels := make(map[string]*string)
+	for k, v := range p.Labels {
+		labels[k] = aws.String(v)
+	}
+
+	var ulimits []*ecs.Ulimit
+	if p.Nproc != 0 {
+		ulimits = []*ecs.Ulimit{
+			&ecs.Ulimit{
+				Name:      aws.String("nproc"),
+				SoftLimit: aws.Int64(int64(p.Nproc)),
+				HardLimit: aws.Int64(int64(p.Nproc)),
+			},
+		}
+	}
+
+	return &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String(p.Type),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			&ecs.ContainerDefinition{
+				Name:             aws.String(p.Type),
+				Cpu:              aws.Int64(int64(p.CPUShares)),
+				Command:          command,
+				Image:            aws.String(p.Image.String()),
+				Essential:        aws.Bool(true),
+				Memory:           aws.Int64(int64(p.MemoryLimit / MB)),
+				Environment:      environment,
+				LogConfiguration: m.logConfiguration,
+				PortMappings:     ports,
+				DockerLabels:     labels,
+				Ulimits:          ulimits,
+			},
+		},
+	}, nil
+}
+
+// createService creates a Service in ECS for the service.
+func (m *Scheduler) createService(ctx context.Context, app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.Service, error) {
+	var role *string
+	var loadBalancers []*ecs.LoadBalancer
+
+	if loadBalancer != nil {
 		loadBalancers = []*ecs.LoadBalancer{
 			{
 				ContainerName:    aws.String(p.Type),
-				ContainerPort:    p.Ports[0].Container,
-				LoadBalancerName: aws.String(loadBalancer),
+				ContainerPort:    aws.Int64(ContainerPort),
+				LoadBalancerName: aws.String(loadBalancer.Name),
 			},
 		}
 		role = aws.String(m.serviceRole)
@@ -384,7 +465,7 @@ func (m *Scheduler) updateService(ctx context.Context, app *scheduler.App, p *sc
 }
 
 // updateCreateService will perform an upsert for the service in ECS.
-func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
+func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.Service, error) {
 	s, err := m.updateService(ctx, app, p)
 	if err != nil {
 		return nil, err
@@ -394,17 +475,18 @@ func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App,
 		return s, nil
 	}
 
-	return m.createService(ctx, app, p)
+	return m.createService(ctx, app, p, loadBalancer)
 }
 
 // loadBalancer creates (or updates) a a load balancer for the given process, if
 // the process is exposed. It returns the name of the load balancer.
-func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *scheduler.Process) (string, error) {
+func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*lb.LoadBalancer, error) {
+	// No load balancer for unexposed processes.
 	if p.Exposure > scheduler.ExposeNone {
 		// Attempt to find an existing load balancer for this app.
 		l, err := m.findLoadBalancer(ctx, app.ID, p.Type)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		// If the load balancer doesn't match the exposure that we
@@ -414,12 +496,12 @@ func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *sch
 			var opts *lb.UpdateLoadBalancerOpts
 			opts, err = updateOpts(p, l)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			if opts != nil {
 				if err = m.lb.UpdateLoadBalancer(ctx, *opts); err != nil {
-					return "", err
+					return nil, err
 				}
 			}
 		}
@@ -432,20 +514,19 @@ func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *sch
 			tags[lb.AppTag] = app.Name
 
 			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
-				InstancePort: *p.Ports[0].Host, // TODO: Check that the process has ports.
-				External:     p.Exposure == scheduler.ExposePublic,
-				SSLCert:      p.SSLCert,
-				Tags:         tags,
+				External: p.Exposure == scheduler.ExposePublic,
+				SSLCert:  p.SSLCert,
+				Tags:     tags,
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 		}
 
-		return l.Name, nil
+		return l, nil
 	}
 
-	return "", nil
+	return nil, nil
 }
 
 func (m *Scheduler) removeLoadBalancer(ctx context.Context, app string, p string) error {
@@ -546,73 +627,6 @@ func (m *Scheduler) Scale(ctx context.Context, app string, process string, insta
 		Service:      aws.String(process),
 	})
 	return err
-}
-
-// taskDefinitionInput returns an ecs.RegisterTaskDefinitionInput suitable for
-// creating a task definition from a Process.
-func taskDefinitionInput(p *scheduler.Process, logConfiguration *ecs.LogConfiguration) (*ecs.RegisterTaskDefinitionInput, error) {
-	args, err := shellwords.Parse(p.Command)
-	if err != nil {
-		return nil, err
-	}
-
-	// ecs.ContainerDefinition{Command} is expecting a []*string
-	var command []*string
-	for _, s := range args {
-		ss := s
-		command = append(command, &ss)
-	}
-
-	var environment []*ecs.KeyValuePair
-	for k, v := range p.Env {
-		environment = append(environment, &ecs.KeyValuePair{
-			Name:  aws.String(k),
-			Value: aws.String(v),
-		})
-	}
-
-	var ports []*ecs.PortMapping
-	for _, m := range p.Ports {
-		ports = append(ports, &ecs.PortMapping{
-			HostPort:      m.Host,
-			ContainerPort: m.Container,
-		})
-	}
-
-	labels := make(map[string]*string)
-	for k, v := range p.Labels {
-		labels[k] = aws.String(v)
-	}
-
-	var ulimits []*ecs.Ulimit
-	if p.Nproc != 0 {
-		ulimits = []*ecs.Ulimit{
-			&ecs.Ulimit{
-				Name:      aws.String("nproc"),
-				SoftLimit: aws.Int64(int64(p.Nproc)),
-				HardLimit: aws.Int64(int64(p.Nproc)),
-			},
-		}
-	}
-
-	return &ecs.RegisterTaskDefinitionInput{
-		Family: aws.String(p.Type),
-		ContainerDefinitions: []*ecs.ContainerDefinition{
-			&ecs.ContainerDefinition{
-				Name:             aws.String(p.Type),
-				Cpu:              aws.Int64(int64(p.CPUShares)),
-				Command:          command,
-				Image:            aws.String(p.Image.String()),
-				Essential:        aws.Bool(true),
-				Memory:           aws.Int64(int64(p.MemoryLimit / MB)),
-				Environment:      environment,
-				LogConfiguration: logConfiguration,
-				PortMappings:     ports,
-				DockerLabels:     labels,
-				Ulimits:          ulimits,
-			},
-		},
-	}, nil
 }
 
 func safeString(s *string) string {
@@ -743,16 +757,6 @@ func (e *LoadBalancerExposureError) Error() string {
 	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, e.proc.Exposure, lbExposure)
 }
 
-// LoadBalancerPortMismatchError is returned when the port stored in the data store does not match the ELB instance port
-type LoadBalancerPortMismatchError struct {
-	proc *scheduler.Process
-	lb   *lb.LoadBalancer
-}
-
-func (e *LoadBalancerPortMismatchError) Error() string {
-	return fmt.Sprintf("Process %s instance port is %d, but load balancer instance port is %d.", e.proc.Type, *e.proc.Ports[0].Host, e.lb.InstancePort)
-}
-
 // canUpdate checks if the load balancer is suitable for the process.
 func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 	if p.Exposure == scheduler.ExposePublic && !lb.External {
@@ -761,10 +765,6 @@ func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 
 	if p.Exposure == scheduler.ExposePrivate && lb.External {
 		return &LoadBalancerExposureError{p, lb}
-	}
-
-	if *p.Ports[0].Host != lb.InstancePort {
-		return &LoadBalancerPortMismatchError{p, lb}
 	}
 
 	return nil

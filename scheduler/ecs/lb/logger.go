@@ -30,7 +30,6 @@ func (m *LoggedManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBala
 		"err", err,
 		"name", name,
 		"external", o.External,
-		"instance-port", o.InstancePort,
 		"dns-name", dnsName,
 		"cert", o.SSLCert,
 	)
