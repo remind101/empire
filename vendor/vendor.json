@@ -243,6 +243,11 @@
 			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
 		},
 		{
+			"path": "github.com/ejholmes/migrate",
+			"revision": "25b6c8ba8b982afba37e16c5fe93c0f592941578",
+			"revisionTime": "2016-04-15T11:14:42+07:00"
+		},
+		{
 			"path": "github.com/ernesto-jimenez/go-querystring/query",
 			"revision": "a9b7f983e384616b2a317c8f345701fb1688d061",
 			"revisionTime": "2014-11-09T01:42:17Z"

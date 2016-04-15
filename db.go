@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/ejholmes/migrate"
 	"github.com/jinzhu/gorm"
-	"github.com/mattes/migrate/migrate"
 	"github.com/remind101/empire/pkg/headerutil"
 )
 
@@ -41,8 +41,8 @@ func OpenDB(uri string) (*DB, error) {
 }
 
 // MigrateUp migrates the database to the latest version of the schema.
-func (db *DB) MigrateUp(path string) ([]error, bool) {
-	return migrate.UpSync(db.uri, path)
+func (db *DB) MigrateUp() error {
+	return migrate.Exec(db.DB.DB(), migrate.Up, Migrations...)
 }
 
 // Reset resets the database to a pristine state.
