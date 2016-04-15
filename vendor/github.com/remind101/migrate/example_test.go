@@ -3,8 +3,8 @@ package migrate_test
 import (
 	"database/sql"
 
-	"github.com/ejholmes/migrate"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/remind101/migrate"
 )
 
 func Example() {

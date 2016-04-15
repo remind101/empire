@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ejholmes/migrate"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/remind101/migrate"
 	"github.com/stretchr/testify/assert"
 )
 

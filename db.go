@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ejholmes/migrate"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
+	"github.com/remind101/migrate"
 )
 
 // DB wraps a gorm.DB and provides the datastore layer for Empire.

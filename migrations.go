@@ -1,6 +1,6 @@
 package empire
 
-import "github.com/ejholmes/migrate"
+import "github.com/remind101/migrate"
 
 var Migrations = []migrate.Migration{
 	{
