@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -69,34 +70,27 @@ func ParseCommand(command string) (Command, error) {
 
 // Scan implements the sql.Scanner interface.
 func (c *Command) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		command, err := ParseCommand(string(src))
-		if err != nil {
-			return err
-		}
-		*c = command
+	bytes, ok := src.([]byte)
+	if !ok {
+		return error(errors.New("Scan source was not []bytes"))
 	}
+
+	var cmd Command
+	if err := json.Unmarshal(bytes, &cmd); err != nil {
+		return err
+	}
+	*c = cmd
 
 	return nil
 }
 
 // Value implements the driver.Value interface.
 func (c Command) Value() (driver.Value, error) {
-	// TODO(ejholmes): We really should be storing this as a postgres array,
-	// because stringifying it can cause information to be lost.
-	//
-	// For example, if we have the command:
-	//
-	//	Command{"echo", "hello world"}
-	//
-	// Then stringify it:
-	//
-	//	"echo hello world"
-	//
-	// Then parse it again:
-	//
-	//	Command{"echo", "hello", "world"}
-	return driver.Value(c.String()), nil
+	raw, err := json.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	return driver.Value(raw), nil
 }
 
 // String returns the string reprsentation of the command.

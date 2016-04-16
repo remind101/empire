@@ -1,6 +1,10 @@
 package empire
 
-import "github.com/remind101/migrate"
+import (
+	"database/sql"
+
+	"github.com/remind101/migrate"
+)
 
 var Migrations = []migrate.Migration{
 	{
@@ -242,6 +246,59 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 		}),
 		Down: migrate.Queries([]string{
 			`ALTER TABLE ports DROP column taken`,
+		}),
+	},
+	{
+		ID: 14,
+		Up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`ALTER TABLE processes ADD COLUMN command_arr jsonb`)
+			if err != nil {
+				return err
+			}
+
+			rows, err := tx.Query(`SELECT id, command FROM processes`)
+			if err != nil {
+				return err
+			}
+			defer rows.Close()
+
+			commands := make(map[string]string)
+			for rows.Next() {
+				var id, command string
+				if err := rows.Scan(&id, &command); err != nil {
+					return err
+				}
+				commands[id] = command
+			}
+
+			if err := rows.Err(); err != nil {
+				return err
+			}
+
+			for id, command := range commands {
+				cmd, err := ParseCommand(command)
+				if err != nil {
+					return err
+				}
+
+				query := `UPDATE processes SET command_arr = $1 WHERE id = $2`
+				_, err = tx.Exec(query, cmd, id)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = tx.Exec(`ALTER TABLE processes DROP COLUMN command`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`ALTER TABLE processes RENAME COLUMN command_arr TO command`)
+			return err
+		},
+		Down: migrate.Queries([]string{
+			`ALTER TABLE processes DROP COLUMN command`,
+			`ALTER TABLE processes ADD COLUMN command text not null`,
 		}),
 	},
 }
