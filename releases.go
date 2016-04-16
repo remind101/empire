@@ -298,8 +298,7 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		MemoryLimit: uint(p.Constraints.Memory),
 		CPUShares:   uint(p.Constraints.CPUShare),
 		Nproc:       uint(p.Constraints.Nproc),
-		Exposure:    processExposure(release.App.Exposure, p.Type),
-		SSLCert:     release.App.Cert,
+		Exposure:    processExposure(release.App, p),
 	}
 }
 
@@ -314,20 +313,24 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func processExposure(appExp string, process ProcessType) (exp scheduler.Exposure) {
+func processExposure(app *App, process *Process) *scheduler.Exposure {
 	// For now, only the `web` process can be exposed.
-	if process != WebProcessType {
-		return scheduler.ExposeNone
+	if process.Type != WebProcessType {
+		return nil
 	}
 
-	switch appExp {
-	case ExposePrivate:
-		exp = scheduler.ExposePrivate
-	case ExposePublic:
-		exp = scheduler.ExposePublic
+	exposure := &scheduler.Exposure{
+		External: app.Exposure == ExposePublic,
+	}
+
+	switch app.Cert {
+	case "":
+		exposure.Type = &scheduler.HTTPExposure{}
 	default:
-		exp = scheduler.ExposeNone
+		exposure.Type = &scheduler.HTTPSExposure{
+			Cert: app.Cert,
+		}
 	}
 
-	return exp
+	return exposure
 }

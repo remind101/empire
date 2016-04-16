@@ -102,15 +102,16 @@ func TestEmpire_Deploy(t *testing.T) {
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{
-				Type:        "web",
-				Image:       img,
-				Command:     []string{"./bin/web"},
-				Exposure:    scheduler.ExposePrivate,
+				Type:    "web",
+				Image:   img,
+				Command: []string{"./bin/web"},
+				Exposure: &scheduler.Exposure{
+					Type: &scheduler.HTTPExposure{},
+				},
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				SSLCert:     "",
 				Env: map[string]string{
 					"EMPIRE_APPID":      app.ID,
 					"EMPIRE_APPNAME":    "acme-inc",
@@ -258,15 +259,16 @@ func TestEmpire_Set(t *testing.T) {
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{
-				Type:        "web",
-				Image:       img,
-				Command:     []string{"./bin/web"},
-				Exposure:    scheduler.ExposePrivate,
+				Type:    "web",
+				Image:   img,
+				Command: []string{"./bin/web"},
+				Exposure: &scheduler.Exposure{
+					Type: &scheduler.HTTPExposure{},
+				},
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				SSLCert:     "",
 				Env: map[string]string{
 					"EMPIRE_APPID":      app.ID,
 					"EMPIRE_APPNAME":    "acme-inc",
@@ -300,15 +302,16 @@ func TestEmpire_Set(t *testing.T) {
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{
-				Type:        "web",
-				Image:       img,
-				Command:     []string{"./bin/web"},
-				Exposure:    scheduler.ExposePrivate,
+				Type:    "web",
+				Image:   img,
+				Command: []string{"./bin/web"},
+				Exposure: &scheduler.Exposure{
+					Type: &scheduler.HTTPExposure{},
+				},
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				SSLCert:     "",
 				Env: map[string]string{
 					"EMPIRE_APPID":      app.ID,
 					"EMPIRE_APPNAME":    "acme-inc",
