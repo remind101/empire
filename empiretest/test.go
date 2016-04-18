@@ -35,7 +35,9 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		t.Fatal(err)
 	}
 
-	// TODO: Run db.MigrateUp once migrations are in the binary.
+	if err := db.MigrateUp(); err != nil {
+		t.Fatal(err)
+	}
 
 	// Log queries if verbose mode is set.
 	if testing.Verbose() {

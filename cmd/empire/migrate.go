@@ -13,10 +13,8 @@ func runMigrate(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	path := c.String(FlagDBPath)
-	errors, ok := db.MigrateUp(path)
-	if !ok {
-		log.Fatal(errors)
+	if err := db.MigrateUp(); err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("Up to date")
