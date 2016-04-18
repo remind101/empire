@@ -238,7 +238,7 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 		ID: 13,
 		Up: migrate.Queries([]string{
 			`ALTER TABLE ports ADD COLUMN taken text`,
-			`UPDATE ports SET taken = 't' WHERE port = (SELECT port FROM ports WHERE app_id is not NULL)`,
+			`UPDATE ports SET taken = 't' FROM (SELECT port FROM ports WHERE app_id is not NULL) as used_ports WHERE ports.port = used_ports.port`,
 		}),
 		Down: migrate.Queries([]string{
 			`ALTER TABLE ports DROP column taken`,
