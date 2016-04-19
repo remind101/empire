@@ -268,6 +268,7 @@ func newServiceApp(release *Release) *scheduler.App {
 	return &scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
+		Image:     release.Slug.Image,
 		Processes: processes,
 	}
 }
@@ -293,7 +294,6 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		Env:         env,
 		Labels:      labels,
 		Command:     []string(p.Command),
-		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),
 		MemoryLimit: uint(p.Constraints.Memory),
 		CPUShares:   uint(p.Constraints.CPUShare),

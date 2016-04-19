@@ -332,7 +332,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.TaskDefinition, error) {
-	taskDef, err := m.taskDefinitionInput(process, loadBalancer)
+	taskDef, err := m.taskDefinitionInput(app, process, loadBalancer)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App
 	return resp.TaskDefinition, err
 }
 
-func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
+func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
 	// ecs.ContainerDefinition{Command} is expecting a []*string
 	var command []*string
 	for _, s := range p.Command {
@@ -395,7 +395,7 @@ func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.L
 				Name:             aws.String(p.Type),
 				Cpu:              aws.Int64(int64(p.CPUShares)),
 				Command:          command,
-				Image:            aws.String(p.Image.String()),
+				Image:            aws.String(app.Image.String()),
 				Essential:        aws.Bool(true),
 				Memory:           aws.Int64(int64(p.MemoryLimit / MB)),
 				Environment:      environment,

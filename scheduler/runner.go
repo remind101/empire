@@ -18,7 +18,7 @@ func (m *AttachedRunner) Run(ctx context.Context, app *App, p *Process, in io.Re
 	// If an output stream is provided, run using the docker runner.
 	if out != nil {
 		return m.Runner.Run(ctx, runner.RunOpts{
-			Image:   p.Image,
+			Image:   app.Image,
 			Command: p.Command,
 			Env:     p.Env,
 			Input:   in,

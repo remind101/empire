@@ -98,12 +98,12 @@ func TestEmpire_Deploy(t *testing.T) {
 
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:    app.ID,
+		Name:  "acme-inc",
+		Image: img,
 		Processes: []*scheduler.Process{
 			{
 				Type:    "web",
-				Image:   img,
 				Command: []string{"./bin/web"},
 				Exposure: &scheduler.Exposure{
 					Type: &scheduler.HTTPExposure{},
@@ -255,12 +255,12 @@ func TestEmpire_Set(t *testing.T) {
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:    app.ID,
+		Name:  "acme-inc",
+		Image: img,
 		Processes: []*scheduler.Process{
 			{
 				Type:    "web",
-				Image:   img,
 				Command: []string{"./bin/web"},
 				Exposure: &scheduler.Exposure{
 					Type: &scheduler.HTTPExposure{},
@@ -298,12 +298,12 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Remove the environment variable
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:    app.ID,
+		Name:  "acme-inc",
+		Image: img,
 		Processes: []*scheduler.Process{
 			{
 				Type:    "web",
-				Image:   img,
 				Command: []string{"./bin/web"},
 				Exposure: &scheduler.Exposure{
 					Type: &scheduler.HTTPExposure{},

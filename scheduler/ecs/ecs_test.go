@@ -454,10 +454,12 @@ func TestScheduler_Run(t *testing.T) {
 	m, s := newTestScheduler(h)
 	defer s.Close()
 
-	app := &scheduler.App{ID: "1234"}
+	app := &scheduler.App{
+		ID:    "1234",
+		Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+	}
 	process := &scheduler.Process{
 		Type:    "run",
-		Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 		Command: []string{"acme-inc", "web", "--port", "80"},
 		Env: map[string]string{
 			"USER": "foo",
@@ -666,11 +668,11 @@ func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]strin
 
 // fake app for testing.
 var fakeApp = &scheduler.App{
-	ID: "1234",
+	ID:    "1234",
+	Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 	Processes: []*scheduler.Process{
 		&scheduler.Process{
 			Type:    "web",
-			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 			Command: []string{"acme-inc", "web", "--port", "80"},
 			Env: map[string]string{
 				"USER": "foo",

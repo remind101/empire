@@ -17,6 +17,9 @@ type App struct {
 	// The name of the app.
 	Name string
 
+	// The Image to run.
+	Image image.Image
+
 	// Process that belong to this app.
 	Processes []*Process
 }
@@ -24,9 +27,6 @@ type App struct {
 type Process struct {
 	// The type of process.
 	Type string
-
-	// The Image to run.
-	Image image.Image
 
 	// The Command to run.
 	Command []string

@@ -78,6 +78,6 @@ type mockScheduler struct {
 }
 
 func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
-	m.image <- app.Processes[0].Image.String()
+	m.image <- app.Image.String()
 	return nil
 }
