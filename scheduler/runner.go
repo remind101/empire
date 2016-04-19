@@ -3,6 +3,7 @@ package scheduler
 import (
 	"io"
 
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/runner"
 	"golang.org/x/net/context"
 )
@@ -14,13 +15,13 @@ type AttachedRunner struct {
 	Runner *runner.Runner
 }
 
-func (m *AttachedRunner) Run(ctx context.Context, app App, p Process, in io.Reader, out io.Writer) error {
+func (m *AttachedRunner) Run(ctx context.Context, app twelvefactor.App, p twelvefactor.Process, in io.Reader, out io.Writer) error {
 	// If an output stream is provided, run using the docker runner.
 	if out != nil {
 		return m.Runner.Run(ctx, runner.RunOpts{
 			Image:   app.Image,
 			Command: p.Command,
-			Env:     ProcessEnv(app, p),
+			Env:     twelvefactor.ProcessEnv(app, p),
 			Input:   in,
 			Output:  out,
 		})

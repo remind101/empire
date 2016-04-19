@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/headerutil"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -148,7 +148,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 // Release submits a release to the scheduler.
 func (s *releasesService) Release(ctx context.Context, release *Release) error {
-	a := newServiceApp(release)
+	a := new12factorApp(release)
 	return s.Scheduler.Submit(ctx, a)
 }
 
@@ -258,11 +258,11 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func newServiceApp(release *Release) scheduler.App {
-	var processes []scheduler.Process
+func new12factorApp(release *Release) twelvefactor.App {
+	var processes []twelvefactor.Process
 
 	for _, p := range release.Processes {
-		processes = append(processes, newServiceProcess(release, p))
+		processes = append(processes, new12factorProcess(release, p))
 	}
 
 	env := environment(release.Config.Vars)
@@ -277,7 +277,7 @@ func newServiceApp(release *Release) scheduler.App {
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
-	return scheduler.App{
+	return twelvefactor.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
 		Image:     release.Slug.Image,
@@ -287,7 +287,7 @@ func newServiceApp(release *Release) scheduler.App {
 	}
 }
 
-func newServiceProcess(release *Release, p *Process) scheduler.Process {
+func new12factorProcess(release *Release, p *Process) twelvefactor.Process {
 	env := map[string]string{
 		"EMPIRE_PROCESS": string(p.Type),
 		"SOURCE":         fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version),
@@ -297,7 +297,7 @@ func newServiceProcess(release *Release, p *Process) scheduler.Process {
 		"empire.app.process": string(p.Type),
 	}
 
-	return scheduler.Process{
+	return twelvefactor.Process{
 		Type:        string(p.Type),
 		Env:         env,
 		Labels:      labels,
@@ -321,21 +321,21 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func processExposure(app *App, process *Process) *scheduler.Exposure {
+func processExposure(app *App, process *Process) *twelvefactor.Exposure {
 	// For now, only the `web` process can be exposed.
 	if process.Type != WebProcessType {
 		return nil
 	}
 
-	exposure := &scheduler.Exposure{
+	exposure := &twelvefactor.Exposure{
 		External: app.Exposure == ExposePublic,
 	}
 
 	switch app.Cert {
 	case "":
-		exposure.Type = &scheduler.HTTPExposure{}
+		exposure.Type = &twelvefactor.HTTPExposure{}
 	default:
-		exposure.Type = &scheduler.HTTPSExposure{
+		exposure.Type = &twelvefactor.HTTPSExposure{
 			Cert: app.Cert,
 		}
 	}

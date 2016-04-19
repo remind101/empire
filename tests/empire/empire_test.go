@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
@@ -97,7 +98,7 @@ func TestEmpire_Deploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", scheduler.App{
+	s.On("Submit", twelvefactor.App{
 		ID:    app.ID,
 		Name:  "acme-inc",
 		Image: img,
@@ -112,12 +113,12 @@ func TestEmpire_Deploy(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-		Processes: []scheduler.Process{
+		Processes: []twelvefactor.Process{
 			{
 				Type:    "web",
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Type: &scheduler.HTTPExposure{},
+				Exposure: &twelvefactor.Exposure{
+					Type: &twelvefactor.HTTPExposure{},
 				},
 				Instances:   1,
 				MemoryLimit: 536870912,
@@ -258,7 +259,7 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", scheduler.App{
+	s.On("Submit", twelvefactor.App{
 		ID:    app.ID,
 		Name:  "acme-inc",
 		Image: img,
@@ -274,12 +275,12 @@ func TestEmpire_Set(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-		Processes: []scheduler.Process{
+		Processes: []twelvefactor.Process{
 			{
 				Type:    "web",
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Type: &scheduler.HTTPExposure{},
+				Exposure: &twelvefactor.Exposure{
+					Type: &twelvefactor.HTTPExposure{},
 				},
 				Instances:   1,
 				MemoryLimit: 536870912,
@@ -305,7 +306,7 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Remove the environment variable
-	s.On("Submit", scheduler.App{
+	s.On("Submit", twelvefactor.App{
 		ID:    app.ID,
 		Name:  "acme-inc",
 		Image: img,
@@ -320,12 +321,12 @@ func TestEmpire_Set(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v2",
 		},
-		Processes: []scheduler.Process{
+		Processes: []twelvefactor.Process{
 			{
 				Type:    "web",
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Type: &scheduler.HTTPExposure{},
+				Exposure: &twelvefactor.Exposure{
+					Type: &twelvefactor.HTTPExposure{},
 				},
 				Instances:   1,
 				MemoryLimit: 536870912,
@@ -359,7 +360,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app scheduler.App) error {
+func (m *mockScheduler) Submit(_ context.Context, app twelvefactor.App) error {
 	args := m.Called(app)
 	return args.Error(0)
 }
