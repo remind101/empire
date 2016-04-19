@@ -21,13 +21,13 @@ func TestNewFormation(t *testing.T) {
 		{
 			f: nil,
 			cm: CommandMap{
-				"web": "./bin/web",
+				"web": Command{"./bin/web"},
 			},
 			expected: Formation{
 				"web": &Process{
 					Type:        "web",
 					Quantity:    1,
-					Command:     "./bin/web",
+					Command:     Command{"./bin/web"},
 					Constraints: NamedConstraints["1X"],
 				},
 			},
@@ -36,13 +36,13 @@ func TestNewFormation(t *testing.T) {
 		{
 			f: Formation{},
 			cm: CommandMap{
-				"web": "./bin/web",
+				"web": Command{"./bin/web"},
 			},
 			expected: Formation{
 				"web": &Process{
 					Type:        "web",
 					Quantity:    1,
-					Command:     "./bin/web",
+					Command:     Command{"./bin/web"},
 					Constraints: NamedConstraints["1X"],
 				},
 			},
@@ -51,13 +51,13 @@ func TestNewFormation(t *testing.T) {
 		{
 			f: Formation{},
 			cm: CommandMap{
-				"worker": "sidekiq",
+				"worker": Command{"sidekiq"},
 			},
 			expected: Formation{
 				"worker": &Process{
 					Type:        "worker",
 					Quantity:    0,
-					Command:     "sidekiq",
+					Command:     Command{"sidekiq"},
 					Constraints: NamedConstraints["1X"],
 				},
 			},
@@ -68,24 +68,24 @@ func TestNewFormation(t *testing.T) {
 				"web": &Process{
 					Type:        "web",
 					Quantity:    5,
-					Command:     "rackup",
+					Command:     Command{"rackup"},
 					Constraints: NamedConstraints["1X"],
 				},
 				"worker": &Process{
 					Type:        "worker",
 					Quantity:    2,
-					Command:     "sidekiq",
+					Command:     Command{"sidekiq"},
 					Constraints: NamedConstraints["1X"],
 				},
 			},
 			cm: CommandMap{
-				"web": "./bin/web",
+				"web": Command{"./bin/web"},
 			},
 			expected: Formation{
 				"web": &Process{
 					Type:        "web",
 					Quantity:    5,
-					Command:     "./bin/web",
+					Command:     Command{"./bin/web"},
 					Constraints: NamedConstraints["1X"],
 				},
 			},

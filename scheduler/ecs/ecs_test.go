@@ -61,7 +61,7 @@ func TestScheduler_Submit(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"},{"name":"PORT","value":"8080"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port", "80"],"environment":[{"name":"USER","value":"foo"},{"name":"PORT","value":"8080"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -176,7 +176,7 @@ func TestScheduler_Instances(t *testing.T) {
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
-				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","cpu":256,"memory":256,"command":["acme-inc", "web", "--port 80"]}]}}`,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"name":"web","cpu":256,"memory":256,"command":["acme-inc", "web", "--port", "80"]}]}}`,
 			},
 		},
 	})
@@ -202,7 +202,7 @@ func TestScheduler_Instances(t *testing.T) {
 		t.Fatalf("UpdatedAt => %s; want %s", got, want)
 	}
 
-	if got, want := i.Process.Command, "acme-inc web --port 80"; got != want {
+	if got, want := i.Process.Command, []string{"acme-inc", "web", "--port", "80"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("Command => %s; want %s", got, want)
 	}
 
@@ -432,7 +432,7 @@ func TestScheduler_Run(t *testing.T) {
 			Request: awsutil.Request{
 				RequestURI: "/",
 				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
-				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"run"}],"family":"1234--run"}`,
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port", "80"],"environment":[{"name":"USER","value":"foo"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"run"}],"family":"1234--run"}`,
 			},
 			Response: awsutil.Response{
 				StatusCode: 200,
@@ -458,7 +458,7 @@ func TestScheduler_Run(t *testing.T) {
 	process := &scheduler.Process{
 		Type:    "run",
 		Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-		Command: "acme-inc web '--port 80'",
+		Command: []string{"acme-inc", "web", "--port", "80"},
 		Env: map[string]string{
 			"USER": "foo",
 		},
@@ -659,7 +659,7 @@ var fakeApp = &scheduler.App{
 		&scheduler.Process{
 			Type:    "web",
 			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-			Command: "acme-inc web '--port 80'",
+			Command: []string{"acme-inc", "web", "--port", "80"},
 			Env: map[string]string{
 				"USER": "foo",
 			},

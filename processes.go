@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
+	shellwords "github.com/mattn/go-shellwords"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/procfile"
@@ -57,20 +60,42 @@ func (p ProcessType) Value() (driver.Value, error) {
 
 // Command represents the actual shell command that gets executed for a given
 // ProcessType.
-type Command string
+type Command []string
+
+// ParseCommand parses a string into a Command, taking quotes and other shell
+// words into account.
+func ParseCommand(command string) (Command, error) {
+	return shellwords.Parse(command)
+}
 
 // Scan implements the sql.Scanner interface.
 func (c *Command) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*c = Command(src)
+	bytes, ok := src.([]byte)
+	if !ok {
+		return error(errors.New("Scan source was not []bytes"))
 	}
+
+	var cmd Command
+	if err := json.Unmarshal(bytes, &cmd); err != nil {
+		return err
+	}
+	*c = cmd
 
 	return nil
 }
 
 // Value implements the driver.Value interface.
 func (c Command) Value() (driver.Value, error) {
-	return driver.Value(string(c)), nil
+	raw, err := json.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	return driver.Value(raw), nil
+}
+
+// String returns the string reprsentation of the command.
+func (c Command) String() string {
+	return strings.Join([]string(c), " ")
 }
 
 // Process holds configuration information about a Process Type.
@@ -114,7 +139,12 @@ func (cm *CommandMap) Scan(src interface{}) error {
 	m := make(CommandMap)
 
 	for k, v := range h.Map {
-		m[ProcessType(k)] = Command(v.String)
+		command, err := ParseCommand(v.String)
+		if err != nil {
+			return err
+		}
+
+		m[ProcessType(k)] = command
 	}
 
 	*cm = m
@@ -129,7 +159,7 @@ func (cm CommandMap) Value() (driver.Value, error) {
 	for k, v := range cm {
 		m[string(k)] = sql.NullString{
 			Valid:  true,
-			String: string(v),
+			String: v.String(),
 		}
 	}
 

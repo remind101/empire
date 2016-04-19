@@ -88,6 +88,6 @@ func Run(m *testing.M) {
 // ExtractProcfile extracts a fake procfile.
 func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
 	return procfile.Procfile{
-		"web": "./bin/web",
+		"web": []string{"./bin/web"},
 	}, dockerutil.FakePull(img, w)
 }

@@ -50,7 +50,7 @@ type Process struct {
 	Image image.Image
 
 	// The Command to run.
-	Command string
+	Command []string
 
 	// Environment variables to set.
 	Env map[string]string
