@@ -258,6 +258,9 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
+// new12factorManifest builds a twelvefactor.Manifest from a Release, which
+// represents a 12factor application that we can submit to the scheduler
+// backend.
 func new12factorManifest(release *Release) twelvefactor.Manifest {
 	app := new12factorApp(release)
 
@@ -272,6 +275,8 @@ func new12factorManifest(release *Release) twelvefactor.Manifest {
 	}
 }
 
+// new12factorApp returns a new twelvefactor.App description for the given
+// release.
 func new12factorApp(release *Release) twelvefactor.App {
 	env := environment(release.Config.Vars)
 	env["EMPIRE_APPID"] = release.App.ID
@@ -294,6 +299,8 @@ func new12factorApp(release *Release) twelvefactor.App {
 	}
 }
 
+// new12factorProcess returns a new twelvefactor.Process description for the
+// given process.
 func new12factorProcess(release *Release, p *Process) twelvefactor.Process {
 	env := map[string]string{
 		"EMPIRE_PROCESS": string(p.Type),
