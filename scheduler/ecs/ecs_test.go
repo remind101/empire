@@ -525,8 +525,10 @@ func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
 		Name: "appname",
 	}
 	process := &scheduler.Process{
-		Type:     "web",
-		Exposure: scheduler.ExposePrivate,
+		Type: "web",
+		Exposure: &scheduler.Exposure{
+			Type: &scheduler.HTTPExposure{},
+		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{}, nil)
@@ -555,8 +557,11 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
 		Name: "appname",
 	}
 	process := &scheduler.Process{
-		Type:     "web",
-		Exposure: scheduler.ExposePublic,
+		Type: "web",
+		Exposure: &scheduler.Exposure{
+			External: true,
+			Type:     &scheduler.HTTPExposure{},
+		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
@@ -581,8 +586,11 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_MismatchedExposure(t *testi
 		Name: "appname",
 	}
 	process := &scheduler.Process{
-		Type:     "web",
-		Exposure: scheduler.ExposePublic,
+		Type: "web",
+		Exposure: &scheduler.Exposure{
+			External: true,
+			Type:     &scheduler.HTTPExposure{},
+		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
@@ -607,9 +615,13 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewCert(t *testing.T) {
 		Name: "appname",
 	}
 	process := &scheduler.Process{
-		Type:     "web",
-		Exposure: scheduler.ExposePublic,
-		SSLCert:  "newcert",
+		Type: "web",
+		Exposure: &scheduler.Exposure{
+			External: true,
+			Type: &scheduler.HTTPSExposure{
+				Cert: "newcert",
+			},
+		},
 	}
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{
@@ -669,7 +681,9 @@ var fakeApp = &scheduler.App{
 			},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,
-			Exposure:    scheduler.ExposePrivate,
+			Exposure: &scheduler.Exposure{
+				Type: &scheduler.HTTPExposure{},
+			},
 		},
 	},
 }

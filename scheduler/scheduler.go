@@ -10,27 +10,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Exposure int
-
-func (e Exposure) String() string {
-	switch e {
-	case ExposeNone:
-		return "none"
-	case ExposePrivate:
-		return "private"
-	case ExposePublic:
-		return "public"
-	default:
-		return "unknown"
-	}
-}
-
-const (
-	ExposeNone Exposure = iota
-	ExposePrivate
-	ExposePublic
-)
-
 type App struct {
 	// The id of the app.
 	ID string
@@ -59,7 +38,7 @@ type Process struct {
 	Labels map[string]string
 
 	// Exposure is the level of exposure for this process.
-	Exposure Exposure
+	Exposure *Exposure
 
 	// Instances is the desired instances of this service to run.
 	Instances uint
@@ -73,10 +52,38 @@ type Process struct {
 
 	// ulimit -u
 	Nproc uint
-
-	// An SSL Cert associated with this process.
-	SSLCert string
 }
+
+// Exposure controls the exposure settings for a process.
+type Exposure struct {
+	// External means that this process will be exposed to internet facing
+	// traffic, as opposed to being internal. How this is used is
+	// implementation specific. For ECS, this means that the attached ELB
+	// will be "internet-facing".
+	External bool
+
+	// The exposure type (e.g. HTTPExposure, HTTPSExposure, TCPExposure).
+	Type ExposureType
+}
+
+// Exposure represents a service that a process exposes, like HTTP/HTTPS/TCP or
+// SSL.
+type ExposureType interface {
+	Protocol() string
+}
+
+// HTTPExposure represents an HTTP exposure.
+type HTTPExposure struct{}
+
+func (e *HTTPExposure) Protocol() string { return "http" }
+
+// HTTPSExposure represents an HTTPS exposure
+type HTTPSExposure struct {
+	// The certificate to attach to the process.
+	Cert string
+}
+
+func (e *HTTPSExposure) Protocol() string { return "https" }
 
 // Instance represents an Instance of a Process.
 type Instance struct {

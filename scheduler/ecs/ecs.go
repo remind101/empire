@@ -474,52 +474,57 @@ func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App,
 // loadBalancer creates (or updates) a a load balancer for the given process, if
 // the process is exposed. It returns the name of the load balancer.
 func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*lb.LoadBalancer, error) {
-	// No load balancer for unexposed processes.
-	if p.Exposure > scheduler.ExposeNone {
-		// Attempt to find an existing load balancer for this app.
-		l, err := m.findLoadBalancer(ctx, app.ID, p.Type)
+	// No exposure, no load balancer.
+	if p.Exposure == nil {
+		return nil, nil
+	}
+
+	// Attempt to find an existing load balancer for this app.
+	l, err := m.findLoadBalancer(ctx, app.ID, p.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the load balancer doesn't match the exposure that we
+	// want, we'll return an error. Users should manually destroy
+	// the app and re-create it with the proper exposure.
+	if l != nil {
+		var opts *lb.UpdateLoadBalancerOpts
+		opts, err = updateOpts(p, l)
 		if err != nil {
 			return nil, err
 		}
 
-		// If the load balancer doesn't match the exposure that we
-		// want, we'll return an error. Users should manually destroy
-		// the app and re-create it with the proper exposure.
-		if l != nil {
-			var opts *lb.UpdateLoadBalancerOpts
-			opts, err = updateOpts(p, l)
-			if err != nil {
-				return nil, err
-			}
-
-			if opts != nil {
-				if err = m.lb.UpdateLoadBalancer(ctx, *opts); err != nil {
-					return nil, err
-				}
-			}
-		}
-
-		// If this app doesn't have a load balancer yet, create one.
-		if l == nil {
-			tags := lbTags(app.ID, p.Type)
-
-			// Add "App" tag so that a CNAME can be created.
-			tags[lb.AppTag] = app.Name
-
-			l, err = m.lb.CreateLoadBalancer(ctx, lb.CreateLoadBalancerOpts{
-				External: p.Exposure == scheduler.ExposePublic,
-				SSLCert:  p.SSLCert,
-				Tags:     tags,
-			})
-			if err != nil {
+		if opts != nil {
+			if err = m.lb.UpdateLoadBalancer(ctx, *opts); err != nil {
 				return nil, err
 			}
 		}
-
-		return l, nil
 	}
 
-	return nil, nil
+	// If this app doesn't have a load balancer yet, create one.
+	if l == nil {
+		tags := lbTags(app.ID, p.Type)
+
+		// Add "App" tag so that a CNAME can be created.
+		tags[lb.AppTag] = app.Name
+
+		opts := lb.CreateLoadBalancerOpts{
+			External: p.Exposure.External,
+			Tags:     tags,
+		}
+
+		if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
+			opts.SSLCert = e.Cert
+		}
+
+		l, err = m.lb.CreateLoadBalancer(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return l, nil
 }
 
 func (m *Scheduler) removeLoadBalancer(ctx context.Context, app string, p string) error {
@@ -740,23 +745,26 @@ type LoadBalancerExposureError struct {
 }
 
 func (e *LoadBalancerExposureError) Error() string {
-	var lbExposure string
-	if !e.lb.External {
-		lbExposure = "private"
-	} else {
-		lbExposure = "public"
+	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, external(e.proc.Exposure.External), external(e.lb.External))
+}
+
+type external bool
+
+func (e external) String() string {
+	if e {
+		return "public"
 	}
 
-	return fmt.Sprintf("Process %s is %s, but load balancer is %s. An update would require me to delete the load balancer.", e.proc.Type, e.proc.Exposure, lbExposure)
+	return "private"
 }
 
 // canUpdate checks if the load balancer is suitable for the process.
 func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
-	if p.Exposure == scheduler.ExposePublic && !lb.External {
+	if p.Exposure.External && !lb.External {
 		return &LoadBalancerExposureError{p, lb}
 	}
 
-	if p.Exposure == scheduler.ExposePrivate && lb.External {
+	if !p.Exposure.External && lb.External {
 		return &LoadBalancerExposureError{p, lb}
 	}
 
@@ -775,8 +783,10 @@ func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) (*lb.UpdateLoadBalance
 	}
 
 	// Requires an update to the Cert.
-	if p.SSLCert != b.SSLCert {
-		opts.SSLCert = &p.SSLCert
+	if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
+		if e.Cert != b.SSLCert {
+			opts.SSLCert = &e.Cert
+		}
 	}
 
 	// Load balancer doesn't require an update.
