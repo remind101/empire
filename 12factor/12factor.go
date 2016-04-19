@@ -27,8 +27,6 @@ type App struct {
 
 	// The shared labels for the individual processes.
 	Labels map[string]string
-
-	Processes []Process
 }
 
 // Process represents an individual Process of an App, which defines the command

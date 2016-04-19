@@ -148,8 +148,8 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 // Release submits a release to the scheduler.
 func (s *releasesService) Release(ctx context.Context, release *Release) error {
-	a := new12factorApp(release)
-	return s.Scheduler.Submit(ctx, a)
+	m := new12factorManifest(release)
+	return s.Scheduler.Submit(ctx, m)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -258,13 +258,21 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func new12factorApp(release *Release) twelvefactor.App {
-	var processes []twelvefactor.Process
+func new12factorManifest(release *Release) twelvefactor.Manifest {
+	app := new12factorApp(release)
 
+	var processes []twelvefactor.Process
 	for _, p := range release.Processes {
 		processes = append(processes, new12factorProcess(release, p))
 	}
 
+	return twelvefactor.Manifest{
+		App:       app,
+		Processes: processes,
+	}
+}
+
+func new12factorApp(release *Release) twelvefactor.App {
 	env := environment(release.Config.Vars)
 	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
@@ -278,12 +286,11 @@ func new12factorApp(release *Release) twelvefactor.App {
 	}
 
 	return twelvefactor.App{
-		ID:        release.App.ID,
-		Name:      release.App.Name,
-		Image:     release.Slug.Image,
-		Env:       env,
-		Labels:    labels,
-		Processes: processes,
+		ID:     release.App.ID,
+		Name:   release.App.Name,
+		Image:  release.Slug.Image,
+		Env:    env,
+		Labels: labels,
 	}
 }
 

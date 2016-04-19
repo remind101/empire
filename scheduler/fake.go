@@ -10,45 +10,45 @@ import (
 )
 
 type FakeScheduler struct {
-	apps    map[string]twelvefactor.App
-	running map[string]map[string]uint
+	manifests map[string]twelvefactor.Manifest
+	running   map[string]map[string]uint
 }
 
 func NewFakeScheduler() *FakeScheduler {
 	return &FakeScheduler{
-		apps:    make(map[string]twelvefactor.App),
-		running: make(map[string]map[string]uint),
+		manifests: make(map[string]twelvefactor.Manifest),
+		running:   make(map[string]map[string]uint),
 	}
 }
 
-func (m *FakeScheduler) Submit(ctx context.Context, app twelvefactor.App) error {
-	m.apps[app.ID] = app
-	for _, p := range app.Processes {
-		if m.running[app.ID] == nil {
-			m.running[app.ID] = make(map[string]uint)
+func (m *FakeScheduler) Submit(ctx context.Context, manifest twelvefactor.Manifest) error {
+	m.manifests[manifest.ID] = manifest
+	for _, p := range manifest.Processes {
+		if m.running[manifest.ID] == nil {
+			m.running[manifest.ID] = make(map[string]uint)
 		}
-		m.running[app.ID][p.Type] = p.Instances
+		m.running[manifest.ID][p.Type] = p.Instances
 	}
 	return nil
 }
 
-func (m *FakeScheduler) Scale(ctx context.Context, app string, ptype string, instances uint) error {
-	m.running[app][ptype] = instances
+func (m *FakeScheduler) Scale(ctx context.Context, appID string, ptype string, instances uint) error {
+	m.running[appID][ptype] = instances
 	return nil
 }
 
 func (m *FakeScheduler) Remove(ctx context.Context, appID string) error {
-	delete(m.apps, appID)
+	delete(m.manifests, appID)
 	delete(m.running, appID)
 	return nil
 }
 
 func (m *FakeScheduler) Instances(ctx context.Context, appID string) ([]Instance, error) {
 	var instances []Instance
-	if a, ok := m.apps[appID]; ok {
-		for _, p := range a.Processes {
-			for i := uint(1); i <= m.running[a.ID][p.Type]; i++ {
-				p.Env = twelvefactor.ProcessEnv(a, p)
+	if manifest, ok := m.manifests[appID]; ok {
+		for _, p := range manifest.Processes {
+			for i := uint(1); i <= m.running[manifest.App.ID][p.Type]; i++ {
+				p.Env = twelvefactor.ProcessEnv(manifest.App, p)
 				instances = append(instances, Instance{
 					ID:        fmt.Sprintf("%d", i),
 					State:     "running",

@@ -172,19 +172,21 @@ func validateLoadBalancedConfig(c Config) error {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *Scheduler) Submit(ctx context.Context, app twelvefactor.App) error {
+func (m *Scheduler) Submit(ctx context.Context, manifest twelvefactor.Manifest) error {
+	app := manifest.App
+
 	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
 	}
 
-	for _, p := range app.Processes {
+	for _, p := range manifest.Processes {
 		if err := m.CreateProcess(ctx, app, p); err != nil {
 			return err
 		}
 	}
 
-	toRemove := diffProcessTypes(processes, app.Processes)
+	toRemove := diffProcessTypes(processes, manifest.Processes)
 	for _, p := range toRemove {
 		if err := m.RemoveProcess(ctx, app.ID, p); err != nil {
 			return err

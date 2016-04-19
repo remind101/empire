@@ -98,20 +98,22 @@ func TestEmpire_Deploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", twelvefactor.App{
-		ID:    app.ID,
-		Name:  "acme-inc",
-		Image: img,
-		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v1",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-		},
-		Labels: map[string]string{
-			"empire.app.name":    "acme-inc",
-			"empire.app.id":      app.ID,
-			"empire.app.release": "v1",
+	s.On("Submit", twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID:    app.ID,
+			Name:  "acme-inc",
+			Image: img,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_RELEASE":    "v1",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.release": "v1",
+			},
 		},
 		Processes: []twelvefactor.Process{
 			{
@@ -259,21 +261,23 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", twelvefactor.App{
-		ID:    app.ID,
-		Name:  "acme-inc",
-		Image: img,
-		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v1",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-			"RAILS_ENV":         "production",
-		},
-		Labels: map[string]string{
-			"empire.app.name":    "acme-inc",
-			"empire.app.id":      app.ID,
-			"empire.app.release": "v1",
+	s.On("Submit", twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID:    app.ID,
+			Name:  "acme-inc",
+			Image: img,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_RELEASE":    "v1",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+				"RAILS_ENV":         "production",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.release": "v1",
+			},
 		},
 		Processes: []twelvefactor.Process{
 			{
@@ -306,20 +310,22 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Remove the environment variable
-	s.On("Submit", twelvefactor.App{
-		ID:    app.ID,
-		Name:  "acme-inc",
-		Image: img,
-		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v2",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-		},
-		Labels: map[string]string{
-			"empire.app.name":    "acme-inc",
-			"empire.app.id":      app.ID,
-			"empire.app.release": "v2",
+	s.On("Submit", twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID:    app.ID,
+			Name:  "acme-inc",
+			Image: img,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_RELEASE":    "v2",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.release": "v2",
+			},
 		},
 		Processes: []twelvefactor.Process{
 			{
@@ -360,7 +366,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app twelvefactor.App) error {
-	args := m.Called(app)
+func (m *mockScheduler) Submit(_ context.Context, manifest twelvefactor.Manifest) error {
+	args := m.Called(manifest)
 	return args.Error(0)
 }

@@ -670,14 +670,16 @@ func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]strin
 }
 
 // fake app for testing.
-var fakeApp = twelvefactor.App{
-	ID:    "1234",
-	Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-	Env: map[string]string{
-		"USER": "foo",
-	},
-	Labels: map[string]string{
-		"label1": "foo",
+var fakeApp = twelvefactor.Manifest{
+	App: twelvefactor.App{
+		ID:    "1234",
+		Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+		Env: map[string]string{
+			"USER": "foo",
+		},
+		Labels: map[string]string{
+			"label1": "foo",
+		},
 	},
 	Processes: []twelvefactor.Process{
 		twelvefactor.Process{

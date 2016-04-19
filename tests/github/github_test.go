@@ -78,7 +78,7 @@ type mockScheduler struct {
 	image chan string
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app twelvefactor.App) error {
-	m.image <- app.Image.String()
+func (m *mockScheduler) Submit(_ context.Context, manifest twelvefactor.Manifest) error {
+	m.image <- manifest.App.Image.String()
 	return nil
 }
