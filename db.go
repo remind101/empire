@@ -15,6 +15,8 @@ type DB struct {
 	*gorm.DB
 
 	uri string
+
+	migrator *migrate.Migrator
 }
 
 // OpenDB returns a new gorm.DB instance.
@@ -35,14 +37,15 @@ func OpenDB(uri string) (*DB, error) {
 	}
 
 	return &DB{
-		DB:  &db,
-		uri: uri,
+		DB:       &db,
+		uri:      uri,
+		migrator: migrate.NewPostgresMigrator(conn),
 	}, nil
 }
 
 // MigrateUp migrates the database to the latest version of the schema.
 func (db *DB) MigrateUp() error {
-	return migrate.Exec(db.DB.DB(), migrate.Up, Migrations...)
+	return db.migrator.Exec(migrate.Up, Migrations...)
 }
 
 // Reset resets the database to a pristine state.

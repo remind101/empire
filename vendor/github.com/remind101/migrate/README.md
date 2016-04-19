@@ -44,3 +44,14 @@ migrations := []migrate.Migration{
 db, _ := sql.Open("sqlite3", ":memory:")
 _ = migrate.Exec(db, migrate.Up, migrations...)
 ```
+
+### Locking
+
+All migrations are run in a transaction, but if you attempt to run a single long running migration concurrently, you could run into a deadlock. For Postgres connections, `migrate` can use [pg_advisory_lock](http://www.postgresql.org/docs/9.1/static/explicit-locking.html) to ensure that only 1 migration is run at a time.
+
+To use this, simply instantiate a `Migrator` instance using `migrate.NewPostgresMigrator`:
+
+```go
+migrator := NewPostgresMigrator(db)
+_ = migrator.Exec(migrate.Up, migrations...)
+```
