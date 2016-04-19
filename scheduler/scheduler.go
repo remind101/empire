@@ -27,7 +27,7 @@ type App struct {
 	Labels map[string]string
 
 	// Process that belong to this app.
-	Processes []*Process
+	Processes []Process
 }
 
 type Process struct {
@@ -94,7 +94,7 @@ func (e *HTTPSExposure) Protocol() string { return "https" }
 
 // Instance represents an Instance of a Process.
 type Instance struct {
-	Process *Process
+	Process Process
 
 	// The instance ID.
 	ID string
@@ -108,12 +108,12 @@ type Instance struct {
 
 // ProcessEnv merges the App environment with any environment variables provided
 // in the process.
-func ProcessEnv(app *App, process *Process) map[string]string {
+func ProcessEnv(app App, process Process) map[string]string {
 	return merge(app.Env, process.Env)
 }
 
 // ProcessLabels merges the App labels with any labels provided in the process.
-func ProcessLabels(app *App, process *Process) map[string]string {
+func ProcessLabels(app App, process Process) map[string]string {
 	return merge(app.Labels, process.Labels)
 }
 
@@ -135,7 +135,7 @@ type Scaler interface {
 
 type Runner interface {
 	// Run runs a process.
-	Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error
+	Run(ctx context.Context, app App, process Process, in io.Reader, out io.Writer) error
 }
 
 // Scheduler is an interface for interfacing with Services.
@@ -144,13 +144,13 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App) error
+	Submit(context.Context, App) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
 
 	// Instance lists the instances of a Process for an app.
-	Instances(ctx context.Context, app string) ([]*Instance, error)
+	Instances(ctx context.Context, app string) ([]Instance, error)
 
 	// Stop stops an instance. The scheduler will automatically start a new
 	// instance.

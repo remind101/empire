@@ -454,7 +454,7 @@ func TestScheduler_Run(t *testing.T) {
 	m, s := newTestScheduler(h)
 	defer s.Close()
 
-	app := &scheduler.App{
+	app := scheduler.App{
 		ID:    "1234",
 		Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 		Env: map[string]string{
@@ -464,7 +464,7 @@ func TestScheduler_Run(t *testing.T) {
 			"label1": "foo",
 		},
 	}
-	process := &scheduler.Process{
+	process := scheduler.Process{
 		Type:    "run",
 		Command: []string{"acme-inc", "web", "--port", "80"},
 		Labels: map[string]string{
@@ -473,6 +473,7 @@ func TestScheduler_Run(t *testing.T) {
 		MemoryLimit: 134217728, // 128
 		CPUShares:   128,
 	}
+
 	if err := m.Run(context.Background(), app, process, nil, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -480,13 +481,13 @@ func TestScheduler_Run(t *testing.T) {
 
 func TestDiffProcessTypes(t *testing.T) {
 	tests := []struct {
-		old, new []*scheduler.Process
+		old, new []scheduler.Process
 		out      []string
 	}{
 		{nil, nil, []string{}},
-		{[]*scheduler.Process{{Type: "web"}}, []*scheduler.Process{{Type: "web"}}, []string{}},
-		{[]*scheduler.Process{{Type: "web"}}, nil, []string{"web"}},
-		{[]*scheduler.Process{{Type: "web"}, {Type: "worker"}}, []*scheduler.Process{{Type: "web"}}, []string{"worker"}},
+		{[]scheduler.Process{{Type: "web"}}, []scheduler.Process{{Type: "web"}}, []string{}},
+		{[]scheduler.Process{{Type: "web"}}, nil, []string{"web"}},
+		{[]scheduler.Process{{Type: "web"}, {Type: "worker"}}, []scheduler.Process{{Type: "web"}}, []string{"worker"}},
 	}
 
 	for i, tt := range tests {
@@ -508,8 +509,8 @@ func TestScheduler_LoadBalancer_NoExposure(t *testing.T) {
 		lb: l,
 	}
 
-	app := &scheduler.App{}
-	process := &scheduler.Process{}
+	app := scheduler.App{}
+	process := scheduler.Process{}
 
 	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
 	assert.NoError(t, err)
@@ -524,11 +525,11 @@ func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
 		lb: l,
 	}
 
-	app := &scheduler.App{
+	app := scheduler.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := scheduler.Process{
 		Type: "web",
 		Exposure: &scheduler.Exposure{
 			Type: &scheduler.HTTPExposure{},
@@ -556,11 +557,11 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
 		lb: l,
 	}
 
-	app := &scheduler.App{
+	app := scheduler.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := scheduler.Process{
 		Type: "web",
 		Exposure: &scheduler.Exposure{
 			External: true,
@@ -585,11 +586,11 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_MismatchedExposure(t *testi
 		lb: l,
 	}
 
-	app := &scheduler.App{
+	app := scheduler.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := scheduler.Process{
 		Type: "web",
 		Exposure: &scheduler.Exposure{
 			External: true,
@@ -614,11 +615,11 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewCert(t *testing.T) {
 	}
 
 	port := int64(8080)
-	app := &scheduler.App{
+	app := scheduler.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := scheduler.Process{
 		Type: "web",
 		Exposure: &scheduler.Exposure{
 			External: true,
@@ -669,7 +670,7 @@ func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]strin
 }
 
 // fake app for testing.
-var fakeApp = &scheduler.App{
+var fakeApp = scheduler.App{
 	ID:    "1234",
 	Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 	Env: map[string]string{
@@ -678,8 +679,8 @@ var fakeApp = &scheduler.App{
 	Labels: map[string]string{
 		"label1": "foo",
 	},
-	Processes: []*scheduler.Process{
-		&scheduler.Process{
+	Processes: []scheduler.Process{
+		scheduler.Process{
 			Type:    "web",
 			Command: []string{"acme-inc", "web", "--port", "80"},
 			Labels: map[string]string{

@@ -97,7 +97,7 @@ func TestEmpire_Deploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", &scheduler.App{
+	s.On("Submit", scheduler.App{
 		ID:    app.ID,
 		Name:  "acme-inc",
 		Image: img,
@@ -112,7 +112,7 @@ func TestEmpire_Deploy(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []scheduler.Process{
 			{
 				Type:    "web",
 				Command: []string{"./bin/web"},
@@ -258,7 +258,7 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", &scheduler.App{
+	s.On("Submit", scheduler.App{
 		ID:    app.ID,
 		Name:  "acme-inc",
 		Image: img,
@@ -274,7 +274,7 @@ func TestEmpire_Set(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []scheduler.Process{
 			{
 				Type:    "web",
 				Command: []string{"./bin/web"},
@@ -305,7 +305,7 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Remove the environment variable
-	s.On("Submit", &scheduler.App{
+	s.On("Submit", scheduler.App{
 		ID:    app.ID,
 		Name:  "acme-inc",
 		Image: img,
@@ -320,7 +320,7 @@ func TestEmpire_Set(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v2",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []scheduler.Process{
 			{
 				Type:    "web",
 				Command: []string{"./bin/web"},
@@ -359,7 +359,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
+func (m *mockScheduler) Submit(_ context.Context, app scheduler.App) error {
 	args := m.Called(app)
 	return args.Error(0)
 }

@@ -14,7 +14,7 @@ type AttachedRunner struct {
 	Runner *runner.Runner
 }
 
-func (m *AttachedRunner) Run(ctx context.Context, app *App, p *Process, in io.Reader, out io.Writer) error {
+func (m *AttachedRunner) Run(ctx context.Context, app App, p Process, in io.Reader, out io.Writer) error {
 	// If an output stream is provided, run using the docker runner.
 	if out != nil {
 		return m.Runner.Run(ctx, runner.RunOpts{

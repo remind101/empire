@@ -258,8 +258,8 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func newServiceApp(release *Release) *scheduler.App {
-	var processes []*scheduler.Process
+func newServiceApp(release *Release) scheduler.App {
+	var processes []scheduler.Process
 
 	for _, p := range release.Processes {
 		processes = append(processes, newServiceProcess(release, p))
@@ -277,7 +277,7 @@ func newServiceApp(release *Release) *scheduler.App {
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
-	return &scheduler.App{
+	return scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
 		Image:     release.Slug.Image,
@@ -287,7 +287,7 @@ func newServiceApp(release *Release) *scheduler.App {
 	}
 }
 
-func newServiceProcess(release *Release, p *Process) *scheduler.Process {
+func newServiceProcess(release *Release, p *Process) scheduler.Process {
 	env := map[string]string{
 		"EMPIRE_PROCESS": string(p.Type),
 		"SOURCE":         fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version),
@@ -297,7 +297,7 @@ func newServiceProcess(release *Release, p *Process) *scheduler.Process {
 		"empire.app.process": string(p.Type),
 	}
 
-	return &scheduler.Process{
+	return scheduler.Process{
 		Type:        string(p.Type),
 		Env:         env,
 		Labels:      labels,

@@ -171,7 +171,7 @@ func validateLoadBalancedConfig(c Config) error {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
+func (m *Scheduler) Submit(ctx context.Context, app scheduler.App) error {
 	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
@@ -211,8 +211,8 @@ func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 
 // Instances returns all instances that are currently running, pending or
 // draining.
-func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.Instance, error) {
-	var instances []*scheduler.Instance
+func (m *Scheduler) Instances(ctx context.Context, appID string) ([]scheduler.Instance, error) {
+	var instances []scheduler.Instance
 
 	tasks, err := m.describeAppTasks(ctx, appID)
 	if err != nil {
@@ -258,7 +258,7 @@ func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.I
 			updatedAt = *t.StoppedAt
 		}
 
-		instances = append(instances, &scheduler.Instance{
+		instances = append(instances, scheduler.Instance{
 			Process:   p,
 			State:     state,
 			ID:        id,
@@ -297,7 +297,7 @@ func (m *Scheduler) Stop(ctx context.Context, instanceID string) error {
 }
 
 // CreateProcess creates an ECS service for the process.
-func (m *Scheduler) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
+func (m *Scheduler) CreateProcess(ctx context.Context, app scheduler.App, p scheduler.Process) error {
 	loadBalancer, err := m.loadBalancer(ctx, app, p)
 	if err != nil {
 		return err
@@ -311,7 +311,7 @@ func (m *Scheduler) CreateProcess(ctx context.Context, app *scheduler.App, p *sc
 	return err
 }
 
-func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+func (m *Scheduler) Run(ctx context.Context, app scheduler.App, process scheduler.Process, in io.Reader, out io.Writer) error {
 	if out != nil {
 		return errors.New("running an attached process is not implemented by the ECS manager.")
 	}
@@ -331,7 +331,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 }
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
-func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.TaskDefinition, error) {
+func (m *Scheduler) createTaskDefinition(ctx context.Context, app scheduler.App, process scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.TaskDefinition, error) {
 	taskDef, err := m.taskDefinitionInput(app, process, loadBalancer)
 	if err != nil {
 		return nil, err
@@ -341,7 +341,7 @@ func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App
 	return resp.TaskDefinition, err
 }
 
-func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
+func (m *Scheduler) taskDefinitionInput(app scheduler.App, p scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
 	// ecs.ContainerDefinition{Command} is expecting a []*string
 	var command []*string
 	for _, s := range p.Command {
@@ -409,7 +409,7 @@ func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process
 }
 
 // createService creates a Service in ECS for the service.
-func (m *Scheduler) createService(ctx context.Context, app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.Service, error) {
+func (m *Scheduler) createService(ctx context.Context, app scheduler.App, p scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.Service, error) {
 	var role *string
 	var loadBalancers []*ecs.LoadBalancer
 
@@ -436,7 +436,7 @@ func (m *Scheduler) createService(ctx context.Context, app *scheduler.App, p *sc
 }
 
 // updateService updates an existing Service in ECS.
-func (m *Scheduler) updateService(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*ecs.Service, error) {
+func (m *Scheduler) updateService(ctx context.Context, app scheduler.App, p scheduler.Process) (*ecs.Service, error) {
 	_, err := m.loadBalancer(ctx, app, p)
 	if err != nil {
 		return nil, err
@@ -458,7 +458,7 @@ func (m *Scheduler) updateService(ctx context.Context, app *scheduler.App, p *sc
 }
 
 // updateCreateService will perform an upsert for the service in ECS.
-func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.Service, error) {
+func (m *Scheduler) updateCreateService(ctx context.Context, app scheduler.App, p scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.Service, error) {
 	s, err := m.updateService(ctx, app, p)
 	if err != nil {
 		return nil, err
@@ -473,7 +473,7 @@ func (m *Scheduler) updateCreateService(ctx context.Context, app *scheduler.App,
 
 // loadBalancer creates (or updates) a a load balancer for the given process, if
 // the process is exposed. It returns the name of the load balancer.
-func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *scheduler.Process) (*lb.LoadBalancer, error) {
+func (m *Scheduler) loadBalancer(ctx context.Context, app scheduler.App, p scheduler.Process) (*lb.LoadBalancer, error) {
 	// No exposure, no load balancer.
 	if p.Exposure == nil {
 		return nil, nil
@@ -554,8 +554,8 @@ func (m *Scheduler) findLoadBalancer(ctx context.Context, app string, process st
 	return lbs[0], nil
 }
 
-func (m *Scheduler) Processes(ctx context.Context, appID string) ([]*scheduler.Process, error) {
-	var processes []*scheduler.Process
+func (m *Scheduler) Processes(ctx context.Context, appID string) ([]scheduler.Process, error) {
+	var processes []scheduler.Process
 
 	list, err := m.ecs.ListAppServices(ctx, appID, &ecs.ListServicesInput{
 		Cluster: aws.String(m.cluster),
@@ -659,11 +659,11 @@ func noService(err error) bool {
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
 // Process.
-func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error) {
+func taskDefinitionToProcess(td *ecs.TaskDefinition) (scheduler.Process, error) {
 	// If this task definition has no container definitions, then something
 	// funky is up.
 	if len(td.ContainerDefinitions) == 0 {
-		return nil, errors.New("task definition had no container definitions")
+		return scheduler.Process{}, errors.New("task definition had no container definitions")
 	}
 
 	container := td.ContainerDefinitions[0]
@@ -680,7 +680,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 		}
 	}
 
-	return &scheduler.Process{
+	return scheduler.Process{
 		Type:        safeString(container.Name),
 		Command:     command,
 		Env:         env,
@@ -704,7 +704,7 @@ func softLimit(ulimits []*ecs.Ulimit, name string) int64 {
 	return 0
 }
 
-func diffProcessTypes(old, new []*scheduler.Process) []string {
+func diffProcessTypes(old, new []scheduler.Process) []string {
 	var types []string
 
 	om := processTypes(old)
@@ -719,7 +719,7 @@ func diffProcessTypes(old, new []*scheduler.Process) []string {
 	return types
 }
 
-func processTypes(processes []*scheduler.Process) map[string]struct{} {
+func processTypes(processes []scheduler.Process) map[string]struct{} {
 	m := make(map[string]struct{})
 
 	for _, p := range processes {
@@ -740,7 +740,7 @@ func lbTags(app string, process string) map[string]string {
 
 // LoadBalancerExposureError is returned when the exposure of the process in the data store does not match the exposure of the ELB
 type LoadBalancerExposureError struct {
-	proc *scheduler.Process
+	proc scheduler.Process
 	lb   *lb.LoadBalancer
 }
 
@@ -759,7 +759,7 @@ func (e external) String() string {
 }
 
 // canUpdate checks if the load balancer is suitable for the process.
-func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
+func canUpdate(p scheduler.Process, lb *lb.LoadBalancer) error {
 	if p.Exposure.External && !lb.External {
 		return &LoadBalancerExposureError{p, lb}
 	}
@@ -771,7 +771,7 @@ func canUpdate(p *scheduler.Process, lb *lb.LoadBalancer) error {
 	return nil
 }
 
-func updateOpts(p *scheduler.Process, b *lb.LoadBalancer) (*lb.UpdateLoadBalancerOpts, error) {
+func updateOpts(p scheduler.Process, b *lb.LoadBalancer) (*lb.UpdateLoadBalancerOpts, error) {
 	// This load balancer can't be updated to make it work for the process.
 	// Return an error.
 	if err := canUpdate(p, b); err != nil {
