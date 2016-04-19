@@ -350,7 +350,7 @@ func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process
 	}
 
 	var environment []*ecs.KeyValuePair
-	for k, v := range p.Env {
+	for k, v := range scheduler.ProcessEnv(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
@@ -373,7 +373,7 @@ func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process
 	}
 
 	labels := make(map[string]*string)
-	for k, v := range p.Labels {
+	for k, v := range scheduler.ProcessLabels(app, p) {
 		labels[k] = aws.String(v)
 	}
 

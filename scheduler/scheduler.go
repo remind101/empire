@@ -20,6 +20,12 @@ type App struct {
 	// The Image to run.
 	Image image.Image
 
+	// The shared environment variables for the individual processes.
+	Env map[string]string
+
+	// The shared labels for the individual processes.
+	Labels map[string]string
+
 	// Process that belong to this app.
 	Processes []*Process
 }
@@ -31,10 +37,11 @@ type Process struct {
 	// The Command to run.
 	Command []string
 
-	// Environment variables to set.
+	// Additional environment variables to merge with the App's environment
+	// when running this process.
 	Env map[string]string
 
-	// Labels to set on the container.
+	// Free form labels to attach to this process.
 	Labels map[string]string
 
 	// Exposure is the level of exposure for this process.
@@ -97,6 +104,28 @@ type Instance struct {
 
 	// The time that this instance was last updated.
 	UpdatedAt time.Time
+}
+
+// ProcessEnv merges the App environment with any environment variables provided
+// in the process.
+func ProcessEnv(app *App, process *Process) map[string]string {
+	return merge(app.Env, process.Env)
+}
+
+// ProcessLabels merges the App labels with any labels provided in the process.
+func ProcessLabels(app *App, process *Process) map[string]string {
+	return merge(app.Labels, process.Labels)
+}
+
+// merges the maps together, favoring keys from the right to the left.
+func merge(envs ...map[string]string) map[string]string {
+	merged := make(map[string]string)
+	for _, env := range envs {
+		for k, v := range env {
+			merged[k] = v
+		}
+	}
+	return merged
 }
 
 type Scaler interface {

@@ -457,15 +457,17 @@ func TestScheduler_Run(t *testing.T) {
 	app := &scheduler.App{
 		ID:    "1234",
 		Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-	}
-	process := &scheduler.Process{
-		Type:    "run",
-		Command: []string{"acme-inc", "web", "--port", "80"},
 		Env: map[string]string{
 			"USER": "foo",
 		},
 		Labels: map[string]string{
 			"label1": "foo",
+		},
+	}
+	process := &scheduler.Process{
+		Type:    "run",
+		Command: []string{"acme-inc", "web", "--port", "80"},
+		Labels: map[string]string{
 			"label2": "bar",
 		},
 		MemoryLimit: 134217728, // 128
@@ -670,15 +672,17 @@ func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]strin
 var fakeApp = &scheduler.App{
 	ID:    "1234",
 	Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+	Env: map[string]string{
+		"USER": "foo",
+	},
+	Labels: map[string]string{
+		"label1": "foo",
+	},
 	Processes: []*scheduler.Process{
 		&scheduler.Process{
 			Type:    "web",
 			Command: []string{"acme-inc", "web", "--port", "80"},
-			Env: map[string]string{
-				"USER": "foo",
-			},
 			Labels: map[string]string{
-				"label1": "foo",
 				"label2": "bar",
 			},
 			MemoryLimit: 134217728, // 128

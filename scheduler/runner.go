@@ -20,7 +20,7 @@ func (m *AttachedRunner) Run(ctx context.Context, app *App, p *Process, in io.Re
 		return m.Runner.Run(ctx, runner.RunOpts{
 			Image:   app.Image,
 			Command: p.Command,
-			Env:     p.Env,
+			Env:     ProcessEnv(app, p),
 			Input:   in,
 			Output:  out,
 		})

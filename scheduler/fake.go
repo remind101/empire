@@ -19,6 +19,10 @@ func NewFakeScheduler() *FakeScheduler {
 }
 
 func (m *FakeScheduler) Submit(ctx context.Context, app *App) error {
+	for _, p := range app.Processes {
+		p.Env = ProcessEnv(app, p)
+		p.Labels = ProcessLabels(app, p)
+	}
 	m.apps[app.ID] = app
 	return nil
 }

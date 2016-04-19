@@ -265,28 +265,36 @@ func newServiceApp(release *Release) *scheduler.App {
 		processes = append(processes, newServiceProcess(release, p))
 	}
 
+	env := environment(release.Config.Vars)
+	env["EMPIRE_APPID"] = release.App.ID
+	env["EMPIRE_APPNAME"] = release.App.Name
+	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
+	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
+
+	labels := map[string]string{
+		"empire.app.id":      release.App.ID,
+		"empire.app.name":    release.App.Name,
+		"empire.app.release": fmt.Sprintf("v%d", release.Version),
+	}
+
 	return &scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
 		Image:     release.Slug.Image,
+		Env:       env,
+		Labels:    labels,
 		Processes: processes,
 	}
 }
 
 func newServiceProcess(release *Release, p *Process) *scheduler.Process {
-	env := environment(release.Config.Vars)
-	env["EMPIRE_APPID"] = release.App.ID
-	env["EMPIRE_APPNAME"] = release.App.Name
-	env["EMPIRE_PROCESS"] = string(p.Type)
-	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
-	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
-	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
+	env := map[string]string{
+		"EMPIRE_PROCESS": string(p.Type),
+		"SOURCE":         fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version),
+	}
 
 	labels := map[string]string{
-		"empire.app.id":      release.App.ID,
-		"empire.app.name":    release.App.Name,
 		"empire.app.process": string(p.Type),
-		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
 	return &scheduler.Process{
