@@ -2,14 +2,26 @@ package migrate_test
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/remind101/migrate"
 	"github.com/stretchr/testify/assert"
 )
+
+const (
+	Sqlite   = "sqlite3"
+	Postgres = "postgres"
+)
+
+// A flag to determine what database to run the suite against.
+var database = flag.String("test.database", Sqlite, "The name of the database to run against. (sqlite3, postgres).")
 
 var testMigrations = []migrate.Migration{
 	{
@@ -41,6 +53,7 @@ var testMigrations = []migrate.Migration{
 
 func TestMigrate(t *testing.T) {
 	db := newDB(t)
+	defer db.Close()
 
 	migrations := testMigrations[:]
 
@@ -60,6 +73,7 @@ CREATE TABLE people (id int, first_name text)
 
 func TestMigrate_Individual(t *testing.T) {
 	db := newDB(t)
+	defer db.Close()
 
 	err := migrate.Exec(db, migrate.Up, testMigrations[0])
 	assert.NoError(t, err)
@@ -80,6 +94,7 @@ CREATE TABLE people (id int, first_name text)
 
 func TestMigrate_AlreadyRan(t *testing.T) {
 	db := newDB(t)
+	defer db.Close()
 
 	migration := testMigrations[0]
 
@@ -102,6 +117,7 @@ CREATE TABLE people (id int)
 
 func TestMigrate_Order(t *testing.T) {
 	db := newDB(t)
+	defer db.Close()
 
 	migrations := []migrate.Migration{
 		testMigrations[1],
@@ -119,6 +135,7 @@ CREATE TABLE people (id int, first_name text)
 
 func TestMigrate_Rollback(t *testing.T) {
 	db := newDB(t)
+	defer db.Close()
 
 	migration := migrate.Migration{
 		ID: 1,
@@ -143,16 +160,68 @@ func TestMigrate_Rollback(t *testing.T) {
 	assert.IsType(t, &migrate.MigrationError{}, err)
 }
 
-func assertSchema(t testing.TB, expectedSchema string, db *sql.DB) {
-	schema, err := schema(db)
-	if err != nil {
-		t.Fatal(err)
+func TestMigrate_Locking(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	migrator := migrate.NewMigrator(db)
+	if *database == Postgres {
+		migrator = migrate.NewPostgresMigrator(db)
 	}
 
-	assert.Equal(t, strings.TrimSpace(expectedSchema), schema)
+	err := migrator.Exec(migrate.Up, testMigrations...)
+	assert.NoError(t, err)
+	assertSchema(t, `
+people
+CREATE TABLE people (id int, first_name text)
+`, db)
+	assert.Equal(t, []int{1, 2}, appliedMigrations(t, db))
+
+	var called int
+	// Generates a migration that sends on the given channel when it starts.
+	migration := migrate.Migration{
+		ID: 3,
+		Up: func(tx *sql.Tx) error {
+			called++
+			_, err := tx.Exec(`INSERT INTO people (id, first_name) VALUES (1, 'Eric')`)
+			return err
+		},
+	}
+
+	m1 := make(chan error)
+	m2 := make(chan error)
+
+	// Start two migrations in parallel.
+	go func() {
+		m1 <- migrator.Exec(migrate.Up, migration)
+	}()
+	go func() {
+		m2 <- migrator.Exec(migrate.Up, migration)
+	}()
+
+	assert.Nil(t, <-m1)
+	assert.Nil(t, <-m2)
+	assert.Equal(t, 1, called)
+
+	assertSchema(t, `
+people
+CREATE TABLE people (id int, first_name text)
+`, db)
+	assert.Equal(t, []int{1, 2, 3}, appliedMigrations(t, db))
 }
 
-func schema(db *sql.DB) (string, error) {
+func assertSchema(t testing.TB, expectedSchema string, db *sql.DB) {
+	if *database == Sqlite {
+		schema, err := sqliteSchema(db)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, strings.TrimSpace(expectedSchema), schema)
+	}
+}
+
+func sqliteSchema(db *sql.DB) (string, error) {
 	var tables []string
 	rows, err := db.Query(`SELECT name, sql FROM sqlite_master
 WHERE type='table'
@@ -193,10 +262,41 @@ func appliedMigrations(t testing.TB, db *sql.DB) []int {
 	return ids
 }
 
+// factory methods to open a database connection to a type of database.
+var databases = map[string]func() (*sql.DB, error){
+	Postgres: func() (*sql.DB, error) {
+		name := "migrate_test"
+
+		command := func(name string, arg ...string) *exec.Cmd {
+			cmd := exec.Command(name, arg...)
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			return cmd
+		}
+
+		command("dropdb", name).Run()
+		if err := command("createdb", name).Run(); err != nil {
+			return nil, err
+		}
+
+		return sql.Open("postgres", fmt.Sprintf("postgres://localhost/%s?sslmode=disable", name))
+	},
+	Sqlite: func() (*sql.DB, error) {
+		os.Remove("migrate_test.db")
+		return sql.Open("sqlite3", "migrate_test.db?cache=shared&mode=wrc")
+	},
+}
+
 func newDB(t testing.TB) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+	open, ok := databases[*database]
+	if !ok {
+		t.Fatal(fmt.Sprintf("Unknown database: %s", *database))
+	}
+
+	db, err := open()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return db
 }

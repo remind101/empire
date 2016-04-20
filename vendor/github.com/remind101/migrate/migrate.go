@@ -5,7 +5,9 @@ package migrate
 import (
 	"database/sql"
 	"fmt"
+	"hash/crc32"
 	"sort"
+	"sync"
 )
 
 type MigrationDirection int
@@ -59,37 +61,89 @@ type Migrator struct {
 	// value is DefaultTable.
 	Table string
 
+	// Locker is a sync.Locker to use to ensure that only 1 process is
+	// running migrations.
+	sync.Locker
+
 	db *sql.DB
+}
+
+// postgresLocker implements the sync.Locker interface using pg_advisory_lock.
+type postgresLocker struct {
+	key uint32
+	db  *sql.DB
+}
+
+// NewPostgresLocker returns a new sync.Locker that obtains locks with
+// pg_advisory_lock.
+func newPostgresLocker(db *sql.DB) sync.Locker {
+	key := crc32.ChecksumIEEE([]byte("migrations"))
+	return &postgresLocker{
+		key: key,
+		db:  db,
+	}
+}
+
+// Lock obtains the advisory lock.
+func (l *postgresLocker) Lock() {
+	l.do("lock")
+}
+
+// Unlock removes the advisory Lock
+func (l *postgresLocker) Unlock() {
+	l.do("unlock")
+}
+
+func (l *postgresLocker) do(m string) {
+	_, err := l.db.Exec(fmt.Sprintf("SELECT pg_advisory_%s(%d)", m, l.key))
+	if err != nil {
+		panic(fmt.Sprintf("migrate: %v", err))
+	}
 }
 
 // NewMigrator returns a new Migrator instance that will use the sql.DB to
 // perform the migrations.
 func NewMigrator(db *sql.DB) *Migrator {
 	return &Migrator{
-		db: db,
+		db:     db,
+		Locker: new(sync.Mutex),
 	}
+}
+
+// NewPostgresMigrator returns a new Migrator instance that uses the underlying
+// sql.DB connection to a postgres database to perform migrations. It will use
+// Postgres's advisory locks to ensure that only 1 migration is run at a time.
+func NewPostgresMigrator(db *sql.DB) *Migrator {
+	m := NewMigrator(db)
+	m.Locker = newPostgresLocker(db)
+	return m
 }
 
 // Exec runs the migrations in the given direction.
 func (m *Migrator) Exec(dir MigrationDirection, migrations ...Migration) error {
+	m.Lock()
+	defer m.Unlock()
+
 	_, err := m.db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (version integer primary key not null)", m.table()))
 	if err != nil {
 		return err
 	}
 
 	for _, migration := range sortMigrations(dir, migrations) {
-		shouldMigrate, err := m.shouldMigrate(migration.ID, dir)
+		tx, err := m.db.Begin()
 		if err != nil {
+			return err
+		}
+
+		shouldMigrate, err := m.shouldMigrate(tx, migration.ID, dir)
+		if err != nil {
+			tx.Rollback()
 			return err
 		}
 
 		if !shouldMigrate {
+			tx.Rollback()
 			continue
-		}
-
-		tx, err := m.db.Begin()
-		if err != nil {
-			return err
 		}
 
 		var migrate func(tx *sql.Tx) error
@@ -131,10 +185,10 @@ func (m *Migrator) Exec(dir MigrationDirection, migrations ...Migration) error {
 	return nil
 }
 
-func (m *Migrator) shouldMigrate(id int, dir MigrationDirection) (bool, error) {
+func (m *Migrator) shouldMigrate(tx *sql.Tx, id int, dir MigrationDirection) (bool, error) {
 	// Check if this migration has already ran
 	var _id int
-	err := m.db.QueryRow(fmt.Sprintf("SELECT version FROM %s WHERE version = %d", m.table(), id)).Scan(&_id)
+	err := tx.QueryRow(fmt.Sprintf("SELECT version FROM %s WHERE version = %d", m.table(), id)).Scan(&_id)
 	if err != nil && err != sql.ErrNoRows {
 		return false, err
 	}
