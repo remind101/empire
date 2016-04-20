@@ -32,6 +32,10 @@ type Scaler interface {
 
 type Runner interface {
 	// Run runs a process.
+	//
+	// TODO: In an ideal world, we'd only submit the app ID, since the
+	// scheduler should already know about the app description from a
+	// previous Submit.
 	Run(ctx context.Context, app twelvefactor.App, process twelvefactor.Process, in io.Reader, out io.Writer) error
 }
 
