@@ -2,7 +2,9 @@ package empire
 
 import (
 	"database/sql"
+	"encoding/json"
 
+	"github.com/lib/pq/hstore"
 	"github.com/remind101/migrate"
 )
 
@@ -248,19 +250,84 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`ALTER TABLE ports DROP column taken`,
 		}),
 	},
+
+	// This migration changes how we store commands from a plain string to a
+	// []string.
 	{
 		ID: 14,
 		Up: func(tx *sql.Tx) error {
-			_, err := tx.Exec(`ALTER TABLE processes ADD COLUMN command_arr jsonb`)
+			_, err := tx.Exec(`ALTER TABLE slugs ADD COLUMN process_types_json jsonb`)
 			if err != nil {
 				return err
 			}
 
-			rows, err := tx.Query(`SELECT id, command FROM processes`)
+			_, err = tx.Exec(`ALTER TABLE processes ADD COLUMN command_arr jsonb`)
 			if err != nil {
 				return err
 			}
-			defer rows.Close()
+
+			// Migrate the data in the slugs table
+			rows, err := tx.Query(`SELECT id, process_types FROM slugs`)
+			if err != nil {
+				return err
+			}
+
+			slugs := make(map[string]map[string]Command)
+			for rows.Next() {
+				var id string
+				var ptypes hstore.Hstore
+				if err := rows.Scan(&id, &ptypes); err != nil {
+					return err
+				}
+				m := make(map[string]Command)
+				for k, v := range ptypes.Map {
+					command, err := ParseCommand(v.String)
+					if err != nil {
+						return err
+					}
+					m[k] = command
+				}
+				slugs[id] = m
+			}
+
+			if err := rows.Err(); err != nil {
+				return err
+			}
+
+			rows.Close()
+
+			for id, ptypes := range slugs {
+				raw, err := json.Marshal(ptypes)
+				if err != nil {
+					return err
+				}
+
+				_, err = tx.Exec(`UPDATE slugs SET process_types_json = $1 WHERE id = $2`, raw, id)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = tx.Exec(`ALTER TABLE slugs DROP COLUMN process_types`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`ALTER TABLE slugs RENAME COLUMN process_types_json to process_types`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`ALTER TABLE slugs ALTER COLUMN process_types SET NOT NULL`)
+			if err != nil {
+				return err
+			}
+
+			// Migrate the data in the processes table.
+			rows, err = tx.Query(`SELECT id, command FROM processes`)
+			if err != nil {
+				return err
+			}
 
 			commands := make(map[string]string)
 			for rows.Next() {
@@ -274,6 +341,8 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			if err := rows.Err(); err != nil {
 				return err
 			}
+
+			rows.Close()
 
 			for id, command := range commands {
 				cmd, err := ParseCommand(command)
@@ -294,6 +363,11 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			}
 
 			_, err = tx.Exec(`ALTER TABLE processes RENAME COLUMN command_arr TO command`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`ALTER TABLE processes ALTER COLUMN command SET NOT NULL`)
 			return err
 		},
 		Down: migrate.Queries([]string{

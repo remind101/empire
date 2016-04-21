@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -9,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
-	"github.com/lib/pq/hstore"
 	shellwords "github.com/mattn/go-shellwords"
 	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
@@ -131,22 +129,15 @@ func commandMapFromProcfile(p procfile.Procfile) CommandMap {
 
 // Scan implements the sql.Scanner interface.
 func (cm *CommandMap) Scan(src interface{}) error {
-	h := hstore.Hstore{}
-	if err := h.Scan(src); err != nil {
-		return err
+	bytes, ok := src.([]byte)
+	if !ok {
+		return error(errors.New("Scan source was not []bytes"))
 	}
 
 	m := make(CommandMap)
-
-	for k, v := range h.Map {
-		command, err := ParseCommand(v.String)
-		if err != nil {
-			return err
-		}
-
-		m[ProcessType(k)] = command
+	if err := json.Unmarshal(bytes, &m); err != nil {
+		return err
 	}
-
 	*cm = m
 
 	return nil
@@ -154,20 +145,11 @@ func (cm *CommandMap) Scan(src interface{}) error {
 
 // Value implements the driver.Value interface.
 func (cm CommandMap) Value() (driver.Value, error) {
-	m := make(map[string]sql.NullString)
-
-	for k, v := range cm {
-		m[string(k)] = sql.NullString{
-			Valid:  true,
-			String: v.String(),
-		}
+	raw, err := json.Marshal(cm)
+	if err != nil {
+		return nil, err
 	}
-
-	h := hstore.Hstore{
-		Map: m,
-	}
-
-	return h.Value()
+	return driver.Value(raw), nil
 }
 
 // Constraints aliases constraints.Constraints to implement the
