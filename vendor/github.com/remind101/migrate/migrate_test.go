@@ -2,6 +2,7 @@ package migrate_test
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -112,6 +113,46 @@ CREATE TABLE people (id int)
 	assertSchema(t, `
 people
 CREATE TABLE people (id int)
+`, db)
+}
+
+func TestMigrate_SingleTransactionMode_Rollback(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	migrator := migrate.NewMigrator(db)
+	migrator.TransactionMode = migrate.SingleTransaction
+
+	migrations := []migrate.Migration{
+		testMigrations[0],
+		testMigrations[1],
+		migrate.Migration{
+			ID: 3,
+			Up: func(tx *sql.Tx) error {
+				return errors.New("Rollback")
+			},
+		},
+	}
+
+	err := migrator.Exec(migrate.Up, migrations...)
+	assert.Error(t, err)
+	assert.Equal(t, []int{}, appliedMigrations(t, db))
+	assertSchema(t, ``, db)
+}
+
+func TestMigrate_SingleTransactionMode_Commit(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	migrator := migrate.NewMigrator(db)
+	migrator.TransactionMode = migrate.SingleTransaction
+
+	err := migrator.Exec(migrate.Up, testMigrations...)
+	assert.NoError(t, err)
+	assert.Equal(t, []int{1, 2}, appliedMigrations(t, db))
+	assertSchema(t, `
+people
+CREATE TABLE people (id int, first_name text)
 `, db)
 }
 
