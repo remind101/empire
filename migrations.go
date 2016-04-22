@@ -262,7 +262,7 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 				return err
 			}
 
-			_, err = tx.Exec(`ALTER TABLE processes ADD COLUMN command_arr jsonb`)
+			_, err = tx.Exec(`ALTER TABLE processes ADD COLUMN command_json jsonb`)
 			if err != nil {
 				return err
 			}
@@ -351,7 +351,7 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 					return err
 				}
 
-				query := `UPDATE processes SET command_arr = $1 WHERE id = $2`
+				query := `UPDATE processes SET command_json = $1 WHERE id = $2`
 				_, err = tx.Exec(query, cmd, id)
 				if err != nil {
 					return err
@@ -363,7 +363,7 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 				return err
 			}
 
-			_, err = tx.Exec(`ALTER TABLE processes RENAME COLUMN command_arr TO command`)
+			_, err = tx.Exec(`ALTER TABLE processes RENAME COLUMN command_json TO command`)
 			if err != nil {
 				return err
 			}
@@ -374,6 +374,8 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 		Down: migrate.Queries([]string{
 			`ALTER TABLE processes DROP COLUMN command`,
 			`ALTER TABLE processes ADD COLUMN command text not null`,
+			`ALTER TABLE slugs DROP COLUMN process_types`,
+			`ALTER TABLE slugs ADD COLUMN process_types hstore not null`,
 		}),
 	},
 }
