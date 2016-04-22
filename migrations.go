@@ -86,6 +86,7 @@ var Migrations = []migrate.Migration{
 			`DROP TABLE releases CASCADE`,
 			`DROP TABLE processes CASCADE`,
 			`DROP TABLE jobs CASCADE`,
+			`DROP TABLE deployments CASCADE`,
 		}),
 	},
 	{
@@ -169,7 +170,7 @@ INSERT INTO ports (port) (SELECT generate_series(9000,10000))`,
 			`DROP INDEX index_slugs_on_image`,
 		}),
 		Down: migrate.Queries([]string{
-			`CREATE UNIQUE INDEX index_slugs_on_image ON images USING btree (image)`,
+			`CREATE UNIQUE INDEX index_slugs_on_image ON slugs USING btree (image)`,
 		}),
 	},
 	{
@@ -179,7 +180,7 @@ INSERT INTO ports (port) (SELECT generate_series(9000,10000))`,
 ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 		}),
 		Down: migrate.Queries([]string{
-			`ALTER TABLE apps REMOVE COLUMN exposure`,
+			`ALTER TABLE apps DROP COLUMN exposure`,
 		}),
 	},
 	{
@@ -227,7 +228,7 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`UPDATE apps SET cert = (select name from certificates where certificates.app_id = apps.id)`,
 		}),
 		Down: migrate.Queries([]string{
-			`ALTER TABLE apps DROP COLUMN cert text`,
+			`ALTER TABLE apps DROP COLUMN cert`,
 		}),
 	},
 	{
