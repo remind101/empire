@@ -257,12 +257,12 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 	{
 		ID: 14,
 		Up: func(tx *sql.Tx) error {
-			_, err := tx.Exec(`ALTER TABLE slugs ADD COLUMN process_types_json jsonb`)
+			_, err := tx.Exec(`ALTER TABLE slugs ADD COLUMN process_types_json json`)
 			if err != nil {
 				return err
 			}
 
-			_, err = tx.Exec(`ALTER TABLE processes ADD COLUMN command_json jsonb`)
+			_, err = tx.Exec(`ALTER TABLE processes ADD COLUMN command_json json`)
 			if err != nil {
 				return err
 			}
