@@ -147,7 +147,7 @@ Perform the following steps when releasing a new version:
 
 1. Create a new branch `release-VERSION`.
 2. Bump the version number with `make bump` (this will add a commit to the branch).
-3. Change `HEAD` -> `VERSION` in [CHANGELOG.md][./CHANGELOG.md]
+3. Change `HEAD` -> `VERSION` in [CHANGELOG.md](./CHANGELOG.md).
 4. Open a PR to review.
 5. Once merged into master, wait for the Conveyor build to complete.
 6. Finally, tag the commit with the version as `v<VERSION>`. This will trigger CircleCI to:
