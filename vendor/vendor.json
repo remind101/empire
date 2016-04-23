@@ -494,8 +494,8 @@
 		},
 		{
 			"path": "github.com/remind101/migrate",
-			"revision": "6a911e1904d23e8ad3de5b9fab2f6530241c6183",
-			"revisionTime": "2016-04-20T11:09:36+07:00"
+			"revision": "d22d647232c20dbea6d2aa1dda7f2737cccce614",
+			"revisionTime": "2016-04-23T08:09:09+07:00"
 		},
 		{
 			"path": "github.com/remind101/newrelic",

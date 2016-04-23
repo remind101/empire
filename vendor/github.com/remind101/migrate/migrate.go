@@ -17,6 +17,18 @@ const (
 	Down
 )
 
+type TransactionMode int
+
+const (
+	// In this mode, each migration is run in it's own isolated transaction.
+	// If a migration fails, only that migration will be rolled back.
+	IndividualTransactions TransactionMode = iota
+
+	// In this mode, all migrations are run inside a single transaction. If
+	// one migration fails, all migrations are rolled back.
+	SingleTransaction
+)
+
 // MigrationError is an error that gets returned when an individual migration
 // fails.
 type MigrationError struct {
@@ -64,6 +76,10 @@ type Migrator struct {
 	// Locker is a sync.Locker to use to ensure that only 1 process is
 	// running migrations.
 	sync.Locker
+
+	// The TransactionMode to use. The zero value is IndividualTransactions,
+	// which runs each migration in it's own transaction.
+	TransactionMode TransactionMode
 
 	db *sql.DB
 }
@@ -129,60 +145,84 @@ func (m *Migrator) Exec(dir MigrationDirection, migrations ...Migration) error {
 		return err
 	}
 
+	var tx *sql.Tx
+	if m.TransactionMode == SingleTransaction {
+		tx, err = m.db.Begin()
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, migration := range sortMigrations(dir, migrations) {
-		tx, err := m.db.Begin()
-		if err != nil {
-			return err
+		if m.TransactionMode == IndividualTransactions {
+			tx, err = m.db.Begin()
+			if err != nil {
+				return err
+			}
 		}
 
-		shouldMigrate, err := m.shouldMigrate(tx, migration.ID, dir)
-		if err != nil {
+		if err := m.runMigration(tx, dir, migration); err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		if !shouldMigrate {
-			tx.Rollback()
-			continue
+		if m.TransactionMode == IndividualTransactions {
+			if err := tx.Commit(); err != nil {
+				return err
+			}
 		}
+	}
 
-		var migrate func(tx *sql.Tx) error
-		switch dir {
-		case Up:
-			migrate = migration.Up
-		default:
-			migrate = migration.Down
-		}
-
-		if err := migrate(tx); err != nil {
-			tx.Rollback()
-			return &MigrationError{Migration: migration, Err: err}
-		}
-
-		var query string
-		switch dir {
-		case Up:
-			// Yes. This is a sql injection vulnerability. This gets around
-			// the different bindings for sqlite3/postgres.
-			//
-			// If you're running migrations from user input, you're doing
-			// something wrong.
-			query = fmt.Sprintf("INSERT INTO %s (version) VALUES (%d)", m.table(), migration.ID)
-		default:
-			query = fmt.Sprintf("DELETE FROM %s WHERE version = %d", m.table(), migration.ID)
-		}
-
-		_, err = tx.Exec(query)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
+	if m.TransactionMode == SingleTransaction {
 		if err := tx.Commit(); err != nil {
 			return err
 		}
 	}
+
 	return nil
+}
+
+// runMigration runs the given Migration in the given direction using the given
+// transaction. This function does not commit or rollback the transaction,
+// that's the responsibility of the consumer dependending on whether an error
+// gets returned.
+func (m *Migrator) runMigration(tx *sql.Tx, dir MigrationDirection, migration Migration) error {
+	shouldMigrate, err := m.shouldMigrate(tx, migration.ID, dir)
+	if err != nil {
+		return err
+	}
+
+	if !shouldMigrate {
+		return nil
+	}
+
+	var migrate func(tx *sql.Tx) error
+	switch dir {
+	case Up:
+		migrate = migration.Up
+	default:
+		migrate = migration.Down
+	}
+
+	if err := migrate(tx); err != nil {
+		return &MigrationError{Migration: migration, Err: err}
+	}
+
+	var query string
+	switch dir {
+	case Up:
+		// Yes. This is a sql injection vulnerability. This gets around
+		// the different bindings for sqlite3/postgres.
+		//
+		// If you're running migrations from user input, you're doing
+		// something wrong.
+		query = fmt.Sprintf("INSERT INTO %s (version) VALUES (%d)", m.table(), migration.ID)
+	default:
+		query = fmt.Sprintf("DELETE FROM %s WHERE version = %d", m.table(), migration.ID)
+	}
+
+	_, err = tx.Exec(query)
+	return err
 }
 
 func (m *Migrator) shouldMigrate(tx *sql.Tx, id int, dir MigrationDirection) (bool, error) {

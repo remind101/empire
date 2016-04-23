@@ -36,10 +36,18 @@ func OpenDB(uri string) (*DB, error) {
 		return nil, err
 	}
 
+	m := migrate.NewPostgresMigrator(conn)
+	// Run all migrations in a single transaction, so they will be rolled
+	// back as one. This is almost always the behavior that users would want
+	// when upgrading Empire. If a new release has multiple migrations, and
+	// one of those fails, it's easier for them if the entire upgrade rolls
+	// back instead of getting stuck in failed state.
+	m.TransactionMode = migrate.SingleTransaction
+
 	return &DB{
 		DB:       &db,
 		uri:      uri,
-		migrator: migrate.NewPostgresMigrator(conn),
+		migrator: m,
 	}, nil
 }
 
