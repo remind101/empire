@@ -10,9 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/awsutil"
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -454,21 +454,26 @@ func TestScheduler_Run(t *testing.T) {
 	m, s := newTestScheduler(h)
 	defer s.Close()
 
-	app := &scheduler.App{ID: "1234"}
-	process := &scheduler.Process{
-		Type:    "run",
-		Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-		Command: []string{"acme-inc", "web", "--port", "80"},
+	app := twelvefactor.App{
+		ID:    "1234",
+		Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 		Env: map[string]string{
 			"USER": "foo",
 		},
 		Labels: map[string]string{
 			"label1": "foo",
+		},
+	}
+	process := twelvefactor.Process{
+		Type:    "run",
+		Command: []string{"acme-inc", "web", "--port", "80"},
+		Labels: map[string]string{
 			"label2": "bar",
 		},
 		MemoryLimit: 134217728, // 128
 		CPUShares:   128,
 	}
+
 	if err := m.Run(context.Background(), app, process, nil, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -476,13 +481,13 @@ func TestScheduler_Run(t *testing.T) {
 
 func TestDiffProcessTypes(t *testing.T) {
 	tests := []struct {
-		old, new []*scheduler.Process
+		old, new []twelvefactor.Process
 		out      []string
 	}{
 		{nil, nil, []string{}},
-		{[]*scheduler.Process{{Type: "web"}}, []*scheduler.Process{{Type: "web"}}, []string{}},
-		{[]*scheduler.Process{{Type: "web"}}, nil, []string{"web"}},
-		{[]*scheduler.Process{{Type: "web"}, {Type: "worker"}}, []*scheduler.Process{{Type: "web"}}, []string{"worker"}},
+		{[]twelvefactor.Process{{Type: "web"}}, []twelvefactor.Process{{Type: "web"}}, []string{}},
+		{[]twelvefactor.Process{{Type: "web"}}, nil, []string{"web"}},
+		{[]twelvefactor.Process{{Type: "web"}, {Type: "worker"}}, []twelvefactor.Process{{Type: "web"}}, []string{"worker"}},
 	}
 
 	for i, tt := range tests {
@@ -504,8 +509,8 @@ func TestScheduler_LoadBalancer_NoExposure(t *testing.T) {
 		lb: l,
 	}
 
-	app := &scheduler.App{}
-	process := &scheduler.Process{}
+	app := twelvefactor.App{}
+	process := twelvefactor.Process{}
 
 	loadBalancer, err := s.loadBalancer(context.Background(), app, process)
 	assert.NoError(t, err)
@@ -520,14 +525,14 @@ func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
 		lb: l,
 	}
 
-	app := &scheduler.App{
+	app := twelvefactor.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := twelvefactor.Process{
 		Type: "web",
-		Exposure: &scheduler.Exposure{
-			Type: &scheduler.HTTPExposure{},
+		Exposure: &twelvefactor.Exposure{
+			Type: &twelvefactor.HTTPExposure{},
 		},
 	}
 
@@ -552,15 +557,15 @@ func TestLBProcessManager_CreateProcess_ExistingLoadBalancer(t *testing.T) {
 		lb: l,
 	}
 
-	app := &scheduler.App{
+	app := twelvefactor.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := twelvefactor.Process{
 		Type: "web",
-		Exposure: &scheduler.Exposure{
+		Exposure: &twelvefactor.Exposure{
 			External: true,
-			Type:     &scheduler.HTTPExposure{},
+			Type:     &twelvefactor.HTTPExposure{},
 		},
 	}
 
@@ -581,15 +586,15 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_MismatchedExposure(t *testi
 		lb: l,
 	}
 
-	app := &scheduler.App{
+	app := twelvefactor.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := twelvefactor.Process{
 		Type: "web",
-		Exposure: &scheduler.Exposure{
+		Exposure: &twelvefactor.Exposure{
 			External: true,
-			Type:     &scheduler.HTTPExposure{},
+			Type:     &twelvefactor.HTTPExposure{},
 		},
 	}
 
@@ -610,15 +615,15 @@ func TestScheduler_LoadBalancer_ExistingLoadBalancer_NewCert(t *testing.T) {
 	}
 
 	port := int64(8080)
-	app := &scheduler.App{
+	app := twelvefactor.App{
 		ID:   "appid",
 		Name: "appname",
 	}
-	process := &scheduler.Process{
+	process := twelvefactor.Process{
 		Type: "web",
-		Exposure: &scheduler.Exposure{
+		Exposure: &twelvefactor.Exposure{
 			External: true,
-			Type: &scheduler.HTTPSExposure{
+			Type: &twelvefactor.HTTPSExposure{
 				Cert: "newcert",
 			},
 		},
@@ -665,24 +670,28 @@ func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]strin
 }
 
 // fake app for testing.
-var fakeApp = &scheduler.App{
-	ID: "1234",
-	Processes: []*scheduler.Process{
-		&scheduler.Process{
+var fakeApp = twelvefactor.Manifest{
+	App: twelvefactor.App{
+		ID:    "1234",
+		Image: image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+		Env: map[string]string{
+			"USER": "foo",
+		},
+		Labels: map[string]string{
+			"label1": "foo",
+		},
+	},
+	Processes: []twelvefactor.Process{
+		twelvefactor.Process{
 			Type:    "web",
-			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 			Command: []string{"acme-inc", "web", "--port", "80"},
-			Env: map[string]string{
-				"USER": "foo",
-			},
 			Labels: map[string]string{
-				"label1": "foo",
 				"label2": "bar",
 			},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,
-			Exposure: &scheduler.Exposure{
-				Type: &scheduler.HTTPExposure{},
+			Exposure: &twelvefactor.Exposure{
+				Type: &twelvefactor.HTTPExposure{},
 			},
 		},
 	},

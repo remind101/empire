@@ -62,8 +62,8 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	a := newServiceApp(release)
-	p := newServiceProcess(release, NewProcess("run", opts.Command))
+	a := new12factorApp(release)
+	p := new12factorProcess(release, NewProcess("run", opts.Command))
 
 	for k, v := range opts.Env {
 		p.Env[k] = v

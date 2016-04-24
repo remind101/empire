@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/pkg/headerutil"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -148,8 +148,8 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 // Release submits a release to the scheduler.
 func (s *releasesService) Release(ctx context.Context, release *Release) error {
-	a := newServiceApp(release)
-	return s.Scheduler.Submit(ctx, a)
+	m := new12factorManifest(release)
+	return s.Scheduler.Submit(ctx, m)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -258,42 +258,64 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func newServiceApp(release *Release) *scheduler.App {
-	var processes []*scheduler.Process
+// new12factorManifest builds a twelvefactor.Manifest from a Release, which
+// represents a 12factor application that we can submit to the scheduler
+// backend.
+func new12factorManifest(release *Release) twelvefactor.Manifest {
+	app := new12factorApp(release)
 
+	var processes []twelvefactor.Process
 	for _, p := range release.Processes {
-		processes = append(processes, newServiceProcess(release, p))
+		processes = append(processes, new12factorProcess(release, p))
 	}
 
-	return &scheduler.App{
-		ID:        release.App.ID,
-		Name:      release.App.Name,
+	return twelvefactor.Manifest{
+		App:       app,
 		Processes: processes,
 	}
 }
 
-func newServiceProcess(release *Release, p *Process) *scheduler.Process {
+// new12factorApp returns a new twelvefactor.App description for the given
+// release.
+func new12factorApp(release *Release) twelvefactor.App {
 	env := environment(release.Config.Vars)
 	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
-	env["EMPIRE_PROCESS"] = string(p.Type)
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
 	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
-	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
 
 	labels := map[string]string{
 		"empire.app.id":      release.App.ID,
 		"empire.app.name":    release.App.Name,
-		"empire.app.process": string(p.Type),
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
-	return &scheduler.Process{
+	return twelvefactor.App{
+		ID:     release.App.ID,
+		Name:   release.App.Name,
+		Image:  release.Slug.Image,
+		Env:    env,
+		Labels: labels,
+	}
+}
+
+// new12factorProcess returns a new twelvefactor.Process description for the
+// given process.
+func new12factorProcess(release *Release, p *Process) twelvefactor.Process {
+	env := map[string]string{
+		"EMPIRE_PROCESS": string(p.Type),
+		"SOURCE":         fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version),
+	}
+
+	labels := map[string]string{
+		"empire.app.process": string(p.Type),
+	}
+
+	return twelvefactor.Process{
 		Type:        string(p.Type),
 		Env:         env,
 		Labels:      labels,
 		Command:     []string(p.Command),
-		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),
 		MemoryLimit: uint(p.Constraints.Memory),
 		CPUShares:   uint(p.Constraints.CPUShare),
@@ -313,21 +335,21 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func processExposure(app *App, process *Process) *scheduler.Exposure {
+func processExposure(app *App, process *Process) *twelvefactor.Exposure {
 	// For now, only the `web` process can be exposed.
 	if process.Type != WebProcessType {
 		return nil
 	}
 
-	exposure := &scheduler.Exposure{
+	exposure := &twelvefactor.Exposure{
 		External: app.Exposure == ExposePublic,
 	}
 
 	switch app.Cert {
 	case "":
-		exposure.Type = &scheduler.HTTPExposure{}
+		exposure.Type = &twelvefactor.HTTPExposure{}
 	default:
-		exposure.Type = &scheduler.HTTPSExposure{
+		exposure.Type = &twelvefactor.HTTPSExposure{
 			Cert: app.Cert,
 		}
 	}

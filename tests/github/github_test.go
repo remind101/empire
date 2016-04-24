@@ -10,6 +10,7 @@ import (
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,7 @@ type mockScheduler struct {
 	image chan string
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
-	m.image <- app.Processes[0].Image.String()
+func (m *mockScheduler) Submit(_ context.Context, manifest twelvefactor.Manifest) error {
+	m.image <- manifest.App.Image.String()
 	return nil
 }

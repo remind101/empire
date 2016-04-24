@@ -41,7 +41,7 @@ func (s *tasksService) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 // taskFromInstance converts a scheduler.Instance into a Task.
 // It pulls some of its data from empire specific environment variables if they have been set.
 // Once ECS supports this data natively, we can stop doing this.
-func taskFromInstance(i *scheduler.Instance) *Task {
+func taskFromInstance(i scheduler.Instance) *Task {
 	version := i.Process.Env["EMPIRE_RELEASE"]
 	if version == "" {
 		version = "v0"

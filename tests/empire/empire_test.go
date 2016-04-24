@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/12factor"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
@@ -97,34 +98,40 @@ func TestEmpire_Deploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
-		Processes: []*scheduler.Process{
+	s.On("Submit", twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID:    app.ID,
+			Name:  "acme-inc",
+			Image: img,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_RELEASE":    "v1",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.release": "v1",
+			},
+		},
+		Processes: []twelvefactor.Process{
 			{
 				Type:    "web",
-				Image:   img,
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Type: &scheduler.HTTPExposure{},
+				Exposure: &twelvefactor.Exposure{
+					Type: &twelvefactor.HTTPExposure{},
 				},
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_APPID":      app.ID,
-					"EMPIRE_APPNAME":    "acme-inc",
-					"EMPIRE_PROCESS":    "web",
-					"EMPIRE_RELEASE":    "v1",
-					"SOURCE":            "acme-inc.web.v1",
-					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+					"EMPIRE_PROCESS": "web",
+					"SOURCE":         "acme-inc.web.v1",
 				},
 				Labels: map[string]string{
-					"empire.app.name":    "acme-inc",
-					"empire.app.id":      app.ID,
 					"empire.app.process": "web",
-					"empire.app.release": "v1",
 				},
 			},
 		},
@@ -254,35 +261,41 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
-		Processes: []*scheduler.Process{
+	s.On("Submit", twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID:    app.ID,
+			Name:  "acme-inc",
+			Image: img,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_RELEASE":    "v1",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+				"RAILS_ENV":         "production",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.release": "v1",
+			},
+		},
+		Processes: []twelvefactor.Process{
 			{
 				Type:    "web",
-				Image:   img,
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Type: &scheduler.HTTPExposure{},
+				Exposure: &twelvefactor.Exposure{
+					Type: &twelvefactor.HTTPExposure{},
 				},
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_APPID":      app.ID,
-					"EMPIRE_APPNAME":    "acme-inc",
-					"EMPIRE_PROCESS":    "web",
-					"EMPIRE_RELEASE":    "v1",
-					"SOURCE":            "acme-inc.web.v1",
-					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-					"RAILS_ENV":         "production",
+					"EMPIRE_PROCESS": "web",
+					"SOURCE":         "acme-inc.web.v1",
 				},
 				Labels: map[string]string{
-					"empire.app.name":    "acme-inc",
-					"empire.app.id":      app.ID,
 					"empire.app.process": "web",
-					"empire.app.release": "v1",
 				},
 			},
 		},
@@ -297,34 +310,40 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Remove the environment variable
-	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
-		Processes: []*scheduler.Process{
+	s.On("Submit", twelvefactor.Manifest{
+		App: twelvefactor.App{
+			ID:    app.ID,
+			Name:  "acme-inc",
+			Image: img,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_RELEASE":    "v2",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.release": "v2",
+			},
+		},
+		Processes: []twelvefactor.Process{
 			{
 				Type:    "web",
-				Image:   img,
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Type: &scheduler.HTTPExposure{},
+				Exposure: &twelvefactor.Exposure{
+					Type: &twelvefactor.HTTPExposure{},
 				},
 				Instances:   1,
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_APPID":      app.ID,
-					"EMPIRE_APPNAME":    "acme-inc",
-					"EMPIRE_PROCESS":    "web",
-					"EMPIRE_RELEASE":    "v2",
-					"SOURCE":            "acme-inc.web.v2",
-					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+					"EMPIRE_PROCESS": "web",
+					"SOURCE":         "acme-inc.web.v2",
 				},
 				Labels: map[string]string{
-					"empire.app.name":    "acme-inc",
-					"empire.app.id":      app.ID,
 					"empire.app.process": "web",
-					"empire.app.release": "v2",
 				},
 			},
 		},
@@ -347,7 +366,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
-	args := m.Called(app)
+func (m *mockScheduler) Submit(_ context.Context, manifest twelvefactor.Manifest) error {
+	args := m.Called(manifest)
 	return args.Error(0)
 }
