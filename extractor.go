@@ -1,4 +1,4 @@
-package procfile
+package empire
 
 import (
 	"archive/tar"
@@ -8,7 +8,12 @@ import (
 	"io"
 	"path"
 
+	"gopkg.in/yaml.v1"
+
+	"golang.org/x/net/context"
+
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/procfile"
 
 	"github.com/fsouza/go-dockerclient"
 )
@@ -18,15 +23,15 @@ var (
 	ProcfileName = "Procfile"
 )
 
-// Extract represents something that can extract a Procfile from an image.
-type Extractor interface {
-	Extract(image.Image) (Procfile, error)
+// ProcfileExtractor represents something that can extract a Procfile from an image.
+type ProcfileExtractor interface {
+	Extract(context.Context, image.Image, io.Writer) ([]byte, error)
 }
 
-type ExtractorFunc func(image.Image) (Procfile, error)
+type ProcfileExtractorFunc func(context.Context, image.Image, io.Writer) ([]byte, error)
 
-func (fn ExtractorFunc) Extract(image image.Image) (Procfile, error) {
-	return fn(image)
+func (fn ProcfileExtractorFunc) Extract(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
+	return fn(ctx, image, w)
 }
 
 // CommandExtractor is an Extractor implementation that returns a Procfile based
@@ -41,25 +46,25 @@ func NewCMDExtractor(c *docker.Client) *CMDExtractor {
 	return &CMDExtractor{client: c}
 }
 
-func (e *CMDExtractor) Extract(img image.Image) (Procfile, error) {
-	pm := make(Procfile)
-
+func (e *CMDExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) ([]byte, error) {
 	i, err := e.client.InspectImage(img.String())
 	if err != nil {
-		return pm, err
+		return nil, err
 	}
 
-	pm["web"] = i.Config.Cmd
-
-	return pm, nil
+	return yaml.Marshal(procfile.ExtendedProcfile{
+		"web": procfile.Process{
+			Command: i.Config.Cmd,
+		},
+	})
 }
 
 // MultiExtractor is an Extractor implementation that tries multiple Extractors
 // in succession until one succeeds.
-func MultiExtractor(extractors ...Extractor) Extractor {
-	return ExtractorFunc(func(image image.Image) (Procfile, error) {
+func MultiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
+	return ProcfileExtractorFunc(func(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
 		for _, extractor := range extractors {
-			p, err := extractor.Extract(image)
+			p, err := extractor.Extract(ctx, image, w)
 
 			// Yay!
 			if err == nil {
@@ -93,27 +98,25 @@ func NewFileExtractor(c *docker.Client) *FileExtractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *FileExtractor) Extract(img image.Image) (Procfile, error) {
-	pm := make(Procfile)
-
+func (e *FileExtractor) Extract(_ context.Context, img image.Image, w io.Writer) ([]byte, error) {
 	c, err := e.createContainer(img)
 	if err != nil {
-		return pm, err
+		return nil, err
 	}
 
 	defer e.removeContainer(c.ID)
 
-	procfile, err := e.procfile(c.ID)
+	pfile, err := e.procfile(c.ID)
 	if err != nil {
-		return pm, err
+		return nil, err
 	}
 
-	b, err := e.copyFile(c.ID, procfile)
+	b, err := e.copyFile(c.ID, pfile)
 	if err != nil {
-		return pm, &ProcfileError{Err: err}
+		return nil, &ProcfileError{Err: err}
 	}
 
-	return ParseProcfile(b)
+	return b, nil
 }
 
 // procfile returns the path to the Procfile. If the container has a WORKDIR
@@ -187,4 +190,63 @@ func firstFile(tr *tar.Reader) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func formationFromProcfile(p procfile.Procfile) (Formation, error) {
+	switch p := p.(type) {
+	case procfile.StandardProcfile:
+		return formationFromStandardProcfile(p)
+	case procfile.ExtendedProcfile:
+		return formationFromExtendedProcfile(p)
+	default:
+		return nil, &ProcfileError{
+			Err: errors.New("unknown Procfile format"),
+		}
+	}
+}
+
+func formationFromStandardProcfile(p procfile.StandardProcfile) (Formation, error) {
+	f := make(Formation)
+
+	for name, command := range p {
+		cmd, err := ParseCommand(command)
+		if err != nil {
+			return nil, err
+		}
+
+		f[name] = Process{
+			Command: cmd,
+		}
+	}
+
+	return f, nil
+}
+
+func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, error) {
+	f := make(Formation)
+
+	for name, process := range p {
+		var cmd Command
+		var err error
+
+		switch command := process.Command.(type) {
+		case string:
+			cmd, err = ParseCommand(command)
+			if err != nil {
+				return nil, err
+			}
+		case []interface{}:
+			for _, v := range command {
+				cmd = append(cmd, v.(string))
+			}
+		default:
+			return nil, errors.New("unknown command format")
+		}
+
+		f[name] = Process{
+			Command: cmd,
+		}
+	}
+
+	return f, nil
 }

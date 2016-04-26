@@ -1,34 +1,63 @@
 package procfile
 
 import (
-	"github.com/mattn/go-shellwords"
+	"io"
+	"io/ioutil"
+
 	"gopkg.in/yaml.v2"
 )
 
-// Procfile is a Go representation of a Procfile, which maps a named process to
-// a command to run.
-type Procfile map[string][]string
+// Procfile is a Go representation of process configuration.
+type Procfile interface {
+	version() string
+}
 
-// yamlProcfile is a struct that we can yaml.Unmarshal into.
-type yamlProcfile map[string]string
+// ExtendedProcfile represents the extended Procfile format.
+type ExtendedProcfile map[string]Process
+
+func (e ExtendedProcfile) version() string {
+	return "extended"
+}
+
+type Process struct {
+	Command interface{} `yaml:"command"`
+}
+
+// StandardProcfile represents a standard Procfile.
+type StandardProcfile map[string]string
+
+func (p StandardProcfile) version() string {
+	return "standard"
+}
+
+// Parse parses the Procfile by reading from r.
+func Parse(r io.Reader) (Procfile, error) {
+	raw, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseProcfile(raw)
+}
 
 // ParseProcfile takes a byte slice representing a YAML Procfile and parses it
 // into a Procfile.
 func ParseProcfile(b []byte) (Procfile, error) {
-	y := make(yamlProcfile)
-
-	if err := yaml.Unmarshal(b, &y); err != nil {
-		return nil, err
+	p, err := parseStandardProcfile(b)
+	if err != nil {
+		p, err = parseExtendedProcfile(b)
 	}
+	return p, err
+}
 
-	p := make(Procfile)
-	for process, command := range y {
-		args, err := shellwords.Parse(command)
-		if err != nil {
-			return nil, err
-		}
-		p[process] = args
-	}
+func parseExtendedProcfile(b []byte) (Procfile, error) {
+	y := make(ExtendedProcfile)
+	err := yaml.Unmarshal(b, &y)
+	return y, err
+}
 
-	return p, nil
+func parseStandardProcfile(b []byte) (Procfile, error) {
+	y := make(StandardProcfile)
+	err := yaml.Unmarshal(b, &y)
+	return y, err
 }

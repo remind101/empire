@@ -8,6 +8,8 @@ import (
 	"testing"
 	"text/template"
 
+	"gopkg.in/yaml.v1"
+
 	"golang.org/x/net/context"
 
 	"github.com/ejholmes/flock"
@@ -46,7 +48,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 
 	e := empire.New(db, empire.DefaultOptions)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ExtractProcfile = ExtractProcfile
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(ExtractProcfile)
 	e.RunRecorder = empire.RecordTo(ioutil.Discard)
 
 	if err := e.Reset(); err != nil {
@@ -85,9 +87,16 @@ func Run(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// ExtractProcfile extracts a fake procfile.
-func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
-	return procfile.Procfile{
-		"web": []string{"./bin/web"},
-	}, dockerutil.FakePull(img, w)
+// ExtractProcfile extracts a fake Procfile.
+func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+	p, err := yaml.Marshal(procfile.ExtendedProcfile{
+		"web": procfile.Process{
+			Command: []string{"./bin/web"},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return p, dockerutil.FakePull(img, w)
 }

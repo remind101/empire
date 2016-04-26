@@ -4,7 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"gopkg.in/yaml.v1"
+
 	"github.com/lib/pq/hstore"
+	"github.com/remind101/empire/pkg/constraints"
+	"github.com/remind101/empire/procfile"
 	"github.com/remind101/migrate"
 )
 
@@ -376,6 +380,141 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`ALTER TABLE processes ADD COLUMN command text not null`,
 			`ALTER TABLE slugs DROP COLUMN process_types`,
 			`ALTER TABLE slugs ADD COLUMN process_types hstore not null`,
+		}),
+	},
+
+	// This migration changes that way we store process configuration for
+	// releases and slugs, to instead store a Formation in JSON format.
+	{
+		ID: 15,
+		Up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`ALTER TABLE slugs ADD COLUMN procfile bytea`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`ALTER TABLE releases ADD COLUMN formation json`)
+			if err != nil {
+				return err
+			}
+
+			rows, err := tx.Query(`SELECT id, process_types FROM slugs`)
+			if err != nil {
+				return err
+			}
+
+			slugs := make(map[string]procfile.Procfile)
+			for rows.Next() {
+				var id string
+				var ptypes []byte
+				if err := rows.Scan(&id, &ptypes); err != nil {
+					return err
+				}
+				m := make(map[string][]string)
+				if err := json.Unmarshal(ptypes, &m); err != nil {
+					return err
+				}
+				p := make(procfile.ExtendedProcfile)
+				for name, command := range m {
+					p[name] = procfile.Process{
+						Command: command,
+					}
+				}
+				slugs[id] = p
+			}
+
+			if err := rows.Err(); err != nil {
+				return err
+			}
+
+			rows.Close()
+
+			for id, p := range slugs {
+				raw, err := yaml.Marshal(p)
+				if err != nil {
+					return err
+				}
+
+				_, err = tx.Exec(`UPDATE slugs SET procfile = $1 WHERE id = $2`, raw, id)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = tx.Exec(`ALTER TABLE slugs DROP COLUMN process_types`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`ALTER TABLE slugs ALTER COLUMN procfile SET NOT NULL`)
+			if err != nil {
+				return err
+			}
+
+			rows, err = tx.Query(`SELECT release_id, id, type, quantity, command, memory, cpu_share, nproc FROM processes`)
+			if err != nil {
+				return err
+			}
+
+			formations := make(map[string]Formation)
+			for rows.Next() {
+				var release, id, ptype string
+				var command Command
+				var quantity, memory, cpu, nproc int
+				if err := rows.Scan(&release, &id, &ptype, &quantity, &command, &memory, &cpu, &nproc); err != nil {
+					return err
+				}
+				if formations[release] == nil {
+					formations[release] = make(Formation)
+				}
+
+				f := formations[release]
+				f[ptype] = Process{
+					Command:  command,
+					Quantity: quantity,
+					Memory:   constraints.Memory(memory),
+					CPUShare: constraints.CPUShare(cpu),
+					Nproc:    constraints.Nproc(nproc),
+				}
+			}
+
+			if err := rows.Err(); err != nil {
+				return err
+			}
+
+			rows.Close()
+
+			for id, f := range formations {
+				_, err = tx.Exec(`UPDATE releases SET formation = $1 WHERE id = $2`, f, id)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = tx.Exec(`ALTER TABLE releases ALTER COLUMN formation SET NOT NULL`)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Exec(`DROP TABLE processes`)
+
+			return err
+		},
+		Down: migrate.Queries([]string{
+			`ALTER TABLE releases DROP COLUMN formation`,
+			`ALTER TABLE slugs DROP COLUMN procfile`,
+			`ALTER TABLE slugs ADD COLUMN process_types hstore not null`,
+			`CREATE TABLE processes (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  release_id uuid NOT NULL references releases(id) ON DELETE CASCADE,
+  "type" text NOT NULL,
+  quantity int NOT NULL,
+  command text NOT NULL,
+  cpu_share int,
+  memory bigint,
+  nproc bigint
+)`,
+			`CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type")`,
 		}),
 	},
 }

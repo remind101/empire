@@ -5,14 +5,25 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/procfile"
 	"golang.org/x/net/context"
 )
 
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
-	ID           string
-	Image        image.Image
-	ProcessTypes CommandMap
+	ID       string
+	Image    image.Image
+	Procfile []byte
+}
+
+// Formation returns a new Formation built from the extracted Procfile.
+func (s *Slug) Formation() (Formation, error) {
+	p, err := procfile.ParseProcfile(s.Procfile)
+	if err != nil {
+		return nil, err
+	}
+
+	return formationFromProcfile(p)
 }
 
 // slugsCreate inserts a Slug into the database.
@@ -27,7 +38,7 @@ type slugsService struct {
 
 // SlugsCreateByImage creates a Slug for the given image.
 func (s *slugsService) Create(ctx context.Context, db *gorm.DB, img image.Image, out io.Writer) (*Slug, error) {
-	return slugsCreateByImage(ctx, db, s.ExtractProcfile, img, out)
+	return slugsCreateByImage(ctx, db, s.ProcfileExtractor, img, out)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
@@ -44,17 +55,17 @@ func slugsCreateByImage(ctx context.Context, db *gorm.DB, e ProcfileExtractor, i
 
 // SlugsExtract extracts the process types from the image, then returns a new
 // Slug instance.
-func slugsExtract(ctx context.Context, extract ProcfileExtractor, img image.Image, out io.Writer) (*Slug, error) {
+func slugsExtract(ctx context.Context, extractor ProcfileExtractor, img image.Image, out io.Writer) (*Slug, error) {
 	slug := &Slug{
 		Image: img,
 	}
 
-	p, err := extract(ctx, img, out)
+	p, err := extractor.Extract(ctx, img, out)
 	if err != nil {
 		return slug, err
 	}
 
-	slug.ProcessTypes = commandMapFromProcfile(p)
+	slug.Procfile = p
 
 	return slug, nil
 }

@@ -18,6 +18,9 @@ func TestMigrations(t *testing.T) {
 	err = db.migrator.Exec(migrate.Up, Migrations...)
 	assert.NoError(t, err)
 
+	err = db.Reset()
+	assert.NoError(t, err)
+
 	err = db.migrator.Exec(migrate.Down, Migrations...)
 	assert.NoError(t, err)
 

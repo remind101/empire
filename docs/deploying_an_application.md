@@ -17,13 +17,22 @@ To see an example application, you can look at [remind101/acme-inc]
 
 Empire was modeled after the Heroku API.  As such, many concepts and commands are similar.  One concept which has bled over and which is a requirement is that of a [Procfile][procfile].  For your application to actually work, you must include a Procfile at the root level of your application.
 
-Imagine a Python application which simply ran celery.  A `Procfile` for such a service could look like this:
+Empire supports two Procfile formats; `standard` and `extended`. The `standard` format is probably what you're used to if you've used Heroku before and simply maps a process name to a command to run:
 
-```
-workerservice: celery -A tasks worker --loglevel=info
+```yaml
+worker: celery -A tasks worker --loglevel=info
 ```
 
-The file would be named `Procfile`, and live at the directory root for your application.
+The `extended` format is Empire specific and allows you to define additional configuration for processes, like exposure settings (http/https/tcp/ssl), health checks, and more. An example of the Procfile above in the `extended` format would simply be:
+
+```yaml
+worker:
+  command: celery -A tasks worker --loglevel=info
+```
+
+The extended Procfile formation is documented [here][extended-procfile].
+
+Whichever format you use, the file would be named `Procfile`, and live at the directory root for your application.
 
 ```console
 $ tree .
@@ -120,4 +129,5 @@ web: /code/run.sh
 TODO
 
 [procfile]: https://devcenter.heroku.com/articles/procfile
+[extended-procfile]: https://github.com/remind101/empire/tree/master/procfile
 [remind101/acme-inc]: https://github.com/remind101/acme-inc

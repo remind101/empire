@@ -1,4 +1,4 @@
-package procfile
+package empire
 
 import (
 	"archive/tar"
@@ -26,17 +26,19 @@ func TestCMDExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(image.Image{
+	got, err := e.Extract(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := Procfile{
-		"web": []string{"/go/bin/app", "server"},
-	}
+	want := []byte(`web:
+  command:
+  - /go/bin/app
+  - server
+`)
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Extract() => %q; want %q", got, want)
@@ -65,17 +67,15 @@ func TestProcfileExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(image.Image{
+	got, err := e.Extract(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := Procfile{
-		"web": []string{"rails", "server"},
-	}
+	want := []byte(`web: rails server`)
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Extract() => %q; want %q", got, want)
@@ -109,17 +109,19 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 		NewCMDExtractor(c),
 	)
 
-	got, err := e.Extract(image.Image{
+	got, err := e.Extract(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := Procfile{
-		"web": []string{"/go/bin/app", "server"},
-	}
+	want := []byte(`web:
+  command:
+  - /go/bin/app
+  - server
+`)
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Extract() => %q; want %q", got, want)

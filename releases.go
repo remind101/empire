@@ -29,30 +29,10 @@ type Release struct {
 	SlugID string
 	Slug   *Slug
 
-	Processes []*Process
+	Formation Formation
 
 	Description string
 	CreatedAt   *time.Time
-}
-
-// Formation creates a Formation object
-func (r *Release) Formation() Formation {
-	f := make(Formation)
-	for _, p := range r.Processes {
-		f[p.Type] = p
-	}
-	return f
-}
-
-// Process return the Process with the given type.
-func (r *Release) Process(t ProcessType) *Process {
-	for _, p := range r.Processes {
-		if p.Type == t {
-			return p
-		}
-	}
-
-	return nil
 }
 
 // BeforeCreate sets created_at before inserting.
@@ -115,9 +95,14 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (
 		return r, err
 	}
 
-	// Create a new formation for this release.
-	if err := createFormation(db, r); err != nil {
-		return r, err
+	// During rollbacks, we can just provide the existing Formation for the
+	// old release. For new releases, we need to create a new formation by
+	// merging the formation from the extracted Procfile, and the Formation
+	// from the existing release.
+	if r.Formation == nil {
+		if err := buildFormation(db, r); err != nil {
+			return r, err
+		}
 	}
 
 	r, err := releasesCreate(db, r)
@@ -142,6 +127,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 		App:         app,
 		Config:      r.Config,
 		Slug:        r.Slug,
+		Formation:   r.Formation,
 		Description: desc,
 	})
 }
@@ -171,7 +157,7 @@ func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App)
 }
 
 // These associations are always available on a Release.
-var releasesPreload = Preload("App", "Config", "Slug", "Processes")
+var releasesPreload = Preload("App", "Config", "Slug")
 
 // releasesFind returns the first matching release.
 func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
@@ -192,7 +178,11 @@ func releases(db *gorm.DB, scope Scope) ([]*Release, error) {
 	return releases, find(db, scope, &releases)
 }
 
-func createFormation(db *gorm.DB, release *Release) error {
+func releasesUpdate(db *gorm.DB, release *Release) error {
+	return db.Save(release).Error
+}
+
+func buildFormation(db *gorm.DB, release *Release) error {
 	var existing Formation
 
 	// Get the old release, so we can copy the Formation.
@@ -202,11 +192,14 @@ func createFormation(db *gorm.DB, release *Release) error {
 			return err
 		}
 	} else {
-		existing = last.Formation()
+		existing = last.Formation
 	}
 
-	f := NewFormation(existing, release.Slug.ProcessTypes)
-	release.Processes = f.Processes()
+	f, err := release.Slug.Formation()
+	if err != nil {
+		return err
+	}
+	release.Formation = f.Merge(existing)
 
 	return nil
 }
@@ -218,7 +211,7 @@ func currentFormation(db *gorm.DB, app *App) (Formation, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := current.Formation()
+	f := current.Formation
 	return f, nil
 }
 
@@ -261,8 +254,8 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 func newServiceApp(release *Release) *scheduler.App {
 	var processes []*scheduler.Process
 
-	for _, p := range release.Processes {
-		processes = append(processes, newServiceProcess(release, p))
+	for name, p := range release.Formation {
+		processes = append(processes, newServiceProcess(release, name, p))
 	}
 
 	return &scheduler.App{
@@ -272,33 +265,33 @@ func newServiceApp(release *Release) *scheduler.App {
 	}
 }
 
-func newServiceProcess(release *Release, p *Process) *scheduler.Process {
+func newServiceProcess(release *Release, name string, p Process) *scheduler.Process {
 	env := environment(release.Config.Vars)
 	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
-	env["EMPIRE_PROCESS"] = string(p.Type)
+	env["EMPIRE_PROCESS"] = name
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
 	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
-	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, p.Type, release.Version)
+	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version)
 
 	labels := map[string]string{
 		"empire.app.id":      release.App.ID,
 		"empire.app.name":    release.App.Name,
-		"empire.app.process": string(p.Type),
+		"empire.app.process": name,
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
 	return &scheduler.Process{
-		Type:        string(p.Type),
+		Type:        name,
 		Env:         env,
 		Labels:      labels,
 		Command:     []string(p.Command),
 		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),
-		MemoryLimit: uint(p.Constraints.Memory),
-		CPUShares:   uint(p.Constraints.CPUShare),
-		Nproc:       uint(p.Constraints.Nproc),
-		Exposure:    processExposure(release.App, p),
+		MemoryLimit: uint(p.Memory),
+		CPUShares:   uint(p.CPUShare),
+		Nproc:       uint(p.Nproc),
+		Exposure:    processExposure(release.App, name),
 	}
 }
 
@@ -313,9 +306,9 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func processExposure(app *App, process *Process) *scheduler.Exposure {
+func processExposure(app *App, process string) *scheduler.Exposure {
 	// For now, only the `web` process can be exposed.
-	if process.Type != WebProcessType {
+	if process != WebProcessType {
 		return nil
 	}
 

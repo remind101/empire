@@ -67,6 +67,7 @@ func (db *DB) Reset() error {
 
 	exec(`TRUNCATE TABLE apps CASCADE`)
 	exec(`TRUNCATE TABLE ports CASCADE`)
+	exec(`TRUNCATE TABLE slugs CASCADE`)
 	exec(`INSERT INTO ports (port) (SELECT generate_series(9000,10000))`)
 
 	return err
