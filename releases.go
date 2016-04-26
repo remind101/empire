@@ -95,9 +95,14 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (
 		return r, err
 	}
 
-	// Create a new formation for this release.
-	if err := createFormation(db, r); err != nil {
-		return r, err
+	// During rollbacks, we can just provide the existing Formation for the
+	// old release. For new releases, we need to create a new formation by
+	// merging the formation from the extracted Procfile, and the Formation
+	// from the existing release.
+	if r.Formation == nil {
+		if err := buildFormation(db, r); err != nil {
+			return r, err
+		}
 	}
 
 	r, err := releasesCreate(db, r)
@@ -122,6 +127,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 		App:         app,
 		Config:      r.Config,
 		Slug:        r.Slug,
+		Formation:   r.Formation,
 		Description: desc,
 	})
 }
@@ -176,7 +182,7 @@ func releasesUpdate(db *gorm.DB, release *Release) error {
 	return db.Save(release).Error
 }
 
-func createFormation(db *gorm.DB, release *Release) error {
+func buildFormation(db *gorm.DB, release *Release) error {
 	var existing Formation
 
 	// Get the old release, so we can copy the Formation.
