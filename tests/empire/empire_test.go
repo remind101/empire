@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v1"
-
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
@@ -174,7 +172,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	s := new(mockScheduler)
 	e.Scheduler = scheduler.NewFakeScheduler()
 	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		return yaml.Marshal(procfile.ExtendedProcfile{
+		return procfile.Marshal(procfile.ExtendedProcfile{
 			"web": procfile.Process{
 				Command: []string{"./bin/web"},
 			},
@@ -203,7 +201,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 		case "v3":
 			close(v3Started)
 		}
-		return yaml.Marshal(procfile.ExtendedProcfile{
+		return procfile.Marshal(procfile.ExtendedProcfile{
 			"web": procfile.Process{
 				Command: []string{"./bin/web"},
 			},

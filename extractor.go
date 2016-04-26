@@ -8,8 +8,6 @@ import (
 	"io"
 	"path"
 
-	"gopkg.in/yaml.v1"
-
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/image"
@@ -52,7 +50,7 @@ func (e *CMDExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) 
 		return nil, err
 	}
 
-	return yaml.Marshal(procfile.ExtendedProcfile{
+	return procfile.Marshal(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: i.Config.Cmd,
 		},

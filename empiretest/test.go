@@ -8,8 +8,6 @@ import (
 	"testing"
 	"text/template"
 
-	"gopkg.in/yaml.v1"
-
 	"golang.org/x/net/context"
 
 	"github.com/ejholmes/flock"
@@ -89,7 +87,7 @@ func Run(m *testing.M) {
 
 // ExtractProcfile extracts a fake Procfile.
 func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-	p, err := yaml.Marshal(procfile.ExtendedProcfile{
+	p, err := procfile.Marshal(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},
 		},

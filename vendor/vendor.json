@@ -635,11 +635,6 @@
 			"revision": "c87af80f3cc5036b55b83d77171e156791085e2e"
 		},
 		{
-			"path": "gopkg.in/yaml.v1",
-			"revision": "9f9df34309c04878acc86042b16630b0f696e1de",
-			"revisionTime": "2014-09-24T13:16:07-03:00"
-		},
-		{
 			"path": "gopkg.in/yaml.v2",
 			"revision": "5d6f7e02b7cdad63b06ab3877915532cd30073b4"
 		},

@@ -30,6 +30,11 @@ func (p StandardProcfile) version() string {
 	return "standard"
 }
 
+// Marshal marshals the Procfile to yaml format.
+func Marshal(p Procfile) ([]byte, error) {
+	return yaml.Marshal(p)
+}
+
 // Parse parses the Procfile by reading from r.
 func Parse(r io.Reader) (Procfile, error) {
 	raw, err := ioutil.ReadAll(r)

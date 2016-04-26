@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	"gopkg.in/yaml.v1"
-
 	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/procfile"
@@ -430,7 +428,7 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			rows.Close()
 
 			for id, p := range slugs {
-				raw, err := yaml.Marshal(p)
+				raw, err := procfile.Marshal(p)
 				if err != nil {
 					return err
 				}
