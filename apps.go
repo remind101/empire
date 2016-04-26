@@ -144,42 +144,45 @@ func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*
 		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
-	p := release.Process(t)
-	if p == nil {
+	p, ok := release.Formation[t]
+	if !ok {
 		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	if err := s.Scheduler.Scale(ctx, release.AppID, string(p.Type), uint(quantity)); err != nil {
+	if err := s.Scheduler.Scale(ctx, release.AppID, opts.Process, uint(quantity)); err != nil {
 		return nil, err
 	}
 
 	event := opts.Event()
 	event.PreviousQuantity = p.Quantity
-	event.PreviousConstraints = p.Constraints
+	event.PreviousConstraints = p.Constraints()
 
 	// Update quantity for this process in the formation
 	p.Quantity = quantity
 	if c != nil {
-		p.Constraints = *c
+		p.SetConstraints(*c)
 	}
 
-	if err := processesUpdate(db, p); err != nil {
+	release.Formation[t] = p
+
+	// Save the new formation.
+	if err := releasesUpdate(db, release); err != nil {
 		return nil, err
 	}
 
 	// If there are no changes to the process size, we can do a quick scale
 	// up, otherwise, we will resubmit the release to the scheduler.
 	if c == nil {
-		err = s.Scheduler.Scale(ctx, release.AppID, string(p.Type), uint(quantity))
+		err = s.Scheduler.Scale(ctx, release.AppID, opts.Process, uint(quantity))
 	} else {
 		err = s.releases.Release(ctx, release)
 	}
 
 	if err != nil {
-		return p, err
+		return &p, err
 	}
 
-	return p, s.PublishEvent(event)
+	return &p, s.PublishEvent(event)
 }
 
 // appsEnsureRepo will set the repo if it's not set.

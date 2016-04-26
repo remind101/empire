@@ -11,7 +11,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -33,9 +32,6 @@ const (
 	// WebProcessType is the process type we assume are web server processes.
 	WebProcessType = "web"
 )
-
-// ProcfileExtractor is a function that can extract a Procfile from an image.
-type ProcfileExtractor func(context.Context, image.Image, io.Writer) (procfile.Procfile, error)
 
 // Options is provided to New to configure the Empire services.
 type Options struct {
@@ -71,9 +67,9 @@ type Empire struct {
 	// LogsStreamer is the backend used to stream application logs.
 	LogsStreamer LogsStreamer
 
-	// ExtractProcfile is called during deployments to extract the Procfile
-	// from the newly deployed image.
-	ExtractProcfile ProcfileExtractor
+	// ProcfileExtractor is called during deployments to extract the
+	// Formation from the Procfile in the newly deployed image.
+	ProcfileExtractor ProcfileExtractor
 
 	// Environment represents the environment this Empire server is responsible for
 	Environment string
@@ -507,8 +503,8 @@ type ScaleOpts struct {
 	// The associated app.
 	App *App
 
-	// The process type to scale.
-	Process ProcessType
+	// The process to scale.
+	Process string
 
 	// The desired quantity of processes.
 	Quantity int
@@ -603,15 +599,15 @@ func nullLogger() log15.Logger {
 }
 
 // PullAndExtract returns a ProcfileExtractor that will pull the image using the
-// docker client, then attempt to extract the Procfile from the WORKDIR, or
-// fallback to the CMD directive in the Procfile.
+// docker client, then attempt to extract the the Procfile, or fallback to the
+// CMD directive in the Dockerfile.
 func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
-	e := procfile.MultiExtractor(
-		procfile.NewFileExtractor(c.Client),
-		procfile.NewCMDExtractor(c.Client),
+	e := MultiExtractor(
+		NewFileExtractor(c.Client),
+		NewCMDExtractor(c.Client),
 	)
 
-	return ProcfileExtractor(func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+	return ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
 		if err := c.PullImage(ctx, docker.PullImageOptions{
 			Registry:      img.Registry,
 			Repository:    img.Repository,
@@ -622,6 +618,6 @@ func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
 			return nil, err
 		}
 
-		return e.Extract(img)
+		return e.Extract(ctx, img, w)
 	})
 }

@@ -4,56 +4,16 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
-	"github.com/jinzhu/gorm"
 	shellwords "github.com/mattn/go-shellwords"
-	. "github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/constraints"
-	"github.com/remind101/empire/procfile"
 )
-
-var (
-	Constraints1X = Constraints{constraints.CPUShare(256), constraints.Memory(512 * MB), constraints.Nproc(256)}
-	Constraints2X = Constraints{constraints.CPUShare(512), constraints.Memory(1 * GB), constraints.Nproc(512)}
-	ConstraintsPX = Constraints{constraints.CPUShare(1024), constraints.Memory(6 * GB), 0}
-
-	// NamedConstraints maps a heroku dynos size to a Constraints.
-	NamedConstraints = map[string]Constraints{
-		"1X": Constraints1X,
-		"2X": Constraints2X,
-		"PX": ConstraintsPX,
-	}
-
-	// DefaultConstraints defaults to 1X process size.
-	DefaultConstraints = Constraints1X
-)
-
-// ProcessQuantityMap represents a map of process types to quantities.
-type ProcessQuantityMap map[ProcessType]int
 
 // DefaultQuantities maps a process type to the default number of instances to
 // run.
-var DefaultQuantities = ProcessQuantityMap{
+var DefaultQuantities = map[string]int{
 	"web": 1,
-}
-
-// ProcessType represents the type of a given process/command.
-type ProcessType string
-
-// Scan implements the sql.Scanner interface.
-func (p *ProcessType) Scan(src interface{}) error {
-	if src, ok := src.([]byte); ok {
-		*p = ProcessType(src)
-	}
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (p ProcessType) Value() (driver.Value, error) {
-	return driver.Value(string(p)), nil
 }
 
 // Command represents the actual shell command that gets executed for a given
@@ -96,166 +56,84 @@ func (c Command) String() string {
 	return strings.Join([]string(c), " ")
 }
 
-// Process holds configuration information about a Process Type.
+// Process holds configuration information about a Process.
 type Process struct {
-	ReleaseID string
-	ID        string
-	Type      ProcessType
-	Quantity  int
-	Command   Command
-	Constraints
+	Command  Command              `json:"Command,omitempty"`
+	Quantity int                  `json:"Quantity,omitempty"`
+	Memory   constraints.Memory   `json:"Memory,omitempty"`
+	CPUShare constraints.CPUShare `json:"CPUShare,omitempty"`
+	Nproc    constraints.Nproc    `json:"Nproc,omitempty"`
 }
 
-// NewProcess returns a new Process instance.
-func NewProcess(t ProcessType, cmd Command) *Process {
-	return &Process{
-		Type:        t,
-		Quantity:    DefaultQuantities[t],
-		Command:     cmd,
-		Constraints: DefaultConstraints,
+// Constraints returns a constraints.Constraints from this Process definition.
+func (p *Process) Constraints() Constraints {
+	return Constraints{
+		Memory:   p.Memory,
+		CPUShare: p.CPUShare,
+		Nproc:    p.Nproc,
 	}
 }
 
-// CommandMap maps a process ProcessType to a Command.
-type CommandMap map[ProcessType]Command
-
-func commandMapFromProcfile(p procfile.Procfile) CommandMap {
-	cm := make(CommandMap)
-	for n, c := range p {
-		cm[ProcessType(n)] = Command(c)
-	}
-	return cm
+// SetConstraints sets the memory/cpu/nproc for this Process to the given
+// constraints.
+func (p *Process) SetConstraints(c Constraints) {
+	p.Memory = c.Memory
+	p.CPUShare = c.CPUShare
+	p.Nproc = c.Nproc
 }
+
+// Formation represents a collection of named processes and their configuration.
+type Formation map[string]Process
 
 // Scan implements the sql.Scanner interface.
-func (cm *CommandMap) Scan(src interface{}) error {
+func (f *Formation) Scan(src interface{}) error {
 	bytes, ok := src.([]byte)
 	if !ok {
 		return error(errors.New("Scan source was not []bytes"))
 	}
 
-	m := make(CommandMap)
-	if err := json.Unmarshal(bytes, &m); err != nil {
+	formation := make(Formation)
+	if err := json.Unmarshal(bytes, &formation); err != nil {
 		return err
 	}
-	*cm = m
+	*f = formation
 
 	return nil
 }
 
 // Value implements the driver.Value interface.
-func (cm CommandMap) Value() (driver.Value, error) {
-	raw, err := json.Marshal(cm)
-	if err != nil {
-		return nil, err
-	}
-	return driver.Value(raw), nil
-}
-
-// Constraints aliases constraints.Constraints to implement the
-// sql.Scanner interface.
-type Constraints constraints.Constraints
-
-func parseConstraints(con string) (*Constraints, error) {
-	if con == "" {
+func (f Formation) Value() (driver.Value, error) {
+	if f == nil {
 		return nil, nil
 	}
 
-	if n, ok := NamedConstraints[con]; ok {
-		return &n, nil
-	}
-
-	c, err := constraints.Parse(con)
+	raw, err := json.Marshal(f)
 	if err != nil {
 		return nil, err
 	}
 
-	r := Constraints(c)
-	return &r, nil
+	return driver.Value(raw), nil
 }
 
-func (c *Constraints) UnmarshalJSON(b []byte) error {
-	var s string
+// Merge merges in the existing quantity and constraints from the old Formation
+// into this Formation.
+func (f Formation) Merge(other Formation) Formation {
+	new := make(Formation)
 
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-
-	cc, err := parseConstraints(s)
-	if err != nil {
-		return err
-	}
-
-	if cc != nil {
-		*c = *cc
-	}
-
-	return nil
-}
-
-func (c Constraints) String() string {
-	for n, constraint := range NamedConstraints {
-		if c == constraint {
-			return n
-		}
-	}
-
-	if c.Nproc == 0 {
-		return fmt.Sprintf("%d:%s", c.CPUShare, c.Memory)
-	} else {
-		return fmt.Sprintf("%d:%s:nproc=%d", c.CPUShare, c.Memory, c.Nproc)
-	}
-}
-
-// Formation maps a process ProcessType to a Process.
-type Formation map[ProcessType]*Process
-
-// NewFormation creates a new Formation based on an existing Formation and
-// the available processes from a CommandMap.
-func NewFormation(f Formation, cm CommandMap) Formation {
-	processes := make(Formation)
-
-	// Iterate through all of the available process types in the CommandMap.
-	for t, cmd := range cm {
-		p := NewProcess(t, cmd)
-
-		if existing, found := f[t]; found {
+	for name, p := range f {
+		if existing, found := other[name]; found {
 			// If the existing Formation already had a process
 			// configuration for this process type, copy over the
 			// instance count.
 			p.Quantity = existing.Quantity
-			p.Constraints = existing.Constraints
+			p.SetConstraints(existing.Constraints())
+		} else {
+			p.Quantity = DefaultQuantities[name]
+			p.SetConstraints(DefaultConstraints)
 		}
 
-		processes[t] = p
+		new[name] = p
 	}
 
-	return processes
-}
-
-// newFormation takes a slice of processes and returns a Formation.
-func newFormation(p []*Process) Formation {
-	f := make(Formation)
-
-	for _, pp := range p {
-		f[pp.Type] = pp
-	}
-
-	return f
-}
-
-// Processes takes a Formation and returns a slice of the processes.
-func (f Formation) Processes() []*Process {
-	var processes []*Process
-
-	for _, p := range f {
-		processes = append(processes, p)
-	}
-
-	return processes
-}
-
-// processesUpdate updates an existing process into the database.
-func processesUpdate(db *gorm.DB, process *Process) error {
-	return db.Save(process).Error
+	return new
 }

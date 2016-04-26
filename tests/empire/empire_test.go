@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v1"
+
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
@@ -145,9 +147,9 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
-	e.ExtractProcfile = func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
 		return nil, errors.New("image not found")
-	}
+	})
 
 	// Deploying an image to an app that doesn't exist will create a new
 	// app.
@@ -171,9 +173,13 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ExtractProcfile = func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
-		return nil, nil
-	}
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+		return yaml.Marshal(procfile.ExtendedProcfile{
+			"web": procfile.Process{
+				Command: []string{"./bin/web"},
+			},
+		})
+	})
 
 	user := &empire.User{Name: "ejholmes"}
 
@@ -189,7 +195,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	// We'll use the procfile extractor to synchronize two concurrent
 	// deployments.
 	v2Started, v3Started := make(chan struct{}), make(chan struct{})
-	e.ExtractProcfile = func(ctx context.Context, img image.Image, w io.Writer) (procfile.Procfile, error) {
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
 		switch img.Tag {
 		case "v2":
 			close(v2Started)
@@ -197,8 +203,12 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 		case "v3":
 			close(v3Started)
 		}
-		return nil, nil
-	}
+		return yaml.Marshal(procfile.ExtendedProcfile{
+			"web": procfile.Process{
+				Command: []string{"./bin/web"},
+			},
+		})
+	})
 
 	v2Done := make(chan struct{})
 	go func() {

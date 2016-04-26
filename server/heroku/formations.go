@@ -16,7 +16,7 @@ type PatchFormation struct {
 
 type PatchFormationForm struct {
 	Updates []struct {
-		Process  empire.ProcessType  `json:"process"` // Refers to process type
+		Process  string              `json:"process"` // Refers to process type
 		Quantity int                 `json:"quantity"`
 		Size     *empire.Constraints `json:"size"`
 	} `json:"updates"`
@@ -48,9 +48,9 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 			return err
 		}
 		resp = append(resp, &Formation{
-			Type:     string(p.Type),
+			Type:     up.Process,
 			Quantity: p.Quantity,
-			Size:     p.Constraints.String(),
+			Size:     p.Constraints().String(),
 		})
 	}
 
@@ -76,11 +76,11 @@ func (h *GetFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 	}
 
 	var resp []*Formation
-	for _, proc := range formation {
+	for name, proc := range formation {
 		resp = append(resp, &Formation{
-			Type:     string(proc.Type),
+			Type:     name,
 			Quantity: proc.Quantity,
-			Size:     proc.Constraints.String(),
+			Size:     proc.Constraints().String(),
 		})
 	}
 
