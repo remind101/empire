@@ -18,6 +18,7 @@
 * `emp scale -l` now lists configured scale, not the running processes [#769](https://github.com/remind101/empire/pull/769)
 * Fixed a bug where it was previously possible to create a signed access token with an empty username [#780](https://github.com/remind101/empire/pull/780)
 * ECR authentication now supports multiple regions, and works independently of ECS region [#784](https://github.com/remind101/empire/pull/784)
+* Provisioned ELB's are only destroyed when the entire app is removed [#801](https://github.com/remind101/empire/pull/801)
 
 **Performance**
 
