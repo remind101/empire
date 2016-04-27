@@ -64,6 +64,10 @@ type Exposure struct {
 
 	// The exposure type (e.g. HTTPExposure, HTTPSExposure, TCPExposure).
 	Type ExposureType
+
+	// The port to expose. Implementors should provide sensible defaults for
+	// the zero value (e.g. port 80 for HTTP, port 443 for HTTPS).
+	Port int64
 }
 
 // Exposure represents a service that a process exposes, like HTTP/HTTPS/TCP or
@@ -84,6 +88,19 @@ type HTTPSExposure struct {
 }
 
 func (e *HTTPSExposure) Protocol() string { return "https" }
+
+// TCPExposure represents a raw TCP exposure.
+type TCPExposure struct{}
+
+func (e *TCPExposure) Protocol() string { return "tcp" }
+
+// SSLExposure represents a secure TCP exposure.
+type SSLExposure struct {
+	// The certificate to attach to the process.
+	Cert string
+}
+
+func (e *SSLExposure) Protocol() string { return "ssl" }
 
 // Instance represents an Instance of a Process.
 type Instance struct {

@@ -8,6 +8,9 @@ const AppTag = "App"
 // CreateLoadBalancerOpts are options that can be provided when creating a
 // LoadBalancer.
 type CreateLoadBalancerOpts struct {
+	// The protocol to create the load balancer with.
+	Protocol string
+
 	// An arbitrary list of tags to assign to the load balancer.
 	Tags map[string]string
 
@@ -16,6 +19,9 @@ type CreateLoadBalancerOpts struct {
 
 	// The SSL Certificate
 	SSLCert string
+
+	// The port to listen on.
+	Port int64
 }
 
 // UpdateLoadBalancerOpts are options that can be provided when updating an

@@ -533,6 +533,7 @@ func TestScheduler_LoadBalancer_NoExistingLoadBalancer(t *testing.T) {
 
 	l.On("LoadBalancers", map[string]string{"AppID": "appid", "ProcessType": "web"}).Return([]*lb.LoadBalancer{}, nil)
 	l.On("CreateLoadBalancer", lb.CreateLoadBalancerOpts{
+		Protocol: "http",
 		Tags:     map[string]string{"AppID": "appid", "ProcessType": "web", "App": "appname"},
 		External: false,
 	}).Return(&lb.LoadBalancer{
