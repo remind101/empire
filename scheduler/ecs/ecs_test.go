@@ -277,8 +277,7 @@ func TestScheduler_Remove(t *testing.T) {
 	defer s.Close()
 
 	m.lb.(*mockLBManager).On("LoadBalancers", map[string]string{
-		"AppID":       "1234",
-		"ProcessType": "web",
+		"AppID": "1234",
 	}).Return([]*lb.LoadBalancer{}, nil)
 
 	if err := m.Remove(context.Background(), "1234"); err != nil {

@@ -193,7 +193,7 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 	return nil
 }
 
-// Remove removes any ECS services that belong to this app.
+// Remove removes all of the AWS resources for this app.
 func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 	processes, err := m.Processes(ctx, appID)
 	if err != nil {
@@ -206,7 +206,7 @@ func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 		}
 	}
 
-	return nil
+	return m.removeLoadBalancers(ctx, appID)
 }
 
 // Instances returns all instances that are currently running, pending or
@@ -527,16 +527,18 @@ func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *sch
 	return l, nil
 }
 
-func (m *Scheduler) removeLoadBalancer(ctx context.Context, app string, p string) error {
-	l, err := m.findLoadBalancer(ctx, app, p)
+func (m *Scheduler) removeLoadBalancers(ctx context.Context, app string) error {
+	tags := map[string]string{
+		"AppID": app,
+	}
+
+	lbs, err := m.lb.LoadBalancers(ctx, tags)
 	if err != nil {
-		// TODO: Maybe we shouldn't care here.
 		return err
 	}
 
-	if l != nil {
-		if err := m.lb.DestroyLoadBalancer(ctx, l); err != nil {
-			// TODO: Maybe we shouldn't care here.
+	for _, lb := range lbs {
+		if err := m.lb.DestroyLoadBalancer(ctx, lb); err != nil {
 			return err
 		}
 	}
@@ -610,11 +612,7 @@ func (m *Scheduler) RemoveProcess(ctx context.Context, app string, process strin
 		return nil
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return m.removeLoadBalancer(ctx, app, process)
+	return err
 }
 
 // Scale scales an ECS service to the desired number of instances.
