@@ -46,6 +46,7 @@ func TestELB_CreateLoadBalancer(t *testing.T) {
 	}).Return(&elb.ModifyLoadBalancerAttributesOutput{}, nil)
 
 	lb, err := m.CreateLoadBalancer(context.Background(), CreateLoadBalancerOpts{
+		Protocol: "http",
 		External: true,
 	})
 	assert.NoError(t, err)

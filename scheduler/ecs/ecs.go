@@ -510,12 +510,23 @@ func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *sch
 		tags[lb.AppTag] = app.Name
 
 		opts := lb.CreateLoadBalancerOpts{
+			Port:     p.Exposure.Port,
 			External: p.Exposure.External,
 			Tags:     tags,
 		}
 
-		if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
+		switch e := p.Exposure.Type.(type) {
+		case *scheduler.HTTPExposure:
+			opts.Protocol = "http"
+		case *scheduler.HTTPSExposure:
+			opts.Protocol = "https"
 			opts.SSLCert = e.Cert
+		case *scheduler.TCPExposure:
+			opts.Protocol = "tcp"
+		case *scheduler.SSLExposure:
+			opts.Protocol = "ssl"
+		default:
+			return nil, fmt.Errorf("can't create %v load balancer", e.Protocol())
 		}
 
 		l, err = m.lb.CreateLoadBalancer(ctx, opts)

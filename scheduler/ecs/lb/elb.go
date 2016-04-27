@@ -77,13 +77,13 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 	}
 
 	// Allocate a new instance port for this load balancer.
-	port, err := m.Ports.Get()
+	instancePort, err := m.Ports.Get()
 	if err != nil {
 		return nil, err
 	}
 
 	input := &elb.CreateLoadBalancerInput{
-		Listeners:        elbListeners(port, o.SSLCert),
+		Listeners:        []*elb.Listener{elbListener(o.Protocol, o.Port, instancePort, o.SSLCert)},
 		LoadBalancerName: aws.String(m.newName()),
 		Scheme:           aws.String(scheme),
 		SecurityGroups:   []*string{aws.String(sg)},
@@ -118,7 +118,7 @@ func (m *ELBManager) CreateLoadBalancer(ctx context.Context, o CreateLoadBalance
 		DNSName:      *out.DNSName,
 		External:     o.External,
 		SSLCert:      o.SSLCert,
-		InstancePort: port,
+		InstancePort: instancePort,
 	}, nil
 }
 
@@ -274,29 +274,52 @@ func newName() string {
 	return strings.Replace(uuid.New(), "-", "", -1)
 }
 
-// elbListeners returns a suitable list of listeners. We listen on post 80 by default.
+// elbListener returns a suitable list of listeners. We listen on post 80 by default.
 // If certID is not empty an SSL listener will be added to the list. certID should be
 // the Amazon Resource Name (ARN) of the server certificate.
-func elbListeners(port int64, certID string) []*elb.Listener {
-	listeners := []*elb.Listener{
-		{
-			InstancePort:     aws.Int64(port),
-			LoadBalancerPort: aws.Int64(80),
+func elbListener(proto string, port, instancePort int64, certID string) *elb.Listener {
+	switch proto {
+	case "http":
+		if port == 0 {
+			port = 80
+		}
+
+		return &elb.Listener{
+			InstancePort:     aws.Int64(instancePort),
+			LoadBalancerPort: aws.Int64(port),
 			Protocol:         aws.String("http"),
 			InstanceProtocol: aws.String("http"),
-		},
-	}
+		}
+	case "https":
+		if port == 0 {
+			port = 443
+		}
 
-	if certID != "" {
-		listeners = append(listeners, &elb.Listener{
-			InstancePort:     aws.Int64(port),
-			LoadBalancerPort: aws.Int64(443),
+		return &elb.Listener{
+			InstancePort:     aws.Int64(instancePort),
+			LoadBalancerPort: aws.Int64(port),
 			SSLCertificateId: aws.String(certID),
 			Protocol:         aws.String("https"),
 			InstanceProtocol: aws.String("http"),
-		})
+		}
+	case "tcp":
+		return &elb.Listener{
+			InstancePort:     aws.Int64(instancePort),
+			LoadBalancerPort: aws.Int64(port),
+			Protocol:         aws.String("tcp"),
+			InstanceProtocol: aws.String("tcp"),
+		}
+	case "ssl":
+		return &elb.Listener{
+			InstancePort:     aws.Int64(instancePort),
+			LoadBalancerPort: aws.Int64(port),
+			SSLCertificateId: aws.String(certID),
+			Protocol:         aws.String("ssl"),
+			InstanceProtocol: aws.String("tcp"),
+		}
+	default:
+		return nil
 	}
-	return listeners
 }
 
 // mapTags takes a list of []*elb.Tag's and converts them into a map[string]string
