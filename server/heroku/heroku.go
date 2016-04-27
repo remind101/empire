@@ -167,3 +167,8 @@ func UserFromContext(ctx context.Context) *empire.User {
 	}
 	return u
 }
+
+func findMessage(ctx context.Context) (string, error) {
+	vars := httpx.Vars(ctx)
+	return vars["message"], nil
+}

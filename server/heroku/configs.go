@@ -42,11 +42,17 @@ func (h *PatchConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
+	m, err := findMessage(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Update the config
 	c, err := h.Set(ctx, empire.SetOpts{
-		User: UserFromContext(ctx),
-		App:  a,
-		Vars: configVars,
+		User:    UserFromContext(ctx),
+		App:     a,
+		Vars:    configVars,
+		Message: m,
 	})
 	if err != nil {
 		return err

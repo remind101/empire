@@ -132,12 +132,16 @@ type CreateOpts struct {
 
 	// Name of the application.
 	Name string
+
+	// Commit message
+	Message string
 }
 
 func (opts CreateOpts) Event() CreateEvent {
 	return CreateEvent{
-		User: opts.User.Name,
-		Name: opts.Name,
+		User:    opts.User.Name,
+		Name:    opts.Name,
+		Message: opts.Message,
 	}
 }
 
@@ -158,12 +162,16 @@ type DestroyOpts struct {
 
 	// The associated app.
 	App *App
+
+	// Commit message
+	Message string
 }
 
 func (opts DestroyOpts) Event() DestroyEvent {
 	return DestroyEvent{
-		User: opts.User.Name,
-		App:  opts.App.Name,
+		User:    opts.User.Name,
+		App:     opts.App.Name,
+		Message: opts.Message,
 	}
 }
 
@@ -210,6 +218,9 @@ type SetOpts struct {
 
 	// The new vars to merge into the old config.
 	Vars Vars
+
+	// Commit message
+	Message string
 }
 
 func (opts SetOpts) Event() SetEvent {
@@ -222,6 +233,7 @@ func (opts SetOpts) Event() SetEvent {
 		User:    opts.User.Name,
 		App:     opts.App.Name,
 		Changed: changed,
+		Message: opts.Message,
 	}
 }
 
@@ -303,13 +315,17 @@ type RestartOpts struct {
 	// If provided, a PID that will be killed. Generally used for killing
 	// detached processes.
 	PID string
+
+	// Commit message
+	Message string
 }
 
 func (opts RestartOpts) Event() RestartEvent {
 	return RestartEvent{
-		User: opts.User.Name,
-		App:  opts.App.Name,
-		PID:  opts.PID,
+		User:    opts.User.Name,
+		App:     opts.App.Name,
+		PID:     opts.PID,
+		Message: opts.Message,
 	}
 }
 
@@ -335,6 +351,9 @@ type RunOpts struct {
 	// The command to run.
 	Command Command
 
+	// Commit message
+	Message string
+
 	// If provided, input will be read from this.
 	Input io.Reader
 
@@ -356,6 +375,7 @@ func (opts RunOpts) Event() RunEvent {
 		App:      opts.App.Name,
 		Command:  opts.Command,
 		Attached: attached,
+		Message:  opts.Message,
 	}
 }
 
@@ -410,6 +430,9 @@ type RollbackOpts struct {
 
 	// The release version to rollback to.
 	Version int
+
+	// Commit message
+	Message string
 }
 
 func (opts RollbackOpts) Event() RollbackEvent {
@@ -417,6 +440,7 @@ func (opts RollbackOpts) Event() RollbackEvent {
 		User:    opts.User.Name,
 		App:     opts.App.Name,
 		Version: opts.Version,
+		Message: opts.Message,
 	}
 }
 
@@ -456,12 +480,16 @@ type DeploymentsCreateOpts struct {
 	// Output is an io.Writer where deployment output and events will be
 	// streamed in jsonmessage format.
 	Output io.Writer
+
+	// Commit message
+	Message string
 }
 
 func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	e := DeployEvent{
-		User:  opts.User.Name,
-		Image: opts.Image.String(),
+		User:    opts.User.Name,
+		Image:   opts.Image.String(),
+		Message: opts.Message,
 	}
 	if opts.App != nil {
 		e.App = opts.App.Name
@@ -511,6 +539,9 @@ type ScaleOpts struct {
 
 	// If provided, new memory and CPU constraints for the process.
 	Constraints *Constraints
+
+	// Commit message
+	Message string
 }
 
 func (opts ScaleOpts) Event() ScaleEvent {
@@ -519,6 +550,7 @@ func (opts ScaleOpts) Event() ScaleEvent {
 		App:      opts.App.Name,
 		Process:  string(opts.Process),
 		Quantity: opts.Quantity,
+		Message:  opts.Message,
 	}
 
 	if opts.Constraints != nil {

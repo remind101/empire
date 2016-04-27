@@ -69,9 +69,15 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
+	m, err := findMessage(ctx)
+	if err != nil {
+		return err
+	}
+
 	if err := h.Destroy(ctx, empire.DestroyOpts{
-		User: UserFromContext(ctx),
-		App:  a,
+		User:    UserFromContext(ctx),
+		App:     a,
+		Message: m,
 	}); err != nil {
 		return err
 	}
@@ -113,9 +119,15 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
+	m, err := findMessage(ctx)
+	if err != nil {
+		return err
+	}
+
 	a, err := h.Create(ctx, empire.CreateOpts{
-		User: UserFromContext(ctx),
-		Name: form.Name,
+		User:    UserFromContext(ctx),
+		Name:    form.Name,
+		Message: m,
 	})
 	if err != nil {
 		return err

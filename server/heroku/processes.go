@@ -76,6 +76,11 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
+	m, err := findMessage(ctx)
+	if err != nil {
+		return err
+	}
+
 	if err := Decode(r, &form); err != nil {
 		return err
 	}
@@ -90,6 +95,7 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		App:     a,
 		Command: command,
 		Env:     form.Env,
+		Message: m,
 	}
 
 	if form.Attach {
@@ -146,10 +152,16 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 		return err
 	}
 
+	m, err := findMessage(ctx)
+	if err != nil {
+		return err
+	}
+
 	if err := h.Restart(ctx, empire.RestartOpts{
-		User: UserFromContext(ctx),
-		App:  a,
-		PID:  pid,
+		User:    UserFromContext(ctx),
+		App:     a,
+		PID:     pid,
+		Message: m,
 	}); err != nil {
 		return err
 	}

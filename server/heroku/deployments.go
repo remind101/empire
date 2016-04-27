@@ -40,6 +40,11 @@ func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *h
 		return nil, err
 	}
 
+	m, err := findMessage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
 
 	if form.Image.Tag == "" && form.Image.Digest == "" {
@@ -47,9 +52,10 @@ func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *h
 	}
 
 	opts := empire.DeploymentsCreateOpts{
-		User:   UserFromContext(ctx),
-		Image:  form.Image,
-		Output: streamhttp.StreamingResponseWriter(w),
+		User:    UserFromContext(ctx),
+		Image:   form.Image,
+		Output:  streamhttp.StreamingResponseWriter(w),
+		Message: m,
 	}
 	return &opts, nil
 }
