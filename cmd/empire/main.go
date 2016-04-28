@@ -35,12 +35,13 @@ const (
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
 
-	FlagScheduler      = "scheduler"
-	FlagAWSDebug       = "aws.debug"
-	FlagECSCluster     = "ecs.cluster"
-	FlagECSServiceRole = "ecs.service.role"
-	FlagECSLogDriver   = "ecs.logdriver"
-	FlagECSLogOpts     = "ecs.logopt"
+	FlagScheduler        = "scheduler"
+	FlagAWSDebug         = "aws.debug"
+	FlagS3TemplateBucket = "s3.templatebucket"
+	FlagECSCluster       = "ecs.cluster"
+	FlagECSServiceRole   = "ecs.service.role"
+	FlagECSLogDriver     = "ecs.logdriver"
+	FlagECSLogOpts       = "ecs.logopt"
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
@@ -193,6 +194,11 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagAWSDebug,
 		Usage:  "Enable verbose debug output for AWS integration.",
 		EnvVar: "EMPIRE_AWS_DEBUG",
+	},
+	cli.StringFlag{
+		Name:   FlagS3TemplateBucket,
+		Usage:  "When using the cloudformation backend, this is the bucket where templates will be stored",
+		EnvVar: "EMPIRE_S3_TEMPLATE_BUCKET",
 	},
 	cli.StringFlag{
 		Name:   FlagECSCluster,
