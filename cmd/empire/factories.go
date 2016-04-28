@@ -137,7 +137,7 @@ func newConfigProvider(c *cli.Context) client.ConfigProvider {
 
 	if c.Bool(FlagAWSDebug) {
 		config := &aws.Config{}
-		config.WithLogLevel(1)
+		config.WithLogLevel(aws.LogDebug)
 		p = session.New(config)
 	}
 
