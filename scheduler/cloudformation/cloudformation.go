@@ -102,10 +102,16 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 		StackName: aws.String(stackName),
 	})
 
+	tags := []*cloudformation.Tag{
+		{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
+		{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
+	}
+
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
 			StackName:    aws.String(stackName),
 			TemplateBody: aws.String(buf.String()),
+			Tags:         tags,
 		}); err != nil {
 			return err
 		}
@@ -142,6 +148,8 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 		if _, err := s.cloudformation.UpdateStack(&cloudformation.UpdateStackInput{
 			StackName:    aws.String(stackName),
 			TemplateBody: aws.String(buf.String()),
+			// TODO: Update Go client
+			// Tags:         tags,
 		}); err != nil {
 			return err
 		}

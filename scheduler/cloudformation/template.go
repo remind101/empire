@@ -165,6 +165,12 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 					"Subnets":        subnets,
 					"Listeners":      listeners,
 					"CrossZone":      true,
+					"Tags": []map[string]string{
+						map[string]string{
+							"Key":   "empire.app.process",
+							"Value": p.Type,
+						},
+					},
 					"ConnectionDrainingPolicy": map[string]interface{}{
 						"Enabled": true,
 						"Timeout": defaultConnectionDrainingTimeout,

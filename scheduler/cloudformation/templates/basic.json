@@ -65,7 +65,13 @@
         "SecurityGroups": [
           ""
         ],
-        "Subnets": null
+        "Subnets": null,
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ]
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
