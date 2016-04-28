@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -24,10 +26,13 @@ const ecsServiceType = "AWS::ECS::Service"
 
 type cloudformationClient interface {
 	CreateStack(*cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error)
+	UpdateStack(*cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error)
 	DeleteStack(*cloudformation.DeleteStackInput) (*cloudformation.DeleteStackOutput, error)
 	ListStackResourcesPages(*cloudformation.ListStackResourcesInput, func(*cloudformation.ListStackResourcesOutput, bool) bool) error
 	DescribeStackResource(*cloudformation.DescribeStackResourceInput) (*cloudformation.DescribeStackResourceOutput, error)
+	DescribeStacks(*cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error)
 	WaitUntilStackCreateComplete(*cloudformation.DescribeStacksInput) error
+	WaitUntilStackUpdateComplete(*cloudformation.DescribeStacksInput) error
 }
 
 type ecsClient interface {
@@ -62,6 +67,9 @@ type Scheduler struct {
 	// The ECS cluster to run tasks in.
 	Cluster string
 
+	// If true, wait for stack updates and creates to complete.
+	Wait bool
+
 	// stackName returns the name of the stack for the app.
 	stackName func(app string) string
 
@@ -82,7 +90,7 @@ func NewScheduler(config client.ConfigProvider) *Scheduler {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(_ context.Context, app *scheduler.App) error {
+func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 	stackName := s.stackName(app.ID)
 
 	buf := new(bytes.Buffer)
@@ -90,16 +98,62 @@ func (s *Scheduler) Submit(_ context.Context, app *scheduler.App) error {
 		return err
 	}
 
-	if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
-		StackName:    aws.String(stackName),
-		TemplateBody: aws.String(buf.String()),
-	}); err != nil {
-		return err
-	}
-
-	if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
-	}); err != nil {
+	})
+
+	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
+		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+			StackName:    aws.String(stackName),
+			TemplateBody: aws.String(buf.String()),
+		}); err != nil {
+			return err
+		}
+
+		if s.Wait {
+			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+				StackName: aws.String(stackName),
+			}); err != nil {
+				return err
+			}
+		}
+	} else if err == nil {
+		stack := desc.Stacks[0]
+		status := *stack.StackStatus
+
+		// If there's currently an update happening, wait for it to
+		// complete.
+		if strings.Contains(status, "IN_PROGRESS") {
+			if strings.Contains(status, "CREATE") {
+				if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+					StackName: aws.String(stackName),
+				}); err != nil {
+					return err
+				}
+			} else if strings.Contains(status, "UPDATE") {
+				if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+					StackName: aws.String(stackName),
+				}); err != nil {
+					return err
+				}
+			}
+		}
+
+		if _, err := s.cloudformation.UpdateStack(&cloudformation.UpdateStackInput{
+			StackName:    aws.String(stackName),
+			TemplateBody: aws.String(buf.String()),
+		}); err != nil {
+			return err
+		}
+
+		if s.Wait {
+			if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+				StackName: aws.String(stackName),
+			}); err != nil {
+				return err
+			}
+		}
+	} else {
 		return err
 	}
 
