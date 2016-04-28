@@ -19,6 +19,7 @@ import (
 	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
@@ -86,7 +87,42 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 // Scheduler ============================
 
 func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
-	return newECSScheduler(db, c)
+	scheduler := c.String(FlagScheduler)
+	switch scheduler {
+	case "cloudformation":
+		return newCloudFormationScheduler(c)
+	case "ecs":
+		return newECSScheduler(db, c)
+	default:
+		panic(fmt.Sprintf("unknown scheduler: %v", scheduler))
+	}
+}
+
+func newCloudFormationScheduler(c *cli.Context) (scheduler.Scheduler, error) {
+	logDriver := c.String(FlagECSLogDriver)
+	logOpts := c.StringSlice(FlagECSLogOpts)
+	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
+
+	config := newConfigProvider(c)
+	zone, err := cloudformation.HostedZone(config, c.String(FlagRoute53InternalZoneID))
+	if err != nil {
+		return nil, err
+	}
+
+	t := &cloudformation.EmpireTemplate{
+		Cluster:                 c.String(FlagECSCluster),
+		InternalSecurityGroupID: c.String(FlagELBSGPrivate),
+		ExternalSecurityGroupID: c.String(FlagELBSGPublic),
+		InternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPrivate),
+		ExternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPublic),
+		HostedZone:              zone,
+		LogConfiguration:        logConfiguration,
+	}
+
+	s := cloudformation.NewScheduler(config)
+	s.Cluster = c.String(FlagECSCluster)
+	s.Template = t
+	return s, nil
 }
 
 func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {

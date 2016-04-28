@@ -1,0 +1,146 @@
+{
+  "Outputs": {},
+  "Parameters": {
+    "ServiceRole": {
+      "Default": "ecsServiceRole",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "CNAME": {
+      "Properties": {
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "acme-inc.empire",
+        "ResourceRecords": [
+          {
+            "Ref": "webLoadBalancer"
+          }
+        ],
+        "TTL": 60,
+        "Type": "CNAME"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
+    "web": {
+      "Metadata": {
+        "name": "web"
+      },
+      "Properties": {
+        "Cluster": "",
+        "DesiredCount": 0,
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": {
+          "Ref": "ServiceRole"
+        },
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service"
+    },
+    "webLoadBalancer": {
+      "Properties": {
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 30
+        },
+        "CrossZone": true,
+        "Listeners": [
+          {
+            "InstancePort": 9000,
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http"
+          }
+        ],
+        "Scheme": "internal",
+        "SecurityGroups": [
+          ""
+        ],
+        "Subnets": null
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/web"
+            ],
+            "Cpu": 0,
+            "DockerLabels": {},
+            "Environment": [
+              {
+                "Name": "PORT",
+                "Value": "8080"
+              }
+            ],
+            "Essential": true,
+            "Image": "",
+            "Memory": 0,
+            "Name": "web",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": 9000
+              }
+            ],
+            "Ulimits": []
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    },
+    "worker": {
+      "Metadata": {
+        "name": "worker"
+      },
+      "Properties": {
+        "Cluster": "",
+        "DesiredCount": 0,
+        "LoadBalancers": [],
+        "TaskDefinition": {
+          "Ref": "workerTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service"
+    },
+    "workerTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/worker"
+            ],
+            "Cpu": 0,
+            "DockerLabels": {},
+            "Environment": [
+              {
+                "Name": "FOO",
+                "Value": "BAR"
+              }
+            ],
+            "Essential": true,
+            "Image": "",
+            "Memory": 0,
+            "Name": "worker",
+            "PortMappings": [],
+            "Ulimits": []
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    }
+  }
+}
