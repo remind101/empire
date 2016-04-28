@@ -122,7 +122,7 @@ func runRun(cmd *Command, args []string) {
 		Env:     opts.Env,
 		Size:    opts.Size,
 	}
-	req, err := client.NewRequest("POST", "/apps/"+appname+"/dynos", params)
+	req, err := client.NewRequest("POST", "/apps/"+appname+"/dynos", params, nil)
 	must(err)
 
 	u, err := url.Parse(apiURL)

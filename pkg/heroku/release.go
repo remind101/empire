@@ -52,7 +52,7 @@ func (c *Client) ReleaseInfo(appIdentity string, releaseIdentity string) (*Relea
 // appIdentity is the unique identifier of the Release's App. lr is an optional
 // ListRange that sets the Range options for the paginated list of results.
 func (c *Client) ReleaseList(appIdentity string, lr *ListRange) ([]Release, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/releases", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/releases", nil, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -75,7 +75,7 @@ func (c *Client) CollaboratorInfo(appIdentity string, collaboratorIdentity strin
 // optional ListRange that sets the Range options for the paginated list of
 // results.
 func (c *Client) CollaboratorList(appIdentity string, lr *ListRange) ([]Collaborator, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/collaborators", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/collaborators", nil, nil)
 	if err != nil {
 		return nil, err
 	}

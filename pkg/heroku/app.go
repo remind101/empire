@@ -107,7 +107,7 @@ func (c *Client) AppInfo(appIdentity string) (*App, error) {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) AppList(lr *ListRange) ([]App, error) {
-	req, err := c.NewRequest("GET", "/apps", nil)
+	req, err := c.NewRequest("GET", "/apps", nil, nil)
 	if err != nil {
 		return nil, err
 	}

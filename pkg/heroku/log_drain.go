@@ -72,7 +72,7 @@ func (c *Client) LogDrainInfo(appIdentity string, logDrainIdentity string) (*Log
 // appIdentity is the unique identifier of the LogDrain's App. lr is an optional
 // ListRange that sets the Range options for the paginated list of results.
 func (c *Client) LogDrainList(appIdentity string, lr *ListRange) ([]LogDrain, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/log-drains", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/log-drains", nil, nil)
 	if err != nil {
 		return nil, err
 	}

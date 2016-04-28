@@ -40,7 +40,7 @@ func (c *Client) StackInfo(stackIdentity string) (*Stack, error) {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) StackList(lr *ListRange) ([]Stack, error) {
-	req, err := c.NewRequest("GET", "/stacks", nil)
+	req, err := c.NewRequest("GET", "/stacks", nil, nil)
 	if err != nil {
 		return nil, err
 	}

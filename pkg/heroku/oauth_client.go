@@ -70,7 +70,7 @@ func (c *Client) OAuthClientInfo(oauthClientIdentity string) (*OAuthClient, erro
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) OAuthClientList(lr *ListRange) ([]OAuthClient, error) {
-	req, err := c.NewRequest("GET", "/oauth/clients", nil)
+	req, err := c.NewRequest("GET", "/oauth/clients", nil, nil)
 	if err != nil {
 		return nil, err
 	}

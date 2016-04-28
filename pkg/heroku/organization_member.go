@@ -55,7 +55,7 @@ func (c *Client) OrganizationMemberDelete(organizationIdentity string, organizat
 // Organization. lr is an optional ListRange that sets the Range options for the
 // paginated list of results.
 func (c *Client) OrganizationMemberList(organizationIdentity string, lr *ListRange) ([]OrganizationMember, error) {
-	req, err := c.NewRequest("GET", "/organizations/"+organizationIdentity+"/members", nil)
+	req, err := c.NewRequest("GET", "/organizations/"+organizationIdentity+"/members", nil, nil)
 	if err != nil {
 		return nil, err
 	}

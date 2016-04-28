@@ -50,7 +50,7 @@ func (c *Client) FormationInfo(appIdentity string, formationIdentity string) (*F
 // optional ListRange that sets the Range options for the paginated list of
 // results.
 func (c *Client) FormationList(appIdentity string, lr *ListRange) ([]Formation, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/formation", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/formation", nil, nil)
 	if err != nil {
 		return nil, err
 	}

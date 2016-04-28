@@ -51,7 +51,7 @@ func (c *Client) AppFeatureInfo(appIdentity string, appFeatureIdentity string) (
 // optional ListRange that sets the Range options for the paginated list of
 // results.
 func (c *Client) AppFeatureList(appIdentity string, lr *ListRange) ([]AppFeature, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/features", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/features", nil, nil)
 	if err != nil {
 		return nil, err
 	}

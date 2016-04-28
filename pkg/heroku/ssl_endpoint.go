@@ -82,7 +82,7 @@ func (c *Client) SSLEndpointInfo(appIdentity string, sslEndpointIdentity string)
 // optional ListRange that sets the Range options for the paginated list of
 // results.
 func (c *Client) SSLEndpointList(appIdentity string, lr *ListRange) ([]SSLEndpoint, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/ssl-endpoints", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/ssl-endpoints", nil, nil)
 	if err != nil {
 		return nil, err
 	}

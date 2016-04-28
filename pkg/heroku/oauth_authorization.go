@@ -107,7 +107,7 @@ func (c *Client) OAuthAuthorizationInfo(oauthAuthorizationIdentity string) (*OAu
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) OAuthAuthorizationList(lr *ListRange) ([]OAuthAuthorization, error) {
-	req, err := c.NewRequest("GET", "/oauth/authorizations", nil)
+	req, err := c.NewRequest("GET", "/oauth/authorizations", nil, nil)
 	if err != nil {
 		return nil, err
 	}

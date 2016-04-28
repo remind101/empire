@@ -106,7 +106,7 @@ func (c *Client) DynoInfo(appIdentity string, dynoIdentity string) (*Dyno, error
 // appIdentity is the unique identifier of the Dyno's App. lr is an optional
 // ListRange that sets the Range options for the paginated list of results.
 func (c *Client) DynoList(appIdentity string, lr *ListRange) ([]Dyno, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/dynos", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/dynos", nil, nil)
 	if err != nil {
 		return nil, err
 	}

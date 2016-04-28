@@ -54,7 +54,7 @@ func runAPI(cmd *Command, args []string) {
 	if method == "PATCH" || method == "PUT" || method == "POST" {
 		body = os.Stdin
 	}
-	if err := client.APIReq(os.Stdout, method, args[1], body); err != nil {
+	if err := client.APIReq(os.Stdout, method, args[1], body, nil); err != nil {
 		printFatal(err.Error())
 	}
 }

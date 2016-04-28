@@ -62,23 +62,43 @@ type Client struct {
 }
 
 func (c *Client) Get(v interface{}, path string) error {
-	return c.APIReq(v, "GET", path, nil)
+	return c.APIReq(v, "GET", path, nil, nil)
 }
 
 func (c *Client) Patch(v interface{}, path string, body interface{}) error {
-	return c.APIReq(v, "PATCH", path, body)
+	return c.APIReq(v, "PATCH", path, body, nil)
 }
 
 func (c *Client) Post(v interface{}, path string, body interface{}) error {
-	return c.APIReq(v, "POST", path, body)
+	return c.APIReq(v, "POST", path, body, nil)
 }
 
 func (c *Client) Put(v interface{}, path string, body interface{}) error {
-	return c.APIReq(v, "PUT", path, body)
+	return c.APIReq(v, "PUT", path, body, nil)
 }
 
 func (c *Client) Delete(path string) error {
-	return c.APIReq(nil, "DELETE", path, nil)
+	return c.APIReq(nil, "DELETE", path, nil, nil)
+}
+
+func (c *Client) GetWithHeaders(v interface{}, path string, headers http.Header) error {
+	return c.APIReq(v, "GET", path, nil, headers)
+}
+
+func (c *Client) PatchWithHeaders(v interface{}, path string, body interface{}, headers http.Header) error {
+	return c.APIReq(v, "PATCH", path, body, headers)
+}
+
+func (c *Client) PostWithHeaders(v interface{}, path string, body interface{}, headers http.Header) error {
+	return c.APIReq(v, "POST", path, body, headers)
+}
+
+func (c *Client) PutWithHeaders(v interface{}, path string, body interface{}, headers http.Header) error {
+	return c.APIReq(v, "PUT", path, body, headers)
+}
+
+func (c *Client) DeleteWithHeaders(path string, headers http.Header) error {
+	return c.APIReq(nil, "DELETE", path, nil, headers)
 }
 
 // Generates an HTTP request for the Heroku API, but does not
@@ -96,7 +116,7 @@ func (c *Client) Delete(path string) error {
 //   nil         no body
 //   io.Reader   body is sent verbatim
 //   else        body is encoded as application/json
-func (c *Client) NewRequest(method, path string, body interface{}) (*http.Request, error) {
+func (c *Client) NewRequest(method, path string, body interface{}, headers http.Header) (*http.Request, error) {
 	var ctype string
 	var rbody io.Reader
 
@@ -147,6 +167,9 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 	for k, v := range c.AdditionalHeaders {
 		req.Header[k] = v
 	}
+	for k, v := range headers {
+		req.Header[k] = v
+	}
 	return req, nil
 }
 
@@ -154,8 +177,8 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 // described in NewRequest(), the type of body determines how to
 // encode the request body. As described in DoReq(), the type of
 // v determines how to handle the response body.
-func (c *Client) APIReq(v interface{}, meth, path string, body interface{}) error {
-	req, err := c.NewRequest(meth, path, body)
+func (c *Client) APIReq(v interface{}, meth, path string, body interface{}, headers http.Header) error {
+	req, err := c.NewRequest(meth, path, body, headers)
 	if err != nil {
 		return err
 	}
@@ -268,4 +291,16 @@ func (lr *ListRange) SetHeader(req *http.Request) {
 
 	req.Header.Set("Range", hdrval)
 	return
+}
+
+type RequestHeaders struct {
+	CommitMessage string
+}
+
+func (r *RequestHeaders) Headers() http.Header {
+	headers := http.Header{}
+	if r.CommitMessage != "" {
+		headers.Set("Commit-Message", r.CommitMessage)
+	}
+	return headers
 }

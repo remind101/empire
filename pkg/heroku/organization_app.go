@@ -108,7 +108,7 @@ type OrganizationAppCreateOpts struct {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) OrganizationAppList(lr *ListRange) ([]OrganizationApp, error) {
-	req, err := c.NewRequest("GET", "/organizations/apps", nil)
+	req, err := c.NewRequest("GET", "/organizations/apps", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (c *Client) OrganizationAppList(lr *ListRange) ([]OrganizationApp, error) {
 // Organization. lr is an optional ListRange that sets the Range options for the
 // paginated list of results.
 func (c *Client) OrganizationAppListForOrganization(organizationIdentity string, lr *ListRange) ([]OrganizationApp, error) {
-	req, err := c.NewRequest("GET", "/organizations/"+organizationIdentity+"/apps", nil)
+	req, err := c.NewRequest("GET", "/organizations/"+organizationIdentity+"/apps", nil, nil)
 	if err != nil {
 		return nil, err
 	}

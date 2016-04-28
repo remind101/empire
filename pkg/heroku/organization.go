@@ -28,7 +28,7 @@ type Organization struct {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) OrganizationList(lr *ListRange) ([]Organization, error) {
-	req, err := c.NewRequest("GET", "/organizations", nil)
+	req, err := c.NewRequest("GET", "/organizations", nil, nil)
 	if err != nil {
 		return nil, err
 	}

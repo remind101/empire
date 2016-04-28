@@ -59,7 +59,7 @@ func (c *Client) DomainInfo(appIdentity string, domainIdentity string) (*Domain,
 // appIdentity is the unique identifier of the Domain's App. lr is an optional
 // ListRange that sets the Range options for the paginated list of results.
 func (c *Client) DomainList(appIdentity string, lr *ListRange) ([]Domain, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/domains", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/domains", nil, nil)
 	if err != nil {
 		return nil, err
 	}

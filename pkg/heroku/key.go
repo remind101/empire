@@ -66,7 +66,7 @@ func (c *Client) KeyInfo(keyIdentity string) (*Key, error) {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) KeyList(lr *ListRange) ([]Key, error) {
-	req, err := c.NewRequest("GET", "/account/keys", nil)
+	req, err := c.NewRequest("GET", "/account/keys", nil, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func (c *Client) RegionInfo(regionIdentity string) (*Region, error) {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) RegionList(lr *ListRange) ([]Region, error) {
-	req, err := c.NewRequest("GET", "/regions", nil)
+	req, err := c.NewRequest("GET", "/regions", nil, nil)
 	if err != nil {
 		return nil, err
 	}
