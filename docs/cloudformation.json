@@ -301,6 +301,7 @@
             {
               "Effect": "Allow",
               "Action": [
+                "cloudformation:*",
                 "ec2:Describe*",
                 "elasticloadbalancing:*",
                 "ecs:*",
