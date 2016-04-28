@@ -168,7 +168,6 @@ func UserFromContext(ctx context.Context) *empire.User {
 	return u
 }
 
-func findMessage(ctx context.Context) (string, error) {
-	vars := httpx.Vars(ctx)
-	return vars["message"], nil
+func findMessage(r *http.Request) (string, error) {
+	return r.Header.Get("Commit-Message"), nil
 }

@@ -81,15 +81,17 @@ type DynoCreateOpts struct {
 //
 // appIdentity is the unique identifier of the Dyno's App. dynoIdentity is the
 // unique identifier of the Dyno.
-func (c *Client) DynoRestart(appIdentity string, dynoIdentity string) error {
-	return c.Delete("/apps/" + appIdentity + "/dynos/" + dynoIdentity)
+func (c *Client) DynoRestart(appIdentity, dynoIdentity, message string) error {
+	rh := RequestHeaders{CommitMessage: message}
+	return c.DeleteWithHeaders("/apps/"+appIdentity+"/dynos/"+dynoIdentity, rh.Headers())
 }
 
 // Restart all dynos
 //
 // appIdentity is the unique identifier of the Dyno's App.
-func (c *Client) DynoRestartAll(appIdentity string) error {
-	return c.Delete("/apps/" + appIdentity + "/dynos")
+func (c *Client) DynoRestartAll(appIdentity, message string) error {
+	rh := RequestHeaders{CommitMessage: message}
+	return c.DeleteWithHeaders("/apps/"+appIdentity+"/dynos", rh.Headers())
 }
 
 // Info for existing dyno.

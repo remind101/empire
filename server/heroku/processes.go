@@ -152,7 +152,7 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 		return err
 	}
 
-	m, err := findMessage(ctx)
+	m, err := findMessage(r)
 	if err != nil {
 		return err
 	}
