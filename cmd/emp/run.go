@@ -22,11 +22,12 @@ var (
 )
 
 var cmdRun = &Command{
-	Run:      runRun,
-	Usage:    "run [-s <size>] [-d] <command> [<argument>...]",
-	NeedsApp: true,
-	Category: "dyno",
-	Short:    "run a process in a dyno",
+	Run:             runRun,
+	Usage:           "run [-s <size>] [-d] <command> [<argument>...]",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "dyno",
+	Short:           "run a process in a dyno",
 	Long: `
 Run a process on Heroku. Flags such as` + " `-a` " + `may be parsed out of
 the command unless the command is quoted or provided after a
@@ -69,6 +70,7 @@ func runRun(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 	appname := mustApp()
+	message := getMessage()
 
 	w, err := term.GetWinsize(inFd)
 	if err != nil {
@@ -85,7 +87,7 @@ func runRun(cmd *Command, args []string) {
 	}
 
 	attached := !detachedRun
-	opts := heroku.DynoCreateOpts{Attach: &attached}
+	opts := heroku.DynoCreateOpts{Attach: &attached, Message: message}
 	if attached {
 		env := map[string]string{
 			"COLUMNS": strconv.Itoa(int(w.Width)),
@@ -122,7 +124,9 @@ func runRun(cmd *Command, args []string) {
 		Env:     opts.Env,
 		Size:    opts.Size,
 	}
-	req, err := client.NewRequest("POST", "/apps/"+appname+"/dynos", params, nil)
+
+	rh := heroku.RequestHeaders{CommitMessage: message}
+	req, err := client.NewRequest("POST", "/apps/"+appname+"/dynos", params, rh.Headers())
 	must(err)
 
 	u, err := url.Parse(apiURL)

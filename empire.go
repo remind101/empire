@@ -396,7 +396,9 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 			event.URL = w.URL()
 		}
 
-		io.WriteString(w, fmt.Sprintf("Running `%s` on %s as %s\n", opts.Command, opts.App.Name, opts.User.Name))
+		msg := fmt.Sprintf("Running `%s` on %s as %s", opts.Command, opts.App.Name, opts.User.Name)
+		msg = appendCommitMessage(msg, opts.Message)
+		io.WriteString(w, fmt.Sprintf("%s\n", msg))
 
 		// Write output to both the original output as well as the
 		// record.

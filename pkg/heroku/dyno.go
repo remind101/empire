@@ -63,8 +63,10 @@ func (c *Client) DynoCreate(appIdentity string, command string, options *DynoCre
 		params.Env = options.Env
 		params.Size = options.Size
 	}
+
+	rh := RequestHeaders{CommitMessage: options.Message}
 	var dynoRes Dyno
-	return &dynoRes, c.Post(&dynoRes, "/apps/"+appIdentity+"/dynos", params)
+	return &dynoRes, c.PostWithHeaders(&dynoRes, "/apps/"+appIdentity+"/dynos", params, rh.Headers())
 }
 
 // DynoCreateOpts holds the optional parameters for DynoCreate
@@ -75,6 +77,8 @@ type DynoCreateOpts struct {
 	Env *map[string]string `json:"env,omitempty"`
 	// dyno size (default: "1X")
 	Size *string `json:"size,omitempty"`
+	// commit message
+	Message string
 }
 
 // Restart dyno.
