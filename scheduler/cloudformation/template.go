@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -82,6 +83,11 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	}
 
 	for _, p := range app.Processes {
+		// CloudFormation only allows alphanumeric resource names, so we
+		// have to normalize it.
+		r := regexp.MustCompile("[^a-zA-Z0-9]")
+		key := r.ReplaceAllString(p.Type, "")
+
 		ulimits := []map[string]interface{}{}
 		if p.Nproc != 0 {
 			ulimits = []map[string]interface{}{
@@ -149,7 +155,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				"Value": fmt.Sprintf("%d", ContainerPort),
 			})
 
-			loadBalancer := fmt.Sprintf("%sLoadBalancer", p.Type)
+			loadBalancer := fmt.Sprintf("%sLoadBalancer", key)
 			loadBalancers = append(loadBalancers, map[string]interface{}{
 				"ContainerName": p.Type,
 				"ContainerPort": ContainerPort,
@@ -196,7 +202,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			}
 		}
 
-		taskDefinition := fmt.Sprintf("%sTaskDefinition", p.Type)
+		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
 		containerDefinition := map[string]interface{}{
 			"Name":         p.Type,
 			"Command":      p.Command,
@@ -222,7 +228,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			},
 		}
 
-		service := fmt.Sprintf("%s", p.Type)
+		service := fmt.Sprintf("%s", key)
 		serviceProperties := map[string]interface{}{
 			"Cluster":       t.Cluster,
 			"DesiredCount":  p.Instances,

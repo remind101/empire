@@ -122,6 +122,7 @@ func newCloudFormationScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 	s := cloudformation.NewScheduler(config)
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
+	s.Bucket = c.String(FlagS3TemplateBucket)
 	return s, nil
 }
 

@@ -289,6 +289,13 @@
       }
     },
 
+    "TemplateBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "Private"
+      }
+    },
+
     "InstancePolicies": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
@@ -302,6 +309,7 @@
               "Effect": "Allow",
               "Action": [
                 "cloudformation:*",
+                "s3:*",
                 "ec2:Describe*",
                 "elasticloadbalancing:*",
                 "ecs:*",
@@ -492,6 +500,10 @@
                 "Value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
               },
               {
+                "Name": "EMPIRE_S3_TEMPLATE_BUCKET",
+                "Value": { "Ref": "TemplateBucket" }
+              },
+              {
                 "Name": "EMPIRE_ECS_CLUSTER",
                 "Value": { "Ref": "Cluster"  }
               },
@@ -666,6 +678,10 @@
     "InternalZoneID": {
       "Description": "The zone ID for the internal hosted zone.",
       "Value": { "Ref": "InternalDomain" }
+    },
+    "TemplateBucket": {
+      "Description": "The s3 bucket where stack templates will be stored",
+      "Value": { "Ref": "TemplateBucket" }
     }
   }
 }

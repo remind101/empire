@@ -4,6 +4,7 @@ package cloudformation
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
@@ -41,6 +43,10 @@ type ecsClient interface {
 	DescribeTasks(*ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+}
+
+type s3Client interface {
+	PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error)
 }
 
 // Template represents something that can generate a stack body. Conveniently
@@ -70,6 +76,9 @@ type Scheduler struct {
 	// If true, wait for stack updates and creates to complete.
 	Wait bool
 
+	// The name of the bucket to store templates in.
+	Bucket string
+
 	// stackName returns the name of the stack for the app.
 	stackName func(app string) string
 
@@ -78,6 +87,9 @@ type Scheduler struct {
 
 	// ECS client for performing ECS API calls.
 	ecs ecsClient
+
+	// S3 client to upload templates to s3.
+	s3 s3Client
 }
 
 // NewScheduler returns a new Scheduler instance.
@@ -85,6 +97,7 @@ func NewScheduler(config client.ConfigProvider) *Scheduler {
 	return &Scheduler{
 		cloudformation: cloudformation.New(config),
 		ecs:            ecs.New(config),
+		s3:             s3.New(config),
 		stackName:      stackName,
 	}
 }
@@ -98,6 +111,20 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 		return err
 	}
 
+	key := fmt.Sprintf("%x", sha1.Sum(buf.Bytes()))
+
+	_, err := s.s3.PutObject(&s3.PutObjectInput{
+		Bucket:      aws.String(s.Bucket),
+		Key:         aws.String(fmt.Sprintf("/%s", key)),
+		Body:        bytes.NewReader(buf.Bytes()),
+		ContentType: aws.String("application/json"),
+	})
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
+
 	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
@@ -109,9 +136,9 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
-			StackName:    aws.String(stackName),
-			TemplateBody: aws.String(buf.String()),
-			Tags:         tags,
+			StackName:   aws.String(stackName),
+			TemplateURL: aws.String(url),
+			Tags:        tags,
 		}); err != nil {
 			return err
 		}
@@ -146,8 +173,8 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 		}
 
 		if _, err := s.cloudformation.UpdateStack(&cloudformation.UpdateStackInput{
-			StackName:    aws.String(stackName),
-			TemplateBody: aws.String(buf.String()),
+			StackName:   aws.String(stackName),
+			TemplateURL: aws.String(url),
 			// TODO: Update Go client
 			// Tags:         tags,
 		}); err != nil {
