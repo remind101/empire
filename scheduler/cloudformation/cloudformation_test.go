@@ -31,6 +31,10 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	c.On("CreateStack", &cloudformation.CreateStackInput{
 		StackName:    aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
 		TemplateBody: aws.String("{}"),
+		Tags: []*cloudformation.Tag{
+			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
+			{Key: aws.String("empire.app.name"), Value: aws.String("")},
+		},
 	}).Return(&cloudformation.CreateStackOutput{}, nil)
 
 	c.On("WaitUntilStackCreateComplete", &cloudformation.DescribeStacksInput{
