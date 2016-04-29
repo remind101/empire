@@ -81,9 +81,10 @@ type OrganizationApp struct {
 // if unspecified,  or in personal account, if default organization is not set.
 //
 // options is the struct of optional parameters for this action.
-func (c *Client) OrganizationAppCreate(options *OrganizationAppCreateOpts) (*OrganizationApp, error) {
+func (c *Client) OrganizationAppCreate(options *OrganizationAppCreateOpts, message string) (*OrganizationApp, error) {
+	rh := RequestHeaders{CommitMessage: message}
 	var organizationAppRes OrganizationApp
-	return &organizationAppRes, c.Post(&organizationAppRes, "/organizations/apps", options)
+	return &organizationAppRes, c.PostWithHeaders(&organizationAppRes, "/organizations/apps", options, rh.Headers())
 }
 
 // OrganizationAppCreateOpts holds the optional parameters for OrganizationAppCreate

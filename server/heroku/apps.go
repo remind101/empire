@@ -69,7 +69,7 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	m, err := findMessage(ctx)
+	m, err := findMessage(r)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	m, err := findMessage(ctx)
+	m, err := findMessage(r)
 	if err != nil {
 		return err
 	}

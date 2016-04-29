@@ -7,10 +7,11 @@ import (
 )
 
 var cmdCreate = &Command{
-	Run:      runCreate,
-	Usage:    "create [-r <region>] [-o <org>] [--http-git] [<name>]",
-	Category: "app",
-	Short:    "create an app",
+	Run:             runCreate,
+	Usage:           "create [-r <region>] [-o <org>] [--http-git] [<name>]",
+	OptionalMessage: true,
+	Category:        "app",
+	Short:           "create an app",
 	Long: `
 Create creates a new Heroku app. If <name> is not specified, the
 app is created with a random haiku name.
@@ -46,6 +47,7 @@ func runCreate(cmd *Command, args []string) {
 	if len(args) > 0 {
 		appname = args[0]
 	}
+	message := getMessage()
 
 	var opts heroku.OrganizationAppCreateOpts
 	if appname != "" {
@@ -61,7 +63,7 @@ func runCreate(cmd *Command, args []string) {
 		opts.Region = &flagRegion
 	}
 
-	app, err := client.OrganizationAppCreate(&opts)
+	app, err := client.OrganizationAppCreate(&opts, message)
 	must(err)
 
 	addGitRemote(app, flagHTTPGit)
