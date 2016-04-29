@@ -17,7 +17,8 @@ func (c *Client) ConfigVarInfo(appIdentity string) (map[string]string, error) {
 //
 // appIdentity is the unique identifier of the ConfigVar's App. options is the
 // hash of config changes – update values or delete by seting it to nil.
-func (c *Client) ConfigVarUpdate(appIdentity string, options map[string]*string) (map[string]string, error) {
+func (c *Client) ConfigVarUpdate(appIdentity string, options map[string]*string, message string) (map[string]string, error) {
+	rh := RequestHeaders{CommitMessage: message}
 	var configVarRes map[string]string
-	return configVarRes, c.Patch(&configVarRes, "/apps/"+appIdentity+"/config-vars", options)
+	return configVarRes, c.PatchWithHeaders(&configVarRes, "/apps/"+appIdentity+"/config-vars", options, rh.Headers())
 }
