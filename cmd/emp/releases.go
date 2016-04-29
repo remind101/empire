@@ -200,11 +200,12 @@ func runReleaseInfo(cmd *Command, args []string) {
 }
 
 var cmdRollback = &Command{
-	Run:      runRollback,
-	Usage:    "rollback <version>",
-	NeedsApp: true,
-	Category: "release",
-	Short:    "roll back to a previous release",
+	Run:             runRollback,
+	Usage:           "rollback <version>",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "release",
+	Short:           "roll back to a previous release",
 	Long: `
 Rollback re-releases an app at an older version. This action
 creates a new release based on the older release, then restarts
@@ -219,12 +220,13 @@ Examples:
 
 func runRollback(cmd *Command, args []string) {
 	appname := mustApp()
+	message := getMessage()
 	if len(args) != 1 {
 		cmd.PrintUsage()
 		os.Exit(2)
 	}
 	ver := strings.TrimPrefix(args[0], "v")
-	rel, err := client.ReleaseRollback(appname, ver)
+	rel, err := client.ReleaseRollback(appname, ver, message)
 	must(err)
 	log.Printf("Rolled back %s to v%s as v%d.\n", appname, ver, rel.Version)
 }

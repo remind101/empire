@@ -94,12 +94,13 @@ type ReleaseCreateOpts struct {
 //
 // appIdentity is the unique identifier of the Release's App. release is the
 // unique identifier of release.
-func (c *Client) ReleaseRollback(appIdentity string, release string) (*Release, error) {
+func (c *Client) ReleaseRollback(appIdentity, release, message string) (*Release, error) {
 	params := struct {
 		Release string `json:"release"`
 	}{
 		Release: release,
 	}
+	rh := RequestHeaders{CommitMessage: message}
 	var releaseRes Release
-	return &releaseRes, c.Post(&releaseRes, "/apps/"+appIdentity+"/releases", params)
+	return &releaseRes, c.PostWithHeaders(&releaseRes, "/apps/"+appIdentity+"/releases", params, rh.Headers())
 }
