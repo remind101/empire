@@ -90,7 +90,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	scheduler := c.String(FlagScheduler)
 	switch scheduler {
 	case "cloudformation":
-		return newCloudFormationScheduler(c)
+		return newCloudFormationScheduler(db, c)
 	case "ecs":
 		return newECSScheduler(db, c)
 	default:
@@ -98,7 +98,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	}
 }
 
-func newCloudFormationScheduler(c *cli.Context) (scheduler.Scheduler, error) {
+func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
@@ -119,7 +119,7 @@ func newCloudFormationScheduler(c *cli.Context) (scheduler.Scheduler, error) {
 		LogConfiguration:        logConfiguration,
 	}
 
-	s := cloudformation.NewScheduler(config)
+	s := cloudformation.NewScheduler(db.DB.DB(), config)
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
 	s.Bucket = c.String(FlagS3TemplateBucket)

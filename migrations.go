@@ -515,4 +515,21 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`CREATE UNIQUE INDEX index_processes_on_release_id_and_type ON processes USING btree (release_id, "type")`,
 		}),
 	},
+
+	// This migration changes that way we store process configuration for
+	// releases and slugs, to instead store a Formation in JSON format.
+	{
+		ID: 16,
+		Up: migrate.Queries([]string{
+			`CREATE TABLE stacks (
+  app_id text NOT NULL,
+  stack_name text NOT NULL
+)`,
+			`CREATE UNIQUE INDEX index_stacks_on_app_id ON stacks USING btree (app_id)`,
+			`CREATE UNIQUE INDEX index_stacks_on_stack_name ON stacks USING btree (stack_name)`,
+		}),
+		Down: migrate.Queries([]string{
+			`DROP TABLE stacks`,
+		}),
+	},
 }

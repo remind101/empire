@@ -2,6 +2,7 @@ package cloudformation
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"html/template"
 	"testing"
@@ -12,12 +13,16 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/s3"
+	_ "github.com/lib/pq"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestScheduler_Submit_NewStack(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
@@ -26,7 +31,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
-		stackName:      stackName,
+		db:             db,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -37,24 +42,25 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	}).Return(&s3.PutObjectOutput{}, nil)
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
-		StackName: aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
-	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id app-c9366591-ab68-4d49-a333-95ce5a23df68 does not exist", errors.New("")))
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id acme-inc does not exist", errors.New("")))
 
 	c.On("CreateStack", &cloudformation.CreateStackInput{
-		StackName:   aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
-			{Key: aws.String("empire.app.name"), Value: aws.String("")},
+			{Key: aws.String("empire.app.name"), Value: aws.String("acme-inc")},
 		},
 	}).Return(&cloudformation.CreateStackOutput{}, nil)
 
 	c.On("WaitUntilStackCreateComplete", &cloudformation.DescribeStacksInput{
-		StackName: aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
-		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
@@ -63,6 +69,9 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 }
 
 func TestScheduler_Submit_ExistingStack(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
@@ -71,7 +80,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
-		stackName:      stackName,
+		db:             db,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -82,7 +91,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	}).Return(&s3.PutObjectOutput{}, nil)
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
-		StackName: aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName: aws.String("acme-inc"),
 	}).Return(&cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{StackStatus: aws.String("CREATE_COMPLETE")},
@@ -90,16 +99,17 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	}, nil)
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
-		StackName:   aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
-		StackName: aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
-		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
@@ -108,6 +118,9 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 }
 
 func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
@@ -116,7 +129,7 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
-		stackName:      stackName,
+		db:             db,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -127,7 +140,7 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 	}).Return(&s3.PutObjectOutput{}, nil)
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
-		StackName: aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName: aws.String("acme-inc"),
 	}).Return(&cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{StackStatus: aws.String("UPDATE_IN_PROGRESS")},
@@ -135,21 +148,33 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 	}, nil)
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
-		StackName:   aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
-		StackName: aws.String("app-c9366591-ab68-4d49-a333-95ce5a23df68"),
+		StackName: aws.String("acme-inc"),
 	}).Return(nil).Twice()
 
 	err := s.Submit(context.Background(), &scheduler.App{
-		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
+}
+
+func newDB(t testing.TB) *sql.DB {
+	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`TRUNCATE TABLE stacks`); err != nil {
+		t.Fatal(err)
+	}
+	return db
 }
 
 type mockCloudFormationClient struct {
