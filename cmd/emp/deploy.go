@@ -7,14 +7,16 @@ import (
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
+	"github.com/remind101/empire/pkg/heroku"
 )
 
 var cmdDeploy = &Command{
-	Run:         runDeploy,
-	Usage:       "deploy [<registry>]<image>:[<tag>]",
-	OptionalApp: true,
-	Category:    "deploy",
-	Short:       "deploy a docker image",
+	Run:             runDeploy,
+	Usage:           "deploy [<registry>]<image>:[<tag>]",
+	OptionalApp:     true,
+	OptionalMessage: true,
+	Category:        "deploy",
+	Short:           "deploy a docker image",
 	Long: `
 Deploy is used to deploy a docker image to an app.
 Examples:
@@ -46,6 +48,7 @@ func runDeploy(cmd *Command, args []string) {
 	}
 
 	image := args[0]
+	message := getMessage()
 	form := &PostDeployForm{Image: image}
 
 	var endpoint string
@@ -56,8 +59,9 @@ func runDeploy(cmd *Command, args []string) {
 		endpoint = "/deploys"
 	}
 
+	rh := heroku.RequestHeaders{CommitMessage: message}
 	go func() {
-		must(client.Post(w, endpoint, form))
+		must(client.PostWithHeaders(w, endpoint, form, rh.Headers()))
 		must(w.Close())
 	}()
 

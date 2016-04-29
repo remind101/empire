@@ -40,7 +40,7 @@ func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *h
 		return nil, err
 	}
 
-	m, err := findMessage(ctx)
+	m, err := findMessage(req)
 	if err != nil {
 		return nil, err
 	}
