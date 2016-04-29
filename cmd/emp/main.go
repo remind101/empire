@@ -55,7 +55,7 @@ func (c *Command) PrintLongUsage() {
 }
 
 func (c *Command) FullUsage() string {
-	parts := make([]string, 0, 2)
+	var parts []string
 	if c.NeedsApp || c.OptionalApp {
 		parts = append(parts, "[-a <app or remote>]")
 	}
