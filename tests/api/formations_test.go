@@ -26,7 +26,7 @@ func TestFormationBatchUpdate(t *testing.T) {
 }
 
 func mustFormationBatchUpdate(t testing.TB, c *heroku.Client, appName string, updates []heroku.FormationBatchUpdateOpts) []heroku.Formation {
-	f, err := c.FormationBatchUpdate(appName, updates, nil)
+	f, err := c.FormationBatchUpdate(appName, updates, "")
 	if err != nil {
 		t.Fatal(err)
 	}

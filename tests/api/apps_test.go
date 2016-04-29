@@ -158,7 +158,7 @@ func mustOrganizationAppCreate(t testing.TB, c *heroku.Client, app empire.App) *
 		Name: &name,
 	}
 
-	a, err := c.OrganizationAppCreate(&opts)
+	a, err := c.OrganizationAppCreate(&opts, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func mustAppList(t testing.TB, c *heroku.Client) []heroku.App {
 
 // Delets an app or fails.
 func mustAppDelete(t testing.TB, c *heroku.Client, appName string) {
-	if err := c.AppDelete(appName); err != nil {
+	if err := c.AppDelete(appName, ""); err != nil {
 		t.Fatal(err)
 	}
 }
