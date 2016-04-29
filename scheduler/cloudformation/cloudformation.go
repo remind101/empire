@@ -5,6 +5,7 @@ package cloudformation
 import (
 	"bytes"
 	"crypto/sha1"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -79,9 +80,6 @@ type Scheduler struct {
 	// The name of the bucket to store templates in.
 	Bucket string
 
-	// stackName returns the name of the stack for the app.
-	stackName func(app string) string
-
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -90,21 +88,31 @@ type Scheduler struct {
 
 	// S3 client to upload templates to s3.
 	s3 s3Client
+
+	db *sql.DB
 }
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(config client.ConfigProvider) *Scheduler {
+func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 	return &Scheduler{
 		cloudformation: cloudformation.New(config),
 		ecs:            ecs.New(config),
 		s3:             s3.New(config),
-		stackName:      stackName,
+		db:             db,
 	}
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
-	stackName := s.stackName(app.ID)
+	stackName, err := s.stackName(app.ID)
+	if err == sql.ErrNoRows {
+		stackName = app.Name
+		if _, err := s.db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, app.ID, stackName); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
 
 	buf := new(bytes.Buffer)
 	if err := s.Template.Execute(buf, app); err != nil {
@@ -113,7 +121,7 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 
 	key := fmt.Sprintf("%x", sha1.Sum(buf.Bytes()))
 
-	_, err := s.s3.PutObject(&s3.PutObjectInput{
+	_, err = s.s3.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String(s.Bucket),
 		Key:         aws.String(fmt.Sprintf("/%s", key)),
 		Body:        bytes.NewReader(buf.Bytes()),
@@ -197,7 +205,10 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 
 // Remove removes the CloudFormation stack for the given app.
 func (s *Scheduler) Remove(_ context.Context, appID string) error {
-	stackName := s.stackName(appID)
+	stackName, err := s.stackName(appID)
+	if err != nil {
+		return err
+	}
 
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
@@ -309,8 +320,11 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 
 // Services returns the names of the map that maps the name of a process to the
 // ARN of the ECS service.
-func (s *Scheduler) Services(app string) (map[string]string, error) {
-	stackName := s.stackName(app)
+func (s *Scheduler) Services(appID string) (map[string]string, error) {
+	stackName, err := s.stackName(appID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get a summary of all of the stacks resources.
 	var summaries []*cloudformation.StackResourceSummary
@@ -357,8 +371,8 @@ func (s *Scheduler) Stop(ctx context.Context, instanceID string) error {
 
 // Scale scales the ECS service for the given process to the desired number of
 // instances.
-func (s *Scheduler) Scale(ctx context.Context, app string, process string, instances uint) error {
-	services, err := s.Services(app)
+func (s *Scheduler) Scale(ctx context.Context, appID string, process string, instances uint) error {
+	services, err := s.Services(appID)
 	if err != nil {
 		return err
 	}
@@ -377,14 +391,15 @@ func (s *Scheduler) Scale(ctx context.Context, app string, process string, insta
 	return err
 }
 
+func (s *Scheduler) stackName(appID string) (string, error) {
+	var stackName string
+	err := s.db.QueryRow(`SELECT stack_name FROM stacks WHERE app_id = $1`, appID).Scan(&stackName)
+	return stackName, err
+}
+
 func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
 	// Do the same thing as the ECS scheduler.
 	return nil
-}
-
-// stackName returns a stack name for the app id.
-func stackName(appID string) string {
-	return fmt.Sprintf("app-%s", appID)
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
