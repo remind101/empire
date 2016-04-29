@@ -290,7 +290,7 @@ func TestEmpire_Run(t *testing.T) {
 	err = e.Run(context.Background(), empire.RunOpts{
 		User:    user,
 		App:     app,
-		Command: empire.Command{"bundle", "exec", "rake", "db:migrate"},
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
 
 		// Detached Process
 		Output: nil,
@@ -361,7 +361,7 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	err = e.Run(context.Background(), empire.RunOpts{
 		User:    user,
 		App:     app,
-		Command: empire.Command{"bundle", "exec", "rake", "db:migrate"},
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
 
 		// Detached Process
 		Output: nil,

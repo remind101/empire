@@ -95,10 +95,6 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		App:         a,
 		Command:     command,
 		Env:         form.Env,
-		User:        UserFromContext(ctx),
-		App:         a,
-		Command:     command,
-		Env:         form.Env,
 		Constraints: form.Size,
 		Message:     m,
 	}
