@@ -90,8 +90,9 @@ type AppCreateOpts struct {
 // Delete an existing app.
 //
 // appIdentity is the unique identifier of the App.
-func (c *Client) AppDelete(appIdentity string) error {
-	return c.Delete("/apps/" + appIdentity)
+func (c *Client) AppDelete(appIdentity, message string) error {
+	rh := RequestHeaders{CommitMessage: message}
+	return c.DeleteWithHeaders("/apps/"+appIdentity, rh.Headers())
 }
 
 // Info for existing app.
