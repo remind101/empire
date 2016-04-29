@@ -58,10 +58,10 @@ func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 }
 
 type PostProcessForm struct {
-	Command string            `json:"command"`
-	Attach  bool              `json:"attach"`
-	Env     map[string]string `json:"env"`
-	Size    string            `json:"size"`
+	Command string              `json:"command"`
+	Attach  bool                `json:"attach"`
+	Env     map[string]string   `json:"env"`
+	Size    *empire.Constraints `json:"size"`
 }
 
 type PostProcess struct {
@@ -91,11 +91,16 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	opts := empire.RunOpts{
-		User:    UserFromContext(ctx),
-		App:     a,
-		Command: command,
-		Env:     form.Env,
-		Message: m,
+		User:        UserFromContext(ctx),
+		App:         a,
+		Command:     command,
+		Env:         form.Env,
+		User:        UserFromContext(ctx),
+		App:         a,
+		Command:     command,
+		Env:         form.Env,
+		Constraints: form.Size,
+		Message:     m,
 	}
 
 	if form.Attach {

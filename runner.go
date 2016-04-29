@@ -62,12 +62,19 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	a := newServiceApp(release)
-	p := newServiceProcess(release, "run", Process{
-		Command:  opts.Command,
-		Quantity: 1,
-	})
+	proc := Process{Command: opts.Command, Quantity: 1}
 
+	// Set the size of the process.
+	constraints := DefaultConstraints
+	if opts.Constraints != nil {
+		constraints = *opts.Constraints
+	}
+	proc.SetConstraints(constraints)
+
+	a := newServiceApp(release)
+	p := newServiceProcess(release, "run", proc)
+
+	// Add additional environment variables to the process.
 	for k, v := range opts.Env {
 		p.Env[k] = v
 	}
