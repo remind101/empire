@@ -14,11 +14,12 @@ import (
 var listMode bool
 
 var cmdScale = &Command{
-	Run:      runScale,
-	Usage:    "scale [-l] <type>=[<qty>]:[<size>]...",
-	NeedsApp: true,
-	Category: "dyno",
-	Short:    "change dyno quantities and sizes",
+	Run:             runScale,
+	Usage:           "scale [-l] <type>=[<qty>]:[<size>]...",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "dyno",
+	Short:           "change dyno quantities and sizes",
 	Long: `
 Scale changes the quantity of dynos (horizontal scale) and/or the
 dyno size (vertical scale) for each process type. Note that
@@ -48,6 +49,7 @@ func init() {
 // takes args of the form "web=1", "worker=3X", web=4:2X etc
 func runScale(cmd *Command, args []string) {
 	appname := mustApp()
+	message := getMessage()
 	if listMode {
 		listScale(appname)
 		os.Exit(0)
@@ -82,7 +84,7 @@ func runScale(cmd *Command, args []string) {
 		todo[i] = opt
 	}
 
-	formations, err := client.FormationBatchUpdate(appname, todo)
+	formations, err := client.FormationBatchUpdate(appname, todo, message)
 	must(err)
 
 	sortedFormations := formationsByType(formations)
