@@ -8,6 +8,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/headerutil"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/httpx/middleware"
@@ -169,5 +170,5 @@ func UserFromContext(ctx context.Context) *empire.User {
 }
 
 func findMessage(r *http.Request) (string, error) {
-	return r.Header.Get("Commit-Message"), nil
+	return r.Header.Get(heroku.CommitMessageHeader), nil
 }

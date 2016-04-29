@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	Version          = "0.10.2"
-	DefaultAPIURL    = "https://api.heroku.com"
-	DefaultUserAgent = "heroku-go/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
+	Version             = "0.10.2"
+	DefaultAPIURL       = "https://api.heroku.com"
+	DefaultUserAgent    = "heroku-go/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
+	CommitMessageHeader = "Commit-Message"
 )
 
 // A Client is a Heroku API client. Its zero value is a usable client that uses
@@ -300,7 +301,7 @@ type RequestHeaders struct {
 func (r *RequestHeaders) Headers() http.Header {
 	headers := http.Header{}
 	if r.CommitMessage != "" {
-		headers.Set("Commit-Message", r.CommitMessage)
+		headers.Set(CommitMessageHeader, r.CommitMessage)
 	}
 	return headers
 }
