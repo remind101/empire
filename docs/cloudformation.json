@@ -308,6 +308,20 @@
             {
               "Effect": "Allow",
               "Action": [
+                "sqs:*"
+              ],
+              "Resource": { "Fn::GetAtt": ["CustomResourcesQueue", "Arn"] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "sns:Publish"
+              ],
+              "Resource": { "Ref": "CustomResourcesTopic" }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "cloudformation:*",
                 "s3:*",
                 "ec2:Describe*",
@@ -629,6 +643,17 @@
       "Properties": {
         "RetentionInDays": 7
       }
+    },
+
+    "CustomResourcesTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "DisplayName": "Empire Custom Resources"
+      }
+    },
+
+    "CustomResourcesQueue": {
+      "Type": "AWS::SQS::Queue"
     }
   },
 
@@ -682,6 +707,14 @@
     "TemplateBucket": {
       "Description": "The s3 bucket where stack templates will be stored",
       "Value": { "Ref": "TemplateBucket" }
+    },
+    "CustomResourcesTopic": {
+      "Description": "The ARN of the SNS topic to use as the ServiceToken for custom CloudFormation resources.",
+      "Value": { "Ref": "CustomResourcesTopic" }
+    },
+    "CustomResourcesQueue": {
+      "Description": "The queue that Empire will listen on to provision custom CloudFormation resources.",
+      "Value": { "Ref": "CustomResourcesQueue" }
     }
   }
 }

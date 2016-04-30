@@ -14,6 +14,7 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	githubauth "github.com/remind101/empire/server/auth/github"
+	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
 	"golang.org/x/oauth2"
 )
@@ -25,10 +26,19 @@ func runServer(c *cli.Context) {
 		runMigrate(c)
 	}
 
-	e, err := newEmpire(c)
+	db, err := newDB(c)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	e, err := newEmpire(db, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
+	p.QueueURL = c.String(FlagCustomResourcesQueue)
+	go p.Start()
 
 	s := newServer(c, e)
 	log.Printf("Starting on port %s", port)
