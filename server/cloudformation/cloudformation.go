@@ -7,13 +7,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/empire/scheduler/ecs/lb"
+	"github.com/remind101/pkg/logger"
+	"github.com/remind101/pkg/reporter"
 )
 
 // Provisioner is something that can provision custom resources.
@@ -162,6 +165,9 @@ type sqsClient interface {
 // CustomResourceProvisioner polls for CloudFormation Custom Resource requests
 // from an sqs queue, provisions them, then responds back.
 type CustomResourceProvisioner struct {
+	// Logger to use to perform logging.
+	Logger logger.Logger
+
 	// The SQS queue url to listen for CloudFormation Custom Resource
 	// requests.
 	QueueURL string
@@ -170,8 +176,8 @@ type CustomResourceProvisioner struct {
 	// provisioning.
 	Provisioners map[string]Provisioner
 
-	// Error is called when an error occurs during provisioning.
-	Error func(error)
+	// Reporter is called when an error occurs during provisioning.
+	Reporter reporter.Reporter
 
 	client interface {
 		Do(*http.Request) (*http.Response, error)
@@ -188,9 +194,6 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 				ports: lb.NewDBPortAllocator(db),
 			},
 		},
-		Error: func(err error) {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-		},
 		client: http.DefaultClient,
 		sqs:    sqs.New(config),
 	}
@@ -201,17 +204,19 @@ func (c *CustomResourceProvisioner) Start() {
 	t := time.Tick(10 * time.Second)
 
 	for range t {
+		ctx := context.Background()
+
 		resp, err := c.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl: aws.String(c.QueueURL),
 		})
 		if err != nil {
-			c.Error(err)
+			c.Reporter.Report(ctx, err)
 			continue
 		}
 
 		for _, m := range resp.Messages {
 			if err := c.handle(m); err != nil {
-				c.Error(err)
+				c.Reporter.Report(ctx, err)
 				continue
 			}
 		}
@@ -254,11 +259,19 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 	switch err {
 	case nil:
 		resp.Status = StatusSuccess
+		c.Logger.Info("cloudformation.provision",
+			"request", req,
+			"response", resp,
+		)
 	default:
 		resp.Status = StatusFailed
 		resp.Reason = err.Error()
+		c.Logger.Error("cloudformation.provision.error",
+			"request", req,
+			"response", resp,
+			"err", err.Error(),
+		)
 	}
-	fmt.Printf("%s for %s as %s with data %v\n", resp.Status, req.ResourceType, resp.PhysicalResourceId, resp.Data)
 
 	raw, err := json.Marshal(resp)
 	if err != nil {
