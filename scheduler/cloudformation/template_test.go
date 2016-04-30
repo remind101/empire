@@ -8,6 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/remind101/empire/pkg/bytesize"
+	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,16 +27,28 @@ func TestEmpireTemplate(t *testing.T) {
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPExposure{},
 						},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Instances:   1,
+						Nproc:       256,
 					},
 					{
 						Type:    "worker",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/worker"},
 						Env: map[string]string{
 							"FOO": "BAR",
+						},
+						Labels: map[string]string{
+							"empire.app.process": "worker",
 						},
 					},
 				},
