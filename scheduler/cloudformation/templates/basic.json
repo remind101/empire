@@ -1,11 +1,6 @@
 {
   "Outputs": {},
-  "Parameters": {
-    "ServiceRole": {
-      "Default": "ecsServiceRole",
-      "Type": "String"
-    }
-  },
+  "Parameters": {},
   "Resources": {
     "CNAME": {
       "Properties": {
@@ -37,9 +32,7 @@
             }
           }
         ],
-        "Role": {
-          "Ref": "ServiceRole"
-        },
+        "Role": "ecsServiceRole",
         "TaskDefinition": {
           "Ref": "webTaskDefinition"
         }

@@ -17,7 +17,6 @@ import (
 )
 
 const (
-
 	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
 	// the container port. This is the port that processes within the container
 	// should bind to. Tihs value is also exposed to the container through the PORT
@@ -52,6 +51,9 @@ type EmpireTemplate struct {
 	// The Subnet IDs to assign when creating external load balancers.
 	ExternalSubnetIDs []string
 
+	// The name of the ECS Service IAM role.
+	ServiceRole string
+
 	LogConfiguration *ecs.LogConfiguration
 }
 
@@ -76,12 +78,6 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	parameters := map[string]interface{}{}
 	resources := map[string]interface{}{}
 	outputs := map[string]interface{}{}
-
-	serviceRole := "ServiceRole" // TODO: Build a service role.
-	parameters["ServiceRole"] = map[string]string{
-		"Type":    "String",
-		"Default": "ecsServiceRole",
-	}
 
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(p)
@@ -217,9 +213,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			},
 		}
 		if len(loadBalancers) > 0 {
-			serviceProperties["Role"] = map[string]string{
-				"Ref": serviceRole,
-			}
+			serviceProperties["Role"] = t.ServiceRole
 		}
 		resources[service] = map[string]interface{}{
 			"Type": "AWS::ECS::Service",
