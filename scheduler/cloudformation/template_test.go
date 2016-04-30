@@ -40,6 +40,25 @@ func TestEmpireTemplate(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			"https.json",
+			&scheduler.App{
+				ID:   "1234",
+				Name: "acme-inc",
+				Processes: []*scheduler.Process{
+					{
+						Type:    "web",
+						Command: []string{"./bin/web"},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPSExposure{
+								Cert: "iamcert",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
