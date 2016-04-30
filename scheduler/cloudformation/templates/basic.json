@@ -22,7 +22,7 @@
       },
       "Properties": {
         "Cluster": "cluster",
-        "DesiredCount": 0,
+        "DesiredCount": 1,
         "LoadBalancers": [
           {
             "ContainerName": "web",
@@ -78,8 +78,10 @@
             "Command": [
               "./bin/web"
             ],
-            "Cpu": 0,
-            "DockerLabels": {},
+            "Cpu": 256,
+            "DockerLabels": {
+              "empire.app.process": "web"
+            },
             "Environment": [
               {
                 "Name": "PORT",
@@ -87,8 +89,8 @@
               }
             ],
             "Essential": true,
-            "Image": "",
-            "Memory": 0,
+            "Image": "remind101/acme-inc:latest",
+            "Memory": 128,
             "Name": "web",
             "PortMappings": [
               {
@@ -96,7 +98,13 @@
                 "HostPort": 9000
               }
             ],
-            "Ulimits": []
+            "Ulimits": [
+              {
+                "HardLimit": 256,
+                "Name": "nproc",
+                "SoftLimit": 256
+              }
+            ]
           }
         ],
         "Volumes": []
@@ -125,7 +133,9 @@
               "./bin/worker"
             ],
             "Cpu": 0,
-            "DockerLabels": {},
+            "DockerLabels": {
+              "empire.app.process": "worker"
+            },
             "Environment": [
               {
                 "Name": "FOO",
@@ -133,7 +143,7 @@
               }
             ],
             "Essential": true,
-            "Image": "",
+            "Image": "remind101/acme-inc:latest",
             "Memory": 0,
             "Name": "worker",
             "PortMappings": [],
