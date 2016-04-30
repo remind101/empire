@@ -21,7 +21,7 @@
         "name": "web"
       },
       "Properties": {
-        "Cluster": "",
+        "Cluster": "cluster",
         "DesiredCount": 0,
         "LoadBalancers": [
           {
@@ -56,9 +56,12 @@
         ],
         "Scheme": "internal",
         "SecurityGroups": [
-          ""
+          "sg-e7387381"
         ],
-        "Subnets": null,
+        "Subnets": [
+          "subnet-bb01c4cd",
+          "subnet-c85f4091"
+        ],
         "Tags": [
           {
             "Key": "empire.app.process",
@@ -105,7 +108,7 @@
         "name": "worker"
       },
       "Properties": {
-        "Cluster": "",
+        "Cluster": "cluster",
         "DesiredCount": 0,
         "LoadBalancers": [],
         "TaskDefinition": {
