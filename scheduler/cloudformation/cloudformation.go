@@ -27,6 +27,8 @@ import (
 
 const ecsServiceType = "AWS::ECS::Service"
 
+var errNoStack = errors.New("no stack for app found")
+
 type cloudformationClient interface {
 	CreateStack(*cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error)
 	UpdateStack(*cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error)
@@ -106,10 +108,26 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = s.submit(ctx, tx, app)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// Submit creates (or updates) the CloudFormation stack for the app.
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) error {
 	stackName, err := s.stackName(app.ID)
-	if err == sql.ErrNoRows {
+	if err == errNoStack {
 		stackName = app.Name
-		if _, err := s.db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, app.ID, stackName); err != nil {
+		if _, err := tx.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, app.ID, stackName); err != nil {
 			return err
 		}
 	} else if err != nil {
@@ -206,8 +224,29 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 }
 
 // Remove removes the CloudFormation stack for the given app.
-func (s *Scheduler) Remove(_ context.Context, appID string) error {
+func (s *Scheduler) Remove(ctx context.Context, appID string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = s.remove(ctx, tx, appID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// Remove removes the CloudFormation stack for the given app.
+func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	stackName, err := s.stackName(appID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`DELETE FROM stacks WHERE app_id = $1`, appID)
 	if err != nil {
 		return err
 	}
@@ -215,11 +254,6 @@ func (s *Scheduler) Remove(_ context.Context, appID string) error {
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
 	}); err != nil {
-		return err
-	}
-
-	_, err = s.db.Exec(`DELETE FROM stacks WHERE app_id = $1`, appID)
-	if err != nil {
 		return err
 	}
 
@@ -451,6 +485,9 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 func (s *Scheduler) stackName(appID string) (string, error) {
 	var stackName string
 	err := s.db.QueryRow(`SELECT stack_name FROM stacks WHERE app_id = $1`, appID).Scan(&stackName)
+	if err == sql.ErrNoRows {
+		return "", errNoStack
+	}
 	return stackName, err
 }
 
