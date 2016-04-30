@@ -44,7 +44,12 @@ func TestEmpireTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		tmpl := &EmpireTemplate{
-			ServiceRole: "ecsServiceRole",
+			Cluster:                 "cluster",
+			ServiceRole:             "ecsServiceRole",
+			InternalSecurityGroupID: "sg-e7387381",
+			ExternalSecurityGroupID: "sg-1938737f",
+			InternalSubnetIDs:       []string{"subnet-bb01c4cd", "subnet-c85f4091"},
+			ExternalSubnetIDs:       []string{"subnet-ca96f4cd", "subnet-a13b909c"},
 			HostedZone: &route53.HostedZone{
 				Id:   aws.String("Z3DG6IL3SJCGPX"),
 				Name: aws.String("empire"),
