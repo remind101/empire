@@ -216,6 +216,11 @@ func (s *Scheduler) Remove(_ context.Context, appID string) error {
 		return err
 	}
 
+	_, err = s.db.Exec(`DELETE FROM stacks WHERE app_id = $1`, appID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
