@@ -83,6 +83,7 @@ func TestEmpireTemplate(t *testing.T) {
 			ExternalSecurityGroupID: "sg-1938737f",
 			InternalSubnetIDs:       []string{"subnet-bb01c4cd", "subnet-c85f4091"},
 			ExternalSubnetIDs:       []string{"subnet-ca96f4cd", "subnet-a13b909c"},
+			CustomResourcesTopic:    "sns topic arn",
 			HostedZone: &route53.HostedZone{
 				Id:   aws.String("Z3DG6IL3SJCGPX"),
 				Name: aws.String("empire"),

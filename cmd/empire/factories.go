@@ -33,12 +33,7 @@ func newDB(c *cli.Context) (*empire.DB, error) {
 
 // Empire ===============================
 
-func newEmpire(c *cli.Context) (*empire.Empire, error) {
-	db, err := newDB(c)
-	if err != nil {
-		return nil, err
-	}
-
+func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	docker, err := newDockerClient(c)
 	if err != nil {
 		return nil, err
@@ -134,6 +129,7 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 		ExternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPublic),
 		HostedZone:              zone,
 		ServiceRole:             c.String(FlagECSServiceRole),
+		CustomResourcesTopic:    c.String(FlagCustomResourcesTopic),
 		LogConfiguration:        logConfiguration,
 	}
 

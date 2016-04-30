@@ -39,6 +39,13 @@
       },
       "Type": "AWS::ECS::Service"
     },
+    "web8080InstancePort": {
+      "Properties": {
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::InstancePort",
+      "Version": "1.0"
+    },
     "webLoadBalancer": {
       "Properties": {
         "ConnectionDrainingPolicy": {
@@ -48,7 +55,12 @@
         "CrossZone": true,
         "Listeners": [
           {
-            "InstancePort": 9000,
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "web8080InstancePort",
+                "InstancePort"
+              ]
+            },
             "InstanceProtocol": "http",
             "LoadBalancerPort": 80,
             "Protocol": "http"
@@ -95,7 +107,12 @@
             "PortMappings": [
               {
                 "ContainerPort": 8080,
-                "HostPort": 9000
+                "HostPort": {
+                  "Fn::GetAtt": [
+                    "web8080InstancePort",
+                    "InstancePort"
+                  ]
+                }
               }
             ],
             "Ulimits": [

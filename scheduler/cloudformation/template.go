@@ -54,6 +54,9 @@ type EmpireTemplate struct {
 	// The name of the ECS Service IAM role.
 	ServiceRole string
 
+	// The ARN of the SNS topic to provision instance ports.
+	CustomResourcesTopic string
+
 	LogConfiguration *ecs.LogConfiguration
 }
 
@@ -87,7 +90,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		r := regexp.MustCompile("[^a-zA-Z0-9]")
 		key := r.ReplaceAllString(p.Type, "")
 
-		portMappings := []map[string]int64{}
+		portMappings := []map[string]interface{}{}
 
 		loadBalancers := []map[string]interface{}{}
 		if p.Exposure != nil {
@@ -101,12 +104,25 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				subnets = t.ExternalSubnetIDs
 			}
 
-			instancePort := int64(9000) // TODO: Allocate a port
+			instancePort := fmt.Sprintf("%s%dInstancePort", key, ContainerPort)
+			resources[instancePort] = map[string]interface{}{
+				"Type":    "Custom::InstancePort",
+				"Version": "1.0",
+				"Properties": map[string]interface{}{
+					"ServiceToken": t.CustomResourcesTopic,
+				},
+			}
+
 			listeners := []map[string]interface{}{
 				map[string]interface{}{
 					"LoadBalancerPort": 80,
 					"Protocol":         "http",
-					"InstancePort":     instancePort,
+					"InstancePort": map[string][]string{
+						"Fn::GetAtt": []string{
+							instancePort,
+							"InstancePort",
+						},
+					},
 					"InstanceProtocol": "http",
 				},
 			}
@@ -115,15 +131,25 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				listeners = append(listeners, map[string]interface{}{
 					"LoadBalancerPort": 80,
 					"Protocol":         "http",
-					"InstancePort":     instancePort,
+					"InstancePort": map[string][]string{
+						"Fn::GetAtt": []string{
+							instancePort,
+							"InstancePort",
+						},
+					},
 					"SSLCertificateId": e.Cert,
 					"InstanceProtocol": "http",
 				})
 			}
 
-			portMappings = append(portMappings, map[string]int64{
+			portMappings = append(portMappings, map[string]interface{}{
 				"ContainerPort": ContainerPort,
-				"HostPort":      instancePort,
+				"HostPort": map[string][]string{
+					"Fn::GetAtt": []string{
+						instancePort,
+						"InstancePort",
+					},
+				},
 			})
 			cd.Environment = append(cd.Environment, &ecs.KeyValuePair{
 				Name:  aws.String("PORT"),
