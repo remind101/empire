@@ -42,6 +42,8 @@ type ecsClient interface {
 	ListTasksPages(input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error
 	DescribeTaskDefinition(*ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error)
 	DescribeTasks(*ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error)
+	RunTask(*ecs.RunTaskInput) (*ecs.RunTaskOutput, error)
+	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 }
@@ -291,6 +293,8 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	}
 
 	var arns []*string
+
+	// Find all of the tasks started by the ECS services.
 	for _, serviceArn := range services {
 		id, err := arn.ResourceID(serviceArn)
 		if err != nil {
@@ -313,6 +317,17 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		}
 
 		arns = append(arns, taskArns...)
+	}
+
+	// Find all of the tasks started by Run.
+	if err := s.ecs.ListTasksPages(&ecs.ListTasksInput{
+		Cluster:   aws.String(s.Cluster),
+		StartedBy: aws.String(app),
+	}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
+		arns = append(arns, resp.TaskArns...)
+		return true
+	}); err != nil {
+		return nil, err
 	}
 
 	resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
@@ -396,15 +411,47 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 	return err
 }
 
+// Run registers a TaskDefinition for the process, and calls RunTask.
+func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+	if out != nil {
+		return errors.New("running an attached process is not implemented by the ECS manager.")
+	}
+
+	t, ok := m.Template.(interface {
+		ContainerDefinition(*scheduler.Process) *ecs.ContainerDefinition
+	})
+	if !ok {
+		return errors.New("provided template can't generate a container definition for this process")
+	}
+
+	resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+		Family: aws.String(fmt.Sprintf("%s--%s", app.ID, process.Type)),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			t.ContainerDefinition(process),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error registering TaskDefinition: %v", err)
+	}
+
+	_, err = m.ecs.RunTask(&ecs.RunTaskInput{
+		TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
+		Cluster:        aws.String(m.Cluster),
+		Count:          aws.Int64(1),
+		StartedBy:      aws.String(app.ID),
+	})
+	if err != nil {
+		return fmt.Errorf("error calling RunTask: %v", err)
+	}
+
+	return nil
+}
+
+// stackName returns the name of the CloudFormation stack for the app id.
 func (s *Scheduler) stackName(appID string) (string, error) {
 	var stackName string
 	err := s.db.QueryRow(`SELECT stack_name FROM stacks WHERE app_id = $1`, appID).Scan(&stackName)
 	return stackName, err
-}
-
-func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
-	// Do the same thing as the ECS scheduler.
-	return nil
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a

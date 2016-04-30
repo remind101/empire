@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -83,36 +84,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	}
 
 	for _, p := range app.Processes {
+		cd := t.ContainerDefinition(p)
+
 		// CloudFormation only allows alphanumeric resource names, so we
 		// have to normalize it.
 		r := regexp.MustCompile("[^a-zA-Z0-9]")
 		key := r.ReplaceAllString(p.Type, "")
 
-		ulimits := []map[string]interface{}{}
-		if p.Nproc != 0 {
-			ulimits = []map[string]interface{}{
-				map[string]interface{}{
-					"Name":      "nproc",
-					"SoftLimit": p.Nproc,
-					"HardLimit": p.Nproc,
-				},
-			}
-		}
-
 		portMappings := []map[string]int64{}
-
-		labels := p.Labels
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-
-		environment := []map[string]string{}
-		for k, v := range p.Env {
-			environment = append(environment, map[string]string{
-				"Name":  k,
-				"Value": v,
-			})
-		}
 
 		loadBalancers := []map[string]interface{}{}
 		if p.Exposure != nil {
@@ -150,9 +129,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				"ContainerPort": ContainerPort,
 				"HostPort":      instancePort,
 			})
-			environment = append(environment, map[string]string{
-				"Name":  "PORT",
-				"Value": fmt.Sprintf("%d", ContainerPort),
+			cd.Environment = append(cd.Environment, &ecs.KeyValuePair{
+				Name:  aws.String("PORT"),
+				Value: aws.String(fmt.Sprintf("%d", ContainerPort)),
 			})
 
 			loadBalancer := fmt.Sprintf("%sLoadBalancer", key)
@@ -204,19 +183,19 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
 		containerDefinition := map[string]interface{}{
-			"Name":         p.Type,
-			"Command":      p.Command,
-			"Cpu":          p.CPUShares,
-			"Image":        p.Image.String(),
-			"Essential":    true,
-			"Memory":       p.MemoryLimit / bytesize.MB,
-			"Environment":  environment,
+			"Name":         *cd.Name,
+			"Command":      cd.Command,
+			"Cpu":          *cd.Cpu,
+			"Image":        *cd.Image,
+			"Essential":    *cd.Essential,
+			"Memory":       *cd.Memory,
+			"Environment":  cd.Environment,
 			"PortMappings": portMappings,
-			"DockerLabels": labels,
-			"Ulimits":      ulimits,
+			"DockerLabels": cd.DockerLabels,
+			"Ulimits":      cd.Ulimits,
 		}
-		if t.LogConfiguration != nil {
-			containerDefinition["LogConfiguration"] = t.LogConfiguration
+		if cd.LogConfiguration != nil {
+			containerDefinition["LogConfiguration"] = cd.LogConfiguration
 		}
 		resources[taskDefinition] = map[string]interface{}{
 			"Type": "AWS::ECS::TaskDefinition",
@@ -257,6 +236,52 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		"Resources":  resources,
 		"Outputs":    outputs,
 	}, nil
+}
+
+// ContainerDefinition generates an ECS ContainerDefinition for a process.
+func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.ContainerDefinition {
+	command := []*string{}
+	for _, s := range p.Command {
+		ss := s
+		command = append(command, &ss)
+	}
+
+	environment := []*ecs.KeyValuePair{}
+	for k, v := range p.Env {
+		environment = append(environment, &ecs.KeyValuePair{
+			Name:  aws.String(k),
+			Value: aws.String(v),
+		})
+	}
+
+	labels := make(map[string]*string)
+	for k, v := range p.Labels {
+		labels[k] = aws.String(v)
+	}
+
+	ulimits := []*ecs.Ulimit{}
+	if p.Nproc != 0 {
+		ulimits = []*ecs.Ulimit{
+			&ecs.Ulimit{
+				Name:      aws.String("nproc"),
+				SoftLimit: aws.Int64(int64(p.Nproc)),
+				HardLimit: aws.Int64(int64(p.Nproc)),
+			},
+		}
+	}
+
+	return &ecs.ContainerDefinition{
+		Name:             aws.String(p.Type),
+		Cpu:              aws.Int64(int64(p.CPUShares)),
+		Command:          command,
+		Image:            aws.String(p.Image.String()),
+		Essential:        aws.Bool(true),
+		Memory:           aws.Int64(int64(p.MemoryLimit / bytesize.MB)),
+		Environment:      environment,
+		LogConfiguration: t.LogConfiguration,
+		DockerLabels:     labels,
+		Ulimits:          ulimits,
+	}
 }
 
 // HostedZone returns the HostedZone for the ZoneID.
