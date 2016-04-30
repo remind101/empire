@@ -87,15 +87,30 @@ func newEmpire(c *cli.Context) (*empire.Empire, error) {
 // Scheduler ============================
 
 func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
-	scheduler := c.String(FlagScheduler)
-	switch scheduler {
-	case "cloudformation":
-		return newCloudFormationScheduler(db, c)
-	case "ecs":
-		return newECSScheduler(db, c)
-	default:
-		panic(fmt.Sprintf("unknown scheduler: %v", scheduler))
+	r, err := newDockerRunner(c)
+	if err != nil {
+		return nil, err
 	}
+
+	var s scheduler.Scheduler
+	name := c.String(FlagScheduler)
+	switch name {
+	case "cloudformation":
+		s, err = newCloudFormationScheduler(db, c)
+	case "ecs":
+		s, err = newECSScheduler(db, c)
+	default:
+		panic(fmt.Sprintf("unknown scheduler: %v", name))
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &scheduler.AttachedRunner{
+		Scheduler: s,
+		Runner:    r,
+	}, nil
 }
 
 func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
@@ -104,7 +119,9 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
 
 	config := newConfigProvider(c)
-	zone, err := cloudformation.HostedZone(config, c.String(FlagRoute53InternalZoneID))
+
+	zoneID := c.String(FlagRoute53InternalZoneID)
+	zone, err := cloudformation.HostedZone(config, zoneID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +140,16 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
 	s.Bucket = c.String(FlagS3TemplateBucket)
+
+	log.Println("Using CloudFormation backend with the following configuration:")
+	log.Println(fmt.Sprintf("  Cluster: %v", s.Cluster))
+	log.Println(fmt.Sprintf("  InternalSecurityGroupID: %v", t.InternalSecurityGroupID))
+	log.Println(fmt.Sprintf("  ExternalSecurityGroupID: %v", t.ExternalSecurityGroupID))
+	log.Println(fmt.Sprintf("  InternalSubnetIDs: %v", t.InternalSubnetIDs))
+	log.Println(fmt.Sprintf("  ExternalSubnetIDs: %v", t.ExternalSubnetIDs))
+	log.Println(fmt.Sprintf("  ZoneID: %v", zoneID))
+	log.Println(fmt.Sprintf("  LogConfiguration: %v", t.LogConfiguration))
+
 	return s, nil
 }
 
@@ -148,11 +175,6 @@ func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error)
 		return nil, err
 	}
 
-	r, err := newDockerRunner(c)
-	if err != nil {
-		return nil, err
-	}
-
 	log.Println("Using ECS backend with the following configuration:")
 	log.Println(fmt.Sprintf("  Cluster: %v", config.Cluster))
 	log.Println(fmt.Sprintf("  ServiceRole: %v", config.ServiceRole))
@@ -163,10 +185,7 @@ func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error)
 	log.Println(fmt.Sprintf("  ZoneID: %v", config.ZoneID))
 	log.Println(fmt.Sprintf("  LogConfiguration: %v", logConfiguration))
 
-	return &scheduler.AttachedRunner{
-		Scheduler: s,
-		Runner:    r,
-	}, nil
+	return s, nil
 }
 
 func newConfigProvider(c *cli.Context) client.ConfigProvider {
