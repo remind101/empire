@@ -44,6 +44,7 @@ func TestEmpireTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		tmpl := &EmpireTemplate{
+			ServiceRole: "ecsServiceRole",
 			HostedZone: &route53.HostedZone{
 				Id:   aws.String("Z3DG6IL3SJCGPX"),
 				Name: aws.String("empire"),

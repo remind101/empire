@@ -25,10 +25,15 @@ import (
 	"golang.org/x/net/context"
 )
 
+// The identifier of the ECS Service resource in CloudFormation.
 const ecsServiceType = "AWS::ECS::Service"
 
+// errNoStack can be returned when there's no CloudFormation stack for a given
+// app.
 var errNoStack = errors.New("no stack for app found")
 
+// cloudformationClient duck types the cloudformation.CloudFormation interface
+// that we use.
 type cloudformationClient interface {
 	CreateStack(*cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error)
 	UpdateStack(*cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error)
@@ -40,6 +45,7 @@ type cloudformationClient interface {
 	WaitUntilStackUpdateComplete(*cloudformation.DescribeStacksInput) error
 }
 
+// ecsClient duck types the ecs.ECS interface that we use.
 type ecsClient interface {
 	ListTasksPages(input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error
 	DescribeTaskDefinition(*ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error)
@@ -50,6 +56,7 @@ type ecsClient interface {
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 }
 
+// s3Client duck types the s3.S3 interface that we use.
 type s3Client interface {
 	PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error)
 }

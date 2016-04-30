@@ -133,6 +133,7 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 		InternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPrivate),
 		ExternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPublic),
 		HostedZone:              zone,
+		ServiceRole:             c.String(FlagECSServiceRole),
 		LogConfiguration:        logConfiguration,
 	}
 
