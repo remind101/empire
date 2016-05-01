@@ -40,7 +40,7 @@ func runServer(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
+	p := cloudformation.NewCustomResourceProvisioner(e, newConfigProvider(c))
 	p.Logger = newLogger()
 	p.Reporter = r
 	p.QueueURL = c.String(FlagCustomResourcesQueue)
