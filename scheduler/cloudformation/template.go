@@ -19,7 +19,7 @@ import (
 const (
 	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
 	// the container port. This is the port that processes within the container
-	// should bind to. Tihs value is also exposed to the container through the PORT
+	// should bind to. This value is also exposed to the container through the PORT
 	// environment variable.
 	ContainerPort = 8080
 

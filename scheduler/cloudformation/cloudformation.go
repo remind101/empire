@@ -379,8 +379,8 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	return resp.Tasks, err
 }
 
-// Services returns the names of the map that maps the name of a process to the
-// ARN of the ECS service.
+// Services returns a map that maps the name of the process (e.g. web) to the
+// ARN of the associated ECS service.
 func (s *Scheduler) Services(appID string) (map[string]string, error) {
 	stackName, err := s.stackName(appID)
 	if err != nil {
