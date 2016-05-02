@@ -81,9 +81,10 @@ type OrganizationApp struct {
 // if unspecified,  or in personal account, if default organization is not set.
 //
 // options is the struct of optional parameters for this action.
-func (c *Client) OrganizationAppCreate(options *OrganizationAppCreateOpts) (*OrganizationApp, error) {
+func (c *Client) OrganizationAppCreate(options *OrganizationAppCreateOpts, message string) (*OrganizationApp, error) {
+	rh := RequestHeaders{CommitMessage: message}
 	var organizationAppRes OrganizationApp
-	return &organizationAppRes, c.Post(&organizationAppRes, "/organizations/apps", options)
+	return &organizationAppRes, c.PostWithHeaders(&organizationAppRes, "/organizations/apps", options, rh.Headers())
 }
 
 // OrganizationAppCreateOpts holds the optional parameters for OrganizationAppCreate
@@ -108,7 +109,7 @@ type OrganizationAppCreateOpts struct {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) OrganizationAppList(lr *ListRange) ([]OrganizationApp, error) {
-	req, err := c.NewRequest("GET", "/organizations/apps", nil)
+	req, err := c.NewRequest("GET", "/organizations/apps", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,7 @@ func (c *Client) OrganizationAppList(lr *ListRange) ([]OrganizationApp, error) {
 // Organization. lr is an optional ListRange that sets the Range options for the
 // paginated list of results.
 func (c *Client) OrganizationAppListForOrganization(organizationIdentity string, lr *ListRange) ([]OrganizationApp, error) {
-	req, err := c.NewRequest("GET", "/organizations/"+organizationIdentity+"/apps", nil)
+	req, err := c.NewRequest("GET", "/organizations/"+organizationIdentity+"/apps", nil, nil)
 	if err != nil {
 		return nil, err
 	}

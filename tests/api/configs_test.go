@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 )
 
 func TestConfigVarUpdate(t *testing.T) {
@@ -79,7 +79,7 @@ func TestConfigVarInfo(t *testing.T) {
 }
 
 func mustConfigVarUpdate(t testing.TB, c *heroku.Client, appName string, options map[string]*string) map[string]string {
-	vars, err := c.ConfigVarUpdate(appName, options)
+	vars, err := c.ConfigVarUpdate(appName, options, "")
 	if err != nil {
 		t.Fatal(err)
 	}

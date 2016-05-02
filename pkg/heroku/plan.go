@@ -54,7 +54,7 @@ func (c *Client) PlanInfo(addonServiceIdentity string, planIdentity string) (*Pl
 // is an optional ListRange that sets the Range options for the paginated list
 // of results.
 func (c *Client) PlanList(addonServiceIdentity string, lr *ListRange) ([]Plan, error) {
-	req, err := c.NewRequest("GET", "/addon-services/"+addonServiceIdentity+"/plans", nil)
+	req, err := c.NewRequest("GET", "/addon-services/"+addonServiceIdentity+"/plans", nil, nil)
 	if err != nil {
 		return nil, err
 	}

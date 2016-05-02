@@ -63,8 +63,10 @@ func (c *Client) DynoCreate(appIdentity string, command string, options *DynoCre
 		params.Env = options.Env
 		params.Size = options.Size
 	}
+
+	rh := RequestHeaders{CommitMessage: options.Message}
 	var dynoRes Dyno
-	return &dynoRes, c.Post(&dynoRes, "/apps/"+appIdentity+"/dynos", params)
+	return &dynoRes, c.PostWithHeaders(&dynoRes, "/apps/"+appIdentity+"/dynos", params, rh.Headers())
 }
 
 // DynoCreateOpts holds the optional parameters for DynoCreate
@@ -75,21 +77,25 @@ type DynoCreateOpts struct {
 	Env *map[string]string `json:"env,omitempty"`
 	// dyno size (default: "1X")
 	Size *string `json:"size,omitempty"`
+	// commit message
+	Message string
 }
 
 // Restart dyno.
 //
 // appIdentity is the unique identifier of the Dyno's App. dynoIdentity is the
 // unique identifier of the Dyno.
-func (c *Client) DynoRestart(appIdentity string, dynoIdentity string) error {
-	return c.Delete("/apps/" + appIdentity + "/dynos/" + dynoIdentity)
+func (c *Client) DynoRestart(appIdentity, dynoIdentity, message string) error {
+	rh := RequestHeaders{CommitMessage: message}
+	return c.DeleteWithHeaders("/apps/"+appIdentity+"/dynos/"+dynoIdentity, rh.Headers())
 }
 
 // Restart all dynos
 //
 // appIdentity is the unique identifier of the Dyno's App.
-func (c *Client) DynoRestartAll(appIdentity string) error {
-	return c.Delete("/apps/" + appIdentity + "/dynos")
+func (c *Client) DynoRestartAll(appIdentity, message string) error {
+	rh := RequestHeaders{CommitMessage: message}
+	return c.DeleteWithHeaders("/apps/"+appIdentity+"/dynos", rh.Headers())
 }
 
 // Info for existing dyno.
@@ -106,7 +112,7 @@ func (c *Client) DynoInfo(appIdentity string, dynoIdentity string) (*Dyno, error
 // appIdentity is the unique identifier of the Dyno's App. lr is an optional
 // ListRange that sets the Range options for the paginated list of results.
 func (c *Client) DynoList(appIdentity string, lr *ListRange) ([]Dyno, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/dynos", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/dynos", nil, nil)
 	if err != nil {
 		return nil, err
 	}

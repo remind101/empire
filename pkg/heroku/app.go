@@ -90,8 +90,9 @@ type AppCreateOpts struct {
 // Delete an existing app.
 //
 // appIdentity is the unique identifier of the App.
-func (c *Client) AppDelete(appIdentity string) error {
-	return c.Delete("/apps/" + appIdentity)
+func (c *Client) AppDelete(appIdentity, message string) error {
+	rh := RequestHeaders{CommitMessage: message}
+	return c.DeleteWithHeaders("/apps/"+appIdentity, rh.Headers())
 }
 
 // Info for existing app.
@@ -107,7 +108,7 @@ func (c *Client) AppInfo(appIdentity string) (*App, error) {
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) AppList(lr *ListRange) ([]App, error) {
-	req, err := c.NewRequest("GET", "/apps", nil)
+	req, err := c.NewRequest("GET", "/apps", nil, nil)
 	if err != nil {
 		return nil, err
 	}

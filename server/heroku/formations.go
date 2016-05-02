@@ -34,6 +34,11 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return err
 	}
 
+	m, err := findMessage(r)
+	if err != nil {
+		return err
+	}
+
 	// Create the response object
 	var resp []*Formation
 	for _, up := range form.Updates {
@@ -43,6 +48,7 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 			Process:     up.Process,
 			Quantity:    up.Quantity,
 			Constraints: up.Size,
+			Message:     m,
 		})
 		if err != nil {
 			return err

@@ -78,7 +78,7 @@ func (c *Client) AppTransferInfo(appTransferIdentity string) (*AppTransfer, erro
 // lr is an optional ListRange that sets the Range options for the paginated
 // list of results.
 func (c *Client) AppTransferList(lr *ListRange) ([]AppTransfer, error) {
-	req, err := c.NewRequest("GET", "/account/app-transfers", nil)
+	req, err := c.NewRequest("GET", "/account/app-transfers", nil, nil)
 	if err != nil {
 		return nil, err
 	}

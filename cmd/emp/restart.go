@@ -7,11 +7,12 @@ import (
 )
 
 var cmdRestart = &Command{
-	Run:      runRestart,
-	Usage:    "restart [<type or name>]",
-	NeedsApp: true,
-	Category: "dyno",
-	Short:    "restart dynos (or stop a dyno started with 'emp run')",
+	Run:             runRestart,
+	Usage:           "restart [<type or name>]",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "dyno",
+	Short:           "restart dynos (or stop a dyno started with 'emp run')",
 	Long: `
 Restart all app dynos, all dynos of a specific type, or a single dyno. If used
 on a dyno started using 'emp run' this will effectively stop it.
@@ -35,13 +36,14 @@ func runRestart(cmd *Command, args []string) {
 		cmd.PrintUsage()
 		os.Exit(2)
 	}
+	message := getMessage()
 
 	target := "all"
 	if len(args) == 1 {
 		target = args[0]
-		must(client.DynoRestart(appname, target))
+		must(client.DynoRestart(appname, target, message))
 	} else {
-		must(client.DynoRestartAll(appname))
+		must(client.DynoRestartAll(appname, message))
 	}
 
 	switch {

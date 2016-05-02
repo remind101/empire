@@ -8,10 +8,11 @@ import (
 )
 
 var cmdDestroy = &Command{
-	Run:      runDestroy,
-	Usage:    "destroy <name>",
-	Category: "app",
-	Short:    "destroy an app",
+	Run:             runDestroy,
+	Usage:           "destroy <name>",
+	OptionalMessage: true,
+	Category:        "app",
+	Short:           "destroy an app",
 	Long: `
 Destroy destroys a heroku app. There is no going back, so be
 sure you mean it. The command will prompt for confirmation, or
@@ -34,11 +35,12 @@ func runDestroy(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 	appname := args[0]
+	message := getMessage()
 
 	warning := fmt.Sprintf("This will destroy %s and its add-ons. Please type %q to continue:", appname, appname)
 	mustConfirm(warning, appname)
 
-	must(client.AppDelete(appname))
+	must(client.AppDelete(appname, message))
 	log.Printf("Destroyed %s.", appname)
 	remotes, _ := gitRemotes()
 	for remote, remoteApp := range remotes {

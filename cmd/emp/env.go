@@ -67,11 +67,12 @@ func runGet(cmd *Command, args []string) {
 }
 
 var cmdSet = &Command{
-	Run:      runSet,
-	Usage:    "set <name>=<value>...",
-	NeedsApp: true,
-	Category: "config",
-	Short:    "set env var",
+	Run:             runSet,
+	Usage:           "set <name>=<value>...",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "config",
+	Short:           "set env var",
 	Long: `
 Set the value of an env var.
 
@@ -84,6 +85,7 @@ Example:
 
 func runSet(cmd *Command, args []string) {
 	appname := mustApp()
+	message := getMessage()
 	if len(args) == 0 {
 		cmd.PrintUsage()
 		os.Exit(2)
@@ -97,17 +99,18 @@ func runSet(cmd *Command, args []string) {
 		val := arg[i+1:]
 		config[arg[:i]] = &val
 	}
-	_, err := client.ConfigVarUpdate(appname, config)
+	_, err := client.ConfigVarUpdate(appname, config, message)
 	must(err)
 	log.Printf("Set env vars and restarted " + appname + ".")
 }
 
 var cmdUnset = &Command{
-	Run:      runUnset,
-	Usage:    "unset <name>...",
-	NeedsApp: true,
-	Category: "config",
-	Short:    "unset env var",
+	Run:             runUnset,
+	Usage:           "unset <name>...",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "config",
+	Short:           "unset env var",
 	Long: `
 Unset an env var.
 
@@ -120,6 +123,7 @@ Example:
 
 func runUnset(cmd *Command, args []string) {
 	appname := mustApp()
+	message := getMessage()
 	if len(args) == 0 {
 		cmd.PrintUsage()
 		os.Exit(2)
@@ -128,17 +132,18 @@ func runUnset(cmd *Command, args []string) {
 	for _, key := range args {
 		config[key] = nil
 	}
-	_, err := client.ConfigVarUpdate(appname, config)
+	_, err := client.ConfigVarUpdate(appname, config, message)
 	must(err)
 	log.Printf("Unset env vars and restarted %s.", appname)
 }
 
 var cmdEnvLoad = &Command{
-	Run:      runEnvLoad,
-	Usage:    "env-load <file>",
-	NeedsApp: true,
-	Category: "config",
-	Short:    "load env file",
+	Run:             runEnvLoad,
+	Usage:           "env-load <file>",
+	NeedsApp:        true,
+	OptionalMessage: true,
+	Category:        "config",
+	Short:           "load env file",
 	Long: `
 Loads environment variables from a file.
 
@@ -151,6 +156,7 @@ Example:
 
 func runEnvLoad(cmd *Command, args []string) {
 	appname := mustApp()
+	message := getMessage()
 	if len(args) != 1 {
 		cmd.PrintUsage()
 		os.Exit(2)
@@ -169,7 +175,7 @@ func runEnvLoad(cmd *Command, args []string) {
 		}
 	}
 
-	_, err = client.ConfigVarUpdate(appname, config)
+	_, err = client.ConfigVarUpdate(appname, config, message)
 	must(err)
 	log.Printf("Updated env vars from %s and restarted %s.", args[0], appname)
 }

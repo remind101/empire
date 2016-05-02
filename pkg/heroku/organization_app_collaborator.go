@@ -84,7 +84,7 @@ func (c *Client) OrganizationAppCollaboratorInfo(appIdentity string, collaborato
 // App. lr is an optional ListRange that sets the Range options for the
 // paginated list of results.
 func (c *Client) OrganizationAppCollaboratorList(appIdentity string, lr *ListRange) ([]OrganizationAppCollaborator, error) {
-	req, err := c.NewRequest("GET", "/organizations/apps/"+appIdentity+"/collaborators", nil)
+	req, err := c.NewRequest("GET", "/organizations/apps/"+appIdentity+"/collaborators", nil, nil)
 	if err != nil {
 		return nil, err
 	}

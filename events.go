@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+func appendCommitMessage(main, commit string) string {
+	output := main
+	if commit != "" {
+		output = fmt.Sprintf("%s: '%s'", main, commit)
+	}
+	return output
+}
+
 // RunEvent is triggered when a user starts a one off process.
 type RunEvent struct {
 	User     string
@@ -13,6 +21,7 @@ type RunEvent struct {
 	Command  Command
 	URL      string
 	Attached bool
+	Message  string
 }
 
 func (e RunEvent) Event() string {
@@ -28,14 +37,15 @@ func (e RunEvent) String() string {
 	if e.URL != "" {
 		msg = fmt.Sprintf("%s (<%s|logs>)", msg, e.URL)
 	}
-	return msg
+	return appendCommitMessage(msg, e.Message)
 }
 
 // RestartEvent is triggered when a user restarts an application.
 type RestartEvent struct {
-	User string
-	App  string
-	PID  string
+	User    string
+	App     string
+	PID     string
+	Message string
 }
 
 func (e RestartEvent) Event() string {
@@ -43,11 +53,13 @@ func (e RestartEvent) Event() string {
 }
 
 func (e RestartEvent) String() string {
+	msg := ""
 	if e.PID == "" {
-		return fmt.Sprintf("%s restarted %s", e.User, e.App)
+		msg = fmt.Sprintf("%s restarted %s", e.User, e.App)
+	} else {
+		msg = fmt.Sprintf("%s restarted `%s` on %s", e.User, e.PID, e.App)
 	}
-
-	return fmt.Sprintf("%s restarted `%s` on %s", e.User, e.PID, e.App)
+	return appendCommitMessage(msg, e.Message)
 }
 
 // ScaleEvent is triggered when a manual scaling event happens.
@@ -59,6 +71,7 @@ type ScaleEvent struct {
 	PreviousQuantity    int
 	Constraints         Constraints
 	PreviousConstraints Constraints
+	Message             string
 }
 
 func (e ScaleEvent) Event() string {
@@ -80,7 +93,8 @@ func (e ScaleEvent) String() string {
 		newConstraints.Nproc = e.PreviousConstraints.Nproc
 	}
 
-	return fmt.Sprintf("%s scaled `%s` on %s from %d(%s) to %d(%s)", e.User, e.Process, e.App, e.PreviousQuantity, e.PreviousConstraints, e.Quantity, newConstraints)
+	msg := fmt.Sprintf("%s scaled `%s` on %s from %d(%s) to %d(%s)", e.User, e.Process, e.App, e.PreviousQuantity, e.PreviousConstraints, e.Quantity, newConstraints)
+	return appendCommitMessage(msg, e.Message)
 }
 
 // DeployEvent is triggered when a user deploys a new image to an app.
@@ -90,6 +104,7 @@ type DeployEvent struct {
 	Image       string
 	Environment string
 	Release     int
+	Message     string
 }
 
 func (e DeployEvent) Event() string {
@@ -97,11 +112,13 @@ func (e DeployEvent) Event() string {
 }
 
 func (e DeployEvent) String() string {
+	msg := ""
 	if e.App == "" {
-		return fmt.Sprintf("%s deployed %s", e.User, e.Image)
+		msg = fmt.Sprintf("%s deployed %s", e.User, e.Image)
+	} else {
+		msg = fmt.Sprintf("%s deployed %s to %s %s (v%d)", e.User, e.Image, e.App, e.Environment, e.Release)
 	}
-
-	return fmt.Sprintf("%s deployed %s to %s %s (v%d)", e.User, e.Image, e.App, e.Environment, e.Release)
+	return appendCommitMessage(msg, e.Message)
 }
 
 // RollbackEvent is triggered when a user rolls back to an old version.
@@ -109,6 +126,7 @@ type RollbackEvent struct {
 	User    string
 	App     string
 	Version int
+	Message string
 }
 
 func (e RollbackEvent) Event() string {
@@ -116,7 +134,8 @@ func (e RollbackEvent) Event() string {
 }
 
 func (e RollbackEvent) String() string {
-	return fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
+	msg := fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
+	return appendCommitMessage(msg, e.Message)
 }
 
 // SetEvent is triggered when environment variables are changed on an
@@ -125,6 +144,7 @@ type SetEvent struct {
 	User    string
 	App     string
 	Changed []string
+	Message string
 }
 
 func (e SetEvent) Event() string {
@@ -132,13 +152,15 @@ func (e SetEvent) Event() string {
 }
 
 func (e SetEvent) String() string {
-	return fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
+	msg := fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
+	return appendCommitMessage(msg, e.Message)
 }
 
 // CreateEvent is triggered when a user creates a new application.
 type CreateEvent struct {
-	User string
-	Name string
+	User    string
+	Name    string
+	Message string
 }
 
 func (e CreateEvent) Event() string {
@@ -146,13 +168,15 @@ func (e CreateEvent) Event() string {
 }
 
 func (e CreateEvent) String() string {
-	return fmt.Sprintf("%s created %s", e.User, e.Name)
+	msg := fmt.Sprintf("%s created %s", e.User, e.Name)
+	return appendCommitMessage(msg, e.Message)
 }
 
 // DestroyEvent is triggered when a user destroys an application.
 type DestroyEvent struct {
-	User string
-	App  string
+	User    string
+	App     string
+	Message string
 }
 
 func (e DestroyEvent) Event() string {
@@ -160,7 +184,8 @@ func (e DestroyEvent) Event() string {
 }
 
 func (e DestroyEvent) String() string {
-	return fmt.Sprintf("%s destroyed %s", e.User, e.App)
+	msg := fmt.Sprintf("%s destroyed %s", e.User, e.App)
+	return appendCommitMessage(msg, e.Message)
 }
 
 // Event represents an event triggered within Empire.

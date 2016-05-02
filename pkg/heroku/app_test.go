@@ -227,7 +227,7 @@ func TestAppDeleteSuccess(t *testing.T) {
 	ts, handler, c := newTestServerAndClient(t, appDeleteRequest)
 	defer ts.Close()
 
-	err := c.AppDelete("example")
+	err := c.AppDelete("example", "")
 	if err != nil {
 		t.Fatal(err)
 	}

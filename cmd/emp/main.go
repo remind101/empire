@@ -25,11 +25,12 @@ var (
 
 type Command struct {
 	// args does not include the command name
-	Run         func(cmd *Command, args []string)
-	Flag        flag.FlagSet
-	NeedsApp    bool
-	OptionalApp bool
-	NoClient    bool
+	Run             func(cmd *Command, args []string)
+	Flag            flag.FlagSet
+	NeedsApp        bool
+	OptionalApp     bool
+	NoClient        bool
+	OptionalMessage bool
 
 	Usage    string // first word is the command name
 	Category string // i.e. "App", "Account", etc.
@@ -54,8 +55,19 @@ func (c *Command) PrintLongUsage() {
 }
 
 func (c *Command) FullUsage() string {
+	var parts []string
 	if c.NeedsApp || c.OptionalApp {
-		return c.Name() + " [-a <app or remote>]" + strings.TrimPrefix(c.Usage, c.Name())
+		parts = append(parts, "[-a <app or remote>]")
+	}
+
+	if c.OptionalMessage {
+		parts = append(parts, "[-m <message>]")
+	}
+
+	if len(parts) > 0 {
+		// NB: no space between last two placeholders because of
+		// strings.TrimPrefix behavior
+		return fmt.Sprintf("%s %s%s", c.Name(), strings.Join(parts, " "), strings.TrimPrefix(c.Usage, c.Name()))
 	}
 	return c.Usage
 }
@@ -139,10 +151,11 @@ var commands = []*Command{
 }
 
 var (
-	flagApp   string
-	client    *heroku.Client
-	hkAgent   = "hk/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
-	userAgent = hkAgent + " " + heroku.DefaultUserAgent
+	flagApp     string
+	flagMessage string
+	client      *heroku.Client
+	hkAgent     = "hk/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
+	userAgent   = hkAgent + " " + heroku.DefaultUserAgent
 )
 
 func initClients() {
@@ -190,6 +203,9 @@ func main() {
 			}
 			if cmd.NeedsApp || cmd.OptionalApp {
 				cmd.Flag.StringVarP(&flagApp, "app", "a", "", "app name")
+			}
+			if cmd.OptionalMessage {
+				cmd.Flag.StringVarP(&flagMessage, "message", "m", "", "message")
 			}
 			if err := cmd.Flag.Parse(args[1:]); err == flag.ErrHelp {
 				cmdHelp.Run(cmdHelp, args[:1])
@@ -257,6 +273,10 @@ func mustApp() string {
 		printFatal(err.Error())
 	}
 	return name
+}
+
+func getMessage() string {
+	return flagMessage
 }
 
 // matchesCommand checks if the Command matches the command that we want to run.

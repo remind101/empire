@@ -50,7 +50,7 @@ func (c *Client) FormationInfo(appIdentity string, formationIdentity string) (*F
 // optional ListRange that sets the Range options for the paginated list of
 // results.
 func (c *Client) FormationList(appIdentity string, lr *ListRange) ([]Formation, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/formation", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/formation", nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +69,15 @@ func (c *Client) FormationList(appIdentity string, lr *ListRange) ([]Formation, 
 // Array with formation updates. Each element must have "process", the id or
 // name of the process type to be updated, and can optionally update its
 // "quantity" or "size".
-func (c *Client) FormationBatchUpdate(appIdentity string, updates []FormationBatchUpdateOpts) ([]Formation, error) {
+func (c *Client) FormationBatchUpdate(appIdentity string, updates []FormationBatchUpdateOpts, message string) ([]Formation, error) {
 	params := struct {
 		Updates []FormationBatchUpdateOpts `json:"updates"`
 	}{
 		Updates: updates,
 	}
+	rh := RequestHeaders{CommitMessage: message}
 	var formationsRes []Formation
-	return formationsRes, c.Patch(&formationsRes, "/apps/"+appIdentity+"/formation", params)
+	return formationsRes, c.PatchWithHeaders(&formationsRes, "/apps/"+appIdentity+"/formation", params, rh.Headers())
 }
 
 type FormationBatchUpdateOpts struct {

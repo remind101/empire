@@ -20,7 +20,7 @@ func TestAdditionalHeaders(t *testing.T) {
 		"Fake-Header":     []string{"value"},
 		"X-Heroku-Header": multival,
 	}}
-	req, err := c.NewRequest("GET", "/", nil)
+	req, err := c.NewRequest("GET", "/", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestAdditionalHeaders(t *testing.T) {
 
 func TestRequestId(t *testing.T) {
 	c := &Client{}
-	req, err := c.NewRequest("GET", "/", nil)
+	req, err := c.NewRequest("GET", "/", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestRequestId(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	c := &Client{}
-	req, err := c.NewRequest("GET", "/", nil)
+	req, err := c.NewRequest("GET", "/", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestUserAgent(t *testing.T) {
 	// try a custom User-Agent
 	customAgent := "custom-client 2.1 " + DefaultUserAgent
 	c.UserAgent = customAgent
-	req, err = c.NewRequest("GET", "/", nil)
+	req, err = c.NewRequest("GET", "/", nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

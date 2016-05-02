@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -119,10 +119,16 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
+	m, err := findMessage(r)
+	if err != nil {
+		return err
+	}
+
 	release, err := h.Rollback(ctx, empire.RollbackOpts{
 		User:    UserFromContext(ctx),
 		App:     app,
 		Version: version,
+		Message: m,
 	})
 	if err != nil {
 		return err

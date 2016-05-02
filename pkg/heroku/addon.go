@@ -82,7 +82,7 @@ func (c *Client) AddonInfo(appIdentity string, addonIdentity string) (*Addon, er
 // appIdentity is the unique identifier of the Addon's App. lr is an optional
 // ListRange that sets the Range options for the paginated list of results.
 func (c *Client) AddonList(appIdentity string, lr *ListRange) ([]Addon, error) {
-	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/addons", nil)
+	req, err := c.NewRequest("GET", "/apps/"+appIdentity+"/addons", nil, nil)
 	if err != nil {
 		return nil, err
 	}

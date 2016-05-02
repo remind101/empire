@@ -184,7 +184,7 @@ func attemptLogin(username, password, twoFactorCode string) (hostname, token str
 		ExpiresIn:   &expires,
 	}
 
-	req, err := client.NewRequest("POST", "/oauth/authorizations", &opts)
+	req, err := client.NewRequest("POST", "/oauth/authorizations", &opts, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("unknown error when creating login request: %s", err.Error())
 	}

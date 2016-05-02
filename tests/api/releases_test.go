@@ -67,7 +67,7 @@ func mustReleaseInfo(t testing.TB, c *heroku.Client, appName string, version str
 }
 
 func mustReleaseRollback(t testing.TB, c *heroku.Client, appName string, version string) *heroku.Release {
-	release, err := c.ReleaseRollback(appName, version)
+	release, err := c.ReleaseRollback(appName, version, "")
 	if err != nil {
 		t.Fatal(err)
 	}
