@@ -36,7 +36,6 @@ const (
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
 
-	FlagScheduler            = "scheduler"
 	FlagAWSDebug             = "aws.debug"
 	FlagS3TemplateBucket     = "s3.templatebucket"
 	FlagCustomResourcesTopic = "customresources.topic"
@@ -186,12 +185,6 @@ var EmpireFlags = []cli.Flag{
 		Value:  path.Join(os.Getenv("HOME"), ".dockercfg"),
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
-	},
-	cli.StringFlag{
-		Name:   FlagScheduler,
-		Value:  "ecs",
-		Usage:  "The scheduler backend to use. Can be `ecs` or `cloudformation`.",
-		EnvVar: "EMPIRE_SCHEDULER",
 	},
 	cli.BoolFlag{
 		Name:   FlagAWSDebug,

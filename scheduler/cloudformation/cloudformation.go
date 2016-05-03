@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -26,8 +25,17 @@ import (
 	"golang.org/x/net/context"
 )
 
-// The identifier of the ECS Service resource in CloudFormation.
-const ecsServiceType = "AWS::ECS::Service"
+// The name of the output key where process names are mapped to ECS services.
+// This output is expected to be a comma delimited list of `process=servicearn`
+// values.
+const servicesOutput = "Services"
+
+// CloudFormation limits
+//
+// See http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html
+const (
+	MaxTemplateSize = 460800 // bytes
+)
 
 // DefaultStackNameTemplate is the default text/template for generating a
 // CloudFormation stack name for an app.
@@ -72,19 +80,12 @@ type Template interface {
 	Execute(wr io.Writer, data interface{}) error
 }
 
-// Templates should add metadata to the ECS resources with the following
-// structure.
-type serviceMetadata struct {
-	// This is the name of the process that this ECS service is for.
-	Name string `json:"name"`
-}
-
 // Scheduler implements the scheduler.Scheduler interface using CloudFormation
 // to provision resources.
 type Scheduler struct {
 	// Template is a text/template that will be executed using the
 	// twelvefactor.Manifest as data. This template should return a valid
-	// CloudFormation JSON manifest.
+	// CloudFormation JSON template.
 	Template Template
 
 	// The ECS cluster to run tasks in.
@@ -127,12 +128,30 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
+	return s.SubmitWithOptions(ctx, app, SubmitOptions{
+		Wait: s.Wait,
+	})
+}
+
+// SubmitOptions are options provided to SubmitWithOptions.
+type SubmitOptions struct {
+	// If true, waits to for the stack to complete the create/update
+	// successfully.
+	Wait bool
+
+	// When true, does not make any changes to DNS. This is only used when
+	// migrating to this scheduler
+	NoDNS bool
+}
+
+// SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app)
+	err = s.submit(ctx, tx, app, opts)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -142,7 +161,9 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, opts SubmitOptions) error {
+	wait := opts.Wait
+
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -175,14 +196,10 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error uploading stack template to s3: %v", err)
 	}
 
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
-
-	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
 
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
@@ -197,7 +214,14 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
 		})
 	}
+	parameters = append(parameters, &cloudformation.Parameter{
+		ParameterKey:   aws.String("DNS"),
+		ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
+	})
 
+	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
 			StackName:   aws.String(stackName),
@@ -205,10 +229,10 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 			Tags:        tags,
 			Parameters:  parameters,
 		}); err != nil {
-			return err
+			return fmt.Errorf("error creating stack: %v", err)
 		}
 
-		if s.Wait {
+		if wait {
 			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 				StackName: aws.String(stackName),
 			}); err != nil {
@@ -222,11 +246,11 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 			Parameters:  parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}); err != nil {
+		}, wait); err != nil {
 			return err
 		}
 	} else {
-		return err
+		return fmt.Errorf("error describing stack: %v", err)
 	}
 
 	return nil
@@ -236,7 +260,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 // stable state before starting.
 //
 // TODO: Timeout?
-func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
+func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput, wait bool) (*cloudformation.UpdateStackOutput, error) {
 	status := *stack.StackStatus
 	stackName := input.StackName
 
@@ -284,10 +308,16 @@ func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformati
 
 	resp, err := s.cloudformation.UpdateStack(input)
 	if err != nil {
-		return resp, err
+		if err, ok := err.(awserr.Error); ok {
+			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
+				return resp, nil
+			}
+		}
+
+		return resp, fmt.Errorf("error updating stack: %v", err)
 	}
 
-	if s.Wait {
+	if wait {
 		if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
 			StackName: stackName,
 		}); err != nil {
@@ -329,7 +359,7 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
 	}); err != nil {
-		return err
+		return fmt.Errorf("error deleting stack: %v", err)
 	}
 
 	return nil
@@ -404,7 +434,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	var arns []*string
 
 	// Find all of the tasks started by the ECS services.
-	for _, serviceArn := range services {
+	for process, serviceArn := range services {
 		id, err := arn.ResourceID(serviceArn)
 		if err != nil {
 			return nil, err
@@ -418,7 +448,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 			taskArns = append(taskArns, resp.TaskArns...)
 			return true
 		}); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error listing tasks for %s: %v", process, err)
 		}
 
 		if len(taskArns) == 0 {
@@ -436,15 +466,18 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		arns = append(arns, resp.TaskArns...)
 		return true
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error listing tasks started by %s: %v", app, err)
 	}
 
 	resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: aws.String(s.Cluster),
 		Tasks:   arns,
 	})
+	if err != nil {
+		return resp.Tasks, fmt.Errorf("error describing tasks: %v", err)
+	}
 
-	return resp.Tasks, err
+	return resp.Tasks, nil
 }
 
 // Services returns a map that maps the name of the process (e.g. web) to the
@@ -455,38 +488,31 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, err
 	}
 
-	// Get a summary of all of the stacks resources.
-	var summaries []*cloudformation.StackResourceSummary
-	if err := s.cloudformation.ListStackResourcesPages(&cloudformation.ListStackResourcesInput{
+	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
-	}, func(p *cloudformation.ListStackResourcesOutput, lastPage bool) bool {
-		summaries = append(summaries, p.StackResourceSummaries...)
-		return true
-	}); err != nil {
-		return nil, err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
 
-	services := make(map[string]string)
-	for _, summary := range summaries {
-		if *summary.ResourceType == ecsServiceType {
-			resp, err := s.cloudformation.DescribeStackResource(&cloudformation.DescribeStackResourceInput{
-				StackName:         aws.String(stackName),
-				LogicalResourceId: summary.LogicalResourceId,
-			})
-			if err != nil {
-				return services, err
-			}
+	stack := resp.Stacks[0]
 
-			var meta serviceMetadata
-			if err := json.Unmarshal([]byte(*resp.StackResourceDetail.Metadata), &meta); err != nil {
-				return services, err
-			}
-
-			services[meta.Name] = *resp.StackResourceDetail.PhysicalResourceId
+	var output *cloudformation.Output
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == servicesOutput {
+			output = o
 		}
 	}
+	if output == nil {
+		// Nothing to do but wait until the outputs are set.
+		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
+			return nil, nil
+		}
 
-	return services, nil
+		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
+	}
+
+	return extractServices(*output.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
@@ -522,13 +548,7 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
 			},
 		},
-	})
-
-	if err, ok := err.(awserr.Error); ok {
-		if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
-			return nil
-		}
-	}
+	}, s.Wait)
 
 	return err
 }
@@ -577,6 +597,20 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 		return "", errNoStack
 	}
 	return stackName, err
+}
+
+// extractServices extracts a map that maps the process name to the ARN of the
+// associated ECS service.
+func extractServices(value string) map[string]string {
+	services := make(map[string]string)
+	pairs := strings.Split(value, ",")
+
+	for _, p := range pairs {
+		parts := strings.Split(p, "=")
+		services[parts[0]] = parts[1]
+	}
+
+	return services
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a

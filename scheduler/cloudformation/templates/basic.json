@@ -1,6 +1,52 @@
 {
-  "Outputs": {},
+  "Conditions": {
+    "DNSCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "DNS"
+        },
+        "true"
+      ]
+    }
+  },
+  "Outputs": {
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Ref": "web"
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "worker",
+                  {
+                    "Ref": "worker"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
   "Parameters": {
+    "DNS": {
+      "Description": "When set to `true`, CNAME's will be altered",
+      "Type": "String"
+    },
     "webScale": {
       "Type": "String"
     },
@@ -10,12 +56,16 @@
   },
   "Resources": {
     "CNAME": {
+      "Condition": "DNSCondition",
       "Properties": {
         "HostedZoneId": "Z3DG6IL3SJCGPX",
         "Name": "acme-inc.empire",
         "ResourceRecords": [
           {
-            "Ref": "webLoadBalancer"
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
           }
         ],
         "TTL": 60,
@@ -24,9 +74,6 @@
       "Type": "AWS::Route53::RecordSet"
     },
     "web": {
-      "Metadata": {
-        "name": "web"
-      },
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
@@ -138,9 +185,6 @@
       "Type": "AWS::ECS::TaskDefinition"
     },
     "worker": {
-      "Metadata": {
-        "name": "worker"
-      },
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
