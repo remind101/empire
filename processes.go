@@ -26,6 +26,16 @@ func ParseCommand(command string) (Command, error) {
 	return shellwords.Parse(command)
 }
 
+// MustParseCommand parses the string into a Command, panicing if there's an
+// error. This method should only be used in tests for convenience.
+func MustParseCommand(command string) Command {
+	c, err := ParseCommand(command)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 // Scan implements the sql.Scanner interface.
 func (c *Command) Scan(src interface{}) error {
 	bytes, ok := src.([]byte)
