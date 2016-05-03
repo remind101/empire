@@ -163,7 +163,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 		return err
 	}
 
-	key := fmt.Sprintf("%x", sha1.Sum(buf.Bytes()))
+	key := fmt.Sprintf("%s/%s/%x", app.Name, app.ID, sha1.Sum(buf.Bytes()))
 
 	_, err = s.s3.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String(s.Bucket),
