@@ -136,7 +136,7 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 	}
 
 	if err := t.Validate(); err != nil {
-		return nil, fmt.Errorf("error validating CloudFormation template: %v")
+		return nil, fmt.Errorf("error validating CloudFormation template: %v", err)
 	}
 
 	var tags []*cf.Tag
