@@ -257,7 +257,11 @@ func CheckResp(res *http.Response) error {
 		if err != nil {
 			return errors.New("Unexpected error: " + res.Status)
 		}
-		return Error{error: errors.New(e.Message), Id: e.Id, URL: e.URL}
+		ret := Error{error: errors.New(e.Message), Id: e.Id, URL: e.URL}
+		if e.Id == "message_required" {
+			panic(ret)
+		}
+		return err
 	}
 	if msg := res.Header.Get("X-Heroku-Warning"); msg != "" {
 		fmt.Fprintln(os.Stderr, strings.TrimSpace(msg))

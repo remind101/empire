@@ -1,12 +1,14 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 )
@@ -44,6 +46,11 @@ var (
 		ID:      "not_found",
 		Message: "Support for uploading SSL certificates through Empire has been removed and replaced with certificate attachments.",
 		URL:     "http://empire.readthedocs.org/en/latest/ssl_certs/",
+	}
+	ErrMessageRequired = &ErrorResource{
+		Status:  http.StatusBadRequest,
+		ID:      "message_required",
+		Message: fmt.Sprintf("Header '%s' is required", heroku.CommitMessageHeader),
 	}
 )
 
