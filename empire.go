@@ -79,6 +79,9 @@ type Empire struct {
 
 	// RunRecorder is used to record the logs from interactive runs.
 	RunRecorder RunRecorder
+
+	// MessagesRequired is a boolean used to determine if messages should be required for events.
+	MessagesRequired bool
 }
 
 // New returns a new Empire instance.
@@ -103,6 +106,11 @@ func New(db *DB, options Options) *Empire {
 	e.releases = &releasesService{Empire: e}
 	e.certs = &certsService{Empire: e}
 	return e
+}
+
+// ShouldRequireMessages returns a boolean if messages are required for actions
+func (e *Empire) ShouldRequireMessages() bool {
+	return e.MessagesRequired
 }
 
 // AccessTokensFind finds an access token.

@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -169,6 +170,15 @@ func UserFromContext(ctx context.Context) *empire.User {
 	return u
 }
 
-func findMessage(r *http.Request) (string, error) {
-	return r.Header.Get(heroku.CommitMessageHeader), nil
+type shouldRequireMessages interface {
+	ShouldRequireMessages() bool
+}
+
+func findMessage(r *http.Request, e shouldRequireMessages) (string, error) {
+	var err error
+	h := r.Header.Get(heroku.CommitMessageHeader)
+	if e.ShouldRequireMessages() && h == "" {
+		err = fmt.Errorf("Header '%s' is required", heroku.CommitMessageHeader)
+	}
+	return h, err
 }

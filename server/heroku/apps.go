@@ -69,7 +69,7 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	m, err := findMessage(r)
+	m, err := findMessage(r, h)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (h *DeployApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	opts, err := newDeploymentsCreateOpts(ctx, w, r)
+	opts, err := newDeploymentsCreateOpts(ctx, w, r, h)
 	opts.App = a
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	m, err := findMessage(r)
+	m, err := findMessage(r, h)
 	if err != nil {
 		return err
 	}

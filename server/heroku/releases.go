@@ -119,7 +119,7 @@ func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	m, err := findMessage(r)
+	m, err := findMessage(r, h)
 	if err != nil {
 		return err
 	}

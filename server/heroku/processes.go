@@ -76,7 +76,7 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	m, err := findMessage(r)
+	m, err := findMessage(r, h)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 		return err
 	}
 
-	m, err := findMessage(r)
+	m, err := findMessage(r, h)
 	if err != nil {
 		return err
 	}
