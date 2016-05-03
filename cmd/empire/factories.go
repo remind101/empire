@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/url"
 	"os"
@@ -136,6 +137,7 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 	s := cloudformation.NewScheduler(db.DB.DB(), config)
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
+	s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
 	s.Bucket = c.String(FlagS3TemplateBucket)
 
 	log.Println("Using CloudFormation backend with the following configuration:")
@@ -148,6 +150,13 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 	log.Println(fmt.Sprintf("  LogConfiguration: %v", t.LogConfiguration))
 
 	return s, nil
+}
+
+// prefixedStackName returns a text/template that prefixes the stack name with
+// the given prefix, if it's set.
+func prefixedStackName(prefix string) *template.Template {
+	t := `{{ if "` + prefix + `" }}{{"` + prefix + `"}}-{{ end }}{{.Name}}`
+	return template.Must(template.New("stack_name").Parse(t))
 }
 
 func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {

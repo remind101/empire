@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"strings"
 	"time"
@@ -27,6 +28,10 @@ import (
 
 // The identifier of the ECS Service resource in CloudFormation.
 const ecsServiceType = "AWS::ECS::Service"
+
+// DefaultStackNameTemplate is the default text/template for generating a
+// CloudFormation stack name for an app.
+var DefaultStackNameTemplate = template.Must(template.New("stack_name").Parse("{{.Name}}"))
 
 // errNoStack can be returned when there's no CloudFormation stack for a given
 // app.
@@ -91,6 +96,10 @@ type Scheduler struct {
 	// The name of the bucket to store templates in.
 	Bucket string
 
+	// A text/template that will generate the stack name for the app. This
+	// template will be executed with a scheduler.App as it's data.
+	StackNameTemplate *template.Template
+
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -133,7 +142,15 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
-		stackName = app.Name
+		t := s.StackNameTemplate
+		if t == nil {
+			t = DefaultStackNameTemplate
+		}
+		buf := new(bytes.Buffer)
+		if err := t.Execute(buf, app); err != nil {
+			return fmt.Errorf("error generating stack name: %v", err)
+		}
+		stackName = buf.String()
 		if _, err := tx.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, app.ID, stackName); err != nil {
 			return err
 		}
