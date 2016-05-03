@@ -1,0 +1,142 @@
+{
+  "Outputs": {},
+  "Parameters": {
+    "webScale": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "CNAME": {
+      "Properties": {
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "acme-inc.empire",
+        "ResourceRecords": [
+          {
+            "Ref": "webLoadBalancer"
+          }
+        ],
+        "TTL": 60,
+        "Type": "CNAME"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
+    "web": {
+      "Metadata": {
+        "name": "web"
+      },
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service"
+    },
+    "web8080InstancePort": {
+      "Properties": {
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::InstancePort",
+      "Version": "1.0"
+    },
+    "webLoadBalancer": {
+      "Properties": {
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 30
+        },
+        "CrossZone": true,
+        "Listeners": [
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "web8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http"
+          },
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "web8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http",
+            "SSLCertificateId": "iamcert"
+          }
+        ],
+        "Scheme": "internal",
+        "SecurityGroups": [
+          "sg-e7387381"
+        ],
+        "Subnets": [
+          "subnet-bb01c4cd",
+          "subnet-c85f4091"
+        ],
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/web"
+            ],
+            "Cpu": 0,
+            "DockerLabels": {},
+            "Environment": [
+              {
+                "Name": "PORT",
+                "Value": "8080"
+              }
+            ],
+            "Essential": true,
+            "Image": "",
+            "Memory": 0,
+            "Name": "web",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": {
+                  "Fn::GetAtt": [
+                    "web8080InstancePort",
+                    "InstancePort"
+                  ]
+                }
+              }
+            ],
+            "Ulimits": []
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    }
+  }
+}

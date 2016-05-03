@@ -14,6 +14,7 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	githubauth "github.com/remind101/empire/server/auth/github"
+	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
 	"golang.org/x/oauth2"
 )
@@ -25,9 +26,23 @@ func runServer(c *cli.Context) {
 		runMigrate(c)
 	}
 
-	e, err := newEmpire(c)
+	db, err := newDB(c)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	e, err := newEmpire(db, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if c.String(FlagCustomResourcesQueue) != "" {
+		p, err := newCloudFormationCustomResourceProvisioner(db, c)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Starting CloudFormation custom resource provisioner")
+		go p.Start()
 	}
 
 	s := newServer(c, e)
@@ -44,6 +59,19 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	return server.New(e, opts)
+}
+
+func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
+	r, err := newReporter(c)
+	if err != nil {
+		return nil, err
+	}
+
+	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
+	p.Logger = newLogger()
+	p.Reporter = r
+	p.QueueURL = c.String(FlagCustomResourcesQueue)
+	return p, nil
 }
 
 func newImageBuilder(c *cli.Context) github.ImageBuilder {

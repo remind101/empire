@@ -128,6 +128,11 @@
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"path": "github.com/aws/aws-sdk-go/service/cloudformation",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8",
+			"revisionTime": "2015-11-23T19:39:42-08:00"
+		},
+		{
 			"path": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8",
 			"revisionTime": "2015-11-23T19:39:42-08:00"
@@ -163,9 +168,19 @@
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
 		},
 		{
+			"path": "github.com/aws/aws-sdk-go/service/s3",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8",
+			"revisionTime": "2015-11-23T19:39:42-08:00"
+		},
+		{
 			"comment": "v1.0.2",
 			"path": "github.com/aws/aws-sdk-go/service/sns",
 			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8"
+		},
+		{
+			"path": "github.com/aws/aws-sdk-go/service/sqs",
+			"revision": "9d7bc2d6ca2ada0468f705f0e9725ca97f8550c8",
+			"revisionTime": "2015-11-23T19:39:42-08:00"
 		},
 		{
 			"path": "github.com/bgentry/go-netrc/netrc",

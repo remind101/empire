@@ -127,6 +127,7 @@ else
   echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
   echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
   echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
+  echo "EMPIRE_S3_TEMPLATE_BUCKET=$(output TemplateBucket)" >> .env
   echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
   echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
   echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env

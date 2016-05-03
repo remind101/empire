@@ -35,11 +35,15 @@ const (
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
 
-	FlagAWSDebug       = "aws.debug"
-	FlagECSCluster     = "ecs.cluster"
-	FlagECSServiceRole = "ecs.service.role"
-	FlagECSLogDriver   = "ecs.logdriver"
-	FlagECSLogOpts     = "ecs.logopt"
+	FlagScheduler            = "scheduler"
+	FlagAWSDebug             = "aws.debug"
+	FlagS3TemplateBucket     = "s3.templatebucket"
+	FlagCustomResourcesTopic = "customresources.topic"
+	FlagCustomResourcesQueue = "customresources.queue"
+	FlagECSCluster           = "ecs.cluster"
+	FlagECSServiceRole       = "ecs.service.role"
+	FlagECSLogDriver         = "ecs.logdriver"
+	FlagECSLogOpts           = "ecs.logopt"
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
@@ -182,10 +186,31 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
 	},
+	cli.StringFlag{
+		Name:   FlagScheduler,
+		Value:  "ecs",
+		Usage:  "The scheduler backend to use. Can be `ecs` or `cloudformation`.",
+		EnvVar: "EMPIRE_SCHEDULER",
+	},
 	cli.BoolFlag{
 		Name:   FlagAWSDebug,
 		Usage:  "Enable verbose debug output for AWS integration.",
 		EnvVar: "EMPIRE_AWS_DEBUG",
+	},
+	cli.StringFlag{
+		Name:   FlagS3TemplateBucket,
+		Usage:  "When using the cloudformation backend, this is the bucket where templates will be stored",
+		EnvVar: "EMPIRE_S3_TEMPLATE_BUCKET",
+	},
+	cli.StringFlag{
+		Name:   FlagCustomResourcesTopic,
+		Usage:  "The ARN of the SNS topic used to create custom resources when using the CloudFormation backend.",
+		EnvVar: "EMPIRE_CUSTOM_RESOURCES_TOPIC",
+	},
+	cli.StringFlag{
+		Name:   FlagCustomResourcesQueue,
+		Usage:  "The queue url of the SQS queue to pull CloudFormation Custom Resource requests from.",
+		EnvVar: "EMPIRE_CUSTOM_RESOURCES_QUEUE",
 	},
 	cli.StringFlag{
 		Name:   FlagECSCluster,
