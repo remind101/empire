@@ -532,4 +532,17 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`DROP TABLE stacks`,
 		}),
 	},
+
+	// This migration changes that way we store process configuration for
+	// releases and slugs, to instead store a Formation in JSON format.
+	{
+		ID: 17,
+		Up: migrate.Queries([]string{
+			`CREATE TABLE scheduler_migration (app_id text NOT NULL, backend text NOT NULL)`,
+			`INSERT INTO scheduler_migration (app_id, backend) SELECT id, 'ecs' FROM apps`,
+		}),
+		Down: migrate.Queries([]string{
+			`DROP TABLE scheduler_migration`,
+		}),
+	},
 }

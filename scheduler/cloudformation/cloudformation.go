@@ -127,12 +127,19 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
+	return s.SubmitWithWait(ctx, app, s.Wait)
+}
+
+// SubmitWithWait submits (or updates) the CloudFormation stack for the app. If
+// wait is true, it will wait for the stack create/update to complete before
+// returning.
+func (s *Scheduler) SubmitWithWait(ctx context.Context, app *scheduler.App, wait bool) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app)
+	err = s.submit(ctx, tx, app, wait)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -142,7 +149,7 @@ func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, wait bool) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -208,7 +215,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 			return err
 		}
 
-		if s.Wait {
+		if wait {
 			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 				StackName: aws.String(stackName),
 			}); err != nil {
@@ -222,7 +229,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 			Parameters:  parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}); err != nil {
+		}, wait); err != nil {
 			return err
 		}
 	} else {
@@ -236,7 +243,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 // stable state before starting.
 //
 // TODO: Timeout?
-func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
+func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput, wait bool) (*cloudformation.UpdateStackOutput, error) {
 	status := *stack.StackStatus
 	stackName := input.StackName
 
@@ -287,7 +294,7 @@ func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformati
 		return resp, err
 	}
 
-	if s.Wait {
+	if wait {
 		if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
 			StackName: stackName,
 		}); err != nil {
@@ -522,7 +529,7 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
 			},
 		},
-	})
+	}, s.Wait)
 
 	if err, ok := err.(awserr.Error); ok {
 		if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
