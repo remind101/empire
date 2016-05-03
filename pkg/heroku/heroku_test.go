@@ -168,9 +168,9 @@ var respTests = []respTest{
 
 func TestCheckResp(t *testing.T) {
 	for i, rt := range respTests {
-		resp := checkResp(&rt.Response)
+		resp := CheckResp(&rt.Response)
 		if !reflect.DeepEqual(rt.Expected, resp) {
-			t.Errorf("checkResp respTests[%d] expected %v, got %v", i, rt.Expected, resp)
+			t.Errorf("CheckResp respTests[%d] expected %v, got %v", i, rt.Expected, resp)
 		}
 	}
 }
