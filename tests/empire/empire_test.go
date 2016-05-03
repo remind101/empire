@@ -235,6 +235,149 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	s.AssertExpectations(t)
 }
 
+func TestEmpire_Run(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+
+	user := &empire.User{Name: "ejholmes"}
+
+	app, err := e.Create(context.Background(), empire.CreateOpts{
+		User: user,
+		Name: "acme-inc",
+	})
+	assert.NoError(t, err)
+
+	img := image.Image{Repository: "remind101/acme-inc"}
+	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+		App:    app,
+		User:   user,
+		Output: ioutil.Discard,
+		Image:  img,
+	})
+	assert.NoError(t, err)
+
+	s := new(mockScheduler)
+	e.Scheduler = s
+
+	s.On("Run", &scheduler.App{
+		ID:   app.ID,
+		Name: "acme-inc",
+	},
+		&scheduler.Process{
+			Type:        "run",
+			Image:       img,
+			Command:     []string{"bundle", "exec", "rake", "db:migrate"},
+			Instances:   1,
+			MemoryLimit: 536870912,
+			CPUShares:   256,
+			Nproc:       256,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_PROCESS":    "run",
+				"EMPIRE_RELEASE":    "v1",
+				"SOURCE":            "acme-inc.run.v1",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+				"TERM":              "xterm",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.process": "run",
+				"empire.app.release": "v1",
+			},
+		}, nil, nil).Return(nil)
+
+	err = e.Run(context.Background(), empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
+
+		// Detached Process
+		Output: nil,
+		Input:  nil,
+
+		Env: map[string]string{
+			"TERM": "xterm",
+		},
+	})
+	assert.NoError(t, err)
+
+	s.AssertExpectations(t)
+}
+
+func TestEmpire_Run_WithConstraints(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+
+	user := &empire.User{Name: "ejholmes"}
+
+	app, err := e.Create(context.Background(), empire.CreateOpts{
+		User: user,
+		Name: "acme-inc",
+	})
+	assert.NoError(t, err)
+
+	img := image.Image{Repository: "remind101/acme-inc"}
+	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+		App:    app,
+		User:   user,
+		Output: ioutil.Discard,
+		Image:  img,
+	})
+	assert.NoError(t, err)
+
+	s := new(mockScheduler)
+	e.Scheduler = s
+
+	s.On("Run", &scheduler.App{
+		ID:   app.ID,
+		Name: "acme-inc",
+	},
+		&scheduler.Process{
+			Type:        "run",
+			Image:       img,
+			Command:     []string{"bundle", "exec", "rake", "db:migrate"},
+			Instances:   1,
+			MemoryLimit: 1073741824,
+			CPUShares:   512,
+			Nproc:       512,
+			Env: map[string]string{
+				"EMPIRE_APPID":      app.ID,
+				"EMPIRE_APPNAME":    "acme-inc",
+				"EMPIRE_PROCESS":    "run",
+				"EMPIRE_RELEASE":    "v1",
+				"SOURCE":            "acme-inc.run.v1",
+				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+				"TERM":              "xterm",
+			},
+			Labels: map[string]string{
+				"empire.app.name":    "acme-inc",
+				"empire.app.id":      app.ID,
+				"empire.app.process": "run",
+				"empire.app.release": "v1",
+			},
+		}, nil, nil).Return(nil)
+
+	constraints := empire.NamedConstraints["2X"]
+	err = e.Run(context.Background(), empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
+
+		// Detached Process
+		Output: nil,
+		Input:  nil,
+
+		Env: map[string]string{
+			"TERM": "xterm",
+		},
+
+		Constraints: &constraints,
+	})
+	assert.NoError(t, err)
+
+	s.AssertExpectations(t)
+}
+
 func TestEmpire_Set(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
@@ -357,5 +500,11 @@ type mockScheduler struct {
 
 func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
 	args := m.Called(app)
+	return args.Error(0)
+}
+
+func (m *mockScheduler) Run(_ context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+	app.Processes = nil // This is bogus and doesn't actually matter for Runs.
+	args := m.Called(app, process, in, out)
 	return args.Error(0)
 }

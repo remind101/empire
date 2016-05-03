@@ -370,6 +370,9 @@ type RunOpts struct {
 
 	// Extra environment variables to set.
 	Env map[string]string
+
+	// Optional memory/cpu/nproc constraints.
+	Constraints *Constraints
 }
 
 func (opts RunOpts) Event() RunEvent {

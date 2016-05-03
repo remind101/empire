@@ -12,6 +12,7 @@
 * Stdout and Stdin from interactive run sessions can now be sent to CloudWatch Logs for longterm storage and auditing [#757](https://github.com/remind101/empire/pull/757).
 * Add `Environment` and `Release` to Deploy Events. `--environment` will likely be used for tagging resources later. [#758](https://github.com/remind101/empire/pull/758)
 * Add constraint changes to scale events [#773](https://github.com/remind101/empire/pull/773)
+* You can now specify the CPU and memory constraints for attached one-off tasks with the `-s` flag to `emp run` [#809](https://github.com/remind101/empire/pull/809)
 
 **Bugs**
 
@@ -20,6 +21,7 @@
 * Fixed a bug where it was previously possible to create a signed access token with an empty username [#780](https://github.com/remind101/empire/pull/780)
 * ECR authentication now supports multiple regions, and works independently of ECS region [#784](https://github.com/remind101/empire/pull/784)
 * Provisioned ELB's are only destroyed when the entire app is removed [#801](https://github.com/remind101/empire/pull/801)
+* Docker containers started by attached runs now have labels, cpu and memory constraints applied to them [#809](https://github.com/remind101/empire/pull/809)
 
 **Performance**
 
