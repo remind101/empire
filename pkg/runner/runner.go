@@ -29,6 +29,13 @@ type RunOpts struct {
 	// Environment variables to set.
 	Env map[string]string
 
+	// Labels to set
+	Labels map[string]string
+
+	// Memory/CPUShares.
+	Memory    int64
+	CPUShares int64
+
 	// Streams fo Stdout, Stderr and Stdin.
 	Input  io.Reader
 	Output io.Writer
@@ -86,9 +93,12 @@ func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, e
 			AttachStdout: true,
 			AttachStderr: true,
 			OpenStdin:    true,
+			Memory:       opts.Memory,
+			CPUShares:    opts.CPUShares,
 			Image:        opts.Image.String(),
 			Cmd:          opts.Command,
 			Env:          envKeys(opts.Env),
+			Labels:       opts.Labels,
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{
