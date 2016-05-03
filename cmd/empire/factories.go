@@ -135,6 +135,10 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 		LogConfiguration:        logConfiguration,
 	}
 
+	if err := t.Validate(); err != nil {
+		return nil, fmt.Errorf("error validating CloudFormation template: %v")
+	}
+
 	var tags []*cf.Tag
 	if env := c.String(FlagEnvironment); env != "" {
 		tags = append(tags, &cf.Tag{Key: aws.String("environment"), Value: aws.String(env)})

@@ -3,6 +3,7 @@ package cloudformation
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -58,6 +59,40 @@ type EmpireTemplate struct {
 	CustomResourcesTopic string
 
 	LogConfiguration *ecs.LogConfiguration
+}
+
+// Validate checks that all of the expected values are provided.
+func (t *EmpireTemplate) Validate() error {
+	r := func(n string) error {
+		return errors.New(fmt.Sprintf("%s is required", n))
+	}
+
+	if t.Cluster == "" {
+		return r("Cluster")
+	}
+	if t.ServiceRole == "" {
+		return r("ServiceRole")
+	}
+	if t.HostedZone == nil {
+		return r("HostedZone")
+	}
+	if t.InternalSecurityGroupID == "" {
+		return r("InternalSecurityGroupID")
+	}
+	if t.ExternalSecurityGroupID == "" {
+		return r("ExternalSecurityGroupID")
+	}
+	if len(t.InternalSubnetIDs) == 0 {
+		return r("InternalSubnetIDs")
+	}
+	if len(t.ExternalSubnetIDs) == 0 {
+		return r("ExternalSubnetIDs")
+	}
+	if t.CustomResourcesTopic == "" {
+		return r("CustomResourcesTopic")
+	}
+
+	return nil
 }
 
 // Execute builds the template, and writes it to w.
