@@ -100,6 +100,9 @@ type Scheduler struct {
 	// template will be executed with a scheduler.App as it's data.
 	StackNameTemplate *template.Template
 
+	// Any additional tags to add to stacks.
+	Tags []*cloudformation.Tag
+
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -181,10 +184,10 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 		StackName: aws.String(stackName),
 	})
 
-	tags := []*cloudformation.Tag{
-		{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
-		{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
-	}
+	tags := append(s.Tags,
+		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
+		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
+	)
 
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{

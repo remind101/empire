@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
+	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/codegangsta/cli"
 	"github.com/inconshreveable/log15"
@@ -134,11 +135,17 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Schedu
 		LogConfiguration:        logConfiguration,
 	}
 
+	var tags []*cf.Tag
+	if env := c.String(FlagEnvironment); env != "" {
+		tags = append(tags, &cf.Tag{Key: aws.String("environment"), Value: aws.String(env)})
+	}
+
 	s := cloudformation.NewScheduler(db.DB.DB(), config)
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
 	s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
 	s.Bucket = c.String(FlagS3TemplateBucket)
+	s.Tags = tags
 
 	log.Println("Using CloudFormation backend with the following configuration:")
 	log.Println(fmt.Sprintf("  Cluster: %v", s.Cluster))
