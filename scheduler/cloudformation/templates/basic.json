@@ -1,6 +1,20 @@
 {
+  "Conditions": {
+    "DNSCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "DNS"
+        },
+        "true"
+      ]
+    }
+  },
   "Outputs": {},
   "Parameters": {
+    "DNS": {
+      "Description": "When set to `true`, CNAME's will be altered",
+      "Type": "String"
+    },
     "webScale": {
       "Type": "String"
     },
@@ -10,6 +24,7 @@
   },
   "Resources": {
     "CNAME": {
+      "Condition": "DNSCondition",
       "Properties": {
         "HostedZoneId": "Z3DG6IL3SJCGPX",
         "Name": "acme-inc.empire",

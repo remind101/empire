@@ -51,6 +51,9 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	c.On("CreateStack", &cloudformation.CreateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
 			{Key: aws.String("empire.app.name"), Value: aws.String("acme-inc")},
@@ -104,6 +107,9 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -153,6 +159,9 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{

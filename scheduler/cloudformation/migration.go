@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -19,6 +20,11 @@ import (
 // can be migrated from the ecs scheduler to the cloudformation scheduler by
 // using the Migrate function.
 type MigrationScheduler struct {
+	// This is the amount of time to wait for the new CloudFormation stack
+	// to stabilize before swapping over to it. 5-10 minutes is probably
+	// enough for the load balancer to starting being resolvable.
+	WaitTime time.Duration
+
 	// The scheduler that we want to migrate to.
 	cloudformation *Scheduler
 
@@ -31,6 +37,7 @@ type MigrationScheduler struct {
 // NewMigrationScheduler returns a new MigrationSchedeuler instance.
 func NewMigrationScheduler(db *sql.DB, c *Scheduler, e *ecs.Scheduler) *MigrationScheduler {
 	return &MigrationScheduler{
+		WaitTime:       10 * time.Minute,
 		db:             db,
 		cloudformation: c,
 		ecs:            e,
@@ -98,15 +105,27 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 // to successfully create, then removes the old API managed resources using the
 // ECS scheduler.
 func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App) error {
-	// Unfortunately, we need to start with the existing ECS scheduler
-	// because CloudFormation will refuse to overwrite the existing CNAME.
+	// Submit to cloudformation and wait for it to complete successfully.
+	// Don't make any DNS changes.
+	if err := s.cloudformation.SubmitWithOptions(ctx, app, SubmitOptions{
+		Wait:  true,
+		NoDNS: true,
+	}); err != nil {
+		return err
+	}
+
+	// Wait for some time for everything to start running.
+	<-time.After(s.WaitTime)
+
+	// Remove the old AWS resources.
 	if err := s.ecs.Remove(ctx, app.ID); err != nil {
 		return err
 	}
 
-	// Submit to cloudformation and wait for it to complete successfully.
-	wait := true
-	if err := s.cloudformation.SubmitWithWait(ctx, app, wait); err != nil {
+	// Finalize the changes by altering DNS.
+	if err := s.cloudformation.SubmitWithOptions(ctx, app, SubmitOptions{
+		Wait: true,
+	}); err != nil {
 		return err
 	}
 

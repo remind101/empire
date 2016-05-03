@@ -127,19 +127,30 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
-	return s.SubmitWithWait(ctx, app, s.Wait)
+	return s.SubmitWithOptions(ctx, app, SubmitOptions{
+		Wait: s.Wait,
+	})
 }
 
-// SubmitWithWait submits (or updates) the CloudFormation stack for the app. If
-// wait is true, it will wait for the stack create/update to complete before
-// returning.
-func (s *Scheduler) SubmitWithWait(ctx context.Context, app *scheduler.App, wait bool) error {
+// SubmitOptions are options provided to SubmitWithOptions.
+type SubmitOptions struct {
+	// If true, waits to for the stack to complete the create/update
+	// successfully.
+	Wait bool
+
+	// When true, does not make any changes to DNS. This is only used when
+	// migrating to this scheduler
+	NoDNS bool
+}
+
+// SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app, wait)
+	err = s.submit(ctx, tx, app, opts)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -149,7 +160,9 @@ func (s *Scheduler) SubmitWithWait(ctx context.Context, app *scheduler.App, wait
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, wait bool) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, opts SubmitOptions) error {
+	wait := opts.Wait
+
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -204,6 +217,10 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
 		})
 	}
+	parameters = append(parameters, &cloudformation.Parameter{
+		ParameterKey:   aws.String("DNS"),
+		ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
+	})
 
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{

@@ -113,7 +113,22 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 
 // Build builds a Go representation of a CloudFormation template for the app.
 func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
-	parameters := map[string]interface{}{}
+	parameters := map[string]interface{}{
+		"DNS": map[string]string{
+			"Type":        "String",
+			"Description": "When set to `true`, CNAME's will be altered",
+		},
+	}
+	conditions := map[string]interface{}{
+		"DNSCondition": map[string]interface{}{
+			"Fn::Equals": []interface{}{
+				map[string]string{
+					"Ref": "DNS",
+				},
+				"true",
+			},
+		},
+	}
 	resources := map[string]interface{}{}
 	outputs := map[string]interface{}{}
 
@@ -223,7 +238,8 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 			if p.Type == "web" {
 				resources["CNAME"] = map[string]interface{}{
-					"Type": "AWS::Route53::RecordSet",
+					"Type":      "AWS::Route53::RecordSet",
+					"Condition": "DNSCondition",
 					"Properties": map[string]interface{}{
 						"HostedZoneId": *t.HostedZone.Id,
 						"Name":         fmt.Sprintf("%s.%s", app.Name, *t.HostedZone.Name),
@@ -291,6 +307,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 	return map[string]interface{}{
 		"Parameters": parameters,
+		"Conditions": conditions,
 		"Resources":  resources,
 		"Outputs":    outputs,
 	}, nil
