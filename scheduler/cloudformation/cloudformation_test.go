@@ -360,6 +360,92 @@ func TestScheduler_Instances(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
+func TestScheduler_Scale(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		cloudformation: c,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:           aws.String("acme-inc"),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("2")},
+			{ParameterKey: aws.String("workerScale"), UsePreviousValue: aws.Bool(true)},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	err = s.Scale(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 2)
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+}
+
+func TestScheduler_Scale_NoUpdates(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		cloudformation: c,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:           aws.String("acme-inc"),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("workerScale"), UsePreviousValue: aws.Bool(true)},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, awserr.New("ValidationError", "No updates are to be performed.", errors.New("")))
+
+	err = s.Scale(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 1)
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {

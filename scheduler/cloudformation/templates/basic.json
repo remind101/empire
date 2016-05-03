@@ -1,6 +1,13 @@
 {
   "Outputs": {},
-  "Parameters": {},
+  "Parameters": {
+    "webScale": {
+      "Type": "String"
+    },
+    "workerScale": {
+      "Type": "String"
+    }
+  },
   "Resources": {
     "CNAME": {
       "Properties": {
@@ -22,7 +29,9 @@
       },
       "Properties": {
         "Cluster": "cluster",
-        "DesiredCount": 1,
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
         "LoadBalancers": [
           {
             "ContainerName": "web",
@@ -134,7 +143,9 @@
       },
       "Properties": {
         "Cluster": "cluster",
-        "DesiredCount": 0,
+        "DesiredCount": {
+          "Ref": "workerScale"
+        },
         "LoadBalancers": [],
         "TaskDefinition": {
           "Ref": "workerTaskDefinition"

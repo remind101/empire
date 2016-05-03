@@ -85,10 +85,11 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(p)
 
-		// CloudFormation only allows alphanumeric resource names, so we
-		// have to normalize it.
-		r := regexp.MustCompile("[^a-zA-Z0-9]")
-		key := r.ReplaceAllString(p.Type, "")
+		key := processResourceName(p.Type)
+
+		parameters[scaleParameter(p.Type)] = map[string]string{
+			"Type": "String",
+		}
 
 		portMappings := []map[string]interface{}{}
 
@@ -231,8 +232,10 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 		service := fmt.Sprintf("%s", key)
 		serviceProperties := map[string]interface{}{
-			"Cluster":       t.Cluster,
-			"DesiredCount":  p.Instances,
+			"Cluster": t.Cluster,
+			"DesiredCount": map[string]string{
+				"Ref": scaleParameter(p.Type),
+			},
 			"LoadBalancers": loadBalancers,
 			"TaskDefinition": map[string]string{
 				"Ref": taskDefinition,
@@ -323,4 +326,20 @@ func fixHostedZoneIDPrefix(zoneID string) *string {
 		s = strings.Join([]string{prefix, zoneID}, "")
 	}
 	return &s
+}
+
+// CloudFormation only allows alphanumeric resource names, so we
+// have to normalize it.
+var resourceRegex = regexp.MustCompile("[^a-zA-Z0-9]")
+
+// processResourceName returns a string that can be used as a resource name in a
+// CloudFormation stack for a process.
+func processResourceName(process string) string {
+	return resourceRegex.ReplaceAllString(process, "")
+}
+
+// scaleParameter returns the name of the parameter used to control the
+// scale of a process.
+func scaleParameter(process string) string {
+	return fmt.Sprintf("%sScale", processResourceName(process))
 }

@@ -189,11 +189,21 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
 	)
 
+	// Build parameters for the stack.
+	var parameters []*cloudformation.Parameter
+	for _, p := range app.Processes {
+		parameters = append(parameters, &cloudformation.Parameter{
+			ParameterKey:   aws.String(scaleParameter(p.Type)),
+			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
+		})
+	}
+
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
 			StackName:   aws.String(stackName),
 			TemplateURL: aws.String(url),
 			Tags:        tags,
+			Parameters:  parameters,
 		}); err != nil {
 			return err
 		}
@@ -206,48 +216,86 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App) 
 			}
 		}
 	} else if err == nil {
-		stack := desc.Stacks[0]
-		status := *stack.StackStatus
-
-		// If there's currently an update happening, wait for it to
-		// complete.
-		if strings.Contains(status, "IN_PROGRESS") {
-			if strings.Contains(status, "CREATE") {
-				if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-					StackName: aws.String(stackName),
-				}); err != nil {
-					return err
-				}
-			} else if strings.Contains(status, "UPDATE") {
-				if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-					StackName: aws.String(stackName),
-				}); err != nil {
-					return err
-				}
-			}
-		}
-
-		if _, err := s.cloudformation.UpdateStack(&cloudformation.UpdateStackInput{
+		if _, err := s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
 			StackName:   aws.String(stackName),
 			TemplateURL: aws.String(url),
+			Parameters:  parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
 		}); err != nil {
 			return err
-		}
-
-		if s.Wait {
-			if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-				StackName: aws.String(stackName),
-			}); err != nil {
-				return err
-			}
 		}
 	} else {
 		return err
 	}
 
 	return nil
+}
+
+// updateStack performs a stack update, but waits for the stack to enter a
+// stable state before starting.
+//
+// TODO: Timeout?
+func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
+	status := *stack.StackStatus
+	stackName := input.StackName
+
+	// The parameters that the stack defines. We need to make sure that we
+	// provide all parameters in the update (lame).
+	definedParams := make(map[string]bool)
+	for _, p := range stack.Parameters {
+		definedParams[*p.ParameterKey] = true
+	}
+
+	// The parameters that are provided in this update.
+	providedParams := make(map[string]bool)
+	for _, p := range input.Parameters {
+		providedParams[*p.ParameterKey] = true
+	}
+
+	// Fill in any parameters that weren't provided with their default
+	// value.
+	for k := range definedParams {
+		if !providedParams[k] {
+			input.Parameters = append(input.Parameters, &cloudformation.Parameter{
+				ParameterKey:     aws.String(k),
+				UsePreviousValue: aws.Bool(true),
+			})
+		}
+	}
+
+	// If there's currently an update happening, wait for it to
+	// complete.
+	if strings.Contains(status, "IN_PROGRESS") {
+		if strings.Contains(status, "CREATE") {
+			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+				StackName: stackName,
+			}); err != nil {
+				return nil, err
+			}
+		} else if strings.Contains(status, "UPDATE") {
+			if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+				StackName: stackName,
+			}); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	resp, err := s.cloudformation.UpdateStack(input)
+	if err != nil {
+		return resp, err
+	}
+
+	if s.Wait {
+		if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+			StackName: stackName,
+		}); err != nil {
+			return resp, err
+		}
+	}
+
+	return resp, nil
 }
 
 // Remove removes the CloudFormation stack for the given app.
@@ -453,22 +501,35 @@ func (s *Scheduler) Stop(ctx context.Context, instanceID string) error {
 // Scale scales the ECS service for the given process to the desired number of
 // instances.
 func (s *Scheduler) Scale(ctx context.Context, appID string, process string, instances uint) error {
-	services, err := s.Services(appID)
+	stackName, err := s.stackName(appID)
 	if err != nil {
 		return err
 	}
 
-	serviceArn, ok := services[process]
-	if !ok {
-		return fmt.Errorf("no %s process found", process)
+	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
+	if err != nil {
+		return err
 	}
 
-	// TODO: Should we just update a parameter in the stack instead?
-	_, err = s.ecs.UpdateService(&ecs.UpdateServiceInput{
-		Cluster:      aws.String(s.Cluster),
-		DesiredCount: aws.Int64(int64(instances)),
-		Service:      aws.String(serviceArn),
+	_, err = s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
+		StackName:           aws.String(stackName),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{
+				ParameterKey:   aws.String(scaleParameter(process)),
+				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
+			},
+		},
 	})
+
+	if err, ok := err.(awserr.Error); ok {
+		if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
+			return nil
+		}
+	}
+
 	return err
 }
 

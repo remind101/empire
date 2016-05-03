@@ -149,10 +149,6 @@ func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*
 		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
 	}
 
-	if err := s.Scheduler.Scale(ctx, release.AppID, opts.Process, uint(quantity)); err != nil {
-		return nil, err
-	}
-
 	event := opts.Event()
 	event.PreviousQuantity = p.Quantity
 	event.PreviousConstraints = p.Constraints()

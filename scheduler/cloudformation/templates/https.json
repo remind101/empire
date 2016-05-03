@@ -1,6 +1,10 @@
 {
   "Outputs": {},
-  "Parameters": {},
+  "Parameters": {
+    "webScale": {
+      "Type": "String"
+    }
+  },
   "Resources": {
     "CNAME": {
       "Properties": {
@@ -22,7 +26,9 @@
       },
       "Properties": {
         "Cluster": "cluster",
-        "DesiredCount": 0,
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
         "LoadBalancers": [
           {
             "ContainerName": "web",
