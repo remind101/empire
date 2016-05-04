@@ -22,6 +22,7 @@
 * ECR authentication now supports multiple regions, and works independently of ECS region [#784](https://github.com/remind101/empire/pull/784)
 * Provisioned ELB's are only destroyed when the entire app is removed [#801](https://github.com/remind101/empire/pull/801)
 * Docker containers started by attached runs now have labels, cpu and memory constraints applied to them [#809](https://github.com/remind101/empire/pull/809)
+* Fixed a bug where interactive `emp run` would get stuck attempting to read bytes after an error from the initial request [#795](https://github.com/remind101/empire/issues/795)
 
 **Performance**
 

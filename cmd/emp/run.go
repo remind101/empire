@@ -149,7 +149,11 @@ func runRun(cmd *Command, args []string) {
 
 	clientconn := httputil.NewClientConn(dial, nil)
 	defer clientconn.Close()
-	_, err = clientconn.Do(req)
+	res, err := clientconn.Do(req)
+	defer res.Body.Close()
+	if err = heroku.CheckResp(res); err != nil {
+		printFatal(err.Error())
+	}
 	if err != nil && err != httputil.ErrPersistEOF {
 		printFatal(err.Error())
 	}

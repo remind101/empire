@@ -224,7 +224,7 @@ func (c *Client) DoReq(req *http.Request, v interface{}) error {
 			os.Stderr.Write([]byte{'\n'})
 		}
 	}
-	if err = checkResp(res); err != nil {
+	if err = CheckResp(res); err != nil {
 		return err
 	}
 	switch t := v.(type) {
@@ -250,7 +250,7 @@ type errorResp struct {
 	URL     string `json:"url"`
 }
 
-func checkResp(res *http.Response) error {
+func CheckResp(res *http.Response) error {
 	if res.StatusCode/100 != 2 { // 200, 201, 202, etc
 		var e errorResp
 		err := json.NewDecoder(res.Body).Decode(&e)
