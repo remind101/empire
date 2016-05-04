@@ -261,7 +261,7 @@ func CheckResp(res *http.Response) error {
 		if e.Id == "message_required" {
 			panic(ret)
 		}
-		return err
+		return ret
 	}
 	if msg := res.Header.Get("X-Heroku-Warning"); msg != "" {
 		fmt.Fprintln(os.Stderr, strings.TrimSpace(msg))
