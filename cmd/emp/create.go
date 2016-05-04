@@ -7,7 +7,7 @@ import (
 )
 
 var cmdCreate = &Command{
-	Run:             runCreate,
+	Run:             maybeMessage(runCreate),
 	Usage:           "create [-r <region>] [-o <org>] [--http-git] [<name>]",
 	OptionalMessage: true,
 	Category:        "app",
