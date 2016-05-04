@@ -663,6 +663,11 @@ func (m *mockLBManager) LoadBalancers(ctx context.Context, tags map[string]strin
 	return args.Get(0).([]*lb.LoadBalancer), args.Error(1)
 }
 
+func (m *mockLBManager) RemoveCNAMEs(ctx context.Context, tags map[string]string) error {
+	args := m.Called(tags)
+	return args.Error(0)
+}
+
 // fake app for testing.
 var fakeApp = &scheduler.App{
 	ID: "1234",

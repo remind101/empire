@@ -69,16 +69,16 @@ type Manager interface {
 
 // WithCNAME wraps a Manager to create CNAME records for the LoadBalancer
 // using a Nameserver.
-func WithCNAME(m Manager, n Nameserver) Manager {
-	return &cnameManager{
+func WithCNAME(m Manager, n Nameserver) *CNAMEManager {
+	return &CNAMEManager{
 		Manager:    m,
 		Nameserver: n,
 	}
 }
 
-// cnameManager is an implementation of the Manager interface that creates CNAME
+// CNAMEManager is an implementation of the Manager interface that creates CNAME
 // records for the LoadBalancer after its created.
-type cnameManager struct {
+type CNAMEManager struct {
 	Manager
 	Nameserver
 }
@@ -86,7 +86,7 @@ type cnameManager struct {
 // CreateLoadBalancer will create the LoadBalancer using the underlying manager,
 // then create a CNAME record pointed at the LoadBalancers DNSName. The CNAME
 // will be pulled from the `Service` tag if provided.
-func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBalancerOpts) (*LoadBalancer, error) {
+func (m *CNAMEManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBalancerOpts) (*LoadBalancer, error) {
 	lb, err := m.Manager.CreateLoadBalancer(ctx, opts)
 	if err != nil {
 		return lb, err
@@ -101,15 +101,33 @@ func (m *cnameManager) CreateLoadBalancer(ctx context.Context, opts CreateLoadBa
 
 // DestroyLoadBalancer destroys an ELB, then removes any CNAMEs that were
 // pointed at that ELB.
-func (m *cnameManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
+func (m *CNAMEManager) DestroyLoadBalancer(ctx context.Context, lb *LoadBalancer) error {
 	err := m.Manager.DestroyLoadBalancer(ctx, lb)
-
 	if err != nil {
 		return err
 	}
 
+	return m.RemoveCNAME(ctx, lb)
+}
+
+func (m *CNAMEManager) RemoveCNAME(ctx context.Context, lb *LoadBalancer) error {
 	if n, ok := lb.Tags[AppTag]; ok {
 		return m.DeleteCNAME(n, lb.DNSName)
+	}
+
+	return nil
+}
+
+func (m *CNAMEManager) RemoveCNAMEs(ctx context.Context, tags map[string]string) error {
+	lbs, err := m.LoadBalancers(ctx, tags)
+	if err != nil {
+		return err
+	}
+
+	for _, lb := range lbs {
+		if err := m.RemoveCNAME(ctx, lb); err != nil {
+			return err
+		}
 	}
 
 	return nil
