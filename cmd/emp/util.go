@@ -149,27 +149,15 @@ func mustConfirm(warning, desired string) {
 }
 
 func askForMessage() (string, error) {
-	var message string
 	if !isTerminalIn {
-		return message, errors.New("can't ask for message")
+		return "", errors.New("Can't ask for message")
 	}
 
-	fmt.Println("commit message required, would you like to input one now? (y/n)")
-	fmt.Printf("> ")
-
-	var addMessage string
-	if _, err := fmt.Scanln(&addMessage); err != nil {
-		return message, err
-	}
-	if addMessage != "y" {
-		return message, nil
-	}
-
-	fmt.Println("enter commit message")
+	fmt.Println("A commit message is required, enter one below:")
 	fmt.Printf("> ")
 	reader := bufio.NewReader(os.Stdin)
 	message, err := reader.ReadString('\n')
-	return message, err
+	return strings.Trim(message, " \n"), err
 }
 
 func colorizeMessage(color, prefix, message string, args ...interface{}) string {
