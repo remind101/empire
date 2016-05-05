@@ -155,6 +155,11 @@ func (opts CreateOpts) Event() CreateEvent {
 
 // Create creates a new app.
 func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return nil, &MessageRequiredError{}
+	}
+
 	a, err := appsCreate(e.db, &App{Name: opts.Name})
 	if err != nil {
 		return a, err
@@ -185,6 +190,11 @@ func (opts DestroyOpts) Event() DestroyEvent {
 
 // Destroy destroys an app.
 func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return &MessageRequiredError{}
+	}
+
 	tx := e.db.Begin()
 
 	if err := e.apps.Destroy(ctx, tx, opts.App); err != nil {
@@ -249,6 +259,11 @@ func (opts SetOpts) Event() SetEvent {
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return nil, &MessageRequiredError{}
+	}
+
 	tx := e.db.Begin()
 
 	c, err := e.configs.Set(ctx, tx, opts)
@@ -340,6 +355,11 @@ func (opts RestartOpts) Event() RestartEvent {
 // Restart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return &MessageRequiredError{}
+	}
+
 	if err := e.apps.Restart(ctx, e.db, opts); err != nil {
 		return err
 	}
@@ -464,6 +484,11 @@ func (opts RollbackOpts) Event() RollbackEvent {
 // Rollback rolls an app back to a specific release version. Returns a
 // new release.
 func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return nil, &MessageRequiredError{}
+	}
+
 	tx := e.db.Begin()
 
 	r, err := e.releases.Rollback(ctx, tx, opts)
@@ -517,6 +542,11 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return nil, &MessageRequiredError{}
+	}
+
 	tx := e.db.Begin()
 
 	r, err := e.deployer.Deploy(ctx, tx, opts)
@@ -578,6 +608,11 @@ func (opts ScaleOpts) Event() ScaleEvent {
 
 // Scale scales an apps process.
 func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
+
+	if e.MessagesRequired && opts.Message == "" {
+		return nil, &MessageRequiredError{}
+	}
+
 	tx := e.db.Begin()
 
 	p, err := e.apps.Scale(ctx, tx, opts)
