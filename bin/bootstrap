@@ -136,4 +136,6 @@ else
   echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
   echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
   echo "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=$(output InternalZoneID)" >> .env
+  echo "EMPIRE_CUSTOM_RESOURCES_TOPIC=$(output CustomResourcesTopic)" >> .env
+  echo "EMPIRE_CUSTOM_RESOURCES_QUEUE=$(output CustomResourcesQueue)" >> .env
 fi
