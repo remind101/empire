@@ -13,6 +13,7 @@
 * Add `Environment` and `Release` to Deploy Events. `--environment` will likely be used for tagging resources later. [#758](https://github.com/remind101/empire/pull/758)
 * Add constraint changes to scale events [#773](https://github.com/remind101/empire/pull/773)
 * You can now specify the CPU and memory constraints for attached one-off tasks with the `-s` flag to `emp run` [#809](https://github.com/remind101/empire/pull/809)
+* You can now provision Empire applications and set environment variables from CloudFormation stacks using a `Custom::App` resource [#819](https://github.com/remind101/empire/pull/819)
 
 **Bugs**
 
