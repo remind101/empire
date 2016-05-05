@@ -533,8 +533,8 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 		}),
 	},
 
-	// This migration changes that way we store process configuration for
-	// releases and slugs, to instead store a Formation in JSON format.
+	// This migration adds a table that gets used to migrate apps from the
+	// old ECS backend to the shiny new CloudFormation backend.
 	{
 		ID: 17,
 		Up: migrate.Queries([]string{
