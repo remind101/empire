@@ -78,17 +78,16 @@ func (s *MigrationScheduler) Backend(appID string) (scheduler.Scheduler, error) 
 }
 
 // backend returns the name of the backend to use for operations.
-func (s *MigrationScheduler) backend(appID string) (backend string, err error) {
-	err = s.db.QueryRow(`SELECT backend FROM scheduler_migration WHERE app_id = $1`, appID).Scan(&backend)
+func (s *MigrationScheduler) backend(appID string) (string, error) {
+	var backend string
+	err := s.db.QueryRow(`SELECT backend FROM scheduler_migration WHERE app_id = $1`, appID).Scan(&backend)
 
 	// For newly created apps.
 	if err == sql.ErrNoRows {
-		backend = "cloudformation"
-		err = nil
-		return
+		return "cloudformation", nil
 	}
 
-	return
+	return backend, err
 }
 
 func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) error {
