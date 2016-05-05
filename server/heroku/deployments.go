@@ -22,7 +22,7 @@ type PostDeployForm struct {
 
 // ServeHTTPContext implements the Handler interface.
 func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
-	opts, err := newDeploymentsCreateOpts(ctx, w, req, h)
+	opts, err := newDeploymentsCreateOpts(ctx, w, req)
 	if err != nil {
 		return err
 	}
@@ -33,14 +33,14 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	return nil
 }
 
-func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *http.Request, e shouldRequireMessages) (*empire.DeploymentsCreateOpts, error) {
+func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *http.Request) (*empire.DeploymentsCreateOpts, error) {
 	var form PostDeployForm
 
 	if err := Decode(req, &form); err != nil {
 		return nil, err
 	}
 
-	m, err := findMessage(req, e)
+	m, err := findMessage(req)
 	if err != nil {
 		return nil, err
 	}

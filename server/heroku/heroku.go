@@ -169,11 +169,7 @@ func UserFromContext(ctx context.Context) *empire.User {
 	return u
 }
 
-type shouldRequireMessages interface {
-	ShouldRequireMessages() bool
-}
-
-func findMessage(r *http.Request, e shouldRequireMessages) (string, error) {
+func findMessage(r *http.Request) (string, error) {
 	h := r.Header.Get(heroku.CommitMessageHeader)
 	return h, nil
 }

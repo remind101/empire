@@ -108,11 +108,6 @@ func New(db *DB, options Options) *Empire {
 	return e
 }
 
-// ShouldRequireMessages returns a boolean if messages are required for actions
-func (e *Empire) ShouldRequireMessages() bool {
-	return e.MessagesRequired
-}
-
 // AccessTokensFind finds an access token.
 func (e *Empire) AccessTokensFind(token string) (*AccessToken, error) {
 	return e.accessTokens.AccessTokensFind(token)

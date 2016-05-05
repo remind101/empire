@@ -34,7 +34,7 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return err
 	}
 
-	m, err := findMessage(r, h)
+	m, err := findMessage(r)
 	if err != nil {
 		return err
 	}

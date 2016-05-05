@@ -42,7 +42,7 @@ func (h *PatchConfigs) ServeHTTPContext(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	m, err := findMessage(r, h)
+	m, err := findMessage(r)
 	if err != nil {
 		return err
 	}
