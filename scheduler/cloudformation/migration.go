@@ -37,10 +37,16 @@ var ErrMigrating = errors.New("app is currently being migrated to a CloudFormati
 // using the Migrate function.
 type MigrationScheduler struct {
 	// The scheduler that we want to migrate to.
-	cloudformation *Scheduler
+	cloudformation interface {
+		scheduler.Scheduler
+		SubmitWithOptions(context.Context, *scheduler.App, SubmitOptions) error
+	}
 
 	// The scheduler we're migrating from.
-	ecs *ecs.Scheduler
+	ecs interface {
+		scheduler.Scheduler
+		RemoveWithOptions(context.Context, string, ecs.RemoveOptions) error
+	}
 
 	db *sql.DB
 }
@@ -85,14 +91,6 @@ func (s *MigrationScheduler) backend(appID string) (backend string, err error) {
 	return
 }
 
-// Migrate prepares this app to be migrated to the cloudformation backend. The
-// next time the app is deployed, it will be deployed to using the
-// cloudformation backend, then the old resources will be removed.
-func (s *MigrationScheduler) Prepare(appID string) error {
-	_, err := s.db.Exec(`UPDATE scheduler_migration SET backend = 'migrate' WHERE app_id = $1`, appID)
-	return err
-}
-
 func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) error {
 	state, err := s.backend(app.ID)
 	if err != nil {
@@ -101,7 +99,10 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 
 	desiredState := app.Processes[0].Env[MigrationEnvVar]
 	if desiredState != "" {
-		return s.Migrate(ctx, app, state, desiredState)
+		if err := s.Migrate(ctx, app, state, desiredState); err != nil {
+			return fmt.Errorf("error migrating app from %s to %s: %v", state, desiredState, err)
+		}
+		return nil
 	}
 
 	b, err := s.Backend(app.ID)
@@ -120,7 +121,7 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 		return nil
 	}
 
-	errTransition := fmt.Errorf("cannot transition to %s from %s", desiredState, state)
+	errTransition := fmt.Errorf("cannot transition from %s to %s", state, desiredState)
 
 	switch desiredState {
 	case "step1":
@@ -134,16 +135,14 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 			Wait:  false,
 			NoDNS: true,
 		}); err != nil {
-			return err
+			return fmt.Errorf("error creating CloudFormation stack: %v", err)
 		}
 
 		// After this step, the user has a couple of options.
 		//
 		// 1. The user can proceed by migrating to step2
-		// 2. The user can manually change the <app>.empire record to
-		//    point at the new load balancer to test that everything is
-		//    functioning properly. When done, they should change it
-		//    back to it's existing value and proceed to step2.
+		// 2. The user can remove the old CNAME, then update the DNS
+		//    parameter in the CloudFormation stack to `true`.
 
 		state = "step1"
 	case "step2":
@@ -151,16 +150,22 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 			return errTransition
 		}
 
+		// The user may have already manually enabled the DNS change,
+		// but let's make sure.
+		if err := s.cloudformation.Submit(ctx, app); err != nil {
+			return fmt.Errorf("error updating CloudFormation stack: %v", err)
+		}
+
 		// Remove the old AWS resources.
 		if err := s.ecs.RemoveWithOptions(ctx, app.ID, ecs.RemoveOptions{
 			NoDNS: true,
 		}); err != nil {
-			return err
+			return fmt.Errorf("error removing existing ECS resources: %v", err)
 		}
 
 		state = "cloudformation"
 	default:
-		return fmt.Errorf("Cannot transition to %s", desiredState)
+		return fmt.Errorf("cannot transition to %s", desiredState)
 	}
 
 	_, err := s.db.Exec(`UPDATE scheduler_migration SET backend = $1 WHERE app_id = $2`, state, app.ID)
@@ -172,7 +177,11 @@ func (s *MigrationScheduler) Remove(ctx context.Context, appID string) error {
 	if err != nil {
 		return err
 	}
-	return b.Remove(ctx, appID)
+	if err := b.Remove(ctx, appID); err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`DELETE FROM scheduler_migration WHERE app_id = $1`, appID)
+	return err
 }
 
 func (s *MigrationScheduler) Instances(ctx context.Context, appID string) ([]*scheduler.Instance, error) {

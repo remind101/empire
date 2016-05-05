@@ -463,6 +463,9 @@ func newDB(t testing.TB) *sql.DB {
 	if _, err := db.Exec(`TRUNCATE TABLE stacks`); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := db.Exec(`TRUNCATE TABLE scheduler_migration`); err != nil {
+		t.Fatal(err)
+	}
 	return db
 }
 
