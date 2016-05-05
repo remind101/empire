@@ -174,10 +174,6 @@ type shouldRequireMessages interface {
 }
 
 func findMessage(r *http.Request, e shouldRequireMessages) (string, error) {
-	var err error
 	h := r.Header.Get(heroku.CommitMessageHeader)
-	if e.ShouldRequireMessages() && h == "" {
-		err = ErrMessageRequired
-	}
-	return h, err
+	return h, nil
 }

@@ -394,6 +394,10 @@ func (opts RunOpts) Event() RunEvent {
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 	event := opts.Event()
 
+	if e.MessagesRequired && opts.Message == "" {
+		return &MessageRequiredError{}
+	}
+
 	if opts.Input != nil && opts.Output != nil && e.RunRecorder != nil {
 		w, err := e.RunRecorder()
 		if err != nil {
@@ -625,6 +629,12 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string {
 	return e.Err.Error()
+}
+
+type MessageRequiredError struct{}
+
+func (e *MessageRequiredError) Error() string {
+	return "Missing required option: 'Message'"
 }
 
 func newJSONMessageError(err error) jsonmessage.JSONMessage {

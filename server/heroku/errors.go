@@ -70,6 +70,8 @@ func newError(err error) *ErrorResource {
 	switch err := err.(type) {
 	case *ErrorResource:
 		return err
+	case *empire.MessageRequiredError:
+		return ErrMessageRequired
 	case *empire.ValidationError:
 		return ErrBadRequest
 	default:
