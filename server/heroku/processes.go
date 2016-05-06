@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -111,6 +112,10 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 		opts.Output = stream
 
 		if err := h.Run(ctx, opts); err != nil {
+			if stream.Hijacked {
+				fmt.Fprintf(stream, "%v\r", err)
+				return nil
+			}
 			return err
 		}
 	} else {

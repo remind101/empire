@@ -14,8 +14,8 @@ type HijackReadWriter struct {
 
 	Header   string
 	Response http.ResponseWriter
+	Hijacked bool
 
-	hijacked bool
 	// writer is returned when hijacking the connection
 	writer io.Writer
 	// reader is returned when hijacking the connection
@@ -44,7 +44,7 @@ func (rw *HijackReadWriter) hijack() error {
 	rw.Lock()
 	defer rw.Unlock()
 
-	if !rw.hijacked {
+	if !rw.Hijacked {
 		reader, writer, err := hijackServer(rw.Response)
 		if err != nil {
 			return err
@@ -52,7 +52,7 @@ func (rw *HijackReadWriter) hijack() error {
 		rw.reader = reader
 		rw.writer = writer
 		fmt.Fprintf(writer, rw.Header)
-		rw.hijacked = true
+		rw.Hijacked = true
 	}
 	return nil
 }
