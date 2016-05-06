@@ -195,14 +195,10 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error uploading stack template to s3: %v", err)
 	}
 
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
-
-	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
 
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
@@ -222,6 +218,9 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
 	})
 
+	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
 		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
 			StackName:   aws.String(stackName),
@@ -229,7 +228,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Tags:        tags,
 			Parameters:  parameters,
 		}); err != nil {
-			return err
+			return fmt.Errorf("error creating stack: %v", err)
 		}
 
 		if wait {
@@ -250,7 +249,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			return err
 		}
 	} else {
-		return err
+		return fmt.Errorf("error describing stack: %v", err)
 	}
 
 	return nil
@@ -308,7 +307,13 @@ func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformati
 
 	resp, err := s.cloudformation.UpdateStack(input)
 	if err != nil {
-		return resp, err
+		if err, ok := err.(awserr.Error); ok {
+			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
+				return resp, nil
+			}
+		}
+
+		return resp, fmt.Errorf("error updating stack: %v", err)
 	}
 
 	if wait {
@@ -353,7 +358,7 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
 	}); err != nil {
-		return err
+		return fmt.Errorf("error deleting stack: %v", err)
 	}
 
 	return nil
@@ -547,12 +552,6 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 			},
 		},
 	}, s.Wait)
-
-	if err, ok := err.(awserr.Error); ok {
-		if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
-			return nil
-		}
-	}
 
 	return err
 }
