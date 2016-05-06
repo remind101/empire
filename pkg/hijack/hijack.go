@@ -12,7 +12,7 @@ import (
 type HijackReadWriter struct {
 	sync.Mutex
 
-	Header   string
+	Header   http.Header
 	Response http.ResponseWriter
 	Hijacked bool
 
@@ -51,8 +51,13 @@ func (rw *HijackReadWriter) hijack() error {
 		}
 		rw.reader = reader
 		rw.writer = writer
-		fmt.Fprintf(writer, rw.Header)
 		rw.Hijacked = true
+
+		fmt.Fprintf(writer, "HTTP/1.1 200 OK\r\n")
+		if err := rw.Header.Write(writer); err != nil {
+			return err
+		}
+		fmt.Fprintf(writer, "\r\n")
 	}
 	return nil
 }

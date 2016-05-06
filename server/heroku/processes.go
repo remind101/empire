@@ -100,9 +100,11 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	if form.Attach {
+		header := http.Header{}
+		header.Set("Content-Type", "application/vnd.empire.raw-stream")
 		stream := &hijack.HijackReadWriter{
 			Response: w,
-			Header:   "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n",
+			Header:   header,
 		}
 		defer stream.Close()
 		// Prevent the ELB idle connection timeout to close the connection.
