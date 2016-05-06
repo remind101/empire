@@ -308,7 +308,8 @@
             {
               "Effect": "Allow",
               "Action": [
-                "sqs:*"
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage"
               ],
               "Resource": { "Fn::GetAtt": ["CustomResourcesQueue", "Arn"] }
             },
@@ -564,6 +565,14 @@
               {
                 "Name": "EMPIRE_CLOUDWATCH_LOG_GROUP",
                 "Value": { "Ref": "LogGroup" }
+              },
+              {
+                "Name": "EMPIRE_CUSTOM_RESOURCES_TOPIC",
+                "Value": { "Ref": "CustomResourcesTopic" }
+              },
+              {
+                "Name": "EMPIRE_CUSTOM_RESOURCES_QUEUE",
+                "Value": { "Ref": "CustomResourcesQueue" }
               }
             ],
             "Command": ["server", "-automigrate=true"],
@@ -648,12 +657,43 @@
     "CustomResourcesTopic": {
       "Type": "AWS::SNS::Topic",
       "Properties": {
-        "DisplayName": "Empire Custom Resources"
+        "DisplayName": "Empire Custom Resources",
+        "Subscription": [
+          {
+            "Protocol": "sqs",
+            "Endpoint": { "Fn::GetAtt": ["CustomResourcesQueue", "Arn"] }
+          }
+        ]
       }
     },
 
     "CustomResourcesQueue": {
       "Type": "AWS::SQS::Queue"
+    },
+
+    "CustomResourcesQueuePolicy": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "Queues": [{ "Ref": "CustomResourcesQueue" }],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Id": "CustomResourcesQueuePolicy",
+          "Statement": [
+            {
+              "Sid": "AllowCustomResourcesTopicToSendMessages",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": ["sqs:SendMessage"],
+              "Resource": "*",
+              "Condition": {
+                "ArnEquals": {
+                  "aws:SourceArn": { "Ref": "CustomResourcesTopic" }
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   },
 
