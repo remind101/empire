@@ -140,6 +140,53 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
+// It's not unlikely that the first couple of migrations will get rolled back,
+// because of Empire configuration issues (not having the correct permissions).
+//
+// To account for that, it should be possible to run step1 multiple times.
+func TestMigrationScheduler_Migrate_Rollback(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	e := new(mockECSScheduler)
+	c := new(mockCloudFormationScheduler)
+	s := &MigrationScheduler{
+		ecs:            e,
+		cloudformation: c,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO scheduler_migration (app_id, backend) VALUES ('c9366591-ab68-4d49-a333-95ce5a23df68', 'ecs')`)
+	assert.NoError(t, err)
+
+	app := &scheduler.App{
+		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Processes: []*scheduler.Process{
+			{
+				Type: "web",
+				Env: map[string]string{
+					MigrationEnvVar: "step1",
+				},
+			},
+		},
+	}
+
+	c.On("SubmitWithOptions", app, SubmitOptions{
+		NoDNS: true,
+	}).Return(nil).Twice()
+
+	err = s.Submit(context.Background(), app)
+	assert.NoError(t, err)
+
+	// Let's assume the the CloudFormation stack that was created got rolled
+	// back, so they manually delete the stack and try again.
+	err = s.Submit(context.Background(), app)
+	assert.NoError(t, err)
+
+	e.AssertExpectations(t)
+	c.AssertExpectations(t)
+}
+
 func TestMigrationScheduler_Migrate_InvalidStateTransitions(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()

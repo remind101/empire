@@ -115,16 +115,14 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 // to successfully create, then removes the old API managed resources using the
 // ECS scheduler.
 func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, state, desiredState string) error {
-	// Nothing to do.
-	if state == desiredState {
-		return nil
-	}
-
 	errTransition := fmt.Errorf("cannot transition from %s to %s", state, desiredState)
+
+	// Whether or not we're re-trying a state transition.
+	rerun := state == desiredState
 
 	switch desiredState {
 	case "step1":
-		if state != "ecs" {
+		if !rerun && state != "ecs" {
 			return errTransition
 		}
 
@@ -145,7 +143,7 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 
 		state = "step1"
 	case "step2":
-		if state != "step1" {
+		if !rerun && state != "step1" {
 			return errTransition
 		}
 
