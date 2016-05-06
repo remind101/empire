@@ -30,7 +30,10 @@
         "Name": "acme-inc.empire",
         "ResourceRecords": [
           {
-            "Ref": "webLoadBalancer"
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
           }
         ],
         "TTL": 60,

@@ -245,9 +245,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 						"Name":         fmt.Sprintf("%s.%s", app.Name, *t.HostedZone.Name),
 						"Type":         "CNAME",
 						"TTL":          defaultCNAMETTL,
-						"ResourceRecords": []map[string]string{
-							map[string]string{
-								"Ref": loadBalancer,
+						"ResourceRecords": []map[string][]string{
+							map[string][]string{
+								"Fn::GetAtt": []string{loadBalancer, "DNSName"},
 							},
 						},
 					},
