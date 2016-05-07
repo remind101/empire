@@ -440,7 +440,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	var arns []*string
 
 	// Find all of the tasks started by the ECS services.
-	for _, serviceArn := range services {
+	for process, serviceArn := range services {
 		id, err := arn.ResourceID(serviceArn)
 		if err != nil {
 			return nil, err
@@ -454,7 +454,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 			taskArns = append(taskArns, resp.TaskArns...)
 			return true
 		}); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error listing tasks for %s: %v", process, err)
 		}
 
 		if len(taskArns) == 0 {
@@ -472,15 +472,18 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		arns = append(arns, resp.TaskArns...)
 		return true
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error listing tasks started by %s: %v", app, err)
 	}
 
 	resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: aws.String(s.Cluster),
 		Tasks:   arns,
 	})
+	if err != nil {
+		return resp.Tasks, fmt.Errorf("error describing tasks: %v", err)
+	}
 
-	return resp.Tasks, err
+	return resp.Tasks, nil
 }
 
 // Services returns a map that maps the name of the process (e.g. web) to the
@@ -499,7 +502,7 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		summaries = append(summaries, p.StackResourceSummaries...)
 		return true
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error listing stack resources: %v", err)
 	}
 
 	services := make(map[string]string)
@@ -510,12 +513,12 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 				LogicalResourceId: summary.LogicalResourceId,
 			})
 			if err != nil {
-				return services, err
+				return services, fmt.Errorf("error describing stack resource %s: %v", *summary.LogicalResourceId, err)
 			}
 
 			var meta serviceMetadata
 			if err := json.Unmarshal([]byte(*resp.StackResourceDetail.Metadata), &meta); err != nil {
-				return services, err
+				return services, fmt.Errorf("error unmarshalling service metadata from %s: %v", *summary.LogicalResourceId, err)
 			}
 
 			services[meta.Name] = *resp.StackResourceDetail.PhysicalResourceId
