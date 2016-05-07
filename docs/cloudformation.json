@@ -112,7 +112,7 @@
       "Type": "String",
       "Default": "true",
       "AllowedValues": ["false", "true"],
-      "Description": "If true, then launch Empire & Postgres as ECS tasks. If anything else, skip launching Empire (intended for dev use when Empire is ran locally)."
+      "Description": "If true, then launch Empire & Postgres as ECS services. Note that this is NOT a production grade stack, this is only meant to serve as an easy way to try out Empire. If you want to take Empire into production, read the docs on Production Best Practices http://empire.readthedocs.io/en/latest/production_best_practices/."
     },
     "GitHubClientId": {
       "Type": "String",
@@ -357,10 +357,39 @@
       }
     },
 
-    "InstancePolicies": {
+    "ECSAgentPolicy": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
         "PolicyName": "ecs",
+        "Roles": [ { "Ref": "InstanceRole" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ecs:DeregisterContainerInstance",
+                "ecs:DiscoverPollEndpoint",
+                "ecs:Poll",
+                "ecs:RegisterContainerInstance",
+                "ecs:StartTelemetrySession",
+                "ecs:Submit*",
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage"
+              ],
+              "Resource": ["*"]
+            }
+          ]
+        }
+      }
+    },
+
+    "EmpirePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "empire",
         "Roles": [ { "Ref": "InstanceRole" } ],
         "Users": [ { "Ref": "User" } ],
         "PolicyDocument": {
@@ -384,28 +413,102 @@
             {
               "Effect": "Allow",
               "Action": [
-                "cloudformation:*",
-                "s3:*",
-                "ec2:Describe*",
-                "elasticloadbalancing:*",
-                "ecs:*",
+                "sns:Publish"
+              ],
+              "Resource": { "Ref": "EventsTopic" }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:PutObjectVersionAcl",
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:GetObjectAcl",
+                "s3:GetObjectVersionAcl"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "TemplateBucket" }, "/*"]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:ListStackResources",
+                "cloudformation:DescribeStackResource",
+                "cloudformation:DescribeStacks"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ecs:CreateService",
+                "ecs:DeleteService",
+                "ecs:DeregisterTaskDefinition",
+                "ecs:Describe*",
+                "ecs:List*",
+                "ecs:RegisterTaskDefinition",
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:StopTask",
+                "ecs:SubmitTaskStateChange",
+                "ecs:UpdateService"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:DescribeTags",
+                "elasticloadbalancing:ConfigureHealthCheck",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:SetLoadBalancerListenerSSLCertificate",
+                "elasticloadbalancing:SetLoadBalancerPoliciesOfListener"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "ecr:GetAuthorizationToken",
                 "ecr:BatchCheckLayerAvailability",
                 "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage",
-                "iam:ListInstanceProfiles",
-                "iam:ListRoles",
-                "iam:PassRole",
-                "iam:UploadServerCertificate",
-                "iam:DeleteServerCertificate",
-                "route53:*",
-                "sns:*",
+                "ecr:BatchGetImage"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:DescribeSubnets",
+                "ec2:DescribeSecurityGroups"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "route53:ListHostedZonesByName",
+                "route53:ChangeResourceRecordSets",
+                "route53:ListHostedZones",
+                "route53:GetHostedZone",
+                "route53:GetChange"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:route53:::hostedzone/", { "Ref": "InternalDomain" }]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "logs:CreateLogStream",
                 "logs:PutLogEvents"
               ],
-              "Resource": [
-                "*"
-              ]
+              "Resource": { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "LogGroup" }, ":log-stream:*"]] }
             }
           ]
         }
