@@ -24,7 +24,7 @@ set -o pipefail
 
 # Set to anything other than 1 to skip launching Empire/Postgres as a service
 # in ECS (meant for development)
-DEMOMODE=${DEMOMODE:-1}
+DEMOMODE=${DEMOMODE:-true}
 
 # Check for dependent commands
 check_dep() {

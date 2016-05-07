@@ -3,6 +3,7 @@
 Going forward from the [installing](quickstart_installing.md) guide, the first thing we'll need to do is tell the empire client where it can find the empire API. The *bootstrap* command should have printed that out for you, so make sure you've set it in your environment like so:
 
 ```
+$ # This value is obtained from the ELBDNSName stack output from the CloudFormation stack you created.
 $ export EMPIRE_API_URL=http://empire-60-LoadBala-1M8NAQ24SPGMP-770037928.us-east-1.elb.amazonaws.com/
 ```
 
@@ -31,7 +32,7 @@ $ emp apps
 Good - we haven't deployed any apps, so we shouldn't see any. Lets deploy our first app - the [acme-inc](https://github.com/remind101/acme-inc) app. It's a simple app that was written by Remind for simple testing of Empire. It has two 'processes' in the [Procfile](https://github.com/remind101/acme-inc/blob/master/Procfile) - a web and worker process.
 
 ```console
-$ emp deploy remind101/acme-inc:latest
+$ emp deploy remind101/acme-inc:master
 Pulling repository remind101/acme-inc
 345c7524bc96: Download complete
 a1dd7097a8e8: Download complete
@@ -40,11 +41,11 @@ a1dd7097a8e8: Download complete
 c7388ff7ab91: Download complete
 78fb106ed050: Download complete
 133fcef559c4: Download complete
-Status: Downloaded newer image for remind101/acme-inc:latest
+Status: Downloaded newer image for remind101/acme-inc:master
 Status: Created new release v1 for acme-inc
 ```
 
-So what just happened? We just told the Empire API to go out and get the 'latest' tagged image from the remind101/acme-inc repository. The Empire daemon then pulled that image down from [hub.docker.com](http://hub.docker.com/), then extracted the *Procfile* from it to analyze what processes were available. Now lets see what apps we're running:
+So what just happened? We just told the Empire API to go out and get the 'master' tagged image from the remind101/acme-inc repository. The Empire daemon then pulled that image down from [hub.docker.com](http://hub.docker.com/), then extracted the *Procfile* from it to analyze what processes were available. Now lets see what apps we're running:
 
 ```console
 $ emp apps
@@ -68,7 +69,7 @@ Next lets take a look at this release and see what we can find out about it. Fir
 
 ```console
 $ emp releases -a acme-inc
-v1    Jun 15 20:42  Deploy remind101/acme-inc:latest
+v1    Jun 15 20:42  Deploy remind101/acme-inc:master
 ```
 
 As you can see we only have a single release, the initial release that was created when we deployed the app.
@@ -98,7 +99,7 @@ As well we should see a new release created for acme-inc:
 
 ```console
 $ emp releases -a acme-inc
-v1    Jun 15 20:42  Deploy remind101/acme-inc:latest
+v1    Jun 15 20:42  Deploy remind101/acme-inc:master
 v2    Jun 15 20:44  Set BAT,FOO config vars
 ```
 
@@ -128,7 +129,7 @@ Rollback creates a new release that copies all the environment variables, as wel
 
 ```console
 $ emp releases -a acme-inc
-v1    Jun 15 20:42  Deploy remind101/acme-inc:latest
+v1    Jun 15 20:42  Deploy remind101/acme-inc:master
 v2    Jun 15 20:44  Set BAT,FOO config vars
 v3    Jun 15 20:45  Rollback to v1
 ```
