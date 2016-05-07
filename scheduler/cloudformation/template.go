@@ -34,6 +34,11 @@ const (
 // This implements the Template interface to create a suitable CloudFormation
 // template for an Empire app.
 type EmpireTemplate struct {
+	// By default, the JSON will not have any whitespace or newlines, which
+	// helps prevent templates from going over the maximum size limit. If
+	// you care about readability, you can set this to true.
+	NoCompress bool
+
 	// The ECS cluster to run the services in.
 	Cluster string
 
@@ -102,13 +107,17 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 		return err
 	}
 
-	raw, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
+	if t.NoCompress {
+		raw, err := json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(w, bytes.NewReader(raw))
 		return err
 	}
 
-	_, err = io.Copy(w, bytes.NewReader(raw))
-	return err
+	return json.NewEncoder(w).Encode(v)
 }
 
 // Build builds a Go representation of a CloudFormation template for the app.

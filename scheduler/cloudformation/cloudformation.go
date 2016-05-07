@@ -29,6 +29,13 @@ import (
 // The identifier of the ECS Service resource in CloudFormation.
 const ecsServiceType = "AWS::ECS::Service"
 
+// CloudFormation limits
+//
+// See http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html
+const (
+	MaxTemplateSize = 460800 // bytes
+)
+
 // DefaultStackNameTemplate is the default text/template for generating a
 // CloudFormation stack name for an app.
 var DefaultStackNameTemplate = template.Must(template.New("stack_name").Parse("{{.Name}}"))
@@ -84,7 +91,7 @@ type serviceMetadata struct {
 type Scheduler struct {
 	// Template is a text/template that will be executed using the
 	// twelvefactor.Manifest as data. This template should return a valid
-	// CloudFormation JSON manifest.
+	// CloudFormation JSON template.
 	Template Template
 
 	// The ECS cluster to run tasks in.
