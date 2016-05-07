@@ -200,7 +200,7 @@ func runReleaseInfo(cmd *Command, args []string) {
 }
 
 var cmdRollback = &Command{
-	Run:             runRollback,
+	Run:             maybeMessage(runRollback),
 	Usage:           "rollback <version>",
 	NeedsApp:        true,
 	OptionalMessage: true,

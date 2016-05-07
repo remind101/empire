@@ -8,7 +8,7 @@ import (
 )
 
 var cmdDestroy = &Command{
-	Run:             runDestroy,
+	Run:             maybeMessage(runDestroy),
 	Usage:           "destroy <name>",
 	OptionalMessage: true,
 	Category:        "app",

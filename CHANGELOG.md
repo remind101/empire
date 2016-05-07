@@ -4,6 +4,7 @@
 
 **Features**
 
+* Empire now supports requiring commit messages for all actions that emit an event via `--messages.required`. If a commit message is required for an action, emp will gracefully handle it and ask the user to input a value [#767](https://github.com/remind101/empire/issues/767).
 * You can now supply a commit message to any event that is published by Empire [#767](https://github.com/remind101/empire/issues/767).
 * Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
 * The Docker logging driver that the ECS backend uses is now configurable via the `--ecs.logdriver` flag [#731](https://github.com/remind101/empire/pull/731).

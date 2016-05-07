@@ -79,6 +79,9 @@ type Empire struct {
 
 	// RunRecorder is used to record the logs from interactive runs.
 	RunRecorder RunRecorder
+
+	// MessagesRequired is a boolean used to determine if messages should be required for events.
+	MessagesRequired bool
 }
 
 // New returns a new Empire instance.
@@ -125,6 +128,13 @@ func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
 	return apps(e.db, q)
 }
 
+func (e *Empire) requireMessages(m string) error {
+	if e.MessagesRequired && m == "" {
+		return &MessageRequiredError{}
+	}
+	return nil
+}
+
 // CreateOpts are options that are provided when creating a new application.
 type CreateOpts struct {
 	// User performing the action.
@@ -145,8 +155,16 @@ func (opts CreateOpts) Event() CreateEvent {
 	}
 }
 
+func (opts CreateOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Create creates a new app.
 func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+	if err := opts.Validate(e); err != nil {
+		return nil, err
+	}
+
 	a, err := appsCreate(e.db, &App{Name: opts.Name})
 	if err != nil {
 		return a, err
@@ -175,8 +193,16 @@ func (opts DestroyOpts) Event() DestroyEvent {
 	}
 }
 
+func (opts DestroyOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Destroy destroys an app.
 func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
+	if err := opts.Validate(e); err != nil {
+		return err
+	}
+
 	tx := e.db.Begin()
 
 	if err := e.apps.Destroy(ctx, tx, opts.App); err != nil {
@@ -237,10 +263,18 @@ func (opts SetOpts) Event() SetEvent {
 	}
 }
 
+func (opts SetOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Set applies the new config vars to the apps current Config, returning the new
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	if err := opts.Validate(e); err != nil {
+		return nil, err
+	}
+
 	tx := e.db.Begin()
 
 	c, err := e.configs.Set(ctx, tx, opts)
@@ -329,9 +363,17 @@ func (opts RestartOpts) Event() RestartEvent {
 	}
 }
 
+func (opts RestartOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Restart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
+	if err := opts.Validate(e); err != nil {
+		return err
+	}
+
 	if err := e.apps.Restart(ctx, e.db, opts); err != nil {
 		return err
 	}
@@ -382,9 +424,17 @@ func (opts RunOpts) Event() RunEvent {
 	}
 }
 
+func (opts RunOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 	event := opts.Event()
+
+	if err := opts.Validate(e); err != nil {
+		return err
+	}
 
 	if opts.Input != nil && opts.Output != nil && e.RunRecorder != nil {
 		w, err := e.RunRecorder()
@@ -449,9 +499,17 @@ func (opts RollbackOpts) Event() RollbackEvent {
 	}
 }
 
+func (opts RollbackOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Rollback rolls an app back to a specific release version. Returns a
 // new release.
 func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
+	if err := opts.Validate(e); err != nil {
+		return nil, err
+	}
+
 	tx := e.db.Begin()
 
 	r, err := e.releases.Rollback(ctx, tx, opts)
@@ -503,8 +561,16 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	return e
 }
 
+func (opts DeploymentsCreateOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	if err := opts.Validate(e); err != nil {
+		return nil, err
+	}
+
 	tx := e.db.Begin()
 
 	r, err := e.deployer.Deploy(ctx, tx, opts)
@@ -564,8 +630,16 @@ func (opts ScaleOpts) Event() ScaleEvent {
 	return e
 }
 
+func (opts ScaleOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
 // Scale scales an apps process.
 func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
+	if err := opts.Validate(e); err != nil {
+		return nil, err
+	}
+
 	tx := e.db.Begin()
 
 	p, err := e.apps.Scale(ctx, tx, opts)
@@ -617,6 +691,12 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string {
 	return e.Err.Error()
+}
+
+type MessageRequiredError struct{}
+
+func (e *MessageRequiredError) Error() string {
+	return "Missing required option: 'Message'"
 }
 
 func newJSONMessageError(err error) jsonmessage.JSONMessage {

@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	FlagPort           = "port"
-	FlagAutoMigrate    = "automigrate"
-	FlagEventsBackend  = "events.backend"
-	FlagRunLogsBackend = "runlogs.backend"
+	FlagPort             = "port"
+	FlagAutoMigrate      = "automigrate"
+	FlagEventsBackend    = "events.backend"
+	FlagRunLogsBackend   = "runlogs.backend"
+	FlagMessagesRequired = "messages.required"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -319,6 +320,11 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "When using the `cloudwatch` backend with the `--" + FlagRunLogsBackend + "` flag , this is the log group that CloudWatch log streams will be created in.",
 		EnvVar: "EMPIRE_CLOUDWATCH_LOG_GROUP",
+	},
+	cli.BoolFlag{
+		Name:   FlagMessagesRequired,
+		Usage:  "If true, messages will be required for empire actions that emit events.",
+		EnvVar: "EMPIRE_MESSAGES_REQUIRED",
 	},
 }
 

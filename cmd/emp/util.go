@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -146,6 +148,18 @@ func mustConfirm(warning, desired string) {
 	}
 }
 
+func askForMessage() (string, error) {
+	if !isTerminalIn {
+		return "", errors.New("Can't ask for message")
+	}
+
+	fmt.Println("A commit message is required, enter one below:")
+	fmt.Printf("> ")
+	reader := bufio.NewReader(os.Stdin)
+	message, err := reader.ReadString('\n')
+	return strings.Trim(message, " \n"), err
+}
+
 func colorizeMessage(color, prefix, message string, args ...interface{}) string {
 	prefResult := ""
 	if prefix != "" {
@@ -261,4 +275,24 @@ func stringsIndex(s []string, item string) int {
 		}
 	}
 	return -1
+}
+
+func maybeMessage(action func(cmd *Command, args []string)) func(cmd *Command, args []string) {
+	return func(cmd *Command, args []string) {
+		defer func() {
+			if r := recover(); r != nil {
+				e := r.(heroku.Error)
+				if e.Id == "message_required" {
+					message, err := askForMessage()
+					if message == "" || err != nil {
+						printFatal("A message is required for this action, please run again with '-m'.")
+					}
+					flagMessage = message
+					action(cmd, args)
+				}
+			}
+		}()
+
+		action(cmd, args)
+	}
 }

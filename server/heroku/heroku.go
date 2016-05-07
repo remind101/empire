@@ -170,5 +170,6 @@ func UserFromContext(ctx context.Context) *empire.User {
 }
 
 func findMessage(r *http.Request) (string, error) {
-	return r.Header.Get(heroku.CommitMessageHeader), nil
+	h := r.Header.Get(heroku.CommitMessageHeader)
+	return h, nil
 }

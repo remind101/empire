@@ -77,6 +77,7 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	e.Logger = newLogger()
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
+	e.MessagesRequired = c.Bool(FlagMessagesRequired)
 
 	return e, nil
 }
