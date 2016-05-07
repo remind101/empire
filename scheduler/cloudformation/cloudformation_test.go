@@ -451,6 +451,17 @@ func TestScheduler_Scale_NoUpdates(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
+func TestExtractServices(t *testing.T) {
+	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
+	services := extractServices(output)
+	expected := map[string]string{
+		"statuses":       "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO",
+		"statuses_retry": "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N",
+	}
+
+	assert.Equal(t, expected, services)
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {
