@@ -250,22 +250,18 @@ func TestScheduler_Instances(t *testing.T) {
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
 	assert.NoError(t, err)
 
-	c.On("ListStackResourcesPages", &cloudformation.ListStackResourcesInput{
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
-	}).Return(&cloudformation.ListStackResourcesOutput{
-		StackResourceSummaries: []*cloudformation.StackResourceSummary{
-			{ResourceType: aws.String("AWS::EC2::LoadBalancer")},
-			{ResourceType: aws.String("AWS::ECS::Service"), LogicalResourceId: aws.String("web")},
-		},
-	}, nil)
-
-	c.On("DescribeStackResource", &cloudformation.DescribeStackResourceInput{
-		LogicalResourceId: aws.String("web"),
-		StackName:         aws.String("acme-inc"),
-	}).Return(&cloudformation.DescribeStackResourceOutput{
-		StackResourceDetail: &cloudformation.StackResourceDetail{
-			Metadata:           aws.String(`{"name":"web"}`),
-			PhysicalResourceId: aws.String(`arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web`),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+				},
+			},
 		},
 	}, nil)
 

@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -26,8 +25,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-// The identifier of the ECS Service resource in CloudFormation.
-const ecsServiceType = "AWS::ECS::Service"
+// The name of the output key where process names are mapped to ECS services.
+// This output is expected to be a comma delimited list of `process=servicearn`
+// values.
+const servicesOutput = "Services"
 
 // CloudFormation limits
 //
@@ -77,13 +78,6 @@ type s3Client interface {
 // the same interface as text/template.Template.
 type Template interface {
 	Execute(wr io.Writer, data interface{}) error
-}
-
-// Templates should add metadata to the ECS resources with the following
-// structure.
-type serviceMetadata struct {
-	// This is the name of the process that this ECS service is for.
-	Name string `json:"name"`
 }
 
 // Scheduler implements the scheduler.Scheduler interface using CloudFormation
@@ -494,38 +488,31 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, err
 	}
 
-	// Get a summary of all of the stacks resources.
-	var summaries []*cloudformation.StackResourceSummary
-	if err := s.cloudformation.ListStackResourcesPages(&cloudformation.ListStackResourcesInput{
+	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
-	}, func(p *cloudformation.ListStackResourcesOutput, lastPage bool) bool {
-		summaries = append(summaries, p.StackResourceSummaries...)
-		return true
-	}); err != nil {
-		return nil, fmt.Errorf("error listing stack resources: %v", err)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
 
-	services := make(map[string]string)
-	for _, summary := range summaries {
-		if *summary.ResourceType == ecsServiceType {
-			resp, err := s.cloudformation.DescribeStackResource(&cloudformation.DescribeStackResourceInput{
-				StackName:         aws.String(stackName),
-				LogicalResourceId: summary.LogicalResourceId,
-			})
-			if err != nil {
-				return services, fmt.Errorf("error describing stack resource %s: %v", *summary.LogicalResourceId, err)
-			}
+	stack := resp.Stacks[0]
 
-			var meta serviceMetadata
-			if err := json.Unmarshal([]byte(*resp.StackResourceDetail.Metadata), &meta); err != nil {
-				return services, fmt.Errorf("error unmarshalling service metadata from %s: %v", *summary.LogicalResourceId, err)
-			}
-
-			services[meta.Name] = *resp.StackResourceDetail.PhysicalResourceId
+	var output *cloudformation.Output
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == servicesOutput {
+			output = o
 		}
 	}
+	if output == nil {
+		// Nothing to do but wait until the outputs are set.
+		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
+			return nil, nil
+		}
 
-	return services, nil
+		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
+	}
+
+	return extractServices(*output.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
@@ -610,6 +597,20 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 		return "", errNoStack
 	}
 	return stackName, err
+}
+
+// extractServices extracts a map that maps the process name to the ARN of the
+// associated ECS service.
+func extractServices(value string) map[string]string {
+	services := make(map[string]string)
+	pairs := strings.Split(value, ",")
+
+	for _, p := range pairs {
+		parts := strings.Split(p, "=")
+		services[parts[0]] = parts[1]
+	}
+
+	return services
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a

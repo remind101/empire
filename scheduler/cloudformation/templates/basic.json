@@ -9,7 +9,39 @@
       ]
     }
   },
-  "Outputs": {},
+  "Outputs": {
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Ref": "web"
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "worker",
+                  {
+                    "Ref": "worker"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
   "Parameters": {
     "DNS": {
       "Description": "When set to `true`, CNAME's will be altered",
@@ -42,9 +74,6 @@
       "Type": "AWS::Route53::RecordSet"
     },
     "web": {
-      "Metadata": {
-        "name": "web"
-      },
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
@@ -156,9 +185,6 @@
       "Type": "AWS::ECS::TaskDefinition"
     },
     "worker": {
-      "Metadata": {
-        "name": "worker"
-      },
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {

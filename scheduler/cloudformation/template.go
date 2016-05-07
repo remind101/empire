@@ -141,6 +141,8 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	resources := map[string]interface{}{}
 	outputs := map[string]interface{}{}
 
+	serviceMappings := []map[string]interface{}{}
+
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(p)
 
@@ -291,6 +293,12 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		}
 
 		service := fmt.Sprintf("%s", key)
+		serviceMappings = append(serviceMappings, map[string]interface{}{
+			"Fn::Join": []interface{}{
+				"=",
+				[]interface{}{p.Type, map[string]string{"Ref": service}},
+			},
+		})
 		serviceProperties := map[string]interface{}{
 			"Cluster": t.Cluster,
 			"DesiredCount": map[string]string{
@@ -305,13 +313,19 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			serviceProperties["Role"] = t.ServiceRole
 		}
 		resources[service] = map[string]interface{}{
-			"Type": "AWS::ECS::Service",
-			"Metadata": &serviceMetadata{
-				Name: p.Type,
-			},
+			"Type":       "AWS::ECS::Service",
 			"Properties": serviceProperties,
 		}
 
+	}
+
+	outputs[servicesOutput] = map[string]interface{}{
+		"Value": map[string]interface{}{
+			"Fn::Join": []interface{}{
+				",",
+				serviceMappings,
+			},
+		},
 	}
 
 	return map[string]interface{}{

@@ -9,7 +9,28 @@
       ]
     }
   },
-  "Outputs": {},
+  "Outputs": {
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Ref": "web"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
   "Parameters": {
     "DNS": {
       "Description": "When set to `true`, CNAME's will be altered",
@@ -39,9 +60,6 @@
       "Type": "AWS::Route53::RecordSet"
     },
     "web": {
-      "Metadata": {
-        "name": "web"
-      },
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
