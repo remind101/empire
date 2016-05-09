@@ -391,7 +391,7 @@
       "Properties": {
         "PolicyName": "empire",
         "Roles": [ { "Ref": "InstanceRole" } ],
-        "Users": [ { "Ref": "User" } ],
+        "Groups": [ { "Ref": "Group" } ],
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -618,9 +618,15 @@
       }
     },
 
+    "Group": {
+      "Type": "AWS::IAM::Group"
+    },
+
     "User": {
       "Type": "AWS::IAM::User",
-      "Properties": { }
+      "Properties": {
+        "Groups": [ { "Ref": "Group" } ]
+      }
     },
 
     "AccessKey": {
