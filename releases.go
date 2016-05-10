@@ -330,9 +330,9 @@ func processExposure(app *App, process string) *scheduler.Exposure {
 }
 
 func appendMessageToDescription(main string, user *User, message string) string {
-	formatted := message
-	if formatted != "" {
-		formatted = fmt.Sprintf(": '%s'", formatted)
+	var formatted string
+	if message != "" {
+		formatted = fmt.Sprintf(": '%s'", message)
 	}
 	return fmt.Sprintf("%s (%s%s)", main, user.Name, formatted)
 }
