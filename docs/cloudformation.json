@@ -352,6 +352,7 @@
 
     "TemplateBucket": {
       "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Delete",
       "Properties": {
         "AccessControl": "Private"
       }
@@ -395,6 +396,13 @@
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "iam:PassRole"
+              ],
+              "Resource": { "Fn::GetAtt": ["ServiceRole", "Arn"] }
+            },
             {
               "Effect": "Allow",
               "Action": [
@@ -497,10 +505,16 @@
                 "route53:ListHostedZonesByName",
                 "route53:ChangeResourceRecordSets",
                 "route53:ListHostedZones",
-                "route53:GetHostedZone",
-                "route53:GetChange"
+                "route53:GetHostedZone"
               ],
               "Resource": { "Fn::Join": ["", ["arn:aws:route53:::hostedzone/", { "Ref": "InternalDomain" }]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "route53:GetChange*"
+              ],
+              "Resource": "arn:aws:route53:::change/*"
             },
             {
               "Effect": "Allow",
