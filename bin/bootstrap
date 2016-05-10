@@ -2,14 +2,14 @@
 
 echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-echo '!! This script produces an insecure demo or dev environment and is   !!'
+echo '!! This script produces an insecure dev environment and is           !!'
 echo '!! not meant to be ran in production. As well it is exposed to the   !!'
 echo '!! internet and as such should not be left running without further   !!'
 echo '!! locking down of the security groups.                              !!'
 echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
-read -p "Do you want to continue? (y/N)" SECCHECK
+read -p "Do you want to continue? (y/N) " SECCHECK
 
 SECCHECK=$(echo $SECCHECK | tr '[:upper:]' '[:lower:]')
 
@@ -21,10 +21,6 @@ fi
 
 set -e
 set -o pipefail
-
-# Set to anything other than 1 to skip launching Empire/Postgres as a service
-# in ECS (meant for development)
-DEMOMODE=${DEMOMODE:-1}
 
 # Check for dependent commands
 check_dep() {
@@ -73,7 +69,7 @@ DEFAULT_DOCKER_REGISTRY="https://index.docker.io/v1/"
 AWSCMD="aws cloudformation create-stack --stack-name "$STACK" --template-body file://$PWD/docs/cloudformation.json --capabilities CAPABILITY_IAM"
 
 
-PARAMETERS="ParameterKey=DesiredCapacity,ParameterValue=5 ParameterKey=MaxCapacity,ParameterValue=10 ParameterKey=AvailabilityZones,ParameterValue=\"$SAFEZONES\" ParameterKey=KeyName,ParameterValue=\"$keyname\" ParameterKey=LaunchEmpire,ParameterValue=$DEMOMODE"
+PARAMETERS="ParameterKey=DesiredCapacity,ParameterValue=5 ParameterKey=DesiredCapacity,ParameterValue=10 ParameterKey=AvailabilityZones,ParameterValue=\"$SAFEZONES\" ParameterKey=KeyName,ParameterValue=\"$keyname\" ParameterKey=LaunchEmpire,ParameterValue=false"
 
 if [ "$private_docker" == "Y" ]
 then
@@ -111,31 +107,23 @@ done
 echo
 echo "==> Stack $STACK complete."
 
-# Give additional info if in DEMOMODE
-if [ "$DEMOMODE" -eq 1 ]
-then
-  echo "==> Now run the following commands - when asked for a username, enter 'fake'. The password is blank:"
-  echo "$ export EMPIRE_API_URL=http://$(output ELBDNSName)/"
-  echo "$ emp login"
-else
-  if [ ! -e ~/.dockercfg ]; then
-    echo "==> ~/.dockercfg not found. Creating."
-    echo '{}' > ~/.dockercfg
-  fi
-
-  echo "==> Dumping stack info into .env for devmode."
-  echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
-  echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
-  echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
-  echo "EMPIRE_S3_TEMPLATE_BUCKET=$(output TemplateBucket)" >> .env
-  echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
-  echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
-  echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
-  echo "EMPIRE_ECS_CLUSTER=$(output Cluster)" >> .env
-  echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
-  echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
-  echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
-  echo "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=$(output InternalZoneID)" >> .env
-  echo "EMPIRE_CUSTOM_RESOURCES_TOPIC=$(output CustomResourcesTopic)" >> .env
-  echo "EMPIRE_CUSTOM_RESOURCES_QUEUE=$(output CustomResourcesQueue)" >> .env
+if [ ! -e ~/.dockercfg ]; then
+  echo "==> ~/.dockercfg not found. Creating."
+  echo '{}' > ~/.dockercfg
 fi
+
+echo "==> Dumping stack info into .env"
+echo "AWS_REGION=$AWS_DEFAULT_REGION" > .env
+echo "AWS_ACCESS_KEY_ID=$(output AccessKeyId)" >> .env
+echo "AWS_SECRET_ACCESS_KEY=$(output SecretAccessKey)" >> .env
+echo "EMPIRE_S3_TEMPLATE_BUCKET=$(output TemplateBucket)" >> .env
+echo "EMPIRE_ELB_VPC_ID=$(output VPC)" >> .env
+echo "EMPIRE_ELB_SG_PRIVATE=$(output InternalELBSG)" >> .env
+echo "EMPIRE_ELB_SG_PUBLIC=$(output ExternalELBSG)" >> .env
+echo "EMPIRE_ECS_CLUSTER=$(output Cluster)" >> .env
+echo "EMPIRE_ECS_SERVICE_ROLE=$(output ServiceRole)" >> .env
+echo "EMPIRE_EC2_SUBNETS_PRIVATE=$(output Subnets)" >> .env
+echo "EMPIRE_EC2_SUBNETS_PUBLIC=$(output Subnets)" >> .env
+echo "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=$(output InternalZoneID)" >> .env
+echo "EMPIRE_CUSTOM_RESOURCES_TOPIC=$(output CustomResourcesTopic)" >> .env
+echo "EMPIRE_CUSTOM_RESOURCES_QUEUE=$(output CustomResourcesQueue)" >> .env

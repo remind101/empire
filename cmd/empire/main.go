@@ -292,7 +292,7 @@ var EmpireFlags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:   FlagRunLogsBackend,
-		Value:  "",
+		Value:  "stdout",
 		Usage:  "The backend implementation to use to record the logs from interactive runs. Current supports `cloudwatch` and `stdout`",
 		EnvVar: "EMPIRE_RUN_LOGS_BACKEND",
 	},
