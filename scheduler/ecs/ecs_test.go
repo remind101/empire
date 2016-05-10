@@ -453,11 +453,8 @@ func TestScheduler_Run(t *testing.T) {
 	m, s := newTestScheduler(h)
 	defer s.Close()
 
-	app := &scheduler.App{ID: "1234"}
-	process := &scheduler.Process{
-		Type:    "run",
-		Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-		Command: []string{"acme-inc", "web", "--port", "80"},
+	app := &scheduler.App{
+		ID: "1234",
 		Env: map[string]string{
 			"USER": "foo",
 		},
@@ -465,6 +462,11 @@ func TestScheduler_Run(t *testing.T) {
 			"label1": "foo",
 			"label2": "bar",
 		},
+	}
+	process := &scheduler.Process{
+		Type:        "run",
+		Image:       image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+		Command:     []string{"acme-inc", "web", "--port", "80"},
 		MemoryLimit: 134217728, // 128
 		CPUShares:   128,
 	}
@@ -671,18 +673,18 @@ func (m *mockLBManager) RemoveCNAMEs(ctx context.Context, tags map[string]string
 // fake app for testing.
 var fakeApp = &scheduler.App{
 	ID: "1234",
+	Env: map[string]string{
+		"USER": "foo",
+	},
+	Labels: map[string]string{
+		"label1": "foo",
+		"label2": "bar",
+	},
 	Processes: []*scheduler.Process{
 		&scheduler.Process{
-			Type:    "web",
-			Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-			Command: []string{"acme-inc", "web", "--port", "80"},
-			Env: map[string]string{
-				"USER": "foo",
-			},
-			Labels: map[string]string{
-				"label1": "foo",
-				"label2": "bar",
-			},
+			Type:        "web",
+			Image:       image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+			Command:     []string{"acme-inc", "web", "--port", "80"},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,
 			Exposure: &scheduler.Exposure{

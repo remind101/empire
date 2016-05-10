@@ -358,7 +358,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.TaskDefinition, error) {
-	taskDef, err := m.taskDefinitionInput(process, loadBalancer)
+	taskDef, err := m.taskDefinitionInput(app, process, loadBalancer)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +367,7 @@ func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App
 	return resp.TaskDefinition, err
 }
 
-func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
+func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
 	// ecs.ContainerDefinition{Command} is expecting a []*string
 	var command []*string
 	for _, s := range p.Command {
@@ -376,7 +376,7 @@ func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.L
 	}
 
 	var environment []*ecs.KeyValuePair
-	for k, v := range p.Env {
+	for k, v := range scheduler.Env(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
@@ -399,7 +399,7 @@ func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.L
 	}
 
 	labels := make(map[string]*string)
-	for k, v := range p.Labels {
+	for k, v := range scheduler.Labels(app, p) {
 		labels[k] = aws.String(v)
 	}
 
@@ -715,7 +715,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 	return &scheduler.Process{
 		Type:        safeString(container.Name),
 		Command:     command,
-		Env:         env,
+		FEnv:        env,
 		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * MB,
 		Nproc:       uint(softLimit(container.Ulimits, "nproc")),

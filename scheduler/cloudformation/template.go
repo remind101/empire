@@ -144,7 +144,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	serviceMappings := []map[string]interface{}{}
 
 	for _, p := range app.Processes {
-		cd := t.ContainerDefinition(p)
+		cd := t.ContainerDefinition(app, p)
 
 		key := processResourceName(p.Type)
 
@@ -337,7 +337,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 }
 
 // ContainerDefinition generates an ECS ContainerDefinition for a process.
-func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.ContainerDefinition {
+func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Process) *ecs.ContainerDefinition {
 	command := []*string{}
 	for _, s := range p.Command {
 		ss := s
@@ -345,7 +345,7 @@ func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.Containe
 	}
 
 	environment := []*ecs.KeyValuePair{}
-	for k, v := range p.Env {
+	for k, v := range scheduler.Env(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
@@ -353,7 +353,7 @@ func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.Containe
 	}
 
 	labels := make(map[string]*string)
-	for k, v := range p.Labels {
+	for k, v := range scheduler.Labels(app, p) {
 		labels[k] = aws.String(v)
 	}
 

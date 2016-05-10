@@ -32,7 +32,7 @@ func TestEmpireTemplate(t *testing.T) {
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPExposure{},
 						},
-						Labels: map[string]string{
+						FLabels: map[string]string{
 							"empire.app.process": "web",
 						},
 						MemoryLimit: 128 * bytesize.MB,
@@ -44,11 +44,11 @@ func TestEmpireTemplate(t *testing.T) {
 						Type:    "worker",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/worker"},
-						Env: map[string]string{
-							"FOO": "BAR",
-						},
-						Labels: map[string]string{
+						FLabels: map[string]string{
 							"empire.app.process": "worker",
+						},
+						FEnv: map[string]string{
+							"FOO": "BAR",
 						},
 					},
 				},
@@ -99,16 +99,16 @@ func TestEmpireTemplate_Large(t *testing.T) {
 		env[fmt.Sprintf("ENV_VAR_%d", i)] = fmt.Sprintf("value%d", i)
 	}
 	app := &scheduler.App{
-		ID:   "",
-		Name: "bigappwithlotsofprocesses",
+		ID:     "",
+		Name:   "bigappwithlotsofprocesses",
+		Env:    env,
+		Labels: labels,
 	}
 
 	for i := 0; i < 60; i++ {
 		app.Processes = append(app.Processes, &scheduler.Process{
 			Type:    fmt.Sprintf("%d", i),
 			Command: []string{"./bin/web"},
-			Env:     env,
-			Labels:  labels,
 		})
 	}
 

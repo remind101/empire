@@ -48,11 +48,13 @@ func (m *FakeScheduler) Instances(ctx context.Context, appID string) ([]*Instanc
 	var instances []*Instance
 	if a, ok := m.apps[appID]; ok {
 		for _, p := range a.Processes {
+			pp := *p
+			pp.FEnv = Env(a, p)
 			for i := uint(1); i <= p.Instances; i++ {
 				instances = append(instances, &Instance{
 					ID:        fmt.Sprintf("%d", i),
 					State:     "running",
-					Process:   p,
+					Process:   &pp,
 					UpdatedAt: timex.Now(),
 				})
 			}

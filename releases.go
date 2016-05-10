@@ -134,7 +134,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 // Release submits a release to the scheduler.
 func (s *releasesService) Release(ctx context.Context, release *Release) error {
-	a := newServiceApp(release)
+	a := newSchedulerApp(release)
 	return s.Scheduler.Submit(ctx, a)
 }
 
@@ -251,40 +251,49 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func newServiceApp(release *Release) *scheduler.App {
+func newSchedulerApp(release *Release) *scheduler.App {
+
 	var processes []*scheduler.Process
 
 	for name, p := range release.Formation {
-		processes = append(processes, newServiceProcess(release, name, p))
+		processes = append(processes, newSchedulerProcess(release, name, p))
+	}
+
+	env := environment(release.Config.Vars)
+	env["EMPIRE_APPID"] = release.App.ID
+	env["EMPIRE_APPNAME"] = release.App.Name
+	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
+	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
+
+	labels := map[string]string{
+		"empire.app.id":      release.App.ID,
+		"empire.app.name":    release.App.Name,
+		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
 	return &scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
 		Processes: processes,
+		Env:       env,
+		Labels:    labels,
 	}
 }
 
-func newServiceProcess(release *Release, name string, p Process) *scheduler.Process {
-	env := environment(release.Config.Vars)
-	env["EMPIRE_APPID"] = release.App.ID
-	env["EMPIRE_APPNAME"] = release.App.Name
-	env["EMPIRE_PROCESS"] = name
-	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
-	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
-	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version)
+func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Process {
+	env := map[string]string{
+		"EMPIRE_PROCESS": name,
+		"SOURCE":         fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version),
+	}
 
 	labels := map[string]string{
-		"empire.app.id":      release.App.ID,
-		"empire.app.name":    release.App.Name,
 		"empire.app.process": name,
-		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
 	return &scheduler.Process{
 		Type:        name,
-		Env:         env,
-		Labels:      labels,
+		FEnv:        env,
+		FLabels:     labels,
 		Command:     []string(p.Command),
 		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),

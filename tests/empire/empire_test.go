@@ -100,6 +100,17 @@ func TestEmpire_Deploy(t *testing.T) {
 	s.On("Submit", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
+		Env: map[string]string{
+			"EMPIRE_APPID":      app.ID,
+			"EMPIRE_APPNAME":    "acme-inc",
+			"EMPIRE_RELEASE":    "v1",
+			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+		},
+		Labels: map[string]string{
+			"empire.app.name":    "acme-inc",
+			"empire.app.id":      app.ID,
+			"empire.app.release": "v1",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type:    "web",
@@ -112,19 +123,12 @@ func TestEmpire_Deploy(t *testing.T) {
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				Env: map[string]string{
-					"EMPIRE_APPID":      app.ID,
-					"EMPIRE_APPNAME":    "acme-inc",
-					"EMPIRE_PROCESS":    "web",
-					"EMPIRE_RELEASE":    "v1",
-					"SOURCE":            "acme-inc.web.v1",
-					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+				FEnv: map[string]string{
+					"EMPIRE_PROCESS": "web",
+					"SOURCE":         "acme-inc.web.v1",
 				},
-				Labels: map[string]string{
-					"empire.app.name":    "acme-inc",
-					"empire.app.id":      app.ID,
+				FLabels: map[string]string{
 					"empire.app.process": "web",
-					"empire.app.release": "v1",
 				},
 			},
 		},
@@ -261,6 +265,17 @@ func TestEmpire_Run(t *testing.T) {
 	s.On("Run", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
+		Env: map[string]string{
+			"EMPIRE_APPID":      app.ID,
+			"EMPIRE_APPNAME":    "acme-inc",
+			"EMPIRE_RELEASE":    "v1",
+			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+		},
+		Labels: map[string]string{
+			"empire.app.name":    "acme-inc",
+			"empire.app.id":      app.ID,
+			"empire.app.release": "v1",
+		},
 	},
 		&scheduler.Process{
 			Type:        "run",
@@ -270,20 +285,13 @@ func TestEmpire_Run(t *testing.T) {
 			MemoryLimit: 536870912,
 			CPUShares:   256,
 			Nproc:       256,
-			Env: map[string]string{
-				"EMPIRE_APPID":      app.ID,
-				"EMPIRE_APPNAME":    "acme-inc",
-				"EMPIRE_PROCESS":    "run",
-				"EMPIRE_RELEASE":    "v1",
-				"SOURCE":            "acme-inc.run.v1",
-				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-				"TERM":              "xterm",
+			FEnv: map[string]string{
+				"EMPIRE_PROCESS": "run",
+				"SOURCE":         "acme-inc.run.v1",
+				"TERM":           "xterm",
 			},
-			Labels: map[string]string{
-				"empire.app.name":    "acme-inc",
-				"empire.app.id":      app.ID,
+			FLabels: map[string]string{
 				"empire.app.process": "run",
-				"empire.app.release": "v1",
 			},
 		}, nil, nil).Return(nil)
 
@@ -331,6 +339,17 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	s.On("Run", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
+		Env: map[string]string{
+			"EMPIRE_APPID":      app.ID,
+			"EMPIRE_APPNAME":    "acme-inc",
+			"EMPIRE_RELEASE":    "v1",
+			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+		},
+		Labels: map[string]string{
+			"empire.app.name":    "acme-inc",
+			"empire.app.id":      app.ID,
+			"empire.app.release": "v1",
+		},
 	},
 		&scheduler.Process{
 			Type:        "run",
@@ -340,20 +359,13 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 			MemoryLimit: 1073741824,
 			CPUShares:   512,
 			Nproc:       512,
-			Env: map[string]string{
-				"EMPIRE_APPID":      app.ID,
-				"EMPIRE_APPNAME":    "acme-inc",
-				"EMPIRE_PROCESS":    "run",
-				"EMPIRE_RELEASE":    "v1",
-				"SOURCE":            "acme-inc.run.v1",
-				"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-				"TERM":              "xterm",
+			FEnv: map[string]string{
+				"EMPIRE_PROCESS": "run",
+				"SOURCE":         "acme-inc.run.v1",
+				"TERM":           "xterm",
 			},
-			Labels: map[string]string{
-				"empire.app.name":    "acme-inc",
-				"empire.app.id":      app.ID,
+			FLabels: map[string]string{
 				"empire.app.process": "run",
-				"empire.app.release": "v1",
 			},
 		}, nil, nil).Return(nil)
 
@@ -408,6 +420,18 @@ func TestEmpire_Set(t *testing.T) {
 	s.On("Submit", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
+		Env: map[string]string{
+			"EMPIRE_APPID":      app.ID,
+			"EMPIRE_APPNAME":    "acme-inc",
+			"EMPIRE_RELEASE":    "v1",
+			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			"RAILS_ENV":         "production",
+		},
+		Labels: map[string]string{
+			"empire.app.name":    "acme-inc",
+			"empire.app.id":      app.ID,
+			"empire.app.release": "v1",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type:    "web",
@@ -420,20 +444,12 @@ func TestEmpire_Set(t *testing.T) {
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				Env: map[string]string{
-					"EMPIRE_APPID":      app.ID,
-					"EMPIRE_APPNAME":    "acme-inc",
-					"EMPIRE_PROCESS":    "web",
-					"EMPIRE_RELEASE":    "v1",
-					"SOURCE":            "acme-inc.web.v1",
-					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-					"RAILS_ENV":         "production",
+				FEnv: map[string]string{
+					"EMPIRE_PROCESS": "web",
+					"SOURCE":         "acme-inc.web.v1",
 				},
-				Labels: map[string]string{
-					"empire.app.name":    "acme-inc",
-					"empire.app.id":      app.ID,
+				FLabels: map[string]string{
 					"empire.app.process": "web",
-					"empire.app.release": "v1",
 				},
 			},
 		},
@@ -451,6 +467,17 @@ func TestEmpire_Set(t *testing.T) {
 	s.On("Submit", &scheduler.App{
 		ID:   app.ID,
 		Name: "acme-inc",
+		Env: map[string]string{
+			"EMPIRE_APPID":      app.ID,
+			"EMPIRE_APPNAME":    "acme-inc",
+			"EMPIRE_RELEASE":    "v2",
+			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+		},
+		Labels: map[string]string{
+			"empire.app.name":    "acme-inc",
+			"empire.app.id":      app.ID,
+			"empire.app.release": "v2",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type:    "web",
@@ -463,19 +490,12 @@ func TestEmpire_Set(t *testing.T) {
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				Env: map[string]string{
-					"EMPIRE_APPID":      app.ID,
-					"EMPIRE_APPNAME":    "acme-inc",
-					"EMPIRE_PROCESS":    "web",
-					"EMPIRE_RELEASE":    "v2",
-					"SOURCE":            "acme-inc.web.v2",
-					"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+				FEnv: map[string]string{
+					"EMPIRE_PROCESS": "web",
+					"SOURCE":         "acme-inc.web.v2",
 				},
-				Labels: map[string]string{
-					"empire.app.name":    "acme-inc",
-					"empire.app.id":      app.ID,
+				FLabels: map[string]string{
 					"empire.app.process": "web",
-					"empire.app.release": "v2",
 				},
 			},
 		},

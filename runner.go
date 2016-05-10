@@ -71,12 +71,12 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 	}
 	proc.SetConstraints(constraints)
 
-	a := newServiceApp(release)
-	p := newServiceProcess(release, "run", proc)
+	a := newSchedulerApp(release)
+	p := newSchedulerProcess(release, "run", proc)
 
 	// Add additional environment variables to the process.
 	for k, v := range opts.Env {
-		p.Env[k] = v
+		p.FEnv[k] = v
 	}
 
 	return r.Scheduler.Run(ctx, a, p, opts.Input, opts.Output)

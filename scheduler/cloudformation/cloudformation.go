@@ -560,7 +560,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 	}
 
 	t, ok := m.Template.(interface {
-		ContainerDefinition(*scheduler.Process) *ecs.ContainerDefinition
+		ContainerDefinition(*scheduler.App, *scheduler.Process) *ecs.ContainerDefinition
 	})
 	if !ok {
 		return errors.New("provided template can't generate a container definition for this process")
@@ -569,7 +569,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 	resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		Family: aws.String(fmt.Sprintf("%s--%s", app.ID, process.Type)),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
-			t.ContainerDefinition(process),
+			t.ContainerDefinition(app, process),
 		},
 	})
 	if err != nil {
@@ -639,7 +639,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 	return &scheduler.Process{
 		Type:        safeString(container.Name),
 		Command:     command,
-		Env:         env,
+		FEnv:        env,
 		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * bytesize.MB,
 		Nproc:       uint(softLimit(container.Ulimits, "nproc")),
