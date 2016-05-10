@@ -90,17 +90,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 		return nil, err
 	}
 
-	var s scheduler.Scheduler
-	name := c.String(FlagScheduler)
-	switch name {
-	case "cloudformation":
-		s, err = newCloudFormationScheduler(db, c)
-	case "ecs":
-		s, err = newECSScheduler(db, c)
-	default:
-		panic(fmt.Sprintf("unknown scheduler: %v", name))
-	}
-
+	s, err := newMigrationScheduler(db, c)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +101,21 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	}, nil
 }
 
-func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
+func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.MigrationScheduler, error) {
+	es, err := newECSScheduler(db, c)
+	if err != nil {
+		return nil, err
+	}
+
+	cs, err := newCloudFormationScheduler(db, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
+}
+
+func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
@@ -171,7 +175,7 @@ func prefixedStackName(prefix string) *template.Template {
 	return template.Must(template.New("stack_name").Parse(t))
 }
 
-func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
+func newECSScheduler(db *empire.DB, c *cli.Context) (*ecs.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)

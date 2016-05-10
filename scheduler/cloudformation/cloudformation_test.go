@@ -51,6 +51,9 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	c.On("CreateStack", &cloudformation.CreateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
 			{Key: aws.String("empire.app.name"), Value: aws.String("acme-inc")},
@@ -104,6 +107,9 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -153,6 +159,9 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -241,22 +250,18 @@ func TestScheduler_Instances(t *testing.T) {
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
 	assert.NoError(t, err)
 
-	c.On("ListStackResourcesPages", &cloudformation.ListStackResourcesInput{
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
-	}).Return(&cloudformation.ListStackResourcesOutput{
-		StackResourceSummaries: []*cloudformation.StackResourceSummary{
-			{ResourceType: aws.String("AWS::EC2::LoadBalancer")},
-			{ResourceType: aws.String("AWS::ECS::Service"), LogicalResourceId: aws.String("web")},
-		},
-	}, nil)
-
-	c.On("DescribeStackResource", &cloudformation.DescribeStackResourceInput{
-		LogicalResourceId: aws.String("web"),
-		StackName:         aws.String("acme-inc"),
-	}).Return(&cloudformation.DescribeStackResourceOutput{
-		StackResourceDetail: &cloudformation.StackResourceDetail{
-			Metadata:           aws.String(`{"name":"web"}`),
-			PhysicalResourceId: aws.String(`arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web`),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+				},
+			},
 		},
 	}, nil)
 
@@ -446,12 +451,26 @@ func TestScheduler_Scale_NoUpdates(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
+func TestExtractServices(t *testing.T) {
+	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
+	services := extractServices(output)
+	expected := map[string]string{
+		"statuses":       "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO",
+		"statuses_retry": "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N",
+	}
+
+	assert.Equal(t, expected, services)
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`TRUNCATE TABLE stacks`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`TRUNCATE TABLE scheduler_migration`); err != nil {
 		t.Fatal(err)
 	}
 	return db
