@@ -82,24 +82,38 @@ func TestReleaseDesc(t *testing.T) {
 	configVal := "test"
 
 	tests := []struct {
-		in  Vars
+		in  SetOpts
 		out string
 	}{
 		{
-			Vars{"FOO": &configVal},
-			"Set FOO config var",
+			SetOpts{
+				User: &User{Name: "fake"},
+				Vars: Vars{"FOO": &configVal},
+			},
+			"Set FOO config var (fake)",
 		},
 		{
-			Vars{"FOO": &configVal, "BAR": &configVal},
-			"Set BAR, FOO config vars",
+			SetOpts{
+				User:    &User{Name: "fake"},
+				Vars:    Vars{"FOO": &configVal, "BAR": &configVal},
+				Message: "important things",
+			},
+			"Set BAR, FOO config vars (fake: 'important things')",
 		},
 		{
-			Vars{"FOO": nil},
-			"Unset FOO config var",
+			SetOpts{
+				User: &User{Name: "fake"},
+				Vars: Vars{"FOO": nil},
+			},
+			"Unset FOO config var (fake)",
 		},
 		{
-			Vars{"FOO": nil, "BAR": nil},
-			"Unset BAR, FOO config vars",
+			SetOpts{
+				User:    &User{Name: "fake"},
+				Vars:    Vars{"FOO": nil, "BAR": nil},
+				Message: "important things",
+			},
+			"Unset BAR, FOO config vars (fake: 'important things')",
 		},
 	}
 

@@ -145,7 +145,7 @@ func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*C
 		App:         release.App,
 		Config:      c,
 		Slug:        release.Slug,
-		Description: configsApplyReleaseDesc(vars),
+		Description: configsApplyReleaseDesc(opts),
 	})
 	return c, err
 }
@@ -200,7 +200,8 @@ func mergeVars(old, new Vars) Vars {
 
 // configsApplyReleaseDesc formats a release description based on the config variables
 // being applied.
-func configsApplyReleaseDesc(vars Vars) string {
+func configsApplyReleaseDesc(opts SetOpts) string {
+	vars := opts.Vars
 	verb := "Set"
 	plural := ""
 	if len(vars) > 1 {
@@ -215,5 +216,6 @@ func configsApplyReleaseDesc(vars Vars) string {
 		}
 	}
 	keys.Sort()
-	return fmt.Sprintf("%s %s config var%s", verb, strings.Join(keys, ", "), plural)
+	desc := fmt.Sprintf("%s %s config var%s", verb, strings.Join(keys, ", "), plural)
+	return appendMessageToDescription(desc, opts.User, opts.Message)
 }
