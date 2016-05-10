@@ -23,9 +23,9 @@
         }
       ],
       "ParameterLabels": {
-        "KeyName": { "default": "Key name" },
+        "KeyName": { "default": "SSH key name" },
         "LaunchEmpire": { "default": "Launch" },
-        "EmpireVersion": { "default": "Version" },
+        "EmpireVersion": { "default": "Daemon version" },
         "EventsBackend": { "default": "Send events to" },
         "RunLogsBackend": { "default": "Send interactive run logs to" },
         "GitHubClientId": { "default": "Client ID" },
