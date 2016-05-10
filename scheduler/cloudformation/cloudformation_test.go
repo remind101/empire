@@ -345,7 +345,7 @@ func TestScheduler_Instances(t *testing.T) {
 			Type:        "web",
 			MemoryLimit: 256 * bytesize.MB,
 			CPUShares:   256,
-			FEnv:        make(map[string]string),
+			Env:         make(map[string]string),
 		},
 	}, instances[0])
 	assert.Equal(t, &scheduler.Instance{
@@ -356,7 +356,7 @@ func TestScheduler_Instances(t *testing.T) {
 			Type:        "run",
 			MemoryLimit: 256 * bytesize.MB,
 			CPUShares:   256,
-			FEnv:        make(map[string]string),
+			Env:         make(map[string]string),
 		},
 	}, instances[1])
 

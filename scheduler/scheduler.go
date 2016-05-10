@@ -38,10 +38,10 @@ type Process struct {
 	Command []string
 
 	// Environment variables to set.
-	FEnv map[string]string
+	Env map[string]string
 
 	// Labels to set on the container.
-	FLabels map[string]string
+	Labels map[string]string
 
 	// Exposure is the level of exposure for this process.
 	Exposure *Exposure
@@ -137,12 +137,12 @@ type Scheduler interface {
 // Env merges the App environment with any environment variables provided
 // in the process.
 func Env(app *App, process *Process) map[string]string {
-	return merge(app.Env, process.FEnv)
+	return merge(app.Env, process.Env)
 }
 
 // Labels merges the App labels with any labels provided in the process.
 func Labels(app *App, process *Process) map[string]string {
-	return merge(app.Labels, process.FLabels)
+	return merge(app.Labels, process.Labels)
 }
 
 // merges the maps together, favoring keys from the right to the left.

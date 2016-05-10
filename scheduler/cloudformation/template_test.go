@@ -32,7 +32,7 @@ func TestEmpireTemplate(t *testing.T) {
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPExposure{},
 						},
-						FLabels: map[string]string{
+						Labels: map[string]string{
 							"empire.app.process": "web",
 						},
 						MemoryLimit: 128 * bytesize.MB,
@@ -44,10 +44,10 @@ func TestEmpireTemplate(t *testing.T) {
 						Type:    "worker",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/worker"},
-						FLabels: map[string]string{
+						Labels: map[string]string{
 							"empire.app.process": "worker",
 						},
-						FEnv: map[string]string{
+						Env: map[string]string{
 							"FOO": "BAR",
 						},
 					},

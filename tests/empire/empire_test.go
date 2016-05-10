@@ -123,11 +123,11 @@ func TestEmpire_Deploy(t *testing.T) {
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				FEnv: map[string]string{
+				Env: map[string]string{
 					"EMPIRE_PROCESS": "web",
 					"SOURCE":         "acme-inc.web.v1",
 				},
-				FLabels: map[string]string{
+				Labels: map[string]string{
 					"empire.app.process": "web",
 				},
 			},
@@ -285,12 +285,12 @@ func TestEmpire_Run(t *testing.T) {
 			MemoryLimit: 536870912,
 			CPUShares:   256,
 			Nproc:       256,
-			FEnv: map[string]string{
+			Env: map[string]string{
 				"EMPIRE_PROCESS": "run",
 				"SOURCE":         "acme-inc.run.v1",
 				"TERM":           "xterm",
 			},
-			FLabels: map[string]string{
+			Labels: map[string]string{
 				"empire.app.process": "run",
 			},
 		}, nil, nil).Return(nil)
@@ -359,12 +359,12 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 			MemoryLimit: 1073741824,
 			CPUShares:   512,
 			Nproc:       512,
-			FEnv: map[string]string{
+			Env: map[string]string{
 				"EMPIRE_PROCESS": "run",
 				"SOURCE":         "acme-inc.run.v1",
 				"TERM":           "xterm",
 			},
-			FLabels: map[string]string{
+			Labels: map[string]string{
 				"empire.app.process": "run",
 			},
 		}, nil, nil).Return(nil)
@@ -444,11 +444,11 @@ func TestEmpire_Set(t *testing.T) {
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				FEnv: map[string]string{
+				Env: map[string]string{
 					"EMPIRE_PROCESS": "web",
 					"SOURCE":         "acme-inc.web.v1",
 				},
-				FLabels: map[string]string{
+				Labels: map[string]string{
 					"empire.app.process": "web",
 				},
 			},
@@ -490,11 +490,11 @@ func TestEmpire_Set(t *testing.T) {
 				MemoryLimit: 536870912,
 				CPUShares:   256,
 				Nproc:       256,
-				FEnv: map[string]string{
+				Env: map[string]string{
 					"EMPIRE_PROCESS": "web",
 					"SOURCE":         "acme-inc.web.v2",
 				},
-				FLabels: map[string]string{
+				Labels: map[string]string{
 					"empire.app.process": "web",
 				},
 			},

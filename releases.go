@@ -292,8 +292,8 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 
 	return &scheduler.Process{
 		Type:        name,
-		FEnv:        env,
-		FLabels:     labels,
+		Env:         env,
+		Labels:      labels,
 		Command:     []string(p.Command),
 		Image:       release.Slug.Image,
 		Instances:   uint(p.Quantity),

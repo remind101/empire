@@ -639,7 +639,7 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 	return &scheduler.Process{
 		Type:        safeString(container.Name),
 		Command:     command,
-		FEnv:        env,
+		Env:         env,
 		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * bytesize.MB,
 		Nproc:       uint(softLimit(container.Ulimits, "nproc")),

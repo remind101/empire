@@ -76,7 +76,7 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 
 	// Add additional environment variables to the process.
 	for k, v := range opts.Env {
-		p.FEnv[k] = v
+		p.Env[k] = v
 	}
 
 	return r.Scheduler.Run(ctx, a, p, opts.Input, opts.Output)
