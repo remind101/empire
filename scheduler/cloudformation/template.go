@@ -191,8 +191,8 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 			if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
 				listeners = append(listeners, map[string]interface{}{
-					"LoadBalancerPort": 80,
-					"Protocol":         "http",
+					"LoadBalancerPort": 443,
+					"Protocol":         "https",
 					"InstancePort": map[string][]string{
 						"Fn::GetAtt": []string{
 							instancePort,
