@@ -123,6 +123,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 	}
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
+	desc = appendMessageToDescription(desc, opts.User, opts.Message)
 	return s.Create(ctx, db, &Release{
 		App:         app,
 		Config:      r.Config,
@@ -326,4 +327,12 @@ func processExposure(app *App, process string) *scheduler.Exposure {
 	}
 
 	return exposure
+}
+
+func appendMessageToDescription(main string, user *User, message string) string {
+	var formatted string
+	if message != "" {
+		formatted = fmt.Sprintf(": '%s'", message)
+	}
+	return fmt.Sprintf("%s (%s%s)", main, user.Name, formatted)
 }
