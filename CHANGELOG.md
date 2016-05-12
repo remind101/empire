@@ -15,6 +15,7 @@
 * Add `Environment` and `Release` to Deploy Events. `--environment` will likely be used for tagging resources later. [#758](https://github.com/remind101/empire/pull/758)
 * Add constraint changes to scale events [#773](https://github.com/remind101/empire/pull/773)
 * You can now specify the CPU and memory constraints for attached one-off tasks with the `-s` flag to `emp run` [#809](https://github.com/remind101/empire/pull/809)
+* You can now provide a duration to `emp log` with the `-d` flag to start streaming logs from a specific point in time ie (5m, 10m, 1h) [#829](https://github.com/remind101/empire/issues/829)
 
 **Bugs**
 
