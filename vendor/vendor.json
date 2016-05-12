@@ -637,8 +637,10 @@
 			"revisionTime": "2016-02-04T11:21:13+07:00"
 		},
 		{
+			"checksumSHA1": "4b0x2WtLZCJfDwkoVTKoXg0xIdo=",
 			"path": "github.com/remind101/kinesumer",
-			"revision": "95c75f2f16905897a5ba7076c26b9a8b6219a71a"
+			"revision": "2d23070b01308992a3dedac2c8613b75ad3e7dae",
+			"revisionTime": "2016-05-12T22:17:14Z"
 		},
 		{
 			"path": "github.com/remind101/kinesumer/checkpointers/empty",

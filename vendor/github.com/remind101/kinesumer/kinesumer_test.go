@@ -25,6 +25,7 @@ func makeTestKinesumer(t *testing.T) (*Kinesumer, *mocks.Kinesis, *mocks.Checkpo
 		rand.NewSource(0),
 		"TestStream",
 		nil,
+		time.Duration(0),
 	)
 	if err != nil {
 		t.Error(err)
