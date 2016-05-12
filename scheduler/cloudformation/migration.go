@@ -96,7 +96,7 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 		return err
 	}
 
-	desiredState := app.Processes[0].Env[MigrationEnvVar]
+	desiredState := app.Env[MigrationEnvVar]
 	if desiredState != "" {
 		if err := s.Migrate(ctx, app, state, desiredState); err != nil {
 			return fmt.Errorf("error migrating app from %s to %s: %v", state, desiredState, err)

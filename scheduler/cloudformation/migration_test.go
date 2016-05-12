@@ -91,12 +91,12 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 
 	app := &scheduler.App{
 		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Env: map[string]string{
+			MigrationEnvVar: "step1",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type: "web",
-				Env: map[string]string{
-					MigrationEnvVar: "step1",
-				},
 			},
 		},
 	}
@@ -115,7 +115,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 
 	// Step2: Update the CloudFormation stack with the DNS changes, and
 	// remove the existing ECS resources.
-	app.Processes[0].Env[MigrationEnvVar] = "step2"
+	app.Env[MigrationEnvVar] = "step2"
 
 	c.On("Submit", app).Return(nil)
 	e.On("RemoveWithOptions", app.ID, ecs.RemoveOptions{
@@ -129,7 +129,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 	c.AssertExpectations(t)
 
 	// Step3: Finalize the migration.
-	delete(app.Processes[0].Env, MigrationEnvVar)
+	delete(app.Env, MigrationEnvVar)
 
 	c.On("Submit", app).Return(err)
 
@@ -161,12 +161,12 @@ func TestMigrationScheduler_Migrate_Rollback(t *testing.T) {
 
 	app := &scheduler.App{
 		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Env: map[string]string{
+			MigrationEnvVar: "step1",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type: "web",
-				Env: map[string]string{
-					MigrationEnvVar: "step1",
-				},
 			},
 		},
 	}
@@ -204,12 +204,12 @@ func TestMigrationScheduler_Migrate_InvalidStateTransitions(t *testing.T) {
 
 	app := &scheduler.App{
 		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Env: map[string]string{
+			MigrationEnvVar: "step2",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type: "web",
-				Env: map[string]string{
-					MigrationEnvVar: "step2",
-				},
 			},
 		},
 	}
@@ -218,7 +218,7 @@ func TestMigrationScheduler_Migrate_InvalidStateTransitions(t *testing.T) {
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error migrating app from ecs to step2: cannot transition from ecs to step2")
 
-	app.Processes[0].Env[MigrationEnvVar] = "step3"
+	app.Env[MigrationEnvVar] = "step3"
 
 	err = s.Submit(context.Background(), app)
 	assert.Error(t, err)
