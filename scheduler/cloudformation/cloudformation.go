@@ -37,6 +37,11 @@ const (
 	MaxTemplateSize = 460800 // bytes
 )
 
+// ECS limits
+const (
+	MaxDescribeTasks = 100
+)
+
 // DefaultStackNameTemplate is the default text/template for generating a
 // CloudFormation stack name for an app.
 var DefaultStackNameTemplate = template.Must(template.New("stack_name").Parse("{{.Name}}"))
@@ -469,15 +474,27 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		return nil, fmt.Errorf("error listing tasks started by %s: %v", app, err)
 	}
 
-	resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
-		Cluster: aws.String(s.Cluster),
-		Tasks:   arns,
-	})
-	if err != nil {
-		return resp.Tasks, fmt.Errorf("error describing tasks: %v", err)
+	var tasks []*ecs.Task
+	for len(arns) > 0 {
+		end := MaxDescribeTasks
+		if len(arns) < MaxDescribeTasks {
+			end = len(arns)
+		}
+
+		chunk := arns[0:end]
+		arns = arns[end:]
+		resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+			Cluster: aws.String(s.Cluster),
+			Tasks:   chunk,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error describing %d tasks: %v", len(chunk), err)
+		}
+
+		tasks = append(tasks, resp.Tasks...)
 	}
 
-	return resp.Tasks, nil
+	return tasks, nil
 }
 
 // Services returns a map that maps the name of the process (e.g. web) to the

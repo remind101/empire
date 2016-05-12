@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"html/template"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -359,6 +361,92 @@ func TestScheduler_Instances(t *testing.T) {
 			Env:         make(map[string]string),
 		},
 	}, instances[1])
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+	e.AssertExpectations(t)
+}
+
+func TestScheduler_Instances_ManyTasks(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Wait:           true,
+		Bucket:         "bucket",
+		Cluster:        "cluster",
+		cloudformation: c,
+		s3:             x,
+		ecs:            e,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	var page1 []*string
+	for i := 0; i < MaxDescribeTasks; i++ {
+		arn := fmt.Sprintf("arn:aws:ecs:us-east-1:012345678910:task/%s", uuid.New())
+		page1 = append(page1, aws.String(arn))
+	}
+	page2 := []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:task/c09f0188-7f87-4b0f-bfc3-16296622b6fe")}
+	e.On("ListTasksPages", &ecs.ListTasksInput{
+		Cluster:     aws.String("cluster"),
+		ServiceName: aws.String("acme-inc-web"),
+	}).Return(&ecs.ListTasksOutput{
+		TaskArns: append(page1, page2...),
+	}, nil)
+
+	e.On("ListTasksPages", &ecs.ListTasksInput{
+		Cluster:   aws.String("cluster"),
+		StartedBy: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68"),
+	}).Return(&ecs.ListTasksOutput{
+		TaskArns: []*string{},
+	}, nil)
+
+	e.On("DescribeTasks", &ecs.DescribeTasksInput{
+		Cluster: aws.String("cluster"),
+		Tasks:   page1,
+	}).Return(&ecs.DescribeTasksOutput{
+		Tasks: []*ecs.Task{
+		// In reality, this would return all the tasks, but we
+		// just want to test that task arns are chunked
+		// properly.
+		},
+	}, nil)
+
+	e.On("DescribeTasks", &ecs.DescribeTasksInput{
+		Cluster: aws.String("cluster"),
+		Tasks:   page2,
+	}).Return(&ecs.DescribeTasksOutput{
+		Tasks: []*ecs.Task{
+		// In reality, this would return all the tasks, but we
+		// just want to test that task arns are chunked
+		// properly.
+		},
+	}, nil)
+
+	_, err = s.Instances(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
+	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
