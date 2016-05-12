@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/awstesting"
+	"github.com/aws/aws-sdk-go/private/protocol"
 	"github.com/aws/aws-sdk-go/private/protocol/restxml"
 	"github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil"
 	"github.com/aws/aws-sdk-go/private/signer/v4"
@@ -30,12 +32,16 @@ var _ json.Marshaler
 var _ time.Time
 var _ xmlutil.XMLNode
 var _ xml.Attr
-var _ = awstesting.GenerateAssertions
 var _ = ioutil.Discard
 var _ = util.Trim("")
 var _ = url.Values{}
 var _ = io.EOF
 var _ = aws.String
+var _ = fmt.Println
+
+func init() {
+	protocol.RandReader = &awstesting.ZeroReader{}
+}
 
 //The service client's operations are safe to be used concurrently.
 // It is not safe to mutate any of the client's properties though.
@@ -75,10 +81,10 @@ func newInputService1ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -106,6 +112,8 @@ func (c *InputService1ProtocolTest) InputService1TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService1TestShapeInputService1TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -132,6 +140,8 @@ func (c *InputService1ProtocolTest) InputService1TestCaseOperation2Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService1TestShapeInputService1TestCaseOperation2Output{}
 	req.Data = output
 	return
@@ -158,6 +168,8 @@ func (c *InputService1ProtocolTest) InputService1TestCaseOperation3Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService1TestShapeInputService1TestCaseOperation3Output{}
 	req.Data = output
 	return
@@ -170,47 +182,27 @@ func (c *InputService1ProtocolTest) InputService1TestCaseOperation3(input *Input
 }
 
 type InputService1TestShapeInputService1TestCaseOperation1Output struct {
-	metadataInputService1TestShapeInputService1TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputService1TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService1TestShapeInputService1TestCaseOperation2Output struct {
-	metadataInputService1TestShapeInputService1TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputService1TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService1TestShapeInputService1TestCaseOperation3Input struct {
-	metadataInputService1TestShapeInputService1TestCaseOperation3Input `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputService1TestCaseOperation3Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService1TestShapeInputService1TestCaseOperation3Output struct {
-	metadataInputService1TestShapeInputService1TestCaseOperation3Output `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputService1TestCaseOperation3Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService1TestShapeInputShape struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	Description *string `type:"string"`
 
 	Name *string `type:"string"`
-
-	metadataInputService1TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputShape struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -251,10 +243,10 @@ func newInputService2ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -282,6 +274,8 @@ func (c *InputService2ProtocolTest) InputService2TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService2TestShapeInputService2TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -294,6 +288,8 @@ func (c *InputService2ProtocolTest) InputService2TestCaseOperation1(input *Input
 }
 
 type InputService2TestShapeInputService2TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	First *bool `type:"boolean"`
 
 	Fourth *int64 `type:"integer"`
@@ -301,20 +297,10 @@ type InputService2TestShapeInputService2TestCaseOperation1Input struct {
 	Second *bool `type:"boolean"`
 
 	Third *float64 `type:"float"`
-
-	metadataInputService2TestShapeInputService2TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService2TestShapeInputService2TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService2TestShapeInputService2TestCaseOperation1Output struct {
-	metadataInputService2TestShapeInputService2TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService2TestShapeInputService2TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -355,10 +341,10 @@ func newInputService3ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -386,6 +372,8 @@ func (c *InputService3ProtocolTest) InputService3TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService3TestShapeInputService3TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -412,6 +400,8 @@ func (c *InputService3ProtocolTest) InputService3TestCaseOperation2Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService3TestShapeInputService3TestCaseOperation2Output{}
 	req.Data = output
 	return
@@ -424,43 +414,27 @@ func (c *InputService3ProtocolTest) InputService3TestCaseOperation2(input *Input
 }
 
 type InputService3TestShapeInputService3TestCaseOperation1Output struct {
-	metadataInputService3TestShapeInputService3TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeInputService3TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService3TestShapeInputService3TestCaseOperation2Output struct {
-	metadataInputService3TestShapeInputService3TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeInputService3TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService3TestShapeInputShape struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	Description *string `type:"string"`
 
 	SubStructure *InputService3TestShapeSubStructure `type:"structure"`
-
-	metadataInputService3TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeInputShape struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService3TestShapeSubStructure struct {
+	_ struct{} `type:"structure"`
+
 	Bar *string `type:"string"`
 
 	Foo *string `type:"string"`
-
-	metadataInputService3TestShapeSubStructure `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeSubStructure struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -501,10 +475,10 @@ func newInputService4ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -532,6 +506,8 @@ func (c *InputService4ProtocolTest) InputService4TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService4TestShapeInputService4TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -544,35 +520,23 @@ func (c *InputService4ProtocolTest) InputService4TestCaseOperation1(input *Input
 }
 
 type InputService4TestShapeInputService4TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	Description *string `type:"string"`
 
 	SubStructure *InputService4TestShapeSubStructure `type:"structure"`
-
-	metadataInputService4TestShapeInputService4TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService4TestShapeInputService4TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService4TestShapeInputService4TestCaseOperation1Output struct {
-	metadataInputService4TestShapeInputService4TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService4TestShapeInputService4TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService4TestShapeSubStructure struct {
+	_ struct{} `type:"structure"`
+
 	Bar *string `type:"string"`
 
 	Foo *string `type:"string"`
-
-	metadataInputService4TestShapeSubStructure `json:"-" xml:"-"`
-}
-
-type metadataInputService4TestShapeSubStructure struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -613,10 +577,10 @@ func newInputService5ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -644,6 +608,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -656,21 +622,13 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation1(input *Input
 }
 
 type InputService5TestShapeInputService5TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	ListParam []*string `type:"list"`
-
-	metadataInputService5TestShapeInputService5TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService5TestShapeInputService5TestCaseOperation1Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -711,10 +669,10 @@ func newInputService6ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -742,6 +700,8 @@ func (c *InputService6ProtocolTest) InputService6TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService6TestShapeInputService6TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -754,21 +714,13 @@ func (c *InputService6ProtocolTest) InputService6TestCaseOperation1(input *Input
 }
 
 type InputService6TestShapeInputService6TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	ListParam []*string `locationName:"AlternateName" locationNameList:"NotMember" type:"list"`
-
-	metadataInputService6TestShapeInputService6TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService6TestShapeInputService6TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService6TestShapeInputService6TestCaseOperation1Output struct {
-	metadataInputService6TestShapeInputService6TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService6TestShapeInputService6TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -809,10 +761,10 @@ func newInputService7ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -840,6 +792,8 @@ func (c *InputService7ProtocolTest) InputService7TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService7TestShapeInputService7TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -852,21 +806,13 @@ func (c *InputService7ProtocolTest) InputService7TestCaseOperation1(input *Input
 }
 
 type InputService7TestShapeInputService7TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	ListParam []*string `type:"list" flattened:"true"`
-
-	metadataInputService7TestShapeInputService7TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService7TestShapeInputService7TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService7TestShapeInputService7TestCaseOperation1Output struct {
-	metadataInputService7TestShapeInputService7TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService7TestShapeInputService7TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -907,10 +853,10 @@ func newInputService8ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -938,6 +884,8 @@ func (c *InputService8ProtocolTest) InputService8TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService8TestShapeInputService8TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -950,21 +898,13 @@ func (c *InputService8ProtocolTest) InputService8TestCaseOperation1(input *Input
 }
 
 type InputService8TestShapeInputService8TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	ListParam []*string `locationName:"item" type:"list" flattened:"true"`
-
-	metadataInputService8TestShapeInputService8TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService8TestShapeInputService8TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService8TestShapeInputService8TestCaseOperation1Output struct {
-	metadataInputService8TestShapeInputService8TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService8TestShapeInputService8TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1005,10 +945,10 @@ func newInputService9ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1036,6 +976,8 @@ func (c *InputService9ProtocolTest) InputService9TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService9TestShapeInputService9TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1048,31 +990,19 @@ func (c *InputService9ProtocolTest) InputService9TestCaseOperation1(input *Input
 }
 
 type InputService9TestShapeInputService9TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	ListParam []*InputService9TestShapeSingleFieldStruct `locationName:"item" type:"list" flattened:"true"`
-
-	metadataInputService9TestShapeInputService9TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService9TestShapeInputService9TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService9TestShapeInputService9TestCaseOperation1Output struct {
-	metadataInputService9TestShapeInputService9TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService9TestShapeInputService9TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService9TestShapeSingleFieldStruct struct {
+	_ struct{} `type:"structure"`
+
 	Element *string `locationName:"value" type:"string"`
-
-	metadataInputService9TestShapeSingleFieldStruct `json:"-" xml:"-"`
-}
-
-type metadataInputService9TestShapeSingleFieldStruct struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1113,10 +1043,10 @@ func newInputService10ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1144,6 +1074,8 @@ func (c *InputService10ProtocolTest) InputService10TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService10TestShapeInputService10TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1156,33 +1088,22 @@ func (c *InputService10ProtocolTest) InputService10TestCaseOperation1(input *Inp
 }
 
 type InputService10TestShapeInputService10TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	StructureParam *InputService10TestShapeStructureShape `type:"structure"`
-
-	metadataInputService10TestShapeInputService10TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService10TestShapeInputService10TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService10TestShapeInputService10TestCaseOperation1Output struct {
-	metadataInputService10TestShapeInputService10TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService10TestShapeInputService10TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService10TestShapeStructureShape struct {
+	_ struct{} `type:"structure"`
+
+	// B is automatically base64 encoded/decoded by the SDK.
 	B []byte `locationName:"b" type:"blob"`
 
 	T *time.Time `locationName:"t" type:"timestamp" timestampFormat:"iso8601"`
-
-	metadataInputService10TestShapeStructureShape `json:"-" xml:"-"`
-}
-
-type metadataInputService10TestShapeStructureShape struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1223,10 +1144,10 @@ func newInputService11ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1254,6 +1175,8 @@ func (c *InputService11ProtocolTest) InputService11TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService11TestShapeInputService11TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1266,21 +1189,13 @@ func (c *InputService11ProtocolTest) InputService11TestCaseOperation1(input *Inp
 }
 
 type InputService11TestShapeInputService11TestCaseOperation1Input struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
 	Foo map[string]*string `location:"headers" locationName:"x-foo-" type:"map"`
-
-	metadataInputService11TestShapeInputService11TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService11TestShapeInputService11TestCaseOperation1Input struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
 }
 
 type InputService11TestShapeInputService11TestCaseOperation1Output struct {
-	metadataInputService11TestShapeInputService11TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService11TestShapeInputService11TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1321,10 +1236,10 @@ func newInputService12ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1344,7 +1259,7 @@ func (c *InputService12ProtocolTest) InputService12TestCaseOperation1Request(inp
 	op := &request.Operation{
 		Name:       opInputService12TestCaseOperation1,
 		HTTPMethod: "GET",
-		HTTPPath:   "/2014-01-01/jobsByPipeline/{PipelineId}",
+		HTTPPath:   "/path",
 	}
 
 	if input == nil {
@@ -1352,6 +1267,8 @@ func (c *InputService12ProtocolTest) InputService12TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService12TestShapeInputService12TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1364,23 +1281,13 @@ func (c *InputService12ProtocolTest) InputService12TestCaseOperation1(input *Inp
 }
 
 type InputService12TestShapeInputService12TestCaseOperation1Input struct {
-	PipelineId *string `location:"uri" type:"string"`
+	_ struct{} `type:"structure"`
 
-	QueryDoc map[string]*string `location:"querystring" type:"map"`
-
-	metadataInputService12TestShapeInputService12TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService12TestShapeInputService12TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	Items []*string `location:"querystring" locationName:"item" type:"list"`
 }
 
 type InputService12TestShapeInputService12TestCaseOperation1Output struct {
-	metadataInputService12TestShapeInputService12TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService12TestShapeInputService12TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1421,10 +1328,10 @@ func newInputService13ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1452,6 +1359,8 @@ func (c *InputService13ProtocolTest) InputService13TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService13TestShapeInputService13TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1464,23 +1373,15 @@ func (c *InputService13ProtocolTest) InputService13TestCaseOperation1(input *Inp
 }
 
 type InputService13TestShapeInputService13TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
+
 	PipelineId *string `location:"uri" type:"string"`
 
-	QueryDoc map[string][]*string `location:"querystring" type:"map"`
-
-	metadataInputService13TestShapeInputService13TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService13TestShapeInputService13TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	QueryDoc map[string]*string `location:"querystring" type:"map"`
 }
 
 type InputService13TestShapeInputService13TestCaseOperation1Output struct {
-	metadataInputService13TestShapeInputService13TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService13TestShapeInputService13TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1521,10 +1422,10 @@ func newInputService14ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1543,8 +1444,8 @@ const opInputService14TestCaseOperation1 = "OperationName"
 func (c *InputService14ProtocolTest) InputService14TestCaseOperation1Request(input *InputService14TestShapeInputService14TestCaseOperation1Input) (req *request.Request, output *InputService14TestShapeInputService14TestCaseOperation1Output) {
 	op := &request.Operation{
 		Name:       opInputService14TestCaseOperation1,
-		HTTPMethod: "POST",
-		HTTPPath:   "/",
+		HTTPMethod: "GET",
+		HTTPPath:   "/2014-01-01/jobsByPipeline/{PipelineId}",
 	}
 
 	if input == nil {
@@ -1552,6 +1453,8 @@ func (c *InputService14ProtocolTest) InputService14TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService14TestShapeInputService14TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1564,21 +1467,15 @@ func (c *InputService14ProtocolTest) InputService14TestCaseOperation1(input *Inp
 }
 
 type InputService14TestShapeInputService14TestCaseOperation1Input struct {
-	Foo *string `locationName:"foo" type:"string"`
+	_ struct{} `type:"structure"`
 
-	metadataInputService14TestShapeInputService14TestCaseOperation1Input `json:"-" xml:"-"`
-}
+	PipelineId *string `location:"uri" type:"string"`
 
-type metadataInputService14TestShapeInputService14TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure" payload:"Foo"`
+	QueryDoc map[string][]*string `location:"querystring" type:"map"`
 }
 
 type InputService14TestShapeInputService14TestCaseOperation1Output struct {
-	metadataInputService14TestShapeInputService14TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService14TestShapeInputService14TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1619,10 +1516,10 @@ func newInputService15ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1638,7 +1535,7 @@ func (c *InputService15ProtocolTest) newRequest(op *request.Operation, params, d
 const opInputService15TestCaseOperation1 = "OperationName"
 
 // InputService15TestCaseOperation1Request generates a request for the InputService15TestCaseOperation1 operation.
-func (c *InputService15ProtocolTest) InputService15TestCaseOperation1Request(input *InputService15TestShapeInputShape) (req *request.Request, output *InputService15TestShapeInputService15TestCaseOperation1Output) {
+func (c *InputService15ProtocolTest) InputService15TestCaseOperation1Request(input *InputService15TestShapeInputService15TestCaseOperation1Input) (req *request.Request, output *InputService15TestShapeInputService15TestCaseOperation1Output) {
 	op := &request.Operation{
 		Name:       opInputService15TestCaseOperation1,
 		HTTPMethod: "POST",
@@ -1646,71 +1543,31 @@ func (c *InputService15ProtocolTest) InputService15TestCaseOperation1Request(inp
 	}
 
 	if input == nil {
-		input = &InputService15TestShapeInputShape{}
+		input = &InputService15TestShapeInputService15TestCaseOperation1Input{}
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService15TestShapeInputService15TestCaseOperation1Output{}
 	req.Data = output
 	return
 }
 
-func (c *InputService15ProtocolTest) InputService15TestCaseOperation1(input *InputService15TestShapeInputShape) (*InputService15TestShapeInputService15TestCaseOperation1Output, error) {
+func (c *InputService15ProtocolTest) InputService15TestCaseOperation1(input *InputService15TestShapeInputService15TestCaseOperation1Input) (*InputService15TestShapeInputService15TestCaseOperation1Output, error) {
 	req, out := c.InputService15TestCaseOperation1Request(input)
 	err := req.Send()
 	return out, err
 }
 
-const opInputService15TestCaseOperation2 = "OperationName"
+type InputService15TestShapeInputService15TestCaseOperation1Input struct {
+	_ struct{} `type:"structure" payload:"Foo"`
 
-// InputService15TestCaseOperation2Request generates a request for the InputService15TestCaseOperation2 operation.
-func (c *InputService15ProtocolTest) InputService15TestCaseOperation2Request(input *InputService15TestShapeInputShape) (req *request.Request, output *InputService15TestShapeInputService15TestCaseOperation2Output) {
-	op := &request.Operation{
-		Name:       opInputService15TestCaseOperation2,
-		HTTPMethod: "POST",
-		HTTPPath:   "/",
-	}
-
-	if input == nil {
-		input = &InputService15TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService15TestShapeInputService15TestCaseOperation2Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService15ProtocolTest) InputService15TestCaseOperation2(input *InputService15TestShapeInputShape) (*InputService15TestShapeInputService15TestCaseOperation2Output, error) {
-	req, out := c.InputService15TestCaseOperation2Request(input)
-	err := req.Send()
-	return out, err
+	Foo *string `locationName:"foo" type:"string"`
 }
 
 type InputService15TestShapeInputService15TestCaseOperation1Output struct {
-	metadataInputService15TestShapeInputService15TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService15TestShapeInputService15TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService15TestShapeInputService15TestCaseOperation2Output struct {
-	metadataInputService15TestShapeInputService15TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService15TestShapeInputService15TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService15TestShapeInputShape struct {
-	Foo []byte `locationName:"foo" type:"blob"`
-
-	metadataInputService15TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService15TestShapeInputShape struct {
-	SDKShapeTraits bool `type:"structure" payload:"Foo"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1751,10 +1608,10 @@ func newInputService16ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1782,6 +1639,8 @@ func (c *InputService16ProtocolTest) InputService16TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService16TestShapeInputService16TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -1808,6 +1667,8 @@ func (c *InputService16ProtocolTest) InputService16TestCaseOperation2Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService16TestShapeInputService16TestCaseOperation2Output{}
 	req.Data = output
 	return
@@ -1819,108 +1680,18 @@ func (c *InputService16ProtocolTest) InputService16TestCaseOperation2(input *Inp
 	return out, err
 }
 
-const opInputService16TestCaseOperation3 = "OperationName"
-
-// InputService16TestCaseOperation3Request generates a request for the InputService16TestCaseOperation3 operation.
-func (c *InputService16ProtocolTest) InputService16TestCaseOperation3Request(input *InputService16TestShapeInputShape) (req *request.Request, output *InputService16TestShapeInputService16TestCaseOperation3Output) {
-	op := &request.Operation{
-		Name:       opInputService16TestCaseOperation3,
-		HTTPMethod: "POST",
-		HTTPPath:   "/",
-	}
-
-	if input == nil {
-		input = &InputService16TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService16TestShapeInputService16TestCaseOperation3Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService16ProtocolTest) InputService16TestCaseOperation3(input *InputService16TestShapeInputShape) (*InputService16TestShapeInputService16TestCaseOperation3Output, error) {
-	req, out := c.InputService16TestCaseOperation3Request(input)
-	err := req.Send()
-	return out, err
-}
-
-const opInputService16TestCaseOperation4 = "OperationName"
-
-// InputService16TestCaseOperation4Request generates a request for the InputService16TestCaseOperation4 operation.
-func (c *InputService16ProtocolTest) InputService16TestCaseOperation4Request(input *InputService16TestShapeInputShape) (req *request.Request, output *InputService16TestShapeInputService16TestCaseOperation4Output) {
-	op := &request.Operation{
-		Name:       opInputService16TestCaseOperation4,
-		HTTPMethod: "POST",
-		HTTPPath:   "/",
-	}
-
-	if input == nil {
-		input = &InputService16TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService16TestShapeInputService16TestCaseOperation4Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService16ProtocolTest) InputService16TestCaseOperation4(input *InputService16TestShapeInputShape) (*InputService16TestShapeInputService16TestCaseOperation4Output, error) {
-	req, out := c.InputService16TestCaseOperation4Request(input)
-	err := req.Send()
-	return out, err
-}
-
-type InputService16TestShapeFooShape struct {
-	Baz *string `locationName:"baz" type:"string"`
-
-	metadataInputService16TestShapeFooShape `json:"-" xml:"-"`
-}
-
-type metadataInputService16TestShapeFooShape struct {
-	SDKShapeTraits bool `locationName:"foo" type:"structure"`
-}
-
 type InputService16TestShapeInputService16TestCaseOperation1Output struct {
-	metadataInputService16TestShapeInputService16TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService16TestShapeInputService16TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService16TestShapeInputService16TestCaseOperation2Output struct {
-	metadataInputService16TestShapeInputService16TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService16TestShapeInputService16TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService16TestShapeInputService16TestCaseOperation3Output struct {
-	metadataInputService16TestShapeInputService16TestCaseOperation3Output `json:"-" xml:"-"`
-}
-
-type metadataInputService16TestShapeInputService16TestCaseOperation3Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService16TestShapeInputService16TestCaseOperation4Output struct {
-	metadataInputService16TestShapeInputService16TestCaseOperation4Output `json:"-" xml:"-"`
-}
-
-type metadataInputService16TestShapeInputService16TestCaseOperation4Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService16TestShapeInputShape struct {
-	Foo *InputService16TestShapeFooShape `locationName:"foo" type:"structure"`
+	_ struct{} `type:"structure" payload:"Foo"`
 
-	metadataInputService16TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService16TestShapeInputShape struct {
-	SDKShapeTraits bool `type:"structure" payload:"Foo"`
+	Foo []byte `locationName:"foo" type:"blob"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1961,10 +1732,10 @@ func newInputService17ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1980,7 +1751,7 @@ func (c *InputService17ProtocolTest) newRequest(op *request.Operation, params, d
 const opInputService17TestCaseOperation1 = "OperationName"
 
 // InputService17TestCaseOperation1Request generates a request for the InputService17TestCaseOperation1 operation.
-func (c *InputService17ProtocolTest) InputService17TestCaseOperation1Request(input *InputService17TestShapeInputService17TestCaseOperation1Input) (req *request.Request, output *InputService17TestShapeInputService17TestCaseOperation1Output) {
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation1Request(input *InputService17TestShapeInputShape) (req *request.Request, output *InputService17TestShapeInputService17TestCaseOperation1Output) {
 	op := &request.Operation{
 		Name:       opInputService17TestCaseOperation1,
 		HTTPMethod: "POST",
@@ -1988,59 +1759,133 @@ func (c *InputService17ProtocolTest) InputService17TestCaseOperation1Request(inp
 	}
 
 	if input == nil {
-		input = &InputService17TestShapeInputService17TestCaseOperation1Input{}
+		input = &InputService17TestShapeInputShape{}
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService17TestShapeInputService17TestCaseOperation1Output{}
 	req.Data = output
 	return
 }
 
-func (c *InputService17ProtocolTest) InputService17TestCaseOperation1(input *InputService17TestShapeInputService17TestCaseOperation1Input) (*InputService17TestShapeInputService17TestCaseOperation1Output, error) {
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation1(input *InputService17TestShapeInputShape) (*InputService17TestShapeInputService17TestCaseOperation1Output, error) {
 	req, out := c.InputService17TestCaseOperation1Request(input)
 	err := req.Send()
 	return out, err
 }
 
-type InputService17TestShapeGrant struct {
-	Grantee *InputService17TestShapeGrantee `type:"structure"`
+const opInputService17TestCaseOperation2 = "OperationName"
 
-	metadataInputService17TestShapeGrant `json:"-" xml:"-"`
+// InputService17TestCaseOperation2Request generates a request for the InputService17TestCaseOperation2 operation.
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation2Request(input *InputService17TestShapeInputShape) (req *request.Request, output *InputService17TestShapeInputService17TestCaseOperation2Output) {
+	op := &request.Operation{
+		Name:       opInputService17TestCaseOperation2,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &InputService17TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService17TestShapeInputService17TestCaseOperation2Output{}
+	req.Data = output
+	return
 }
 
-type metadataInputService17TestShapeGrant struct {
-	SDKShapeTraits bool `locationName:"Grant" type:"structure"`
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation2(input *InputService17TestShapeInputShape) (*InputService17TestShapeInputService17TestCaseOperation2Output, error) {
+	req, out := c.InputService17TestCaseOperation2Request(input)
+	err := req.Send()
+	return out, err
 }
 
-type InputService17TestShapeGrantee struct {
-	EmailAddress *string `type:"string"`
+const opInputService17TestCaseOperation3 = "OperationName"
 
-	Type *string `locationName:"xsi:type" type:"string" xmlAttribute:"true"`
+// InputService17TestCaseOperation3Request generates a request for the InputService17TestCaseOperation3 operation.
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation3Request(input *InputService17TestShapeInputShape) (req *request.Request, output *InputService17TestShapeInputService17TestCaseOperation3Output) {
+	op := &request.Operation{
+		Name:       opInputService17TestCaseOperation3,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
 
-	metadataInputService17TestShapeGrantee `json:"-" xml:"-"`
+	if input == nil {
+		input = &InputService17TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService17TestShapeInputService17TestCaseOperation3Output{}
+	req.Data = output
+	return
 }
 
-type metadataInputService17TestShapeGrantee struct {
-	SDKShapeTraits bool `type:"structure" xmlPrefix:"xsi" xmlURI:"http://www.w3.org/2001/XMLSchema-instance"`
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation3(input *InputService17TestShapeInputShape) (*InputService17TestShapeInputService17TestCaseOperation3Output, error) {
+	req, out := c.InputService17TestCaseOperation3Request(input)
+	err := req.Send()
+	return out, err
 }
 
-type InputService17TestShapeInputService17TestCaseOperation1Input struct {
-	Grant *InputService17TestShapeGrant `locationName:"Grant" type:"structure"`
+const opInputService17TestCaseOperation4 = "OperationName"
 
-	metadataInputService17TestShapeInputService17TestCaseOperation1Input `json:"-" xml:"-"`
+// InputService17TestCaseOperation4Request generates a request for the InputService17TestCaseOperation4 operation.
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation4Request(input *InputService17TestShapeInputShape) (req *request.Request, output *InputService17TestShapeInputService17TestCaseOperation4Output) {
+	op := &request.Operation{
+		Name:       opInputService17TestCaseOperation4,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &InputService17TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService17TestShapeInputService17TestCaseOperation4Output{}
+	req.Data = output
+	return
 }
 
-type metadataInputService17TestShapeInputService17TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure" payload:"Grant"`
+func (c *InputService17ProtocolTest) InputService17TestCaseOperation4(input *InputService17TestShapeInputShape) (*InputService17TestShapeInputService17TestCaseOperation4Output, error) {
+	req, out := c.InputService17TestCaseOperation4Request(input)
+	err := req.Send()
+	return out, err
+}
+
+type InputService17TestShapeFooShape struct {
+	_ struct{} `locationName:"foo" type:"structure"`
+
+	Baz *string `locationName:"baz" type:"string"`
 }
 
 type InputService17TestShapeInputService17TestCaseOperation1Output struct {
-	metadataInputService17TestShapeInputService17TestCaseOperation1Output `json:"-" xml:"-"`
+	_ struct{} `type:"structure"`
 }
 
-type metadataInputService17TestShapeInputService17TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+type InputService17TestShapeInputService17TestCaseOperation2Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService17TestShapeInputService17TestCaseOperation3Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService17TestShapeInputService17TestCaseOperation4Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService17TestShapeInputShape struct {
+	_ struct{} `type:"structure" payload:"Foo"`
+
+	Foo *InputService17TestShapeFooShape `locationName:"foo" type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -2081,10 +1926,10 @@ func newInputService18ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -2103,8 +1948,8 @@ const opInputService18TestCaseOperation1 = "OperationName"
 func (c *InputService18ProtocolTest) InputService18TestCaseOperation1Request(input *InputService18TestShapeInputService18TestCaseOperation1Input) (req *request.Request, output *InputService18TestShapeInputService18TestCaseOperation1Output) {
 	op := &request.Operation{
 		Name:       opInputService18TestCaseOperation1,
-		HTTPMethod: "GET",
-		HTTPPath:   "/{Bucket}/{Key+}",
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
@@ -2112,6 +1957,8 @@ func (c *InputService18ProtocolTest) InputService18TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService18TestShapeInputService18TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -2123,24 +1970,28 @@ func (c *InputService18ProtocolTest) InputService18TestCaseOperation1(input *Inp
 	return out, err
 }
 
-type InputService18TestShapeInputService18TestCaseOperation1Input struct {
-	Bucket *string `location:"uri" type:"string"`
+type InputService18TestShapeGrant struct {
+	_ struct{} `locationName:"Grant" type:"structure"`
 
-	Key *string `location:"uri" type:"string"`
-
-	metadataInputService18TestShapeInputService18TestCaseOperation1Input `json:"-" xml:"-"`
+	Grantee *InputService18TestShapeGrantee `type:"structure"`
 }
 
-type metadataInputService18TestShapeInputService18TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+type InputService18TestShapeGrantee struct {
+	_ struct{} `type:"structure" xmlPrefix:"xsi" xmlURI:"http://www.w3.org/2001/XMLSchema-instance"`
+
+	EmailAddress *string `type:"string"`
+
+	Type *string `locationName:"xsi:type" type:"string" xmlAttribute:"true"`
+}
+
+type InputService18TestShapeInputService18TestCaseOperation1Input struct {
+	_ struct{} `type:"structure" payload:"Grant"`
+
+	Grant *InputService18TestShapeGrant `locationName:"Grant" type:"structure"`
 }
 
 type InputService18TestShapeInputService18TestCaseOperation1Output struct {
-	metadataInputService18TestShapeInputService18TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService18TestShapeInputService18TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -2181,10 +2032,10 @@ func newInputService19ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -2200,79 +2051,41 @@ func (c *InputService19ProtocolTest) newRequest(op *request.Operation, params, d
 const opInputService19TestCaseOperation1 = "OperationName"
 
 // InputService19TestCaseOperation1Request generates a request for the InputService19TestCaseOperation1 operation.
-func (c *InputService19ProtocolTest) InputService19TestCaseOperation1Request(input *InputService19TestShapeInputShape) (req *request.Request, output *InputService19TestShapeInputService19TestCaseOperation1Output) {
+func (c *InputService19ProtocolTest) InputService19TestCaseOperation1Request(input *InputService19TestShapeInputService19TestCaseOperation1Input) (req *request.Request, output *InputService19TestShapeInputService19TestCaseOperation1Output) {
 	op := &request.Operation{
 		Name:       opInputService19TestCaseOperation1,
-		HTTPMethod: "POST",
-		HTTPPath:   "/path",
+		HTTPMethod: "GET",
+		HTTPPath:   "/{Bucket}/{Key+}",
 	}
 
 	if input == nil {
-		input = &InputService19TestShapeInputShape{}
+		input = &InputService19TestShapeInputService19TestCaseOperation1Input{}
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService19TestShapeInputService19TestCaseOperation1Output{}
 	req.Data = output
 	return
 }
 
-func (c *InputService19ProtocolTest) InputService19TestCaseOperation1(input *InputService19TestShapeInputShape) (*InputService19TestShapeInputService19TestCaseOperation1Output, error) {
+func (c *InputService19ProtocolTest) InputService19TestCaseOperation1(input *InputService19TestShapeInputService19TestCaseOperation1Input) (*InputService19TestShapeInputService19TestCaseOperation1Output, error) {
 	req, out := c.InputService19TestCaseOperation1Request(input)
 	err := req.Send()
 	return out, err
 }
 
-const opInputService19TestCaseOperation2 = "OperationName"
+type InputService19TestShapeInputService19TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
 
-// InputService19TestCaseOperation2Request generates a request for the InputService19TestCaseOperation2 operation.
-func (c *InputService19ProtocolTest) InputService19TestCaseOperation2Request(input *InputService19TestShapeInputShape) (req *request.Request, output *InputService19TestShapeInputService19TestCaseOperation2Output) {
-	op := &request.Operation{
-		Name:       opInputService19TestCaseOperation2,
-		HTTPMethod: "POST",
-		HTTPPath:   "/path?abc=mno",
-	}
+	Bucket *string `location:"uri" type:"string"`
 
-	if input == nil {
-		input = &InputService19TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService19TestShapeInputService19TestCaseOperation2Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService19ProtocolTest) InputService19TestCaseOperation2(input *InputService19TestShapeInputShape) (*InputService19TestShapeInputService19TestCaseOperation2Output, error) {
-	req, out := c.InputService19TestCaseOperation2Request(input)
-	err := req.Send()
-	return out, err
+	Key *string `location:"uri" type:"string"`
 }
 
 type InputService19TestShapeInputService19TestCaseOperation1Output struct {
-	metadataInputService19TestShapeInputService19TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService19TestShapeInputService19TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService19TestShapeInputService19TestCaseOperation2Output struct {
-	metadataInputService19TestShapeInputService19TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService19TestShapeInputService19TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService19TestShapeInputShape struct {
-	Foo *string `location:"querystring" locationName:"param-name" type:"string"`
-
-	metadataInputService19TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService19TestShapeInputShape struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -2313,10 +2126,10 @@ func newInputService20ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -2344,6 +2157,8 @@ func (c *InputService20ProtocolTest) InputService20TestCaseOperation1Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService20TestShapeInputService20TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -2362,7 +2177,7 @@ func (c *InputService20ProtocolTest) InputService20TestCaseOperation2Request(inp
 	op := &request.Operation{
 		Name:       opInputService20TestCaseOperation2,
 		HTTPMethod: "POST",
-		HTTPPath:   "/path",
+		HTTPPath:   "/path?abc=mno",
 	}
 
 	if input == nil {
@@ -2370,6 +2185,8 @@ func (c *InputService20ProtocolTest) InputService20TestCaseOperation2Request(inp
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService20TestShapeInputService20TestCaseOperation2Output{}
 	req.Data = output
 	return
@@ -2381,182 +2198,18 @@ func (c *InputService20ProtocolTest) InputService20TestCaseOperation2(input *Inp
 	return out, err
 }
 
-const opInputService20TestCaseOperation3 = "OperationName"
-
-// InputService20TestCaseOperation3Request generates a request for the InputService20TestCaseOperation3 operation.
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation3Request(input *InputService20TestShapeInputShape) (req *request.Request, output *InputService20TestShapeInputService20TestCaseOperation3Output) {
-	op := &request.Operation{
-		Name:       opInputService20TestCaseOperation3,
-		HTTPMethod: "POST",
-		HTTPPath:   "/path",
-	}
-
-	if input == nil {
-		input = &InputService20TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService20TestShapeInputService20TestCaseOperation3Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation3(input *InputService20TestShapeInputShape) (*InputService20TestShapeInputService20TestCaseOperation3Output, error) {
-	req, out := c.InputService20TestCaseOperation3Request(input)
-	err := req.Send()
-	return out, err
-}
-
-const opInputService20TestCaseOperation4 = "OperationName"
-
-// InputService20TestCaseOperation4Request generates a request for the InputService20TestCaseOperation4 operation.
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation4Request(input *InputService20TestShapeInputShape) (req *request.Request, output *InputService20TestShapeInputService20TestCaseOperation4Output) {
-	op := &request.Operation{
-		Name:       opInputService20TestCaseOperation4,
-		HTTPMethod: "POST",
-		HTTPPath:   "/path",
-	}
-
-	if input == nil {
-		input = &InputService20TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService20TestShapeInputService20TestCaseOperation4Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation4(input *InputService20TestShapeInputShape) (*InputService20TestShapeInputService20TestCaseOperation4Output, error) {
-	req, out := c.InputService20TestCaseOperation4Request(input)
-	err := req.Send()
-	return out, err
-}
-
-const opInputService20TestCaseOperation5 = "OperationName"
-
-// InputService20TestCaseOperation5Request generates a request for the InputService20TestCaseOperation5 operation.
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation5Request(input *InputService20TestShapeInputShape) (req *request.Request, output *InputService20TestShapeInputService20TestCaseOperation5Output) {
-	op := &request.Operation{
-		Name:       opInputService20TestCaseOperation5,
-		HTTPMethod: "POST",
-		HTTPPath:   "/path",
-	}
-
-	if input == nil {
-		input = &InputService20TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService20TestShapeInputService20TestCaseOperation5Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation5(input *InputService20TestShapeInputShape) (*InputService20TestShapeInputService20TestCaseOperation5Output, error) {
-	req, out := c.InputService20TestCaseOperation5Request(input)
-	err := req.Send()
-	return out, err
-}
-
-const opInputService20TestCaseOperation6 = "OperationName"
-
-// InputService20TestCaseOperation6Request generates a request for the InputService20TestCaseOperation6 operation.
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation6Request(input *InputService20TestShapeInputShape) (req *request.Request, output *InputService20TestShapeInputService20TestCaseOperation6Output) {
-	op := &request.Operation{
-		Name:       opInputService20TestCaseOperation6,
-		HTTPMethod: "POST",
-		HTTPPath:   "/path",
-	}
-
-	if input == nil {
-		input = &InputService20TestShapeInputShape{}
-	}
-
-	req = c.newRequest(op, input, output)
-	output = &InputService20TestShapeInputService20TestCaseOperation6Output{}
-	req.Data = output
-	return
-}
-
-func (c *InputService20ProtocolTest) InputService20TestCaseOperation6(input *InputService20TestShapeInputShape) (*InputService20TestShapeInputService20TestCaseOperation6Output, error) {
-	req, out := c.InputService20TestCaseOperation6Request(input)
-	err := req.Send()
-	return out, err
-}
-
 type InputService20TestShapeInputService20TestCaseOperation1Output struct {
-	metadataInputService20TestShapeInputService20TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputService20TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService20TestShapeInputService20TestCaseOperation2Output struct {
-	metadataInputService20TestShapeInputService20TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputService20TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService20TestShapeInputService20TestCaseOperation3Output struct {
-	metadataInputService20TestShapeInputService20TestCaseOperation3Output `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputService20TestCaseOperation3Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService20TestShapeInputService20TestCaseOperation4Output struct {
-	metadataInputService20TestShapeInputService20TestCaseOperation4Output `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputService20TestCaseOperation4Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService20TestShapeInputService20TestCaseOperation5Output struct {
-	metadataInputService20TestShapeInputService20TestCaseOperation5Output `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputService20TestCaseOperation5Output struct {
-	SDKShapeTraits bool `type:"structure"`
-}
-
-type InputService20TestShapeInputService20TestCaseOperation6Output struct {
-	metadataInputService20TestShapeInputService20TestCaseOperation6Output `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputService20TestCaseOperation6Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService20TestShapeInputShape struct {
-	RecursiveStruct *InputService20TestShapeRecursiveStructType `type:"structure"`
+	_ struct{} `type:"structure"`
 
-	metadataInputService20TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeInputShape struct {
-	SDKShapeTraits bool `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
-}
-
-type InputService20TestShapeRecursiveStructType struct {
-	NoRecurse *string `type:"string"`
-
-	RecursiveList []*InputService20TestShapeRecursiveStructType `type:"list"`
-
-	RecursiveMap map[string]*InputService20TestShapeRecursiveStructType `type:"map"`
-
-	RecursiveStruct *InputService20TestShapeRecursiveStructType `type:"structure"`
-
-	metadataInputService20TestShapeRecursiveStructType `json:"-" xml:"-"`
-}
-
-type metadataInputService20TestShapeRecursiveStructType struct {
-	SDKShapeTraits bool `type:"structure"`
+	Foo *string `location:"querystring" locationName:"param-name" type:"string"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -2597,10 +2250,10 @@ func newInputService21ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -2616,7 +2269,7 @@ func (c *InputService21ProtocolTest) newRequest(op *request.Operation, params, d
 const opInputService21TestCaseOperation1 = "OperationName"
 
 // InputService21TestCaseOperation1Request generates a request for the InputService21TestCaseOperation1 operation.
-func (c *InputService21ProtocolTest) InputService21TestCaseOperation1Request(input *InputService21TestShapeInputService21TestCaseOperation1Input) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation1Output) {
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation1Request(input *InputService21TestShapeInputShape) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation1Output) {
 	op := &request.Operation{
 		Name:       opInputService21TestCaseOperation1,
 		HTTPMethod: "POST",
@@ -2624,37 +2277,419 @@ func (c *InputService21ProtocolTest) InputService21TestCaseOperation1Request(inp
 	}
 
 	if input == nil {
-		input = &InputService21TestShapeInputService21TestCaseOperation1Input{}
+		input = &InputService21TestShapeInputShape{}
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService21TestShapeInputService21TestCaseOperation1Output{}
 	req.Data = output
 	return
 }
 
-func (c *InputService21ProtocolTest) InputService21TestCaseOperation1(input *InputService21TestShapeInputService21TestCaseOperation1Input) (*InputService21TestShapeInputService21TestCaseOperation1Output, error) {
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation1(input *InputService21TestShapeInputShape) (*InputService21TestShapeInputService21TestCaseOperation1Output, error) {
 	req, out := c.InputService21TestCaseOperation1Request(input)
 	err := req.Send()
 	return out, err
 }
 
-type InputService21TestShapeInputService21TestCaseOperation1Input struct {
-	TimeArgInHeader *time.Time `location:"header" locationName:"x-amz-timearg" type:"timestamp" timestampFormat:"rfc822"`
+const opInputService21TestCaseOperation2 = "OperationName"
 
-	metadataInputService21TestShapeInputService21TestCaseOperation1Input `json:"-" xml:"-"`
+// InputService21TestCaseOperation2Request generates a request for the InputService21TestCaseOperation2 operation.
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation2Request(input *InputService21TestShapeInputShape) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation2Output) {
+	op := &request.Operation{
+		Name:       opInputService21TestCaseOperation2,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService21TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService21TestShapeInputService21TestCaseOperation2Output{}
+	req.Data = output
+	return
 }
 
-type metadataInputService21TestShapeInputService21TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation2(input *InputService21TestShapeInputShape) (*InputService21TestShapeInputService21TestCaseOperation2Output, error) {
+	req, out := c.InputService21TestCaseOperation2Request(input)
+	err := req.Send()
+	return out, err
+}
+
+const opInputService21TestCaseOperation3 = "OperationName"
+
+// InputService21TestCaseOperation3Request generates a request for the InputService21TestCaseOperation3 operation.
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation3Request(input *InputService21TestShapeInputShape) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation3Output) {
+	op := &request.Operation{
+		Name:       opInputService21TestCaseOperation3,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService21TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService21TestShapeInputService21TestCaseOperation3Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation3(input *InputService21TestShapeInputShape) (*InputService21TestShapeInputService21TestCaseOperation3Output, error) {
+	req, out := c.InputService21TestCaseOperation3Request(input)
+	err := req.Send()
+	return out, err
+}
+
+const opInputService21TestCaseOperation4 = "OperationName"
+
+// InputService21TestCaseOperation4Request generates a request for the InputService21TestCaseOperation4 operation.
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation4Request(input *InputService21TestShapeInputShape) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation4Output) {
+	op := &request.Operation{
+		Name:       opInputService21TestCaseOperation4,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService21TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService21TestShapeInputService21TestCaseOperation4Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation4(input *InputService21TestShapeInputShape) (*InputService21TestShapeInputService21TestCaseOperation4Output, error) {
+	req, out := c.InputService21TestCaseOperation4Request(input)
+	err := req.Send()
+	return out, err
+}
+
+const opInputService21TestCaseOperation5 = "OperationName"
+
+// InputService21TestCaseOperation5Request generates a request for the InputService21TestCaseOperation5 operation.
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation5Request(input *InputService21TestShapeInputShape) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation5Output) {
+	op := &request.Operation{
+		Name:       opInputService21TestCaseOperation5,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService21TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService21TestShapeInputService21TestCaseOperation5Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation5(input *InputService21TestShapeInputShape) (*InputService21TestShapeInputService21TestCaseOperation5Output, error) {
+	req, out := c.InputService21TestCaseOperation5Request(input)
+	err := req.Send()
+	return out, err
+}
+
+const opInputService21TestCaseOperation6 = "OperationName"
+
+// InputService21TestCaseOperation6Request generates a request for the InputService21TestCaseOperation6 operation.
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation6Request(input *InputService21TestShapeInputShape) (req *request.Request, output *InputService21TestShapeInputService21TestCaseOperation6Output) {
+	op := &request.Operation{
+		Name:       opInputService21TestCaseOperation6,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService21TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService21TestShapeInputService21TestCaseOperation6Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService21ProtocolTest) InputService21TestCaseOperation6(input *InputService21TestShapeInputShape) (*InputService21TestShapeInputService21TestCaseOperation6Output, error) {
+	req, out := c.InputService21TestCaseOperation6Request(input)
+	err := req.Send()
+	return out, err
 }
 
 type InputService21TestShapeInputService21TestCaseOperation1Output struct {
-	metadataInputService21TestShapeInputService21TestCaseOperation1Output `json:"-" xml:"-"`
+	_ struct{} `type:"structure"`
 }
 
-type metadataInputService21TestShapeInputService21TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+type InputService21TestShapeInputService21TestCaseOperation2Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService21TestShapeInputService21TestCaseOperation3Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService21TestShapeInputService21TestCaseOperation4Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService21TestShapeInputService21TestCaseOperation5Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService21TestShapeInputService21TestCaseOperation6Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService21TestShapeInputShape struct {
+	_ struct{} `locationName:"OperationRequest" type:"structure" xmlURI:"https://foo/"`
+
+	RecursiveStruct *InputService21TestShapeRecursiveStructType `type:"structure"`
+}
+
+type InputService21TestShapeRecursiveStructType struct {
+	_ struct{} `type:"structure"`
+
+	NoRecurse *string `type:"string"`
+
+	RecursiveList []*InputService21TestShapeRecursiveStructType `type:"list"`
+
+	RecursiveMap map[string]*InputService21TestShapeRecursiveStructType `type:"map"`
+
+	RecursiveStruct *InputService21TestShapeRecursiveStructType `type:"structure"`
+}
+
+//The service client's operations are safe to be used concurrently.
+// It is not safe to mutate any of the client's properties though.
+type InputService22ProtocolTest struct {
+	*client.Client
+}
+
+// New creates a new instance of the InputService22ProtocolTest client with a session.
+// If additional configuration is needed for the client instance use the optional
+// aws.Config parameter to add your extra config.
+//
+// Example:
+//     // Create a InputService22ProtocolTest client from just a session.
+//     svc := inputservice22protocoltest.New(mySession)
+//
+//     // Create a InputService22ProtocolTest client with additional configuration
+//     svc := inputservice22protocoltest.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
+func NewInputService22ProtocolTest(p client.ConfigProvider, cfgs ...*aws.Config) *InputService22ProtocolTest {
+	c := p.ClientConfig("inputservice22protocoltest", cfgs...)
+	return newInputService22ProtocolTestClient(*c.Config, c.Handlers, c.Endpoint, c.SigningRegion)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newInputService22ProtocolTestClient(cfg aws.Config, handlers request.Handlers, endpoint, signingRegion string) *InputService22ProtocolTest {
+	svc := &InputService22ProtocolTest{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:   "inputservice22protocoltest",
+				SigningRegion: signingRegion,
+				Endpoint:      endpoint,
+				APIVersion:    "2014-01-01",
+			},
+			handlers,
+		),
+	}
+
+	// Handlers
+	svc.Handlers.Sign.PushBack(v4.Sign)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
+
+	return svc
+}
+
+// newRequest creates a new request for a InputService22ProtocolTest operation and runs any
+// custom request initialization.
+func (c *InputService22ProtocolTest) newRequest(op *request.Operation, params, data interface{}) *request.Request {
+	req := c.NewRequest(op, params, data)
+
+	return req
+}
+
+const opInputService22TestCaseOperation1 = "OperationName"
+
+// InputService22TestCaseOperation1Request generates a request for the InputService22TestCaseOperation1 operation.
+func (c *InputService22ProtocolTest) InputService22TestCaseOperation1Request(input *InputService22TestShapeInputService22TestCaseOperation1Input) (req *request.Request, output *InputService22TestShapeInputService22TestCaseOperation1Output) {
+	op := &request.Operation{
+		Name:       opInputService22TestCaseOperation1,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService22TestShapeInputService22TestCaseOperation1Input{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService22TestShapeInputService22TestCaseOperation1Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService22ProtocolTest) InputService22TestCaseOperation1(input *InputService22TestShapeInputService22TestCaseOperation1Input) (*InputService22TestShapeInputService22TestCaseOperation1Output, error) {
+	req, out := c.InputService22TestCaseOperation1Request(input)
+	err := req.Send()
+	return out, err
+}
+
+type InputService22TestShapeInputService22TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
+
+	TimeArgInHeader *time.Time `location:"header" locationName:"x-amz-timearg" type:"timestamp" timestampFormat:"rfc822"`
+}
+
+type InputService22TestShapeInputService22TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+}
+
+//The service client's operations are safe to be used concurrently.
+// It is not safe to mutate any of the client's properties though.
+type InputService23ProtocolTest struct {
+	*client.Client
+}
+
+// New creates a new instance of the InputService23ProtocolTest client with a session.
+// If additional configuration is needed for the client instance use the optional
+// aws.Config parameter to add your extra config.
+//
+// Example:
+//     // Create a InputService23ProtocolTest client from just a session.
+//     svc := inputservice23protocoltest.New(mySession)
+//
+//     // Create a InputService23ProtocolTest client with additional configuration
+//     svc := inputservice23protocoltest.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
+func NewInputService23ProtocolTest(p client.ConfigProvider, cfgs ...*aws.Config) *InputService23ProtocolTest {
+	c := p.ClientConfig("inputservice23protocoltest", cfgs...)
+	return newInputService23ProtocolTestClient(*c.Config, c.Handlers, c.Endpoint, c.SigningRegion)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newInputService23ProtocolTestClient(cfg aws.Config, handlers request.Handlers, endpoint, signingRegion string) *InputService23ProtocolTest {
+	svc := &InputService23ProtocolTest{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:   "inputservice23protocoltest",
+				SigningRegion: signingRegion,
+				Endpoint:      endpoint,
+				APIVersion:    "2014-01-01",
+			},
+			handlers,
+		),
+	}
+
+	// Handlers
+	svc.Handlers.Sign.PushBack(v4.Sign)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
+
+	return svc
+}
+
+// newRequest creates a new request for a InputService23ProtocolTest operation and runs any
+// custom request initialization.
+func (c *InputService23ProtocolTest) newRequest(op *request.Operation, params, data interface{}) *request.Request {
+	req := c.NewRequest(op, params, data)
+
+	return req
+}
+
+const opInputService23TestCaseOperation1 = "OperationName"
+
+// InputService23TestCaseOperation1Request generates a request for the InputService23TestCaseOperation1 operation.
+func (c *InputService23ProtocolTest) InputService23TestCaseOperation1Request(input *InputService23TestShapeInputShape) (req *request.Request, output *InputService23TestShapeInputService23TestCaseOperation1Output) {
+	op := &request.Operation{
+		Name:       opInputService23TestCaseOperation1,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService23TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService23TestShapeInputService23TestCaseOperation1Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService23ProtocolTest) InputService23TestCaseOperation1(input *InputService23TestShapeInputShape) (*InputService23TestShapeInputService23TestCaseOperation1Output, error) {
+	req, out := c.InputService23TestCaseOperation1Request(input)
+	err := req.Send()
+	return out, err
+}
+
+const opInputService23TestCaseOperation2 = "OperationName"
+
+// InputService23TestCaseOperation2Request generates a request for the InputService23TestCaseOperation2 operation.
+func (c *InputService23ProtocolTest) InputService23TestCaseOperation2Request(input *InputService23TestShapeInputShape) (req *request.Request, output *InputService23TestShapeInputService23TestCaseOperation2Output) {
+	op := &request.Operation{
+		Name:       opInputService23TestCaseOperation2,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService23TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService23TestShapeInputService23TestCaseOperation2Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService23ProtocolTest) InputService23TestCaseOperation2(input *InputService23TestShapeInputShape) (*InputService23TestShapeInputService23TestCaseOperation2Output, error) {
+	req, out := c.InputService23TestCaseOperation2Request(input)
+	err := req.Send()
+	return out, err
+}
+
+type InputService23TestShapeInputService23TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService23TestShapeInputService23TestCaseOperation2Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService23TestShapeInputShape struct {
+	_ struct{} `type:"structure"`
+
+	Token *string `type:"string" idempotencyToken:"true"`
 }
 
 //
@@ -2664,7 +2699,6 @@ type metadataInputService21TestShapeInputService21TestCaseOperation1Output struc
 func TestInputService1ProtocolTestBasicXMLSerializationCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService1ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService1TestShapeInputShape{
 		Description: aws.String("bar"),
 		Name:        aws.String("foo"),
@@ -2691,7 +2725,6 @@ func TestInputService1ProtocolTestBasicXMLSerializationCase1(t *testing.T) {
 func TestInputService1ProtocolTestBasicXMLSerializationCase2(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService1ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService1TestShapeInputShape{
 		Description: aws.String("bar"),
 		Name:        aws.String("foo"),
@@ -2718,7 +2751,6 @@ func TestInputService1ProtocolTestBasicXMLSerializationCase2(t *testing.T) {
 func TestInputService1ProtocolTestBasicXMLSerializationCase3(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService1ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService1TestShapeInputService1TestCaseOperation3Input{}
 	req, _ := svc.InputService1TestCaseOperation3Request(input)
 	r := req.HTTPRequest
@@ -2737,7 +2769,6 @@ func TestInputService1ProtocolTestBasicXMLSerializationCase3(t *testing.T) {
 func TestInputService2ProtocolTestSerializeOtherScalarTypesCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService2ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService2TestShapeInputService2TestCaseOperation1Input{
 		First:  aws.Bool(true),
 		Fourth: aws.Int64(3),
@@ -2766,7 +2797,6 @@ func TestInputService2ProtocolTestSerializeOtherScalarTypesCase1(t *testing.T) {
 func TestInputService3ProtocolTestNestedStructuresCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService3ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService3TestShapeInputShape{
 		Description: aws.String("baz"),
 		SubStructure: &InputService3TestShapeSubStructure{
@@ -2796,7 +2826,6 @@ func TestInputService3ProtocolTestNestedStructuresCase1(t *testing.T) {
 func TestInputService3ProtocolTestNestedStructuresCase2(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService3ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService3TestShapeInputShape{
 		Description: aws.String("baz"),
 		SubStructure: &InputService3TestShapeSubStructure{
@@ -2825,7 +2854,6 @@ func TestInputService3ProtocolTestNestedStructuresCase2(t *testing.T) {
 func TestInputService4ProtocolTestNestedStructuresCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService4ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService4TestShapeInputService4TestCaseOperation1Input{
 		Description:  aws.String("baz"),
 		SubStructure: &InputService4TestShapeSubStructure{},
@@ -2852,7 +2880,6 @@ func TestInputService4ProtocolTestNestedStructuresCase1(t *testing.T) {
 func TestInputService5ProtocolTestNonFlattenedListsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputService5TestCaseOperation1Input{
 		ListParam: []*string{
 			aws.String("one"),
@@ -2882,7 +2909,6 @@ func TestInputService5ProtocolTestNonFlattenedListsCase1(t *testing.T) {
 func TestInputService6ProtocolTestNonFlattenedListsWithLocationNameCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService6ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService6TestShapeInputService6TestCaseOperation1Input{
 		ListParam: []*string{
 			aws.String("one"),
@@ -2912,7 +2938,6 @@ func TestInputService6ProtocolTestNonFlattenedListsWithLocationNameCase1(t *test
 func TestInputService7ProtocolTestFlattenedListsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService7ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService7TestShapeInputService7TestCaseOperation1Input{
 		ListParam: []*string{
 			aws.String("one"),
@@ -2942,7 +2967,6 @@ func TestInputService7ProtocolTestFlattenedListsCase1(t *testing.T) {
 func TestInputService8ProtocolTestFlattenedListsWithLocationNameCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService8ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService8TestShapeInputService8TestCaseOperation1Input{
 		ListParam: []*string{
 			aws.String("one"),
@@ -2972,7 +2996,6 @@ func TestInputService8ProtocolTestFlattenedListsWithLocationNameCase1(t *testing
 func TestInputService9ProtocolTestListOfStructuresCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService9ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService9TestShapeInputService9TestCaseOperation1Input{
 		ListParam: []*InputService9TestShapeSingleFieldStruct{
 			{
@@ -3008,7 +3031,6 @@ func TestInputService9ProtocolTestListOfStructuresCase1(t *testing.T) {
 func TestInputService10ProtocolTestBlobAndTimestampShapesCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService10ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService10TestShapeInputService10TestCaseOperation1Input{
 		StructureParam: &InputService10TestShapeStructureShape{
 			B: []byte("foo"),
@@ -3037,7 +3059,6 @@ func TestInputService10ProtocolTestBlobAndTimestampShapesCase1(t *testing.T) {
 func TestInputService11ProtocolTestHeaderMapsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService11ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService11TestShapeInputService11TestCaseOperation1Input{
 		Foo: map[string]*string{
 			"a": aws.String("b"),
@@ -3060,18 +3081,40 @@ func TestInputService11ProtocolTestHeaderMapsCase1(t *testing.T) {
 
 }
 
-func TestInputService12ProtocolTestStringToStringMapsInQuerystringCase1(t *testing.T) {
+func TestInputService12ProtocolTestQuerystringListOfStringsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService12ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService12TestShapeInputService12TestCaseOperation1Input{
+		Items: []*string{
+			aws.String("value1"),
+			aws.String("value2"),
+		},
+	}
+	req, _ := svc.InputService12TestCaseOperation1Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/path?item=value1&item=value2", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService13ProtocolTestStringToStringMapsInQuerystringCase1(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService13ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService13TestShapeInputService13TestCaseOperation1Input{
 		PipelineId: aws.String("foo"),
 		QueryDoc: map[string]*string{
 			"bar":  aws.String("baz"),
 			"fizz": aws.String("buzz"),
 		},
 	}
-	req, _ := svc.InputService12TestCaseOperation1Request(input)
+	req, _ := svc.InputService13TestCaseOperation1Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3085,11 +3128,10 @@ func TestInputService12ProtocolTestStringToStringMapsInQuerystringCase1(t *testi
 
 }
 
-func TestInputService13ProtocolTestStringToStringListMapsInQuerystringCase1(t *testing.T) {
+func TestInputService14ProtocolTestStringToStringListMapsInQuerystringCase1(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService13ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService13TestShapeInputService13TestCaseOperation1Input{
+	svc := NewInputService14ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService14TestShapeInputService14TestCaseOperation1Input{
 		PipelineId: aws.String("id"),
 		QueryDoc: map[string][]*string{
 			"fizz": {
@@ -3102,7 +3144,7 @@ func TestInputService13ProtocolTestStringToStringListMapsInQuerystringCase1(t *t
 			},
 		},
 	}
-	req, _ := svc.InputService13TestCaseOperation1Request(input)
+	req, _ := svc.InputService14TestCaseOperation1Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3116,38 +3158,11 @@ func TestInputService13ProtocolTestStringToStringListMapsInQuerystringCase1(t *t
 
 }
 
-func TestInputService14ProtocolTestStringPayloadCase1(t *testing.T) {
-	sess := session.New()
-	svc := NewInputService14ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService14TestShapeInputService14TestCaseOperation1Input{
-		Foo: aws.String("bar"),
-	}
-	req, _ := svc.InputService14TestCaseOperation1Request(input)
-	r := req.HTTPRequest
-
-	// build request
-	restxml.Build(req)
-	assert.NoError(t, req.Error)
-
-	// assert body
-	assert.NotNil(t, r.Body)
-	body := util.SortXML(r.Body)
-	assert.Equal(t, `bar`, util.Trim(string(body)))
-
-	// assert URL
-	awstesting.AssertURL(t, "https://test/", r.URL.String())
-
-	// assert headers
-
-}
-
-func TestInputService15ProtocolTestBlobPayloadCase1(t *testing.T) {
+func TestInputService15ProtocolTestStringPayloadCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService15ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService15TestShapeInputShape{
-		Foo: []byte("bar"),
+	input := &InputService15TestShapeInputService15TestCaseOperation1Input{
+		Foo: aws.String("bar"),
 	}
 	req, _ := svc.InputService15TestCaseOperation1Request(input)
 	r := req.HTTPRequest
@@ -3168,33 +3183,11 @@ func TestInputService15ProtocolTestBlobPayloadCase1(t *testing.T) {
 
 }
 
-func TestInputService15ProtocolTestBlobPayloadCase2(t *testing.T) {
-	sess := session.New()
-	svc := NewInputService15ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService15TestShapeInputShape{}
-	req, _ := svc.InputService15TestCaseOperation2Request(input)
-	r := req.HTTPRequest
-
-	// build request
-	restxml.Build(req)
-	assert.NoError(t, req.Error)
-
-	// assert URL
-	awstesting.AssertURL(t, "https://test/", r.URL.String())
-
-	// assert headers
-
-}
-
-func TestInputService16ProtocolTestStructurePayloadCase1(t *testing.T) {
+func TestInputService16ProtocolTestBlobPayloadCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService16ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService16TestShapeInputShape{
-		Foo: &InputService16TestShapeFooShape{
-			Baz: aws.String("bar"),
-		},
+		Foo: []byte("bar"),
 	}
 	req, _ := svc.InputService16TestCaseOperation1Request(input)
 	r := req.HTTPRequest
@@ -3206,7 +3199,7 @@ func TestInputService16ProtocolTestStructurePayloadCase1(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<foo><baz>bar</baz></foo>`, util.Trim(string(body)), InputService16TestShapeInputShape{})
+	assert.Equal(t, `bar`, util.Trim(string(body)))
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/", r.URL.String())
@@ -3215,10 +3208,9 @@ func TestInputService16ProtocolTestStructurePayloadCase1(t *testing.T) {
 
 }
 
-func TestInputService16ProtocolTestStructurePayloadCase2(t *testing.T) {
+func TestInputService16ProtocolTestBlobPayloadCase2(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService16ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService16TestShapeInputShape{}
 	req, _ := svc.InputService16TestCaseOperation2Request(input)
 	r := req.HTTPRequest
@@ -3234,61 +3226,12 @@ func TestInputService16ProtocolTestStructurePayloadCase2(t *testing.T) {
 
 }
 
-func TestInputService16ProtocolTestStructurePayloadCase3(t *testing.T) {
-	sess := session.New()
-	svc := NewInputService16ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService16TestShapeInputShape{
-		Foo: &InputService16TestShapeFooShape{},
-	}
-	req, _ := svc.InputService16TestCaseOperation3Request(input)
-	r := req.HTTPRequest
-
-	// build request
-	restxml.Build(req)
-	assert.NoError(t, req.Error)
-
-	// assert body
-	assert.NotNil(t, r.Body)
-	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<foo></foo>`, util.Trim(string(body)), InputService16TestShapeInputShape{})
-
-	// assert URL
-	awstesting.AssertURL(t, "https://test/", r.URL.String())
-
-	// assert headers
-
-}
-
-func TestInputService16ProtocolTestStructurePayloadCase4(t *testing.T) {
-	sess := session.New()
-	svc := NewInputService16ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService16TestShapeInputShape{}
-	req, _ := svc.InputService16TestCaseOperation4Request(input)
-	r := req.HTTPRequest
-
-	// build request
-	restxml.Build(req)
-	assert.NoError(t, req.Error)
-
-	// assert URL
-	awstesting.AssertURL(t, "https://test/", r.URL.String())
-
-	// assert headers
-
-}
-
-func TestInputService17ProtocolTestXMLAttributeCase1(t *testing.T) {
+func TestInputService17ProtocolTestStructurePayloadCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService17ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService17TestShapeInputService17TestCaseOperation1Input{
-		Grant: &InputService17TestShapeGrant{
-			Grantee: &InputService17TestShapeGrantee{
-				EmailAddress: aws.String("foo@example.com"),
-				Type:         aws.String("CanonicalUser"),
-			},
+	input := &InputService17TestShapeInputShape{
+		Foo: &InputService17TestShapeFooShape{
+			Baz: aws.String("bar"),
 		},
 	}
 	req, _ := svc.InputService17TestCaseOperation1Request(input)
@@ -3301,7 +3244,7 @@ func TestInputService17ProtocolTestXMLAttributeCase1(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<Grant xmlns:_xmlns="xmlns" _xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:XMLSchema-instance="http://www.w3.org/2001/XMLSchema-instance" XMLSchema-instance:type="CanonicalUser"><Grantee><EmailAddress>foo@example.com</EmailAddress></Grantee></Grant>`, util.Trim(string(body)), InputService17TestShapeInputService17TestCaseOperation1Input{})
+	awstesting.AssertXML(t, `<foo><baz>bar</baz></foo>`, util.Trim(string(body)), InputService17TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/", r.URL.String())
@@ -3310,15 +3253,105 @@ func TestInputService17ProtocolTestXMLAttributeCase1(t *testing.T) {
 
 }
 
-func TestInputService18ProtocolTestGreedyKeysCase1(t *testing.T) {
+func TestInputService17ProtocolTestStructurePayloadCase2(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService17ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService17TestShapeInputShape{}
+	req, _ := svc.InputService17TestCaseOperation2Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService17ProtocolTestStructurePayloadCase3(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService17ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService17TestShapeInputShape{
+		Foo: &InputService17TestShapeFooShape{},
+	}
+	req, _ := svc.InputService17TestCaseOperation3Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert body
+	assert.NotNil(t, r.Body)
+	body := util.SortXML(r.Body)
+	awstesting.AssertXML(t, `<foo></foo>`, util.Trim(string(body)), InputService17TestShapeInputShape{})
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService17ProtocolTestStructurePayloadCase4(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService17ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService17TestShapeInputShape{}
+	req, _ := svc.InputService17TestCaseOperation4Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService18ProtocolTestXMLAttributeCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService18ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService18TestShapeInputService18TestCaseOperation1Input{
+		Grant: &InputService18TestShapeGrant{
+			Grantee: &InputService18TestShapeGrantee{
+				EmailAddress: aws.String("foo@example.com"),
+				Type:         aws.String("CanonicalUser"),
+			},
+		},
+	}
+	req, _ := svc.InputService18TestCaseOperation1Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert body
+	assert.NotNil(t, r.Body)
+	body := util.SortXML(r.Body)
+	awstesting.AssertXML(t, `<Grant xmlns:_xmlns="xmlns" _xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:XMLSchema-instance="http://www.w3.org/2001/XMLSchema-instance" XMLSchema-instance:type="CanonicalUser"><Grantee><EmailAddress>foo@example.com</EmailAddress></Grantee></Grant>`, util.Trim(string(body)), InputService18TestShapeInputService18TestCaseOperation1Input{})
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService19ProtocolTestGreedyKeysCase1(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService19ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService19TestShapeInputService19TestCaseOperation1Input{
 		Bucket: aws.String("my/bucket"),
 		Key:    aws.String("testing /123"),
 	}
-	req, _ := svc.InputService18TestCaseOperation1Request(input)
+	req, _ := svc.InputService19TestCaseOperation1Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3332,12 +3365,11 @@ func TestInputService18ProtocolTestGreedyKeysCase1(t *testing.T) {
 
 }
 
-func TestInputService19ProtocolTestOmitsNullQueryParamsButSerializesEmptyStringsCase1(t *testing.T) {
+func TestInputService20ProtocolTestOmitsNullQueryParamsButSerializesEmptyStringsCase1(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService19ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService19TestShapeInputShape{}
-	req, _ := svc.InputService19TestCaseOperation1Request(input)
+	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService20TestShapeInputShape{}
+	req, _ := svc.InputService20TestCaseOperation1Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3351,14 +3383,13 @@ func TestInputService19ProtocolTestOmitsNullQueryParamsButSerializesEmptyStrings
 
 }
 
-func TestInputService19ProtocolTestOmitsNullQueryParamsButSerializesEmptyStringsCase2(t *testing.T) {
+func TestInputService20ProtocolTestOmitsNullQueryParamsButSerializesEmptyStringsCase2(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService19ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService19TestShapeInputShape{
+	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService20TestShapeInputShape{
 		Foo: aws.String(""),
 	}
-	req, _ := svc.InputService19TestCaseOperation2Request(input)
+	req, _ := svc.InputService20TestCaseOperation2Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3372,16 +3403,15 @@ func TestInputService19ProtocolTestOmitsNullQueryParamsButSerializesEmptyStrings
 
 }
 
-func TestInputService20ProtocolTestRecursiveShapesCase1(t *testing.T) {
+func TestInputService21ProtocolTestRecursiveShapesCase1(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService20TestShapeInputShape{
-		RecursiveStruct: &InputService20TestShapeRecursiveStructType{
+	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService21TestShapeInputShape{
+		RecursiveStruct: &InputService21TestShapeRecursiveStructType{
 			NoRecurse: aws.String("foo"),
 		},
 	}
-	req, _ := svc.InputService20TestCaseOperation1Request(input)
+	req, _ := svc.InputService21TestCaseOperation1Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3391,7 +3421,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase1(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService20TestShapeInputShape{})
+	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService21TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/path", r.URL.String())
@@ -3400,18 +3430,17 @@ func TestInputService20ProtocolTestRecursiveShapesCase1(t *testing.T) {
 
 }
 
-func TestInputService20ProtocolTestRecursiveShapesCase2(t *testing.T) {
+func TestInputService21ProtocolTestRecursiveShapesCase2(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService20TestShapeInputShape{
-		RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-			RecursiveStruct: &InputService20TestShapeRecursiveStructType{
+	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService21TestShapeInputShape{
+		RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+			RecursiveStruct: &InputService21TestShapeRecursiveStructType{
 				NoRecurse: aws.String("foo"),
 			},
 		},
 	}
-	req, _ := svc.InputService20TestCaseOperation2Request(input)
+	req, _ := svc.InputService21TestCaseOperation2Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3421,7 +3450,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase2(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></RecursiveStruct></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService20TestShapeInputShape{})
+	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></RecursiveStruct></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService21TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/path", r.URL.String())
@@ -3430,22 +3459,21 @@ func TestInputService20ProtocolTestRecursiveShapesCase2(t *testing.T) {
 
 }
 
-func TestInputService20ProtocolTestRecursiveShapesCase3(t *testing.T) {
+func TestInputService21ProtocolTestRecursiveShapesCase3(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService20TestShapeInputShape{
-		RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-			RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-				RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-					RecursiveStruct: &InputService20TestShapeRecursiveStructType{
+	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService21TestShapeInputShape{
+		RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+			RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+				RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+					RecursiveStruct: &InputService21TestShapeRecursiveStructType{
 						NoRecurse: aws.String("foo"),
 					},
 				},
 			},
 		},
 	}
-	req, _ := svc.InputService20TestCaseOperation3Request(input)
+	req, _ := svc.InputService21TestCaseOperation3Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3455,7 +3483,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase3(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></RecursiveStruct></RecursiveStruct></RecursiveStruct></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService20TestShapeInputShape{})
+	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></RecursiveStruct></RecursiveStruct></RecursiveStruct></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService21TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/path", r.URL.String())
@@ -3464,13 +3492,12 @@ func TestInputService20ProtocolTestRecursiveShapesCase3(t *testing.T) {
 
 }
 
-func TestInputService20ProtocolTestRecursiveShapesCase4(t *testing.T) {
+func TestInputService21ProtocolTestRecursiveShapesCase4(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService20TestShapeInputShape{
-		RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-			RecursiveList: []*InputService20TestShapeRecursiveStructType{
+	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService21TestShapeInputShape{
+		RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+			RecursiveList: []*InputService21TestShapeRecursiveStructType{
 				{
 					NoRecurse: aws.String("foo"),
 				},
@@ -3480,7 +3507,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase4(t *testing.T) {
 			},
 		},
 	}
-	req, _ := svc.InputService20TestCaseOperation4Request(input)
+	req, _ := svc.InputService21TestCaseOperation4Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3490,7 +3517,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase4(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveList xmlns="https://foo/"><member xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></member><member xmlns="https://foo/"><NoRecurse xmlns="https://foo/">bar</NoRecurse></member></RecursiveList></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService20TestShapeInputShape{})
+	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveList xmlns="https://foo/"><member xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></member><member xmlns="https://foo/"><NoRecurse xmlns="https://foo/">bar</NoRecurse></member></RecursiveList></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService21TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/path", r.URL.String())
@@ -3499,25 +3526,24 @@ func TestInputService20ProtocolTestRecursiveShapesCase4(t *testing.T) {
 
 }
 
-func TestInputService20ProtocolTestRecursiveShapesCase5(t *testing.T) {
+func TestInputService21ProtocolTestRecursiveShapesCase5(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService20TestShapeInputShape{
-		RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-			RecursiveList: []*InputService20TestShapeRecursiveStructType{
+	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService21TestShapeInputShape{
+		RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+			RecursiveList: []*InputService21TestShapeRecursiveStructType{
 				{
 					NoRecurse: aws.String("foo"),
 				},
 				{
-					RecursiveStruct: &InputService20TestShapeRecursiveStructType{
+					RecursiveStruct: &InputService21TestShapeRecursiveStructType{
 						NoRecurse: aws.String("bar"),
 					},
 				},
 			},
 		},
 	}
-	req, _ := svc.InputService20TestCaseOperation5Request(input)
+	req, _ := svc.InputService21TestCaseOperation5Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3527,7 +3553,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase5(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveList xmlns="https://foo/"><member xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></member><member xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">bar</NoRecurse></RecursiveStruct></member></RecursiveList></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService20TestShapeInputShape{})
+	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveList xmlns="https://foo/"><member xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></member><member xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><NoRecurse xmlns="https://foo/">bar</NoRecurse></RecursiveStruct></member></RecursiveList></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService21TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/path", r.URL.String())
@@ -3536,13 +3562,12 @@ func TestInputService20ProtocolTestRecursiveShapesCase5(t *testing.T) {
 
 }
 
-func TestInputService20ProtocolTestRecursiveShapesCase6(t *testing.T) {
+func TestInputService21ProtocolTestRecursiveShapesCase6(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService20ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService20TestShapeInputShape{
-		RecursiveStruct: &InputService20TestShapeRecursiveStructType{
-			RecursiveMap: map[string]*InputService20TestShapeRecursiveStructType{
+	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService21TestShapeInputShape{
+		RecursiveStruct: &InputService21TestShapeRecursiveStructType{
+			RecursiveMap: map[string]*InputService21TestShapeRecursiveStructType{
 				"bar": {
 					NoRecurse: aws.String("bar"),
 				},
@@ -3552,7 +3577,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase6(t *testing.T) {
 			},
 		},
 	}
-	req, _ := svc.InputService20TestCaseOperation6Request(input)
+	req, _ := svc.InputService21TestCaseOperation6Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3562,7 +3587,7 @@ func TestInputService20ProtocolTestRecursiveShapesCase6(t *testing.T) {
 	// assert body
 	assert.NotNil(t, r.Body)
 	body := util.SortXML(r.Body)
-	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveMap xmlns="https://foo/"><entry xmlns="https://foo/"><key xmlns="https://foo/">foo</key><value xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></value></entry><entry xmlns="https://foo/"><key xmlns="https://foo/">bar</key><value xmlns="https://foo/"><NoRecurse xmlns="https://foo/">bar</NoRecurse></value></entry></RecursiveMap></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService20TestShapeInputShape{})
+	awstesting.AssertXML(t, `<OperationRequest xmlns="https://foo/"><RecursiveStruct xmlns="https://foo/"><RecursiveMap xmlns="https://foo/"><entry xmlns="https://foo/"><key xmlns="https://foo/">foo</key><value xmlns="https://foo/"><NoRecurse xmlns="https://foo/">foo</NoRecurse></value></entry><entry xmlns="https://foo/"><key xmlns="https://foo/">bar</key><value xmlns="https://foo/"><NoRecurse xmlns="https://foo/">bar</NoRecurse></value></entry></RecursiveMap></RecursiveStruct></OperationRequest>`, util.Trim(string(body)), InputService21TestShapeInputShape{})
 
 	// assert URL
 	awstesting.AssertURL(t, "https://test/path", r.URL.String())
@@ -3571,14 +3596,13 @@ func TestInputService20ProtocolTestRecursiveShapesCase6(t *testing.T) {
 
 }
 
-func TestInputService21ProtocolTestTimestampInHeaderCase1(t *testing.T) {
+func TestInputService22ProtocolTestTimestampInHeaderCase1(t *testing.T) {
 	sess := session.New()
-	svc := NewInputService21ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
-	input := &InputService21TestShapeInputService21TestCaseOperation1Input{
+	svc := NewInputService22ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService22TestShapeInputService22TestCaseOperation1Input{
 		TimeArgInHeader: aws.Time(time.Unix(1422172800, 0)),
 	}
-	req, _ := svc.InputService21TestCaseOperation1Request(input)
+	req, _ := svc.InputService22TestCaseOperation1Request(input)
 	r := req.HTTPRequest
 
 	// build request
@@ -3590,5 +3614,53 @@ func TestInputService21ProtocolTestTimestampInHeaderCase1(t *testing.T) {
 
 	// assert headers
 	assert.Equal(t, "Sun, 25 Jan 2015 08:00:00 GMT", r.Header.Get("x-amz-timearg"))
+
+}
+
+func TestInputService23ProtocolTestIdempotencyTokenAutoFillCase1(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService23ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService23TestShapeInputShape{
+		Token: aws.String("abc123"),
+	}
+	req, _ := svc.InputService23TestCaseOperation1Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert body
+	assert.NotNil(t, r.Body)
+	body := util.SortXML(r.Body)
+	awstesting.AssertXML(t, `<Token>abc123</Token>`, util.Trim(string(body)), InputService23TestShapeInputShape{})
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/path", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService23ProtocolTestIdempotencyTokenAutoFillCase2(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService23ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService23TestShapeInputShape{}
+	req, _ := svc.InputService23TestCaseOperation2Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	restxml.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert body
+	assert.NotNil(t, r.Body)
+	body := util.SortXML(r.Body)
+	awstesting.AssertXML(t, `<Token>00000000-0000-4000-8000-000000000000</Token>`, util.Trim(string(body)), InputService23TestShapeInputShape{})
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/path", r.URL.String())
+
+	// assert headers
 
 }

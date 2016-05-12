@@ -71,7 +71,8 @@ func ExampleRoute53_ChangeResourceRecordSets() {
 						},
 						SetIdentifier: aws.String("ResourceRecordSetIdentifier"),
 						TTL:           aws.Int64(1),
-						Weight:        aws.Int64(1),
+						TrafficPolicyInstanceId: aws.String("TrafficPolicyInstanceId"),
+						Weight:                  aws.Int64(1),
 					},
 				},
 				// More values...
@@ -131,20 +132,30 @@ func ExampleRoute53_CreateHealthCheck() {
 		CallerReference: aws.String("HealthCheckNonce"), // Required
 		HealthCheckConfig: &route53.HealthCheckConfig{ // Required
 			Type: aws.String("HealthCheckType"), // Required
+			AlarmIdentifier: &route53.AlarmIdentifier{
+				Name:   aws.String("AlarmName"),        // Required
+				Region: aws.String("CloudWatchRegion"), // Required
+			},
 			ChildHealthChecks: []*string{
 				aws.String("HealthCheckId"), // Required
 				// More values...
 			},
-			FailureThreshold:         aws.Int64(1),
-			FullyQualifiedDomainName: aws.String("FullyQualifiedDomainName"),
-			HealthThreshold:          aws.Int64(1),
-			IPAddress:                aws.String("IPAddress"),
-			Inverted:                 aws.Bool(true),
-			MeasureLatency:           aws.Bool(true),
-			Port:                     aws.Int64(1),
-			RequestInterval:          aws.Int64(1),
-			ResourcePath:             aws.String("ResourcePath"),
-			SearchString:             aws.String("SearchString"),
+			EnableSNI:                    aws.Bool(true),
+			FailureThreshold:             aws.Int64(1),
+			FullyQualifiedDomainName:     aws.String("FullyQualifiedDomainName"),
+			HealthThreshold:              aws.Int64(1),
+			IPAddress:                    aws.String("IPAddress"),
+			InsufficientDataHealthStatus: aws.String("InsufficientDataHealthStatus"),
+			Inverted:                     aws.Bool(true),
+			MeasureLatency:               aws.Bool(true),
+			Port:                         aws.Int64(1),
+			Regions: []*string{
+				aws.String("HealthCheckRegion"), // Required
+				// More values...
+			},
+			RequestInterval: aws.Int64(1),
+			ResourcePath:    aws.String("ResourcePath"),
+			SearchString:    aws.String("SearchString"),
 		},
 	}
 	resp, err := svc.CreateHealthCheck(params)
@@ -197,6 +208,71 @@ func ExampleRoute53_CreateReusableDelegationSet() {
 		HostedZoneId:    aws.String("ResourceId"),
 	}
 	resp, err := svc.CreateReusableDelegationSet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_CreateTrafficPolicy() {
+	svc := route53.New(session.New())
+
+	params := &route53.CreateTrafficPolicyInput{
+		Document: aws.String("TrafficPolicyDocument"), // Required
+		Name:     aws.String("TrafficPolicyName"),     // Required
+		Comment:  aws.String("TrafficPolicyComment"),
+	}
+	resp, err := svc.CreateTrafficPolicy(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_CreateTrafficPolicyInstance() {
+	svc := route53.New(session.New())
+
+	params := &route53.CreateTrafficPolicyInstanceInput{
+		HostedZoneId:         aws.String("ResourceId"),      // Required
+		Name:                 aws.String("DNSName"),         // Required
+		TTL:                  aws.Int64(1),                  // Required
+		TrafficPolicyId:      aws.String("TrafficPolicyId"), // Required
+		TrafficPolicyVersion: aws.Int64(1),                  // Required
+	}
+	resp, err := svc.CreateTrafficPolicyInstance(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_CreateTrafficPolicyVersion() {
+	svc := route53.New(session.New())
+
+	params := &route53.CreateTrafficPolicyVersionInput{
+		Document: aws.String("TrafficPolicyDocument"), // Required
+		Id:       aws.String("TrafficPolicyId"),       // Required
+		Comment:  aws.String("TrafficPolicyComment"),
+	}
+	resp, err := svc.CreateTrafficPolicyVersion(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -266,6 +342,45 @@ func ExampleRoute53_DeleteReusableDelegationSet() {
 	fmt.Println(resp)
 }
 
+func ExampleRoute53_DeleteTrafficPolicy() {
+	svc := route53.New(session.New())
+
+	params := &route53.DeleteTrafficPolicyInput{
+		Id:      aws.String("TrafficPolicyId"), // Required
+		Version: aws.Int64(1),                  // Required
+	}
+	resp, err := svc.DeleteTrafficPolicy(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_DeleteTrafficPolicyInstance() {
+	svc := route53.New(session.New())
+
+	params := &route53.DeleteTrafficPolicyInstanceInput{
+		Id: aws.String("TrafficPolicyInstanceId"), // Required
+	}
+	resp, err := svc.DeleteTrafficPolicyInstance(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleRoute53_DisassociateVPCFromHostedZone() {
 	svc := route53.New(session.New())
 
@@ -297,6 +412,25 @@ func ExampleRoute53_GetChange() {
 		Id: aws.String("ResourceId"), // Required
 	}
 	resp, err := svc.GetChange(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_GetChangeDetails() {
+	svc := route53.New(session.New())
+
+	params := &route53.GetChangeDetailsInput{
+		Id: aws.String("ResourceId"), // Required
+	}
+	resp, err := svc.GetChangeDetails(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -464,6 +598,111 @@ func ExampleRoute53_GetReusableDelegationSet() {
 		Id: aws.String("ResourceId"), // Required
 	}
 	resp, err := svc.GetReusableDelegationSet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_GetTrafficPolicy() {
+	svc := route53.New(session.New())
+
+	params := &route53.GetTrafficPolicyInput{
+		Id:      aws.String("TrafficPolicyId"), // Required
+		Version: aws.Int64(1),                  // Required
+	}
+	resp, err := svc.GetTrafficPolicy(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_GetTrafficPolicyInstance() {
+	svc := route53.New(session.New())
+
+	params := &route53.GetTrafficPolicyInstanceInput{
+		Id: aws.String("TrafficPolicyInstanceId"), // Required
+	}
+	resp, err := svc.GetTrafficPolicyInstance(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_GetTrafficPolicyInstanceCount() {
+	svc := route53.New(session.New())
+
+	var params *route53.GetTrafficPolicyInstanceCountInput
+	resp, err := svc.GetTrafficPolicyInstanceCount(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_ListChangeBatchesByHostedZone() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListChangeBatchesByHostedZoneInput{
+		EndDate:      aws.String("Date"),       // Required
+		HostedZoneId: aws.String("ResourceId"), // Required
+		StartDate:    aws.String("Date"),       // Required
+		Marker:       aws.String("PageMarker"),
+		MaxItems:     aws.String("PageMaxItems"),
+	}
+	resp, err := svc.ListChangeBatchesByHostedZone(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_ListChangeBatchesByRRSet() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListChangeBatchesByRRSetInput{
+		EndDate:       aws.String("Date"),       // Required
+		HostedZoneId:  aws.String("ResourceId"), // Required
+		Name:          aws.String("DNSName"),    // Required
+		StartDate:     aws.String("Date"),       // Required
+		Type:          aws.String("RRType"),     // Required
+		Marker:        aws.String("PageMarker"),
+		MaxItems:      aws.String("PageMaxItems"),
+		SetIdentifier: aws.String("ResourceRecordSetIdentifier"),
+	}
+	resp, err := svc.ListChangeBatchesByRRSet(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -646,24 +885,143 @@ func ExampleRoute53_ListTagsForResources() {
 	fmt.Println(resp)
 }
 
+func ExampleRoute53_ListTrafficPolicies() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListTrafficPoliciesInput{
+		MaxItems:              aws.String("PageMaxItems"),
+		TrafficPolicyIdMarker: aws.String("TrafficPolicyId"),
+	}
+	resp, err := svc.ListTrafficPolicies(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_ListTrafficPolicyInstances() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListTrafficPolicyInstancesInput{
+		HostedZoneIdMarker:              aws.String("ResourceId"),
+		MaxItems:                        aws.String("PageMaxItems"),
+		TrafficPolicyInstanceNameMarker: aws.String("DNSName"),
+		TrafficPolicyInstanceTypeMarker: aws.String("RRType"),
+	}
+	resp, err := svc.ListTrafficPolicyInstances(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_ListTrafficPolicyInstancesByHostedZone() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListTrafficPolicyInstancesByHostedZoneInput{
+		HostedZoneId:                    aws.String("ResourceId"), // Required
+		MaxItems:                        aws.String("PageMaxItems"),
+		TrafficPolicyInstanceNameMarker: aws.String("DNSName"),
+		TrafficPolicyInstanceTypeMarker: aws.String("RRType"),
+	}
+	resp, err := svc.ListTrafficPolicyInstancesByHostedZone(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_ListTrafficPolicyInstancesByPolicy() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListTrafficPolicyInstancesByPolicyInput{
+		TrafficPolicyId:                 aws.String("TrafficPolicyId"), // Required
+		TrafficPolicyVersion:            aws.Int64(1),                  // Required
+		HostedZoneIdMarker:              aws.String("ResourceId"),
+		MaxItems:                        aws.String("PageMaxItems"),
+		TrafficPolicyInstanceNameMarker: aws.String("DNSName"),
+		TrafficPolicyInstanceTypeMarker: aws.String("RRType"),
+	}
+	resp, err := svc.ListTrafficPolicyInstancesByPolicy(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_ListTrafficPolicyVersions() {
+	svc := route53.New(session.New())
+
+	params := &route53.ListTrafficPolicyVersionsInput{
+		Id:                         aws.String("TrafficPolicyId"), // Required
+		MaxItems:                   aws.String("PageMaxItems"),
+		TrafficPolicyVersionMarker: aws.String("TrafficPolicyVersionMarker"),
+	}
+	resp, err := svc.ListTrafficPolicyVersions(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleRoute53_UpdateHealthCheck() {
 	svc := route53.New(session.New())
 
 	params := &route53.UpdateHealthCheckInput{
 		HealthCheckId: aws.String("HealthCheckId"), // Required
+		AlarmIdentifier: &route53.AlarmIdentifier{
+			Name:   aws.String("AlarmName"),        // Required
+			Region: aws.String("CloudWatchRegion"), // Required
+		},
 		ChildHealthChecks: []*string{
 			aws.String("HealthCheckId"), // Required
 			// More values...
 		},
-		FailureThreshold:         aws.Int64(1),
-		FullyQualifiedDomainName: aws.String("FullyQualifiedDomainName"),
-		HealthCheckVersion:       aws.Int64(1),
-		HealthThreshold:          aws.Int64(1),
-		IPAddress:                aws.String("IPAddress"),
-		Inverted:                 aws.Bool(true),
-		Port:                     aws.Int64(1),
-		ResourcePath:             aws.String("ResourcePath"),
-		SearchString:             aws.String("SearchString"),
+		EnableSNI:                    aws.Bool(true),
+		FailureThreshold:             aws.Int64(1),
+		FullyQualifiedDomainName:     aws.String("FullyQualifiedDomainName"),
+		HealthCheckVersion:           aws.Int64(1),
+		HealthThreshold:              aws.Int64(1),
+		IPAddress:                    aws.String("IPAddress"),
+		InsufficientDataHealthStatus: aws.String("InsufficientDataHealthStatus"),
+		Inverted:                     aws.Bool(true),
+		Port:                         aws.Int64(1),
+		Regions: []*string{
+			aws.String("HealthCheckRegion"), // Required
+			// More values...
+		},
+		ResourcePath: aws.String("ResourcePath"),
+		SearchString: aws.String("SearchString"),
 	}
 	resp, err := svc.UpdateHealthCheck(params)
 
@@ -686,6 +1044,49 @@ func ExampleRoute53_UpdateHostedZoneComment() {
 		Comment: aws.String("ResourceDescription"),
 	}
 	resp, err := svc.UpdateHostedZoneComment(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_UpdateTrafficPolicyComment() {
+	svc := route53.New(session.New())
+
+	params := &route53.UpdateTrafficPolicyCommentInput{
+		Comment: aws.String("TrafficPolicyComment"), // Required
+		Id:      aws.String("TrafficPolicyId"),      // Required
+		Version: aws.Int64(1),                       // Required
+	}
+	resp, err := svc.UpdateTrafficPolicyComment(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRoute53_UpdateTrafficPolicyInstance() {
+	svc := route53.New(session.New())
+
+	params := &route53.UpdateTrafficPolicyInstanceInput{
+		Id:                   aws.String("TrafficPolicyInstanceId"), // Required
+		TTL:                  aws.Int64(1),                          // Required
+		TrafficPolicyId:      aws.String("TrafficPolicyId"),         // Required
+		TrafficPolicyVersion: aws.Int64(1),                          // Required
+	}
+	resp, err := svc.UpdateTrafficPolicyInstance(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
