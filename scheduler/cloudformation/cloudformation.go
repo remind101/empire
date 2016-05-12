@@ -37,6 +37,11 @@ const (
 	MaxTemplateSize = 460800 // bytes
 )
 
+// ECS limits
+const (
+	MaxDescribeTasks = 100
+)
+
 // DefaultStackNameTemplate is the default text/template for generating a
 // CloudFormation stack name for an app.
 var DefaultStackNameTemplate = template.Must(template.New("stack_name").Parse("{{.Name}}"))
@@ -469,15 +474,20 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		return nil, fmt.Errorf("error listing tasks started by %s: %v", app, err)
 	}
 
-	resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
-		Cluster: aws.String(s.Cluster),
-		Tasks:   arns,
-	})
-	if err != nil {
-		return resp.Tasks, fmt.Errorf("error describing tasks: %v", err)
+	var tasks []*ecs.Task
+	for _, chunk := range chunkStrings(arns, MaxDescribeTasks) {
+		resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+			Cluster: aws.String(s.Cluster),
+			Tasks:   chunk,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error describing %d tasks: %v", len(chunk), err)
+		}
+
+		tasks = append(tasks, resp.Tasks...)
 	}
 
-	return resp.Tasks, nil
+	return tasks, nil
 }
 
 // Services returns a map that maps the name of the process (e.g. web) to the
@@ -666,4 +676,20 @@ func softLimit(ulimits []*ecs.Ulimit, name string) int64 {
 	}
 
 	return 0
+}
+
+// chunkStrings slices a slice of string pointers in equal length chunks, with
+// the last slice being the leftovers.
+func chunkStrings(s []*string, size int) [][]*string {
+	var chunks [][]*string
+	for len(s) > 0 {
+		end := size
+		if len(s) < size {
+			end = len(s)
+		}
+
+		chunks = append(chunks, s[0:end])
+		s = s[end:]
+	}
+	return chunks
 }
