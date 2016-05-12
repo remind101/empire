@@ -475,14 +475,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	}
 
 	var tasks []*ecs.Task
-	for len(arns) > 0 {
-		end := MaxDescribeTasks
-		if len(arns) < MaxDescribeTasks {
-			end = len(arns)
-		}
-
-		chunk := arns[0:end]
-		arns = arns[end:]
+	for _, chunk := range chunkStrings(arns, MaxDescribeTasks) {
 		resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
 			Cluster: aws.String(s.Cluster),
 			Tasks:   chunk,
@@ -683,4 +676,20 @@ func softLimit(ulimits []*ecs.Ulimit, name string) int64 {
 	}
 
 	return 0
+}
+
+// chunkStrings slices a slice of string pointers in equal length chunks, with
+// the last slice being the leftovers.
+func chunkStrings(s []*string, size int) [][]*string {
+	var chunks [][]*string
+	for len(s) > 0 {
+		end := size
+		if len(s) < size {
+			end = len(s)
+		}
+
+		chunks = append(chunks, s[0:end])
+		s = s[end:]
+	}
+	return chunks
 }

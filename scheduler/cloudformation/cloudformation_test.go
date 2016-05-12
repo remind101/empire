@@ -550,6 +550,23 @@ func TestExtractServices(t *testing.T) {
 	assert.Equal(t, expected, services)
 }
 
+func TestChunkStrings(t *testing.T) {
+	tests := []struct {
+		in  []*string
+		out [][]*string
+	}{
+		{[]*string{aws.String("a")}, [][]*string{[]*string{aws.String("a")}}},
+		{[]*string{aws.String("a"), aws.String("b")}, [][]*string{[]*string{aws.String("a"), aws.String("b")}}},
+		{[]*string{aws.String("a"), aws.String("b"), aws.String("c")}, [][]*string{[]*string{aws.String("a"), aws.String("b")}, []*string{aws.String("c")}}},
+		{[]*string{aws.String("a"), aws.String("b"), aws.String("c"), aws.String("d")}, [][]*string{[]*string{aws.String("a"), aws.String("b")}, []*string{aws.String("c"), aws.String("d")}}},
+	}
+
+	for _, tt := range tests {
+		out := chunkStrings(tt.in, 2)
+		assert.Equal(t, tt.out, out)
+	}
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {
