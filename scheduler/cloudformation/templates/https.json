@@ -115,8 +115,8 @@
               ]
             },
             "InstanceProtocol": "http",
-            "LoadBalancerPort": 80,
-            "Protocol": "http",
+            "LoadBalancerPort": 443,
+            "Protocol": "https",
             "SSLCertificateId": "iamcert"
           }
         ],
