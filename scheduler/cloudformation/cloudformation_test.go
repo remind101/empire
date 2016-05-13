@@ -180,6 +180,55 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
+func TestScheduler_Submit_StackUpdateInProgress_Cancel(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("UPDATE_IN_PROGRESS")},
+		},
+	}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Run(func(args mock.Arguments) {
+		cancel()
+		time.Sleep(1 * time.Minute)
+	})
+
+	err := s.Submit(ctx, &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	})
+	assert.Error(t, err)
+	assert.EqualError(t, err, "error waiting for stack to stabilize: context canceled")
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
 func TestScheduler_Remove(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()

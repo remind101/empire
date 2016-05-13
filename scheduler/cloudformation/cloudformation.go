@@ -42,6 +42,10 @@ const (
 	MaxDescribeTasks = 100
 )
 
+// Wait 5 minutes for for the stack to enter a stabilized state
+// (UPDATE_COMPLETE/CREATE_COMPLETE) before attempting an update.
+const StabilizeTimeout = 5 * time.Minute
+
 // DefaultStackNameTemplate is the default text/template for generating a
 // CloudFormation stack name for an app.
 var DefaultStackNameTemplate = template.Must(template.New("stack_name").Parse("{{.Name}}"))
@@ -245,7 +249,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			}
 		}
 	} else if err == nil {
-		if _, err := s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
+		if _, err := s.updateStack(ctx, desc.Stacks[0], &cloudformation.UpdateStackInput{
 			StackName:   aws.String(stackName),
 			TemplateURL: aws.String(url),
 			Parameters:  parameters,
@@ -263,9 +267,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 
 // updateStack performs a stack update, but waits for the stack to enter a
 // stable state before starting.
-//
-// TODO: Timeout?
-func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput, wait bool) (*cloudformation.UpdateStackOutput, error) {
+func (s *Scheduler) updateStack(ctx context.Context, stack *cloudformation.Stack, input *cloudformation.UpdateStackInput, wait bool) (*cloudformation.UpdateStackOutput, error) {
 	status := *stack.StackStatus
 	stackName := input.StackName
 
@@ -293,21 +295,35 @@ func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformati
 		}
 	}
 
-	// If there's currently an update happening, wait for it to
-	// complete.
+	// If there's currently an update happening, wait for the stack to
+	// stabilize.
 	if strings.Contains(status, "IN_PROGRESS") {
-		if strings.Contains(status, "CREATE") {
-			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-				StackName: stackName,
-			}); err != nil {
-				return nil, err
+		ctx, cancel := context.WithTimeout(ctx, StabilizeTimeout)
+		defer cancel()
+
+		errCh := make(chan error)
+
+		go func() {
+			if strings.Contains(status, "CREATE") {
+				errCh <- s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+					StackName: stackName,
+				})
+			} else if strings.Contains(status, "UPDATE") {
+				errCh <- s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+					StackName: stackName,
+				})
 			}
-		} else if strings.Contains(status, "UPDATE") {
-			if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-				StackName: stackName,
-			}); err != nil {
-				return nil, err
+		}()
+
+		select {
+		case err := <-errCh:
+			if err != nil {
+				return nil, fmt.Errorf("error waiting stack to stabilize: %v", err)
 			}
+
+			// No error, continue on.
+		case <-ctx.Done():
+			return nil, fmt.Errorf("error waiting for stack to stabilize: %v", ctx.Err())
 		}
 	}
 
@@ -561,7 +577,7 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 		return err
 	}
 
-	_, err = s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
+	_, err = s.updateStack(ctx, desc.Stacks[0], &cloudformation.UpdateStackInput{
 		StackName:           aws.String(stackName),
 		UsePreviousTemplate: aws.Bool(true),
 		Parameters: []*cloudformation.Parameter{
