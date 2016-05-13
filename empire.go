@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
