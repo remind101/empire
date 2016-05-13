@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 var duration string
@@ -34,7 +35,7 @@ func init() {
 }
 
 type PostLogForm struct {
-	Duration string `json:"duration"`
+	Duration int64 `json:"duration"`
 }
 
 func runLog(cmd *Command, args []string) {
@@ -43,9 +44,16 @@ func runLog(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
+	parsed, err := time.ParseDuration(duration)
+	if err != nil {
+		fmt.Println(err)
+		cmd.PrintUsage()
+		os.Exit(1)
+	}
+
 	appName := mustApp()
 	endpoint := fmt.Sprintf("/apps/%s/log-sessions", appName)
-	form := &PostLogForm{Duration: duration}
+	form := &PostLogForm{Duration: parsed.Nanoseconds()}
 
 	must(client.Post(os.Stdout, endpoint, form))
 }

@@ -657,7 +657,7 @@ func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
 }
 
 // Streamlogs streams logs from an app.
-func (e *Empire) StreamLogs(app *App, w io.Writer, duration string) error {
+func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error {
 	return e.LogsStreamer.StreamLogs(app, w, duration)
 }
 
