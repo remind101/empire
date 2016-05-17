@@ -22,6 +22,8 @@ type RunEvent struct {
 	URL      string
 	Attached bool
 	Message  string
+
+	appID string
 }
 
 func (e RunEvent) Event() string {
@@ -40,12 +42,18 @@ func (e RunEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e RunEvent) AppID() string {
+	return e.appID
+}
+
 // RestartEvent is triggered when a user restarts an application.
 type RestartEvent struct {
 	User    string
 	App     string
 	PID     string
 	Message string
+
+	appID string
 }
 
 func (e RestartEvent) Event() string {
@@ -62,6 +70,10 @@ func (e RestartEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e RestartEvent) AppID() string {
+	return e.appID
+}
+
 // ScaleEvent is triggered when a manual scaling event happens.
 type ScaleEvent struct {
 	User                string
@@ -72,6 +84,8 @@ type ScaleEvent struct {
 	Constraints         Constraints
 	PreviousConstraints Constraints
 	Message             string
+
+	appID string
 }
 
 func (e ScaleEvent) Event() string {
@@ -97,6 +111,10 @@ func (e ScaleEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e ScaleEvent) AppID() string {
+	return e.appID
+}
+
 // DeployEvent is triggered when a user deploys a new image to an app.
 type DeployEvent struct {
 	User        string
@@ -105,6 +123,8 @@ type DeployEvent struct {
 	Environment string
 	Release     int
 	Message     string
+
+	appID string
 }
 
 func (e DeployEvent) Event() string {
@@ -121,12 +141,18 @@ func (e DeployEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e DeployEvent) AppID() string {
+	return e.appID
+}
+
 // RollbackEvent is triggered when a user rolls back to an old version.
 type RollbackEvent struct {
 	User    string
 	App     string
 	Version int
 	Message string
+
+	appID string
 }
 
 func (e RollbackEvent) Event() string {
@@ -138,6 +164,10 @@ func (e RollbackEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e RollbackEvent) AppID() string {
+	return e.appID
+}
+
 // SetEvent is triggered when environment variables are changed on an
 // application.
 type SetEvent struct {
@@ -145,6 +175,8 @@ type SetEvent struct {
 	App     string
 	Changed []string
 	Message string
+
+	appID string
 }
 
 func (e SetEvent) Event() string {
@@ -154,6 +186,10 @@ func (e SetEvent) Event() string {
 func (e SetEvent) String() string {
 	msg := fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
 	return appendCommitMessage(msg, e.Message)
+}
+
+func (e SetEvent) AppID() string {
+	return e.appID
 }
 
 // CreateEvent is triggered when a user creates a new application.
@@ -215,22 +251,24 @@ var NullEventStream = EventStreamFunc(func(event Event) error {
 	return nil
 })
 
-// AsyncEventStream wraps an EventStream to publish events asynchronously in a
-// goroutine.
+// AsyncEventStream wraps an array of EventStreams to publish events
+// asynchronously in a goroutine
 type AsyncEventStream struct {
 	EventStream
-	events chan Event
+
+	streams []EventStream
+	events  chan Event
 }
 
 // AsyncEvents returns a new AsyncEventStream that will buffer upto 100 events
 // before applying backpressure.
-func AsyncEvents(e EventStream) *AsyncEventStream {
-	s := &AsyncEventStream{
-		EventStream: e,
-		events:      make(chan Event, 100),
+func AsyncEvents(s []EventStream) *AsyncEventStream {
+	e := &AsyncEventStream{
+		streams: s,
+		events:  make(chan Event, 100),
 	}
-	go s.start()
-	return s
+	go e.start()
+	return e
 }
 
 func (e *AsyncEventStream) PublishEvent(event Event) error {
@@ -258,8 +296,12 @@ func (e *AsyncEventStream) publishEvent(event Event) (err error) {
 			err = fmt.Errorf("panic: %v", v)
 		}
 	}()
-
-	err = e.EventStream.PublishEvent(event)
+	for _, stream := range e.streams {
+		err = stream.PublishEvent(event)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 
