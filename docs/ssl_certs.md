@@ -11,5 +11,5 @@ $ aws iam upload-server-certificate --server-certificate-name myServerCertificat
 Then attach it to the application:
 
 ```console
-$ emp certs-attach arn:aws:iam::<accountId>:server-certificate/myServerCertificate -a <app>
+$ emp certs-attach myServerCertificate -a <app>
 ```
