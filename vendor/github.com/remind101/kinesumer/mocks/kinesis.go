@@ -112,6 +112,56 @@ func (m *Kinesis) DeleteStream(_a0 *kinesis.DeleteStreamInput) (*kinesis.DeleteS
 
 	return r0, r1
 }
+func (m *Kinesis) DisableEnhancedMonitoring(_a0 *kinesis.DisableEnhancedMonitoringInput) (*kinesis.EnhancedMonitoringOutput, error) {
+	ret := m.Called(_a0)
+
+	var r0 *kinesis.EnhancedMonitoringOutput
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*kinesis.EnhancedMonitoringOutput)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
+func (m *Kinesis) DisableEnhancedMonitoringRequest(_a0 *kinesis.DisableEnhancedMonitoringInput) (*request.Request, *kinesis.EnhancedMonitoringOutput) {
+	ret := m.Called(_a0)
+
+	var r0 *request.Request
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*request.Request)
+	}
+	var r1 *kinesis.EnhancedMonitoringOutput
+	if ret.Get(1) != nil {
+		r1 = ret.Get(1).(*kinesis.EnhancedMonitoringOutput)
+	}
+
+	return r0, r1
+}
+func (m *Kinesis) EnableEnhancedMonitoring(_a0 *kinesis.EnableEnhancedMonitoringInput) (*kinesis.EnhancedMonitoringOutput, error) {
+	ret := m.Called(_a0)
+
+	var r0 *kinesis.EnhancedMonitoringOutput
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*kinesis.EnhancedMonitoringOutput)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
+func (m *Kinesis) EnableEnhancedMonitoringRequest(_a0 *kinesis.EnableEnhancedMonitoringInput) (*request.Request, *kinesis.EnhancedMonitoringOutput) {
+	ret := m.Called(_a0)
+
+	var r0 *request.Request
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*request.Request)
+	}
+	var r1 *kinesis.EnhancedMonitoringOutput
+	if ret.Get(1) != nil {
+		r1 = ret.Get(1).(*kinesis.EnhancedMonitoringOutput)
+	}
+
+	return r0, r1
+}
 func (m *Kinesis) DescribeStreamRequest(_a0 *kinesis.DescribeStreamInput) (*request.Request, *kinesis.DescribeStreamOutput) {
 	ret := m.Called(_a0)
 

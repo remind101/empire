@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
@@ -657,8 +658,8 @@ func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
 }
 
 // Streamlogs streams logs from an app.
-func (e *Empire) StreamLogs(app *App, w io.Writer) error {
-	return e.LogsStreamer.StreamLogs(app, w)
+func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error {
+	return e.LogsStreamer.StreamLogs(app, w, duration)
 }
 
 // CertsAttach attaches an SSL certificate to the app.
