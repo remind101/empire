@@ -66,7 +66,16 @@ func TestEmpireTemplate(t *testing.T) {
 						Command: []string{"./bin/web"},
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPSExposure{
-								Cert: "iamcert",
+								Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+							},
+						},
+					},
+					{
+						Type:    "api",
+						Command: []string{"./bin/api"},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPSExposure{
+								Cert: "AcmeIncDotCom", // Simple cert format.
 							},
 						},
 					},

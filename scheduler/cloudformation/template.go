@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
 )
@@ -190,6 +191,18 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			}
 
 			if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
+				var cert interface{}
+				if _, err := arn.Parse(e.Cert); err == nil {
+					cert = e.Cert
+				} else {
+					cert = map[string]interface{}{
+						"Fn::Join": []interface{}{
+							"",
+							[]interface{}{"arn:aws:iam::", map[string]string{"Ref": "AWS::AccountId"}, ":server-certificate/", e.Cert},
+						},
+					}
+				}
+
 				listeners = append(listeners, map[string]interface{}{
 					"LoadBalancerPort": 443,
 					"Protocol":         "https",
@@ -199,7 +212,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 							"InstancePort",
 						},
 					},
-					"SSLCertificateId": e.Cert,
+					"SSLCertificateId": cert,
 					"InstanceProtocol": "http",
 				})
 			}
