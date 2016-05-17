@@ -477,6 +477,8 @@
                 "elasticloadbalancing:ConfigureHealthCheck",
                 "elasticloadbalancing:ModifyLoadBalancerAttributes",
                 "elasticloadbalancing:SetLoadBalancerListenerSSLCertificate",
+                "elasticloadbalancing:CreateLoadBalancerListeners",
+                "elasticloadbalancing:DeleteLoadBalancerListeners",
                 "elasticloadbalancing:SetLoadBalancerPoliciesOfListener"
               ],
               "Resource": ["*"]
