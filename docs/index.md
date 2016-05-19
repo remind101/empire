@@ -74,10 +74,10 @@ share how we handle them, or open source them.
 
 ## Logging and Metrics
 
-Internally at Remind we use a combination of [logspout][logspout], [Heka][heka],
-and [Sumo Logic][sumologic] to aggregate logs from both containers and the
-container host. We use [collectd][collectd] and [Librato][librato] to gather
-stats from both the containers and the container host as well.
+Internally at Remind we use a combination of [logspout][logspout] and [Sumo
+Logic][sumologic] to aggregate logs from both containers and the container
+host. We use [datadog][datadog] to gather stats from
+both the containers and the container host as well.
 
 This solution works for us, but we don't feel that it's sufficiently generic
 or simple enough to make it a part of the core Empire project itself.
@@ -103,7 +103,6 @@ each repository.
 [logspout]: https://github.com/gliderlabs/logspout
 [heka]: http://hekad.readthedocs.org/en/latest/
 [sumologic]: https://www.sumologic.com/
-[collectd]: https://collectd.org/
-[librato]: https://www.librato.com/
+[datadog]: https://www.datadoghq.com
 [dockerhub]: https://registry.hub.docker.com/
 [circleci]: https://circleci.com/

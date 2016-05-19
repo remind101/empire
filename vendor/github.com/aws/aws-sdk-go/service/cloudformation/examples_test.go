@@ -34,6 +34,77 @@ func ExampleCloudFormation_CancelUpdateStack() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudFormation_ContinueUpdateRollback() {
+	svc := cloudformation.New(session.New())
+
+	params := &cloudformation.ContinueUpdateRollbackInput{
+		StackName: aws.String("StackNameOrId"), // Required
+	}
+	resp, err := svc.ContinueUpdateRollback(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudFormation_CreateChangeSet() {
+	svc := cloudformation.New(session.New())
+
+	params := &cloudformation.CreateChangeSetInput{
+		ChangeSetName: aws.String("ChangeSetName"), // Required
+		StackName:     aws.String("StackNameOrId"), // Required
+		Capabilities: []*string{
+			aws.String("Capability"), // Required
+			// More values...
+		},
+		ClientToken: aws.String("ClientToken"),
+		Description: aws.String("Description"),
+		NotificationARNs: []*string{
+			aws.String("NotificationARN"), // Required
+			// More values...
+		},
+		Parameters: []*cloudformation.Parameter{
+			{ // Required
+				ParameterKey:     aws.String("ParameterKey"),
+				ParameterValue:   aws.String("ParameterValue"),
+				UsePreviousValue: aws.Bool(true),
+			},
+			// More values...
+		},
+		ResourceTypes: []*string{
+			aws.String("ResourceType"), // Required
+			// More values...
+		},
+		Tags: []*cloudformation.Tag{
+			{ // Required
+				Key:   aws.String("TagKey"),
+				Value: aws.String("TagValue"),
+			},
+			// More values...
+		},
+		TemplateBody:        aws.String("TemplateBody"),
+		TemplateURL:         aws.String("TemplateURL"),
+		UsePreviousTemplate: aws.Bool(true),
+	}
+	resp, err := svc.CreateChangeSet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudFormation_CreateStack() {
 	svc := cloudformation.New(session.New())
 
@@ -87,11 +158,35 @@ func ExampleCloudFormation_CreateStack() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudFormation_DeleteChangeSet() {
+	svc := cloudformation.New(session.New())
+
+	params := &cloudformation.DeleteChangeSetInput{
+		ChangeSetName: aws.String("ChangeSetNameOrId"), // Required
+		StackName:     aws.String("StackNameOrId"),
+	}
+	resp, err := svc.DeleteChangeSet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudFormation_DeleteStack() {
 	svc := cloudformation.New(session.New())
 
 	params := &cloudformation.DeleteStackInput{
 		StackName: aws.String("StackName"), // Required
+		RetainResources: []*string{
+			aws.String("LogicalResourceId"), // Required
+			// More values...
+		},
 	}
 	resp, err := svc.DeleteStack(params)
 
@@ -113,6 +208,27 @@ func ExampleCloudFormation_DescribeAccountLimits() {
 		NextToken: aws.String("NextToken"),
 	}
 	resp, err := svc.DescribeAccountLimits(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudFormation_DescribeChangeSet() {
+	svc := cloudformation.New(session.New())
+
+	params := &cloudformation.DescribeChangeSetInput{
+		ChangeSetName: aws.String("ChangeSetNameOrId"), // Required
+		NextToken:     aws.String("NextToken"),
+		StackName:     aws.String("StackNameOrId"),
+	}
+	resp, err := svc.DescribeChangeSet(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -234,6 +350,26 @@ func ExampleCloudFormation_EstimateTemplateCost() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudFormation_ExecuteChangeSet() {
+	svc := cloudformation.New(session.New())
+
+	params := &cloudformation.ExecuteChangeSetInput{
+		ChangeSetName: aws.String("ChangeSetNameOrId"), // Required
+		StackName:     aws.String("StackNameOrId"),
+	}
+	resp, err := svc.ExecuteChangeSet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudFormation_GetStackPolicy() {
 	svc := cloudformation.New(session.New())
 
@@ -281,6 +417,26 @@ func ExampleCloudFormation_GetTemplateSummary() {
 		TemplateURL:  aws.String("TemplateURL"),
 	}
 	resp, err := svc.GetTemplateSummary(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudFormation_ListChangeSets() {
+	svc := cloudformation.New(session.New())
+
+	params := &cloudformation.ListChangeSetsInput{
+		StackName: aws.String("StackNameOrId"), // Required
+		NextToken: aws.String("NextToken"),
+	}
+	resp, err := svc.ListChangeSets(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -408,9 +564,16 @@ func ExampleCloudFormation_UpdateStack() {
 		StackPolicyDuringUpdateBody: aws.String("StackPolicyDuringUpdateBody"),
 		StackPolicyDuringUpdateURL:  aws.String("StackPolicyDuringUpdateURL"),
 		StackPolicyURL:              aws.String("StackPolicyURL"),
-		TemplateBody:                aws.String("TemplateBody"),
-		TemplateURL:                 aws.String("TemplateURL"),
-		UsePreviousTemplate:         aws.Bool(true),
+		Tags: []*cloudformation.Tag{
+			{ // Required
+				Key:   aws.String("TagKey"),
+				Value: aws.String("TagValue"),
+			},
+			// More values...
+		},
+		TemplateBody:        aws.String("TemplateBody"),
+		TemplateURL:         aws.String("TemplateURL"),
+		UsePreviousTemplate: aws.Bool(true),
 	}
 	resp, err := svc.UpdateStack(params)
 

@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"html/template"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -51,6 +53,9 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	c.On("CreateStack", &cloudformation.CreateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
 			{Key: aws.String("empire.app.name"), Value: aws.String("acme-inc")},
@@ -104,6 +109,9 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -153,6 +161,9 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -241,22 +252,18 @@ func TestScheduler_Instances(t *testing.T) {
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
 	assert.NoError(t, err)
 
-	c.On("ListStackResourcesPages", &cloudformation.ListStackResourcesInput{
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
-	}).Return(&cloudformation.ListStackResourcesOutput{
-		StackResourceSummaries: []*cloudformation.StackResourceSummary{
-			{ResourceType: aws.String("AWS::EC2::LoadBalancer")},
-			{ResourceType: aws.String("AWS::ECS::Service"), LogicalResourceId: aws.String("web")},
-		},
-	}, nil)
-
-	c.On("DescribeStackResource", &cloudformation.DescribeStackResourceInput{
-		LogicalResourceId: aws.String("web"),
-		StackName:         aws.String("acme-inc"),
-	}).Return(&cloudformation.DescribeStackResourceOutput{
-		StackResourceDetail: &cloudformation.StackResourceDetail{
-			Metadata:           aws.String(`{"name":"web"}`),
-			PhysicalResourceId: aws.String(`arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web`),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+				},
+			},
 		},
 	}, nil)
 
@@ -360,6 +367,92 @@ func TestScheduler_Instances(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
+func TestScheduler_Instances_ManyTasks(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Wait:           true,
+		Bucket:         "bucket",
+		Cluster:        "cluster",
+		cloudformation: c,
+		s3:             x,
+		ecs:            e,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	var page1 []*string
+	for i := 0; i < MaxDescribeTasks; i++ {
+		arn := fmt.Sprintf("arn:aws:ecs:us-east-1:012345678910:task/%s", uuid.New())
+		page1 = append(page1, aws.String(arn))
+	}
+	page2 := []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:task/c09f0188-7f87-4b0f-bfc3-16296622b6fe")}
+	e.On("ListTasksPages", &ecs.ListTasksInput{
+		Cluster:     aws.String("cluster"),
+		ServiceName: aws.String("acme-inc-web"),
+	}).Return(&ecs.ListTasksOutput{
+		TaskArns: append(page1, page2...),
+	}, nil)
+
+	e.On("ListTasksPages", &ecs.ListTasksInput{
+		Cluster:   aws.String("cluster"),
+		StartedBy: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68"),
+	}).Return(&ecs.ListTasksOutput{
+		TaskArns: []*string{},
+	}, nil)
+
+	e.On("DescribeTasks", &ecs.DescribeTasksInput{
+		Cluster: aws.String("cluster"),
+		Tasks:   page1,
+	}).Return(&ecs.DescribeTasksOutput{
+		Tasks: []*ecs.Task{
+		// In reality, this would return all the tasks, but we
+		// just want to test that task arns are chunked
+		// properly.
+		},
+	}, nil)
+
+	e.On("DescribeTasks", &ecs.DescribeTasksInput{
+		Cluster: aws.String("cluster"),
+		Tasks:   page2,
+	}).Return(&ecs.DescribeTasksOutput{
+		Tasks: []*ecs.Task{
+		// In reality, this would return all the tasks, but we
+		// just want to test that task arns are chunked
+		// properly.
+		},
+	}, nil)
+
+	_, err = s.Instances(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+	e.AssertExpectations(t)
+}
+
 func TestScheduler_Scale(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
@@ -446,12 +539,43 @@ func TestScheduler_Scale_NoUpdates(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
+func TestExtractServices(t *testing.T) {
+	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
+	services := extractServices(output)
+	expected := map[string]string{
+		"statuses":       "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO",
+		"statuses_retry": "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N",
+	}
+
+	assert.Equal(t, expected, services)
+}
+
+func TestChunkStrings(t *testing.T) {
+	tests := []struct {
+		in  []*string
+		out [][]*string
+	}{
+		{[]*string{aws.String("a")}, [][]*string{[]*string{aws.String("a")}}},
+		{[]*string{aws.String("a"), aws.String("b")}, [][]*string{[]*string{aws.String("a"), aws.String("b")}}},
+		{[]*string{aws.String("a"), aws.String("b"), aws.String("c")}, [][]*string{[]*string{aws.String("a"), aws.String("b")}, []*string{aws.String("c")}}},
+		{[]*string{aws.String("a"), aws.String("b"), aws.String("c"), aws.String("d")}, [][]*string{[]*string{aws.String("a"), aws.String("b")}, []*string{aws.String("c"), aws.String("d")}}},
+	}
+
+	for _, tt := range tests {
+		out := chunkStrings(tt.in, 2)
+		assert.Equal(t, tt.out, out)
+	}
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`TRUNCATE TABLE stacks`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`TRUNCATE TABLE scheduler_migration`); err != nil {
 		t.Fatal(err)
 	}
 	return db

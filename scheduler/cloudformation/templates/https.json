@@ -1,18 +1,71 @@
 {
-  "Outputs": {},
+  "Conditions": {
+    "DNSCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "DNS"
+        },
+        "true"
+      ]
+    }
+  },
+  "Outputs": {
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Ref": "web"
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "api",
+                  {
+                    "Ref": "api"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
   "Parameters": {
+    "DNS": {
+      "Description": "When set to `true`, CNAME's will be altered",
+      "Type": "String"
+    },
+    "apiScale": {
+      "Type": "String"
+    },
     "webScale": {
       "Type": "String"
     }
   },
   "Resources": {
     "CNAME": {
+      "Condition": "DNSCondition",
       "Properties": {
         "HostedZoneId": "Z3DG6IL3SJCGPX",
         "Name": "acme-inc.empire",
         "ResourceRecords": [
           {
-            "Ref": "webLoadBalancer"
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
           }
         ],
         "TTL": 60,
@@ -20,10 +73,134 @@
       },
       "Type": "AWS::Route53::RecordSet"
     },
-    "web": {
-      "Metadata": {
-        "name": "web"
+    "api": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "apiScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "api",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "apiLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "TaskDefinition": {
+          "Ref": "apiTaskDefinition"
+        }
       },
+      "Type": "AWS::ECS::Service"
+    },
+    "api8080InstancePort": {
+      "Properties": {
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::InstancePort",
+      "Version": "1.0"
+    },
+    "apiLoadBalancer": {
+      "Properties": {
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 30
+        },
+        "CrossZone": true,
+        "Listeners": [
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "api8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http"
+          },
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "api8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 443,
+            "Protocol": "https",
+            "SSLCertificateId": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:aws:iam::",
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  ":server-certificate/",
+                  "AcmeIncDotCom"
+                ]
+              ]
+            }
+          }
+        ],
+        "Scheme": "internal",
+        "SecurityGroups": [
+          "sg-e7387381"
+        ],
+        "Subnets": [
+          "subnet-bb01c4cd",
+          "subnet-c85f4091"
+        ],
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "api"
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "apiTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/api"
+            ],
+            "Cpu": 0,
+            "DockerLabels": {},
+            "Environment": [
+              {
+                "Name": "PORT",
+                "Value": "8080"
+              }
+            ],
+            "Essential": true,
+            "Image": "",
+            "Memory": 0,
+            "Name": "api",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": {
+                  "Fn::GetAtt": [
+                    "api8080InstancePort",
+                    "InstancePort"
+                  ]
+                }
+              }
+            ],
+            "Ulimits": []
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    },
+    "web": {
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
@@ -79,9 +256,9 @@
               ]
             },
             "InstanceProtocol": "http",
-            "LoadBalancerPort": 80,
-            "Protocol": "http",
-            "SSLCertificateId": "iamcert"
+            "LoadBalancerPort": 443,
+            "Protocol": "https",
+            "SSLCertificateId": "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom"
           }
         ],
         "Scheme": "internal",

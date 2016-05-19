@@ -14,7 +14,7 @@ import (
 var listMode bool
 
 var cmdScale = &Command{
-	Run:             runScale,
+	Run:             maybeMessage(runScale),
 	Usage:           "scale [-l] <type>=[<qty>]:[<size>]...",
 	NeedsApp:        true,
 	OptionalMessage: true,

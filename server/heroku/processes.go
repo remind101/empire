@@ -2,12 +2,12 @@ package heroku
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/pkg/hijack"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/timex"
@@ -100,23 +100,25 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	}
 
 	if form.Attach {
-		inStream, outStream, err := hijackServer(w)
-		if err != nil {
-			return err
+		header := http.Header{}
+		header.Set("Content-Type", "application/vnd.empire.raw-stream")
+		stream := &hijack.HijackReadWriter{
+			Response: w,
+			Header:   header,
 		}
-		defer closeStreams(inStream, outStream)
-
-		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.empire.raw-stream\r\n\r\n")
-
+		defer stream.Close()
 		// Prevent the ELB idle connection timeout to close the connection.
-		defer close(streamhttp.Heartbeat(outStream, 10*time.Second))
+		defer close(streamhttp.Heartbeat(stream, 10*time.Second))
 
-		opts.Input = inStream
-		opts.Output = outStream
+		opts.Input = stream
+		opts.Output = stream
 
 		if err := h.Run(ctx, opts); err != nil {
-			fmt.Fprintf(outStream, "%v", err)
-			return nil
+			if stream.Hijacked {
+				fmt.Fprintf(stream, "%v\r", err)
+				return nil
+			}
+			return err
 		}
 	} else {
 		if err := h.Run(ctx, opts); err != nil {
@@ -168,26 +170,4 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 	}
 
 	return NoContent(w)
-}
-
-func closeStreams(streams ...interface{}) {
-	for _, stream := range streams {
-		if tcpc, ok := stream.(interface {
-			CloseWrite() error
-		}); ok {
-			tcpc.CloseWrite()
-		} else if closer, ok := stream.(io.Closer); ok {
-			closer.Close()
-		}
-	}
-}
-
-func hijackServer(w http.ResponseWriter) (io.ReadCloser, io.Writer, error) {
-	conn, _, err := w.(http.Hijacker).Hijack()
-	if err != nil {
-		return nil, nil, err
-	}
-	// Flush the options to make sure the client sets the raw mode
-	conn.Write([]byte{})
-	return conn, conn, nil
 }

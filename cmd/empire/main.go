@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	FlagPort           = "port"
-	FlagAutoMigrate    = "automigrate"
-	FlagEventsBackend  = "events.backend"
-	FlagRunLogsBackend = "runlogs.backend"
+	FlagPort             = "port"
+	FlagAutoMigrate      = "automigrate"
+	FlagEventsBackend    = "events.backend"
+	FlagRunLogsBackend   = "runlogs.backend"
+	FlagMessagesRequired = "messages.required"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -35,7 +36,6 @@ const (
 	FlagDockerCert   = "docker.cert"
 	FlagDockerAuth   = "docker.auth"
 
-	FlagScheduler            = "scheduler"
 	FlagAWSDebug             = "aws.debug"
 	FlagS3TemplateBucket     = "s3.templatebucket"
 	FlagCustomResourcesTopic = "customresources.topic"
@@ -186,12 +186,6 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
 	},
-	cli.StringFlag{
-		Name:   FlagScheduler,
-		Value:  "ecs",
-		Usage:  "The scheduler backend to use. Can be `ecs` or `cloudformation`.",
-		EnvVar: "EMPIRE_SCHEDULER",
-	},
 	cli.BoolFlag{
 		Name:   FlagAWSDebug,
 		Usage:  "Enable verbose debug output for AWS integration.",
@@ -298,7 +292,7 @@ var EmpireFlags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:   FlagRunLogsBackend,
-		Value:  "",
+		Value:  "stdout",
 		Usage:  "The backend implementation to use to record the logs from interactive runs. Current supports `cloudwatch` and `stdout`",
 		EnvVar: "EMPIRE_RUN_LOGS_BACKEND",
 	},
@@ -319,6 +313,11 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "When using the `cloudwatch` backend with the `--" + FlagRunLogsBackend + "` flag , this is the log group that CloudWatch log streams will be created in.",
 		EnvVar: "EMPIRE_CLOUDWATCH_LOG_GROUP",
+	},
+	cli.BoolFlag{
+		Name:   FlagMessagesRequired,
+		Usage:  "If true, messages will be required for empire actions that emit events.",
+		EnvVar: "EMPIRE_MESSAGES_REQUIRED",
 	},
 }
 

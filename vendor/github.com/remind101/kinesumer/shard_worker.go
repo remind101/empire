@@ -10,22 +10,23 @@ import (
 )
 
 type ShardWorker struct {
-	kinesis             k.Kinesis
-	shard               *kinesis.Shard
-	checkpointer        k.Checkpointer
-	stream              string
-	pollTime            int
-	sequence            string
-	stop                <-chan Unit
-	stopped             chan<- Unit
-	c                   chan k.Record
-	provisioner         k.Provisioner
-	errHandler          func(k.Error)
-	defaultIteratorType string
-	GetRecordsLimit     int64
+	kinesis                k.Kinesis
+	shard                  *kinesis.Shard
+	checkpointer           k.Checkpointer
+	stream                 string
+	pollTime               int
+	sequence               string
+	stop                   <-chan Unit
+	stopped                chan<- Unit
+	c                      chan k.Record
+	provisioner            k.Provisioner
+	errHandler             func(k.Error)
+	defaultIteratorType    string
+	shardIteratorTimestamp time.Time
+	GetRecordsLimit        int64
 }
 
-func (s *ShardWorker) GetShardIterator(iteratorType string, sequence string) (string, error) {
+func (s *ShardWorker) GetShardIterator(iteratorType string, sequence string, timestamp time.Time) (string, error) {
 	var tmp *string
 	if len(sequence) > 0 {
 		tmp = &sequence
@@ -35,6 +36,7 @@ func (s *ShardWorker) GetShardIterator(iteratorType string, sequence string) (st
 		ShardIteratorType:      &iteratorType,
 		StartingSequenceNumber: tmp,
 		StreamName:             &s.stream,
+		Timestamp:              &timestamp,
 	})
 	if err != nil {
 		return "", err
@@ -42,8 +44,8 @@ func (s *ShardWorker) GetShardIterator(iteratorType string, sequence string) (st
 	return aws.StringValue(iter.ShardIterator), nil
 }
 
-func (s *ShardWorker) TryGetShardIterator(iteratorType string, sequence string) string {
-	it, err := s.GetShardIterator(iteratorType, sequence)
+func (s *ShardWorker) TryGetShardIterator(iteratorType string, sequence string, timestamp time.Time) string {
+	it, err := s.GetShardIterator(iteratorType, sequence, timestamp)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +68,7 @@ func (s *ShardWorker) GetRecordsAndProcess(it, sequence string) (cont bool, next
 	if err != nil || len(records) == 0 {
 		if err != nil {
 			s.errHandler(NewError(EWarn, "GetRecords failed", err))
-			nextIt = s.TryGetShardIterator("AFTER_SEQUENCE_NUMBER", sequence)
+			nextIt = s.TryGetShardIterator("AFTER_SEQUENCE_NUMBER", sequence, time.Time{})
 		}
 
 		if err := s.provisioner.Heartbeat(aws.StringValue(s.shard.ShardId)); err != nil {
@@ -123,9 +125,9 @@ func (s *ShardWorker) RunWorker() {
 		sequence = aws.StringValue(s.shard.SequenceNumberRange.StartingSequenceNumber)
 
 		s.errHandler(NewError(EWarn, "Using "+s.defaultIteratorType, nil))
-		it = s.TryGetShardIterator(s.defaultIteratorType, "")
+		it = s.TryGetShardIterator(s.defaultIteratorType, "", time.Time{})
 	} else {
-		it = s.TryGetShardIterator("AFTER_SEQUENCE_NUMBER", sequence)
+		it = s.TryGetShardIterator("AFTER_SEQUENCE_NUMBER", sequence, time.Time{})
 	}
 
 loop:

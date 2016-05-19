@@ -31,25 +31,33 @@ type Options struct {
 	ListStreamsLimit    int64
 	DescribeStreamLimit int64
 	GetRecordsLimit     int64
+
+	// Amount of time to poll of records if consumer lag is minimal
 	PollTime            int
 	MaxShardWorkers     int
 	ErrHandler          func(k.Error)
 	DefaultIteratorType string
+
+	// How long to try and get shard iterator
+	ShardAcquisitionTimeout time.Duration
+
+	// ShardIteratorTimestamp is used when DefaultIteratorType is "AT_TIMESTAMP"
+	ShardIteratorTimestamp time.Time
 }
 
 var DefaultOptions = Options{
 	// These values are the hard limits set by Amazon
-	ListStreamsLimit:    1000,
-	DescribeStreamLimit: 10000,
-	GetRecordsLimit:     10000,
-
-	PollTime:            2000,
-	MaxShardWorkers:     50,
-	ErrHandler:          DefaultErrHandler,
-	DefaultIteratorType: "LATEST",
+	ListStreamsLimit:        1000,
+	DescribeStreamLimit:     10000,
+	GetRecordsLimit:         10000,
+	PollTime:                2000,
+	MaxShardWorkers:         50,
+	ErrHandler:              DefaultErrHandler,
+	DefaultIteratorType:     "LATEST",
+	ShardAcquisitionTimeout: 90 * time.Second,
 }
 
-func NewDefault(stream string) (*Kinesumer, error) {
+func NewDefault(stream string, duration time.Duration) (*Kinesumer, error) {
 	return New(
 		kinesis.New(session.New()),
 		nil,
@@ -57,11 +65,12 @@ func NewDefault(stream string) (*Kinesumer, error) {
 		nil,
 		stream,
 		nil,
+		duration,
 	)
 }
 
 func New(kinesis k.Kinesis, checkpointer k.Checkpointer, provisioner k.Provisioner,
-	randSource rand.Source, stream string, opt *Options) (*Kinesumer, error) {
+	randSource rand.Source, stream string, opt *Options, duration time.Duration) (*Kinesumer, error) {
 
 	if kinesis == nil {
 		return nil, NewError(ECrit, "Kinesis object must not be nil", nil)
@@ -90,6 +99,11 @@ func New(kinesis k.Kinesis, checkpointer k.Checkpointer, provisioner k.Provision
 
 	if opt.ErrHandler == nil {
 		opt.ErrHandler = DefaultErrHandler
+	}
+
+	if duration != 0 {
+		opt.DefaultIteratorType = "AT_TIMESTAMP"
+		opt.ShardIteratorTimestamp = time.Now().Add(duration * -1)
 	}
 
 	return &Kinesumer{
@@ -164,18 +178,19 @@ func (kin *Kinesumer) LaunchShardWorker(shards []*kinesis.Shard) (int, *ShardWor
 		err := kin.Provisioner.TryAcquire(aws.StringValue(shards[j].ShardId))
 		if err == nil {
 			worker := &ShardWorker{
-				kinesis:             kin.Kinesis,
-				shard:               shards[j],
-				checkpointer:        kin.Checkpointer,
-				stream:              kin.Stream,
-				pollTime:            kin.Options.PollTime,
-				stop:                kin.stop,
-				stopped:             kin.stopped,
-				c:                   kin.records,
-				provisioner:         kin.Provisioner,
-				errHandler:          kin.Options.ErrHandler,
-				defaultIteratorType: kin.Options.DefaultIteratorType,
-				GetRecordsLimit:     kin.Options.GetRecordsLimit,
+				kinesis:                kin.Kinesis,
+				shard:                  shards[j],
+				checkpointer:           kin.Checkpointer,
+				stream:                 kin.Stream,
+				pollTime:               kin.Options.PollTime,
+				stop:                   kin.stop,
+				stopped:                kin.stopped,
+				c:                      kin.records,
+				provisioner:            kin.Provisioner,
+				errHandler:             kin.Options.ErrHandler,
+				defaultIteratorType:    kin.Options.DefaultIteratorType,
+				shardIteratorTimestamp: kin.Options.ShardIteratorTimestamp,
+				GetRecordsLimit:        kin.Options.GetRecordsLimit,
 			}
 			kin.nRunning++
 			go worker.RunWorker()
@@ -201,8 +216,12 @@ func (kin *Kinesumer) Begin() (int, error) {
 		n = len(shards)
 	}
 
+	tryTime := kin.Options.ShardAcquisitionTimeout
+	if tryTime < 2*kin.Provisioner.TTL()+time.Second {
+		tryTime = 2*kin.Provisioner.TTL() + time.Second
+	}
+
 	start := time.Now()
-	tryTime := 2*kin.Provisioner.TTL() + time.Second
 
 	kin.stop = make(chan Unit, n)
 	kin.stopped = make(chan Unit, n)
@@ -218,10 +237,14 @@ func (kin *Kinesumer) Begin() (int, error) {
 				shards = append(shards[:j], shards[j+1:]...)
 			}
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(time.Duration(500+rand.Intn(1500)) * time.Millisecond)
 	}
 
 	kin.Options.ErrHandler(NewError(EInfo, fmt.Sprintf("%v/%v workers started", kin.nRunning, n), nil))
+
+	if len(workers) < 1 {
+		return len(workers), NewError(EWarn, "0 shard workers started", nil)
+	}
 
 	return len(workers), nil
 }

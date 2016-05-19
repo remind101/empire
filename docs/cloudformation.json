@@ -2,6 +2,48 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Example ECS cluster for Empire",
 
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": { "default": "Empire" },
+          "Parameters": ["LaunchEmpire", "EmpireVersion", "EventsBackend", "RunLogsBackend"]
+        },
+        {
+          "Label": { "default": "GitHub Authentication" },
+          "Parameters": ["GitHubClientId", "GitHubClientSecret", "GitHubOrganization", "GitHubTeamId"]
+        },
+        {
+          "Label": { "default": "Docker" },
+          "Parameters": ["DockerUser", "DockerPass", "DockerEmail", "DockerRegistry"]
+        },
+        {
+          "Label": { "default": "Cluster" },
+          "Parameters": ["DesiredCapacity", "AmiId", "AvailabilityZones", "InstanceType", "KeyName"]
+        }
+      ],
+      "ParameterLabels": {
+        "KeyName": { "default": "SSH key name" },
+        "LaunchEmpire": { "default": "Launch" },
+        "EmpireVersion": { "default": "Daemon version" },
+        "EventsBackend": { "default": "Send events to" },
+        "RunLogsBackend": { "default": "Send interactive run logs to" },
+        "GitHubClientId": { "default": "Client ID" },
+        "GitHubClientSecret": { "default": "Client Secret" },
+        "GitHubOrganization": { "default": "Organization" },
+        "GitHubTeamId": { "default": "Team ID" },
+        "DockerUser": { "default": "Username" },
+        "DockerPass": { "default": "Password" },
+        "DockerEmail": { "default": "Email" },
+        "DockerRegistry": { "default": "Registry" },
+        "DesiredCapacity": { "default": "Cluster size" },
+        "AmiId": { "default": "ECS optimized AMI id" },
+        "AvailabilityZones": { "default": "Availability zones" },
+        "InstanceType": { "default": "Instance type" }
+      }
+    }
+  },
+
   "Parameters": {
     "InstanceType": {
       "Type": "String",
@@ -12,56 +54,53 @@
     "EmpireVersion": {
       "Type": "String",
       "Default": "master",
-      "Description": "Docker tag to specify the version of Empire to run."
+      "Description": "Docker tag to specify the version of Empire to run. This can be any git branch or sha."
     },
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
-      "Description": "AMI Id. Defaults to the official ECS Optimized Linux.",
+      "Description": "The AMI id of the AMI to run the instances with. This defaults to the official ECS ami.",
       "Default": "ami-67a3a90d"
     },
     "KeyName": {
-      "Type": "AWS::EC2::KeyPair::KeyName",
-      "Description": "The name of the key pair to use to allow SSH access."
+      "Type": "String",
+      "Description": "The name of the key pair to use if you want to allow SSH access to hosts."
     },
     "EventsBackend": {
       "Type": "String",
+      "AllowedValues": ["sns", "none"],
       "Description": "The backend to use to publish Empire events to. Set this to SNS to create an SNS topic and publish events there.",
       "Default": "sns"
     },
     "RunLogsBackend": {
       "Type": "String",
+      "AllowedValues": ["cloudwatch", "stdout"],
       "Description": "The backend used to store logs from interactive runs.",
       "Default": "cloudwatch"
     },
     "DockerRegistry": {
       "Type": "String",
-      "Description": "Docker private registry url",
+      "Description": "The URL of the Docker registry to pull private images from.",
       "Default": "https://index.docker.io/v1/"
     },
     "DockerUser": {
       "Type": "String",
-      "Description": "Docker username for private registry",
+      "Description": "Username of a Docker registry user to pull images from private repositories.",
       "Default": ""
     },
     "DockerPass": {
       "Type": "String",
-      "Description": "Docker password for private registry",
+      "Description": "Password of a Docker registry user to pull images from private repositories.",
       "Default": "",
       "NoEcho": true
     },
     "DockerEmail": {
       "Type": "String",
-      "Description": "Docker registry email",
+      "Description": "Email of a Docker registry user to pull images from private repositories.",
       "Default": ""
-    },
-    "MaxCapacity": {
-      "Type": "String",
-      "Description": "Maximum number of EC2 instances in the auto scaling group",
-      "Default": "5"
     },
     "DesiredCapacity": {
       "Type": "String",
-      "Description": "Desired number of EC2 instances in the auto scaling group",
+      "Description": "The number of EC2 instances to run in the ECS cluster.",
       "Default": "3"
     },
     "AvailabilityZones": {
@@ -70,14 +109,36 @@
       "Default": "us-east-1a,us-east-1b"
     },
     "LaunchEmpire": {
-      "Type": "Number",
-      "Default": "1",
-      "Description": "If 1, then launch Empire & Postgres as ECS tasks. If anything else, skip launching Empire (intended for dev use when Empire is ran locally)"
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": ["false", "true"],
+      "Description": "If true, then launch Empire & Postgres as ECS services. Note that this is NOT a production grade stack, this is only meant to serve as an easy way to try out Empire. If you want to take Empire into production, read the docs on Production Best Practices http://empire.readthedocs.io/en/latest/production_best_practices/."
+    },
+    "GitHubClientId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The oauth client id to use with the GitHub authentication backend."
+    },
+    "GitHubClientSecret": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The oauth client secret to use with the GitHub authentication backend."
+    },
+    "GitHubOrganization": {
+      "Type": "String",
+      "Default": "",
+      "Description": "If set, this will ensure that all users are a member of this GitHub organization."
+    },
+    "GitHubTeamId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "If set, this will ensure that all users are a member of this GitHub team."
     }
   },
 
   "Conditions": {
-    "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "1"]},
+    "HasKeyName": {"Fn::Not": [{"Fn::Equals": ["", { "Ref": "KeyName" }]}]},
+    "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "true"]},
     "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]},
     "SNSEvents": {"Fn::Equals": [{"Ref": "EventsBackend"}, "sns"]},
     "CloudWatchLogs": {"Fn::Equals": [{"Ref": "RunLogsBackend"}, "cloudwatch"]}
@@ -291,24 +352,62 @@
 
     "TemplateBucket": {
       "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Delete",
       "Properties": {
         "AccessControl": "Private"
       }
     },
 
-    "InstancePolicies": {
+    "ECSAgentPolicy": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
         "PolicyName": "ecs",
         "Roles": [ { "Ref": "InstanceRole" } ],
-        "Users": [ { "Ref": "User" } ],
         "PolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
             {
               "Effect": "Allow",
               "Action": [
-                "sqs:*"
+                "ecs:DeregisterContainerInstance",
+                "ecs:DiscoverPollEndpoint",
+                "ecs:Poll",
+                "ecs:RegisterContainerInstance",
+                "ecs:StartTelemetrySession",
+                "ecs:Submit*",
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage"
+              ],
+              "Resource": ["*"]
+            }
+          ]
+        }
+      }
+    },
+
+    "EmpirePolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "empire",
+        "Roles": [ { "Ref": "InstanceRole" } ],
+        "Groups": [ { "Ref": "Group" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "iam:PassRole"
+              ],
+              "Resource": { "Fn::GetAtt": ["ServiceRole", "Arn"] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage"
               ],
               "Resource": { "Fn::GetAtt": ["CustomResourcesQueue", "Arn"] }
             },
@@ -322,28 +421,110 @@
             {
               "Effect": "Allow",
               "Action": [
-                "cloudformation:*",
-                "s3:*",
-                "ec2:Describe*",
-                "elasticloadbalancing:*",
-                "ecs:*",
+                "sns:Publish"
+              ],
+              "Resource": { "Ref": "EventsTopic" }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:PutObjectVersionAcl",
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:GetObjectAcl",
+                "s3:GetObjectVersionAcl"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:s3:::", { "Ref": "TemplateBucket" }, "/*"]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:ListStackResources",
+                "cloudformation:DescribeStackResource",
+                "cloudformation:DescribeStacks"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ecs:CreateService",
+                "ecs:DeleteService",
+                "ecs:DeregisterTaskDefinition",
+                "ecs:Describe*",
+                "ecs:List*",
+                "ecs:RegisterTaskDefinition",
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:StopTask",
+                "ecs:SubmitTaskStateChange",
+                "ecs:UpdateService"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:DescribeTags",
+                "elasticloadbalancing:ConfigureHealthCheck",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:SetLoadBalancerListenerSSLCertificate",
+                "elasticloadbalancing:CreateLoadBalancerListeners",
+                "elasticloadbalancing:DeleteLoadBalancerListeners",
+                "elasticloadbalancing:SetLoadBalancerPoliciesOfListener"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "ecr:GetAuthorizationToken",
                 "ecr:BatchCheckLayerAvailability",
                 "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage",
-                "iam:ListInstanceProfiles",
-                "iam:ListRoles",
-                "iam:PassRole",
-                "iam:UploadServerCertificate",
-                "iam:DeleteServerCertificate",
-                "route53:*",
-                "sns:*",
+                "ecr:BatchGetImage"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:DescribeSubnets",
+                "ec2:DescribeSecurityGroups"
+              ],
+              "Resource": ["*"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "route53:ListHostedZonesByName",
+                "route53:ChangeResourceRecordSets",
+                "route53:ListHostedZones",
+                "route53:GetHostedZone"
+              ],
+              "Resource": { "Fn::Join": ["", ["arn:aws:route53:::hostedzone/", { "Ref": "InternalDomain" }]] }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "route53:GetChange*"
+              ],
+              "Resource": "arn:aws:route53:::change/*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "logs:CreateLogStream",
                 "logs:PutLogEvents"
               ],
-              "Resource": [
-                "*"
-              ]
+              "Resource": { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "LogGroup" }, ":log-stream:*"]] }
             }
           ]
         }
@@ -413,7 +594,7 @@
         "InstanceType": { "Ref": "InstanceType" },
         "AssociatePublicIpAddress": true,
         "IamInstanceProfile": { "Ref": "InstanceProfile" },
-        "KeyName": { "Ref": "KeyName" },
+        "KeyName": { "Fn::If": ["HasKeyName", { "Ref": "KeyName" }, { "Ref": "AWS::NoValue" }] },
         "SecurityGroups": [
           { "Ref": "InstanceSecurityGroup" }
         ],
@@ -441,7 +622,7 @@
         "VPCZoneIdentifier": [{ "Fn::Join" : [",", [ { "Ref" : "PubSubnetAz1" }, { "Ref" : "PubSubnetAz2" } ] ] }],
         "LaunchConfigurationName": { "Ref": "LaunchConfiguration" },
         "MinSize": "1",
-        "MaxSize": { "Ref": "MaxCapacity" },
+        "MaxSize": { "Ref": "DesiredCapacity" },
         "DesiredCapacity": { "Ref": "DesiredCapacity" },
         "Tags": [
           {
@@ -453,9 +634,15 @@
       }
     },
 
+    "Group": {
+      "Type": "AWS::IAM::Group"
+    },
+
     "User": {
       "Type": "AWS::IAM::User",
-      "Properties": { }
+      "Properties": {
+        "Groups": [ { "Ref": "Group" } ]
+      }
     },
 
     "AccessKey": {
@@ -564,6 +751,30 @@
               {
                 "Name": "EMPIRE_CLOUDWATCH_LOG_GROUP",
                 "Value": { "Ref": "LogGroup" }
+              },
+              {
+                "Name": "EMPIRE_CUSTOM_RESOURCES_TOPIC",
+                "Value": { "Ref": "CustomResourcesTopic" }
+              },
+              {
+                "Name": "EMPIRE_CUSTOM_RESOURCES_QUEUE",
+                "Value": { "Ref": "CustomResourcesQueue" }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_CLIENT_ID",
+                "Value": { "Ref": "GitHubClientId" }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_CLIENT_SECRET",
+                "Value": { "Ref": "GitHubClientSecret" }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_ORGANIZATION",
+                "Value": { "Ref": "GitHubOrganization" }
+              },
+              {
+                "Name": "EMPIRE_GITHUB_TEAM_ID",
+                "Value": { "Ref": "GitHubTeamId" }
               }
             ],
             "Command": ["server", "-automigrate=true"],
@@ -632,8 +843,7 @@
       "Type": "AWS::SNS::Topic",
       "Condition": "SNSEvents",
       "Properties": {
-        "DisplayName": "Empire Events",
-        "TopicName" : "events"
+        "DisplayName": "Empire Events"
       }
     },
 
@@ -648,12 +858,43 @@
     "CustomResourcesTopic": {
       "Type": "AWS::SNS::Topic",
       "Properties": {
-        "DisplayName": "Empire Custom Resources"
+        "DisplayName": "Empire Custom Resources",
+        "Subscription": [
+          {
+            "Protocol": "sqs",
+            "Endpoint": { "Fn::GetAtt": ["CustomResourcesQueue", "Arn"] }
+          }
+        ]
       }
     },
 
     "CustomResourcesQueue": {
       "Type": "AWS::SQS::Queue"
+    },
+
+    "CustomResourcesQueuePolicy": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "Queues": [{ "Ref": "CustomResourcesQueue" }],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Id": "CustomResourcesQueuePolicy",
+          "Statement": [
+            {
+              "Sid": "AllowCustomResourcesTopicToSendMessages",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": ["sqs:SendMessage"],
+              "Resource": "*",
+              "Condition": {
+                "ArnEquals": {
+                  "aws:SourceArn": { "Ref": "CustomResourcesTopic" }
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   },
 

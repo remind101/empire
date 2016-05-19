@@ -15,6 +15,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
@@ -56,7 +57,7 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	events, err := newEventStream(c)
+	streams, err := newEventStreams(c)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +72,15 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	})
 	e.Reporter = reporter
 	e.Scheduler = scheduler
-	e.LogsStreamer = logs
-	e.EventStream = empire.AsyncEvents(events)
+	if logs != nil {
+		e.LogsStreamer = logs
+	}
+	e.EventStream = empire.AsyncEvents(streams)
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
+	e.MessagesRequired = c.Bool(FlagMessagesRequired)
 
 	return e, nil
 }
@@ -89,17 +93,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 		return nil, err
 	}
 
-	var s scheduler.Scheduler
-	name := c.String(FlagScheduler)
-	switch name {
-	case "cloudformation":
-		s, err = newCloudFormationScheduler(db, c)
-	case "ecs":
-		s, err = newECSScheduler(db, c)
-	default:
-		panic(fmt.Sprintf("unknown scheduler: %v", name))
-	}
-
+	s, err := newMigrationScheduler(db, c)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +104,21 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	}, nil
 }
 
-func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
+func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.MigrationScheduler, error) {
+	es, err := newECSScheduler(db, c)
+	if err != nil {
+		return nil, err
+	}
+
+	cs, err := newCloudFormationScheduler(db, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
+}
+
+func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
@@ -170,7 +178,7 @@ func prefixedStackName(prefix string) *template.Template {
 	return template.Must(template.New("stack_name").Parse(t))
 }
 
-func newECSScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
+func newECSScheduler(db *empire.DB, c *cli.Context) (*ecs.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
@@ -257,13 +265,34 @@ func newKinesisLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
 
 // Events ==============================
 
-func newEventStream(c *cli.Context) (empire.EventStream, error) {
+func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
+	var streams empire.MultiEventStream
 	switch c.String(FlagEventsBackend) {
 	case "sns":
-		return newSNSEventStream(c)
+		e, err := newSNSEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
 	default:
-		return empire.NullEventStream, nil
+		e := empire.NullEventStream
+		streams = append(streams, e)
 	}
+
+	if c.String(FlagLogsStreamer) == "kinesis" {
+		e, err := newAppEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
+	}
+	return streams, nil
+}
+
+func newAppEventStream(c *cli.Context) (empire.EventStream, error) {
+	e := app.NewEventStream(newConfigProvider(c))
+	log.Println("Using App (Kinesis) events backend")
+	return e, nil
 }
 
 func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {

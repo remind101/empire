@@ -7,7 +7,7 @@ import (
 )
 
 var cmdRestart = &Command{
-	Run:             runRestart,
+	Run:             maybeMessage(runRestart),
 	Usage:           "restart [<type or name>]",
 	NeedsApp:        true,
 	OptionalMessage: true,

@@ -67,7 +67,7 @@ func runGet(cmd *Command, args []string) {
 }
 
 var cmdSet = &Command{
-	Run:             runSet,
+	Run:             maybeMessage(runSet),
 	Usage:           "set <name>=<value>...",
 	NeedsApp:        true,
 	OptionalMessage: true,
@@ -105,7 +105,7 @@ func runSet(cmd *Command, args []string) {
 }
 
 var cmdUnset = &Command{
-	Run:             runUnset,
+	Run:             maybeMessage(runUnset),
 	Usage:           "unset <name>...",
 	NeedsApp:        true,
 	OptionalMessage: true,
@@ -138,7 +138,7 @@ func runUnset(cmd *Command, args []string) {
 }
 
 var cmdEnvLoad = &Command{
-	Run:             runEnvLoad,
+	Run:             maybeMessage(runEnvLoad),
 	Usage:           "env-load <file>",
 	NeedsApp:        true,
 	OptionalMessage: true,

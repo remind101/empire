@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/awstesting"
+	"github.com/aws/aws-sdk-go/private/protocol"
 	"github.com/aws/aws-sdk-go/private/protocol/restxml"
 	"github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil"
 	"github.com/aws/aws-sdk-go/private/signer/v4"
@@ -30,12 +32,16 @@ var _ json.Marshaler
 var _ time.Time
 var _ xmlutil.XMLNode
 var _ xml.Attr
-var _ = awstesting.GenerateAssertions
 var _ = ioutil.Discard
 var _ = util.Trim("")
 var _ = url.Values{}
 var _ = io.EOF
 var _ = aws.String
+var _ = fmt.Println
+
+func init() {
+	protocol.RandReader = &awstesting.ZeroReader{}
+}
 
 //The service client's operations are safe to be used concurrently.
 // It is not safe to mutate any of the client's properties though.
@@ -75,10 +81,10 @@ func newOutputService1ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -140,22 +146,16 @@ func (c *OutputService1ProtocolTest) OutputService1TestCaseOperation2(input *Out
 }
 
 type OutputService1TestShapeOutputService1TestCaseOperation1Input struct {
-	metadataOutputService1TestShapeOutputService1TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService1TestShapeOutputService1TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService1TestShapeOutputService1TestCaseOperation2Input struct {
-	metadataOutputService1TestShapeOutputService1TestCaseOperation2Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService1TestShapeOutputService1TestCaseOperation2Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService1TestShapeOutputShape struct {
+	_ struct{} `type:"structure"`
+
 	Char *string `type:"character"`
 
 	Double *float64 `type:"double"`
@@ -177,12 +177,6 @@ type OutputService1TestShapeOutputShape struct {
 	Timestamp *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	TrueBool *bool `type:"boolean"`
-
-	metadataOutputService1TestShapeOutputShape `json:"-" xml:"-"`
-}
-
-type metadataOutputService1TestShapeOutputShape struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -223,10 +217,10 @@ func newOutputService2ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -264,21 +258,14 @@ func (c *OutputService2ProtocolTest) OutputService2TestCaseOperation1(input *Out
 }
 
 type OutputService2TestShapeOutputService2TestCaseOperation1Input struct {
-	metadataOutputService2TestShapeOutputService2TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService2TestShapeOutputService2TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService2TestShapeOutputService2TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
+	// Blob is automatically base64 encoded/decoded by the SDK.
 	Blob []byte `type:"blob"`
-
-	metadataOutputService2TestShapeOutputService2TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService2TestShapeOutputService2TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -319,10 +306,10 @@ func newOutputService3ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -360,21 +347,13 @@ func (c *OutputService3ProtocolTest) OutputService3TestCaseOperation1(input *Out
 }
 
 type OutputService3TestShapeOutputService3TestCaseOperation1Input struct {
-	metadataOutputService3TestShapeOutputService3TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService3TestShapeOutputService3TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService3TestShapeOutputService3TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	ListMember []*string `type:"list"`
-
-	metadataOutputService3TestShapeOutputService3TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService3TestShapeOutputService3TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -415,10 +394,10 @@ func newOutputService4ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -456,21 +435,13 @@ func (c *OutputService4ProtocolTest) OutputService4TestCaseOperation1(input *Out
 }
 
 type OutputService4TestShapeOutputService4TestCaseOperation1Input struct {
-	metadataOutputService4TestShapeOutputService4TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService4TestShapeOutputService4TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService4TestShapeOutputService4TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	ListMember []*string `locationNameList:"item" type:"list"`
-
-	metadataOutputService4TestShapeOutputService4TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService4TestShapeOutputService4TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -511,10 +482,10 @@ func newOutputService5ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -552,21 +523,13 @@ func (c *OutputService5ProtocolTest) OutputService5TestCaseOperation1(input *Out
 }
 
 type OutputService5TestShapeOutputService5TestCaseOperation1Input struct {
-	metadataOutputService5TestShapeOutputService5TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService5TestShapeOutputService5TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService5TestShapeOutputService5TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	ListMember []*string `type:"list" flattened:"true"`
-
-	metadataOutputService5TestShapeOutputService5TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService5TestShapeOutputService5TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -607,10 +570,10 @@ func newOutputService6ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -648,31 +611,19 @@ func (c *OutputService6ProtocolTest) OutputService6TestCaseOperation1(input *Out
 }
 
 type OutputService6TestShapeOutputService6TestCaseOperation1Input struct {
-	metadataOutputService6TestShapeOutputService6TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService6TestShapeOutputService6TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService6TestShapeOutputService6TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	Map map[string]*OutputService6TestShapeSingleStructure `type:"map"`
-
-	metadataOutputService6TestShapeOutputService6TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService6TestShapeOutputService6TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 type OutputService6TestShapeSingleStructure struct {
+	_ struct{} `type:"structure"`
+
 	Foo *string `locationName:"foo" type:"string"`
-
-	metadataOutputService6TestShapeSingleStructure `json:"-" xml:"-"`
-}
-
-type metadataOutputService6TestShapeSingleStructure struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -713,10 +664,10 @@ func newOutputService7ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -754,21 +705,13 @@ func (c *OutputService7ProtocolTest) OutputService7TestCaseOperation1(input *Out
 }
 
 type OutputService7TestShapeOutputService7TestCaseOperation1Input struct {
-	metadataOutputService7TestShapeOutputService7TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService7TestShapeOutputService7TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService7TestShapeOutputService7TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	Map map[string]*string `type:"map" flattened:"true"`
-
-	metadataOutputService7TestShapeOutputService7TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService7TestShapeOutputService7TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -809,10 +752,10 @@ func newOutputService8ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -850,21 +793,13 @@ func (c *OutputService8ProtocolTest) OutputService8TestCaseOperation1(input *Out
 }
 
 type OutputService8TestShapeOutputService8TestCaseOperation1Input struct {
-	metadataOutputService8TestShapeOutputService8TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService8TestShapeOutputService8TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService8TestShapeOutputService8TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	Map map[string]*string `locationNameKey:"foo" locationNameValue:"bar" type:"map"`
-
-	metadataOutputService8TestShapeOutputService8TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService8TestShapeOutputService8TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -905,10 +840,10 @@ func newOutputService9ProtocolTestClient(cfg aws.Config, handlers request.Handle
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -946,33 +881,21 @@ func (c *OutputService9ProtocolTest) OutputService9TestCaseOperation1(input *Out
 }
 
 type OutputService9TestShapeOutputService9TestCaseOperation1Input struct {
-	metadataOutputService9TestShapeOutputService9TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService9TestShapeOutputService9TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService9TestShapeOutputService9TestCaseOperation1Output struct {
+	_ struct{} `type:"structure" payload:"Data"`
+
 	Data *OutputService9TestShapeSingleStructure `type:"structure"`
 
 	Header *string `location:"header" locationName:"X-Foo" type:"string"`
-
-	metadataOutputService9TestShapeOutputService9TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService9TestShapeOutputService9TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure" payload:"Data"`
 }
 
 type OutputService9TestShapeSingleStructure struct {
+	_ struct{} `type:"structure"`
+
 	Foo *string `type:"string"`
-
-	metadataOutputService9TestShapeSingleStructure `json:"-" xml:"-"`
-}
-
-type metadataOutputService9TestShapeSingleStructure struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1013,10 +936,10 @@ func newOutputService10ProtocolTestClient(cfg aws.Config, handlers request.Handl
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1054,21 +977,13 @@ func (c *OutputService10ProtocolTest) OutputService10TestCaseOperation1(input *O
 }
 
 type OutputService10TestShapeOutputService10TestCaseOperation1Input struct {
-	metadataOutputService10TestShapeOutputService10TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService10TestShapeOutputService10TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService10TestShapeOutputService10TestCaseOperation1Output struct {
+	_ struct{} `type:"structure" payload:"Stream"`
+
 	Stream []byte `type:"blob"`
-
-	metadataOutputService10TestShapeOutputService10TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService10TestShapeOutputService10TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure" payload:"Stream"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1109,10 +1024,10 @@ func newOutputService11ProtocolTestClient(cfg aws.Config, handlers request.Handl
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1150,14 +1065,12 @@ func (c *OutputService11ProtocolTest) OutputService11TestCaseOperation1(input *O
 }
 
 type OutputService11TestShapeOutputService11TestCaseOperation1Input struct {
-	metadataOutputService11TestShapeOutputService11TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService11TestShapeOutputService11TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService11TestShapeOutputService11TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	Char *string `location:"header" locationName:"x-char" type:"character"`
 
 	Double *float64 `location:"header" locationName:"x-double" type:"double"`
@@ -1175,12 +1088,6 @@ type OutputService11TestShapeOutputService11TestCaseOperation1Output struct {
 	Timestamp *time.Time `location:"header" locationName:"x-timestamp" type:"timestamp" timestampFormat:"iso8601"`
 
 	TrueBool *bool `location:"header" locationName:"x-true-bool" type:"boolean"`
-
-	metadataOutputService11TestShapeOutputService11TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService11TestShapeOutputService11TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -1221,10 +1128,10 @@ func newOutputService12ProtocolTestClient(cfg aws.Config, handlers request.Handl
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(restxml.Build)
-	svc.Handlers.Unmarshal.PushBack(restxml.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(restxml.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(restxml.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(restxml.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(restxml.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(restxml.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(restxml.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -1262,21 +1169,13 @@ func (c *OutputService12ProtocolTest) OutputService12TestCaseOperation1(input *O
 }
 
 type OutputService12TestShapeOutputService12TestCaseOperation1Input struct {
-	metadataOutputService12TestShapeOutputService12TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataOutputService12TestShapeOutputService12TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type OutputService12TestShapeOutputService12TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+
 	Foo *string `type:"string"`
-
-	metadataOutputService12TestShapeOutputService12TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataOutputService12TestShapeOutputService12TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //

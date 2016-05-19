@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
 )
@@ -34,6 +35,11 @@ const (
 // This implements the Template interface to create a suitable CloudFormation
 // template for an Empire app.
 type EmpireTemplate struct {
+	// By default, the JSON will not have any whitespace or newlines, which
+	// helps prevent templates from going over the maximum size limit. If
+	// you care about readability, you can set this to true.
+	NoCompress bool
+
 	// The ECS cluster to run the services in.
 	Cluster string
 
@@ -102,23 +108,44 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 		return err
 	}
 
-	raw, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
+	if t.NoCompress {
+		raw, err := json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(w, bytes.NewReader(raw))
 		return err
 	}
 
-	_, err = io.Copy(w, bytes.NewReader(raw))
-	return err
+	return json.NewEncoder(w).Encode(v)
 }
 
 // Build builds a Go representation of a CloudFormation template for the app.
 func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
-	parameters := map[string]interface{}{}
+	parameters := map[string]interface{}{
+		"DNS": map[string]string{
+			"Type":        "String",
+			"Description": "When set to `true`, CNAME's will be altered",
+		},
+	}
+	conditions := map[string]interface{}{
+		"DNSCondition": map[string]interface{}{
+			"Fn::Equals": []interface{}{
+				map[string]string{
+					"Ref": "DNS",
+				},
+				"true",
+			},
+		},
+	}
 	resources := map[string]interface{}{}
 	outputs := map[string]interface{}{}
 
+	serviceMappings := []map[string]interface{}{}
+
 	for _, p := range app.Processes {
-		cd := t.ContainerDefinition(p)
+		cd := t.ContainerDefinition(app, p)
 
 		key := processResourceName(p.Type)
 
@@ -164,16 +191,28 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			}
 
 			if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
+				var cert interface{}
+				if _, err := arn.Parse(e.Cert); err == nil {
+					cert = e.Cert
+				} else {
+					cert = map[string]interface{}{
+						"Fn::Join": []interface{}{
+							"",
+							[]interface{}{"arn:aws:iam::", map[string]string{"Ref": "AWS::AccountId"}, ":server-certificate/", e.Cert},
+						},
+					}
+				}
+
 				listeners = append(listeners, map[string]interface{}{
-					"LoadBalancerPort": 80,
-					"Protocol":         "http",
+					"LoadBalancerPort": 443,
+					"Protocol":         "https",
 					"InstancePort": map[string][]string{
 						"Fn::GetAtt": []string{
 							instancePort,
 							"InstancePort",
 						},
 					},
-					"SSLCertificateId": e.Cert,
+					"SSLCertificateId": cert,
 					"InstanceProtocol": "http",
 				})
 			}
@@ -223,15 +262,16 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 			if p.Type == "web" {
 				resources["CNAME"] = map[string]interface{}{
-					"Type": "AWS::Route53::RecordSet",
+					"Type":      "AWS::Route53::RecordSet",
+					"Condition": "DNSCondition",
 					"Properties": map[string]interface{}{
 						"HostedZoneId": *t.HostedZone.Id,
 						"Name":         fmt.Sprintf("%s.%s", app.Name, *t.HostedZone.Name),
 						"Type":         "CNAME",
 						"TTL":          defaultCNAMETTL,
-						"ResourceRecords": []map[string]string{
-							map[string]string{
-								"Ref": loadBalancer,
+						"ResourceRecords": []map[string][]string{
+							map[string][]string{
+								"Fn::GetAtt": []string{loadBalancer, "DNSName"},
 							},
 						},
 					},
@@ -266,6 +306,12 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		}
 
 		service := fmt.Sprintf("%s", key)
+		serviceMappings = append(serviceMappings, map[string]interface{}{
+			"Fn::Join": []interface{}{
+				"=",
+				[]interface{}{p.Type, map[string]string{"Ref": service}},
+			},
+		})
 		serviceProperties := map[string]interface{}{
 			"Cluster": t.Cluster,
 			"DesiredCount": map[string]string{
@@ -280,24 +326,31 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			serviceProperties["Role"] = t.ServiceRole
 		}
 		resources[service] = map[string]interface{}{
-			"Type": "AWS::ECS::Service",
-			"Metadata": &serviceMetadata{
-				Name: p.Type,
-			},
+			"Type":       "AWS::ECS::Service",
 			"Properties": serviceProperties,
 		}
 
 	}
 
+	outputs[servicesOutput] = map[string]interface{}{
+		"Value": map[string]interface{}{
+			"Fn::Join": []interface{}{
+				",",
+				serviceMappings,
+			},
+		},
+	}
+
 	return map[string]interface{}{
 		"Parameters": parameters,
+		"Conditions": conditions,
 		"Resources":  resources,
 		"Outputs":    outputs,
 	}, nil
 }
 
 // ContainerDefinition generates an ECS ContainerDefinition for a process.
-func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.ContainerDefinition {
+func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Process) *ecs.ContainerDefinition {
 	command := []*string{}
 	for _, s := range p.Command {
 		ss := s
@@ -305,7 +358,7 @@ func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.Containe
 	}
 
 	environment := []*ecs.KeyValuePair{}
-	for k, v := range p.Env {
+	for k, v := range scheduler.Env(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
@@ -313,7 +366,7 @@ func (t *EmpireTemplate) ContainerDefinition(p *scheduler.Process) *ecs.Containe
 	}
 
 	labels := make(map[string]*string)
-	for k, v := range p.Labels {
+	for k, v := range scheduler.Labels(app, p) {
 		labels[k] = aws.String(v)
 	}
 

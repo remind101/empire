@@ -16,10 +16,10 @@ Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake)",
 		},
 		{
-			"deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 -m important",
 			`Pulling repository remind101/acme-inc
 345c7524bc96: Pulling image (9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2) from remind101/acme-inc
 345c7524bc96: Pulling image (9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
@@ -30,7 +30,7 @@ Status: Created new release v2 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2\nv2    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake)\nv2    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake: 'important')",
 		},
 		{
 			"create my-app",
@@ -48,7 +48,7 @@ Status: Created new release v1 for my-app`,
 		},
 		{
 			"releases -a my-app",
-			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake)",
 		},
 	})
 }
@@ -67,7 +67,7 @@ Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)",
 		},
 	})
 }

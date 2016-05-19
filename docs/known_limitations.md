@@ -12,16 +12,6 @@ Right now Empire can only serve http & https services.
 
 You can only have a single exposed process per app, the `web` app.
 
-## Unable to update ELB for an app once it is deployed
-
-Due to a [bug](https://github.com/remind101/empire/issues/498) in
-the way that ELBs are setup, it's not possible to modify an ELB once
-it is created.
-
-## Unable to use non-standard registry
-
-See [https://github.com/remind101/empire/issues/624][https://github.com/remind101/empire/issues/624]
-
 ## Only one web process per app per minion
 
 This is actually a limitation of Elastic Load Balancers. An ELB can only

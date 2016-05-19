@@ -22,7 +22,7 @@ var (
 )
 
 var cmdRun = &Command{
-	Run:             runRun,
+	Run:             maybeMessage(runRun),
 	Usage:           "run [-s <size>] [-d] <command> [<argument>...]",
 	NeedsApp:        true,
 	OptionalMessage: true,

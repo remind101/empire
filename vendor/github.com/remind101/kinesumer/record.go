@@ -34,5 +34,7 @@ func (r *Record) MillisBehindLatest() int64 {
 }
 
 func (r *Record) Done() {
-	r.checkpointC <- r
+	if r.checkpointC != nil {
+		r.checkpointC <- r
+	}
 }
