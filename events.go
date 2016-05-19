@@ -23,7 +23,7 @@ type RunEvent struct {
 	Attached bool
 	Message  string
 
-	appID string
+	app *App
 }
 
 func (e RunEvent) Event() string {
@@ -42,8 +42,8 @@ func (e RunEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
-func (e RunEvent) AppID() string {
-	return e.appID
+func (e RunEvent) GetApp() *App {
+	return e.app
 }
 
 // RestartEvent is triggered when a user restarts an application.
@@ -53,7 +53,7 @@ type RestartEvent struct {
 	PID     string
 	Message string
 
-	appID string
+	app *App
 }
 
 func (e RestartEvent) Event() string {
@@ -70,8 +70,8 @@ func (e RestartEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
-func (e RestartEvent) AppID() string {
-	return e.appID
+func (e RestartEvent) GetApp() *App {
+	return e.app
 }
 
 // ScaleEvent is triggered when a manual scaling event happens.
@@ -85,7 +85,7 @@ type ScaleEvent struct {
 	PreviousConstraints Constraints
 	Message             string
 
-	appID string
+	app *App
 }
 
 func (e ScaleEvent) Event() string {
@@ -111,8 +111,8 @@ func (e ScaleEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
-func (e ScaleEvent) AppID() string {
-	return e.appID
+func (e ScaleEvent) GetApp() *App {
+	return e.app
 }
 
 // DeployEvent is triggered when a user deploys a new image to an app.
@@ -124,7 +124,7 @@ type DeployEvent struct {
 	Release     int
 	Message     string
 
-	appID string
+	app *App
 }
 
 func (e DeployEvent) Event() string {
@@ -141,8 +141,8 @@ func (e DeployEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
-func (e DeployEvent) AppID() string {
-	return e.appID
+func (e DeployEvent) GetApp() *App {
+	return e.app
 }
 
 // RollbackEvent is triggered when a user rolls back to an old version.
@@ -152,7 +152,7 @@ type RollbackEvent struct {
 	Version int
 	Message string
 
-	appID string
+	app *App
 }
 
 func (e RollbackEvent) Event() string {
@@ -164,8 +164,8 @@ func (e RollbackEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
-func (e RollbackEvent) AppID() string {
-	return e.appID
+func (e RollbackEvent) GetApp() *App {
+	return e.app
 }
 
 // SetEvent is triggered when environment variables are changed on an
@@ -176,7 +176,7 @@ type SetEvent struct {
 	Changed []string
 	Message string
 
-	appID string
+	app *App
 }
 
 func (e SetEvent) Event() string {
@@ -188,8 +188,8 @@ func (e SetEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
-func (e SetEvent) AppID() string {
-	return e.appID
+func (e SetEvent) GetApp() *App {
+	return e.app
 }
 
 // CreateEvent is triggered when a user creates a new application.
@@ -231,6 +231,12 @@ type Event interface {
 
 	// Returns a human readable string about the event.
 	String() string
+}
+
+// AppEvent is an Event that relates to a specific App.
+type AppEvent interface {
+	Event
+	GetApp() *App
 }
 
 // EventStream is an interface for publishing events that happen within

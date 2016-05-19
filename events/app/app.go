@@ -21,11 +21,6 @@ type EventStream struct {
 	kinesis kinesisClient
 }
 
-type Event interface {
-	String() string
-	AppID() string
-}
-
 func NewEventStream(c client.ConfigProvider) *EventStream {
 	return &EventStream{
 		kinesis: kinesis.New(c),
@@ -33,9 +28,9 @@ func NewEventStream(c client.ConfigProvider) *EventStream {
 }
 
 func (s *EventStream) PublishEvent(event empire.Event) error {
-	if e, ok := event.(Event); ok {
-		name := e.AppID()
-		key := fmt.Sprintf("%s.events", e.AppID())
+	if e, ok := event.(empire.AppEvent); ok {
+		name := e.GetApp().ID
+		key := fmt.Sprintf("%s.events", e.GetApp().ID)
 		s.kinesis.PutRecord(&kinesis.PutRecordInput{
 			Data:         []byte(e.String()),
 			StreamName:   &name,
