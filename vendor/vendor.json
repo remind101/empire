@@ -527,6 +527,18 @@
 			"revision": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
 		},
 		{
+			"checksumSHA1": "asmDhX/+sXdmgxWwi0wJNzaDhwo=",
+			"path": "github.com/hashicorp/errwrap",
+			"revision": "7554cd9344cec97297fa6649b055a8c98c2a1e55",
+			"revisionTime": "2014-10-28T05:47:10Z"
+		},
+		{
+			"checksumSHA1": "lLtvz/0hxCnN48rjIGIjQmr9E+I=",
+			"path": "github.com/hashicorp/go-multierror",
+			"revision": "d30f09973e19c1dfcd120b2d9c4f168e68d6b5d5",
+			"revisionTime": "2015-09-16T20:57:42Z"
+		},
+		{
 			"comment": "v2.3-38-g352fceb",
 			"path": "github.com/inconshreveable/log15",
 			"revision": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
