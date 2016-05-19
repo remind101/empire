@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func appendCommitMessage(main, commit string) string {
@@ -257,24 +259,35 @@ var NullEventStream = EventStreamFunc(func(event Event) error {
 	return nil
 })
 
+// MultiEventStream is an EventStream implementation that publishes the event to multiple EventStreams, returning any errors after publishing to all streams.
+type MultiEventStream []EventStream
+
+func (streams MultiEventStream) PublishEvent(e Event) error {
+	var result *multierror.Error
+	for _, s := range streams {
+		if err := s.PublishEvent(e); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+	return result.ErrorOrNil()
+}
+
 // AsyncEventStream wraps an array of EventStreams to publish events
 // asynchronously in a goroutine
 type AsyncEventStream struct {
 	EventStream
-
-	streams []EventStream
-	events  chan Event
+	events chan Event
 }
 
 // AsyncEvents returns a new AsyncEventStream that will buffer upto 100 events
 // before applying backpressure.
-func AsyncEvents(s []EventStream) *AsyncEventStream {
-	e := &AsyncEventStream{
-		streams: s,
-		events:  make(chan Event, 100),
+func AsyncEvents(e EventStream) *AsyncEventStream {
+	s := &AsyncEventStream{
+		EventStream: e,
+		events:      make(chan Event, 100),
 	}
-	go e.start()
-	return e
+	go s.start()
+	return s
 }
 
 func (e *AsyncEventStream) PublishEvent(event Event) error {
@@ -302,12 +315,7 @@ func (e *AsyncEventStream) publishEvent(event Event) (err error) {
 			err = fmt.Errorf("panic: %v", v)
 		}
 	}()
-	for _, stream := range e.streams {
-		err = stream.PublishEvent(event)
-		if err != nil {
-			return
-		}
-	}
+	err = e.EventStream.PublishEvent(event)
 	return
 }
 

@@ -265,8 +265,8 @@ func newKinesisLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
 
 // Events ==============================
 
-func newEventStreams(c *cli.Context) ([]empire.EventStream, error) {
-	var streams []empire.EventStream
+func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
+	var streams empire.MultiEventStream
 	switch c.String(FlagEventsBackend) {
 	case "sns":
 		e, err := newSNSEventStream(c)
