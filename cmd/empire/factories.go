@@ -15,6 +15,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
@@ -56,7 +57,7 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	events, err := newEventStream(c)
+	streams, err := newEventStreams(c)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	if logs != nil {
 		e.LogsStreamer = logs
 	}
-	e.EventStream = empire.AsyncEvents(events)
+	e.EventStream = empire.AsyncEvents(streams)
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
 	e.Logger = newLogger()
 	e.Environment = c.String(FlagEnvironment)
@@ -264,13 +265,34 @@ func newKinesisLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
 
 // Events ==============================
 
-func newEventStream(c *cli.Context) (empire.EventStream, error) {
+func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
+	var streams empire.MultiEventStream
 	switch c.String(FlagEventsBackend) {
 	case "sns":
-		return newSNSEventStream(c)
+		e, err := newSNSEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
 	default:
-		return empire.NullEventStream, nil
+		e := empire.NullEventStream
+		streams = append(streams, e)
 	}
+
+	if c.String(FlagLogsStreamer) == "kinesis" {
+		e, err := newAppEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
+	}
+	return streams, nil
+}
+
+func newAppEventStream(c *cli.Context) (empire.EventStream, error) {
+	e := app.NewEventStream(newConfigProvider(c))
+	log.Println("Using App (Kinesis) events backend")
+	return e, nil
 }
 
 func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {

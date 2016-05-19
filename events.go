@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func appendCommitMessage(main, commit string) string {
@@ -22,6 +24,8 @@ type RunEvent struct {
 	URL      string
 	Attached bool
 	Message  string
+
+	app *App
 }
 
 func (e RunEvent) Event() string {
@@ -40,12 +44,18 @@ func (e RunEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e RunEvent) GetApp() *App {
+	return e.app
+}
+
 // RestartEvent is triggered when a user restarts an application.
 type RestartEvent struct {
 	User    string
 	App     string
 	PID     string
 	Message string
+
+	app *App
 }
 
 func (e RestartEvent) Event() string {
@@ -62,6 +72,10 @@ func (e RestartEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e RestartEvent) GetApp() *App {
+	return e.app
+}
+
 // ScaleEvent is triggered when a manual scaling event happens.
 type ScaleEvent struct {
 	User                string
@@ -72,6 +86,8 @@ type ScaleEvent struct {
 	Constraints         Constraints
 	PreviousConstraints Constraints
 	Message             string
+
+	app *App
 }
 
 func (e ScaleEvent) Event() string {
@@ -97,6 +113,10 @@ func (e ScaleEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e ScaleEvent) GetApp() *App {
+	return e.app
+}
+
 // DeployEvent is triggered when a user deploys a new image to an app.
 type DeployEvent struct {
 	User        string
@@ -105,6 +125,8 @@ type DeployEvent struct {
 	Environment string
 	Release     int
 	Message     string
+
+	app *App
 }
 
 func (e DeployEvent) Event() string {
@@ -121,12 +143,18 @@ func (e DeployEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e DeployEvent) GetApp() *App {
+	return e.app
+}
+
 // RollbackEvent is triggered when a user rolls back to an old version.
 type RollbackEvent struct {
 	User    string
 	App     string
 	Version int
 	Message string
+
+	app *App
 }
 
 func (e RollbackEvent) Event() string {
@@ -138,6 +166,10 @@ func (e RollbackEvent) String() string {
 	return appendCommitMessage(msg, e.Message)
 }
 
+func (e RollbackEvent) GetApp() *App {
+	return e.app
+}
+
 // SetEvent is triggered when environment variables are changed on an
 // application.
 type SetEvent struct {
@@ -145,6 +177,8 @@ type SetEvent struct {
 	App     string
 	Changed []string
 	Message string
+
+	app *App
 }
 
 func (e SetEvent) Event() string {
@@ -154,6 +188,10 @@ func (e SetEvent) Event() string {
 func (e SetEvent) String() string {
 	msg := fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
 	return appendCommitMessage(msg, e.Message)
+}
+
+func (e SetEvent) GetApp() *App {
+	return e.app
 }
 
 // CreateEvent is triggered when a user creates a new application.
@@ -197,6 +235,12 @@ type Event interface {
 	String() string
 }
 
+// AppEvent is an Event that relates to a specific App.
+type AppEvent interface {
+	Event
+	GetApp() *App
+}
+
 // EventStream is an interface for publishing events that happen within
 // Empire.
 type EventStream interface {
@@ -215,8 +259,21 @@ var NullEventStream = EventStreamFunc(func(event Event) error {
 	return nil
 })
 
-// AsyncEventStream wraps an EventStream to publish events asynchronously in a
-// goroutine.
+// MultiEventStream is an EventStream implementation that publishes the event to multiple EventStreams, returning any errors after publishing to all streams.
+type MultiEventStream []EventStream
+
+func (streams MultiEventStream) PublishEvent(e Event) error {
+	var result *multierror.Error
+	for _, s := range streams {
+		if err := s.PublishEvent(e); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+	return result.ErrorOrNil()
+}
+
+// AsyncEventStream wraps an array of EventStreams to publish events
+// asynchronously in a goroutine
 type AsyncEventStream struct {
 	EventStream
 	events chan Event
@@ -258,7 +315,6 @@ func (e *AsyncEventStream) publishEvent(event Event) (err error) {
 			err = fmt.Errorf("panic: %v", v)
 		}
 	}()
-
 	err = e.EventStream.PublishEvent(event)
 	return
 }

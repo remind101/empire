@@ -261,6 +261,7 @@ func (opts SetOpts) Event() SetEvent {
 		App:     opts.App.Name,
 		Changed: changed,
 		Message: opts.Message,
+		app:     opts.App,
 	}
 }
 
@@ -361,6 +362,7 @@ func (opts RestartOpts) Event() RestartEvent {
 		App:     opts.App.Name,
 		PID:     opts.PID,
 		Message: opts.Message,
+		app:     opts.App,
 	}
 }
 
@@ -422,6 +424,7 @@ func (opts RunOpts) Event() RunEvent {
 		Command:  opts.Command,
 		Attached: attached,
 		Message:  opts.Message,
+		app:      opts.App,
 	}
 }
 
@@ -497,6 +500,7 @@ func (opts RollbackOpts) Event() RollbackEvent {
 		App:     opts.App.Name,
 		Version: opts.Version,
 		Message: opts.Message,
+		app:     opts.App,
 	}
 }
 
@@ -557,6 +561,7 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	}
 	if opts.App != nil {
 		e.App = opts.App.Name
+		e.app = opts.App
 	}
 
 	return e
@@ -590,6 +595,7 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 	// Deals with new app creation on first deploy
 	if event.App == "" && r.App != nil {
 		event.App = r.App.Name
+		event.app = r.App
 	}
 
 	return r, e.PublishEvent(event)
@@ -623,6 +629,7 @@ func (opts ScaleOpts) Event() ScaleEvent {
 		Process:  string(opts.Process),
 		Quantity: opts.Quantity,
 		Message:  opts.Message,
+		app:      opts.App,
 	}
 
 	if opts.Constraints != nil {
