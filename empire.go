@@ -26,6 +26,14 @@ var (
 	DefaultReporter = reporter.NewLogReporter()
 )
 
+// Timeouts for certain API actions.
+var (
+	TimeoutDeploy      = 20 * time.Minute
+	TimeoutSet         = 30 * time.Second
+	TimeoutRollback    = 30 * time.Second
+	TimeoutCertsAttach = 30 * time.Second
+)
+
 const (
 	// WebPort is the default PORT to set on web processes.
 	WebPort = 8080
@@ -273,6 +281,9 @@ func (opts SetOpts) Validate(e *Empire) error {
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	ctx, cancel := context.WithTimeout(ctx, TimeoutSet)
+	defer cancel()
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -511,6 +522,9 @@ func (opts RollbackOpts) Validate(e *Empire) error {
 // Rollback rolls an app back to a specific release version. Returns a
 // new release.
 func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
+	ctx, cancel := context.WithTimeout(ctx, TimeoutRollback)
+	defer cancel()
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -573,6 +587,9 @@ func (opts DeploymentsCreateOpts) Validate(e *Empire) error {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+	ctx, cancel := context.WithTimeout(ctx, TimeoutDeploy)
+	defer cancel()
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -671,6 +688,9 @@ func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error
 
 // CertsAttach attaches an SSL certificate to the app.
 func (e *Empire) CertsAttach(ctx context.Context, app *App, cert string) error {
+	ctx, cancel := context.WithTimeout(ctx, TimeoutCertsAttach)
+	defer cancel()
+
 	tx := e.db.Begin()
 
 	if err := e.certs.CertsAttach(ctx, tx, app, cert); err != nil {

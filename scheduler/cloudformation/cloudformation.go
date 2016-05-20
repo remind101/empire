@@ -42,10 +42,6 @@ const (
 	MaxDescribeTasks = 100
 )
 
-// Wait 5 minutes for for the stack to enter a stabilized state
-// (UPDATE_COMPLETE/CREATE_COMPLETE) before attempting an update.
-const StabilizeTimeout = 5 * time.Minute
-
 // DefaultStackNameTemplate is the default text/template for generating a
 // CloudFormation stack name for an app.
 var DefaultStackNameTemplate = template.Must(template.New("stack_name").Parse("{{.Name}}"))
@@ -298,9 +294,7 @@ func (s *Scheduler) updateStack(ctx context.Context, stack *cloudformation.Stack
 	// If there's currently an update happening, wait for the stack to
 	// stabilize.
 	if strings.Contains(status, "IN_PROGRESS") {
-		ctx, cancel := context.WithTimeout(ctx, StabilizeTimeout)
-		defer cancel()
-
+		start := time.Now()
 		errCh := make(chan error)
 
 		go func() {
@@ -318,12 +312,17 @@ func (s *Scheduler) updateStack(ctx context.Context, stack *cloudformation.Stack
 		select {
 		case err := <-errCh:
 			if err != nil {
-				return nil, fmt.Errorf("error waiting stack to stabilize: %v", err)
+				return nil, fmt.Errorf("error waiting for stack to stabilize: %v", err)
 			}
 
 			// No error, continue on.
 		case <-ctx.Done():
-			return nil, fmt.Errorf("error waiting for stack to stabilize: %v", ctx.Err())
+			switch ctx.Err() {
+			case context.DeadlineExceeded:
+				return nil, fmt.Errorf("stack did not stabilize from %s after waiting %d seconds", status, int64(time.Since(start).Seconds()))
+			default:
+				return nil, ctx.Err()
+			}
 		}
 	}
 

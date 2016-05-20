@@ -223,7 +223,7 @@ func TestScheduler_Submit_StackUpdateInProgress_Cancel(t *testing.T) {
 		Name: "acme-inc",
 	})
 	assert.Error(t, err)
-	assert.EqualError(t, err, "error waiting for stack to stabilize: context canceled")
+	assert.EqualError(t, err, "context canceled")
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
