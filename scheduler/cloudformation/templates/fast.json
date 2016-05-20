@@ -1,0 +1,242 @@
+{
+  "Conditions": {
+    "DNSCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "DNS"
+        },
+        "true"
+      ]
+    }
+  },
+  "Outputs": {
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Ref": "webService"
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "worker",
+                  {
+                    "Ref": "workerService"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "Parameters": {
+    "DNS": {
+      "Description": "When set to `true`, CNAME's will be altered",
+      "Type": "String"
+    },
+    "webScale": {
+      "Type": "String"
+    },
+    "workerScale": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "CNAME": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "acme-inc.empire",
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
+          }
+        ],
+        "TTL": 60,
+        "Type": "CNAME"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
+    "web8080InstancePort": {
+      "Properties": {
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::InstancePort",
+      "Version": "1.0"
+    },
+    "webLoadBalancer": {
+      "Properties": {
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 30
+        },
+        "CrossZone": true,
+        "Listeners": [
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "web8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http"
+          }
+        ],
+        "Scheme": "internal",
+        "SecurityGroups": [
+          "sg-e7387381"
+        ],
+        "Subnets": [
+          "subnet-bb01c4cd",
+          "subnet-c85f4091"
+        ],
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
+    "webTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/web"
+            ],
+            "Cpu": 256,
+            "DockerLabels": {
+              "empire.app.process": "web"
+            },
+            "Environment": [
+              {
+                "Name": "ECS_UPDATES",
+                "Value": "fast"
+              },
+              {
+                "Name": "PORT",
+                "Value": "8080"
+              }
+            ],
+            "Essential": true,
+            "Image": "remind101/acme-inc:latest",
+            "Memory": 128,
+            "Name": "web",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": {
+                  "Fn::GetAtt": [
+                    "web8080InstancePort",
+                    "InstancePort"
+                  ]
+                }
+              }
+            ],
+            "Ulimits": [
+              {
+                "HardLimit": 256,
+                "Name": "nproc",
+                "SoftLimit": 256
+              }
+            ]
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    },
+    "workerService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "workerScale"
+        },
+        "LoadBalancers": [],
+        "ServiceName": "acme-inc-worker",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "workerTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
+    "workerTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/worker"
+            ],
+            "Cpu": 0,
+            "DockerLabels": {
+              "empire.app.process": "worker"
+            },
+            "Environment": [
+              {
+                "Name": "ECS_UPDATES",
+                "Value": "fast"
+              },
+              {
+                "Name": "FOO",
+                "Value": "BAR"
+              }
+            ],
+            "Essential": true,
+            "Image": "remind101/acme-inc:latest",
+            "Memory": 0,
+            "Name": "worker",
+            "PortMappings": [],
+            "Ulimits": []
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    }
+  }
+}

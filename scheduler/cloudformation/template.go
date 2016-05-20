@@ -144,6 +144,17 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 	serviceMappings := []map[string]interface{}{}
 
+	// The standard AWS::ECS::Service resource's default behavior is to wait
+	// for services to stabilize when you update them. While this is a
+	// sensible default for CloudFormation, the overall behavior when
+	// applied to Empire is not a great experience, because updates will
+	// lock up the stack.
+	//
+	// Setting this option makes the stack use a Custom::ECSService
+	// resources intead, which does not wait for the service to stabilize
+	// after updating.
+	fast := app.Env["ECS_UPDATES"] == "fast"
+
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(app, p)
 
@@ -306,6 +317,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		}
 
 		service := fmt.Sprintf("%s", key)
+		if fast {
+			service = fmt.Sprintf("%sService", service)
+		}
 		serviceMappings = append(serviceMappings, map[string]interface{}{
 			"Fn::Join": []interface{}{
 				"=",
@@ -322,11 +336,19 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				"Ref": taskDefinition,
 			},
 		}
+		if fast {
+			serviceProperties["ServiceName"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+			serviceProperties["ServiceToken"] = t.CustomResourcesTopic
+		}
 		if len(loadBalancers) > 0 {
 			serviceProperties["Role"] = t.ServiceRole
 		}
+		ecsServiceType := "AWS::ECS::Service"
+		if fast {
+			ecsServiceType = "Custom::ECSService"
+		}
 		resources[service] = map[string]interface{}{
-			"Type":       "AWS::ECS::Service",
+			"Type":       ecsServiceType,
 			"Properties": serviceProperties,
 		}
 

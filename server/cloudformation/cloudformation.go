@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
@@ -86,11 +88,11 @@ type Request struct {
 	// This field contains the contents of the Properties object sent by the
 	// template developer. Its contents are defined by the custom resource
 	// provider.
-	ResourceProperties interface{} `json:"ResourceProperties"`
+	ResourceProperties json.RawMessage `json:"ResourceProperties"`
 
 	// Used only for Update requests. Contains the resource properties that
 	// were declared previous to the update request.
-	OldResourceProperties interface{} `json:"OldResourceProperties"`
+	OldResourceProperties json.RawMessage `json:"OldResourceProperties"`
 }
 
 // Possible response statuses.
@@ -192,6 +194,9 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 		Provisioners: map[string]Provisioner{
 			"Custom::InstancePort": &InstancePortsProvisioner{
 				ports: lb.NewDBPortAllocator(db),
+			},
+			"Custom::ECSService": &ECSServiceResource{
+				ecs: ecs.New(config),
 			},
 		},
 		client: http.DefaultClient,
@@ -295,4 +300,33 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 	}
 
 	return nil
+}
+
+// IntValue defines an int64 type that can parse integers as strings from json.
+// It's common to use `Ref`'s inside templates, which means the value of some
+// properties could be a string or an integer.
+type IntValue int64
+
+func (i *IntValue) UnmarshalJSON(b []byte) error {
+	var si int64
+	if err := json.Unmarshal(b, &si); err == nil {
+		*i = IntValue(si)
+		return nil
+	}
+
+	v, err := strconv.Atoi(string(b[1 : len(b)-1]))
+	if err != nil {
+		return fmt.Errorf("error parsing int from string: %v", err)
+	}
+
+	*i = IntValue(v)
+	return nil
+}
+
+func (i *IntValue) Value() *int64 {
+	if i == nil {
+		return nil
+	}
+	p := int64(*i)
+	return &p
 }

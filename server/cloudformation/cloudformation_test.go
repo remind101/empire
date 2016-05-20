@@ -41,15 +41,13 @@ func TestCustomResourceProvisioner_Handle(t *testing.T) {
 	}
 
 	p.On("Provision", Request{
-		RequestType:       Create,
-		ResponseURL:       "https://cloudformation-custom-resource-response-useast1.s3.amazonaws.com/arn%3Aaws%3Acloudformation%3Aus-east-1%3A066251891493%3Astack/foo/70213b00-0e74-11e6-b4fb-500c28680ac6%7CwebInstancePort%7Cdaf3f3f9-79a1-4049-823e-09544e582b06?AWSAccessKeyId=AKIAJNXHFR7P7YGKLDPQ&Expires=1461987599&Signature=EqV%2BqIUAsZPz5Q%2F%2B75Guvn%2BNREU%3D",
-		StackId:           "arn:aws:cloudformation:us-east-1:066251891493:stack/foo/70213b00-0e74-11e6-b4fb-500c28680ac6",
-		RequestId:         "daf3f3f9-79a1-4049-823e-09544e582b06",
-		LogicalResourceId: "webInstancePort",
-		ResourceType:      "Custom::InstancePort",
-		ResourceProperties: map[string]interface{}{
-			"ServiceToken": "arn:aws:sns:us-east-1:066251891493:empire-e01a8fac-CustomResourcesTopic-9KHPNW7WFKBD",
-		},
+		RequestType:        Create,
+		ResponseURL:        "https://cloudformation-custom-resource-response-useast1.s3.amazonaws.com/arn%3Aaws%3Acloudformation%3Aus-east-1%3A066251891493%3Astack/foo/70213b00-0e74-11e6-b4fb-500c28680ac6%7CwebInstancePort%7Cdaf3f3f9-79a1-4049-823e-09544e582b06?AWSAccessKeyId=AKIAJNXHFR7P7YGKLDPQ&Expires=1461987599&Signature=EqV%2BqIUAsZPz5Q%2F%2B75Guvn%2BNREU%3D",
+		StackId:            "arn:aws:cloudformation:us-east-1:066251891493:stack/foo/70213b00-0e74-11e6-b4fb-500c28680ac6",
+		RequestId:          "daf3f3f9-79a1-4049-823e-09544e582b06",
+		LogicalResourceId:  "webInstancePort",
+		ResourceType:       "Custom::InstancePort",
+		ResourceProperties: json.RawMessage(`{"ServiceToken":"arn:aws:sns:us-east-1:066251891493:empire-e01a8fac-CustomResourcesTopic-9KHPNW7WFKBD"}`),
 	}).Return("9001", map[string]int64{"InstancePort": 9001}, nil)
 
 	raw, err := json.Marshal(Response{
@@ -69,6 +67,27 @@ func TestCustomResourceProvisioner_Handle(t *testing.T) {
 
 	err = c.Handle(message)
 	assert.NoError(t, err)
+}
+
+func TestIntValue(t *testing.T) {
+	type foo struct {
+		I IntValue `json:"I"`
+	}
+
+	tests := []struct {
+		in  []byte
+		out foo
+	}{
+		{[]byte(`{"I": 1}`), foo{I: 1}},
+		{[]byte(`{"I": "1"}`), foo{I: 1}},
+	}
+
+	for _, tt := range tests {
+		var i foo
+		err := json.Unmarshal(tt.in, &i)
+		assert.NoError(t, err)
+		assert.Equal(t, tt.out, i)
+	}
 }
 
 type mockProvisioner struct {
