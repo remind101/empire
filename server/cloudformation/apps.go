@@ -1,9 +1,12 @@
 package cloudformation
 
 import (
+	"fmt"
+
+	"golang.org/x/net/context"
+
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
-	"golang.org/x/net/context"
 )
 
 type AppResource struct {
@@ -52,14 +55,14 @@ func (p *AppResource) Provision(req Request) (id string, data interface{}, err e
 	case Update:
 		id := req.PhysicalResourceId
 
-		app, err := p.empire.AppsFind(empire.AppsQuery{
+		_, err := p.empire.AppsFind(empire.AppsQuery{
 			ID: &id,
 		})
 		if err != nil {
 			return id, nil, err
 		}
 
-		return id, map[string]string{"Id": app.ID}, nil
+		return id, nil, fmt.Errorf("Updates are not supported")
 	}
 
 	return
