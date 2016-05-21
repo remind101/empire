@@ -88,11 +88,11 @@ type Request struct {
 	// This field contains the contents of the Properties object sent by the
 	// template developer. Its contents are defined by the custom resource
 	// provider.
-	ResourceProperties json.RawMessage `json:"ResourceProperties"`
+	ResourceProperties interface{} `json:"ResourceProperties"`
 
 	// Used only for Update requests. Contains the resource properties that
 	// were declared previous to the update request.
-	OldResourceProperties json.RawMessage `json:"OldResourceProperties"`
+	OldResourceProperties interface{} `json:"OldResourceProperties"`
 }
 
 // Possible response statuses.
@@ -259,6 +259,19 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 		return fmt.Errorf("no provisioner for %v", req.ResourceType)
 	}
 
+	// If the provisioner defines a type for the properties, let's unmarhsal
+	// into that Go type.
+	if p, ok := p.(interface {
+		Properties() interface{}
+	}); ok {
+		req.ResourceProperties = p.Properties()
+		req.OldResourceProperties = p.Properties()
+		err = json.Unmarshal([]byte(m.Message), &req)
+		if err != nil {
+			return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
+		}
+	}
+
 	resp := NewResponseFromRequest(req)
 	resp.PhysicalResourceId, resp.Data, err = p.Provision(req)
 	switch err {
@@ -306,6 +319,11 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 // It's common to use `Ref`'s inside templates, which means the value of some
 // properties could be a string or an integer.
 type IntValue int64
+
+func intValue(v int64) *IntValue {
+	i := IntValue(v)
+	return &i
+}
 
 func (i *IntValue) UnmarshalJSON(b []byte) error {
 	var si int64

@@ -1,7 +1,6 @@
 package cloudformation
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,8 +26,13 @@ func TestECSServiceResource_Create(t *testing.T) {
 	}, nil)
 
 	id, data, err := p.Provision(Request{
-		RequestType:        Create,
-		ResourceProperties: json.RawMessage(`{"Cluster": "cluster", "ServiceName": "acme-inc-web", "DesiredCount": 1}`),
+		RequestType: Create,
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
+		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
@@ -48,10 +52,18 @@ func TestECSServiceResource_Update(t *testing.T) {
 	}).Return(&ecs.UpdateServiceOutput{}, nil)
 
 	id, data, err := p.Provision(Request{
-		RequestType:           Update,
-		PhysicalResourceId:    "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
-		ResourceProperties:    json.RawMessage(`{"Cluster": "cluster", "ServiceName": "acme-inc-web", "DesiredCount": 2}`),
-		OldResourceProperties: json.RawMessage(`{"Cluster": "cluster", "ServiceName": "acme-inc-web", "DesiredCount": 1}`),
+		RequestType:        Update,
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(2),
+		},
+		OldResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
@@ -76,10 +88,18 @@ func TestECSServiceResource_Delete(t *testing.T) {
 	}).Return(&ecs.DeleteServiceOutput{}, nil)
 
 	id, data, err := p.Provision(Request{
-		RequestType:           Delete,
-		PhysicalResourceId:    "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
-		ResourceProperties:    json.RawMessage(`{"Cluster": "cluster", "ServiceName": "acme-inc-web", "DesiredCount": 1}`),
-		OldResourceProperties: json.RawMessage(`{"Cluster": "cluster", "ServiceName": "acme-inc-web", "DesiredCount": 1}`),
+		RequestType:        Delete,
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
+		OldResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)

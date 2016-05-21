@@ -1,7 +1,6 @@
 package cloudformation
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -34,20 +33,13 @@ type ECSServiceResource struct {
 	ecs ecsClient
 }
 
+func (p *ECSServiceResource) Properties() interface{} {
+	return &ECSServiceProperties{}
+}
+
 func (p *ECSServiceResource) Provision(req Request) (string, interface{}, error) {
-	var properties, oldProperties ECSServiceProperties
-
-	if req.ResourceProperties != nil {
-		if err := json.Unmarshal(req.ResourceProperties, &properties); err != nil {
-			return "", nil, fmt.Errorf("error unmarshaling properties: %v", err)
-		}
-	}
-
-	if req.OldResourceProperties != nil {
-		if err := json.Unmarshal(req.OldResourceProperties, &oldProperties); err != nil {
-			return "", nil, fmt.Errorf("error unmarshaling properties: %v", err)
-		}
-	}
+	properties := req.ResourceProperties.(*ECSServiceProperties)
+	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
 
 	switch req.RequestType {
 	case Create:
