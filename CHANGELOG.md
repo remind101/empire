@@ -4,6 +4,8 @@
 
 **Features**
 
+* Empire now uses CloudFormation to provision resources for applications [#814](https://github.com/remind101/empire/pull/814), [#803](https://github.com/remind101/empire/pull/803).
+* Empire now supports requiring commit messages for all actions that emit an event via `--messages.required`. If a commit message is required for an action, emp will gracefully handle it and ask the user to input a value [#767](https://github.com/remind101/empire/issues/767).
 * You can now supply a commit message to any event that is published by Empire [#767](https://github.com/remind101/empire/issues/767).
 * Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
 * The Docker logging driver that the ECS backend uses is now configurable via the `--ecs.logdriver` flag [#731](https://github.com/remind101/empire/pull/731).
@@ -14,6 +16,8 @@
 * Add constraint changes to scale events [#773](https://github.com/remind101/empire/pull/773)
 * You can now specify the CPU and memory constraints for attached one-off tasks with the `-s` flag to `emp run` [#809](https://github.com/remind101/empire/pull/809)
 * You can now provision Empire applications and set environment variables from CloudFormation stacks using a `Custom::App` resource [#819](https://github.com/remind101/empire/pull/819)
+* You can now provide a duration to `emp log` with the `-d` flag to start streaming logs from a specific point in time ie (5m, 10m, 1h) [#829](https://github.com/remind101/empire/issues/829)
+* If log streaming is enabled, Empire will attempt to write events to the kinesis stream for the application [#832](https://github.com/remind101/empire/issues/832)
 
 **Bugs**
 

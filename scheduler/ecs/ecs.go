@@ -29,6 +29,11 @@ const ContainerPort = 8080
 
 var DefaultDelimiter = "-"
 
+type lbManager interface {
+	lb.Manager
+	RemoveCNAMEs(context.Context, map[string]string) error
+}
+
 // Scheduler is an implementation of the ServiceManager interface that
 // is backed by Amazon ECS.
 type Scheduler struct {
@@ -36,7 +41,7 @@ type Scheduler struct {
 	serviceRole      string
 	ecs              *ecsutil.Client
 	logConfiguration *ecs.LogConfiguration
-	lb               lb.Manager
+	lb               lbManager
 }
 
 // Config holds configuration for generating a new ECS backed Scheduler
@@ -108,7 +113,7 @@ func NewLoadBalancedScheduler(db *sql.DB, config Config) (*Scheduler, error) {
 	return s, nil
 }
 
-func newLBManager(db *sql.DB, config Config) (lb.Manager, error) {
+func newLBManager(db *sql.DB, config Config) (lbManager, error) {
 	if err := validateLoadBalancedConfig(config); err != nil {
 		return nil, err
 	}
@@ -127,10 +132,9 @@ func newLBManager(db *sql.DB, config Config) (lb.Manager, error) {
 	n := lb.NewRoute53Nameserver(config.AWS)
 	n.ZoneID = config.ZoneID
 
-	lbm = lb.WithCNAME(lbm, n)
 	lbm = lb.WithLogging(lbm)
 
-	return lbm, nil
+	return lb.WithCNAME(lbm, n), nil
 }
 
 func validateLoadBalancedConfig(c Config) error {
@@ -161,6 +165,17 @@ func validateLoadBalancedConfig(c Config) error {
 	}
 
 	return nil
+}
+
+// This is purely used to migrate to the new CloudFormation scheduler. Simply
+// deletes the existing CNAME record for the app, so that the CloudFormation
+// stack can create it.
+func (m *Scheduler) RemoveCNAMEs(ctx context.Context, appID string) error {
+	tags := map[string]string{
+		"AppID": appID,
+	}
+
+	return m.lb.RemoveCNAMEs(ctx, tags)
 }
 
 // Submit will create an ECS service for each individual process in the App. New
@@ -195,6 +210,17 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 
 // Remove removes all of the AWS resources for this app.
 func (m *Scheduler) Remove(ctx context.Context, appID string) error {
+	return m.RemoveWithOptions(ctx, appID, RemoveOptions{})
+}
+
+// RemoveOptions are options that can be passed to RemoveWithOptions.
+type RemoveOptions struct {
+	// If set to true, DNS records will not be removed.
+	NoDNS bool
+}
+
+// RemoveWithOptions removes the application.
+func (m *Scheduler) RemoveWithOptions(ctx context.Context, appID string, opts RemoveOptions) error {
 	processes, err := m.Processes(ctx, appID)
 	if err != nil {
 		return err
@@ -206,7 +232,7 @@ func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 		}
 	}
 
-	return m.removeLoadBalancers(ctx, appID)
+	return m.removeLoadBalancers(ctx, appID, opts.NoDNS)
 }
 
 // Instances returns all instances that are currently running, pending or
@@ -332,7 +358,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 
 // createTaskDefinition creates a Task Definition in ECS for the service.
 func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App, process *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.TaskDefinition, error) {
-	taskDef, err := m.taskDefinitionInput(process, loadBalancer)
+	taskDef, err := m.taskDefinitionInput(app, process, loadBalancer)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +367,7 @@ func (m *Scheduler) createTaskDefinition(ctx context.Context, app *scheduler.App
 	return resp.TaskDefinition, err
 }
 
-func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
+func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process, loadBalancer *lb.LoadBalancer) (*ecs.RegisterTaskDefinitionInput, error) {
 	// ecs.ContainerDefinition{Command} is expecting a []*string
 	var command []*string
 	for _, s := range p.Command {
@@ -350,7 +376,7 @@ func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.L
 	}
 
 	var environment []*ecs.KeyValuePair
-	for k, v := range p.Env {
+	for k, v := range scheduler.Env(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
@@ -373,7 +399,7 @@ func (m *Scheduler) taskDefinitionInput(p *scheduler.Process, loadBalancer *lb.L
 	}
 
 	labels := make(map[string]*string)
-	for k, v := range p.Labels {
+	for k, v := range scheduler.Labels(app, p) {
 		labels[k] = aws.String(v)
 	}
 
@@ -527,7 +553,7 @@ func (m *Scheduler) loadBalancer(ctx context.Context, app *scheduler.App, p *sch
 	return l, nil
 }
 
-func (m *Scheduler) removeLoadBalancers(ctx context.Context, app string) error {
+func (m *Scheduler) removeLoadBalancers(ctx context.Context, app string, noDNS bool) error {
 	tags := map[string]string{
 		"AppID": app,
 	}
@@ -537,9 +563,17 @@ func (m *Scheduler) removeLoadBalancers(ctx context.Context, app string) error {
 		return err
 	}
 
-	for _, lb := range lbs {
-		if err := m.lb.DestroyLoadBalancer(ctx, lb); err != nil {
-			return err
+	for _, l := range lbs {
+		if noDNS {
+			// Go around the CNAMEManager and destroy the load
+			// balancer directly.
+			if err := m.lb.(*lb.CNAMEManager).Manager.DestroyLoadBalancer(ctx, l); err != nil {
+				return err
+			}
+		} else {
+			if err := m.lb.DestroyLoadBalancer(ctx, l); err != nil {
+				return err
+			}
 		}
 	}
 

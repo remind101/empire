@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/awstesting"
+	"github.com/aws/aws-sdk-go/private/protocol"
 	"github.com/aws/aws-sdk-go/private/protocol/jsonrpc"
 	"github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil"
 	"github.com/aws/aws-sdk-go/private/signer/v4"
@@ -30,12 +32,16 @@ var _ json.Marshaler
 var _ time.Time
 var _ xmlutil.XMLNode
 var _ xml.Attr
-var _ = awstesting.GenerateAssertions
 var _ = ioutil.Discard
 var _ = util.Trim("")
 var _ = url.Values{}
 var _ = io.EOF
 var _ = aws.String
+var _ = fmt.Println
+
+func init() {
+	protocol.RandReader = &awstesting.ZeroReader{}
+}
 
 //The service client's operations are safe to be used concurrently.
 // It is not safe to mutate any of the client's properties though.
@@ -77,10 +83,10 @@ func newInputService1ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(jsonrpc.Build)
-	svc.Handlers.Unmarshal.PushBack(jsonrpc.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(jsonrpc.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(jsonrpc.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -107,6 +113,8 @@ func (c *InputService1ProtocolTest) InputService1TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService1TestShapeInputService1TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -119,21 +127,13 @@ func (c *InputService1ProtocolTest) InputService1TestCaseOperation1(input *Input
 }
 
 type InputService1TestShapeInputService1TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
+
 	Name *string `type:"string"`
-
-	metadataInputService1TestShapeInputService1TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputService1TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 type InputService1TestShapeInputService1TestCaseOperation1Output struct {
-	metadataInputService1TestShapeInputService1TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService1TestShapeInputService1TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -176,10 +176,10 @@ func newInputService2ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(jsonrpc.Build)
-	svc.Handlers.Unmarshal.PushBack(jsonrpc.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(jsonrpc.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(jsonrpc.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -205,6 +205,8 @@ func (c *InputService2ProtocolTest) InputService2TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService2TestShapeInputService2TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -217,21 +219,13 @@ func (c *InputService2ProtocolTest) InputService2TestCaseOperation1(input *Input
 }
 
 type InputService2TestShapeInputService2TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
+
 	TimeArg *time.Time `type:"timestamp" timestampFormat:"unix"`
-
-	metadataInputService2TestShapeInputService2TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService2TestShapeInputService2TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 type InputService2TestShapeInputService2TestCaseOperation1Output struct {
-	metadataInputService2TestShapeInputService2TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService2TestShapeInputService2TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -274,10 +268,10 @@ func newInputService3ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(jsonrpc.Build)
-	svc.Handlers.Unmarshal.PushBack(jsonrpc.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(jsonrpc.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(jsonrpc.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -303,6 +297,8 @@ func (c *InputService3ProtocolTest) InputService3TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService3TestShapeInputService3TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -327,6 +323,8 @@ func (c *InputService3ProtocolTest) InputService3TestCaseOperation2Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService3TestShapeInputService3TestCaseOperation2Output{}
 	req.Data = output
 	return
@@ -339,31 +337,20 @@ func (c *InputService3ProtocolTest) InputService3TestCaseOperation2(input *Input
 }
 
 type InputService3TestShapeInputService3TestCaseOperation1Output struct {
-	metadataInputService3TestShapeInputService3TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeInputService3TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService3TestShapeInputService3TestCaseOperation2Output struct {
-	metadataInputService3TestShapeInputService3TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeInputService3TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService3TestShapeInputShape struct {
+	_ struct{} `type:"structure"`
+
+	// BlobArg is automatically base64 encoded/decoded by the SDK.
 	BlobArg []byte `type:"blob"`
 
 	BlobMap map[string][]byte `type:"map"`
-
-	metadataInputService3TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService3TestShapeInputShape struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -406,10 +393,10 @@ func newInputService4ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(jsonrpc.Build)
-	svc.Handlers.Unmarshal.PushBack(jsonrpc.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(jsonrpc.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(jsonrpc.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -436,6 +423,8 @@ func (c *InputService4ProtocolTest) InputService4TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService4TestShapeInputService4TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -448,21 +437,13 @@ func (c *InputService4ProtocolTest) InputService4TestCaseOperation1(input *Input
 }
 
 type InputService4TestShapeInputService4TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
+
 	ListParam [][]byte `type:"list"`
-
-	metadataInputService4TestShapeInputService4TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService4TestShapeInputService4TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 type InputService4TestShapeInputService4TestCaseOperation1Output struct {
-	metadataInputService4TestShapeInputService4TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService4TestShapeInputService4TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -505,10 +486,10 @@ func newInputService5ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(jsonrpc.Build)
-	svc.Handlers.Unmarshal.PushBack(jsonrpc.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(jsonrpc.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(jsonrpc.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -534,6 +515,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -558,6 +541,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation2Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation2Output{}
 	req.Data = output
 	return
@@ -582,6 +567,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation3Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation3Output{}
 	req.Data = output
 	return
@@ -606,6 +593,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation4Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation4Output{}
 	req.Data = output
 	return
@@ -630,6 +619,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation5Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation5Output{}
 	req.Data = output
 	return
@@ -654,6 +645,8 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation6Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService5TestShapeInputService5TestCaseOperation6Output{}
 	req.Data = output
 	return
@@ -666,64 +659,38 @@ func (c *InputService5ProtocolTest) InputService5TestCaseOperation6(input *Input
 }
 
 type InputService5TestShapeInputService5TestCaseOperation1Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation1Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService5TestShapeInputService5TestCaseOperation2Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation2Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation2Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService5TestShapeInputService5TestCaseOperation3Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation3Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation3Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService5TestShapeInputService5TestCaseOperation4Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation4Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation4Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService5TestShapeInputService5TestCaseOperation5Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation5Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation5Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService5TestShapeInputService5TestCaseOperation6Output struct {
-	metadataInputService5TestShapeInputService5TestCaseOperation6Output `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputService5TestCaseOperation6Output struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 type InputService5TestShapeInputShape struct {
+	_ struct{} `type:"structure"`
+
 	RecursiveStruct *InputService5TestShapeRecursiveStructType `type:"structure"`
-
-	metadataInputService5TestShapeInputShape `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeInputShape struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 type InputService5TestShapeRecursiveStructType struct {
+	_ struct{} `type:"structure"`
+
 	NoRecurse *string `type:"string"`
 
 	RecursiveList []*InputService5TestShapeRecursiveStructType `type:"list"`
@@ -731,12 +698,6 @@ type InputService5TestShapeRecursiveStructType struct {
 	RecursiveMap map[string]*InputService5TestShapeRecursiveStructType `type:"map"`
 
 	RecursiveStruct *InputService5TestShapeRecursiveStructType `type:"structure"`
-
-	metadataInputService5TestShapeRecursiveStructType `json:"-" xml:"-"`
-}
-
-type metadataInputService5TestShapeRecursiveStructType struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 //The service client's operations are safe to be used concurrently.
@@ -779,10 +740,10 @@ func newInputService6ProtocolTestClient(cfg aws.Config, handlers request.Handler
 
 	// Handlers
 	svc.Handlers.Sign.PushBack(v4.Sign)
-	svc.Handlers.Build.PushBack(jsonrpc.Build)
-	svc.Handlers.Unmarshal.PushBack(jsonrpc.Unmarshal)
-	svc.Handlers.UnmarshalMeta.PushBack(jsonrpc.UnmarshalMeta)
-	svc.Handlers.UnmarshalError.PushBack(jsonrpc.UnmarshalError)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
 
 	return svc
 }
@@ -809,6 +770,8 @@ func (c *InputService6ProtocolTest) InputService6TestCaseOperation1Request(input
 	}
 
 	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	output = &InputService6TestShapeInputService6TestCaseOperation1Output{}
 	req.Data = output
 	return
@@ -821,21 +784,139 @@ func (c *InputService6ProtocolTest) InputService6TestCaseOperation1(input *Input
 }
 
 type InputService6TestShapeInputService6TestCaseOperation1Input struct {
+	_ struct{} `type:"structure"`
+
 	Map map[string]*string `type:"map"`
-
-	metadataInputService6TestShapeInputService6TestCaseOperation1Input `json:"-" xml:"-"`
-}
-
-type metadataInputService6TestShapeInputService6TestCaseOperation1Input struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 type InputService6TestShapeInputService6TestCaseOperation1Output struct {
-	metadataInputService6TestShapeInputService6TestCaseOperation1Output `json:"-" xml:"-"`
+	_ struct{} `type:"structure"`
 }
 
-type metadataInputService6TestShapeInputService6TestCaseOperation1Output struct {
-	SDKShapeTraits bool `type:"structure"`
+//The service client's operations are safe to be used concurrently.
+// It is not safe to mutate any of the client's properties though.
+type InputService7ProtocolTest struct {
+	*client.Client
+}
+
+// New creates a new instance of the InputService7ProtocolTest client with a session.
+// If additional configuration is needed for the client instance use the optional
+// aws.Config parameter to add your extra config.
+//
+// Example:
+//     // Create a InputService7ProtocolTest client from just a session.
+//     svc := inputservice7protocoltest.New(mySession)
+//
+//     // Create a InputService7ProtocolTest client with additional configuration
+//     svc := inputservice7protocoltest.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
+func NewInputService7ProtocolTest(p client.ConfigProvider, cfgs ...*aws.Config) *InputService7ProtocolTest {
+	c := p.ClientConfig("inputservice7protocoltest", cfgs...)
+	return newInputService7ProtocolTestClient(*c.Config, c.Handlers, c.Endpoint, c.SigningRegion)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newInputService7ProtocolTestClient(cfg aws.Config, handlers request.Handlers, endpoint, signingRegion string) *InputService7ProtocolTest {
+	svc := &InputService7ProtocolTest{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:   "inputservice7protocoltest",
+				SigningRegion: signingRegion,
+				Endpoint:      endpoint,
+				APIVersion:    "2014-01-01",
+				JSONVersion:   "",
+				TargetPrefix:  "",
+			},
+			handlers,
+		),
+	}
+
+	// Handlers
+	svc.Handlers.Sign.PushBack(v4.Sign)
+	svc.Handlers.Build.PushBackNamed(jsonrpc.BuildHandler)
+	svc.Handlers.Unmarshal.PushBackNamed(jsonrpc.UnmarshalHandler)
+	svc.Handlers.UnmarshalMeta.PushBackNamed(jsonrpc.UnmarshalMetaHandler)
+	svc.Handlers.UnmarshalError.PushBackNamed(jsonrpc.UnmarshalErrorHandler)
+
+	return svc
+}
+
+// newRequest creates a new request for a InputService7ProtocolTest operation and runs any
+// custom request initialization.
+func (c *InputService7ProtocolTest) newRequest(op *request.Operation, params, data interface{}) *request.Request {
+	req := c.NewRequest(op, params, data)
+
+	return req
+}
+
+const opInputService7TestCaseOperation1 = "OperationName"
+
+// InputService7TestCaseOperation1Request generates a request for the InputService7TestCaseOperation1 operation.
+func (c *InputService7ProtocolTest) InputService7TestCaseOperation1Request(input *InputService7TestShapeInputShape) (req *request.Request, output *InputService7TestShapeInputService7TestCaseOperation1Output) {
+	op := &request.Operation{
+		Name:       opInputService7TestCaseOperation1,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService7TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService7TestShapeInputService7TestCaseOperation1Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService7ProtocolTest) InputService7TestCaseOperation1(input *InputService7TestShapeInputShape) (*InputService7TestShapeInputService7TestCaseOperation1Output, error) {
+	req, out := c.InputService7TestCaseOperation1Request(input)
+	err := req.Send()
+	return out, err
+}
+
+const opInputService7TestCaseOperation2 = "OperationName"
+
+// InputService7TestCaseOperation2Request generates a request for the InputService7TestCaseOperation2 operation.
+func (c *InputService7ProtocolTest) InputService7TestCaseOperation2Request(input *InputService7TestShapeInputShape) (req *request.Request, output *InputService7TestShapeInputService7TestCaseOperation2Output) {
+	op := &request.Operation{
+		Name:       opInputService7TestCaseOperation2,
+		HTTPMethod: "POST",
+		HTTPPath:   "/path",
+	}
+
+	if input == nil {
+		input = &InputService7TestShapeInputShape{}
+	}
+
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(jsonrpc.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	output = &InputService7TestShapeInputService7TestCaseOperation2Output{}
+	req.Data = output
+	return
+}
+
+func (c *InputService7ProtocolTest) InputService7TestCaseOperation2(input *InputService7TestShapeInputShape) (*InputService7TestShapeInputService7TestCaseOperation2Output, error) {
+	req, out := c.InputService7TestCaseOperation2Request(input)
+	err := req.Send()
+	return out, err
+}
+
+type InputService7TestShapeInputService7TestCaseOperation1Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService7TestShapeInputService7TestCaseOperation2Output struct {
+	_ struct{} `type:"structure"`
+}
+
+type InputService7TestShapeInputShape struct {
+	_ struct{} `type:"structure"`
+
+	Token *string `type:"string" idempotencyToken:"true"`
 }
 
 //
@@ -845,7 +926,6 @@ type metadataInputService6TestShapeInputService6TestCaseOperation1Output struct 
 func TestInputService1ProtocolTestScalarMembersCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService1ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService1TestShapeInputService1TestCaseOperation1Input{
 		Name: aws.String("myname"),
 	}
@@ -873,7 +953,6 @@ func TestInputService1ProtocolTestScalarMembersCase1(t *testing.T) {
 func TestInputService2ProtocolTestTimestampValuesCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService2ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService2TestShapeInputService2TestCaseOperation1Input{
 		TimeArg: aws.Time(time.Unix(1422172800, 0)),
 	}
@@ -901,7 +980,6 @@ func TestInputService2ProtocolTestTimestampValuesCase1(t *testing.T) {
 func TestInputService3ProtocolTestBase64EncodedBlobsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService3ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService3TestShapeInputShape{
 		BlobArg: []byte("foo"),
 	}
@@ -929,7 +1007,6 @@ func TestInputService3ProtocolTestBase64EncodedBlobsCase1(t *testing.T) {
 func TestInputService3ProtocolTestBase64EncodedBlobsCase2(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService3ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService3TestShapeInputShape{
 		BlobMap: map[string][]byte{
 			"key1": []byte("foo"),
@@ -960,7 +1037,6 @@ func TestInputService3ProtocolTestBase64EncodedBlobsCase2(t *testing.T) {
 func TestInputService4ProtocolTestNestedBlobsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService4ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService4TestShapeInputService4TestCaseOperation1Input{
 		ListParam: [][]byte{
 			[]byte("foo"),
@@ -991,7 +1067,6 @@ func TestInputService4ProtocolTestNestedBlobsCase1(t *testing.T) {
 func TestInputService5ProtocolTestRecursiveShapesCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputShape{
 		RecursiveStruct: &InputService5TestShapeRecursiveStructType{
 			NoRecurse: aws.String("foo"),
@@ -1021,7 +1096,6 @@ func TestInputService5ProtocolTestRecursiveShapesCase1(t *testing.T) {
 func TestInputService5ProtocolTestRecursiveShapesCase2(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputShape{
 		RecursiveStruct: &InputService5TestShapeRecursiveStructType{
 			RecursiveStruct: &InputService5TestShapeRecursiveStructType{
@@ -1053,7 +1127,6 @@ func TestInputService5ProtocolTestRecursiveShapesCase2(t *testing.T) {
 func TestInputService5ProtocolTestRecursiveShapesCase3(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputShape{
 		RecursiveStruct: &InputService5TestShapeRecursiveStructType{
 			RecursiveStruct: &InputService5TestShapeRecursiveStructType{
@@ -1089,7 +1162,6 @@ func TestInputService5ProtocolTestRecursiveShapesCase3(t *testing.T) {
 func TestInputService5ProtocolTestRecursiveShapesCase4(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputShape{
 		RecursiveStruct: &InputService5TestShapeRecursiveStructType{
 			RecursiveList: []*InputService5TestShapeRecursiveStructType{
@@ -1126,7 +1198,6 @@ func TestInputService5ProtocolTestRecursiveShapesCase4(t *testing.T) {
 func TestInputService5ProtocolTestRecursiveShapesCase5(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputShape{
 		RecursiveStruct: &InputService5TestShapeRecursiveStructType{
 			RecursiveList: []*InputService5TestShapeRecursiveStructType{
@@ -1165,7 +1236,6 @@ func TestInputService5ProtocolTestRecursiveShapesCase5(t *testing.T) {
 func TestInputService5ProtocolTestRecursiveShapesCase6(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService5ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService5TestShapeInputShape{
 		RecursiveStruct: &InputService5TestShapeRecursiveStructType{
 			RecursiveMap: map[string]*InputService5TestShapeRecursiveStructType{
@@ -1202,7 +1272,6 @@ func TestInputService5ProtocolTestRecursiveShapesCase6(t *testing.T) {
 func TestInputService6ProtocolTestEmptyMapsCase1(t *testing.T) {
 	sess := session.New()
 	svc := NewInputService6ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
-
 	input := &InputService6TestShapeInputService6TestCaseOperation1Input{
 		Map: map[string]*string{},
 	}
@@ -1224,5 +1293,53 @@ func TestInputService6ProtocolTestEmptyMapsCase1(t *testing.T) {
 	// assert headers
 	assert.Equal(t, "application/x-amz-json-1.1", r.Header.Get("Content-Type"))
 	assert.Equal(t, "com.amazonaws.foo.OperationName", r.Header.Get("X-Amz-Target"))
+
+}
+
+func TestInputService7ProtocolTestIdempotencyTokenAutoFillCase1(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService7ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService7TestShapeInputShape{
+		Token: aws.String("abc123"),
+	}
+	req, _ := svc.InputService7TestCaseOperation1Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	jsonrpc.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert body
+	assert.NotNil(t, r.Body)
+	body, _ := ioutil.ReadAll(r.Body)
+	awstesting.AssertJSON(t, `{"Token":"abc123"}`, util.Trim(string(body)))
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/path", r.URL.String())
+
+	// assert headers
+
+}
+
+func TestInputService7ProtocolTestIdempotencyTokenAutoFillCase2(t *testing.T) {
+	sess := session.New()
+	svc := NewInputService7ProtocolTest(sess, &aws.Config{Endpoint: aws.String("https://test")})
+	input := &InputService7TestShapeInputShape{}
+	req, _ := svc.InputService7TestCaseOperation2Request(input)
+	r := req.HTTPRequest
+
+	// build request
+	jsonrpc.Build(req)
+	assert.NoError(t, req.Error)
+
+	// assert body
+	assert.NotNil(t, r.Body)
+	body, _ := ioutil.ReadAll(r.Body)
+	awstesting.AssertJSON(t, `{"Token":"00000000-0000-4000-8000-000000000000"}`, util.Trim(string(body)))
+
+	// assert URL
+	awstesting.AssertURL(t, "https://test/path", r.URL.String())
+
+	// assert headers
 
 }

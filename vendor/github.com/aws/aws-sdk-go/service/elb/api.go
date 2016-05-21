@@ -4,6 +4,7 @@
 package elb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awsutil"
@@ -969,6 +970,8 @@ func (c *ELB) SetLoadBalancerPoliciesOfListener(input *SetLoadBalancerPoliciesOf
 
 // Information about the AccessLog attribute.
 type AccessLog struct {
+	_ struct{} `type:"structure"`
+
 	// The interval for publishing the access logs. You can specify an interval
 	// of either 5 minutes or 60 minutes.
 	//
@@ -985,12 +988,6 @@ type AccessLog struct {
 	// my-bucket-prefix/prod. If the prefix is not provided, the log is placed at
 	// the root level of the bucket.
 	S3BucketPrefix *string `type:"string"`
-
-	metadataAccessLog `json:"-" xml:"-"`
-}
-
-type metadataAccessLog struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1003,18 +1000,27 @@ func (s AccessLog) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *AccessLog) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "AccessLog"}
+	if s.Enabled == nil {
+		invalidParams.Add(request.NewErrParamRequired("Enabled"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 type AddTagsInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer. You can specify one load balancer only.
 	LoadBalancerNames []*string `type:"list" required:"true"`
 
 	// The tags.
 	Tags []*Tag `min:"1" type:"list" required:"true"`
-
-	metadataAddTagsInput `json:"-" xml:"-"`
-}
-
-type metadataAddTagsInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1027,12 +1033,37 @@ func (s AddTagsInput) GoString() string {
 	return s.String()
 }
 
-type AddTagsOutput struct {
-	metadataAddTagsOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *AddTagsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "AddTagsInput"}
+	if s.LoadBalancerNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerNames"))
+	}
+	if s.Tags == nil {
+		invalidParams.Add(request.NewErrParamRequired("Tags"))
+	}
+	if s.Tags != nil && len(s.Tags) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Tags", 1))
+	}
+	if s.Tags != nil {
+		for i, v := range s.Tags {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Tags", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataAddTagsOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type AddTagsOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1047,17 +1078,13 @@ func (s AddTagsOutput) GoString() string {
 
 // This data type is reserved.
 type AdditionalAttribute struct {
+	_ struct{} `type:"structure"`
+
 	// This parameter is reserved.
 	Key *string `type:"string"`
 
 	// This parameter is reserved.
 	Value *string `type:"string"`
-
-	metadataAdditionalAttribute `json:"-" xml:"-"`
-}
-
-type metadataAdditionalAttribute struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1072,18 +1099,14 @@ func (s AdditionalAttribute) GoString() string {
 
 // Information about a policy for application-controlled session stickiness.
 type AppCookieStickinessPolicy struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the application cookie used for stickiness.
 	CookieName *string `type:"string"`
 
 	// The mnemonic name for the policy being created. The name must be unique within
 	// a set of policies for this load balancer.
 	PolicyName *string `type:"string"`
-
-	metadataAppCookieStickinessPolicy `json:"-" xml:"-"`
-}
-
-type metadataAppCookieStickinessPolicy struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1097,18 +1120,14 @@ func (s AppCookieStickinessPolicy) GoString() string {
 }
 
 type ApplySecurityGroupsToLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
 	// The IDs of the security groups to associate with the load balancer. Note
 	// that you cannot specify the name of the security group.
 	SecurityGroups []*string `type:"list" required:"true"`
-
-	metadataApplySecurityGroupsToLoadBalancerInput `json:"-" xml:"-"`
-}
-
-type metadataApplySecurityGroupsToLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1121,15 +1140,27 @@ func (s ApplySecurityGroupsToLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
-type ApplySecurityGroupsToLoadBalancerOutput struct {
-	// The IDs of the security groups associated with the load balancer.
-	SecurityGroups []*string `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ApplySecurityGroupsToLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ApplySecurityGroupsToLoadBalancerInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.SecurityGroups == nil {
+		invalidParams.Add(request.NewErrParamRequired("SecurityGroups"))
+	}
 
-	metadataApplySecurityGroupsToLoadBalancerOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataApplySecurityGroupsToLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type ApplySecurityGroupsToLoadBalancerOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The IDs of the security groups associated with the load balancer.
+	SecurityGroups []*string `type:"list"`
 }
 
 // String returns the string representation
@@ -1143,18 +1174,14 @@ func (s ApplySecurityGroupsToLoadBalancerOutput) GoString() string {
 }
 
 type AttachLoadBalancerToSubnetsInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
 	// The IDs of the subnets to add for the load balancer. You can add only one
 	// subnet per Availability Zone.
 	Subnets []*string `type:"list" required:"true"`
-
-	metadataAttachLoadBalancerToSubnetsInput `json:"-" xml:"-"`
-}
-
-type metadataAttachLoadBalancerToSubnetsInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1167,15 +1194,27 @@ func (s AttachLoadBalancerToSubnetsInput) GoString() string {
 	return s.String()
 }
 
-type AttachLoadBalancerToSubnetsOutput struct {
-	// The IDs of the subnets attached to the load balancer.
-	Subnets []*string `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *AttachLoadBalancerToSubnetsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "AttachLoadBalancerToSubnetsInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.Subnets == nil {
+		invalidParams.Add(request.NewErrParamRequired("Subnets"))
+	}
 
-	metadataAttachLoadBalancerToSubnetsOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataAttachLoadBalancerToSubnetsOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type AttachLoadBalancerToSubnetsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The IDs of the subnets attached to the load balancer.
+	Subnets []*string `type:"list"`
 }
 
 // String returns the string representation
@@ -1190,17 +1229,13 @@ func (s AttachLoadBalancerToSubnetsOutput) GoString() string {
 
 // Information about the configuration of a back-end server.
 type BackendServerDescription struct {
+	_ struct{} `type:"structure"`
+
 	// The port on which the back-end server is listening.
 	InstancePort *int64 `min:"1" type:"integer"`
 
 	// The names of the policies enabled for the back-end server.
 	PolicyNames []*string `type:"list"`
-
-	metadataBackendServerDescription `json:"-" xml:"-"`
-}
-
-type metadataBackendServerDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1214,17 +1249,13 @@ func (s BackendServerDescription) GoString() string {
 }
 
 type ConfigureHealthCheckInput struct {
+	_ struct{} `type:"structure"`
+
 	// The configuration information for the new health check.
 	HealthCheck *HealthCheck `type:"structure" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataConfigureHealthCheckInput `json:"-" xml:"-"`
-}
-
-type metadataConfigureHealthCheckInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1237,15 +1268,32 @@ func (s ConfigureHealthCheckInput) GoString() string {
 	return s.String()
 }
 
-type ConfigureHealthCheckOutput struct {
-	// The updated health check.
-	HealthCheck *HealthCheck `type:"structure"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ConfigureHealthCheckInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ConfigureHealthCheckInput"}
+	if s.HealthCheck == nil {
+		invalidParams.Add(request.NewErrParamRequired("HealthCheck"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.HealthCheck != nil {
+		if err := s.HealthCheck.Validate(); err != nil {
+			invalidParams.AddNested("HealthCheck", err.(request.ErrInvalidParams))
+		}
+	}
 
-	metadataConfigureHealthCheckOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataConfigureHealthCheckOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type ConfigureHealthCheckOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The updated health check.
+	HealthCheck *HealthCheck `type:"structure"`
 }
 
 // String returns the string representation
@@ -1260,18 +1308,14 @@ func (s ConfigureHealthCheckOutput) GoString() string {
 
 // Information about the ConnectionDraining attribute.
 type ConnectionDraining struct {
+	_ struct{} `type:"structure"`
+
 	// Specifies whether connection draining is enabled for the load balancer.
 	Enabled *bool `type:"boolean" required:"true"`
 
 	// The maximum time, in seconds, to keep the existing connections open before
 	// deregistering the instances.
 	Timeout *int64 `type:"integer"`
-
-	metadataConnectionDraining `json:"-" xml:"-"`
-}
-
-type metadataConnectionDraining struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1284,17 +1328,26 @@ func (s ConnectionDraining) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ConnectionDraining) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ConnectionDraining"}
+	if s.Enabled == nil {
+		invalidParams.Add(request.NewErrParamRequired("Enabled"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 // Information about the ConnectionSettings attribute.
 type ConnectionSettings struct {
+	_ struct{} `type:"structure"`
+
 	// The time, in seconds, that the connection is allowed to be idle (no data
 	// has been sent over the connection) before it is closed by the load balancer.
 	IdleTimeout *int64 `min:"1" type:"integer" required:"true"`
-
-	metadataConnectionSettings `json:"-" xml:"-"`
-}
-
-type metadataConnectionSettings struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1307,7 +1360,25 @@ func (s ConnectionSettings) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ConnectionSettings) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ConnectionSettings"}
+	if s.IdleTimeout == nil {
+		invalidParams.Add(request.NewErrParamRequired("IdleTimeout"))
+	}
+	if s.IdleTimeout != nil && *s.IdleTimeout < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("IdleTimeout", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 type CreateAppCookieStickinessPolicyInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the application cookie used for stickiness.
 	CookieName *string `type:"string" required:"true"`
 
@@ -1318,12 +1389,6 @@ type CreateAppCookieStickinessPolicyInput struct {
 	// characters and dashes (-). This name must be unique within the set of policies
 	// for this load balancer.
 	PolicyName *string `type:"string" required:"true"`
-
-	metadataCreateAppCookieStickinessPolicyInput `json:"-" xml:"-"`
-}
-
-type metadataCreateAppCookieStickinessPolicyInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1336,12 +1401,27 @@ func (s CreateAppCookieStickinessPolicyInput) GoString() string {
 	return s.String()
 }
 
-type CreateAppCookieStickinessPolicyOutput struct {
-	metadataCreateAppCookieStickinessPolicyOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateAppCookieStickinessPolicyInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateAppCookieStickinessPolicyInput"}
+	if s.CookieName == nil {
+		invalidParams.Add(request.NewErrParamRequired("CookieName"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.PolicyName == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyName"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataCreateAppCookieStickinessPolicyOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type CreateAppCookieStickinessPolicyOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1355,6 +1435,8 @@ func (s CreateAppCookieStickinessPolicyOutput) GoString() string {
 }
 
 type CreateLBCookieStickinessPolicyInput struct {
+	_ struct{} `type:"structure"`
+
 	// The time period, in seconds, after which the cookie should be considered
 	// stale. If you do not specify this parameter, the sticky session lasts for
 	// the duration of the browser session.
@@ -1367,12 +1449,6 @@ type CreateLBCookieStickinessPolicyInput struct {
 	// characters and dashes (-). This name must be unique within the set of policies
 	// for this load balancer.
 	PolicyName *string `type:"string" required:"true"`
-
-	metadataCreateLBCookieStickinessPolicyInput `json:"-" xml:"-"`
-}
-
-type metadataCreateLBCookieStickinessPolicyInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1385,12 +1461,24 @@ func (s CreateLBCookieStickinessPolicyInput) GoString() string {
 	return s.String()
 }
 
-type CreateLBCookieStickinessPolicyOutput struct {
-	metadataCreateLBCookieStickinessPolicyOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateLBCookieStickinessPolicyInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateLBCookieStickinessPolicyInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.PolicyName == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyName"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataCreateLBCookieStickinessPolicyOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type CreateLBCookieStickinessPolicyOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1404,6 +1492,8 @@ func (s CreateLBCookieStickinessPolicyOutput) GoString() string {
 }
 
 type CreateLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
 	// One or more Availability Zones from the same region as the load balancer.
 	// Traffic is equally distributed across all specified Availability Zones.
 	//
@@ -1450,12 +1540,6 @@ type CreateLoadBalancerInput struct {
 	// For more information about tagging your load balancer, see Tagging (http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/TerminologyandKeyConcepts.html#tagging-elb)
 	// in the Elastic Load Balancing Developer Guide.
 	Tags []*Tag `min:"1" type:"list"`
-
-	metadataCreateLoadBalancerInput `json:"-" xml:"-"`
-}
-
-type metadataCreateLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1468,18 +1552,53 @@ func (s CreateLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateLoadBalancerInput"}
+	if s.Listeners == nil {
+		invalidParams.Add(request.NewErrParamRequired("Listeners"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.Tags != nil && len(s.Tags) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Tags", 1))
+	}
+	if s.Listeners != nil {
+		for i, v := range s.Listeners {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Listeners", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+	if s.Tags != nil {
+		for i, v := range s.Tags {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Tags", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 type CreateLoadBalancerListenersInput struct {
+	_ struct{} `type:"structure"`
+
 	// The listeners.
 	Listeners []*Listener `type:"list" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataCreateLoadBalancerListenersInput `json:"-" xml:"-"`
-}
-
-type metadataCreateLoadBalancerListenersInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1492,12 +1611,34 @@ func (s CreateLoadBalancerListenersInput) GoString() string {
 	return s.String()
 }
 
-type CreateLoadBalancerListenersOutput struct {
-	metadataCreateLoadBalancerListenersOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateLoadBalancerListenersInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateLoadBalancerListenersInput"}
+	if s.Listeners == nil {
+		invalidParams.Add(request.NewErrParamRequired("Listeners"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.Listeners != nil {
+		for i, v := range s.Listeners {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Listeners", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataCreateLoadBalancerListenersOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type CreateLoadBalancerListenersOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1511,14 +1652,10 @@ func (s CreateLoadBalancerListenersOutput) GoString() string {
 }
 
 type CreateLoadBalancerOutput struct {
+	_ struct{} `type:"structure"`
+
 	// The DNS name of the load balancer.
 	DNSName *string `type:"string"`
-
-	metadataCreateLoadBalancerOutput `json:"-" xml:"-"`
-}
-
-type metadataCreateLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1532,6 +1669,8 @@ func (s CreateLoadBalancerOutput) GoString() string {
 }
 
 type CreateLoadBalancerPolicyInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
@@ -1544,12 +1683,6 @@ type CreateLoadBalancerPolicyInput struct {
 
 	// The name of the base policy type. To get the list of policy types, use DescribeLoadBalancerPolicyTypes.
 	PolicyTypeName *string `type:"string" required:"true"`
-
-	metadataCreateLoadBalancerPolicyInput `json:"-" xml:"-"`
-}
-
-type metadataCreateLoadBalancerPolicyInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1562,12 +1695,27 @@ func (s CreateLoadBalancerPolicyInput) GoString() string {
 	return s.String()
 }
 
-type CreateLoadBalancerPolicyOutput struct {
-	metadataCreateLoadBalancerPolicyOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateLoadBalancerPolicyInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateLoadBalancerPolicyInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.PolicyName == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyName"))
+	}
+	if s.PolicyTypeName == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyTypeName"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataCreateLoadBalancerPolicyOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type CreateLoadBalancerPolicyOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1582,14 +1730,10 @@ func (s CreateLoadBalancerPolicyOutput) GoString() string {
 
 // Information about the CrossZoneLoadBalancing attribute.
 type CrossZoneLoadBalancing struct {
+	_ struct{} `type:"structure"`
+
 	// Specifies whether cross-zone load balancing is enabled for the load balancer.
 	Enabled *bool `type:"boolean" required:"true"`
-
-	metadataCrossZoneLoadBalancing `json:"-" xml:"-"`
-}
-
-type metadataCrossZoneLoadBalancing struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1602,15 +1746,24 @@ func (s CrossZoneLoadBalancing) GoString() string {
 	return s.String()
 }
 
-type DeleteLoadBalancerInput struct {
-	// The name of the load balancer.
-	LoadBalancerName *string `type:"string" required:"true"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CrossZoneLoadBalancing) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CrossZoneLoadBalancing"}
+	if s.Enabled == nil {
+		invalidParams.Add(request.NewErrParamRequired("Enabled"))
+	}
 
-	metadataDeleteLoadBalancerInput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDeleteLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DeleteLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the load balancer.
+	LoadBalancerName *string `type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -1623,18 +1776,27 @@ func (s DeleteLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteLoadBalancerInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 type DeleteLoadBalancerListenersInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
 	// The client port numbers of the listeners.
 	LoadBalancerPorts []*int64 `type:"list" required:"true"`
-
-	metadataDeleteLoadBalancerListenersInput `json:"-" xml:"-"`
-}
-
-type metadataDeleteLoadBalancerListenersInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1647,12 +1809,24 @@ func (s DeleteLoadBalancerListenersInput) GoString() string {
 	return s.String()
 }
 
-type DeleteLoadBalancerListenersOutput struct {
-	metadataDeleteLoadBalancerListenersOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteLoadBalancerListenersInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteLoadBalancerListenersInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.LoadBalancerPorts == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerPorts"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDeleteLoadBalancerListenersOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DeleteLoadBalancerListenersOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1666,11 +1840,7 @@ func (s DeleteLoadBalancerListenersOutput) GoString() string {
 }
 
 type DeleteLoadBalancerOutput struct {
-	metadataDeleteLoadBalancerOutput `json:"-" xml:"-"`
-}
-
-type metadataDeleteLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1685,17 +1855,13 @@ func (s DeleteLoadBalancerOutput) GoString() string {
 
 // =
 type DeleteLoadBalancerPolicyInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
 	// The name of the policy.
 	PolicyName *string `type:"string" required:"true"`
-
-	metadataDeleteLoadBalancerPolicyInput `json:"-" xml:"-"`
-}
-
-type metadataDeleteLoadBalancerPolicyInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1708,12 +1874,24 @@ func (s DeleteLoadBalancerPolicyInput) GoString() string {
 	return s.String()
 }
 
-type DeleteLoadBalancerPolicyOutput struct {
-	metadataDeleteLoadBalancerPolicyOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteLoadBalancerPolicyInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteLoadBalancerPolicyInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.PolicyName == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyName"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDeleteLoadBalancerPolicyOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DeleteLoadBalancerPolicyOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -1727,17 +1905,13 @@ func (s DeleteLoadBalancerPolicyOutput) GoString() string {
 }
 
 type DeregisterInstancesFromLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The IDs of the instances.
 	Instances []*Instance `type:"list" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataDeregisterInstancesFromLoadBalancerInput `json:"-" xml:"-"`
-}
-
-type metadataDeregisterInstancesFromLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1750,15 +1924,27 @@ func (s DeregisterInstancesFromLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
-type DeregisterInstancesFromLoadBalancerOutput struct {
-	// The remaining instances registered with the load balancer.
-	Instances []*Instance `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeregisterInstancesFromLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeregisterInstancesFromLoadBalancerInput"}
+	if s.Instances == nil {
+		invalidParams.Add(request.NewErrParamRequired("Instances"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
 
-	metadataDeregisterInstancesFromLoadBalancerOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDeregisterInstancesFromLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DeregisterInstancesFromLoadBalancerOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The remaining instances registered with the load balancer.
+	Instances []*Instance `type:"list"`
 }
 
 // String returns the string representation
@@ -1772,17 +1958,13 @@ func (s DeregisterInstancesFromLoadBalancerOutput) GoString() string {
 }
 
 type DescribeInstanceHealthInput struct {
+	_ struct{} `type:"structure"`
+
 	// The IDs of the instances.
 	Instances []*Instance `type:"list"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataDescribeInstanceHealthInput `json:"-" xml:"-"`
-}
-
-type metadataDescribeInstanceHealthInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1795,15 +1977,24 @@ func (s DescribeInstanceHealthInput) GoString() string {
 	return s.String()
 }
 
-type DescribeInstanceHealthOutput struct {
-	// Information about the health of the instances.
-	InstanceStates []*InstanceState `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DescribeInstanceHealthInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DescribeInstanceHealthInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
 
-	metadataDescribeInstanceHealthOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDescribeInstanceHealthOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DescribeInstanceHealthOutput struct {
+	_ struct{} `type:"structure"`
+
+	// Information about the health of the instances.
+	InstanceStates []*InstanceState `type:"list"`
 }
 
 // String returns the string representation
@@ -1817,14 +2008,10 @@ func (s DescribeInstanceHealthOutput) GoString() string {
 }
 
 type DescribeLoadBalancerAttributesInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataDescribeLoadBalancerAttributesInput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancerAttributesInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1837,15 +2024,24 @@ func (s DescribeLoadBalancerAttributesInput) GoString() string {
 	return s.String()
 }
 
-type DescribeLoadBalancerAttributesOutput struct {
-	// Information about the load balancer attributes.
-	LoadBalancerAttributes *LoadBalancerAttributes `type:"structure"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DescribeLoadBalancerAttributesInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DescribeLoadBalancerAttributesInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
 
-	metadataDescribeLoadBalancerAttributesOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDescribeLoadBalancerAttributesOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DescribeLoadBalancerAttributesOutput struct {
+	_ struct{} `type:"structure"`
+
+	// Information about the load balancer attributes.
+	LoadBalancerAttributes *LoadBalancerAttributes `type:"structure"`
 }
 
 // String returns the string representation
@@ -1859,17 +2055,13 @@ func (s DescribeLoadBalancerAttributesOutput) GoString() string {
 }
 
 type DescribeLoadBalancerPoliciesInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string"`
 
 	// The names of the policies.
 	PolicyNames []*string `type:"list"`
-
-	metadataDescribeLoadBalancerPoliciesInput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancerPoliciesInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1883,14 +2075,10 @@ func (s DescribeLoadBalancerPoliciesInput) GoString() string {
 }
 
 type DescribeLoadBalancerPoliciesOutput struct {
+	_ struct{} `type:"structure"`
+
 	// Information about the policies.
 	PolicyDescriptions []*PolicyDescription `type:"list"`
-
-	metadataDescribeLoadBalancerPoliciesOutput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancerPoliciesOutput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1904,15 +2092,11 @@ func (s DescribeLoadBalancerPoliciesOutput) GoString() string {
 }
 
 type DescribeLoadBalancerPolicyTypesInput struct {
+	_ struct{} `type:"structure"`
+
 	// The names of the policy types. If no names are specified, describes all policy
 	// types defined by Elastic Load Balancing.
 	PolicyTypeNames []*string `type:"list"`
-
-	metadataDescribeLoadBalancerPolicyTypesInput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancerPolicyTypesInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1926,14 +2110,10 @@ func (s DescribeLoadBalancerPolicyTypesInput) GoString() string {
 }
 
 type DescribeLoadBalancerPolicyTypesOutput struct {
+	_ struct{} `type:"structure"`
+
 	// Information about the policy types.
 	PolicyTypeDescriptions []*PolicyTypeDescription `type:"list"`
-
-	metadataDescribeLoadBalancerPolicyTypesOutput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancerPolicyTypesOutput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1947,6 +2127,8 @@ func (s DescribeLoadBalancerPolicyTypesOutput) GoString() string {
 }
 
 type DescribeLoadBalancersInput struct {
+	_ struct{} `type:"structure"`
+
 	// The names of the load balancers.
 	LoadBalancerNames []*string `type:"list"`
 
@@ -1957,12 +2139,6 @@ type DescribeLoadBalancersInput struct {
 	// The maximum number of results to return with this call (a number from 1 to
 	// 400). The default is 400.
 	PageSize *int64 `min:"1" type:"integer"`
-
-	metadataDescribeLoadBalancersInput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancersInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -1975,19 +2151,28 @@ func (s DescribeLoadBalancersInput) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DescribeLoadBalancersInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DescribeLoadBalancersInput"}
+	if s.PageSize != nil && *s.PageSize < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("PageSize", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 type DescribeLoadBalancersOutput struct {
+	_ struct{} `type:"structure"`
+
 	// Information about the load balancers.
 	LoadBalancerDescriptions []*LoadBalancerDescription `type:"list"`
 
 	// The marker to use when requesting the next set of results. If there are no
 	// additional results, the string is empty.
 	NextMarker *string `type:"string"`
-
-	metadataDescribeLoadBalancersOutput `json:"-" xml:"-"`
-}
-
-type metadataDescribeLoadBalancersOutput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2001,14 +2186,10 @@ func (s DescribeLoadBalancersOutput) GoString() string {
 }
 
 type DescribeTagsInput struct {
+	_ struct{} `type:"structure"`
+
 	// The names of the load balancers.
 	LoadBalancerNames []*string `min:"1" type:"list" required:"true"`
-
-	metadataDescribeTagsInput `json:"-" xml:"-"`
-}
-
-type metadataDescribeTagsInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2021,15 +2202,27 @@ func (s DescribeTagsInput) GoString() string {
 	return s.String()
 }
 
-type DescribeTagsOutput struct {
-	// Information about the tags.
-	TagDescriptions []*TagDescription `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DescribeTagsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DescribeTagsInput"}
+	if s.LoadBalancerNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerNames"))
+	}
+	if s.LoadBalancerNames != nil && len(s.LoadBalancerNames) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("LoadBalancerNames", 1))
+	}
 
-	metadataDescribeTagsOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDescribeTagsOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DescribeTagsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// Information about the tags.
+	TagDescriptions []*TagDescription `type:"list"`
 }
 
 // String returns the string representation
@@ -2043,17 +2236,13 @@ func (s DescribeTagsOutput) GoString() string {
 }
 
 type DetachLoadBalancerFromSubnetsInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
 	// The IDs of the subnets.
 	Subnets []*string `type:"list" required:"true"`
-
-	metadataDetachLoadBalancerFromSubnetsInput `json:"-" xml:"-"`
-}
-
-type metadataDetachLoadBalancerFromSubnetsInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2066,15 +2255,27 @@ func (s DetachLoadBalancerFromSubnetsInput) GoString() string {
 	return s.String()
 }
 
-type DetachLoadBalancerFromSubnetsOutput struct {
-	// The IDs of the remaining subnets for the load balancer.
-	Subnets []*string `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DetachLoadBalancerFromSubnetsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DetachLoadBalancerFromSubnetsInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.Subnets == nil {
+		invalidParams.Add(request.NewErrParamRequired("Subnets"))
+	}
 
-	metadataDetachLoadBalancerFromSubnetsOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDetachLoadBalancerFromSubnetsOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DetachLoadBalancerFromSubnetsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The IDs of the remaining subnets for the load balancer.
+	Subnets []*string `type:"list"`
 }
 
 // String returns the string representation
@@ -2088,17 +2289,13 @@ func (s DetachLoadBalancerFromSubnetsOutput) GoString() string {
 }
 
 type DisableAvailabilityZonesForLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The Availability Zones.
 	AvailabilityZones []*string `type:"list" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataDisableAvailabilityZonesForLoadBalancerInput `json:"-" xml:"-"`
-}
-
-type metadataDisableAvailabilityZonesForLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2111,15 +2308,27 @@ func (s DisableAvailabilityZonesForLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
-type DisableAvailabilityZonesForLoadBalancerOutput struct {
-	// The remaining Availability Zones for the load balancer.
-	AvailabilityZones []*string `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DisableAvailabilityZonesForLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DisableAvailabilityZonesForLoadBalancerInput"}
+	if s.AvailabilityZones == nil {
+		invalidParams.Add(request.NewErrParamRequired("AvailabilityZones"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
 
-	metadataDisableAvailabilityZonesForLoadBalancerOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataDisableAvailabilityZonesForLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type DisableAvailabilityZonesForLoadBalancerOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The remaining Availability Zones for the load balancer.
+	AvailabilityZones []*string `type:"list"`
 }
 
 // String returns the string representation
@@ -2133,17 +2342,13 @@ func (s DisableAvailabilityZonesForLoadBalancerOutput) GoString() string {
 }
 
 type EnableAvailabilityZonesForLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The Availability Zones. These must be in the same region as the load balancer.
 	AvailabilityZones []*string `type:"list" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataEnableAvailabilityZonesForLoadBalancerInput `json:"-" xml:"-"`
-}
-
-type metadataEnableAvailabilityZonesForLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2156,15 +2361,27 @@ func (s EnableAvailabilityZonesForLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
-type EnableAvailabilityZonesForLoadBalancerOutput struct {
-	// The updated list of Availability Zones for the load balancer.
-	AvailabilityZones []*string `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *EnableAvailabilityZonesForLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "EnableAvailabilityZonesForLoadBalancerInput"}
+	if s.AvailabilityZones == nil {
+		invalidParams.Add(request.NewErrParamRequired("AvailabilityZones"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
 
-	metadataEnableAvailabilityZonesForLoadBalancerOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataEnableAvailabilityZonesForLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type EnableAvailabilityZonesForLoadBalancerOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The updated list of Availability Zones for the load balancer.
+	AvailabilityZones []*string `type:"list"`
 }
 
 // String returns the string representation
@@ -2179,6 +2396,8 @@ func (s EnableAvailabilityZonesForLoadBalancerOutput) GoString() string {
 
 // Information about a health check.
 type HealthCheck struct {
+	_ struct{} `type:"structure"`
+
 	// The number of consecutive health checks successes required before moving
 	// the instance to the Healthy state.
 	HealthyThreshold *int64 `min:"2" type:"integer" required:"true"`
@@ -2216,12 +2435,6 @@ type HealthCheck struct {
 	// The number of consecutive health check failures required before moving the
 	// instance to the Unhealthy state.
 	UnhealthyThreshold *int64 `min:"2" type:"integer" required:"true"`
-
-	metadataHealthCheck `json:"-" xml:"-"`
-}
-
-type metadataHealthCheck struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2234,16 +2447,49 @@ func (s HealthCheck) GoString() string {
 	return s.String()
 }
 
-// The ID of a back-end instance.
-type Instance struct {
-	// The ID of the instance.
-	InstanceId *string `type:"string"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *HealthCheck) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "HealthCheck"}
+	if s.HealthyThreshold == nil {
+		invalidParams.Add(request.NewErrParamRequired("HealthyThreshold"))
+	}
+	if s.HealthyThreshold != nil && *s.HealthyThreshold < 2 {
+		invalidParams.Add(request.NewErrParamMinValue("HealthyThreshold", 2))
+	}
+	if s.Interval == nil {
+		invalidParams.Add(request.NewErrParamRequired("Interval"))
+	}
+	if s.Interval != nil && *s.Interval < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("Interval", 1))
+	}
+	if s.Target == nil {
+		invalidParams.Add(request.NewErrParamRequired("Target"))
+	}
+	if s.Timeout == nil {
+		invalidParams.Add(request.NewErrParamRequired("Timeout"))
+	}
+	if s.Timeout != nil && *s.Timeout < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("Timeout", 1))
+	}
+	if s.UnhealthyThreshold == nil {
+		invalidParams.Add(request.NewErrParamRequired("UnhealthyThreshold"))
+	}
+	if s.UnhealthyThreshold != nil && *s.UnhealthyThreshold < 2 {
+		invalidParams.Add(request.NewErrParamMinValue("UnhealthyThreshold", 2))
+	}
 
-	metadataInstance `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataInstance struct {
-	SDKShapeTraits bool `type:"structure"`
+// The ID of a back-end instance.
+type Instance struct {
+	_ struct{} `type:"structure"`
+
+	// The ID of the instance.
+	InstanceId *string `type:"string"`
 }
 
 // String returns the string representation
@@ -2258,6 +2504,8 @@ func (s Instance) GoString() string {
 
 // Information about the state of a back-end instance.
 type InstanceState struct {
+	_ struct{} `type:"structure"`
+
 	// A description of the instance state. This string can contain one or more
 	// of the following messages.
 	//
@@ -2302,12 +2550,6 @@ type InstanceState struct {
 	//
 	// Valid values: InService | OutOfService | Unknown
 	State *string `type:"string"`
-
-	metadataInstanceState `json:"-" xml:"-"`
-}
-
-type metadataInstanceState struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2322,6 +2564,8 @@ func (s InstanceState) GoString() string {
 
 // Information about a policy for duration-based session stickiness.
 type LBCookieStickinessPolicy struct {
+	_ struct{} `type:"structure"`
+
 	// The time period, in seconds, after which the cookie should be considered
 	// stale. If this parameter is not specified, the stickiness session lasts for
 	// the duration of the browser session.
@@ -2330,12 +2574,6 @@ type LBCookieStickinessPolicy struct {
 	// The name for the policy being created. The name must be unique within the
 	// set of policies for this load balancer.
 	PolicyName *string `type:"string"`
-
-	metadataLBCookieStickinessPolicy `json:"-" xml:"-"`
-}
-
-type metadataLBCookieStickinessPolicy struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2354,6 +2592,8 @@ func (s LBCookieStickinessPolicy) GoString() string {
 // Balancing, see Listener Configurations for Elastic Load Balancing (http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elb-listener-config.html)
 // in the Elastic Load Balancing Developer Guide.
 type Listener struct {
+	_ struct{} `type:"structure"`
+
 	// The port on which the instance is listening.
 	InstancePort *int64 `min:"1" type:"integer" required:"true"`
 
@@ -2381,12 +2621,6 @@ type Listener struct {
 
 	// The Amazon Resource Name (ARN) of the server certificate.
 	SSLCertificateId *string `type:"string"`
-
-	metadataListener `json:"-" xml:"-"`
-}
-
-type metadataListener struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2399,8 +2633,32 @@ func (s Listener) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *Listener) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "Listener"}
+	if s.InstancePort == nil {
+		invalidParams.Add(request.NewErrParamRequired("InstancePort"))
+	}
+	if s.InstancePort != nil && *s.InstancePort < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("InstancePort", 1))
+	}
+	if s.LoadBalancerPort == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerPort"))
+	}
+	if s.Protocol == nil {
+		invalidParams.Add(request.NewErrParamRequired("Protocol"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 // The policies enabled for a listener.
 type ListenerDescription struct {
+	_ struct{} `type:"structure"`
+
 	// Information about a listener.
 	//
 	// For information about the protocols and the ports supported by Elastic Load
@@ -2410,12 +2668,6 @@ type ListenerDescription struct {
 
 	// The policies. If there are no policies enabled, the list is empty.
 	PolicyNames []*string `type:"list"`
-
-	metadataListenerDescription `json:"-" xml:"-"`
-}
-
-type metadataListenerDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2430,6 +2682,8 @@ func (s ListenerDescription) GoString() string {
 
 // The attributes for a load balancer.
 type LoadBalancerAttributes struct {
+	_ struct{} `type:"structure"`
+
 	// If enabled, the load balancer captures detailed information of all requests
 	// and delivers the information to the Amazon S3 bucket that you specify.
 	//
@@ -2463,12 +2717,6 @@ type LoadBalancerAttributes struct {
 	// For more information, see Enable Cross-Zone Load Balancing (http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/enable-disable-crosszone-lb.html)
 	// in the Elastic Load Balancing Developer Guide.
 	CrossZoneLoadBalancing *CrossZoneLoadBalancing `type:"structure"`
-
-	metadataLoadBalancerAttributes `json:"-" xml:"-"`
-}
-
-type metadataLoadBalancerAttributes struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2481,8 +2729,40 @@ func (s LoadBalancerAttributes) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *LoadBalancerAttributes) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "LoadBalancerAttributes"}
+	if s.AccessLog != nil {
+		if err := s.AccessLog.Validate(); err != nil {
+			invalidParams.AddNested("AccessLog", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.ConnectionDraining != nil {
+		if err := s.ConnectionDraining.Validate(); err != nil {
+			invalidParams.AddNested("ConnectionDraining", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.ConnectionSettings != nil {
+		if err := s.ConnectionSettings.Validate(); err != nil {
+			invalidParams.AddNested("ConnectionSettings", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.CrossZoneLoadBalancing != nil {
+		if err := s.CrossZoneLoadBalancing.Validate(); err != nil {
+			invalidParams.AddNested("CrossZoneLoadBalancing", err.(request.ErrInvalidParams))
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 // Information about a load balancer.
 type LoadBalancerDescription struct {
+	_ struct{} `type:"structure"`
+
 	// The Availability Zones for the load balancer.
 	AvailabilityZones []*string `type:"list"`
 
@@ -2544,12 +2824,6 @@ type LoadBalancerDescription struct {
 
 	// The ID of the VPC for the load balancer.
 	VPCId *string `type:"string"`
-
-	metadataLoadBalancerDescription `json:"-" xml:"-"`
-}
-
-type metadataLoadBalancerDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2563,17 +2837,13 @@ func (s LoadBalancerDescription) GoString() string {
 }
 
 type ModifyLoadBalancerAttributesInput struct {
+	_ struct{} `type:"structure"`
+
 	// The attributes of the load balancer.
 	LoadBalancerAttributes *LoadBalancerAttributes `type:"structure" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataModifyLoadBalancerAttributesInput `json:"-" xml:"-"`
-}
-
-type metadataModifyLoadBalancerAttributesInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2586,18 +2856,35 @@ func (s ModifyLoadBalancerAttributesInput) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ModifyLoadBalancerAttributesInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ModifyLoadBalancerAttributesInput"}
+	if s.LoadBalancerAttributes == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerAttributes"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.LoadBalancerAttributes != nil {
+		if err := s.LoadBalancerAttributes.Validate(); err != nil {
+			invalidParams.AddNested("LoadBalancerAttributes", err.(request.ErrInvalidParams))
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 type ModifyLoadBalancerAttributesOutput struct {
+	_ struct{} `type:"structure"`
+
 	// The attributes for a load balancer.
 	LoadBalancerAttributes *LoadBalancerAttributes `type:"structure"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string"`
-
-	metadataModifyLoadBalancerAttributesOutput `json:"-" xml:"-"`
-}
-
-type metadataModifyLoadBalancerAttributesOutput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2612,6 +2899,8 @@ func (s ModifyLoadBalancerAttributesOutput) GoString() string {
 
 // The policies for a load balancer.
 type Policies struct {
+	_ struct{} `type:"structure"`
+
 	// The stickiness policies created using CreateAppCookieStickinessPolicy.
 	AppCookieStickinessPolicies []*AppCookieStickinessPolicy `type:"list"`
 
@@ -2620,12 +2909,6 @@ type Policies struct {
 
 	// The policies other than the stickiness policies.
 	OtherPolicies []*string `type:"list"`
-
-	metadataPolicies `json:"-" xml:"-"`
-}
-
-type metadataPolicies struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2640,17 +2923,13 @@ func (s Policies) GoString() string {
 
 // Information about a policy attribute.
 type PolicyAttribute struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the attribute.
 	AttributeName *string `type:"string"`
 
 	// The value of the attribute.
 	AttributeValue *string `type:"string"`
-
-	metadataPolicyAttribute `json:"-" xml:"-"`
-}
-
-type metadataPolicyAttribute struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2665,17 +2944,13 @@ func (s PolicyAttribute) GoString() string {
 
 // Information about a policy attribute.
 type PolicyAttributeDescription struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the attribute.
 	AttributeName *string `type:"string"`
 
 	// The value of the attribute.
 	AttributeValue *string `type:"string"`
-
-	metadataPolicyAttributeDescription `json:"-" xml:"-"`
-}
-
-type metadataPolicyAttributeDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2690,6 +2965,8 @@ func (s PolicyAttributeDescription) GoString() string {
 
 // Information about a policy attribute type.
 type PolicyAttributeTypeDescription struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the attribute.
 	AttributeName *string `type:"string"`
 
@@ -2710,12 +2987,6 @@ type PolicyAttributeTypeDescription struct {
 
 	// A description of the attribute.
 	Description *string `type:"string"`
-
-	metadataPolicyAttributeTypeDescription `json:"-" xml:"-"`
-}
-
-type metadataPolicyAttributeTypeDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2730,6 +3001,8 @@ func (s PolicyAttributeTypeDescription) GoString() string {
 
 // Information about a policy.
 type PolicyDescription struct {
+	_ struct{} `type:"structure"`
+
 	// The policy attributes.
 	PolicyAttributeDescriptions []*PolicyAttributeDescription `type:"list"`
 
@@ -2738,12 +3011,6 @@ type PolicyDescription struct {
 
 	// The name of the policy type.
 	PolicyTypeName *string `type:"string"`
-
-	metadataPolicyDescription `json:"-" xml:"-"`
-}
-
-type metadataPolicyDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2758,6 +3025,8 @@ func (s PolicyDescription) GoString() string {
 
 // Information about a policy type.
 type PolicyTypeDescription struct {
+	_ struct{} `type:"structure"`
+
 	// A description of the policy type.
 	Description *string `type:"string"`
 
@@ -2767,12 +3036,6 @@ type PolicyTypeDescription struct {
 
 	// The name of the policy type.
 	PolicyTypeName *string `type:"string"`
-
-	metadataPolicyTypeDescription `json:"-" xml:"-"`
-}
-
-type metadataPolicyTypeDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2786,17 +3049,13 @@ func (s PolicyTypeDescription) GoString() string {
 }
 
 type RegisterInstancesWithLoadBalancerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The IDs of the instances.
 	Instances []*Instance `type:"list" required:"true"`
 
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
-
-	metadataRegisterInstancesWithLoadBalancerInput `json:"-" xml:"-"`
-}
-
-type metadataRegisterInstancesWithLoadBalancerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2809,15 +3068,27 @@ func (s RegisterInstancesWithLoadBalancerInput) GoString() string {
 	return s.String()
 }
 
-type RegisterInstancesWithLoadBalancerOutput struct {
-	// The updated list of instances for the load balancer.
-	Instances []*Instance `type:"list"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *RegisterInstancesWithLoadBalancerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "RegisterInstancesWithLoadBalancerInput"}
+	if s.Instances == nil {
+		invalidParams.Add(request.NewErrParamRequired("Instances"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
 
-	metadataRegisterInstancesWithLoadBalancerOutput `json:"-" xml:"-"`
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataRegisterInstancesWithLoadBalancerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type RegisterInstancesWithLoadBalancerOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The updated list of instances for the load balancer.
+	Instances []*Instance `type:"list"`
 }
 
 // String returns the string representation
@@ -2831,18 +3102,14 @@ func (s RegisterInstancesWithLoadBalancerOutput) GoString() string {
 }
 
 type RemoveTagsInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer. You can specify a maximum of one load balancer
 	// name.
 	LoadBalancerNames []*string `type:"list" required:"true"`
 
 	// The list of tag keys to remove.
 	Tags []*TagKeyOnly `min:"1" type:"list" required:"true"`
-
-	metadataRemoveTagsInput `json:"-" xml:"-"`
-}
-
-type metadataRemoveTagsInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2855,12 +3122,37 @@ func (s RemoveTagsInput) GoString() string {
 	return s.String()
 }
 
-type RemoveTagsOutput struct {
-	metadataRemoveTagsOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *RemoveTagsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "RemoveTagsInput"}
+	if s.LoadBalancerNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerNames"))
+	}
+	if s.Tags == nil {
+		invalidParams.Add(request.NewErrParamRequired("Tags"))
+	}
+	if s.Tags != nil && len(s.Tags) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Tags", 1))
+	}
+	if s.Tags != nil {
+		for i, v := range s.Tags {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Tags", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataRemoveTagsOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type RemoveTagsOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -2874,6 +3166,8 @@ func (s RemoveTagsOutput) GoString() string {
 }
 
 type SetLoadBalancerListenerSSLCertificateInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
@@ -2882,12 +3176,6 @@ type SetLoadBalancerListenerSSLCertificateInput struct {
 
 	// The Amazon Resource Name (ARN) of the SSL certificate.
 	SSLCertificateId *string `type:"string" required:"true"`
-
-	metadataSetLoadBalancerListenerSSLCertificateInput `json:"-" xml:"-"`
-}
-
-type metadataSetLoadBalancerListenerSSLCertificateInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2900,12 +3188,27 @@ func (s SetLoadBalancerListenerSSLCertificateInput) GoString() string {
 	return s.String()
 }
 
-type SetLoadBalancerListenerSSLCertificateOutput struct {
-	metadataSetLoadBalancerListenerSSLCertificateOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *SetLoadBalancerListenerSSLCertificateInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "SetLoadBalancerListenerSSLCertificateInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.LoadBalancerPort == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerPort"))
+	}
+	if s.SSLCertificateId == nil {
+		invalidParams.Add(request.NewErrParamRequired("SSLCertificateId"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataSetLoadBalancerListenerSSLCertificateOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type SetLoadBalancerListenerSSLCertificateOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -2919,6 +3222,8 @@ func (s SetLoadBalancerListenerSSLCertificateOutput) GoString() string {
 }
 
 type SetLoadBalancerPoliciesForBackendServerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The port number associated with the back-end server.
 	InstancePort *int64 `type:"integer" required:"true"`
 
@@ -2928,12 +3233,6 @@ type SetLoadBalancerPoliciesForBackendServerInput struct {
 	// The names of the policies. If the list is empty, then all current polices
 	// are removed from the back-end server.
 	PolicyNames []*string `type:"list" required:"true"`
-
-	metadataSetLoadBalancerPoliciesForBackendServerInput `json:"-" xml:"-"`
-}
-
-type metadataSetLoadBalancerPoliciesForBackendServerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2946,12 +3245,27 @@ func (s SetLoadBalancerPoliciesForBackendServerInput) GoString() string {
 	return s.String()
 }
 
-type SetLoadBalancerPoliciesForBackendServerOutput struct {
-	metadataSetLoadBalancerPoliciesForBackendServerOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *SetLoadBalancerPoliciesForBackendServerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "SetLoadBalancerPoliciesForBackendServerInput"}
+	if s.InstancePort == nil {
+		invalidParams.Add(request.NewErrParamRequired("InstancePort"))
+	}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.PolicyNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyNames"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataSetLoadBalancerPoliciesForBackendServerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type SetLoadBalancerPoliciesForBackendServerOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -2965,6 +3279,8 @@ func (s SetLoadBalancerPoliciesForBackendServerOutput) GoString() string {
 }
 
 type SetLoadBalancerPoliciesOfListenerInput struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string" required:"true"`
 
@@ -2974,12 +3290,6 @@ type SetLoadBalancerPoliciesOfListenerInput struct {
 	// The names of the policies. If the list is empty, the current policy is removed
 	// from the listener.
 	PolicyNames []*string `type:"list" required:"true"`
-
-	metadataSetLoadBalancerPoliciesOfListenerInput `json:"-" xml:"-"`
-}
-
-type metadataSetLoadBalancerPoliciesOfListenerInput struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -2992,12 +3302,27 @@ func (s SetLoadBalancerPoliciesOfListenerInput) GoString() string {
 	return s.String()
 }
 
-type SetLoadBalancerPoliciesOfListenerOutput struct {
-	metadataSetLoadBalancerPoliciesOfListenerOutput `json:"-" xml:"-"`
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *SetLoadBalancerPoliciesOfListenerInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "SetLoadBalancerPoliciesOfListenerInput"}
+	if s.LoadBalancerName == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerName"))
+	}
+	if s.LoadBalancerPort == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoadBalancerPort"))
+	}
+	if s.PolicyNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("PolicyNames"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
-type metadataSetLoadBalancerPoliciesOfListenerOutput struct {
-	SDKShapeTraits bool `type:"structure"`
+type SetLoadBalancerPoliciesOfListenerOutput struct {
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -3012,17 +3337,13 @@ func (s SetLoadBalancerPoliciesOfListenerOutput) GoString() string {
 
 // Information about a source security group.
 type SourceSecurityGroup struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the security group.
 	GroupName *string `type:"string"`
 
 	// The owner of the security group.
 	OwnerAlias *string `type:"string"`
-
-	metadataSourceSecurityGroup `json:"-" xml:"-"`
-}
-
-type metadataSourceSecurityGroup struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -3037,17 +3358,13 @@ func (s SourceSecurityGroup) GoString() string {
 
 // Information about a tag.
 type Tag struct {
+	_ struct{} `type:"structure"`
+
 	// The key of the tag.
 	Key *string `min:"1" type:"string" required:"true"`
 
 	// The value of the tag.
 	Value *string `type:"string"`
-
-	metadataTag `json:"-" xml:"-"`
-}
-
-type metadataTag struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -3060,19 +3377,31 @@ func (s Tag) GoString() string {
 	return s.String()
 }
 
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *Tag) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "Tag"}
+	if s.Key == nil {
+		invalidParams.Add(request.NewErrParamRequired("Key"))
+	}
+	if s.Key != nil && len(*s.Key) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
 // The tags associated with a load balancer.
 type TagDescription struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the load balancer.
 	LoadBalancerName *string `type:"string"`
 
 	// The tags.
 	Tags []*Tag `min:"1" type:"list"`
-
-	metadataTagDescription `json:"-" xml:"-"`
-}
-
-type metadataTagDescription struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -3087,14 +3416,10 @@ func (s TagDescription) GoString() string {
 
 // The key of a tag.
 type TagKeyOnly struct {
+	_ struct{} `type:"structure"`
+
 	// The name of the key.
 	Key *string `min:"1" type:"string"`
-
-	metadataTagKeyOnly `json:"-" xml:"-"`
-}
-
-type metadataTagKeyOnly struct {
-	SDKShapeTraits bool `type:"structure"`
 }
 
 // String returns the string representation
@@ -3105,4 +3430,17 @@ func (s TagKeyOnly) String() string {
 // GoString returns the string representation
 func (s TagKeyOnly) GoString() string {
 	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *TagKeyOnly) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "TagKeyOnly"}
+	if s.Key != nil && len(*s.Key) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }

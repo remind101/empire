@@ -50,6 +50,7 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts Deployme
 	// Create a new release for the Config
 	// and Slug.
 	desc := fmt.Sprintf("Deploy %s", img.String())
+	desc = appendMessageToDescription(desc, opts.User, opts.Message)
 
 	r, err := s.releases.Create(ctx, db, &Release{
 		App:         app,

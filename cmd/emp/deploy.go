@@ -11,7 +11,7 @@ import (
 )
 
 var cmdDeploy = &Command{
-	Run:             runDeploy,
+	Run:             maybeMessage(runDeploy),
 	Usage:           "deploy [<registry>]<image>:[<tag>]",
 	OptionalApp:     true,
 	OptionalMessage: true,

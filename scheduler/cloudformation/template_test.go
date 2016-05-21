@@ -44,11 +44,11 @@ func TestEmpireTemplate(t *testing.T) {
 						Type:    "worker",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/worker"},
-						Env: map[string]string{
-							"FOO": "BAR",
-						},
 						Labels: map[string]string{
 							"empire.app.process": "worker",
+						},
+						Env: map[string]string{
+							"FOO": "BAR",
 						},
 					},
 				},
@@ -66,7 +66,16 @@ func TestEmpireTemplate(t *testing.T) {
 						Command: []string{"./bin/web"},
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPSExposure{
-								Cert: "iamcert",
+								Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+							},
+						},
+					},
+					{
+						Type:    "api",
+						Command: []string{"./bin/api"},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPSExposure{
+								Cert: "AcmeIncDotCom", // Simple cert format.
 							},
 						},
 					},
@@ -76,19 +85,8 @@ func TestEmpireTemplate(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tmpl := &EmpireTemplate{
-			Cluster:                 "cluster",
-			ServiceRole:             "ecsServiceRole",
-			InternalSecurityGroupID: "sg-e7387381",
-			ExternalSecurityGroupID: "sg-1938737f",
-			InternalSubnetIDs:       []string{"subnet-bb01c4cd", "subnet-c85f4091"},
-			ExternalSubnetIDs:       []string{"subnet-ca96f4cd", "subnet-a13b909c"},
-			CustomResourcesTopic:    "sns topic arn",
-			HostedZone: &route53.HostedZone{
-				Id:   aws.String("Z3DG6IL3SJCGPX"),
-				Name: aws.String("empire"),
-			},
-		}
+		tmpl := newTemplate()
+		tmpl.NoCompress = true
 		buf := new(bytes.Buffer)
 
 		filename := fmt.Sprintf("templates/%s", tt.file)
@@ -100,5 +98,51 @@ func TestEmpireTemplate(t *testing.T) {
 
 		assert.Equal(t, string(expected), buf.String())
 		ioutil.WriteFile(filename, buf.Bytes(), 0660)
+	}
+}
+
+func TestEmpireTemplate_Large(t *testing.T) {
+	labels := make(map[string]string)
+	env := make(map[string]string)
+	for i := 0; i < 100; i++ {
+		env[fmt.Sprintf("ENV_VAR_%d", i)] = fmt.Sprintf("value%d", i)
+	}
+	app := &scheduler.App{
+		ID:     "",
+		Name:   "bigappwithlotsofprocesses",
+		Env:    env,
+		Labels: labels,
+	}
+
+	for i := 0; i < 60; i++ {
+		app.Processes = append(app.Processes, &scheduler.Process{
+			Type:    fmt.Sprintf("%d", i),
+			Command: []string{"./bin/web"},
+		})
+	}
+
+	tmpl := newTemplate()
+	buf := new(bytes.Buffer)
+
+	err := tmpl.Execute(buf, app)
+	assert.NoError(t, err)
+	assert.Condition(t, func() bool {
+		return buf.Len() < MaxTemplateSize
+	}, fmt.Sprintf("template must be smaller than %d, was %d", MaxTemplateSize, buf.Len()))
+}
+
+func newTemplate() *EmpireTemplate {
+	return &EmpireTemplate{
+		Cluster:                 "cluster",
+		ServiceRole:             "ecsServiceRole",
+		InternalSecurityGroupID: "sg-e7387381",
+		ExternalSecurityGroupID: "sg-1938737f",
+		InternalSubnetIDs:       []string{"subnet-bb01c4cd", "subnet-c85f4091"},
+		ExternalSubnetIDs:       []string{"subnet-ca96f4cd", "subnet-a13b909c"},
+		CustomResourcesTopic:    "sns topic arn",
+		HostedZone: &route53.HostedZone{
+			Id:   aws.String("Z3DG6IL3SJCGPX"),
+			Name: aws.String("empire"),
+		},
 	}
 }

@@ -17,6 +17,12 @@ type App struct {
 	// The name of the app.
 	Name string
 
+	// The application environment.
+	Env map[string]string
+
+	// The application labels.
+	Labels map[string]string
+
 	// Process that belong to this app.
 	Processes []*Process
 }
@@ -126,4 +132,26 @@ type Scheduler interface {
 	// Stop stops an instance. The scheduler will automatically start a new
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
+}
+
+// Env merges the App environment with any environment variables provided
+// in the process.
+func Env(app *App, process *Process) map[string]string {
+	return merge(app.Env, process.Env)
+}
+
+// Labels merges the App labels with any labels provided in the process.
+func Labels(app *App, process *Process) map[string]string {
+	return merge(app.Labels, process.Labels)
+}
+
+// merges the maps together, favoring keys from the right to the left.
+func merge(envs ...map[string]string) map[string]string {
+	merged := make(map[string]string)
+	for _, env := range envs {
+		for k, v := range env {
+			merged[k] = v
+		}
+	}
+	return merged
 }

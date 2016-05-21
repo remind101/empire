@@ -9,14 +9,6 @@ production environments.
 
 This guide assumes that you have the following installed:
 
-* **AWS CLI**: You can find the instructions at
-  [http://aws.amazon.com/cli/][awscli]. You'll need a fairly recent version of the
-  CLI that has support for ECS.
-
-```console
-$ pip install --upgrade awscli
-```
-
 * **Amazon EC2 Key Pair**: Make sure you've created an Amazon EC2 Key Pair. See
   [creating or importing a keypair][keypair] for more information.
 
@@ -37,32 +29,9 @@ group that our CloudFormation stack creates.
 Also, check that the offical ECS AMI ID for US East matches with the one in
 [cloudformation.json][democloud].
 
-## Step 2 - Clone the empire repo
+## Step 2 - Create CloudFormation stack
 
-In order to run the script and cloudformation template for this guide, you'll
-need to clone this repository.
-
-```console
-$ git clone https://github.com/remind101/empire.git
-$ cd empire
-```
-
-## Step 3 - Create CloudFormation stack
-
-Create a new CloudFormation stack using the [bootstrap](../bin/bootstrap)
-script.
-
-```console
-$ ./bin/bootstrap
-AWS SSH KeyName: default
-Do you have a docker account & want to use it for private repo access? [y/N] n
-==> Launching empire in AZs: us-east-1a us-east-1b, Cloudformation Stack empire-1a96c6f3
-==> Waiting for stack to complete
-==> Status: CREATE_IN_PROGRESS
-==> Stack empire-1a96c6f3 complete. Now run the following commands - when asked for a username, enter 'fake'. The password is blank:
-$ export EMPIRE_API_URL=http://empire-1a-LoadBala-EC3V01X8GHOO-1318261069.us-east-1.elb.amazonaws.com/
-$ emp login
-```
+[![Install](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#cstack=sn%7Eempire%7Cturl%7Ehttps://s3.amazonaws.com/empirepaas/cloudformation.json)
 
 This is a very simple stack that will:
 
@@ -75,7 +44,7 @@ This is a very simple stack that will:
 * Configure the instances to be able to pull from a private registry. (If
   docker credentials were provided).
 
-## Step 4 - Get the emp client
+## Step 3 - Get the emp client
 
 The last thing you need to do is download the Empire client, **emp**. Refer to the [README][empclient] for instructions on how to install it.
 

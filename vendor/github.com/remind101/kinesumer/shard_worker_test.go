@@ -56,7 +56,7 @@ func TestShardWorkerGetShardIterator(t *testing.T) {
 	kin.On("GetShardIterator", mock.Anything).Return(&kinesis.GetShardIteratorOutput{
 		ShardIterator: aws.String("AAAAA"),
 	}, awserr.Error(nil))
-	res, err := s.GetShardIterator("TYPE", "123")
+	res, err := s.GetShardIterator("TYPE", "123", time.Time{})
 	assert.Nil(t, err)
 	assert.Equal(t, "AAAAA", res)
 }
@@ -66,7 +66,7 @@ func TestShardWorkerTryGetShardIterator(t *testing.T) {
 
 	kin.On("GetShardIterator", mock.Anything).Return(nil, awserr.New("bad", "bad", errors.New("bad")))
 	assert.Panics(t, func() {
-		s.TryGetShardIterator("TYPE", "123")
+		s.TryGetShardIterator("TYPE", "123", time.Time{})
 	})
 }
 
