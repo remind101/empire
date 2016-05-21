@@ -156,6 +156,12 @@ func NewResponseFromRequest(req Request) Response {
 	}
 }
 
+// NewUser returns an empire.User that should be used by sources when making
+// requests to empire.
+func NewUser() *empire.User {
+	return &empire.User{Name: "cloudformation"}
+}
+
 // sqsClient duck types the sqs.SQS interface.
 type sqsClient interface {
 	ReceiveMessage(*sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error)
@@ -193,7 +199,10 @@ func NewCustomResourceProvisioner(empire *empire.Empire, config client.ConfigPro
 			"Custom::InstancePort": &InstancePortsProvisioner{
 				ports: lb.NewDBPortAllocator(empire.DB.DB.DB()),
 			},
-			"Custom::App": &AppsProvisioner{
+			"Custom::EmpireApp": &AppResource{
+				empire: empire,
+			},
+			"Custom:EmpireAppEnvironment": &EnvironmentResource{
 				empire: empire,
 			},
 		},
