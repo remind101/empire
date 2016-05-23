@@ -202,6 +202,22 @@ func TestScheduler_Remove(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(&cloudformation.DeleteStackOutput{}, nil)
 
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+				},
+			},
+		},
+	}, nil)
+
 	err = s.Remove(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
 	assert.NoError(t, err)
 
@@ -209,7 +225,36 @@ func TestScheduler_Remove(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
-func TestScheduler_Remove_NoStack(t *testing.T) {
+func TestScheduler_Remove_NoCFStack(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Wait:           true,
+		Bucket:         "bucket",
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id acme-inc does not exist", errors.New("")))
+
+	err = s.Remove(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Remove_NoDBStack_NoCFStack(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
 
@@ -225,7 +270,7 @@ func TestScheduler_Remove_NoStack(t *testing.T) {
 	}
 
 	err := s.Remove(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
-	assert.Equal(t, errNoStack, err)
+	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)

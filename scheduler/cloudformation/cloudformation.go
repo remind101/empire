@@ -349,9 +349,14 @@ func (s *Scheduler) Remove(ctx context.Context, appID string) error {
 	return tx.Commit()
 }
 
-// Remove removes the CloudFormation stack for the given app.
+// Remove removes the CloudFormation stack for the given app, if it exists.
 func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	stackName, err := s.stackName(appID)
+
+	// if there's no stack entry in the db for this app, nothing to remove
+	if err == errNoStack {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -359,6 +364,13 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	_, err = tx.Exec(`DELETE FROM stacks WHERE app_id = $1`, appID)
 	if err != nil {
 		return err
+	}
+
+	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
+	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
+		return nil
 	}
 
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
