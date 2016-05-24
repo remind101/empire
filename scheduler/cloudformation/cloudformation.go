@@ -30,6 +30,9 @@ import (
 // values.
 const servicesOutput = "Services"
 
+// Parameter used to trigger a restart of the application.
+const restartParameter = "RestartKey"
+
 // CloudFormation limits
 //
 // See http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html

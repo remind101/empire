@@ -47,7 +47,19 @@
       "Description": "When set to `true`, CNAME's will be altered",
       "Type": "String"
     },
+    "RestartKey": {
+      "Default": "uuid",
+      "Type": "String"
+    },
+    "webRestartKey": {
+      "Default": "uuid",
+      "Type": "String"
+    },
     "webScale": {
+      "Type": "String"
+    },
+    "workerRestartKey": {
+      "Default": "uuid",
       "Type": "String"
     },
     "workerScale": {
@@ -150,7 +162,20 @@
             ],
             "Cpu": 256,
             "DockerLabels": {
-              "empire.app.process": "web"
+              "empire.app.process": "web",
+              "empire.app.restart.key": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      "Ref": "RestartKey"
+                    },
+                    {
+                      "Ref": "webRestartKey"
+                    }
+                  ]
+                ]
+              }
             },
             "Environment": [
               {
@@ -214,7 +239,20 @@
             ],
             "Cpu": 0,
             "DockerLabels": {
-              "empire.app.process": "worker"
+              "empire.app.process": "worker",
+              "empire.app.restart.key": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      "Ref": "RestartKey"
+                    },
+                    {
+                      "Ref": "workerRestartKey"
+                    }
+                  ]
+                ]
+              }
             },
             "Environment": [
               {

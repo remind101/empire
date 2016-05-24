@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -18,6 +19,9 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
 )
+
+// newUUID returns a new UUID. Set to a var so we can stub it out in tests.
+var newUUID = uuid.New
 
 const (
 	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
@@ -129,6 +133,10 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Type":        "String",
 			"Description": "When set to `true`, CNAME's will be altered",
 		},
+		restartParameter: map[string]string{
+			"Type":    "String",
+			"Default": newUUID(),
+		},
 	}
 	conditions := map[string]interface{}{
 		"DNSCondition": map[string]interface{}{
@@ -163,6 +171,10 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 		parameters[scaleParameter(p.Type)] = map[string]string{
 			"Type": "String",
+		}
+		parameters[restartProcessParameter(p.Type)] = map[string]string{
+			"Type":    "String",
+			"Default": newUUID(),
 		}
 
 		portMappings := []map[string]interface{}{}
@@ -291,6 +303,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			}
 		}
 
+		labels := map[string]interface{}{}
+		for k, v := range cd.DockerLabels {
+			labels[k] = v
+		}
+		labels["empire.app.restart.key"] = map[string]interface{}{
+			"Fn::Join": []interface{}{"-", []interface{}{map[string]string{"Ref": restartParameter}, map[string]string{"Ref": restartProcessParameter(p.Type)}}},
+		}
+
 		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
 		containerDefinition := map[string]interface{}{
 			"Name":         *cd.Name,
@@ -301,7 +321,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Memory":       *cd.Memory,
 			"Environment":  cd.Environment,
 			"PortMappings": portMappings,
-			"DockerLabels": cd.DockerLabels,
+			"DockerLabels": labels,
 			"Ulimits":      cd.Ulimits,
 		}
 		if cd.LogConfiguration != nil {
@@ -462,4 +482,10 @@ func processResourceName(process string) string {
 // scale of a process.
 func scaleParameter(process string) string {
 	return fmt.Sprintf("%sScale", processResourceName(process))
+}
+
+// restartProcessParameter returns the name of the parameter used to control
+// restarting a single process.
+func restartProcessParameter(process string) string {
+	return fmt.Sprintf("%sRestartKey", processResourceName(process))
 }

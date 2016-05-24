@@ -14,6 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	newUUID = func() string { return "uuid" }
+}
+
 func TestEmpireTemplate(t *testing.T) {
 	tests := []struct {
 		file string
