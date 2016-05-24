@@ -192,7 +192,7 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestCanUpdateService(t *testing.T) {
+func TestRequiresReplacement(t *testing.T) {
 	tests := []struct {
 		new, old ECSServiceProperties
 		out      bool
@@ -200,46 +200,46 @@ func TestCanUpdateService(t *testing.T) {
 		{
 			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: intValue(1)},
 			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: intValue(0)},
-			true,
+			false,
 		},
 
 		{
 			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elb")}}},
 			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elb")}}},
-			true,
+			false,
 		},
 
 		// Can't change clusters.
 		{
 			ECSServiceProperties{Cluster: aws.String("clusterB")},
 			ECSServiceProperties{Cluster: aws.String("clusterA")},
-			false,
+			true,
 		},
 
 		// Can't change name.
 		{
 			ECSServiceProperties{ServiceName: aws.String("acme-inc-B")},
 			ECSServiceProperties{ServiceName: aws.String("acme-inc-A")},
-			false,
+			true,
 		},
 
 		// Can't change role.
 		{
 			ECSServiceProperties{Role: aws.String("roleB")},
 			ECSServiceProperties{Role: aws.String("roleA")},
-			false,
+			true,
 		},
 
 		// Can't change load balancers
 		{
 			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elbB")}}},
 			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elbA")}}},
-			false,
+			true,
 		},
 	}
 
 	for _, tt := range tests {
-		out := canUpdateService(&tt.new, &tt.old)
+		out := requiresReplacement(&tt.new, &tt.old)
 		assert.Equal(t, tt.out, out)
 	}
 }

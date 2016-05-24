@@ -62,28 +62,28 @@ func (p *ECSServiceResource) Provision(req Request) (string, interface{}, error)
 	case Update:
 		id := req.PhysicalResourceId
 
-		if canUpdateService(properties, oldProperties) {
-			_, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
-				Service:        aws.String(id),
-				Cluster:        properties.Cluster,
-				DesiredCount:   properties.DesiredCount.Value(),
-				TaskDefinition: properties.TaskDefinition,
-			})
+		if requiresReplacement(properties, oldProperties) {
+			// If we can't update the service, we'll need to create a new
+			// one, and destroy the old one.
+			oldId := id
+			id, err := p.create(properties)
+			if err != nil {
+				return oldId, nil, err
+			}
+
+			// There's no need to delete the old service here, since
+			// CloudFormation will send us a DELETE request for the old
+			// service.
+
 			return id, nil, err
 		}
 
-		// If we can't update the service, we'll need to create a new
-		// one, and destroy the old one.
-		oldId := id
-		id, err := p.create(properties)
-		if err != nil {
-			return oldId, nil, err
-		}
-
-		// There's no need to delete the old service here, since
-		// CloudFormation will send us a DELETE request for the old
-		// service.
-
+		_, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
+			Service:        aws.String(id),
+			Cluster:        properties.Cluster,
+			DesiredCount:   properties.DesiredCount.Value(),
+			TaskDefinition: properties.TaskDefinition,
+		})
 		return id, nil, err
 	default:
 		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
@@ -146,27 +146,28 @@ func (p *ECSServiceResource) delete(service, cluster *string) error {
 	return nil
 }
 
-// We currently only support updating the task definition and desired count.
-func canUpdateService(new, old *ECSServiceProperties) bool {
+// Certain parameters cannot be updated on existing services, so we need to
+// create a new physical resource.
+func requiresReplacement(new, old *ECSServiceProperties) bool {
 	eq := reflect.DeepEqual
 
 	if !eq(new.Cluster, old.Cluster) {
-		return false
+		return true
 	}
 
 	if !eq(new.Role, old.Role) {
-		return false
+		return true
 	}
 
 	if !eq(new.ServiceName, old.ServiceName) {
-		return false
+		return true
 	}
 
 	if !eq(new.LoadBalancers, old.LoadBalancers) {
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
 var letters = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
