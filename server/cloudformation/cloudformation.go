@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
@@ -193,6 +195,10 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 			"Custom::InstancePort": &InstancePortsProvisioner{
 				ports: lb.NewDBPortAllocator(db),
 			},
+			"Custom::ECSService": &ECSServiceResource{
+				ecs:     ecs.New(config),
+				postfix: postfix,
+			},
 		},
 		client: http.DefaultClient,
 		sqs:    sqs.New(config),
@@ -254,6 +260,19 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 		return fmt.Errorf("no provisioner for %v", req.ResourceType)
 	}
 
+	// If the provisioner defines a type for the properties, let's unmarhsal
+	// into that Go type.
+	if p, ok := p.(interface {
+		Properties() interface{}
+	}); ok {
+		req.ResourceProperties = p.Properties()
+		req.OldResourceProperties = p.Properties()
+		err = json.Unmarshal([]byte(m.Message), &req)
+		if err != nil {
+			return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
+		}
+	}
+
 	resp := NewResponseFromRequest(req)
 	resp.PhysicalResourceId, resp.Data, err = p.Provision(req)
 	switch err {
@@ -295,4 +314,38 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 	}
 
 	return nil
+}
+
+// IntValue defines an int64 type that can parse integers as strings from json.
+// It's common to use `Ref`'s inside templates, which means the value of some
+// properties could be a string or an integer.
+type IntValue int64
+
+func intValue(v int64) *IntValue {
+	i := IntValue(v)
+	return &i
+}
+
+func (i *IntValue) UnmarshalJSON(b []byte) error {
+	var si int64
+	if err := json.Unmarshal(b, &si); err == nil {
+		*i = IntValue(si)
+		return nil
+	}
+
+	v, err := strconv.Atoi(string(b[1 : len(b)-1]))
+	if err != nil {
+		return fmt.Errorf("error parsing int from string: %v", err)
+	}
+
+	*i = IntValue(v)
+	return nil
+}
+
+func (i *IntValue) Value() *int64 {
+	if i == nil {
+		return nil
+	}
+	p := int64(*i)
+	return &p
 }

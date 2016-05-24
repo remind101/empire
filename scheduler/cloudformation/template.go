@@ -144,6 +144,17 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 	serviceMappings := []map[string]interface{}{}
 
+	// The standard AWS::ECS::Service resource's default behavior is to wait
+	// for services to stabilize when you update them. While this is a
+	// sensible default for CloudFormation, the overall behavior when
+	// applied to Empire is not a great experience, because updates will
+	// lock up the stack.
+	//
+	// Setting this option makes the stack use a Custom::ECSService
+	// resources intead, which does not wait for the service to stabilize
+	// after updating.
+	fast := app.Env["ECS_UPDATES"] == "fast"
+
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(app, p)
 
@@ -306,12 +317,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		}
 
 		service := fmt.Sprintf("%s", key)
-		serviceMappings = append(serviceMappings, map[string]interface{}{
-			"Fn::Join": []interface{}{
-				"=",
-				[]interface{}{p.Type, map[string]string{"Ref": service}},
-			},
-		})
+		ecsServiceType := "AWS::ECS::Service"
 		serviceProperties := map[string]interface{}{
 			"Cluster": t.Cluster,
 			"DesiredCount": map[string]string{
@@ -322,11 +328,26 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				"Ref": taskDefinition,
 			},
 		}
+		if fast {
+			ecsServiceType = "Custom::ECSService"
+			// It's not possible to change the type of a resource,
+			// so we have to change the name of the service resource
+			// to something different (just append "Service").
+			service = fmt.Sprintf("%sService", service)
+			serviceProperties["ServiceName"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+			serviceProperties["ServiceToken"] = t.CustomResourcesTopic
+		}
 		if len(loadBalancers) > 0 {
 			serviceProperties["Role"] = t.ServiceRole
 		}
+		serviceMappings = append(serviceMappings, map[string]interface{}{
+			"Fn::Join": []interface{}{
+				"=",
+				[]interface{}{p.Type, map[string]string{"Ref": service}},
+			},
+		})
 		resources[service] = map[string]interface{}{
-			"Type":       "AWS::ECS::Service",
+			"Type":       ecsServiceType,
 			"Properties": serviceProperties,
 		}
 
