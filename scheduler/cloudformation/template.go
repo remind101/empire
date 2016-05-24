@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -370,6 +371,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	}, nil
 }
 
+// envByKey implements the sort.Interface interface to sort the environment
+// variables by key in alphabetical order.
+type envByKey []*ecs.KeyValuePair
+
+func (e envByKey) Len() int           { return len(e) }
+func (e envByKey) Less(i, j int) bool { return *e[i].Name < *e[j].Name }
+func (e envByKey) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
 // ContainerDefinition generates an ECS ContainerDefinition for a process.
 func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Process) *ecs.ContainerDefinition {
 	command := []*string{}
@@ -378,13 +387,15 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 		command = append(command, &ss)
 	}
 
-	environment := []*ecs.KeyValuePair{}
+	environment := envByKey{}
 	for k, v := range scheduler.Env(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
 		})
 	}
+
+	sort.Sort(environment)
 
 	labels := make(map[string]*string)
 	for k, v := range scheduler.Labels(app, p) {
