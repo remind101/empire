@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -25,10 +26,16 @@ import (
 	"golang.org/x/net/context"
 )
 
+// newUUID returns a new UUID. Set to a var so we can stub it out in tests.
+var newUUID = uuid.New
+
 // The name of the output key where process names are mapped to ECS services.
 // This output is expected to be a comma delimited list of `process=servicearn`
 // values.
 const servicesOutput = "Services"
+
+// Parameter used to trigger a restart of the application.
+const restartParameter = "RestartKey"
 
 // CloudFormation limits
 //
@@ -212,17 +219,29 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	)
 
 	// Build parameters for the stack.
-	var parameters []*cloudformation.Parameter
+	parameters := []*cloudformation.Parameter{
+		{
+			ParameterKey:   aws.String("DNS"),
+			ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
+		},
+		// FIXME: Remove this in favor of a Restart method.
+		{
+			ParameterKey:   aws.String(restartParameter),
+			ParameterValue: aws.String(newUUID()),
+		},
+	}
 	for _, p := range app.Processes {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String(scaleParameter(p.Type)),
 			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
 		})
+
+		// FIXME: Remove this in favor of a RestartProcess method.
+		parameters = append(parameters, &cloudformation.Parameter{
+			ParameterKey:   aws.String(restartProcessParameter(p.Type)),
+			ParameterValue: aws.String(newUUID()),
+		})
 	}
-	parameters = append(parameters, &cloudformation.Parameter{
-		ParameterKey:   aws.String("DNS"),
-		ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
-	})
 
 	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),

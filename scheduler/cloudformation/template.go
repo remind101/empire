@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -128,6 +129,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Type":        "String",
 			"Description": "When set to `true`, CNAME's will be altered",
 		},
+		restartParameter: map[string]string{
+			"Type": "String",
+		},
 	}
 	conditions := map[string]interface{}{
 		"DNSCondition": map[string]interface{}{
@@ -161,6 +165,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		key := processResourceName(p.Type)
 
 		parameters[scaleParameter(p.Type)] = map[string]string{
+			"Type": "String",
+		}
+		parameters[restartProcessParameter(p.Type)] = map[string]string{
 			"Type": "String",
 		}
 
@@ -290,6 +297,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			}
 		}
 
+		labels := map[string]interface{}{}
+		for k, v := range cd.DockerLabels {
+			labels[k] = v
+		}
+		labels["cloudformation.restart_key"] = map[string]interface{}{
+			"Fn::Join": []interface{}{"-", []interface{}{map[string]string{"Ref": restartParameter}, map[string]string{"Ref": restartProcessParameter(p.Type)}}},
+		}
+
 		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
 		containerDefinition := map[string]interface{}{
 			"Name":         *cd.Name,
@@ -300,7 +315,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Memory":       *cd.Memory,
 			"Environment":  cd.Environment,
 			"PortMappings": portMappings,
-			"DockerLabels": cd.DockerLabels,
+			"DockerLabels": labels,
 			"Ulimits":      cd.Ulimits,
 		}
 		if cd.LogConfiguration != nil {
@@ -370,6 +385,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	}, nil
 }
 
+// envByKey implements the sort.Interface interface to sort the environment
+// variables by key in alphabetical order.
+type envByKey []*ecs.KeyValuePair
+
+func (e envByKey) Len() int           { return len(e) }
+func (e envByKey) Less(i, j int) bool { return *e[i].Name < *e[j].Name }
+func (e envByKey) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
 // ContainerDefinition generates an ECS ContainerDefinition for a process.
 func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Process) *ecs.ContainerDefinition {
 	command := []*string{}
@@ -378,13 +401,15 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 		command = append(command, &ss)
 	}
 
-	environment := []*ecs.KeyValuePair{}
+	environment := envByKey{}
 	for k, v := range scheduler.Env(app, p) {
 		environment = append(environment, &ecs.KeyValuePair{
 			Name:  aws.String(k),
 			Value: aws.String(v),
 		})
 	}
+
+	sort.Sort(environment)
 
 	labels := make(map[string]*string)
 	for k, v := range scheduler.Labels(app, p) {
@@ -451,4 +476,10 @@ func processResourceName(process string) string {
 // scale of a process.
 func scaleParameter(process string) string {
 	return fmt.Sprintf("%sScale", processResourceName(process))
+}
+
+// restartProcessParameter returns the name of the parameter used to control
+// restarting a single process.
+func restartProcessParameter(process string) string {
+	return fmt.Sprintf("%sRestartKey", processResourceName(process))
 }

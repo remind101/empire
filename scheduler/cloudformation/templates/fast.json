@@ -47,7 +47,16 @@
       "Description": "When set to `true`, CNAME's will be altered",
       "Type": "String"
     },
+    "RestartKey": {
+      "Type": "String"
+    },
+    "webRestartKey": {
+      "Type": "String"
+    },
     "webScale": {
+      "Type": "String"
+    },
+    "workerRestartKey": {
       "Type": "String"
     },
     "workerScale": {
@@ -150,6 +159,19 @@
             ],
             "Cpu": 256,
             "DockerLabels": {
+              "cloudformation.restart_key": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      "Ref": "RestartKey"
+                    },
+                    {
+                      "Ref": "webRestartKey"
+                    }
+                  ]
+                ]
+              },
               "empire.app.process": "web"
             },
             "Environment": [
@@ -214,6 +236,19 @@
             ],
             "Cpu": 0,
             "DockerLabels": {
+              "cloudformation.restart_key": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      "Ref": "RestartKey"
+                    },
+                    {
+                      "Ref": "workerRestartKey"
+                    }
+                  ]
+                ]
+              },
               "empire.app.process": "worker"
             },
             "Environment": [

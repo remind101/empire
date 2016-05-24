@@ -47,7 +47,16 @@
       "Description": "When set to `true`, CNAME's will be altered",
       "Type": "String"
     },
+    "RestartKey": {
+      "Type": "String"
+    },
+    "apiRestartKey": {
+      "Type": "String"
+    },
     "apiScale": {
+      "Type": "String"
+    },
+    "webRestartKey": {
       "Type": "String"
     },
     "webScale": {
@@ -171,7 +180,21 @@
               "./bin/api"
             ],
             "Cpu": 0,
-            "DockerLabels": {},
+            "DockerLabels": {
+              "cloudformation.restart_key": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      "Ref": "RestartKey"
+                    },
+                    {
+                      "Ref": "apiRestartKey"
+                    }
+                  ]
+                ]
+              }
+            },
             "Environment": [
               {
                 "Name": "PORT",
@@ -286,7 +309,21 @@
               "./bin/web"
             ],
             "Cpu": 0,
-            "DockerLabels": {},
+            "DockerLabels": {
+              "cloudformation.restart_key": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    {
+                      "Ref": "RestartKey"
+                    },
+                    {
+                      "Ref": "webRestartKey"
+                    }
+                  ]
+                ]
+              }
+            },
             "Environment": [
               {
                 "Name": "PORT",

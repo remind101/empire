@@ -24,6 +24,13 @@ func TestEmpireTemplate(t *testing.T) {
 			&scheduler.App{
 				ID:   "1234",
 				Name: "acme-inc",
+				Env: map[string]string{
+					// These should get re-sorted in
+					// alphabetical order.
+					"C": "foo",
+					"A": "foobar",
+					"B": "bar",
+				},
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
