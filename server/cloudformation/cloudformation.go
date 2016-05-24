@@ -196,7 +196,8 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 				ports: lb.NewDBPortAllocator(db),
 			},
 			"Custom::ECSService": &ECSServiceResource{
-				ecs: ecs.New(config),
+				ecs:     ecs.New(config),
+				postfix: postfix,
 			},
 		},
 		client: http.DefaultClient,

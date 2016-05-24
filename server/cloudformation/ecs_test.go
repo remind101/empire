@@ -1,9 +1,11 @@
 package cloudformation
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -12,16 +14,17 @@ import (
 func TestECSServiceResource_Create(t *testing.T) {
 	e := new(mockECS)
 	p := &ECSServiceResource{
-		ecs: e,
+		ecs:     e,
+		postfix: func() string { return "-A" },
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
-		ServiceName:  aws.String("acme-inc-web"),
+		ServiceName:  aws.String("acme-inc-web-A"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
-			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A"),
 		},
 	}, nil)
 
@@ -35,8 +38,10 @@ func TestECSServiceResource_Create(t *testing.T) {
 		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A", id)
 	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
 }
 
 func TestECSServiceResource_Update(t *testing.T) {
@@ -71,24 +76,31 @@ func TestECSServiceResource_Update(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
 	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
 }
 
-func TestECSServiceResource_Update_Cluster(t *testing.T) {
+func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	e := new(mockECS)
 	p := &ECSServiceResource{
-		ecs: e,
+		ecs:     e,
+		postfix: func() string { return "-B" },
 	}
 
-	e.On("UpdateService", &ecs.UpdateServiceInput{
-		Service:        aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
-		Cluster:        aws.String("cluster"),
+	e.On("CreateService", &ecs.CreateServiceInput{
+		ServiceName:    aws.String("acme-inc-web-B"),
+		Cluster:        aws.String("clusterB"),
 		DesiredCount:   aws.Int64(2),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
-	}).Return(&ecs.UpdateServiceOutput{}, nil)
+	}).Return(&ecs.CreateServiceOutput{
+		Service: &ecs.Service{
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B"),
+		},
+	}, nil)
 
 	id, data, err := p.Provision(Request{
 		RequestType:        Update,
-		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterB"),
 			ServiceName:    aws.String("acme-inc-web"),
@@ -102,10 +114,11 @@ func TestECSServiceResource_Update_Cluster(t *testing.T) {
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
 		},
 	})
-	assert.Error(t, err)
-	assert.EqualError(t, err, "cannot update cluster")
-	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B", id)
 	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
 }
 
 func TestECSServiceResource_Delete(t *testing.T) {
@@ -142,6 +155,41 @@ func TestECSServiceResource_Delete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
 	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+}
+
+func TestECSServiceResource_Delete_NotActive(t *testing.T) {
+	e := new(mockECS)
+	p := &ECSServiceResource{
+		ecs: e,
+	}
+
+	e.On("UpdateService", &ecs.UpdateServiceInput{
+		Service:      aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
+		Cluster:      aws.String("cluster"),
+		DesiredCount: aws.Int64(0),
+	}).Return(&ecs.UpdateServiceOutput{}, awserr.New("ServiceNotActiveException", "Service was not ACTIVE", errors.New("")))
+
+	id, data, err := p.Provision(Request{
+		RequestType:        Delete,
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
+		OldResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
 }
 
 func TestCanUpdateService(t *testing.T) {
@@ -192,11 +240,7 @@ func TestCanUpdateService(t *testing.T) {
 
 	for _, tt := range tests {
 		out := canUpdateService(&tt.new, &tt.old)
-		if tt.out {
-			assert.Nil(t, out)
-		} else {
-			assert.Error(t, out)
-		}
+		assert.Equal(t, tt.out, out)
 	}
 }
 
