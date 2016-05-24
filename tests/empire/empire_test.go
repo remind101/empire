@@ -101,10 +101,9 @@ func TestEmpire_Deploy(t *testing.T) {
 		ID:   app.ID,
 		Name: "acme-inc",
 		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v1",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			"EMPIRE_APPID":   app.ID,
+			"EMPIRE_APPNAME": "acme-inc",
+			"EMPIRE_RELEASE": "v1",
 		},
 		Labels: map[string]string{
 			"empire.app.name":    "acme-inc",
@@ -266,10 +265,9 @@ func TestEmpire_Run(t *testing.T) {
 		ID:   app.ID,
 		Name: "acme-inc",
 		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v1",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			"EMPIRE_APPID":   app.ID,
+			"EMPIRE_APPNAME": "acme-inc",
+			"EMPIRE_RELEASE": "v1",
 		},
 		Labels: map[string]string{
 			"empire.app.name":    "acme-inc",
@@ -340,10 +338,9 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 		ID:   app.ID,
 		Name: "acme-inc",
 		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v1",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			"EMPIRE_APPID":   app.ID,
+			"EMPIRE_APPNAME": "acme-inc",
+			"EMPIRE_RELEASE": "v1",
 		},
 		Labels: map[string]string{
 			"empire.app.name":    "acme-inc",
@@ -421,11 +418,10 @@ func TestEmpire_Set(t *testing.T) {
 		ID:   app.ID,
 		Name: "acme-inc",
 		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v1",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
-			"RAILS_ENV":         "production",
+			"EMPIRE_APPID":   app.ID,
+			"EMPIRE_APPNAME": "acme-inc",
+			"EMPIRE_RELEASE": "v1",
+			"RAILS_ENV":      "production",
 		},
 		Labels: map[string]string{
 			"empire.app.name":    "acme-inc",
@@ -468,10 +464,9 @@ func TestEmpire_Set(t *testing.T) {
 		ID:   app.ID,
 		Name: "acme-inc",
 		Env: map[string]string{
-			"EMPIRE_APPID":      app.ID,
-			"EMPIRE_APPNAME":    "acme-inc",
-			"EMPIRE_RELEASE":    "v2",
-			"EMPIRE_CREATED_AT": "2015-01-01T01:01:01Z",
+			"EMPIRE_APPID":   app.ID,
+			"EMPIRE_APPNAME": "acme-inc",
+			"EMPIRE_RELEASE": "v2",
 		},
 		Labels: map[string]string{
 			"empire.app.name":    "acme-inc",

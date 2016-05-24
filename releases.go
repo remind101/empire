@@ -264,7 +264,6 @@ func newSchedulerApp(release *Release) *scheduler.App {
 	env["EMPIRE_APPID"] = release.App.ID
 	env["EMPIRE_APPNAME"] = release.App.Name
 	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
-	env["EMPIRE_CREATED_AT"] = timex.Now().Format(time.RFC3339)
 
 	labels := map[string]string{
 		"empire.app.id":      release.App.ID,
