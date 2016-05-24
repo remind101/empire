@@ -269,27 +269,31 @@ func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformati
 	status := *stack.StackStatus
 	stackName := input.StackName
 
-	// The parameters that the stack defines. We need to make sure that we
-	// provide all parameters in the update (lame).
-	definedParams := make(map[string]bool)
-	for _, p := range stack.Parameters {
-		definedParams[*p.ParameterKey] = true
-	}
+	// If we're updating a stack, without changing the template, merge in
+	// existing parameters with their previous value.
+	if input.UsePreviousTemplate != nil && *input.UsePreviousTemplate == true {
+		// The parameters that the stack defines. We need to make sure that we
+		// provide all parameters in the update (lame).
+		definedParams := make(map[string]bool)
+		for _, p := range stack.Parameters {
+			definedParams[*p.ParameterKey] = true
+		}
 
-	// The parameters that are provided in this update.
-	providedParams := make(map[string]bool)
-	for _, p := range input.Parameters {
-		providedParams[*p.ParameterKey] = true
-	}
+		// The parameters that are provided in this update.
+		providedParams := make(map[string]bool)
+		for _, p := range input.Parameters {
+			providedParams[*p.ParameterKey] = true
+		}
 
-	// Fill in any parameters that weren't provided with their default
-	// value.
-	for k := range definedParams {
-		if !providedParams[k] {
-			input.Parameters = append(input.Parameters, &cloudformation.Parameter{
-				ParameterKey:     aws.String(k),
-				UsePreviousValue: aws.Bool(true),
-			})
+		// Fill in any parameters that weren't provided with their default
+		// value.
+		for k := range definedParams {
+			if !providedParams[k] {
+				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
+					ParameterKey:     aws.String(k),
+					UsePreviousValue: aws.Bool(true),
+				})
+			}
 		}
 	}
 
