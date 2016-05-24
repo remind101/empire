@@ -24,6 +24,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func init() {
+	newUUID = func() string { return "uuid" }
+}
+
 func TestScheduler_Submit_NewStack(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
@@ -55,6 +59,9 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("webRestartKey"), ParameterValue: aws.String("uuid")},
 		},
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
@@ -69,6 +76,12 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
+		Processes: []*scheduler.Process{
+			{
+				Type:      "web",
+				Instances: 1,
+			},
+		},
 	})
 	assert.NoError(t, err)
 
@@ -111,6 +124,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
@@ -163,6 +177,7 @@ func TestScheduler_Submit_StackUpdateInProgress(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
@@ -201,7 +216,6 @@ func TestScheduler_Remove(t *testing.T) {
 	c.On("DeleteStack", &cloudformation.DeleteStackInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(&cloudformation.DeleteStackOutput{}, nil)
-
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),

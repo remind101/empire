@@ -48,18 +48,15 @@
       "Type": "String"
     },
     "RestartKey": {
-      "Default": "uuid",
       "Type": "String"
     },
     "apiRestartKey": {
-      "Default": "uuid",
       "Type": "String"
     },
     "apiScale": {
       "Type": "String"
     },
     "webRestartKey": {
-      "Default": "uuid",
       "Type": "String"
     },
     "webScale": {
@@ -184,7 +181,7 @@
             ],
             "Cpu": 0,
             "DockerLabels": {
-              "empire.app.restart.key": {
+              "cloudformation.restart_key": {
                 "Fn::Join": [
                   "-",
                   [
@@ -313,7 +310,7 @@
             ],
             "Cpu": 0,
             "DockerLabels": {
-              "empire.app.restart.key": {
+              "cloudformation.restart_key": {
                 "Fn::Join": [
                   "-",
                   [

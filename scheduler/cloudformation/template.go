@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -19,9 +18,6 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
 )
-
-// newUUID returns a new UUID. Set to a var so we can stub it out in tests.
-var newUUID = uuid.New
 
 const (
 	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
@@ -134,8 +130,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Description": "When set to `true`, CNAME's will be altered",
 		},
 		restartParameter: map[string]string{
-			"Type":    "String",
-			"Default": newUUID(),
+			"Type": "String",
 		},
 	}
 	conditions := map[string]interface{}{
@@ -173,8 +168,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Type": "String",
 		}
 		parameters[restartProcessParameter(p.Type)] = map[string]string{
-			"Type":    "String",
-			"Default": newUUID(),
+			"Type": "String",
 		}
 
 		portMappings := []map[string]interface{}{}
@@ -307,7 +301,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		for k, v := range cd.DockerLabels {
 			labels[k] = v
 		}
-		labels["empire.app.restart.key"] = map[string]interface{}{
+		labels["cloudformation.restart_key"] = map[string]interface{}{
 			"Fn::Join": []interface{}{"-", []interface{}{map[string]string{"Ref": restartParameter}, map[string]string{"Ref": restartProcessParameter(p.Type)}}},
 		}
 

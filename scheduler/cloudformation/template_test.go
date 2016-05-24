@@ -14,10 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	newUUID = func() string { return "uuid" }
-}
-
 func TestEmpireTemplate(t *testing.T) {
 	tests := []struct {
 		file string
@@ -28,6 +24,13 @@ func TestEmpireTemplate(t *testing.T) {
 			&scheduler.App{
 				ID:   "1234",
 				Name: "acme-inc",
+				Env: map[string]string{
+					// These should get re-sorted in
+					// alphabetical order.
+					"C": "foo",
+					"A": "foobar",
+					"B": "bar",
+				},
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
