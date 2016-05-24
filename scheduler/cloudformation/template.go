@@ -317,15 +317,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		}
 
 		service := fmt.Sprintf("%s", key)
-		if fast {
-			service = fmt.Sprintf("%sService", service)
-		}
-		serviceMappings = append(serviceMappings, map[string]interface{}{
-			"Fn::Join": []interface{}{
-				"=",
-				[]interface{}{p.Type, map[string]string{"Ref": service}},
-			},
-		})
+		ecsServiceType := "AWS::ECS::Service"
 		serviceProperties := map[string]interface{}{
 			"Cluster": t.Cluster,
 			"DesiredCount": map[string]string{
@@ -337,16 +329,23 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			},
 		}
 		if fast {
+			ecsServiceType = "Custom::ECSService"
+			// It's not possible to change the type of a resource,
+			// so we have to change the name of the service resource
+			// to something different (just append "Service").
+			service = fmt.Sprintf("%sService", service)
 			serviceProperties["ServiceName"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
 			serviceProperties["ServiceToken"] = t.CustomResourcesTopic
 		}
 		if len(loadBalancers) > 0 {
 			serviceProperties["Role"] = t.ServiceRole
 		}
-		ecsServiceType := "AWS::ECS::Service"
-		if fast {
-			ecsServiceType = "Custom::ECSService"
-		}
+		serviceMappings = append(serviceMappings, map[string]interface{}{
+			"Fn::Join": []interface{}{
+				"=",
+				[]interface{}{p.Type, map[string]string{"Ref": service}},
+			},
+		})
 		resources[service] = map[string]interface{}{
 			"Type":       ecsServiceType,
 			"Properties": serviceProperties,
