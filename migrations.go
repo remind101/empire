@@ -545,4 +545,19 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`DROP TABLE scheduler_migration`,
 		}),
 	},
+
+	// This sets up a table that will be used as a queue for CloudFormation
+	// stack updates.
+	{
+		ID: 18,
+		Up: migrate.Queries([]string{
+			`CREATE TABLE cloudformation_queue (
+  id serial primary key,
+  stack text NOT NULL
+)`,
+		}),
+		Down: migrate.Queries([]string{
+			`DROP TABLE cloudformation_queue`,
+		}),
+	},
 }

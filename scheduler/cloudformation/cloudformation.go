@@ -131,10 +131,13 @@ type Scheduler struct {
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 	return &Scheduler{
-		cloudformation: cloudformation.New(config),
-		ecs:            ecs.New(config),
-		s3:             s3.New(config),
-		db:             db,
+		cloudformation: &stackUpdateQueue{
+			cloudformationClient: cloudformation.New(config),
+			db:                   db,
+		},
+		ecs: ecs.New(config),
+		s3:  s3.New(config),
+		db:  db,
 	}
 }
 
@@ -243,7 +246,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		})
 	}
 
-	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
@@ -264,13 +267,13 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			}
 		}
 	} else if err == nil {
-		if _, err := s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
+		if err := s.updateStack(&cloudformation.UpdateStackInput{
 			StackName:   aws.String(stackName),
 			TemplateURL: aws.String(url),
 			Parameters:  parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, wait); err != nil {
+		}); err != nil {
 			return err
 		}
 	} else {
@@ -278,82 +281,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	}
 
 	return nil
-}
-
-// updateStack performs a stack update, but waits for the stack to enter a
-// stable state before starting.
-//
-// TODO: Timeout?
-func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput, wait bool) (*cloudformation.UpdateStackOutput, error) {
-	status := *stack.StackStatus
-	stackName := input.StackName
-
-	// If we're updating a stack, without changing the template, merge in
-	// existing parameters with their previous value.
-	if input.UsePreviousTemplate != nil && *input.UsePreviousTemplate == true {
-		// The parameters that the stack defines. We need to make sure that we
-		// provide all parameters in the update (lame).
-		definedParams := make(map[string]bool)
-		for _, p := range stack.Parameters {
-			definedParams[*p.ParameterKey] = true
-		}
-
-		// The parameters that are provided in this update.
-		providedParams := make(map[string]bool)
-		for _, p := range input.Parameters {
-			providedParams[*p.ParameterKey] = true
-		}
-
-		// Fill in any parameters that weren't provided with their default
-		// value.
-		for k := range definedParams {
-			if !providedParams[k] {
-				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
-					ParameterKey:     aws.String(k),
-					UsePreviousValue: aws.Bool(true),
-				})
-			}
-		}
-	}
-
-	// If there's currently an update happening, wait for it to
-	// complete.
-	if strings.Contains(status, "IN_PROGRESS") {
-		if strings.Contains(status, "CREATE") {
-			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-				StackName: stackName,
-			}); err != nil {
-				return nil, err
-			}
-		} else if strings.Contains(status, "UPDATE") {
-			if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-				StackName: stackName,
-			}); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	resp, err := s.cloudformation.UpdateStack(input)
-	if err != nil {
-		if err, ok := err.(awserr.Error); ok {
-			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
-				return resp, nil
-			}
-		}
-
-		return resp, fmt.Errorf("error updating stack: %v", err)
-	}
-
-	if wait {
-		if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-			StackName: stackName,
-		}); err != nil {
-			return resp, err
-		}
-	}
-
-	return resp, nil
 }
 
 // Remove removes the CloudFormation stack for the given app.
@@ -577,14 +504,7 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 		return err
 	}
 
-	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
+	err = s.updateStack(&cloudformation.UpdateStackInput{
 		StackName:           aws.String(stackName),
 		UsePreviousTemplate: aws.Bool(true),
 		Parameters: []*cloudformation.Parameter{
@@ -593,7 +513,7 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
 			},
 		},
-	}, s.Wait)
+	})
 
 	return err
 }
@@ -642,6 +562,21 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 		return "", errNoStack
 	}
 	return stackName, err
+}
+
+func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput) error {
+	errCh := make(chan error)
+	go func() {
+		_, err := s.cloudformation.UpdateStack(input)
+		errCh <- err
+	}()
+
+	select {
+	case <-time.After(10 * time.Second):
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
 
 // extractServices extracts a map that maps the process name to the ARN of the
