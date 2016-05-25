@@ -76,7 +76,7 @@ func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 		Error(w, err, http.StatusInternalServerError)
 	}
 
-	api := Authenticate(r, authenticator)
+	api := Authenticate(withCancel(r), authenticator)
 
 	return middleware.HandleError(api, errorHandler)
 }
@@ -172,4 +172,37 @@ func UserFromContext(ctx context.Context) *empire.User {
 func findMessage(r *http.Request) (string, error) {
 	h := r.Header.Get(heroku.CommitMessageHeader)
 	return h, nil
+}
+
+// statusClientClosedRequest represents a 499 Client Closed Request (Nginx) HTTP status.
+// See: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+const statusClientClosedRequest = 499
+
+// withCancel wraps an httpx.Handler to cancel the context.Context when the
+// client connection is closed (e.g. to prevent long running operations from
+// continuing when a user hits ^C).
+func withCancel(h httpx.Handler) httpx.Handler {
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		ctx, cancel := context.WithCancel(ctx)
+
+		cw, ok := w.(http.CloseNotifier)
+		if !ok {
+			panic("expected the http.ResponseWriter to implement http.CloseNotifier")
+		}
+
+		closed := cw.CloseNotify()
+
+		go func() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-closed:
+				cancel()
+				w.WriteHeader(statusClientClosedRequest)
+				return
+			}
+		}()
+
+		return h.ServeHTTPContext(ctx, w, r)
+	})
 }
