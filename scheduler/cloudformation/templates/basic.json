@@ -157,7 +157,7 @@
             ],
             "Cpu": 256,
             "DockerLabels": {
-              "cloudformation.restart_key": {
+              "cloudformation.restart-key": {
                 "Fn::Join": [
                   "-",
                   [
@@ -240,7 +240,7 @@
             ],
             "Cpu": 0,
             "DockerLabels": {
-              "cloudformation.restart_key": {
+              "cloudformation.restart-key": {
                 "Fn::Join": [
                   "-",
                   [

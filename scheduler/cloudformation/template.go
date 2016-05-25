@@ -301,7 +301,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		for k, v := range cd.DockerLabels {
 			labels[k] = v
 		}
-		labels["cloudformation.restart_key"] = map[string]interface{}{
+		labels["cloudformation.restart-key"] = map[string]interface{}{
 			"Fn::Join": []interface{}{"-", []interface{}{map[string]string{"Ref": restartParameter}, map[string]string{"Ref": restartProcessParameter(p.Type)}}},
 		}
 
