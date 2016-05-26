@@ -40,10 +40,10 @@ const restartParameter = "RestartKey"
 
 // This controls how long a pending stack update has to wait in the queue before
 // it gives up.
-var lockTimeout = 2 * time.Minute
+var lockTimeout = 10 * time.Minute
 
-// Wait 10 seconds for a stack update to be submitted.
-var stackUpdateWait = 10 * time.Second
+// Wait 10 seconds for a lock for a stack update to be obtained.
+var lockWait = 2 * time.Second
 
 // CloudFormation limits
 //
@@ -299,23 +299,30 @@ func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, wait boo
 		errCh <- s.enqueueStackUpdate(input, locked, done)
 	}()
 
+	var err error
 	select {
-	case <-time.After(stackUpdateWait):
+	case <-time.After(lockWait):
+		// FIXME: At this point, we don't want to affect UX by waiting
+		// around, so we return. But, if the stack update times out, or
+		// there's an error, that information is essentially silenced.
 		return nil
+	case err = <-errCh:
 	case <-locked:
-		// If a lock for the stack update is obtained within a
-		// reasonable amount of time, we should just return the error
-		// returned from updating the stack.
-		if err := <-errCh; err != nil {
-			return err
-		}
-		if wait {
-			return <-done
-		}
-		return nil
+		// if a lock is obtained within the time frame, we might as well
+		// just wait for the update to get submitted.
+		err = <-errCh
 	}
 
-	panic("this should never happen")
+	if err != nil {
+		return err
+	}
+
+	// If wait is set, we'll wait for the stack update to fully complete.
+	if wait {
+		return <-done
+	}
+
+	return nil
 }
 
 // enqueueStackUpdate enqueues the stack update. This function returns as soon
@@ -339,8 +346,16 @@ func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, l
 
 	// We have one lock per CloudFormation stack.
 	key := crc32.ChecksumIEEE([]byte(fmt.Sprintf("stack_%s", *input.StackName)))
+
+	// If there are any other pending updates for this stack, fuck em.
+	_, err = tx.Exec(`SELECT pg_cancel_backend(pending.pid) FROM (SELECT pid FROM pg_locks WHERE locktype = 'advisory' AND granted = 'f' AND objid = $1) as pending`, key)
+	if err != nil {
+		return fmt.Errorf("error canceling pending locks: %v", err)
+	}
+
 	_, err = tx.Exec(`SELECT pg_advisory_lock($1)`, key)
 	if err != nil {
+		// TODO: If this was a user cancelation, ignore.
 		return fmt.Errorf("error obtaining lock to update stack %s: %v", *input.StackName, err)
 	}
 
@@ -354,15 +369,17 @@ func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, l
 
 	// Start up a goroutine that will wait for this stack update to
 	// complete, and release the lock when it completes.
-	go func(stackName string) {
-		defer tx.Commit()
-
-		done <- s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-			StackName: aws.String(stackName),
-		})
-	}(*input.StackName)
+	go s.waitUntilStackUpdateComplete(tx, *input.StackName, done)
 
 	return nil
+}
+
+func (s *Scheduler) waitUntilStackUpdateComplete(tx *sql.Tx, stackName string, done chan error) {
+	err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
+	tx.Commit()
+	done <- err
 }
 
 // executeStackUpdate performs a stack update.
