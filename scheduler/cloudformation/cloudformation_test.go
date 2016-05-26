@@ -128,6 +128,10 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
@@ -188,6 +192,10 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 			{ParameterKey: aws.String("webRestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -526,6 +534,7 @@ func TestScheduler_Scale(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
+		Wait:           true,
 		cloudformation: c,
 		db:             db,
 	}
@@ -533,15 +542,82 @@ func TestScheduler_Scale(t *testing.T) {
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
 	assert.NoError(t, err)
 
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+				},
+			},
+		},
+	}, nil)
+
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:           aws.String("acme-inc"),
 		UsePreviousTemplate: aws.Bool(true),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("2")},
+			{ParameterKey: aws.String("workerScale"), UsePreviousValue: aws.Bool(true)},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
 	err = s.Scale(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 2)
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+}
+
+func TestScheduler_Scale_NoUpdates(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Wait:           true,
+		cloudformation: c,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:           aws.String("acme-inc"),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("workerScale"), UsePreviousValue: aws.Bool(true)},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, awserr.New("ValidationError", "No updates are to be performed.", errors.New("")))
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	err = s.Scale(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 1)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)

@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"html/template"
 	"io"
 	"strings"
@@ -36,6 +37,13 @@ const servicesOutput = "Services"
 
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
+
+// This controls how long a pending stack update has to wait in the queue before
+// it gives up.
+var lockTimeout = 2 * time.Minute
+
+// Wait 10 seconds for a stack update to be submitted.
+var stackUpdateWait = 10 * time.Second
 
 // CloudFormation limits
 //
@@ -131,13 +139,10 @@ type Scheduler struct {
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 	return &Scheduler{
-		cloudformation: &stackUpdateQueue{
-			cloudformationClient: cloudformation.New(config),
-			db:                   db,
-		},
-		ecs: ecs.New(config),
-		s3:  s3.New(config),
-		db:  db,
+		cloudformation: cloudformation.New(config),
+		ecs:            ecs.New(config),
+		s3:             s3.New(config),
+		db:             db,
 	}
 }
 
@@ -273,7 +278,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Parameters:  parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}); err != nil {
+		}, wait); err != nil {
 			return err
 		}
 	} else {
@@ -281,6 +286,143 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	}
 
 	return nil
+}
+
+// updateStack enqueues the stack update, and waits up to 10 seconds for the
+// stack updated to be submitted.
+func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, wait bool) error {
+	done := make(chan error)
+	locked := make(chan struct{})
+	errCh := make(chan error)
+
+	go func() {
+		errCh <- s.enqueueStackUpdate(input, locked, done)
+	}()
+
+	select {
+	case <-time.After(stackUpdateWait):
+		return nil
+	case <-locked:
+		// If a lock for the stack update is obtained within a
+		// reasonable amount of time, we should just return the error
+		// returned from updating the stack.
+		if err := <-errCh; err != nil {
+			return err
+		}
+		if wait {
+			return <-done
+		}
+		return nil
+	}
+
+	panic("this should never happen")
+}
+
+// enqueueStackUpdate enqueues the stack update. This function returns as soon
+// as the stack update has been submitted.
+//
+// * If there are no updates currently in progress, the stack will be updated .
+// * If there is a currently active stack update, the update will be queued behind it.
+//
+// An error will be sent on the `done` channel when the stack update completes.
+func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, locked chan struct{}, done chan error) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	timeout := int(lockTimeout.Seconds() * 1000)
+	_, err = tx.Exec(fmt.Sprintf("SET LOCAL lock_timeout = %d", timeout))
+	if err != nil {
+		return fmt.Errorf("error setting lock timeout: %v", err)
+	}
+
+	// We have one lock per CloudFormation stack.
+	key := crc32.ChecksumIEEE([]byte(fmt.Sprintf("stack_%s", *input.StackName)))
+	_, err = tx.Exec(`SELECT pg_advisory_lock($1)`, key)
+	if err != nil {
+		return fmt.Errorf("error obtaining lock to update stack %s: %v", *input.StackName, err)
+	}
+
+	close(locked)
+
+	// Once the lock has been obtained, let's submit the stack update.
+	err = s.executeStackUpdate(input)
+	if err != nil {
+		return err
+	}
+
+	// Start up a goroutine that will wait for this stack update to
+	// complete, and release the lock when it completes.
+	go func(stackName string) {
+		defer tx.Commit()
+
+		done <- s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+			StackName: aws.String(stackName),
+		})
+	}(*input.StackName)
+
+	return nil
+}
+
+// executeStackUpdate performs a stack update.
+func (s *Scheduler) executeStackUpdate(input *cloudformation.UpdateStackInput) error {
+	stack, err := s.stack(input.StackName)
+	if err != nil {
+		return err
+	}
+
+	// If we're updating a stack, without changing the template, merge in
+	// existing parameters with their previous value.
+	if input.UsePreviousTemplate != nil && *input.UsePreviousTemplate == true {
+		// The parameters that the stack defines. We need to make sure that we
+		// provide all parameters in the update (lame).
+		definedParams := make(map[string]bool)
+		for _, p := range stack.Parameters {
+			definedParams[*p.ParameterKey] = true
+		}
+
+		// The parameters that are provided in this update.
+		providedParams := make(map[string]bool)
+		for _, p := range input.Parameters {
+			providedParams[*p.ParameterKey] = true
+		}
+
+		// Fill in any parameters that weren't provided with their default
+		// value.
+		for k := range definedParams {
+			if !providedParams[k] {
+				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
+					ParameterKey:     aws.String(k),
+					UsePreviousValue: aws.Bool(true),
+				})
+			}
+		}
+	}
+
+	_, err = s.cloudformation.UpdateStack(input)
+	if err != nil {
+		if err, ok := err.(awserr.Error); ok {
+			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("error updating stack: %v", err)
+	}
+
+	return nil
+}
+
+// stack returns the cloudformation.Stack for the given stack name.
+func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
+	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: stackName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Stacks[0], nil
 }
 
 // Remove removes the CloudFormation stack for the given app.
@@ -513,7 +655,7 @@ func (s *Scheduler) Scale(ctx context.Context, appID string, process string, ins
 				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
 			},
 		},
-	})
+	}, s.Wait)
 
 	return err
 }
@@ -562,21 +704,6 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 		return "", errNoStack
 	}
 	return stackName, err
-}
-
-func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput) error {
-	errCh := make(chan error)
-	go func() {
-		_, err := s.cloudformation.UpdateStack(input)
-		errCh <- err
-	}()
-
-	select {
-	case <-time.After(10 * time.Second):
-		return nil
-	case err := <-errCh:
-		return err
-	}
 }
 
 // extractServices extracts a map that maps the process name to the ARN of the
