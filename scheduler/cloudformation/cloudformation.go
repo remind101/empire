@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/lib/pq"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
@@ -368,7 +369,13 @@ func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, l
 
 	_, err = tx.Exec(fmt.Sprintf("SELECT pg_advisory_lock($1) /* %s */", context), key)
 	if err != nil {
-		// TODO: If this was a user cancelation, ignore.
+		// This will happen when a newer stack update obsoletes
+		// this one. We simply return nil.
+		//
+		// TODO: Should we return an error here?
+		if queryCanceled(err) {
+			return nil
+		}
 		return fmt.Errorf("error obtaining lock to update stack %s: %v", *input.StackName, err)
 	}
 
@@ -830,4 +837,17 @@ func chunkStrings(s []*string, size int) [][]*string {
 		s = s[end:]
 	}
 	return chunks
+}
+
+const pqQueryCanceled = "query_canceled"
+
+// queryCanceled returns true if the error represents a query_canceled error.
+func queryCanceled(err error) bool {
+	if err, ok := err.(*pq.Error); ok {
+		if err.Code.Name() == pqQueryCanceled {
+			return true
+		}
+	}
+
+	return false
 }
