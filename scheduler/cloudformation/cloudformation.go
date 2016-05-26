@@ -353,7 +353,12 @@ func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, l
 		return fmt.Errorf("error canceling pending locks: %v", err)
 	}
 
-	_, err = tx.Exec(`SELECT pg_advisory_lock($1)`, key)
+	context := fmt.Sprintf("stack %s", *input.StackName)
+	if input.TemplateURL != nil {
+		context = fmt.Sprintf("%s (%s)", context, *input.TemplateURL)
+	}
+
+	_, err = tx.Exec(fmt.Sprintf("SELECT pg_advisory_lock($1) /* %s */", context), key)
 	if err != nil {
 		// TODO: If this was a user cancelation, ignore.
 		return fmt.Errorf("error obtaining lock to update stack %s: %v", *input.StackName, err)
