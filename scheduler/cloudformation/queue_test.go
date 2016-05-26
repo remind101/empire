@@ -2,6 +2,7 @@ package cloudformation
 
 import (
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -37,8 +38,14 @@ func TestStackUpdateQueue_UpdateStack_EmptyQueue(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	_, err := q.UpdateStack(input)
+	done := make(chan error)
+	_, err := q.UpdateStackDone(input, done)
 	assert.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+	}
 
 	c.AssertExpectations(t)
 }

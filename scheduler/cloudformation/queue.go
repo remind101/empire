@@ -3,24 +3,18 @@ package cloudformation
 import (
 	"database/sql"
 	"fmt"
+	"hash/crc32"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 )
 
-const (
-	// Inserts the job into the queue, returning it's job id.
-	sqlEnqueue = `INSERT INTO cloudformation_queue (stack) VALUES ($1) RETURNING id`
-
-	// Removes the job from the queue.
-	sqlDequeue = `DELETE FROM cloudformation_queue WHERE id = $1`
-
-	// Returns the currently active job for an update.
-	sqlActive = `SELECT id FROM cloudformation_queue WHERE stack = $1 ORDER BY id asc LIMIT 1`
-
-	// Checks if this job is invalid (there's another update pending).
-	sqlPending = `SELECT count(*) FROM cloudformation_queue WHERE stack = $1 AND id > $2`
+var (
+	// This controls how long a pending stack update has to wait in the queue before
+	// it gives up.
+	lockTimeout = 2 * time.Minute
 )
 
 // stackUpdateQueue implements a simple queueing system for performing stack updates.
@@ -38,39 +32,45 @@ type stackUpdateQueue struct {
 // 2. If there is an active update, this update will be enqueued behind it.
 // 3. If there is a pending update, it will be replaced with this update.
 func (q *stackUpdateQueue) UpdateStack(input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
-	var id int
-	err := q.db.QueryRow(sqlEnqueue, *input.StackName).Scan(&id)
+	return q.UpdateStackDone(input, make(chan error, 1))
+}
+
+func (q *stackUpdateQueue) UpdateStackDone(input *cloudformation.UpdateStackInput, done chan error) (*cloudformation.UpdateStackOutput, error) {
+	tx, err := q.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	// Wait for this job to become active.
-	for {
-		var pending int
-		err := q.db.QueryRow(sqlPending, *input.StackName, id).Scan(&pending)
-		if err != nil {
-			return nil, err
-		}
-		if pending > 0 {
-			// If there's another pending stack update, we'll treat
-			// this one as invalid.
-			return nil, nil
-		}
-
-		// FIXME: Rate limit.
-		var active int
-		err = q.db.QueryRow(sqlActive, *input.StackName).Scan(&active)
-		if err != nil {
-			return nil, err
-		}
-
-		if active == id {
-			break
-		}
+	timeout := int(lockTimeout.Seconds() * 1000)
+	_, err = tx.Exec(fmt.Sprintf("SET LOCAL lock_timeout = %d", timeout))
+	if err != nil {
+		return nil, fmt.Errorf("error setting lock timeout: %v", err)
 	}
 
-	defer q.db.Exec(sqlDequeue, id)
-	return q.updateStack(input)
+	key := crc32.ChecksumIEEE([]byte(fmt.Sprintf("stack_%s", *input.StackName)))
+	_, err = tx.Exec(`SELECT pg_advisory_lock($1)`, key)
+	if err != nil {
+		return nil, fmt.Errorf("error obtaining stack update lock: %v", err)
+	}
+
+	resp, err := q.updateStack(input)
+	if err != nil {
+		return resp, err
+	}
+
+	// Start up a goroutine that will wait for this stack update to
+	// complete, and release the lock when it completes.
+	go func(stackName string) {
+		defer tx.Commit()
+
+		// Wait for the update to complete.
+		// FIXME: Timeout.
+		done <- q.cloudformationClient.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+			StackName: aws.String(stackName),
+		})
+	}(*input.StackName)
+
+	return resp, nil
 }
 
 // updateStack performs a stack update. It returns only when the update is
@@ -80,8 +80,6 @@ func (q *stackUpdateQueue) updateStack(input *cloudformation.UpdateStackInput) (
 	if err != nil {
 		return nil, err
 	}
-
-	stackName := input.StackName
 
 	// If we're updating a stack, without changing the template, merge in
 	// existing parameters with their previous value.
@@ -120,14 +118,6 @@ func (q *stackUpdateQueue) updateStack(input *cloudformation.UpdateStackInput) (
 		}
 
 		return resp, fmt.Errorf("error updating stack: %v", err)
-	}
-
-	// Wait for the update to complete.
-	// FIXME: Timeout.
-	if err := q.cloudformationClient.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-		StackName: stackName,
-	}); err != nil {
-		return resp, err
 	}
 
 	return resp, nil
