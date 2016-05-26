@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
@@ -144,7 +145,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		},
 	}
 	resources := map[string]interface{}{}
-	outputs := map[string]interface{}{}
+	outputs := map[string]interface{}{
+		"Release": map[string]interface{}{
+			"Value": app.Release,
+		},
+		"EmpireVersion": map[string]interface{}{
+			"Value": empire.Version,
+		},
+	}
 
 	serviceMappings := []map[string]interface{}{}
 

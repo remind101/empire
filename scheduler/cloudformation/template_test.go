@@ -22,8 +22,9 @@ func TestEmpireTemplate(t *testing.T) {
 		{
 			"basic.json",
 			&scheduler.App{
-				ID:   "1234",
-				Name: "acme-inc",
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
 				Env: map[string]string{
 					// These should get re-sorted in
 					// alphabetical order.
@@ -65,8 +66,9 @@ func TestEmpireTemplate(t *testing.T) {
 		{
 			"https.json",
 			&scheduler.App{
-				ID:   "1234",
-				Name: "acme-inc",
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
@@ -93,8 +95,9 @@ func TestEmpireTemplate(t *testing.T) {
 		{
 			"fast.json",
 			&scheduler.App{
-				ID:   "1234",
-				Name: "acme-inc",
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
 				Env: map[string]string{
 					"ECS_UPDATES": "fast",
 				},
@@ -154,10 +157,11 @@ func TestEmpireTemplate_Large(t *testing.T) {
 		env[fmt.Sprintf("ENV_VAR_%d", i)] = fmt.Sprintf("value%d", i)
 	}
 	app := &scheduler.App{
-		ID:     "",
-		Name:   "bigappwithlotsofprocesses",
-		Env:    env,
-		Labels: labels,
+		ID:      "",
+		Release: "v1",
+		Name:    "bigappwithlotsofprocesses",
+		Env:     env,
+		Labels:  labels,
 	}
 
 	for i := 0; i < 60; i++ {
