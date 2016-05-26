@@ -38,12 +38,20 @@ const servicesOutput = "Services"
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
 
-// This controls how long a pending stack update has to wait in the queue before
-// it gives up.
-var lockTimeout = 10 * time.Minute
+// Variables to control stack update locking.
+var (
+	// This controls how long a pending stack update has to wait in the queue before
+	// it gives up.
+	lockTimeout = 10 * time.Minute
 
-// Wait 10 seconds for a lock for a stack update to be obtained.
-var lockWait = 2 * time.Second
+	// Controls how long we'll wait to obtain the stack update lock before we
+	// consider the update to be asynchronous.
+	lockWait = 2 * time.Second
+
+	// Controls the maximum amount of time we'll wait for a stack update to
+	// complete before releasing the lock.
+	updateStackTimeout = 10 * time.Minute
+)
 
 // CloudFormation limits
 //
@@ -380,10 +388,21 @@ func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, l
 }
 
 func (s *Scheduler) waitUntilStackUpdateComplete(tx *sql.Tx, stackName string, done chan error) {
-	err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
-	tx.Commit()
+	errCh := make(chan error)
+	go func() {
+		errCh <- s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
+			StackName: aws.String(stackName),
+		})
+	}()
+
+	var err error
+	select {
+	case <-time.After(updateStackTimeout):
+		err = errors.New("timed out waiting for stack update to complete")
+	case err = <-errCh:
+	}
+
+	tx.Commit() // Release the lock
 	done <- err
 }
 
