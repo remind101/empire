@@ -88,11 +88,11 @@ type Request struct {
 	// This field contains the contents of the Properties object sent by the
 	// template developer. Its contents are defined by the custom resource
 	// provider.
-	ResourceProperties map[string]interface{} `json:"ResourceProperties"`
+	ResourceProperties interface{} `json:"ResourceProperties"`
 
 	// Used only for Update requests. Contains the resource properties that
 	// were declared previous to the update request.
-	OldResourceProperties map[string]interface{} `json:"OldResourceProperties"`
+	OldResourceProperties interface{} `json:"OldResourceProperties"`
 }
 
 // Possible response statuses.
