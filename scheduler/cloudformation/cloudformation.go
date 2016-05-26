@@ -85,6 +85,7 @@ type cloudformationClient interface {
 	DescribeStacks(*cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error)
 	WaitUntilStackCreateComplete(*cloudformation.DescribeStacksInput) error
 	WaitUntilStackUpdateComplete(*cloudformation.DescribeStacksInput) error
+	ValidateTemplate(*cloudformation.ValidateTemplateInput) (*cloudformation.ValidateTemplateOutput, error)
 }
 
 // ecsClient duck types the ecs.ECS interface that we use.
@@ -229,6 +230,13 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	}
 
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
+
+	_, err = s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String(url),
+	})
+	if err != nil {
+		return fmt.Errorf("error validating CloudFormation template: %v", err)
+	}
 
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},

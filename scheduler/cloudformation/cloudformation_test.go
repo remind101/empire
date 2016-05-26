@@ -50,6 +50,10 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		ContentType: aws.String("application/json"),
 	}).Return(&s3.PutObjectOutput{}, nil)
 
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id acme-inc does not exist", errors.New("")))
@@ -111,6 +115,10 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		ContentType: aws.String("application/json"),
 	}).Return(&s3.PutObjectOutput{}, nil)
 
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(&cloudformation.DescribeStacksOutput{
@@ -163,6 +171,10 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		ContentType: aws.String("application/json"),
 	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
@@ -713,6 +725,11 @@ func (m *mockCloudFormationClient) WaitUntilStackCreateComplete(input *cloudform
 func (m *mockCloudFormationClient) WaitUntilStackUpdateComplete(input *cloudformation.DescribeStacksInput) error {
 	args := m.Called(input)
 	return args.Error(0)
+}
+
+func (m *mockCloudFormationClient) ValidateTemplate(input *cloudformation.ValidateTemplateInput) (*cloudformation.ValidateTemplateOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*cloudformation.ValidateTemplateOutput), args.Error(1)
 }
 
 type mockS3Client struct {
