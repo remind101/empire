@@ -95,7 +95,6 @@ func (p *EnvironmentResource) setEnvironment(ctx context.Context, user *empire.U
 		Vars:    vars,
 		Message: fmt.Sprintf("%s variables via Cloudformation", action),
 	})
-
 	return err
 }
 
@@ -142,6 +141,5 @@ func varsFromRequest(req Request) (empire.Vars, error) {
 			}
 		}
 	}
-
 	return vars, errors.ErrorOrNil()
 }
