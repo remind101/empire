@@ -16,7 +16,7 @@ type appClient interface {
 	Destroy(context.Context, empire.DestroyOpts) error
 }
 
-// AppProperties represents the properties for the Custom::EmpirApp
+// AppProperties represents the properties for the Custom::EmpireApp
 type AppProperties struct {
 	Name string
 }
