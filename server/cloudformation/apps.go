@@ -9,8 +9,8 @@ import (
 	"github.com/remind101/empire"
 )
 
-// empireClient mocks the Empire interface we use.
-type empireClient interface {
+// appClient mocks the Empire interface we use.
+type appClient interface {
 	AppsFind(empire.AppsQuery) (*empire.App, error)
 	Create(context.Context, empire.CreateOpts) (*empire.App, error)
 	Destroy(context.Context, empire.DestroyOpts) error
@@ -23,7 +23,7 @@ type AppProperties struct {
 
 // AppResource is a Provisioner that will manage an Empire application
 type AppResource struct {
-	empire empireClient
+	empire appClient
 }
 
 func (p *AppResource) Provision(req Request) (id string, data interface{}, err error) {

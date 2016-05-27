@@ -8,8 +8,32 @@ import (
 	"golang.org/x/net/context"
 )
 
+// envClient mocks the Empire interface we use.
+type envClient interface {
+	AppsFind(empire.AppsQuery) (*empire.App, error)
+	Set(context.Context, empire.SetOpts) (*empire.Config, error)
+}
+
+type Variable struct {
+	Name  *string
+	Value *string
+}
+
+// EnvironmentProperties represents the properties for the
+// Custom::EmpireAppEnvironment
+type EnvironmentProperties struct {
+	AppId     *string
+	Variables []Variable
+}
+
+// EnvironmentResource is a Provisioner that manages environmental variables
+// within an Empire application.
 type EnvironmentResource struct {
-	empire *empire.Empire
+	empire envClient
+}
+
+func (p *EnvironmentResource) Properties() interface{} {
+	return &EnvironmentProperties{}
 }
 
 type VariableError struct {
@@ -24,14 +48,14 @@ func (v *VariableError) Error() string {
 func (p *EnvironmentResource) Provision(req Request) (id string, data interface{}, err error) {
 	ctx := context.Background()
 	user := NewUser()
+	properties := req.ResourceProperties.(*EnvironmentProperties)
 
-	var ok bool
 	switch req.RequestType {
 	case Create:
-		id, ok = req.ResourceProperties["AppId"].(string)
-		if !ok {
+		if *properties.AppId == "" {
 			return "", nil, fmt.Errorf("missing parameter: AppId")
 		}
+		id = *properties.AppId
 	default:
 		id = req.PhysicalResourceId
 	}
@@ -75,83 +99,46 @@ func (p *EnvironmentResource) setEnvironment(ctx context.Context, user *empire.U
 	return err
 }
 
-type Variable struct {
-	Key   string
-	Value *string
-}
-
-func parseVariable(index int, input interface{}) (*Variable, error) {
-	var variable *Variable
-	var err *multierror.Error
-	if m, ok := input.(map[string]interface{}); ok {
-		n, ok := m["Name"]
-		if !ok {
-			err = multierror.Append(err, &VariableError{index, "key 'Name' is required"})
-		}
-
-		var key string
-		switch n := n.(type) {
-		case string:
-			key = n
-		default:
-		}
-
-		if ok && key == "" {
-			err = multierror.Append(err, &VariableError{index, "key 'Name' is required"})
-		}
-
-		v, ok := m["Value"]
-		if !ok {
-			err = multierror.Append(err, &VariableError{index, "key 'Value' is required"})
-		}
-
-		var val *string
-		switch v := v.(type) {
-		case string:
-			vv := v
-			val = &vv
-		default:
-		}
-
-		if key != "" {
-			variable = &Variable{Key: key, Value: val}
-		}
-	} else {
-		err = multierror.Append(err, &VariableError{index, "keys 'Name' and 'Value' are required"})
+func isValid(index int, variable *Variable) error {
+	var err error
+	if variable.Name == nil || *variable.Name == "" {
+		err = &VariableError{index, "key 'Name' is required"}
 	}
-	return variable, err.ErrorOrNil()
+	return err
 }
 
 func varsFromRequest(req Request) (empire.Vars, error) {
 	vars := make(empire.Vars)
 	var errors *multierror.Error
 
-	if variables, ok := req.ResourceProperties["Variables"].([]interface{}); ok {
-		for i, variable := range variables {
-			v, err := parseVariable(i, variable)
+	properties := req.ResourceProperties.(*EnvironmentProperties)
+	oldProperties := req.OldResourceProperties.(*EnvironmentProperties)
+
+	for i, v := range properties.Variables {
+		err := isValid(i, &v)
+		if err != nil {
+			errors = multierror.Append(errors, err)
+			continue
+		}
+
+		var val *string
+		// If we're deleting the resource, we want to unset the variable
+		if req.RequestType != Delete {
+			val = v.Value
+		}
+		vars[empire.Variable(*v.Name)] = val
+	}
+
+	if req.RequestType == Update {
+		for i, v := range oldProperties.Variables {
+			err := isValid(i, &v)
 			if err != nil {
 				errors = multierror.Append(errors, err)
 				continue
 			}
-			var val *string
-			if req.RequestType != Delete {
-				val = v.Value
-			}
-			vars[empire.Variable(v.Key)] = val
-		}
-	}
 
-	if req.RequestType == Update {
-		if variables, ok := req.OldResourceProperties["Variables"].([]interface{}); ok {
-			for i, variable := range variables {
-				v, err := parseVariable(i, variable)
-				if err != nil {
-					errors = multierror.Append(errors, err)
-					continue
-				}
-				if _, ok := vars[empire.Variable(v.Key)]; !ok {
-					vars[empire.Variable(v.Key)] = nil
-				}
+			if _, ok := vars[empire.Variable(*v.Name)]; !ok {
+				vars[empire.Variable(*v.Name)] = nil
 			}
 		}
 	}
