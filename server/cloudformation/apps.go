@@ -18,7 +18,7 @@ type appClient interface {
 
 // AppProperties represents the properties for the Custom::EmpireApp
 type AppProperties struct {
-	Name string
+	Name *string
 }
 
 // AppResource is a Provisioner that will manage an Empire application
@@ -36,7 +36,7 @@ func (p *AppResource) Provision(req Request) (id string, data interface{}, err e
 	case Create:
 		name := properties.Name
 		app, err := p.empire.AppsFind(empire.AppsQuery{
-			Name: &name,
+			Name: name,
 		})
 		if err != nil && err != gorm.RecordNotFound {
 			return "", nil, err
@@ -44,7 +44,7 @@ func (p *AppResource) Provision(req Request) (id string, data interface{}, err e
 
 		app, err = p.empire.Create(ctx, empire.CreateOpts{
 			User:    user,
-			Name:    name,
+			Name:    *name,
 			Message: "Creating app via Cloudformation",
 		})
 		if err != nil {

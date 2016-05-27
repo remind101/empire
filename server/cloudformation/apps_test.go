@@ -3,6 +3,7 @@ package cloudformation
 import (
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestAppResourceProvision_Create(t *testing.T) {
 	id, _, err := resource.Provision(Request{
 		RequestType: Create,
 		ResourceProperties: &AppProperties{
-			Name: app.Name,
+			Name: aws.String(app.Name),
 		},
 	})
 	assert.NoError(t, err)
