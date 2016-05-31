@@ -305,8 +305,8 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	return nil
 }
 
-// updateStack enqueues the stack update, and waits up to 10 seconds for the
-// stack updated to be submitted.
+// updateStack enqueues the stack update, and waits a set amount of time for the
+// stack update to be submitted.
 func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, wait bool) error {
 	done := make(chan error)
 	locked := make(chan struct{})
