@@ -21,9 +21,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/lib/pq"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
+	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
 	"golang.org/x/net/context"
 )
@@ -350,38 +350,23 @@ func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, wait boo
 //
 // An error will be sent on the `done` channel when the stack update completes.
 func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, locked chan struct{}, done chan error) error {
-	tx, err := s.db.Begin()
+	l, err := newAdvisoryLock(s.db, input)
 	if err != nil {
 		return err
 	}
 
-	timeout := int(lockTimeout.Seconds() * 1000)
-	_, err = tx.Exec(fmt.Sprintf("SET LOCAL lock_timeout = %d", timeout))
-	if err != nil {
-		return fmt.Errorf("error setting lock timeout: %v", err)
+	// Cancel any pending stack updates, since this one obsoletes older
+	// updates.
+	if err := l.CancelPending(); err != nil {
+		return fmt.Errorf("error canceling pending stack updates: %v", err)
 	}
 
-	// We have one lock per CloudFormation stack.
-	key := crc32.ChecksumIEEE([]byte(fmt.Sprintf("stack_%s", *input.StackName)))
-
-	// If there are any other pending updates for this stack, fuck em.
-	_, err = tx.Exec(`SELECT pg_cancel_backend(pending.pid) FROM (SELECT pid FROM pg_locks WHERE locktype = 'advisory' AND granted = 'f' AND objid = $1) as pending`, key)
-	if err != nil {
-		return fmt.Errorf("error canceling pending locks: %v", err)
-	}
-
-	context := fmt.Sprintf("stack %s", *input.StackName)
-	if input.TemplateURL != nil {
-		context = fmt.Sprintf("%s (%s)", context, *input.TemplateURL)
-	}
-
-	_, err = tx.Exec(fmt.Sprintf("SELECT pg_advisory_lock($1) /* %s */", context), key)
-	if err != nil {
+	if err := l.Lock(); err != nil {
 		// This will happen when a newer stack update obsoletes
 		// this one. We simply return nil.
 		//
 		// TODO: Should we return an error here?
-		if queryCanceled(err) {
+		if err == pglock.Canceled {
 			return nil
 		}
 		return fmt.Errorf("error obtaining lock to update stack %s: %v", *input.StackName, err)
@@ -397,12 +382,12 @@ func (s *Scheduler) enqueueStackUpdate(input *cloudformation.UpdateStackInput, l
 
 	// Start up a goroutine that will wait for this stack update to
 	// complete, and release the lock when it completes.
-	go s.waitUntilStackUpdateComplete(tx, *input.StackName, done)
+	go s.waitUntilStackUpdateComplete(l, *input.StackName, done)
 
 	return nil
 }
 
-func (s *Scheduler) waitUntilStackUpdateComplete(tx *sql.Tx, stackName string, done chan error) {
+func (s *Scheduler) waitUntilStackUpdateComplete(lock *pglock.AdvisoryLock, stackName string, done chan error) {
 	errCh := make(chan error)
 	go func() {
 		errCh <- s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
@@ -417,7 +402,7 @@ func (s *Scheduler) waitUntilStackUpdateComplete(tx *sql.Tx, stackName string, d
 	case err = <-errCh:
 	}
 
-	tx.Commit() // Release the lock
+	lock.Unlock()
 	done <- err
 }
 
@@ -847,15 +832,23 @@ func chunkStrings(s []*string, size int) [][]*string {
 	return chunks
 }
 
-const pqQueryCanceled = "query_canceled"
+// stackLackKey returns the key to use when obtaining an advisory lock for a
+// CloudFormation stack.
+func stackLockKey(stackName string) uint32 {
+	return crc32.ChecksumIEEE([]byte(fmt.Sprintf("stack_%s", stackName)))
+}
 
-// queryCanceled returns true if the error represents a query_canceled error.
-func queryCanceled(err error) bool {
-	if err, ok := err.(*pq.Error); ok {
-		if err.Code.Name() == pqQueryCanceled {
-			return true
-		}
+// newAdvsiroyLock returns a new AdvisoryLock suitable for obtaining a lock to
+// perform the stack update.
+func newAdvisoryLock(db *sql.DB, input *cloudformation.UpdateStackInput) (*pglock.AdvisoryLock, error) {
+	l, err := pglock.NewAdvisoryLock(db, stackLockKey(*input.StackName))
+	if err != nil {
+		return l, err
 	}
-
-	return false
+	l.LockTimeout = lockTimeout
+	l.Context = fmt.Sprintf("stack %s", *input.StackName)
+	if input.TemplateURL != nil {
+		l.Context = fmt.Sprintf("%s (%s)", l.Context, *input.TemplateURL)
+	}
+	return l, nil
 }

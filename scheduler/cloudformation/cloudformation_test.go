@@ -635,10 +635,6 @@ func TestScheduler_Scale_NoUpdates(t *testing.T) {
 	c.AssertExpectations(t)
 }
 
-func TestScheduler_Concurrency_QueuedUpdate(t *testing.T)       {}
-func TestScheduler_Concurrency_Obsoletion(t *testing.T)         {}
-func TestScheduler_Concurrency_StackUpdateTimeout(t *testing.T) {}
-
 func TestExtractServices(t *testing.T) {
 	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
 	services := extractServices(output)
