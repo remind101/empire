@@ -36,7 +36,6 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
@@ -77,7 +76,8 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
+	done := make(chan error)
+	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
@@ -86,8 +86,12 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 				Instances: 1,
 			},
 		},
+	}, SubmitOptions{
+		Done: done,
 	})
 	assert.NoError(t, err)
+
+	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -101,7 +105,6 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
@@ -140,11 +143,15 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
+	done := make(chan error)
+	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
+	}, SubmitOptions{
+		Done: done,
 	})
 	assert.NoError(t, err)
+	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -158,7 +165,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
@@ -209,14 +215,18 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
+	done := make(chan error)
+	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{Type: "web", Instances: 1},
 		},
+	}, SubmitOptions{
+		Done: done,
 	})
 	assert.NoError(t, err)
+	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -230,7 +240,6 @@ func TestScheduler_Remove(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
@@ -274,7 +283,6 @@ func TestScheduler_Remove_NoCFStack(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
@@ -303,7 +311,6 @@ func TestScheduler_Remove_NoDBStack_NoCFStack(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		cloudformation: c,
 		s3:             x,
@@ -326,7 +333,6 @@ func TestScheduler_Instances(t *testing.T) {
 	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		Cluster:        "cluster",
 		cloudformation: c,
@@ -462,7 +468,6 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		Bucket:         "bucket",
 		Cluster:        "cluster",
 		cloudformation: c,
@@ -546,7 +551,6 @@ func TestScheduler_Scale(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		cloudformation: c,
 		db:             db,
 	}
@@ -581,8 +585,12 @@ func TestScheduler_Scale(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err = s.Scale(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 2)
+	done := make(chan error)
+	err = s.ScaleWithOptions(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 2, ScaleOptions{
+		Done: done,
+	})
 	assert.NoError(t, err)
+	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 }
@@ -594,7 +602,6 @@ func TestScheduler_Scale_NoUpdates(t *testing.T) {
 	c := new(mockCloudFormationClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
-		Wait:           true,
 		cloudformation: c,
 		db:             db,
 	}
@@ -629,8 +636,12 @@ func TestScheduler_Scale_NoUpdates(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err = s.Scale(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 1)
+	done := make(chan error)
+	err = s.ScaleWithOptions(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", "web", 1, ScaleOptions{
+		Done: done,
+	})
 	assert.NoError(t, err)
+	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 }
