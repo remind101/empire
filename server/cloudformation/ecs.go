@@ -15,6 +15,8 @@ type ecsClient interface {
 	CreateService(*ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error)
 	DeleteService(*ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
+	DeregisterTaskDefinition(*ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error)
 }
 
 type LoadBalancer struct {
@@ -143,6 +145,139 @@ func (p *ECSServiceResource) delete(service, cluster *string) error {
 		return fmt.Errorf("error deleting service: %v", err)
 	}
 
+	return nil
+}
+
+type PortMapping struct {
+	ContainerPort *IntValue
+	HostPort      *IntValue
+}
+
+type Ulimit struct {
+	Name      *string
+	HardLimit *IntValue
+	SoftLimit *IntValue
+}
+
+type ContainerDefinition struct {
+	Name             *string
+	Command          []*string
+	Cpu              *IntValue
+	Image            *string
+	Essential        *string
+	Memory           *IntValue
+	PortMappings     []*PortMapping
+	DockerLabels     map[string]*string
+	Ulimits          []*Ulimit
+	Environment      []*string
+	LogConfiguration *ecs.LogConfiguration
+}
+
+// TaskDefinitionProperties are properties passed to the
+// Custom::ECSTaskDefinition custom resource.
+type ECSTaskDefinitionProperties struct {
+	Family               *string
+	ContainerDefinitions []ContainerDefinition
+}
+
+// ECSTaskDefinitionResource is a custom resource that provisions ECS task
+// definitions.
+type ECSTaskDefinitionResource struct {
+	ecs ecsClient
+
+	// postfix returns a string that should be appended when creating new
+	// ecs services.
+	postfix func() string
+}
+
+func (p *ECSTaskDefinitionResource) Properties() interface{} {
+	return &ECSTaskDefinitionProperties{}
+}
+
+func (p *ECSTaskDefinitionResource) Provision(req Request) (string, interface{}, error) {
+	properties := req.ResourceProperties.(*ECSTaskDefinitionProperties)
+
+	switch req.RequestType {
+	case Create:
+		id, err := p.create(properties)
+		return id, nil, err
+	case Delete:
+		id := req.PhysicalResourceId
+		err := p.delete(id)
+		return id, nil, err
+	case Update:
+		id, err := p.create(properties)
+		return id, nil, err
+	default:
+		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
+	}
+}
+
+func (p *ECSTaskDefinitionResource) create(properties *ECSTaskDefinitionProperties) (string, error) {
+	var containerDefinitions []*ecs.ContainerDefinition
+	for _, c := range properties.ContainerDefinitions {
+		// TODO: Fetch, and unencrypt environment.
+		var (
+			env          []*ecs.KeyValuePair
+			ulimits      []*ecs.Ulimit
+			portMappings []*ecs.PortMapping
+			essential    *bool
+		)
+
+		for _, u := range c.Ulimits {
+			ulimits = append(ulimits, &ecs.Ulimit{
+				Name:      u.Name,
+				HardLimit: u.HardLimit.Value(),
+				SoftLimit: u.SoftLimit.Value(),
+			})
+		}
+
+		for _, m := range c.PortMappings {
+			portMappings = append(portMappings, &ecs.PortMapping{
+				ContainerPort: m.ContainerPort.Value(),
+				HostPort:      m.HostPort.Value(),
+			})
+		}
+
+		if c.Essential != nil {
+			essential = aws.Bool(*c.Essential == "true")
+		}
+
+		containerDefinitions = append(containerDefinitions, &ecs.ContainerDefinition{
+			Name:             c.Name,
+			Command:          c.Command,
+			Cpu:              c.Cpu.Value(),
+			Image:            c.Image,
+			Essential:        essential,
+			Memory:           c.Memory.Value(),
+			PortMappings:     portMappings,
+			DockerLabels:     c.DockerLabels,
+			Ulimits:          ulimits,
+			LogConfiguration: c.LogConfiguration,
+			Environment:      env,
+		})
+	}
+
+	var family *string
+	if properties.Family != nil {
+		family = aws.String(*properties.Family + p.postfix())
+	}
+	resp, err := p.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+		Family:               family,
+		ContainerDefinitions: containerDefinitions,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error creating task definition: %v", err)
+	}
+	return *resp.TaskDefinition.TaskDefinitionArn, nil
+}
+
+func (p *ECSTaskDefinitionResource) delete(arn string) error {
+	// We're ignoring errors here because we really don't care if this
+	// fails.
+	p.ecs.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
+		TaskDefinition: aws.String(arn),
+	})
 	return nil
 }
 

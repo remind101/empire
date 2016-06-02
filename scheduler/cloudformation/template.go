@@ -148,6 +148,8 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 	serviceMappings := []map[string]interface{}{}
 
+	ecsServiceType := "AWS::ECS::Service"
+	taskDefinitionType := "AWS::ECS::TaskDefinition"
 	// The standard AWS::ECS::Service resource's default behavior is to wait
 	// for services to stabilize when you update them. While this is a
 	// sensible default for CloudFormation, the overall behavior when
@@ -157,7 +159,22 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	// Setting this option makes the stack use a Custom::ECSService
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
-	fast := app.Env["ECS_UPDATES"] == "fast"
+	if app.Env["ECS_SERVICE"] == "custom" {
+		ecsServiceType = "Custom::ECSService"
+	}
+	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
+		taskDefinitionType = "Custom::ECSTaskDefinition"
+	}
+
+	if taskDefinitionType == "Custom::ECSTaskDefinition" {
+		resources["AppEnv"] = map[string]interface{}{
+			"Type": "Custom::Environment",
+			"Properties": map[string]interface{}{
+				"ServiceToken": t.CustomResourcesTopic,
+				"Environment":  app.Env,
+			},
+		}
+	}
 
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(app, p)
@@ -313,7 +330,6 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Image":        *cd.Image,
 			"Essential":    *cd.Essential,
 			"Memory":       *cd.Memory,
-			"Environment":  cd.Environment,
 			"PortMappings": portMappings,
 			"DockerLabels": labels,
 			"Ulimits":      cd.Ulimits,
@@ -321,18 +337,38 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		if cd.LogConfiguration != nil {
 			containerDefinition["LogConfiguration"] = cd.LogConfiguration
 		}
-		resources[taskDefinition] = map[string]interface{}{
-			"Type": "AWS::ECS::TaskDefinition",
-			"Properties": map[string]interface{}{
-				"ContainerDefinitions": []interface{}{
-					containerDefinition,
+		taskDefinitionProperties := map[string]interface{}{
+			"Volumes": []interface{}{},
+		}
+		if taskDefinitionType == "Custom::ECSTaskDefinition" {
+			processEnv := fmt.Sprintf("%sEnv", key)
+			resources[processEnv] = map[string]interface{}{
+				"Type": "Custom::Environment",
+				"Properties": map[string]interface{}{
+					"ServiceToken": t.CustomResourcesTopic,
+					"Environment":  p.Env,
 				},
-				"Volumes": []interface{}{},
-			},
+			}
+
+			taskDefinition = fmt.Sprintf("%sTD", key)
+			containerDefinition["Environment"] = []interface{}{
+				map[string]string{"Ref": "AppEnv"},
+				map[string]string{"Ref": processEnv},
+			}
+			taskDefinitionProperties["ServiceToken"] = t.CustomResourcesTopic
+			taskDefinitionProperties["Family"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+		} else {
+			containerDefinition["Environment"] = cd.Environment
+		}
+		taskDefinitionProperties["ContainerDefinitions"] = []interface{}{
+			containerDefinition,
+		}
+		resources[taskDefinition] = map[string]interface{}{
+			"Type":       taskDefinitionType,
+			"Properties": taskDefinitionProperties,
 		}
 
 		service := fmt.Sprintf("%s", key)
-		ecsServiceType := "AWS::ECS::Service"
 		serviceProperties := map[string]interface{}{
 			"Cluster": t.Cluster,
 			"DesiredCount": map[string]string{
@@ -343,8 +379,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				"Ref": taskDefinition,
 			},
 		}
-		if fast {
-			ecsServiceType = "Custom::ECSService"
+		if ecsServiceType == "Custom::ECSService" {
 			// It's not possible to change the type of a resource,
 			// so we have to change the name of the service resource
 			// to something different (just append "Service").
