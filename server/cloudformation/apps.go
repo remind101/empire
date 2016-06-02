@@ -28,7 +28,7 @@ type AppResource struct {
 
 func (p *AppResource) Provision(req Request) (id string, data interface{}, err error) {
 	ctx := context.Background()
-	user := NewUser()
+	user := newUser()
 
 	properties := req.ResourceProperties.(*AppProperties)
 

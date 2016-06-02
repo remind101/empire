@@ -158,9 +158,9 @@ func NewResponseFromRequest(req Request) Response {
 	}
 }
 
-// NewUser returns an empire.User that should be used by sources when making
+// newUser returns an empire.User that should be used by sources when making
 // requests to empire.
-func NewUser() *empire.User {
+func newUser() *empire.User {
 	return &empire.User{Name: "Cloudformation"}
 }
 

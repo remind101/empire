@@ -11,7 +11,7 @@ import (
 
 func TestEnvironmentResourceProvision_Create(t *testing.T) {
 	e := new(mockEmpire)
-	user := NewUser()
+	user := newUser()
 
 	app := empire.App{
 		ID:   "1234",
@@ -50,7 +50,7 @@ func TestEnvironmentResourceProvision_Create(t *testing.T) {
 
 func TestEnvironmentResourceProvision_Update(t *testing.T) {
 	e := new(mockEmpire)
-	user := NewUser()
+	user := newUser()
 
 	app := empire.App{
 		ID:   "1234",
@@ -99,7 +99,7 @@ func TestEnvironmentResourceProvision_Update(t *testing.T) {
 
 func TestEnvironmentResourceProvision_Delete(t *testing.T) {
 	e := new(mockEmpire)
-	user := NewUser()
+	user := newUser()
 
 	app := empire.App{
 		ID:   "1234",

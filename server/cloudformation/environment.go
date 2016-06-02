@@ -47,7 +47,7 @@ func (v *VariableError) Error() string {
 
 func (p *EnvironmentResource) Provision(req Request) (id string, data interface{}, err error) {
 	ctx := context.Background()
-	user := NewUser()
+	user := newUser()
 	properties := req.ResourceProperties.(*EnvironmentProperties)
 
 	switch req.RequestType {
