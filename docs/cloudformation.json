@@ -446,7 +446,8 @@
                 "cloudformation:DeleteStack",
                 "cloudformation:ListStackResources",
                 "cloudformation:DescribeStackResource",
-                "cloudformation:DescribeStacks"
+                "cloudformation:DescribeStacks",
+                "cloudformation:ValidateTemplate"
               ],
               "Resource": ["*"]
             },

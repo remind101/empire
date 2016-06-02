@@ -129,7 +129,6 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 		// Submit to cloudformation and wait for it to complete successfully.
 		// Don't make any DNS changes.
 		if err := s.cloudformation.SubmitWithOptions(ctx, app, SubmitOptions{
-			Wait:  false,
 			NoDNS: true,
 		}); err != nil {
 			return fmt.Errorf("error creating CloudFormation stack: %v", err)
