@@ -2,7 +2,6 @@ package cloudformation
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
@@ -88,11 +88,11 @@ type Request struct {
 	// This field contains the contents of the Properties object sent by the
 	// template developer. Its contents are defined by the custom resource
 	// provider.
-	ResourceProperties interface{} `json:"ResourceProperties"`
+	ResourceProperties map[string]interface{} `json:"ResourceProperties"`
 
 	// Used only for Update requests. Contains the resource properties that
 	// were declared previous to the update request.
-	OldResourceProperties interface{} `json:"OldResourceProperties"`
+	OldResourceProperties map[string]interface{} `json:"OldResourceProperties"`
 }
 
 // Possible response statuses.
@@ -189,11 +189,14 @@ type CustomResourceProvisioner struct {
 
 // NewCustomResourceProvisioner returns a new CustomResourceProvisioner with an
 // sqs client configured from config.
-func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *CustomResourceProvisioner {
+func NewCustomResourceProvisioner(empire *empire.Empire, config client.ConfigProvider) *CustomResourceProvisioner {
 	return &CustomResourceProvisioner{
 		Provisioners: map[string]Provisioner{
 			"Custom::InstancePort": &InstancePortsProvisioner{
-				ports: lb.NewDBPortAllocator(db),
+				ports: lb.NewDBPortAllocator(empire.DB.DB.DB()),
+			},
+			"Custom::App": &AppsProvisioner{
+				empire: empire,
 			},
 			"Custom::ECSService": &ECSServiceResource{
 				ecs:     ecs.New(config),

@@ -37,7 +37,7 @@ func runServer(c *cli.Context) {
 	}
 
 	if c.String(FlagCustomResourcesQueue) != "" {
-		p, err := newCloudFormationCustomResourceProvisioner(db, c)
+		p, err := newCloudFormationCustomResourceProvisioner(e, c)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -61,13 +61,13 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	return server.New(e, opts)
 }
 
-func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
+func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
 	r, err := newReporter(c)
 	if err != nil {
 		return nil, err
 	}
 
-	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
+	p := cloudformation.NewCustomResourceProvisioner(e, newConfigProvider(c))
 	p.Logger = newLogger()
 	p.Reporter = r
 	p.QueueURL = c.String(FlagCustomResourcesQueue)
