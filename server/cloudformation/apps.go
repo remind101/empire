@@ -51,7 +51,7 @@ func (p *AppResource) Provision(req Request) (id string, data interface{}, err e
 			return "", nil, err
 		}
 
-		return app.ID, map[string]string{"Id": app.ID}, nil
+		return app.ID, nil, nil
 	case Delete:
 		id := req.PhysicalResourceId
 		app, err := p.empire.AppsFind(empire.AppsQuery{
