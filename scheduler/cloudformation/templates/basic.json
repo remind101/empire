@@ -262,7 +262,6 @@
             "Image": "remind101/acme-inc:latest",
             "Memory": 0,
             "Name": "worker",
-            "PortMappings": [],
             "Ulimits": []
           }
         ],

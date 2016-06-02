@@ -610,6 +610,12 @@
 			"revisionTime": "2013-05-14T23:54:47-07:00"
 		},
 		{
+			"checksumSHA1": "bnhCW1Cu5A402WXhgSEYlFF/v5w=",
+			"path": "github.com/mitchellh/hashstructure",
+			"revision": "b098c52ef6beab8cd82bc4a32422cf54b890e8fa",
+			"revisionTime": "2016-06-09T17:09:29Z"
+		},
+		{
 			"checksumSHA1": "HgqDa4oBBOol5ziacmj/6c55Xtg=",
 			"path": "github.com/opencontainers/runc/libcontainer/user",
 			"revision": "629e35666d31f743090452416c8df207d9fdbd34",
