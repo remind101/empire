@@ -98,8 +98,9 @@ func TestEmpire_Deploy(t *testing.T) {
 
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -262,8 +263,9 @@ func TestEmpire_Run(t *testing.T) {
 	e.Scheduler = s
 
 	s.On("Run", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -335,8 +337,9 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	e.Scheduler = s
 
 	s.On("Run", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -415,8 +418,9 @@ func TestEmpire_Set(t *testing.T) {
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -461,8 +465,9 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Remove the environment variable
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v2",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
