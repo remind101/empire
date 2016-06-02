@@ -52,7 +52,7 @@ func (p *EmpireAppEnvironmentResource) Provision(req Request) (id string, data i
 
 	switch req.RequestType {
 	case Create:
-		if *properties.AppId == "" {
+		if properties.AppId == nil || *properties.AppId == "" {
 			return "", nil, fmt.Errorf("missing parameter: AppId")
 		}
 		id = *properties.AppId
