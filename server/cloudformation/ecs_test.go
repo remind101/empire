@@ -255,6 +255,103 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
+func TestECSTaskDefinition_Create(t *testing.T) {
+	e := new(mockECS)
+	s := new(mockEnvironmentStore)
+	p := &ECSTaskDefinitionResource{
+		ecs:              e,
+		environmentStore: s,
+	}
+
+	s.On("fetch", "003483d3-74b8-465d-8c2e-06e005dda776").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+	}, nil)
+
+	s.On("fetch", "ccc8a1ac-32f9-4576-bec6-4ca36520deb3").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("BAR"),
+			Value: aws.String("foo"),
+		},
+	}, nil)
+
+	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("acme-inc-web-f3ASgQEwwCZ"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			{
+				Environment: []*ecs.KeyValuePair{
+					{
+						Name:  aws.String("FOO"),
+						Value: aws.String("bar"),
+					},
+					{
+						Name:  aws.String("BAR"),
+						Value: aws.String("foo"),
+					},
+				},
+			},
+		},
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web"),
+		},
+	}, nil)
+
+	id, data, err := p.Provision(ctx, Request{
+		RequestType: Create,
+		ResourceProperties: &ECSTaskDefinitionProperties{
+			Family: aws.String("acme-inc-web"),
+			ContainerDefinitions: []ContainerDefinition{
+				{
+					Environment: []string{
+						"003483d3-74b8-465d-8c2e-06e005dda776",
+						"ccc8a1ac-32f9-4576-bec6-4ca36520deb3",
+					},
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+	s.AssertExpectations(t)
+}
+
+func TestECSEnvironment_Create(t *testing.T) {
+	s := new(mockEnvironmentStore)
+	p := &ECSEnvironmentResource{
+		environmentStore: s,
+	}
+
+	s.On("store", []*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+	}).Return("56152438-5fef-4c96-bbe1-9cf92022ae75", nil)
+
+	id, data, err := p.Provision(ctx, Request{
+		RequestType: Create,
+		ResourceProperties: &ECSEnvironmentProperties{
+			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("FOO"),
+					Value: aws.String("bar"),
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "56152438-5fef-4c96-bbe1-9cf92022ae75", id)
+	assert.Nil(t, data)
+
+	s.AssertExpectations(t)
+}
+
 func TestRequiresReplacement(t *testing.T) {
 	tests := []struct {
 		new, old ECSServiceProperties
@@ -330,4 +427,23 @@ func (m *mockECS) DeleteService(input *ecs.DeleteServiceInput) (*ecs.DeleteServi
 func (m *mockECS) WaitUntilServicesStable(input *ecs.DescribeServicesInput) error {
 	args := m.Called(input)
 	return args.Error(0)
+}
+
+func (m *mockECS) RegisterTaskDefinition(input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.RegisterTaskDefinitionOutput), args.Error(1)
+}
+
+type mockEnvironmentStore struct {
+	mock.Mock
+}
+
+func (m *mockEnvironmentStore) store(env []*ecs.KeyValuePair) (string, error) {
+	args := m.Called(env)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockEnvironmentStore) fetch(id string) ([]*ecs.KeyValuePair, error) {
+	args := m.Called(id)
+	return args.Get(0).([]*ecs.KeyValuePair), args.Error(1)
 }

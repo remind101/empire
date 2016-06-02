@@ -1,6 +1,10 @@
 package cloudformation
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -19,6 +23,8 @@ type ecsClient interface {
 	DeleteService(*ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 	WaitUntilServicesStable(*ecs.DescribeServicesInput) error
+	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
+	DeregisterTaskDefinition(*ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error)
 }
 
 type LoadBalancer struct {
@@ -172,6 +178,235 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 	}
 
 	return nil
+}
+
+type PortMapping struct {
+	ContainerPort *IntValue
+	HostPort      *IntValue
+}
+
+type Ulimit struct {
+	Name      *string
+	HardLimit *IntValue
+	SoftLimit *IntValue
+}
+
+type ContainerDefinition struct {
+	Name             *string
+	Command          []*string
+	Cpu              *IntValue
+	Image            *string
+	Essential        *string
+	Memory           *IntValue
+	PortMappings     []PortMapping
+	DockerLabels     map[string]*string
+	Ulimits          []Ulimit
+	Environment      []string
+	LogConfiguration *ecs.LogConfiguration
+}
+
+// TaskDefinitionProperties are properties passed to the
+// Custom::ECSTaskDefinition custom resource.
+type ECSTaskDefinitionProperties struct {
+	Family               *string
+	TaskRoleArn          *string
+	ContainerDefinitions []ContainerDefinition
+}
+
+// ECSTaskDefinitionResource is a custom resource that provisions ECS task
+// definitions.
+type ECSTaskDefinitionResource struct {
+	ecs              ecsClient
+	environmentStore environmentStore
+}
+
+func (p *ECSTaskDefinitionResource) Properties() interface{} {
+	return &ECSTaskDefinitionProperties{}
+}
+
+func (p *ECSTaskDefinitionResource) Provision(ctx context.Context, req Request) (string, interface{}, error) {
+	properties := req.ResourceProperties.(*ECSTaskDefinitionProperties)
+
+	switch req.RequestType {
+	case Create:
+		id, err := p.register(properties, hashRequest(req))
+		return id, nil, err
+	case Delete:
+		id := req.PhysicalResourceId
+		err := p.delete(id)
+		return id, nil, err
+	case Update:
+		id, err := p.register(properties, hashRequest(req))
+		return id, nil, err
+	default:
+		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
+	}
+}
+
+func (p *ECSTaskDefinitionResource) mergedEnvironment(ids ...string) ([]*ecs.KeyValuePair, error) {
+	var env []*ecs.KeyValuePair
+	for _, id := range ids {
+		e, err := p.environmentStore.fetch(id)
+		if err != nil {
+			return nil, err
+		}
+		env = append(env, e...)
+	}
+	return env, nil
+}
+
+func (p *ECSTaskDefinitionResource) register(properties *ECSTaskDefinitionProperties, postfix string) (string, error) {
+	var containerDefinitions []*ecs.ContainerDefinition
+	for _, c := range properties.ContainerDefinitions {
+		var (
+			ulimits      []*ecs.Ulimit
+			portMappings []*ecs.PortMapping
+			essential    *bool
+		)
+
+		env, err := p.mergedEnvironment(c.Environment...)
+		if err != nil {
+			return "", err
+		}
+
+		for _, u := range c.Ulimits {
+			ulimits = append(ulimits, &ecs.Ulimit{
+				Name:      u.Name,
+				HardLimit: u.HardLimit.Value(),
+				SoftLimit: u.SoftLimit.Value(),
+			})
+		}
+
+		for _, m := range c.PortMappings {
+			portMappings = append(portMappings, &ecs.PortMapping{
+				ContainerPort: m.ContainerPort.Value(),
+				HostPort:      m.HostPort.Value(),
+			})
+		}
+
+		if c.Essential != nil {
+			essential = aws.Bool(*c.Essential == "true")
+		}
+
+		containerDefinitions = append(containerDefinitions, &ecs.ContainerDefinition{
+			Name:             c.Name,
+			Command:          c.Command,
+			Cpu:              c.Cpu.Value(),
+			Image:            c.Image,
+			Essential:        essential,
+			Memory:           c.Memory.Value(),
+			PortMappings:     portMappings,
+			DockerLabels:     c.DockerLabels,
+			Ulimits:          ulimits,
+			LogConfiguration: c.LogConfiguration,
+			Environment:      env,
+		})
+	}
+
+	var family *string
+	if properties.Family != nil {
+		family = aws.String(fmt.Sprintf("%s-%s", *properties.Family, postfix))
+	}
+	resp, err := p.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+		Family:               family,
+		TaskRoleArn:          properties.TaskRoleArn,
+		ContainerDefinitions: containerDefinitions,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error creating task definition: %v", err)
+	}
+	return *resp.TaskDefinition.TaskDefinitionArn, nil
+}
+
+func (p *ECSTaskDefinitionResource) delete(arn string) error {
+	// We're ignoring errors here because we really don't care if this
+	// fails.
+	p.ecs.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
+		TaskDefinition: aws.String(arn),
+	})
+	return nil
+}
+
+// ECSEnvironmentProperties are the properties provided to the
+// Custom::ECSEnvironment custom resource.
+type ECSEnvironmentProperties struct {
+	Environment []*ecs.KeyValuePair
+}
+
+// ECSEnvironmentResource is a custom resource that takes some encrypted
+// environment variables, stores them, then returns a unique identifier to
+// represent the environment.
+type ECSEnvironmentResource struct {
+	environmentStore environmentStore
+}
+
+func (p *ECSEnvironmentResource) Properties() interface{} {
+	return &ECSEnvironmentProperties{}
+}
+
+func (p *ECSEnvironmentResource) Provision(ctx context.Context, req Request) (string, interface{}, error) {
+	properties := req.ResourceProperties.(*ECSEnvironmentProperties)
+
+	switch req.RequestType {
+	case Create:
+		id, err := p.environmentStore.store(properties.Environment)
+		return id, nil, err
+	case Delete:
+		id := req.PhysicalResourceId
+		return id, nil, nil
+	case Update:
+		id, err := p.environmentStore.store(properties.Environment)
+		return id, nil, err
+	default:
+		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
+	}
+}
+
+// environmentStore is a storage engine for storing environment variables for
+// the Custom::ECSEnvironment resource.
+type environmentStore interface {
+	store([]*ecs.KeyValuePair) (string, error)
+	fetch(string) ([]*ecs.KeyValuePair, error)
+}
+
+type ecsKeyValuePair []*ecs.KeyValuePair
+
+func (v *ecsKeyValuePair) Scan(src interface{}) error {
+	bytes, ok := src.([]byte)
+	if !ok {
+		return error(errors.New("Scan source was not []bytes"))
+	}
+
+	var kv ecsKeyValuePair
+	if err := json.Unmarshal(bytes, &kv); err != nil {
+		return err
+	}
+	*v = kv
+
+	return nil
+}
+
+func (v ecsKeyValuePair) Value() (driver.Value, error) {
+	return json.Marshal(v)
+}
+
+// dbEnvironmentStore implements environmentStore on top of a sql.DB.
+type dbEnvironmentStore struct {
+	db *sql.DB
+}
+
+func (s *dbEnvironmentStore) store(env []*ecs.KeyValuePair) (string, error) {
+	sql := `INSERT INTO ecs_environment (environment) VALUES ($1) RETURNING id`
+	var id string
+	err := s.db.QueryRow(sql, ecsKeyValuePair(env)).Scan(&id)
+	return id, err
+}
+
+func (s *dbEnvironmentStore) fetch(id string) ([]*ecs.KeyValuePair, error) {
+	sql := `SELECT environment FROM ecs_environment WHERE id = $1 LIMIT 1`
+	var env ecsKeyValuePair
+	err := s.db.QueryRow(sql, id).Scan(&env)
+	return env, err
 }
 
 // Certain parameters cannot be updated on existing services, so we need to

@@ -1,0 +1,217 @@
+{
+  "Conditions": {
+    "DNSCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "DNS"
+        },
+        "true"
+      ]
+    }
+  },
+  "Outputs": {
+    "EmpireVersion": {
+      "Value": "x.x.x"
+    },
+    "Release": {
+      "Value": "v1"
+    },
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Ref": "webService"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "Parameters": {
+    "DNS": {
+      "Type": "String",
+      "Description": "When set to `true`, CNAME's will be altered",
+      "Default": "true"
+    },
+    "RestartKey": {
+      "Type": "String"
+    },
+    "webScale": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "AppEnvironment": {
+      "Properties": {
+        "Environment": [
+          {
+            "Name": "ECS_TASK_DEFINITION",
+            "Value": "custom"
+          }
+        ],
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::ECSEnvironment"
+    },
+    "CNAME": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "acme-inc.empire",
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
+          }
+        ],
+        "TTL": 60,
+        "Type": "CNAME"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
+    "web8080InstancePort": {
+      "Properties": {
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::InstancePort",
+      "Version": "1.0"
+    },
+    "webEnvironment": {
+      "Properties": {
+        "Environment": [
+          {
+            "Name": "FOO",
+            "Value": "bar"
+          }
+        ],
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::ECSEnvironment"
+    },
+    "webLoadBalancer": {
+      "Properties": {
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 30
+        },
+        "CrossZone": true,
+        "Listeners": [
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "web8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http"
+          }
+        ],
+        "Scheme": "internal",
+        "SecurityGroups": [
+          "sg-e7387381"
+        ],
+        "Subnets": [
+          "subnet-bb01c4cd",
+          "subnet-c85f4091"
+        ],
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "webTD"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
+    "webTD": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/web"
+            ],
+            "Cpu": 256,
+            "DockerLabels": {
+              "cloudformation.restart-key": {
+                "Ref": "RestartKey"
+              },
+              "empire.app.process": "web"
+            },
+            "Environment": [
+              {
+                "Ref": "AppEnvironment"
+              },
+              {
+                "Ref": "webEnvironment"
+              }
+            ],
+            "Essential": true,
+            "Image": "remind101/acme-inc:latest",
+            "Memory": 128,
+            "Name": "web",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": {
+                  "Fn::GetAtt": [
+                    "web8080InstancePort",
+                    "InstancePort"
+                  ]
+                }
+              }
+            ],
+            "Ulimits": [
+              {
+                "HardLimit": 256,
+                "Name": "nproc",
+                "SoftLimit": 256
+              }
+            ]
+          }
+        ],
+        "Family": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "Volumes": []
+      },
+      "Type": "Custom::ECSTaskDefinition"
+    }
+  }
+}

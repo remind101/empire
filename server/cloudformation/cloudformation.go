@@ -78,6 +78,15 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 		ecs: ecs.New(config),
 	})
 
+	store := &dbEnvironmentStore{db}
+	p.add("Custom::ECSEnvironment", &ECSEnvironmentResource{
+		environmentStore: store,
+	})
+	p.add("Custom::ECSTaskDefinition", &ECSTaskDefinitionResource{
+		ecs:              ecs.New(config),
+		environmentStore: store,
+	})
+
 	return p
 }
 
@@ -139,6 +148,8 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
 	}
 
+	logger.Info(ctx, "cloudformation.provision.request")
+
 	resp := customresources.NewResponseFromRequest(req)
 
 	// CloudFormation is weird. PhysicalResourceId is required when creating
@@ -162,10 +173,7 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	switch err {
 	case nil:
 		resp.Status = customresources.StatusSuccess
-		logger.Info(ctx, "cloudformation.provision",
-			"request", req,
-			"response", resp,
-		)
+		logger.Info(ctx, "cloudformation.provision.success")
 	default:
 		// A physical resource id is required, so if a Create request
 		// fails, and there's no physical resource id, CloudFormation
@@ -178,11 +186,7 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 
 		resp.Status = customresources.StatusFailed
 		resp.Reason = err.Error()
-		logger.Error(ctx, "cloudformation.provision.error",
-			"request", req,
-			"response", resp,
-			"err", err.Error(),
-		)
+		logger.Error(ctx, "cloudformation.provision.error", "err", err.Error())
 	}
 
 	return c.sendResponse(req, resp)

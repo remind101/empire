@@ -42,6 +42,8 @@ const (
 	defaultCNAMETTL                        = 60
 
 	runTaskFunction = "RunTaskFunction"
+
+	appEnvironment = "AppEnvironment"
 )
 
 // This implements the Template interface to create a suitable CloudFormation
@@ -248,6 +250,28 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
 	ecsServiceType := "Custom::ECSService"
+	taskDefinitionType := "AWS::ECS::TaskDefinition"
+
+	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
+		taskDefinitionType = "Custom::ECSTaskDefinition"
+	}
+
+	if taskDefinitionType == "Custom::ECSTaskDefinition" {
+		var env []interface{}
+		for k, v := range app.Env {
+			env = append(env, map[string]interface{}{
+				"Name":  k,
+				"Value": v,
+			})
+		}
+		tmpl.Resources[appEnvironment] = troposphere.Resource{
+			Type: "Custom::ECSEnvironment",
+			Properties: map[string]interface{}{
+				"ServiceToken": t.CustomResourcesTopic,
+				"Environment":  env,
+			},
+		}
+	}
 
 	cd := t.ContainerDefinition(app, p)
 
@@ -364,14 +388,45 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	containerDefinition["DockerLabels"] = labels
 	containerDefinition["PortMappings"] = portMappings
 
-	tmpl.Resources[taskDefinition] = troposphere.Resource{
-		Type: "AWS::ECS::TaskDefinition",
-		Properties: map[string]interface{}{
-			"ContainerDefinitions": []interface{}{
-				containerDefinition,
+	taskDefinitionProperties := map[string]interface{}{
+		"Volumes": []interface{}{},
+	}
+	if taskDefinitionType == "Custom::ECSTaskDefinition" {
+		taskDefinition = fmt.Sprintf("%sTD", key)
+
+		processEnvironment := fmt.Sprintf("%sEnvironment", key)
+		var env []interface{}
+		for k, v := range p.Env {
+			env = append(env, map[string]interface{}{
+				"Name":  k,
+				"Value": v,
+			})
+		}
+		tmpl.Resources[processEnvironment] = troposphere.Resource{
+			Type: "Custom::ECSEnvironment",
+			Properties: map[string]interface{}{
+				"ServiceToken": t.CustomResourcesTopic,
+				"Environment":  env,
 			},
-			"Volumes": []interface{}{},
-		},
+		}
+
+		containerDefinition["Environment"] = []interface{}{
+			Ref(appEnvironment),
+			Ref(processEnvironment),
+		}
+		taskDefinitionProperties["ServiceToken"] = t.CustomResourcesTopic
+		taskDefinitionProperties["Family"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+	} else {
+		containerDefinition["Environment"] = cd.Environment
+	}
+
+	taskDefinitionProperties["ContainerDefinitions"] = []interface{}{
+		containerDefinition,
+	}
+
+	tmpl.Resources[taskDefinition] = troposphere.Resource{
+		Type:       taskDefinitionType,
+		Properties: taskDefinitionProperties,
 	}
 
 	service := fmt.Sprintf("%sService", key)

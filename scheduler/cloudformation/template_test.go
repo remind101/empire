@@ -95,6 +95,38 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			"custom.json",
+			&scheduler.App{
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Env: map[string]string{
+					"ECS_TASK_DEFINITION": "custom",
+				},
+				Processes: []*scheduler.Process{
+					{
+						Type:    "web",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"FOO": "bar",
+						},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPExposure{},
+						},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Instances:   1,
+						Nproc:       256,
+					},
+				},
+			},
+		},
+
+		{
 			"cron.json",
 			&scheduler.App{
 				ID:      "1234",
@@ -174,6 +206,7 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	err := tmpl.Execute(buf, app)
+	t.Logf("Template size: %d bytes", buf.Len())
 	assert.NoError(t, err)
 	assert.Condition(t, func() bool {
 		return buf.Len() < MaxTemplateSize
