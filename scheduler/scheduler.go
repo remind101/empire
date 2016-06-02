@@ -14,6 +14,9 @@ type App struct {
 	// The id of the app.
 	ID string
 
+	// An identifier that represents the version of this release.
+	Release string
+
 	// The name of the app.
 	Name string
 

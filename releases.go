@@ -253,7 +253,6 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 }
 
 func newSchedulerApp(release *Release) *scheduler.App {
-
 	var processes []*scheduler.Process
 
 	for name, p := range release.Formation {
@@ -274,6 +273,7 @@ func newSchedulerApp(release *Release) *scheduler.App {
 	return &scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
+		Release:   fmt.Sprintf("v%d", release.Version),
 		Processes: processes,
 		Env:       env,
 		Labels:    labels,
