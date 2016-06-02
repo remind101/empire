@@ -93,8 +93,6 @@ func (l *AdvisoryLock) Lock() error {
 		// lock invalid.
 		l.commit()
 
-		// This will happen when a newer stack update obsoletes
-		// this one. We simply return nil.
 		if err, ok := err.(*pq.Error); ok {
 			switch err.Code.Name() {
 			case "query_canceled":
