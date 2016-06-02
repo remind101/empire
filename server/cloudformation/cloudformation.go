@@ -161,7 +161,7 @@ func NewResponseFromRequest(req Request) Response {
 // NewUser returns an empire.User that should be used by sources when making
 // requests to empire.
 func NewUser() *empire.User {
-	return &empire.User{Name: "cloudformation"}
+	return &empire.User{Name: "Cloudformation"}
 }
 
 // sqsClient duck types the sqs.SQS interface.
