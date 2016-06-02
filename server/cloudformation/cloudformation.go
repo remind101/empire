@@ -204,7 +204,7 @@ func NewCustomResourceProvisioner(empire *empire.Empire, config client.ConfigPro
 			"Custom::EmpireApp": &AppResource{
 				empire: empire,
 			},
-			"Custom:EmpireAppEnvironment": &EnvironmentResource{
+			"Custom::EmpireAppEnvironment": &EmpireAppEnvironmentResource{
 				empire: empire,
 			},
 			"Custom::ECSService": &ECSServiceResource{

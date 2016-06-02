@@ -26,13 +26,13 @@ type EnvironmentProperties struct {
 	Variables []Variable
 }
 
-// EnvironmentResource is a Provisioner that manages environmental variables
+// EmpireAppEnvironmentResource is a Provisioner that manages environmental variables
 // within an Empire application.
-type EnvironmentResource struct {
+type EmpireAppEnvironmentResource struct {
 	empire envClient
 }
 
-func (p *EnvironmentResource) Properties() interface{} {
+func (p *EmpireAppEnvironmentResource) Properties() interface{} {
 	return &EnvironmentProperties{}
 }
 
@@ -45,7 +45,7 @@ func (v *VariableError) Error() string {
 	return fmt.Sprintf("invalid variable [%d]: %s", v.index, v.err)
 }
 
-func (p *EnvironmentResource) Provision(req Request) (id string, data interface{}, err error) {
+func (p *EmpireAppEnvironmentResource) Provision(req Request) (id string, data interface{}, err error) {
 	ctx := context.Background()
 	user := newUser()
 	properties := req.ResourceProperties.(*EnvironmentProperties)
@@ -73,7 +73,7 @@ func (p *EnvironmentResource) Provision(req Request) (id string, data interface{
 	return
 }
 
-func (p *EnvironmentResource) setEnvironment(ctx context.Context, user *empire.User, app *empire.App, req Request) error {
+func (p *EmpireAppEnvironmentResource) setEnvironment(ctx context.Context, user *empire.User, app *empire.App, req Request) error {
 	vars, err := varsFromRequest(req)
 	if err != nil {
 		return err

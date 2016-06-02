@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEnvironmentResourceProvision_Create(t *testing.T) {
+func TestEmpireAppEnvironmentResourceProvision_Create(t *testing.T) {
 	e := new(mockEmpire)
 	user := newUser()
 
@@ -32,7 +32,7 @@ func TestEnvironmentResourceProvision_Create(t *testing.T) {
 		Message: "Setting variables via Cloudformation",
 	}).Once().Return(&empire.Config{}, nil)
 
-	resource := &EnvironmentResource{empire: e}
+	resource := &EmpireAppEnvironmentResource{empire: e}
 	id, _, err := resource.Provision(Request{
 		RequestType: Create,
 		ResourceProperties: &EnvironmentProperties{
@@ -48,7 +48,7 @@ func TestEnvironmentResourceProvision_Create(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestEnvironmentResourceProvision_Update(t *testing.T) {
+func TestEmpireAppEnvironmentResourceProvision_Update(t *testing.T) {
 	e := new(mockEmpire)
 	user := newUser()
 
@@ -73,7 +73,7 @@ func TestEnvironmentResourceProvision_Update(t *testing.T) {
 		Message: "Updating variables via Cloudformation",
 	}).Once().Return(&empire.Config{}, nil)
 
-	resource := &EnvironmentResource{empire: e}
+	resource := &EmpireAppEnvironmentResource{empire: e}
 	id, _, err := resource.Provision(Request{
 		RequestType:        Update,
 		PhysicalResourceId: app.ID,
@@ -97,7 +97,7 @@ func TestEnvironmentResourceProvision_Update(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestEnvironmentResourceProvision_Delete(t *testing.T) {
+func TestEmpireAppEnvironmentResourceProvision_Delete(t *testing.T) {
 	e := new(mockEmpire)
 	user := newUser()
 
@@ -121,7 +121,7 @@ func TestEnvironmentResourceProvision_Delete(t *testing.T) {
 		Message: "Unsetting variables via Cloudformation",
 	}).Once().Return(&empire.Config{}, nil)
 
-	resource := &EnvironmentResource{empire: e}
+	resource := &EmpireAppEnvironmentResource{empire: e}
 	id, _, err := resource.Provision(Request{
 		RequestType:        Delete,
 		PhysicalResourceId: app.ID,
