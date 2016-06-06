@@ -175,9 +175,6 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		parameters[scaleParameter(p.Type)] = map[string]string{
 			"Type": "String",
 		}
-		parameters[restartProcessParameter(p.Type)] = map[string]string{
-			"Type": "String",
-		}
 
 		portMappings := []map[string]interface{}{}
 
@@ -309,9 +306,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		for k, v := range cd.DockerLabels {
 			labels[k] = v
 		}
-		labels["cloudformation.restart-key"] = map[string]interface{}{
-			"Fn::Join": []interface{}{"-", []interface{}{map[string]string{"Ref": restartParameter}, map[string]string{"Ref": restartProcessParameter(p.Type)}}},
-		}
+		labels["cloudformation.restart-key"] = map[string]string{"Ref": restartParameter}
 
 		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
 		containerDefinition := map[string]interface{}{
@@ -484,10 +479,4 @@ func processResourceName(process string) string {
 // scale of a process.
 func scaleParameter(process string) string {
 	return fmt.Sprintf("%sScale", processResourceName(process))
-}
-
-// restartProcessParameter returns the name of the parameter used to control
-// restarting a single process.
-func restartProcessParameter(process string) string {
-	return fmt.Sprintf("%sRestartKey", processResourceName(process))
 }
