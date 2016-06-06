@@ -44,16 +44,20 @@ func runLog(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
-	parsed, err := time.ParseDuration(duration)
-	if err != nil {
-		fmt.Println(err)
-		cmd.PrintUsage()
-		os.Exit(1)
+	var d int64
+	if duration != "" {
+		parsed, err := time.ParseDuration(duration)
+		if err != nil {
+			fmt.Println(err)
+			cmd.PrintUsage()
+			os.Exit(1)
+		}
+		d = parsed.Nanoseconds()
 	}
 
 	appName := mustApp()
 	endpoint := fmt.Sprintf("/apps/%s/log-sessions", appName)
-	form := &PostLogForm{Duration: parsed.Nanoseconds()}
+	form := &PostLogForm{Duration: d}
 
 	must(client.Post(os.Stdout, endpoint, form))
 }
