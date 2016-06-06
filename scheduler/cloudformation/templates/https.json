@@ -56,13 +56,7 @@
     "RestartKey": {
       "Type": "String"
     },
-    "apiRestartKey": {
-      "Type": "String"
-    },
     "apiScale": {
-      "Type": "String"
-    },
-    "webRestartKey": {
       "Type": "String"
     },
     "webScale": {
@@ -188,17 +182,7 @@
             "Cpu": 0,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "apiRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               }
             },
             "Environment": [
@@ -317,17 +301,7 @@
             "Cpu": 0,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "webRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               }
             },
             "Environment": [

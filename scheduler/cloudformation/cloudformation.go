@@ -257,12 +257,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			ParameterKey:   aws.String(scaleParameter(p.Type)),
 			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
 		})
-
-		// FIXME: Remove this in favor of a RestartProcess method.
-		parameters = append(parameters, &cloudformation.Parameter{
-			ParameterKey:   aws.String(restartProcessParameter(p.Type)),
-			ParameterValue: aws.String(newUUID()),
-		})
 	}
 
 	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{

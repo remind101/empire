@@ -56,13 +56,7 @@
     "RestartKey": {
       "Type": "String"
     },
-    "webRestartKey": {
-      "Type": "String"
-    },
     "webScale": {
-      "Type": "String"
-    },
-    "workerRestartKey": {
       "Type": "String"
     },
     "workerScale": {
@@ -164,17 +158,7 @@
             "Cpu": 256,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "webRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               },
               "empire.app.process": "web"
             },
@@ -247,17 +231,7 @@
             "Cpu": 0,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "workerRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               },
               "empire.app.process": "worker"
             },

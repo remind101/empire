@@ -64,7 +64,6 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
-			{ParameterKey: aws.String("webRestartKey"), ParameterValue: aws.String("uuid")},
 		},
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
@@ -192,9 +191,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
-					{ParameterKey: aws.String("webRestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
-					{ParameterKey: aws.String("workerRestartKey"), ParameterValue: aws.String("uuid")},
 				},
 			},
 		},
@@ -207,7 +204,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
-			{ParameterKey: aws.String("webRestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
