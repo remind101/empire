@@ -13,6 +13,7 @@ server:
   environment:
     EMPIRE_DATABASE_URL: postgres://postgres:postgres@db/postgres?sslmode=disable
     DOCKER_HOST: unix:///var/run/docker.sock
+    EMPIRE_SCHEDULER: cloudformation-migration
 db:
   image: postgres
   ports:
