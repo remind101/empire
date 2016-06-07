@@ -93,9 +93,17 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 		return nil, err
 	}
 
-	s, err := newMigrationScheduler(db, c)
-	if err != nil {
-		return nil, err
+	var s scheduler.Scheduler
+	if c.String(FlagDefaultScheduler) == "cloudformation" {
+		s, err = newMigrationScheduler(db, c)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		s, err = newECSScheduler(db, c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &scheduler.AttachedRunner{
@@ -115,9 +123,7 @@ func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Migra
 		return nil, err
 	}
 
-	s := cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es)
-	s.Default = c.String(FlagDefaultScheduler)
-	return s, nil
+	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
 }
 
 func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Scheduler, error) {
