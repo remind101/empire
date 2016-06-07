@@ -24,8 +24,10 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	var form PostLogsForm
-
-	if err := Decode(r, &form); err != nil {
+	// We ignore the EOF error for backwards compatability with the "emp"
+	// command that doesn't support providing a duration.
+	ignoreEOF := true
+	if err := DecodeRequest(r, &form, ignoreEOF); err != nil {
 		return err
 	}
 

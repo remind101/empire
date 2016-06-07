@@ -2,6 +2,8 @@ package heroku
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -91,9 +93,21 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
+// DecodeRequest json decodes the request body into v, optionally ignoring EOF
+// errors to handle cases where the request body might be empty.
+func DecodeRequest(r *http.Request, v interface{}, ignoreEOF bool) error {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		if err == io.EOF && ignoreEOF {
+			return nil
+		}
+		return fmt.Errorf("error decoding request body: %v", err)
+	}
+	return nil
+}
+
 // Decode json decodes the request body into v.
 func Decode(r *http.Request, v interface{}) error {
-	return json.NewDecoder(r.Body).Decode(v)
+	return DecodeRequest(r, v, false)
 }
 
 // Stream encodes and flushes data to the client.
