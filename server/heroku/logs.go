@@ -26,7 +26,7 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 
 	var form PostLogsForm
 	if err := Decode(r, &form); err != nil {
-		if err != "EOF" {
+		if err.Error() != "EOF" {
 			return fmt.Errorf("error decoding request: %v", err)
 		}
 	}
