@@ -36,10 +36,8 @@ var ErrMigrating = errors.New("app is currently being migrated to a CloudFormati
 // can be migrated from the ecs scheduler to the cloudformation scheduler by
 // using the Migrate function.
 type MigrationScheduler struct {
-	// When true, the default scheduling backend will be CloudFormation.
-	// When false, the default scheduling backend will be the old ECS
-	// backend.
-	DefaultNew bool
+	// The default scheduler to use. Can be `cloudformation`, or `ecs.
+	Default string
 
 	// The scheduler that we want to migrate to.
 	cloudformation interface {
@@ -89,10 +87,11 @@ func (s *MigrationScheduler) backend(appID string) (string, error) {
 
 	// For newly created apps.
 	if err == sql.ErrNoRows {
-		if s.DefaultNew {
-			return "cloudformation", nil
-		} else {
-			return "ecs", nil
+		switch s.Default {
+		case "cloudformation", "ecs":
+			return s.Default, nil
+		default:
+			return "", fmt.Errorf("unknown default scheduler: %s", s.Default)
 		}
 	}
 

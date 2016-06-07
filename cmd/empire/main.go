@@ -12,6 +12,7 @@ import (
 const (
 	FlagPort             = "port"
 	FlagAutoMigrate      = "automigrate"
+	FlagDefaultScheduler = "scheduler.default"
 	FlagEventsBackend    = "events.backend"
 	FlagRunLogsBackend   = "runlogs.backend"
 	FlagMessagesRequired = "messages.required"
@@ -80,6 +81,12 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
+			},
+			cli.StringFlag{
+				Name:   FlagDefaultScheduler,
+				Value:  "ecs",
+				Usage:  "The default scheduling backend to use for newly created apps. Can be `ecs` or `cloudformation`.",
+				EnvVar: "EMPIRE_DEFAULT_SCHEDULER",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,

@@ -115,7 +115,9 @@ func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Migra
 		return nil, err
 	}
 
-	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
+	s := cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es)
+	s.Default = c.String(FlagDefaultScheduler)
+	return s, nil
 }
 
 func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Scheduler, error) {

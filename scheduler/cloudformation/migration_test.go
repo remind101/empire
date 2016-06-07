@@ -20,7 +20,7 @@ func TestMigrationScheduler_NewApp_ECS(t *testing.T) {
 	e := new(mockECSScheduler)
 	c := new(mockCloudFormationScheduler)
 	s := &MigrationScheduler{
-		DefaultNew:     false,
+		Default:        "ecs",
 		ecs:            e,
 		cloudformation: c,
 		db:             db,
@@ -51,7 +51,7 @@ func TestMigrationScheduler_NewApp_CloudFormation(t *testing.T) {
 	e := new(mockECSScheduler)
 	c := new(mockCloudFormationScheduler)
 	s := &MigrationScheduler{
-		DefaultNew:     true,
+		Default:        "cloudformation",
 		ecs:            e,
 		cloudformation: c,
 		db:             db,
