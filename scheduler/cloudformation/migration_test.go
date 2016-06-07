@@ -11,15 +11,47 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// New apps don't need to be migrated, and should just be routed to the
-// CloudFormation scheduler.
-func TestMigrationScheduler_NewApp(t *testing.T) {
+// When DefaultNew is false, we should default to the old ECS scheduler for new
+// apps.
+func TestMigrationScheduler_NewApp_ECS(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
 
 	e := new(mockECSScheduler)
 	c := new(mockCloudFormationScheduler)
 	s := &MigrationScheduler{
+		DefaultNew:     false,
+		ecs:            e,
+		cloudformation: c,
+		db:             db,
+	}
+
+	app := &scheduler.App{
+		ID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Processes: []*scheduler.Process{
+			{Type: "web"},
+		},
+	}
+
+	e.On("Submit", app).Return(nil)
+
+	err := s.Submit(context.Background(), app)
+	assert.NoError(t, err)
+
+	e.AssertExpectations(t)
+	c.AssertExpectations(t)
+}
+
+// When DefaultNew is true, we should default to the new CloudFormation
+// scheduler.
+func TestMigrationScheduler_NewApp_CloudFormation(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	e := new(mockECSScheduler)
+	c := new(mockCloudFormationScheduler)
+	s := &MigrationScheduler{
+		DefaultNew:     true,
 		ecs:            e,
 		cloudformation: c,
 		db:             db,
