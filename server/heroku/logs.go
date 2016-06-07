@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -26,7 +27,9 @@ func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 
 	var form PostLogsForm
 	if err := Decode(r, &form); err != nil {
-		if err.Error() != "EOF" {
+		// We ignore the EOF error for backwards compatability with the "emp"
+		// command that doesn't support providing a duration.
+		if err != io.EOF {
 			return fmt.Errorf("error decoding request: %v", err)
 		}
 	}
