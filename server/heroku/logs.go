@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -20,13 +21,14 @@ type PostLogsForm struct {
 func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
-		return err
+		return fmt.Errorf("error finding app: %v", err)
 	}
 
 	var form PostLogsForm
-
 	if err := Decode(r, &form); err != nil {
-		return err
+		if err != "EOF" {
+			return fmt.Errorf("error decoding request: %v", err)
+		}
 	}
 
 	rw := streamhttp.StreamingResponseWriter(w)
