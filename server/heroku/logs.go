@@ -21,7 +21,7 @@ type PostLogsForm struct {
 func (h *PostLogs) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
-		return fmt.Errorf("error finding app: %v", err)
+		return err
 	}
 
 	var form PostLogsForm
