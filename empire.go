@@ -666,7 +666,11 @@ func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
 
 // Streamlogs streams logs from an app.
 func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error {
-	return e.LogsStreamer.StreamLogs(app, w, duration)
+	if err := e.LogsStreamer.StreamLogs(app, w, duration); err != nil {
+		return fmt.Errorf("error streaming logs: %v", err)
+	}
+
+	return nil
 }
 
 // CertsAttach attaches an SSL certificate to the app.
