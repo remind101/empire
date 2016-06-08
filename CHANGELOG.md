@@ -1,6 +1,6 @@
 # Changelog
 
-## HEAD
+## 0.10.1 (2016-06-14)
 
 **Features**
 

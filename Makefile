@@ -2,6 +2,7 @@
 
 REPO = remind101/empire
 TYPE = patch
+ARTIFACTS = ${CIRCLE_ARTIFACTS}
 
 cmds: build/empire build/emp
 
@@ -36,8 +37,7 @@ bump:
 release: release/docker release/emp release/empire release/github
 
 release/github::
-	go get -u github.com/progrium/gh-release
-	gh-release create remind101/empire $(shell cat VERSION)
+	./bin/release $(ARTIFACTS)
 
 release/docker::
 	# Wait for the `master` branch to build on CircleCI before running this. We'll
@@ -46,15 +46,15 @@ release/docker::
 	docker tag ${REPO}:${CIRCLE_SHA1} ${REPO}:$(shell cat VERSION)
 	docker push ${REPO}:$(shell cat VERSION)
 
-release/emp: release/emp-Linux-x86_64 release/emp-Darwin-x86_64
-release/empire: release/empire-Linux-x86_64 release/empire-Darwin-x86_64
+release/emp: $(ARTIFACTS)/emp-Linux-x86_64 $(ARTIFACTS)/emp-Darwin-x86_64
+release/empire: $(ARTIFACTS)/empire-Linux-x86_64 $(ARTIFACTS)/empire-Darwin-x86_64
 
-release/emp-Linux-x86_64:
+$(ARTIFACTS)/emp-Linux-x86_64:
 	env GOOS=linux go build -o $@ ./cmd/emp
-release/emp-Darwin-x86_64:
+$(ARTIFACTS)/emp-Darwin-x86_64:
 	env GOOS=darwin go build -o $@ ./cmd/emp
 
-release/empire-Linux-x86_64:
+$(ARTIFACTS)/empire-Linux-x86_64:
 	env GOOS=linux go build -o $@ ./cmd/empire
-release/empire-Darwin-x86_64:
+$(ARTIFACTS)/empire-Darwin-x86_64:
 	env GOOS=darwin go build -o $@ ./cmd/empire

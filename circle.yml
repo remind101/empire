@@ -12,6 +12,7 @@ checkout:
 
 dependencies:
   pre:
+    - go get github.com/aktau/github-release
     - sudo pip install awscli
     - go install -a -race std
     - go version
