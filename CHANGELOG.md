@@ -4,7 +4,7 @@
 
 **Features**
 
-* Empire now uses CloudFormation to provision resources for applications [#814](https://github.com/remind101/empire/pull/814), [#803](https://github.com/remind101/empire/pull/803).
+* Empire now contains expiremental support for using CloudFormation to provision resources for applications [#814](https://github.com/remind101/empire/pull/814), [#803](https://github.com/remind101/empire/pull/803).
 * Empire now supports requiring commit messages for all actions that emit an event via `--messages.required`. If a commit message is required for an action, emp will gracefully handle it and ask the user to input a value [#767](https://github.com/remind101/empire/issues/767).
 * You can now supply a commit message to any event that is published by Empire [#767](https://github.com/remind101/empire/issues/767).
 * Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
