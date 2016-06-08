@@ -10,12 +10,11 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/httpmock"
-	"github.com/remind101/empire/pkg/image"
 )
 
 func TestCMDExtractor(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
-		"GET /images/remind101:acme-inc/json",
+		"GET /images/remind101/acme-inc:latest/json",
 		200, `{ "Config": { "Cmd": ["/go/bin/app","server"] } }`,
 	))
 
@@ -26,10 +25,7 @@ func TestCMDExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(nil, image.Image{
-		Tag:        "acme-inc",
-		Repository: "remind101",
-	}, nil)
+	got, err := e.Extract(nil, "remind101/acme-inc:latest", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,10 +63,7 @@ func TestProcfileExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(nil, image.Image{
-		Tag:        "acme-inc",
-		Repository: "remind101",
-	}, nil)
+	got, err := e.Extract(nil, "remind101/acme-inc:latest", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +90,7 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 		"DELETE /containers/abc",
 		200, `{}`,
 	)).Add(httpmock.PathHandler(t,
-		"GET /images/remind101:acme-inc/json",
+		"GET /images/remind101/acme-inc:latest/json",
 		200, `{ "Config": { "Cmd": ["/go/bin/app","server"] } }`,
 	))
 
@@ -109,10 +102,7 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 		NewCMDExtractor(c),
 	)
 
-	got, err := e.Extract(nil, image.Image{
-		Tag:        "acme-inc",
-		Repository: "remind101",
-	}, nil)
+	got, err := e.Extract(nil, "remind101/acme-inc:latest", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -62,12 +62,12 @@ func TestDeploy_NoTag(t *testing.T) {
 345c7524bc96: Pulling image (latest) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
 345c7524bc96: Pulling dependent layers
 a1dd7097a8e8: Download complete
-Status: Image is up to date for remind101/acme-inc:latest
+Status: Image is up to date for remind101/acme-inc
 Status: Created new release v1 for acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc (fake)",
 		},
 	})
 }

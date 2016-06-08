@@ -9,7 +9,6 @@ import (
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -29,11 +28,8 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 	b := new(bytes.Buffer)
 
 	e.On("Deploy", empire.DeploymentsCreateOpts{
-		User: &empire.User{Name: "ejholmes"},
-		Image: image.Image{
-			Repository: "remind101/acme-inc",
-			Tag:        "abcd123",
-		},
+		User:  &empire.User{Name: "ejholmes"},
+		Image: "remind101/acme-inc:abcd123",
 	}).Return(nil)
 
 	err := d.Deploy(context.Background(), event, b)
@@ -53,7 +49,7 @@ type mockEmpire struct {
 
 func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeploymentsCreateOpts) (*empire.Release, error) {
 	w := opts.Output
-	if err := dockerutil.FakePull(image.Image{Repository: "remind101/acme-inc", Tag: "latest"}, w); err != nil {
+	if err := dockerutil.FakePull("remind101/acme-inc:latest", w); err != nil {
 		panic(err)
 	}
 	opts.Output = nil

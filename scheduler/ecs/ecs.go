@@ -421,7 +421,7 @@ func (m *Scheduler) taskDefinitionInput(app *scheduler.App, p *scheduler.Process
 				Name:             aws.String(p.Type),
 				Cpu:              aws.Int64(int64(p.CPUShares)),
 				Command:          command,
-				Image:            aws.String(p.Image.String()),
+				Image:            aws.String(p.Image),
 				Essential:        aws.Bool(true),
 				Memory:           aws.Int64(int64(p.MemoryLimit / MB)),
 				Environment:      environment,

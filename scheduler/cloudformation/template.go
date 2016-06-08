@@ -434,7 +434,7 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 		Name:             aws.String(p.Type),
 		Cpu:              aws.Int64(int64(p.CPUShares)),
 		Command:          command,
-		Image:            aws.String(p.Image.String()),
+		Image:            aws.String(p.Image),
 		Essential:        aws.Bool(true),
 		Memory:           aws.Int64(int64(p.MemoryLimit / bytesize.MB)),
 		Environment:      environment,

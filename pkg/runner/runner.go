@@ -10,7 +10,6 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
@@ -21,7 +20,7 @@ const DefaultStopTimeout = 10
 // RunOpts is used when running.
 type RunOpts struct {
 	// Image is the image to run.
-	Image image.Image
+	Image string
 
 	// Command is the command to run.
 	Command []string
@@ -75,11 +74,15 @@ func (r *Runner) Run(ctx context.Context, opts RunOpts) error {
 	return nil
 }
 
-func (r *Runner) pull(ctx context.Context, img image.Image, out io.Writer) error {
+func (r *Runner) pull(ctx context.Context, img string, out io.Writer) error {
+	ref, err := dockerutil.ParseReference(img)
+	if err != nil {
+		return err
+	}
+
 	return r.client.PullImage(ctx, docker.PullImageOptions{
-		Registry:     img.Registry,
-		Repository:   img.Repository,
-		Tag:          img.Tag,
+		Repository:   ref.Name(),
+		Tag:          ref.Tag(),
 		OutputStream: out,
 	})
 }
@@ -95,7 +98,7 @@ func (r *Runner) create(ctx context.Context, opts RunOpts) (*docker.Container, e
 			OpenStdin:    true,
 			Memory:       opts.Memory,
 			CPUShares:    opts.CPUShares,
-			Image:        opts.Image.String(),
+			Image:        opts.Image,
 			Cmd:          opts.Command,
 			Env:          envKeys(opts.Env),
 			Labels:       opts.Labels,

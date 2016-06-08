@@ -6,17 +6,24 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
-	"github.com/remind101/empire/pkg/image"
 )
 
 // FakePull writes a jsonmessage stream to w that looks like a Docker pull.
-func FakePull(img image.Image, w io.Writer) error {
+func FakePull(img string, w io.Writer) error {
+	ref, err := ParseReference(img)
+	if err != nil {
+		return err
+	}
+
+	repo := ref.Name()
+	tag := ref.Tag()
 	messages := []jsonmessage.JSONMessage{
-		{Status: fmt.Sprintf("Pulling repository %s", img.Repository)},
-		{Status: fmt.Sprintf("Pulling image (%s) from %s", img.Tag, img.Repository), Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
-		{Status: fmt.Sprintf("Pulling image (%s) from %s, endpoint: https://registry-1.docker.io/v1/", img.Tag, img.Repository), Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
+		{Status: fmt.Sprintf("Pulling repository %s", repo)},
+		{Status: fmt.Sprintf("Pulling image (%s) from %s", tag, repo), Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
+		{Status: fmt.Sprintf("Pulling image (%s) from %s, endpoint: https://registry-1.docker.io/v1/", tag, repo), Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
 		{Status: "Pulling dependent layers", Progress: &jsonmessage.JSONProgress{}, ID: "345c7524bc96"},
 		{Status: "Download complete", Progress: &jsonmessage.JSONProgress{}, ID: "a1dd7097a8e8"},
 		{Status: fmt.Sprintf("Status: Image is up to date for %s", img)},
@@ -31,6 +38,22 @@ func FakePull(img image.Image, w io.Writer) error {
 	}
 
 	return nil
+}
+
+// ParseReference parses a Docker reference into a reference.NamedTagged. If the
+// provided reference doesn't have a tag, "latest" is used.
+func ParseReference(img string) (reference.NamedTagged, error) {
+	r, err := reference.ParseNamed(img)
+	if err != nil {
+		return nil, err
+	}
+
+	ref, ok := r.(reference.NamedTagged)
+	if !ok {
+		return reference.WithTag(r, "latest")
+	}
+
+	return ref, nil
 }
 
 // DecodeJSONMessageStream wraps an io.Writer to decode a jsonmessage stream into

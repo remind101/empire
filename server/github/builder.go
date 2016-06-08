@@ -7,7 +7,6 @@ import (
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/conveyor/client/conveyor"
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
@@ -16,12 +15,12 @@ import (
 // back to the user, you can use the passed in io.Writer and write plain text
 // logs to it.
 type ImageBuilder interface {
-	BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error)
+	BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (string, error)
 }
 
-type ImageBuilderFunc func(context.Context, io.Writer, events.Deployment) (image.Image, error)
+type ImageBuilderFunc func(context.Context, io.Writer, events.Deployment) (string, error)
 
-func (fn ImageBuilderFunc) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error) {
+func (fn ImageBuilderFunc) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (string, error) {
 	return fn(ctx, w, event)
 }
 
@@ -29,13 +28,13 @@ func (fn ImageBuilderFunc) BuildImage(ctx context.Context, w io.Writer, event ev
 // determine what docker image should be deployed. Note that this doesn't not
 // actually perform any "build".
 func ImageFromTemplate(t *template.Template) ImageBuilder {
-	return ImageBuilderFunc(func(ctx context.Context, _ io.Writer, event events.Deployment) (image.Image, error) {
+	return ImageBuilderFunc(func(ctx context.Context, _ io.Writer, event events.Deployment) (string, error) {
 		buf := new(bytes.Buffer)
 		if err := t.Execute(buf, event); err != nil {
-			return image.Image{}, err
+			return "", err
 		}
 
-		return image.Decode(buf.String())
+		return buf.String(), nil
 	})
 }
 
@@ -61,14 +60,14 @@ func NewConveyorImageBuilder(c *conveyor.Service) *ConveyorImageBuilder {
 	}
 }
 
-func (c *ConveyorImageBuilder) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (image.Image, error) {
+func (c *ConveyorImageBuilder) BuildImage(ctx context.Context, w io.Writer, event events.Deployment) (string, error) {
 	a, err := c.client.Build(w, conveyor.BuildCreateOpts{
 		Repository: event.Repository.FullName,
 		Sha:        &event.Deployment.Sha,
 	})
 	if err != nil {
-		return image.Image{}, err
+		return "", err
 	}
 
-	return image.Decode(a.Image)
+	return a.Image, nil
 }

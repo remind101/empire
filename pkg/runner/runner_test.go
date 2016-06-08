@@ -10,7 +10,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/image"
 )
 
 func TestRunner(t *testing.T) {
@@ -18,10 +17,7 @@ func TestRunner(t *testing.T) {
 	out := new(bytes.Buffer)
 
 	if err := r.Run(context.Background(), RunOpts{
-		Image: image.Image{
-			Repository: "ubuntu",
-			Tag:        "14.04",
-		},
+		Image:   "ubuntu:14.04",
 		Command: "/bin/bash 'sleep 60'",
 		Input:   strings.NewReader("ls\nexit\n"),
 		Output:  out,

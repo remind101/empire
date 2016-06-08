@@ -3,7 +3,6 @@ package heroku
 import (
 	"net/http"
 
-	"github.com/remind101/empire/pkg/image"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 
 	"github.com/remind101/empire"
@@ -17,7 +16,7 @@ type PostDeploys struct {
 
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
-	Image image.Image
+	Image string
 }
 
 // ServeHTTPContext implements the Handler interface.
@@ -46,10 +45,6 @@ func newDeploymentsCreateOpts(ctx context.Context, w http.ResponseWriter, req *h
 	}
 
 	w.Header().Set("Content-Type", "application/json; boundary=NL")
-
-	if form.Image.Tag == "" && form.Image.Digest == "" {
-		form.Image.Tag = "latest"
-	}
 
 	opts := empire.DeploymentsCreateOpts{
 		User:    UserFromContext(ctx),

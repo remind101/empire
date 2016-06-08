@@ -11,7 +11,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
-	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
@@ -96,7 +96,7 @@ func TestEmpire_Deploy(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	img := image.Image{Repository: "remind101/acme-inc"}
+	img := "remind101/acme-inc"
 	s.On("Submit", &scheduler.App{
 		ID:      app.ID,
 		Name:    "acme-inc",
@@ -149,7 +149,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img string, w io.Writer) ([]byte, error) {
 		return nil, errors.New("image not found")
 	})
 
@@ -158,7 +158,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 	_, err := e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
 		User:   &empire.User{Name: "ejholmes"},
 		Output: ioutil.Discard,
-		Image:  image.Image{Repository: "remind101/acme-inc"},
+		Image:  "remind101/acme-inc",
 	})
 	assert.Error(t, err)
 
@@ -175,7 +175,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img string, w io.Writer) ([]byte, error) {
 		return procfile.Marshal(procfile.ExtendedProcfile{
 			"web": procfile.Process{
 				Command: []string{"./bin/web"},
@@ -189,7 +189,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	r, err := e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
 		User:   user,
 		Output: ioutil.Discard,
-		Image:  image.Image{Repository: "remind101/acme-inc"},
+		Image:  "remind101/acme-inc:latest",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, r.Version)
@@ -197,8 +197,13 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	// We'll use the procfile extractor to synchronize two concurrent
 	// deployments.
 	v2Started, v3Started := make(chan struct{}), make(chan struct{})
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		switch img.Tag {
+	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img string, w io.Writer) ([]byte, error) {
+		ref, err := dockerutil.ParseReference(img)
+		if err != nil {
+			return nil, err
+		}
+
+		switch ref.Tag() {
 		case "v2":
 			close(v2Started)
 			<-v3Started
@@ -217,7 +222,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 		r, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
 			User:   user,
 			Output: ioutil.Discard,
-			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
+			Image:  "remind101/acme-inc:v2",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, 2, r.Version)
@@ -229,7 +234,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	r, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
 		User:   user,
 		Output: ioutil.Discard,
-		Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v3"},
+		Image:  "remind101/acme-inc:v3",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, r.Version)
@@ -250,7 +255,7 @@ func TestEmpire_Run(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	img := image.Image{Repository: "remind101/acme-inc"}
+	img := "remind101/acme-inc"
 	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
 		App:    app,
 		User:   user,
@@ -324,7 +329,7 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	img := image.Image{Repository: "remind101/acme-inc"}
+	img := "remind101/acme-inc"
 	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
 		App:    app,
 		User:   user,
@@ -416,7 +421,7 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Deploy a new image to the app.
-	img := image.Image{Repository: "remind101/acme-inc"}
+	img := "remind101/acme-inc"
 	s.On("Submit", &scheduler.App{
 		ID:      app.ID,
 		Name:    "acme-inc",

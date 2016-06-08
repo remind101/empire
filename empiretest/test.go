@@ -13,7 +13,6 @@ import (
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/server"
@@ -86,7 +85,7 @@ func Run(m *testing.M) {
 }
 
 // ExtractProcfile extracts a fake Procfile.
-func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+func ExtractProcfile(ctx context.Context, img string, w io.Writer) ([]byte, error) {
 	p, err := procfile.Marshal(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},

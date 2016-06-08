@@ -11,7 +11,6 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -540,7 +539,7 @@ type DeploymentsCreateOpts struct {
 	App *App
 
 	// Image is the image that's being deployed.
-	Image image.Image
+	Image string
 
 	// Environment is the environment where the image is being deployed
 	Environment string
@@ -556,7 +555,7 @@ type DeploymentsCreateOpts struct {
 func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	e := DeployEvent{
 		User:    opts.User.Name,
-		Image:   opts.Image.String(),
+		Image:   opts.Image,
 		Message: opts.Message,
 	}
 	if opts.App != nil {
@@ -736,11 +735,15 @@ func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
 		NewCMDExtractor(c.Client),
 	)
 
-	return ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+	return ProcfileExtractorFunc(func(ctx context.Context, img string, w io.Writer) ([]byte, error) {
+		ref, err := dockerutil.ParseReference(img)
+		if err != nil {
+			return nil, err
+		}
+
 		if err := c.PullImage(ctx, docker.PullImageOptions{
-			Registry:      img.Registry,
-			Repository:    img.Repository,
-			Tag:           img.Tag,
+			Repository:    ref.Name(),
+			Tag:           ref.Tag(),
 			OutputStream:  w,
 			RawJSONStream: true,
 		}); err != nil {

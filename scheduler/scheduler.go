@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
@@ -35,7 +34,7 @@ type Process struct {
 	Type string
 
 	// The Image to run.
-	Image image.Image
+	Image string
 
 	// The Command to run.
 	Command []string

@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/remind101/empire/pkg/bytesize"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +34,7 @@ func TestEmpireTemplate(t *testing.T) {
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Image:   "remind101/acme-inc:latest",
 						Command: []string{"./bin/web"},
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPExposure{},
@@ -50,7 +49,7 @@ func TestEmpireTemplate(t *testing.T) {
 					},
 					{
 						Type:    "worker",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Image:   "remind101/acme-inc:latest",
 						Command: []string{"./bin/worker"},
 						Labels: map[string]string{
 							"empire.app.process": "worker",
@@ -104,7 +103,7 @@ func TestEmpireTemplate(t *testing.T) {
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Image:   "remind101/acme-inc:latest",
 						Command: []string{"./bin/web"},
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPExposure{},
@@ -119,7 +118,7 @@ func TestEmpireTemplate(t *testing.T) {
 					},
 					{
 						Type:    "worker",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Image:   "remind101/acme-inc:latest",
 						Command: []string{"./bin/worker"},
 						Labels: map[string]string{
 							"empire.app.process": "worker",

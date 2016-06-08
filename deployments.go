@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"golang.org/x/net/context"
 )
 
@@ -19,18 +20,22 @@ type deployerService struct {
 func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeploymentsCreateOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
+	ref, err := dockerutil.ParseReference(img)
+	if err != nil {
+		return nil, err
+	}
 	// If no app is specified, attempt to find the app that relates to this
 	// images repository, or create it if not found.
 	if app == nil {
 		var err error
-		app, err = appsFindOrCreateByRepo(db, img.Repository)
+		app, err = appsFindOrCreateByRepo(db, ref.Name())
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// If the app doesn't already have a repo attached to it, we'll attach
 		// this image's repo.
-		if err := appsEnsureRepo(db, app, img.Repository); err != nil {
+		if err := appsEnsureRepo(db, app, ref.Name()); err != nil {
 			return nil, err
 		}
 	}
@@ -49,7 +54,7 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts Deployme
 
 	// Create a new release for the Config
 	// and Slug.
-	desc := fmt.Sprintf("Deploy %s", img.String())
+	desc := fmt.Sprintf("Deploy %s", img)
 	desc = appendMessageToDescription(desc, opts.User, opts.Message)
 
 	r, err := s.releases.Create(ctx, db, &Release{

@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/remind101/empire/pkg/awsutil"
-	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/stretchr/testify/assert"
@@ -465,7 +464,7 @@ func TestScheduler_Run(t *testing.T) {
 	}
 	process := &scheduler.Process{
 		Type:        "run",
-		Image:       image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+		Image:       "remind101/acme-inc:latest",
 		Command:     []string{"acme-inc", "web", "--port", "80"},
 		MemoryLimit: 134217728, // 128
 		CPUShares:   128,
@@ -683,7 +682,7 @@ var fakeApp = &scheduler.App{
 	Processes: []*scheduler.Process{
 		&scheduler.Process{
 			Type:        "web",
-			Image:       image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+			Image:       "remind101/acme-inc:latest",
 			Command:     []string{"acme-inc", "web", "--port", "80"},
 			MemoryLimit: 134217728, // 128
 			CPUShares:   128,

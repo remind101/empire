@@ -1,11 +1,11 @@
 package dockerutil
 
 import (
-	"fmt"
 	"os"
 
 	"golang.org/x/net/context"
 
+	"github.com/docker/distribution/reference"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/pkg/trace"
@@ -66,14 +66,13 @@ func newClient(authProvider dockerauth.AuthProvider, c *docker.Client) *Client {
 
 // PullImage wraps the docker clients PullImage to handle authentication.
 func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) error {
-	// This is to workaround an issue in the Docker API, where it doesn't
-	// respect the registry param. We have to put the registry in the
-	// repository field.
-	if opts.Registry != "" {
-		opts.Repository = fmt.Sprintf("%s/%s", opts.Registry, opts.Repository)
+	ref, err := reference.ParseNamed(opts.Repository)
+	if err != nil {
+		return err
 	}
+	registry, _ := reference.SplitHostname(ref)
 
-	authConf, err := authConfiguration(c.AuthProvider, opts.Registry)
+	authConf, err := authConfiguration(c.AuthProvider, registry)
 	if err != nil {
 		return err
 	}

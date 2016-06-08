@@ -8,12 +8,9 @@ import (
 	"io"
 	"path"
 
-	"golang.org/x/net/context"
-
-	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/empire/procfile"
-
 	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/procfile"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -23,12 +20,12 @@ var (
 
 // ProcfileExtractor represents something that can extract a Procfile from an image.
 type ProcfileExtractor interface {
-	Extract(context.Context, image.Image, io.Writer) ([]byte, error)
+	Extract(context.Context, string, io.Writer) ([]byte, error)
 }
 
-type ProcfileExtractorFunc func(context.Context, image.Image, io.Writer) ([]byte, error)
+type ProcfileExtractorFunc func(context.Context, string, io.Writer) ([]byte, error)
 
-func (fn ProcfileExtractorFunc) Extract(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
+func (fn ProcfileExtractorFunc) Extract(ctx context.Context, image string, w io.Writer) ([]byte, error) {
 	return fn(ctx, image, w)
 }
 
@@ -44,8 +41,8 @@ func NewCMDExtractor(c *docker.Client) *CMDExtractor {
 	return &CMDExtractor{client: c}
 }
 
-func (e *CMDExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) ([]byte, error) {
-	i, err := e.client.InspectImage(img.String())
+func (e *CMDExtractor) Extract(_ context.Context, img string, _ io.Writer) ([]byte, error) {
+	i, err := e.client.InspectImage(img)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +57,7 @@ func (e *CMDExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) 
 // MultiExtractor is an Extractor implementation that tries multiple Extractors
 // in succession until one succeeds.
 func MultiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
-	return ProcfileExtractorFunc(func(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
+	return ProcfileExtractorFunc(func(ctx context.Context, image string, w io.Writer) ([]byte, error) {
 		for _, extractor := range extractors {
 			p, err := extractor.Extract(ctx, image, w)
 
@@ -96,7 +93,7 @@ func NewFileExtractor(c *docker.Client) *FileExtractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *FileExtractor) Extract(_ context.Context, img image.Image, w io.Writer) ([]byte, error) {
+func (e *FileExtractor) Extract(_ context.Context, img string, w io.Writer) ([]byte, error) {
 	c, err := e.createContainer(img)
 	if err != nil {
 		return nil, err
@@ -135,10 +132,10 @@ func (e *FileExtractor) procfile(id string) (string, error) {
 }
 
 // createContainer creates a new docker container for the given docker image.
-func (e *FileExtractor) createContainer(img image.Image) (*docker.Container, error) {
+func (e *FileExtractor) createContainer(img string) (*docker.Container, error) {
 	return e.client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Image: img.String(),
+			Image: img,
 		},
 	})
 }
