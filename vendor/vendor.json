@@ -22,7 +22,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -30,7 +29,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/awserr",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -38,7 +36,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/awsutil",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -46,7 +43,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/client",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -54,7 +50,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/client/metadata",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -62,7 +57,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/corehandlers",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -70,7 +64,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/credentials",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -78,7 +71,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -86,7 +78,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/defaults",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -94,7 +85,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/ec2metadata",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -102,7 +92,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/request",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -110,7 +99,6 @@
 			"path": "github.com/aws/aws-sdk-go/aws/session",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -220,7 +208,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/cloudformation",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -228,7 +215,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/cloudfront",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -236,7 +222,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -244,7 +229,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/dynamodb",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -252,7 +236,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -260,7 +243,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/ec2",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -268,7 +250,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/ecr",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -276,7 +257,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/ecs",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -284,7 +264,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/elastictranscoder",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -292,7 +271,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/elb",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -300,7 +278,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/kinesis",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -308,7 +285,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/kinesis/kinesisiface",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -316,7 +292,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/route53",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -324,7 +299,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/s3",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -332,7 +306,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/sns",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -340,7 +313,6 @@
 			"path": "github.com/aws/aws-sdk-go/service/sqs",
 			"revision": "d0b0d5a4be6b816888caa9f8bfd2d0fc4e42a28d",
 			"revisionTime": "2016-05-12T22:02:53Z",
-			"version": "v1.1.26",
 			"versionExact": "v1.1.26"
 		},
 		{
@@ -371,6 +343,16 @@
 			"comment": "v2.0.0-3-gc0da491",
 			"path": "github.com/dgrijalva/jwt-go",
 			"revision": "c0da49162251c81124e34f3e7885527a091dacd5"
+		},
+		{
+			"path": "github.com/docker/distribution/digest",
+			"revision": "feddf6cd4e439577ab270d8e3ba63a5d7c5c0d55",
+			"revisionTime": "2016-06-02T11:22:55-07:00"
+		},
+		{
+			"path": "github.com/docker/distribution/reference",
+			"revision": "feddf6cd4e439577ab270d8e3ba63a5d7c5c0d55",
+			"revisionTime": "2016-06-02T11:22:55-07:00"
 		},
 		{
 			"comment": "v1.4.1-3107-g5221fd2",
