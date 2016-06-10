@@ -166,14 +166,7 @@ func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*
 		return nil, err
 	}
 
-	// If there are no changes to the process size, we can do a quick scale
-	// up, otherwise, we will resubmit the release to the scheduler.
-	if c == nil {
-		err = s.Scheduler.Scale(ctx, release.AppID, opts.Process, uint(quantity))
-	} else {
-		err = s.releases.Release(ctx, release)
-	}
-
+	err = s.releases.Release(ctx, release)
 	if err != nil {
 		return &p, err
 	}

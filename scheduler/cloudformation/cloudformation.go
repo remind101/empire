@@ -667,42 +667,6 @@ func (s *Scheduler) Stop(ctx context.Context, instanceID string) error {
 	return err
 }
 
-type ScaleOptions struct {
-	// Done is a channel that is sent on when the stack is fully created or
-	// updated.
-	Done chan error
-}
-
-// Scale scales the ECS service for the given process to the desired number of
-// instances.
-func (s *Scheduler) Scale(ctx context.Context, appID string, process string, instances uint) error {
-	return s.ScaleWithOptions(ctx, appID, process, instances, ScaleOptions{})
-}
-
-func (s *Scheduler) ScaleWithOptions(ctx context.Context, appID string, process string, instances uint, opts ScaleOptions) error {
-	if opts.Done == nil {
-		opts.Done = make(chan error)
-	}
-
-	stackName, err := s.stackName(appID)
-	if err != nil {
-		return err
-	}
-
-	err = s.updateStack(&cloudformation.UpdateStackInput{
-		StackName:           aws.String(stackName),
-		UsePreviousTemplate: aws.Bool(true),
-		Parameters: []*cloudformation.Parameter{
-			{
-				ParameterKey:   aws.String(scaleParameter(process)),
-				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
-			},
-		},
-	}, opts.Done)
-
-	return err
-}
-
 // Run registers a TaskDefinition for the process, and calls RunTask.
 func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
 	if out != nil {

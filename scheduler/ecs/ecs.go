@@ -632,7 +632,7 @@ func (m *Scheduler) Processes(ctx context.Context, appID string) ([]*scheduler.P
 }
 
 func (m *Scheduler) RemoveProcess(ctx context.Context, app string, process string) error {
-	if err := m.Scale(ctx, app, process, 0); noService(err) {
+	if err := m.scale(ctx, app, process, 0); noService(err) {
 		return nil
 	} else if err != nil {
 		return err
@@ -650,7 +650,7 @@ func (m *Scheduler) RemoveProcess(ctx context.Context, app string, process strin
 }
 
 // Scale scales an ECS service to the desired number of instances.
-func (m *Scheduler) Scale(ctx context.Context, app string, process string, instances uint) error {
+func (m *Scheduler) scale(ctx context.Context, app string, process string, instances uint) error {
 	_, err := m.ecs.UpdateAppService(ctx, app, &ecs.UpdateServiceInput{
 		Cluster:      aws.String(m.cluster),
 		DesiredCount: aws.Int64(int64(instances)),

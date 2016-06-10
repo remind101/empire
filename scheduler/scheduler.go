@@ -108,11 +108,6 @@ type Instance struct {
 	UpdatedAt time.Time
 }
 
-type Scaler interface {
-	// Scale scales an app process.
-	Scale(ctx context.Context, app string, process string, instances uint) error
-}
-
 type Runner interface {
 	// Run runs a process.
 	Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error
@@ -120,7 +115,6 @@ type Runner interface {
 
 // Scheduler is an interface for interfacing with Services.
 type Scheduler interface {
-	Scaler
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
