@@ -232,7 +232,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		TemplateURL: aws.String(url),
 	})
 	if err != nil {
-		return fmt.Errorf("error validating CloudFormation template: %v", err)
+		return &templateValidationError{templateURL: url, err: err, templateBody: buf}
 	}
 
 	tags := append(s.Tags,
@@ -850,4 +850,20 @@ func newAdvisoryLock(db *sql.DB, stackName string) (*pglock.AdvisoryLock, error)
 	l.LockTimeout = lockTimeout
 	l.Context = fmt.Sprintf("stack %s", stackName)
 	return l, nil
+}
+
+// templateValidationError wraps an error from ValidateTemplate to provide more
+// information.
+type templateValidationError struct {
+	templateURL  string
+	templateBody *bytes.Buffer
+	err          error
+}
+
+func (e *templateValidationError) Error() string {
+	t := `TemplateValidationError:
+  Template URL: %s
+  Template Size: %d bytes
+  Error: %v`
+	return fmt.Sprintf(t, e.templateURL, e.templateBody.Len(), e.err)
 }
