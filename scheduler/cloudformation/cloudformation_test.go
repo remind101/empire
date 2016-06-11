@@ -228,6 +228,45 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
+func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, awserr.New("ValidationError", "Template may not exceed 460800 bytes in size.", errors.New("")))
+
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	})
+	assert.EqualError(t, err, `TemplateValidationError:
+  Template URL: https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f
+  Template Size: 2 bytes
+  Error: ValidationError: Template may not exceed 460800 bytes in size.
+caused by: `)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
 func TestScheduler_Remove(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
