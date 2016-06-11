@@ -19,6 +19,7 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
+	"github.com/remind101/empire/server/middleware"
 )
 
 var (
@@ -59,15 +60,22 @@ func NewEmpire(t testing.TB) *empire.Empire {
 // NewServer builds a new empire.Empire instance and returns an httptest.Server
 // running the empire API.
 func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
+	var opts server.Options
+	opts.GitHub.Webhooks.Secret = "abcd"
+	opts.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
+	opts.GitHub.Deployments.Environments = []string{"test"}
+	opts.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))
+	return NewTestServer(t, e, opts)
+}
+
+// NewTestServer returns a new httptest.Server for testing empire's http server.
+func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *httptest.Server {
 	if e == nil {
 		e = NewEmpire(t)
 	}
 
-	server.DefaultOptions.GitHub.Webhooks.Secret = "abcd"
-	server.DefaultOptions.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
-	server.DefaultOptions.GitHub.Deployments.Environments = []string{"test"}
-	server.DefaultOptions.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))
-	return httptest.NewServer(server.New(e, server.DefaultOptions))
+	s := server.New(e, opts)
+	return httptest.NewServer(middleware.Handler(context.Background(), s))
 }
 
 var dblock = "/tmp/empire.lock"

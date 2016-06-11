@@ -13,7 +13,6 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
-	"github.com/remind101/pkg/httpx/middleware"
 )
 
 // The Accept header that controls the api version. See
@@ -80,7 +79,13 @@ func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 
 	api := Authenticate(r, authenticator)
 
-	return middleware.HandleError(api, errorHandler)
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		err := api.ServeHTTPContext(ctx, w, r)
+		if err != nil {
+			errorHandler(err, w, r)
+		}
+		return nil
+	})
 }
 
 // Encode json encodes v into w.
