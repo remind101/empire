@@ -601,14 +601,7 @@ func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Relea
 	return r, e.PublishEvent(event)
 }
 
-// ScaleOpts are options provided when scaling a process.
-type ScaleOpts struct {
-	// User that's performing the action.
-	User *User
-
-	// The associated app.
-	App *App
-
+type ProcessUpdate struct {
 	// The process to scale.
 	Process string
 
@@ -617,6 +610,17 @@ type ScaleOpts struct {
 
 	// If provided, new memory and CPU constraints for the process.
 	Constraints *Constraints
+}
+
+// ScaleOpts are options provided when scaling a process.
+type ScaleOpts struct {
+	// User that's performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	Updates []*ProcessUpdate
 
 	// Commit message
 	Message string
@@ -624,17 +628,21 @@ type ScaleOpts struct {
 
 func (opts ScaleOpts) Event() ScaleEvent {
 	e := ScaleEvent{
-		User:     opts.User.Name,
-		App:      opts.App.Name,
-		Process:  string(opts.Process),
-		Quantity: opts.Quantity,
-		Message:  opts.Message,
-		app:      opts.App,
+		User:    opts.User.Name,
+		App:     opts.App.Name,
+		Message: opts.Message,
+		app:     opts.App,
 	}
 
-	if opts.Constraints != nil {
-		e.Constraints = *opts.Constraints
+	var updates []*ScaleEventUpdate
+	for _, up := range opts.Updates {
+		updates = append(updates, &ScaleEventUpdate{
+			Process:     up.Process,
+			Quantity:    up.Quantity,
+			Constraints: *up.Constraints,
+		})
 	}
+	e.Updates = updates
 	return e
 }
 
@@ -642,21 +650,21 @@ func (opts ScaleOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
 }
 
-// Scale scales an apps process.
-func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) (*Process, error) {
+// Scale scales an apps processes.
+func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
 
 	tx := e.db.Begin()
 
-	p, err := e.apps.Scale(ctx, tx, opts)
+	ps, err := e.apps.Scale(ctx, tx, opts)
 	if err != nil {
 		tx.Rollback()
-		return p, err
+		return ps, err
 	}
 
-	return p, tx.Commit().Error
+	return ps, tx.Commit().Error
 }
 
 // ListScale lists the current scale settings for a given App

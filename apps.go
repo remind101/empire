@@ -132,34 +132,41 @@ func (s *appsService) Restart(ctx context.Context, db *gorm.DB, opts RestartOpts
 	return s.releases.ReleaseApp(ctx, db, opts.App)
 }
 
-func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*Process, error) {
-	app, t, quantity, c := opts.App, opts.Process, opts.Quantity, opts.Constraints
+func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) ([]*Process, error) {
+	app := opts.App
 
 	release, err := releasesFind(db, ReleasesQuery{App: app})
 	if err != nil {
 		return nil, err
 	}
-
 	if release == nil {
 		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
-	p, ok := release.Formation[t]
-	if !ok {
-		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
-	}
-
 	event := opts.Event()
-	event.PreviousQuantity = p.Quantity
-	event.PreviousConstraints = p.Constraints()
 
-	// Update quantity for this process in the formation
-	p.Quantity = quantity
-	if c != nil {
-		p.SetConstraints(*c)
+	var ps []*Process
+	for i, up := range opts.Updates {
+		t, q, c := up.Process, up.Quantity, up.Constraints
+
+		p, ok := release.Formation[t]
+		if !ok {
+			return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
+		}
+
+		eventUpdate := event.Updates[i]
+		eventUpdate.PreviousQuantity = p.Quantity
+		eventUpdate.PreviousConstraints = p.Constraints()
+
+		// Update quantity for this process in the formation
+		p.Quantity = q
+		if c != nil {
+			p.SetConstraints(*c)
+		}
+
+		release.Formation[t] = p
+		ps = append(ps, &p)
 	}
-
-	release.Formation[t] = p
 
 	// Save the new formation.
 	if err := releasesUpdate(db, release); err != nil {
@@ -168,10 +175,10 @@ func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*
 
 	err = s.releases.Release(ctx, release)
 	if err != nil {
-		return &p, err
+		return ps, err
 	}
 
-	return &p, s.PublishEvent(event)
+	return ps, s.PublishEvent(event)
 }
 
 // appsEnsureRepo will set the repo if it's not set.

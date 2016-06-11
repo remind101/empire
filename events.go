@@ -76,16 +76,20 @@ func (e RestartEvent) GetApp() *App {
 	return e.app
 }
 
-// ScaleEvent is triggered when a manual scaling event happens.
-type ScaleEvent struct {
-	User                string
-	App                 string
+type ScaleEventUpdate struct {
 	Process             string
 	Quantity            int
 	PreviousQuantity    int
 	Constraints         Constraints
 	PreviousConstraints Constraints
-	Message             string
+}
+
+// ScaleEvent is triggered when a manual scaling event happens.
+type ScaleEvent struct {
+	User    string
+	App     string
+	Updates []*ScaleEventUpdate
+	Message string
 
 	app *App
 }
@@ -95,21 +99,36 @@ func (e ScaleEvent) Event() string {
 }
 
 func (e ScaleEvent) String() string {
-	// Deal with no new constraints by copying previous constraint settings.
-	newConstraints := e.Constraints
-	if newConstraints.CPUShare == 0 {
-		newConstraints.CPUShare = e.PreviousConstraints.CPUShare
-	}
+	var msg, sep string
+	for _, up := range e.Updates {
+		// Deal with no new constraints by copying previous constraint settings.
+		newConstraints := up.Constraints
+		previousConstraints := up.PreviousConstraints
+		if newConstraints.CPUShare == 0 {
+			newConstraints.CPUShare = previousConstraints.CPUShare
+		}
 
-	if newConstraints.Memory == 0 {
-		newConstraints.Memory = e.PreviousConstraints.Memory
-	}
+		if newConstraints.Memory == 0 {
+			newConstraints.Memory = previousConstraints.Memory
+		}
 
-	if newConstraints.Nproc == 0 {
-		newConstraints.Nproc = e.PreviousConstraints.Nproc
-	}
+		if newConstraints.Nproc == 0 {
+			newConstraints.Nproc = previousConstraints.Nproc
+		}
 
-	msg := fmt.Sprintf("%s scaled `%s` on %s from %d(%s) to %d(%s)", e.User, e.Process, e.App, e.PreviousQuantity, e.PreviousConstraints, e.Quantity, newConstraints)
+		msg += fmt.Sprintf(
+			"%s%s scaled `%s` on %s from %d(%s) to %d(%s)",
+			sep,
+			e.User,
+			up.Process,
+			e.App,
+			up.PreviousQuantity,
+			up.PreviousConstraints,
+			up.Quantity,
+			newConstraints,
+		)
+		sep = "\n"
+	}
 	return appendCommitMessage(msg, e.Message)
 }
 
