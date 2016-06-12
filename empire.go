@@ -636,11 +636,14 @@ func (opts ScaleOpts) Event() ScaleEvent {
 
 	var updates []*ScaleEventUpdate
 	for _, up := range opts.Updates {
-		updates = append(updates, &ScaleEventUpdate{
-			Process:     up.Process,
-			Quantity:    up.Quantity,
-			Constraints: *up.Constraints,
-		})
+		event := &ScaleEventUpdate{
+			Process:  up.Process,
+			Quantity: up.Quantity,
+		}
+		if up.Constraints != nil {
+			event.Constraints = *up.Constraints
+		}
+		updates = append(updates, event)
 	}
 	e.Updates = updates
 	return e
