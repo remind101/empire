@@ -19,6 +19,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
+	"github.com/remind101/empire/events/stdout"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/ecsutil"
@@ -299,6 +300,12 @@ func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
 			return streams, err
 		}
 		streams = append(streams, e)
+	case "stdout":
+		e, err := newStdoutEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
 	default:
 		e := empire.NullEventStream
 		streams = append(streams, e)
@@ -327,6 +334,12 @@ func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {
 	log.Println("Using SNS events backend with the following configuration:")
 	log.Println(fmt.Sprintf("  TopicARN: %s", e.TopicARN))
 
+	return e, nil
+}
+
+func newStdoutEventStream(c *cli.Context) (empire.EventStream, error) {
+	e := stdout.NewEventStream(newConfigProvider(c))
+	log.Println("Using Stdout events backend")
 	return e, nil
 }
 
