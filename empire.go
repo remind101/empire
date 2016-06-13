@@ -3,17 +3,14 @@ package empire // import "github.com/remind101/empire"
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"time"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/inconshreveable/log15"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
 )
 
@@ -21,9 +18,6 @@ var (
 	// DefaultOptions is a default Options instance that can be passed when
 	// intializing a new Empire.
 	DefaultOptions = Options{}
-
-	// DefaultReporter is the default reporter.Reporter to use.
-	DefaultReporter = reporter.NewLogReporter()
 )
 
 const (
@@ -41,13 +35,6 @@ type Options struct {
 
 // Empire is a context object that contains a collection of services.
 type Empire struct {
-	// Reporter is an reporter.Reporter that will be used to report errors to
-	// an external system.
-	reporter.Reporter
-
-	// Logger is a log15 logger that will be used for logging.
-	Logger log15.Logger
-
 	DB *DB
 	db *gorm.DB
 
@@ -88,7 +75,6 @@ type Empire struct {
 // New returns a new Empire instance.
 func New(db *DB, options Options) *Empire {
 	e := &Empire{
-		Logger:       nullLogger(),
 		LogsStreamer: logsDisabled,
 		EventStream:  NullEventStream,
 
@@ -718,13 +704,6 @@ func newJSONMessageError(err error) jsonmessage.JSONMessage {
 			Message: err.Error(),
 		},
 	}
-}
-
-func nullLogger() log15.Logger {
-	l := log15.New()
-	h := log15.StreamHandler(ioutil.Discard, log15.LogfmtFormat())
-	l.SetHandler(h)
-	return l
 }
 
 // PullAndExtract returns a ProcfileExtractor that will pull the image using the

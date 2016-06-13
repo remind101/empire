@@ -16,6 +16,7 @@ import (
 	githubauth "github.com/remind101/empire/server/auth/github"
 	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
+	"github.com/remind101/empire/server/middleware"
 	"golang.org/x/oauth2"
 )
 
@@ -45,12 +46,20 @@ func runServer(c *cli.Context) {
 		go p.Start()
 	}
 
-	s := newServer(c, e)
+	s, err := newServer(c, e)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("Starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }
 
-func newServer(c *cli.Context, e *empire.Empire) http.Handler {
+func newServer(c *cli.Context, e *empire.Empire) (http.Handler, error) {
+	rootCtx, err := newRootContext(c)
+	if err != nil {
+		return nil, err
+	}
+
 	var opts server.Options
 	opts.Authenticator = newAuthenticator(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
@@ -58,19 +67,19 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
-	return server.New(e, opts)
+	h := middleware.Common(server.New(e, opts))
+	return middleware.Handler(rootCtx, h), nil
 }
 
 func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
-	r, err := newReporter(c)
+	ctx, err := newRootContext(c)
 	if err != nil {
 		return nil, err
 	}
 
 	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
-	p.Logger = newLogger()
-	p.Reporter = r
 	p.QueueURL = c.String(FlagCustomResourcesQueue)
+	p.Context = ctx
 	return p, nil
 }
 

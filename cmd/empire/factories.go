@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"os"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -24,9 +26,30 @@ import (
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/ecs"
+	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
 )
+
+// newRootContext returns a new root context.Context with an error reporter and
+// logger embedded in the context.
+func newRootContext(c *cli.Context) (context.Context, error) {
+	r, err := newReporter(c)
+	if err != nil {
+		return nil, err
+	}
+	l := newLogger()
+
+	ctx := context.Background()
+	if r != nil {
+		ctx = reporter.WithReporter(ctx, r)
+	}
+	if l != nil {
+		ctx = logger.WithLogger(ctx, l)
+	}
+
+	return ctx, nil
+}
 
 // DB ===================================
 
@@ -38,11 +61,6 @@ func newDB(c *cli.Context) (*empire.DB, error) {
 
 func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	docker, err := newDockerClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	reporter, err := newReporter(c)
 	if err != nil {
 		return nil, err
 	}
@@ -70,14 +88,12 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	e := empire.New(db, empire.Options{
 		Secret: c.String(FlagSecret),
 	})
-	e.Reporter = reporter
 	e.Scheduler = scheduler
 	if logs != nil {
 		e.LogsStreamer = logs
 	}
 	e.EventStream = empire.AsyncEvents(streams)
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
-	e.Logger = newLogger()
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
@@ -348,7 +364,7 @@ func newLogger() log15.Logger {
 func newReporter(c *cli.Context) (reporter.Reporter, error) {
 	u := c.String(FlagReporter)
 	if u == "" {
-		return empire.DefaultReporter, nil
+		return nil, nil
 	}
 
 	uri, err := url.Parse(u)
@@ -372,7 +388,7 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 
 	// Append here because `go vet` will complain about unkeyed fields,
 	// since it thinks MultiReporter is a struct literal.
-	return append(reporter.MultiReporter{}, empire.DefaultReporter, r), nil
+	return append(reporter.MultiReporter{}, reporter.NewLogReporter(), r), nil
 }
 
 // Auth provider =======================
