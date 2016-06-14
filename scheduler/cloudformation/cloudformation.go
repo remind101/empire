@@ -166,7 +166,7 @@ type SubmitOptions struct {
 
 	// When true, does not make any changes to DNS. This is only used when
 	// migrating to this scheduler
-	NoDNS bool
+	NoDNS *bool
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
@@ -242,16 +242,20 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 
 	// Build parameters for the stack.
 	parameters := []*cloudformation.Parameter{
-		{
-			ParameterKey:   aws.String("DNS"),
-			ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
-		},
 		// FIXME: Remove this in favor of a Restart method.
 		{
 			ParameterKey:   aws.String(restartParameter),
 			ParameterValue: aws.String(newUUID()),
 		},
 	}
+
+	if opts.NoDNS != nil {
+		parameters = append(parameters, &cloudformation.Parameter{
+			ParameterKey:   aws.String("DNS"),
+			ParameterValue: aws.String(fmt.Sprintf("%t", *opts.NoDNS)),
+		})
+	}
+
 	for _, p := range app.Processes {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String(scaleParameter(p.Type)),

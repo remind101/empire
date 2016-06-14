@@ -61,7 +61,6 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 		},
@@ -133,7 +132,6 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
@@ -188,7 +186,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 			{
 				StackStatus: aws.String("CREATE_COMPLETE"),
 				Parameters: []*cloudformation.Parameter{
-					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
@@ -201,7 +198,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 		},

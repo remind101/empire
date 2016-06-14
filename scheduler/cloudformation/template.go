@@ -129,6 +129,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		"DNS": map[string]string{
 			"Type":        "String",
 			"Description": "When set to `true`, CNAME's will be altered",
+			"Default":     "true",
 		},
 		restartParameter: map[string]string{
 			"Type": "String",
