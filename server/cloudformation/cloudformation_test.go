@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/inconshreveable/log15"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -18,7 +19,6 @@ func TestCustomResourceProvisioner_Handle(t *testing.T) {
 	p := new(mockProvisioner)
 	h := new(mockHTTPClient)
 	c := &CustomResourceProvisioner{
-		Logger: nullLogger(),
 		Provisioners: map[string]Provisioner{
 			"Custom::InstancePort": p,
 		},
@@ -67,7 +67,7 @@ func TestCustomResourceProvisioner_Handle(t *testing.T) {
 
 	h.On("Do", req).Return(&http.Response{StatusCode: 200, Body: ioutil.NopCloser(new(bytes.Buffer))}, nil)
 
-	err = c.Handle(message)
+	err = c.Handle(context.Background(), message)
 	assert.NoError(t, err)
 }
 
@@ -122,11 +122,4 @@ func (m *mockSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.Rec
 func (m *mockSQSClient) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*sqs.DeleteMessageOutput), args.Error(1)
-}
-
-func nullLogger() log15.Logger {
-	l := log15.New()
-	h := log15.StreamHandler(ioutil.Discard, log15.LogfmtFormat())
-	l.SetHandler(h)
-	return l
 }

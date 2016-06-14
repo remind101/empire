@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+gh() {
+  github-release $@
+}
+
+artifacts_dir=$1
+tag=$2
+user=$CIRCLE_PROJECT_USERNAME
+repo=$CIRCLE_PROJECT_REPONAME
+
+gh release \
+    --user ${user} \
+    --repo ${repo} \
+    --tag ${tag}
+
+for f in ${artifacts_dir}/*; do
+  gh upload \
+    --user ${user} \
+    --repo ${repo} \
+    --tag ${tag} \
+    --name $(basename $f) \
+    --file $f
+done

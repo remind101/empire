@@ -11,7 +11,7 @@
   },
   "Outputs": {
     "EmpireVersion": {
-      "Value": "0.10.0"
+      "Value": "0.10.1"
     },
     "Release": {
       "Value": "v1"

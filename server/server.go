@@ -7,7 +7,6 @@ import (
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
-	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -32,7 +31,7 @@ type Options struct {
 	}
 }
 
-func New(e *empire.Empire, options Options) http.Handler {
+func New(e *empire.Empire, options Options) httpx.Handler {
 	r := httpx.NewRouter()
 
 	if options.GitHub.Webhooks.Secret != "" {
@@ -46,16 +45,13 @@ func New(e *empire.Empire, options Options) http.Handler {
 	}
 
 	// Mount the heroku api
-	h := heroku.New(e, options.Authenticator)
-	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
+	hk := heroku.New(e, options.Authenticator)
+	r.Headers("Accept", heroku.AcceptHeader).Handler(hk)
 
 	// Mount health endpoint
 	r.Handle("/health", NewHealthHandler(e))
 
-	return middleware.Common(r, middleware.CommonOpts{
-		Reporter: e.Reporter,
-		Logger:   e.Logger,
-	})
+	return r
 }
 
 // githubWebhook is a MatcherFunc that matches requests that have an

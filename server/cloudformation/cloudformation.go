@@ -167,8 +167,10 @@ type sqsClient interface {
 // CustomResourceProvisioner polls for CloudFormation Custom Resource requests
 // from an sqs queue, provisions them, then responds back.
 type CustomResourceProvisioner struct {
-	// Logger to use to perform logging.
-	Logger logger.Logger
+	// Root context.Context to use. If a reporter.Reporter is embedded,
+	// errors generated will be reporter there. If a logger.Logger is
+	// embedded, logging will be logged there.
+	Context context.Context
 
 	// The SQS queue url to listen for CloudFormation Custom Resource
 	// requests.
@@ -177,9 +179,6 @@ type CustomResourceProvisioner struct {
 	// Provisioners routes a custom resource to the thing that should do the
 	// provisioning.
 	Provisioners map[string]Provisioner
-
-	// Reporter is called when an error occurs during provisioning.
-	Reporter reporter.Reporter
 
 	client interface {
 		Do(*http.Request) (*http.Response, error)
@@ -210,27 +209,27 @@ func (c *CustomResourceProvisioner) Start() {
 	t := time.Tick(10 * time.Second)
 
 	for range t {
-		ctx := context.Background()
+		ctx := c.Context
 
 		resp, err := c.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl: aws.String(c.QueueURL),
 		})
 		if err != nil {
-			c.Reporter.Report(ctx, err)
+			reporter.Report(ctx, err)
 			continue
 		}
 
 		for _, m := range resp.Messages {
-			if err := c.handle(m); err != nil {
-				c.Reporter.Report(ctx, err)
+			if err := c.handle(ctx, m); err != nil {
+				reporter.Report(ctx, err)
 				continue
 			}
 		}
 	}
 }
 
-func (c *CustomResourceProvisioner) handle(message *sqs.Message) error {
-	err := c.Handle(message)
+func (c *CustomResourceProvisioner) handle(ctx context.Context, message *sqs.Message) error {
+	err := c.Handle(ctx, message)
 	if err == nil {
 		_, err = c.sqs.DeleteMessage(&sqs.DeleteMessageInput{
 			QueueUrl:      aws.String(c.QueueURL),
@@ -242,7 +241,7 @@ func (c *CustomResourceProvisioner) handle(message *sqs.Message) error {
 }
 
 // Handle handles a single sqs.Message to perform the provisioning.
-func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
+func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Message) error {
 	var m Message
 	err := json.Unmarshal([]byte(*message.Body), &m)
 	if err != nil {
@@ -278,14 +277,14 @@ func (c *CustomResourceProvisioner) Handle(message *sqs.Message) error {
 	switch err {
 	case nil:
 		resp.Status = StatusSuccess
-		c.Logger.Info("cloudformation.provision",
+		logger.Info(ctx, "cloudformation.provision",
 			"request", req,
 			"response", resp,
 		)
 	default:
 		resp.Status = StatusFailed
 		resp.Reason = err.Error()
-		c.Logger.Error("cloudformation.provision.error",
+		logger.Error(ctx, "cloudformation.provision.error",
 			"request", req,
 			"response", resp,
 			"err", err.Error(),
