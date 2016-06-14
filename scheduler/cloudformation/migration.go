@@ -196,14 +196,6 @@ func (s *MigrationScheduler) Run(ctx context.Context, app *scheduler.App, proces
 	return b.Run(ctx, app, process, in, out)
 }
 
-func (s *MigrationScheduler) Scale(ctx context.Context, appID, process string, instances uint) error {
-	b, err := s.Backend(appID)
-	if err != nil {
-		return err
-	}
-	return b.Scale(ctx, appID, process, instances)
-}
-
 func (s *MigrationScheduler) Stop(ctx context.Context, id string) error {
 	// These are identical between the old and new scheduler, so just using
 	// the new one is safe.

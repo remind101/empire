@@ -32,6 +32,7 @@
 **Performance**
 
 * `emp ps` should be significantly faster for services running a lot of processes [#781](https://github.com/remind101/empire/pull/781)
+* Scaling multiple processes within the Cloudformation scheduler results in 1 update now instead of N [#844](https://github.com/remind101/empire/pull/844)
 
 **Security**
 

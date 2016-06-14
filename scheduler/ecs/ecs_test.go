@@ -96,7 +96,7 @@ func TestScheduler_Submit(t *testing.T) {
 	}
 }
 
-func TestScheduler_Scale(t *testing.T) {
+func TestScheduler_scale(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
 			Request: awsutil.Request{
@@ -113,7 +113,7 @@ func TestScheduler_Scale(t *testing.T) {
 	m, s := newTestScheduler(h)
 	defer s.Close()
 
-	if err := m.Scale(context.Background(), "1234", "web", 10); err != nil {
+	if err := m.scale(context.Background(), "1234", "web", 10); err != nil {
 		t.Fatal(err)
 	}
 }
