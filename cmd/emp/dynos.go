@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -13,13 +12,36 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 )
 
+type dynoProcess struct {
+	Name    string `json:"name"`
+	Size    string `json:"size"`
+	State   string `json:"state"`
+	Age     string `json:"age"`
+	Command string `json:"command"`
+}
+
+type dynosOutput struct {
+	Output
+	Processes []*dynoProcess `json:"processes"`
+}
+
+func (o *dynosOutput) HumanOutput() error {
+	w := tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
+	defer w.Flush()
+	for _, p := range o.Processes {
+		listRec(w, p.Name, p.Size, p.State, p.Age, maybeQuote(p.Command))
+	}
+	return nil
+}
+
 var cmdDynos = &Command{
-	Run:      runDynos,
-	Usage:    "ps [<name>...]",
-	Alias:    "dynos",
-	NeedsApp: true,
-	Category: "dyno",
-	Short:    "list processes",
+	Run:                 runDynos,
+	Usage:               "ps [<name>...]",
+	Alias:               "dynos",
+	NeedsApp:            true,
+	Category:            "dyno",
+	Short:               "list processes",
+	MultipleOutputTypes: true,
 	Long: `
 Lists processes. Shows the name, size, state, age, and command.
 
@@ -37,52 +59,58 @@ Examples:
 }
 
 func runDynos(cmd *Command, names []string) {
-	w := tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
-	defer w.Flush()
-
 	if len(names) > 1 {
 		cmd.PrintUsage()
 		os.Exit(2)
 	}
-	listDynos(w, names)
+	output, err := listDynos(names)
+	if err != nil {
+		must(err)
+	}
+	err = cmd.WriteOutput(output)
+	must(err)
 }
 
-func listDynos(w io.Writer, names []string) {
+func listDynos(names []string) (*dynosOutput, error) {
 	appname := mustApp()
 	dynos, err := client.DynoList(appname, nil)
-	must(err)
+	if err != nil {
+		return nil, err
+	}
 	sort.Sort(DynosByName(dynos))
 
+	output := &dynosOutput{}
 	if len(names) == 0 {
 		for _, d := range dynos {
-			listDyno(w, &d)
+			output.Processes = append(output.Processes, toDynoProcess(&d))
 		}
-		return
+		return output, nil
 	}
 
 	for _, name := range names {
 		for _, d := range dynos {
 			if !strings.Contains(name, ".") {
 				if strings.HasPrefix(d.Name, name+".") {
-					listDyno(w, &d)
+					output.Processes = append(output.Processes, toDynoProcess(&d))
 				}
 			} else {
 				if d.Name == name {
-					listDyno(w, &d)
+					output.Processes = append(output.Processes, toDynoProcess(&d))
 				}
 			}
 		}
 	}
+	return output, nil
 }
 
-func listDyno(w io.Writer, d *heroku.Dyno) {
-	listRec(w,
-		d.Name,
-		d.Size,
-		d.State,
-		prettyDuration{dynoAge(d)},
-		maybeQuote(d.Command),
-	)
+func toDynoProcess(d *heroku.Dyno) *dynoProcess {
+	return &dynoProcess{
+		Name:    d.Name,
+		Size:    d.Size,
+		State:   d.State,
+		Age:     (prettyDuration{dynoAge(d)}).String(),
+		Command: d.Command,
+	}
 }
 
 // quotes s as a json string if it contains any weird chars

@@ -1,5 +1,11 @@
 # Changelog
 
+## TBD
+
+**Features**
+
+* You can now specify `-o json` with the `emp ps` command (ie. `emp ps -o json`) to return the output in JSON [#823](https://github.com/remind101/empire/issues/823)
+
 ## 0.10.1 (2016-06-14)
 
 **Features**

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -25,12 +26,13 @@ var (
 
 type Command struct {
 	// args does not include the command name
-	Run             func(cmd *Command, args []string)
-	Flag            flag.FlagSet
-	NeedsApp        bool
-	OptionalApp     bool
-	NoClient        bool
-	OptionalMessage bool
+	Run                 func(cmd *Command, args []string)
+	Flag                flag.FlagSet
+	NeedsApp            bool
+	OptionalApp         bool
+	NoClient            bool
+	OptionalMessage     bool
+	MultipleOutputTypes bool
 
 	Usage    string // first word is the command name
 	Category string // i.e. "App", "Account", etc.
@@ -62,6 +64,10 @@ func (c *Command) FullUsage() string {
 
 	if c.OptionalMessage {
 		parts = append(parts, "[-m <message>]")
+	}
+
+	if c.MultipleOutputTypes {
+		parts = append(parts, "[-o human,json]")
 	}
 
 	if len(parts) > 0 {
@@ -101,6 +107,34 @@ func (c *Command) ListAsExtra() bool {
 
 func (c *Command) ShortExtra() string {
 	return c.Short[:len(c.Short)-len(extra)]
+}
+
+type Output struct{}
+
+func (t *Output) JSONOutput(o interface{}) error {
+	b, err := json.Marshal(o)
+	if err == nil {
+		fmt.Println(string(b))
+	}
+	return err
+}
+
+type CommandOutput interface {
+	JSONOutput(interface{}) error
+	HumanOutput() error
+}
+
+func (c *Command) WriteOutput(o CommandOutput) (err error) {
+	ot := getOutputType()
+	switch ot {
+	case "human":
+		err = o.HumanOutput()
+	case "json":
+		err = o.JSONOutput(o)
+	default:
+		err = fmt.Errorf("error writing output: output type '%s' is not supported", ot)
+	}
+	return
 }
 
 // Running `emp help` will list commands in this order.
@@ -151,11 +185,12 @@ var commands = []*Command{
 }
 
 var (
-	flagApp     string
-	flagMessage string
-	client      *heroku.Client
-	hkAgent     = "hk/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
-	userAgent   = hkAgent + " " + heroku.DefaultUserAgent
+	flagApp        string
+	flagMessage    string
+	flagOutputType string
+	client         *heroku.Client
+	hkAgent        = "hk/" + Version + " (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
+	userAgent      = hkAgent + " " + heroku.DefaultUserAgent
 )
 
 func initClients() {
@@ -206,6 +241,9 @@ func main() {
 			}
 			if cmd.OptionalMessage {
 				cmd.Flag.StringVarP(&flagMessage, "message", "m", "", "message")
+			}
+			if cmd.MultipleOutputTypes {
+				cmd.Flag.StringVarP(&flagOutputType, "output", "o", "human", "output")
 			}
 			if err := cmd.Flag.Parse(args[1:]); err == flag.ErrHelp {
 				cmdHelp.Run(cmdHelp, args[:1])
@@ -277,6 +315,10 @@ func mustApp() string {
 
 func getMessage() string {
 	return flagMessage
+}
+
+func getOutputType() string {
+	return flagOutputType
 }
 
 // matchesCommand checks if the Command matches the command that we want to run.
