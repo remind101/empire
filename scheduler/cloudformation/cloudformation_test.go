@@ -62,8 +62,8 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 		Tags: []*cloudformation.Tag{
 			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
@@ -134,7 +134,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+			{ParameterKey: aws.String("RestartKey"), UsePreviousValue: aws.Bool(true)},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
@@ -202,8 +202,8 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("RestartKey"), UsePreviousValue: aws.Bool(true)},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
@@ -262,6 +262,67 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
   Template Size: 2 bytes
   Error: ValidationError: Template may not exceed 460800 bytes in size.
 caused by: `)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Restart(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	done := make(chan error)
+	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, SubmitOptions{
+		Done:    done,
+		Restart: true,
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)

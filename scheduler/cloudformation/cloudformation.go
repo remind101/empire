@@ -167,10 +167,13 @@ type SubmitOptions struct {
 	// When true, does not make any changes to DNS. This is only used when
 	// migrating to this scheduler
 	NoDNS bool
+
+	// When true, will generate a new RestartKey.
+	Restart bool
 }
 
 func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App) error {
-	return s.Submit(ctx, app)
+	return s.SubmitWithOptions(ctx, app, SubmitOptions{Restart: true})
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
@@ -250,11 +253,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			ParameterKey:   aws.String("DNS"),
 			ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
 		},
-		// FIXME: Remove this in favor of a Restart method.
-		{
-			ParameterKey:   aws.String(restartParameter),
-			ParameterValue: aws.String(newUUID()),
-		},
 	}
 	for _, p := range app.Processes {
 		parameters = append(parameters, &cloudformation.Parameter{
@@ -267,6 +265,11 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		StackName: aws.String(stackName),
 	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
+		parameters = append(parameters, &cloudformation.Parameter{
+			ParameterKey:   aws.String(restartParameter),
+			ParameterValue: aws.String(newUUID()),
+		})
+
 		if err := s.createStack(&cloudformation.CreateStackInput{
 			StackName:   aws.String(stackName),
 			TemplateURL: aws.String(url),
@@ -276,6 +279,18 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			return fmt.Errorf("error creating stack: %v", err)
 		}
 	} else if err == nil {
+		if opts.Restart {
+			parameters = append(parameters, &cloudformation.Parameter{
+				ParameterKey:   aws.String(restartParameter),
+				ParameterValue: aws.String(newUUID()),
+			})
+		} else {
+			parameters = append(parameters, &cloudformation.Parameter{
+				ParameterKey:     aws.String(restartParameter),
+				UsePreviousValue: aws.Bool(true),
+			})
+		}
+
 		if err := s.updateStack(&cloudformation.UpdateStackInput{
 			StackName:   aws.String(stackName),
 			TemplateURL: aws.String(url),
