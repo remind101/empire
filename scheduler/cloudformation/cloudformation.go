@@ -169,6 +169,10 @@ type SubmitOptions struct {
 	NoDNS bool
 }
 
+func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App) error {
+	return s.Submit(ctx, app)
+}
+
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, opts SubmitOptions) error {
 	if opts.Done == nil {
