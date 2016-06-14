@@ -17,6 +17,7 @@
 * You can now specify the CPU and memory constraints for attached one-off tasks with the `-s` flag to `emp run` [#809](https://github.com/remind101/empire/pull/809)
 * You can now provide a duration to `emp log` with the `-d` flag to start streaming logs from a specific point in time ie (5m, 10m, 1h) [#829](https://github.com/remind101/empire/issues/829)
 * If log streaming is enabled, Empire will attempt to write events to the kinesis stream for the application [#832](https://github.com/remind101/empire/issues/832)
+* You can now specify `-o json` with the `emp ps` command (ie. `emp ps -o json`) to return the output in JSON [#823](https://github.com/remind101/empire/issues/823)
 
 **Bugs**
 
