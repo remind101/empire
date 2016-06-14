@@ -129,6 +129,9 @@ type Scheduler interface {
 	// Stop stops an instance. The scheduler will automatically start a new
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
+
+	// Restart restarts the processes within the App.
+	Restart(context.Context, *App) error
 }
 
 // Env merges the App environment with any environment variables provided
