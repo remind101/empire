@@ -27,7 +27,7 @@
                 [
                   "web",
                   {
-                    "Ref": "webService"
+                    "Ref": "web"
                   }
                 ]
               ]
@@ -38,7 +38,7 @@
                 [
                   "worker",
                   {
-                    "Ref": "workerService"
+                    "Ref": "worker"
                   }
                 ]
               ]
@@ -81,6 +81,28 @@
         "Type": "CNAME"
       },
       "Type": "AWS::Route53::RecordSet"
+    },
+    "web": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service"
     },
     "web8080InstancePort": {
       "Properties": {
@@ -126,30 +148,6 @@
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
-    "webService": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "webScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "web",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "webLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "ServiceName": "acme-inc-web",
-        "ServiceToken": "sns topic arn",
-        "TaskDefinition": {
-          "Ref": "webTaskDefinition"
-        }
-      },
-      "Type": "Custom::ECSService"
-    },
     "webTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
@@ -166,8 +164,8 @@
             },
             "Environment": [
               {
-                "Name": "ECS_UPDATES",
-                "Value": "fast"
+                "Name": "ECS_SERVICE",
+                "Value": "standard"
               },
               {
                 "Name": "PORT",
@@ -202,20 +200,18 @@
       },
       "Type": "AWS::ECS::TaskDefinition"
     },
-    "workerService": {
+    "worker": {
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
           "Ref": "workerScale"
         },
         "LoadBalancers": [],
-        "ServiceName": "acme-inc-worker",
-        "ServiceToken": "sns topic arn",
         "TaskDefinition": {
           "Ref": "workerTaskDefinition"
         }
       },
-      "Type": "Custom::ECSService"
+      "Type": "AWS::ECS::Service"
     },
     "workerTaskDefinition": {
       "Properties": {
@@ -233,8 +229,8 @@
             },
             "Environment": [
               {
-                "Name": "ECS_UPDATES",
-                "Value": "fast"
+                "Name": "ECS_SERVICE",
+                "Value": "standard"
               },
               {
                 "Name": "FOO",

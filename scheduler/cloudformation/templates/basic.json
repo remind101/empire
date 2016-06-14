@@ -27,7 +27,7 @@
                 [
                   "web",
                   {
-                    "Ref": "web"
+                    "Ref": "webService"
                   }
                 ]
               ]
@@ -38,7 +38,7 @@
                 [
                   "worker",
                   {
-                    "Ref": "worker"
+                    "Ref": "workerService"
                   }
                 ]
               ]
@@ -81,28 +81,6 @@
         "Type": "CNAME"
       },
       "Type": "AWS::Route53::RecordSet"
-    },
-    "web": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "webScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "web",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "webLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "TaskDefinition": {
-          "Ref": "webTaskDefinition"
-        }
-      },
-      "Type": "AWS::ECS::Service"
     },
     "web8080InstancePort": {
       "Properties": {
@@ -147,6 +125,30 @@
         ]
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
     },
     "webTaskDefinition": {
       "Properties": {
@@ -208,18 +210,20 @@
       },
       "Type": "AWS::ECS::TaskDefinition"
     },
-    "worker": {
+    "workerService": {
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
           "Ref": "workerScale"
         },
         "LoadBalancers": [],
+        "ServiceName": "acme-inc-worker",
+        "ServiceToken": "sns topic arn",
         "TaskDefinition": {
           "Ref": "workerTaskDefinition"
         }
       },
-      "Type": "AWS::ECS::Service"
+      "Type": "Custom::ECSService"
     },
     "workerTaskDefinition": {
       "Properties": {

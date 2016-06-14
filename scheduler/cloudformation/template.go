@@ -165,7 +165,10 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	// Setting this option makes the stack use a Custom::ECSService
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
-	fast := app.Env["ECS_UPDATES"] == "fast"
+	ecsServiceType := "Custom::ECSService"
+	if app.Env["ECS_SERVICE"] == "standard" {
+		ecsServiceType = "AWS::ECS::Service"
+	}
 
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(app, p)
@@ -335,7 +338,6 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		}
 
 		service := fmt.Sprintf("%s", key)
-		ecsServiceType := "AWS::ECS::Service"
 		serviceProperties := map[string]interface{}{
 			"Cluster": t.Cluster,
 			"DesiredCount": map[string]string{
@@ -346,8 +348,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				"Ref": taskDefinition,
 			},
 		}
-		if fast {
-			ecsServiceType = "Custom::ECSService"
+		if ecsServiceType == "Custom::ECSService" {
 			// It's not possible to change the type of a resource,
 			// so we have to change the name of the service resource
 			// to something different (just append "Service").

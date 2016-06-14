@@ -93,13 +93,13 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
-			"fast.json",
+			"standard.json",
 			&scheduler.App{
 				ID:      "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
-					"ECS_UPDATES": "fast",
+					"ECS_SERVICE": "standard",
 				},
 				Processes: []*scheduler.Process{
 					{
