@@ -15,6 +15,7 @@ type ecsClient interface {
 	CreateService(*ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error)
 	DeleteService(*ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	WaitUntilServicesStable(*ecs.DescribeServicesInput) error
 }
 
 type LoadBalancer struct {
@@ -117,7 +118,17 @@ func (p *ECSServiceResource) create(properties *ECSServiceProperties) (string, e
 		return "", fmt.Errorf("error creating service: %v", err)
 	}
 
-	return *resp.Service.ServiceArn, nil
+	arn := resp.Service.ServiceArn
+	if err := p.ecs.WaitUntilServicesStable(&ecs.DescribeServicesInput{
+		Cluster:  properties.Cluster,
+		Services: []*string{arn},
+	}); err != nil {
+		// We're ignoring this error, because the service was created,
+		// and if the service doesn't stabilize, it's better to just let
+		// the stack finish creating than rolling back.
+	}
+
+	return *arn, nil
 }
 
 func (p *ECSServiceResource) delete(service, cluster *string) error {

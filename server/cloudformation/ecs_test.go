@@ -28,6 +28,11 @@ func TestECSServiceResource_Create(t *testing.T) {
 		},
 	}, nil)
 
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A")},
+	}).Return(nil)
+
 	id, data, err := p.Provision(Request{
 		RequestType: Create,
 		ResourceProperties: &ECSServiceProperties{
@@ -97,6 +102,11 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B"),
 		},
 	}, nil)
+
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("clusterB"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B")},
+	}).Return(nil)
 
 	id, data, err := p.Provision(Request{
 		RequestType:        Update,
@@ -262,4 +272,9 @@ func (m *mockECS) UpdateService(input *ecs.UpdateServiceInput) (*ecs.UpdateServi
 func (m *mockECS) DeleteService(input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DeleteServiceOutput), args.Error(1)
+}
+
+func (m *mockECS) WaitUntilServicesStable(input *ecs.DescribeServicesInput) error {
+	args := m.Called(input)
+	return args.Error(0)
 }
