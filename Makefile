@@ -37,7 +37,7 @@ bump:
 release: release/docker release/emp release/empire release/github
 
 release/github::
-	./bin/release $(ARTIFACTS)
+	./bin/release $(ARTIFACTS) v$(shell cat VERSION)
 
 release/docker::
 	# Wait for the `master` branch to build on CircleCI before running this. We'll
