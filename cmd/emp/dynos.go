@@ -13,16 +13,16 @@ import (
 )
 
 type dynoProcess struct {
-	Name    string `json:name`
-	Size    string `json:size`
-	State   string `json:state`
-	Age     string `json:age`
-	Command string `json:command`
+	Name    string `json:"name"`
+	Size    string `json:"size"`
+	State   string `json:"state"`
+	Age     string `json:"age"`
+	Command string `json:"command"`
 }
 
 type dynosOutput struct {
 	Output
-	Processes []*dynoProcess `json:processes`
+	Processes []*dynoProcess `json:"processes"`
 }
 
 func (o *dynosOutput) HumanOutput() error {
