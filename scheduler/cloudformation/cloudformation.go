@@ -168,12 +168,16 @@ type SubmitOptions struct {
 	// migrating to this scheduler
 	NoDNS bool
 
-	// When true, will generate a new RestartKey.
-	Restart bool
+	// When provided, will generate a new RestartKey for the target.
+	RestartTarget string
 }
 
-func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App) error {
-	return s.SubmitWithOptions(ctx, app, SubmitOptions{Restart: true})
+func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App, p string) error {
+	target := p
+	if target == "" {
+		target = "all"
+	}
+	return s.SubmitWithOptions(ctx, app, SubmitOptions{RestartTarget: target})
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
@@ -242,11 +246,26 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return &templateValidationError{templateURL: url, err: err, templateBody: buf}
 	}
 
+	var stackParameters []*cloudformation.Parameter
+	var create bool
+	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackName),
+	})
+	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
+		create = true
+	} else if err == nil {
+		create = false
+		stackParameters = resp.Stacks[0].Parameters
+	} else {
+		return fmt.Errorf("error describing stack: %v", err)
+	}
+
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
 		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
 	)
 
+	supportProcessRestart := canSupportProcessRestart(app)
 	// Build parameters for the stack.
 	parameters := []*cloudformation.Parameter{
 		{
@@ -259,12 +278,33 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			ParameterKey:   aws.String(scaleParameter(p.Type)),
 			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
 		})
+		if supportProcessRestart {
+			// TODO remove this once we can ensure that a restart parameter
+			// exists for each process.
+			parameterExists := false
+			for _, param := range stackParameters {
+				if *param.ParameterKey == processRestartParameter(p.Type) {
+					parameterExists = true
+				}
+			}
+			if create || opts.RestartTarget == p.Type || !parameterExists {
+				parameters = append(parameters, &cloudformation.Parameter{
+					ParameterKey:   aws.String(processRestartParameter(p.Type)),
+					ParameterValue: aws.String(newUUID()),
+				})
+			} else {
+				parameters = append(parameters, &cloudformation.Parameter{
+					ParameterKey:     aws.String(processRestartParameter(p.Type)),
+					UsePreviousValue: aws.Bool(true),
+				})
+			}
+		}
 	}
 
 	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
-	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
+	if create {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String(restartParameter),
 			ParameterValue: aws.String(newUUID()),
@@ -278,8 +318,8 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		}, opts.Done); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
-	} else if err == nil {
-		if opts.Restart {
+	} else {
+		if opts.RestartTarget == "all" {
 			parameters = append(parameters, &cloudformation.Parameter{
 				ParameterKey:   aws.String(restartParameter),
 				ParameterValue: aws.String(newUUID()),
@@ -300,10 +340,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		}, opts.Done); err != nil {
 			return fmt.Errorf("error updating stack: %v", err)
 		}
-	} else {
-		return fmt.Errorf("error describing stack: %v", err)
 	}
-
 	return nil
 }
 

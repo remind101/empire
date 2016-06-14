@@ -130,8 +130,8 @@ type Scheduler interface {
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
 
-	// Restart restarts the processes within the App.
-	Restart(context.Context, *App) error
+	// Restart restarts the processes or a specific process within the App.
+	Restart(ctx context.Context, app *App, ptype string) error
 }
 
 // Env merges the App environment with any environment variables provided

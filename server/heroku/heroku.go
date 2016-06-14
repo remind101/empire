@@ -55,7 +55,7 @@ func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 	r.Handle("/apps/{app}/dynos", &PostProcess{e}).Methods("POST")                     // hk run
 	r.Handle("/apps/{app}/dynos", &DeleteProcesses{e}).Methods("DELETE")               // hk restart
 	r.Handle("/apps/{app}/dynos/{ptype}.{pid}", &DeleteProcesses{e}).Methods("DELETE") // hk restart web.1
-	r.Handle("/apps/{app}/dynos/{pid}", &DeleteProcesses{e}).Methods("DELETE")         // hk restart web
+	r.Handle("/apps/{app}/dynos/{either}", &DeleteProcesses{e}).Methods("DELETE")      // hk restart web|1e5a2da0-88ae-4888-8762-71d465d9c9c5
 
 	// Formations
 	r.Handle("/apps/{app}/formation", &GetFormation{e}).Methods("GET")     // hk scale -l

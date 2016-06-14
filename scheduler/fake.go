@@ -23,7 +23,7 @@ func (m *FakeScheduler) Submit(ctx context.Context, app *App) error {
 	return nil
 }
 
-func (m *FakeScheduler) Restart(ctx context.Context, app *App) error {
+func (m *FakeScheduler) Restart(ctx context.Context, app *App, ptype string) error {
 	return m.Submit(ctx, app)
 }
 

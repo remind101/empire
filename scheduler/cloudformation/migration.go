@@ -111,12 +111,12 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 	return b.Submit(ctx, app)
 }
 
-func (s *MigrationScheduler) Restart(ctx context.Context, app *scheduler.App) error {
+func (s *MigrationScheduler) Restart(ctx context.Context, app *scheduler.App, ptype string) error {
 	b, err := s.Backend(app.ID)
 	if err != nil {
 		return err
 	}
-	return b.Restart(ctx, app)
+	return b.Restart(ctx, app, ptype)
 }
 
 // Migrate submits the app to the CloudFormation scheduler, waits for the stack

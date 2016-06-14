@@ -166,6 +166,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
 	fast := app.Env["ECS_UPDATES"] == "fast"
+	supportProcessRestart := canSupportProcessRestart(app)
 
 	for _, p := range app.Processes {
 		cd := t.ContainerDefinition(app, p)
@@ -174,6 +175,11 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 
 		parameters[scaleParameter(p.Type)] = map[string]string{
 			"Type": "String",
+		}
+		if supportProcessRestart {
+			parameters[processRestartParameter(p.Type)] = map[string]string{
+				"Type": "String",
+			}
 		}
 
 		portMappings := []map[string]interface{}{}
@@ -307,6 +313,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			labels[k] = v
 		}
 		labels["cloudformation.restart-key"] = map[string]string{"Ref": restartParameter}
+		if supportProcessRestart {
+			labels["cloudformation.process-restart-key"] = map[string]string{"Ref": processRestartParameter(p.Type)}
+		}
 
 		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
 		containerDefinition := map[string]interface{}{
@@ -479,4 +488,22 @@ func processResourceName(process string) string {
 // scale of a process.
 func scaleParameter(process string) string {
 	return fmt.Sprintf("%sScale", processResourceName(process))
+}
+
+// processRestartParameter returns the name of the parameter used to control restarting a specific process.
+func processRestartParameter(process string) string {
+	return fmt.Sprintf("%sRestartKey", processResourceName(process))
+}
+
+// canSupportProcessRestart retuns a boolean for whether or not we can support a
+// restart parameter per process.
+func canSupportProcessRestart(app *scheduler.App) bool {
+	// Cloudformation only allows a maximum of 60 parameters. If an app has more
+	// than 25 processes, including a parameter to restart each process would
+	// get close to pushing us over the limit of the cloudformation parameters.
+	s := true
+	if len(app.Processes) > 25 {
+		s = false
+	}
+	return s
 }

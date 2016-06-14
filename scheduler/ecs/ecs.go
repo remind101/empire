@@ -209,7 +209,7 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 }
 
 // Restart restarts all of the processes for the app.
-func (m *Scheduler) Restart(ctx context.Context, app *scheduler.App) error {
+func (m *Scheduler) Restart(ctx context.Context, app *scheduler.App, ptype string) error {
 	return m.Submit(ctx, app)
 }
 

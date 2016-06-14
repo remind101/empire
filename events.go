@@ -53,6 +53,7 @@ type RestartEvent struct {
 	User    string
 	App     string
 	PID     string
+	PTYPE   string
 	Message string
 
 	app *App

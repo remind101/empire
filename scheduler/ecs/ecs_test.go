@@ -168,7 +168,7 @@ func TestScheduler_Restart(t *testing.T) {
 		{Name: "lb-1234", InstancePort: 8080},
 	}, nil)
 
-	if err := m.Restart(context.Background(), fakeApp); err != nil {
+	if err := m.Restart(context.Background(), fakeApp, ""); err != nil {
 		t.Fatal(err)
 	}
 }

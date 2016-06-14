@@ -16,7 +16,7 @@ func (s *certsService) CertsAttach(ctx context.Context, db *gorm.DB, app *App, c
 		return err
 	}
 
-	if err := s.releases.Restart(ctx, db, app); err != nil {
+	if err := s.releases.Restart(ctx, db, app, ""); err != nil {
 		if err == ErrNoReleases {
 			return nil
 		}

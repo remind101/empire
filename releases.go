@@ -141,7 +141,7 @@ func (s *releasesService) Release(ctx context.Context, release *Release) error {
 
 // Restart will find the last release for an app and submit it to the scheduler
 // to restart the app.
-func (s *releasesService) Restart(ctx context.Context, db *gorm.DB, app *App) error {
+func (s *releasesService) Restart(ctx context.Context, db *gorm.DB, app *App, ptype string) error {
 	release, err := releasesFind(db, ReleasesQuery{App: app})
 	if err != nil {
 		if err == gorm.RecordNotFound {
@@ -155,7 +155,7 @@ func (s *releasesService) Restart(ctx context.Context, db *gorm.DB, app *App) er
 		return nil
 	}
 	a := newSchedulerApp(release)
-	return s.Scheduler.Restart(ctx, a)
+	return s.Scheduler.Restart(ctx, a, ptype)
 }
 
 // These associations are always available on a Release.

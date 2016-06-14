@@ -129,7 +129,7 @@ func (s *appsService) Restart(ctx context.Context, db *gorm.DB, opts RestartOpts
 		return s.Scheduler.Stop(ctx, opts.PID)
 	}
 
-	return s.releases.Restart(ctx, db, opts.App)
+	return s.releases.Restart(ctx, db, opts.App, opts.PTYPE)
 }
 
 func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) ([]*Process, error) {

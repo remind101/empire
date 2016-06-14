@@ -338,6 +338,9 @@ type RestartOpts struct {
 	// detached processes.
 	PID string
 
+	// If provided without PID, will restart all the processes of this type.
+	PTYPE string
+
 	// Commit message
 	Message string
 }
@@ -347,6 +350,7 @@ func (opts RestartOpts) Event() RestartEvent {
 		User:    opts.User.Name,
 		App:     opts.App.Name,
 		PID:     opts.PID,
+		PTYPE:   opts.PTYPE,
 		Message: opts.Message,
 		app:     opts.App,
 	}
