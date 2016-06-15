@@ -3,6 +3,8 @@ package cloudformation
 import (
 	"fmt"
 	"strconv"
+
+	"golang.org/x/net/context"
 )
 
 type portAllocator interface {
@@ -15,7 +17,7 @@ type InstancePortsProvisioner struct {
 	ports portAllocator
 }
 
-func (p *InstancePortsProvisioner) Provision(req Request) (id string, data interface{}, err error) {
+func (p *InstancePortsProvisioner) Provision(_ context.Context, req Request) (id string, data interface{}, err error) {
 	switch req.RequestType {
 	case Create:
 		var port int64

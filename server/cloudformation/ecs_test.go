@@ -33,7 +33,7 @@ func TestECSServiceResource_Create(t *testing.T) {
 		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A")},
 	}).Return(nil)
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType: Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
@@ -62,7 +62,7 @@ func TestECSServiceResource_Update(t *testing.T) {
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 	}).Return(&ecs.UpdateServiceOutput{}, nil)
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
@@ -108,7 +108,7 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B")},
 	}).Return(nil)
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A",
 		ResourceProperties: &ECSServiceProperties{
@@ -148,7 +148,7 @@ func TestECSServiceResource_Delete(t *testing.T) {
 		Cluster: aws.String("cluster"),
 	}).Return(&ecs.DeleteServiceOutput{}, nil)
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
@@ -181,7 +181,7 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 		DesiredCount: aws.Int64(0),
 	}).Return(&ecs.UpdateServiceOutput{}, awserr.New("ServiceNotActiveException", "Service was not ACTIVE", errors.New("")))
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{

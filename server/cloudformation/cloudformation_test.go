@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var ctx = context.Background()
+
 func TestCustomResourceProvisioner_Handle(t *testing.T) {
 	p := new(mockProvisioner)
 	h := new(mockHTTPClient)
@@ -96,7 +98,7 @@ type mockProvisioner struct {
 	mock.Mock
 }
 
-func (m *mockProvisioner) Provision(req Request) (string, interface{}, error) {
+func (m *mockProvisioner) Provision(_ context.Context, req Request) (string, interface{}, error) {
 	args := m.Called(req)
 	return args.String(0), args.Get(1), args.Error(2)
 }

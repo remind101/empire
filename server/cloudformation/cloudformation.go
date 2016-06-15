@@ -27,7 +27,7 @@ type Provisioner interface {
 	//
 	// 1. The physical id that was created, if any.
 	// 2. The data to return.
-	Provision(Request) (string, interface{}, error)
+	Provision(context.Context, Request) (string, interface{}, error)
 }
 
 // Possible request types.
@@ -273,7 +273,7 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	}
 
 	resp := NewResponseFromRequest(req)
-	resp.PhysicalResourceId, resp.Data, err = p.Provision(req)
+	resp.PhysicalResourceId, resp.Data, err = p.Provision(ctx, req)
 	switch err {
 	case nil:
 		resp.Status = StatusSuccess
