@@ -17,6 +17,10 @@ type InstancePortsProvisioner struct {
 	ports portAllocator
 }
 
+func (p *InstancePortsProvisioner) Properties() interface{} {
+	return nil
+}
+
 func (p *InstancePortsProvisioner) Provision(_ context.Context, req Request) (id string, data interface{}, err error) {
 	switch req.RequestType {
 	case Create:

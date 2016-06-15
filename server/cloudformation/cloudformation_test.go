@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -94,6 +95,40 @@ func TestIntValue(t *testing.T) {
 	}
 }
 
+func TestWithTimeout_NoTimeout(t *testing.T) {
+	m := new(mockProvisioner)
+	p := withTimeout(m, time.Second, time.Second)
+
+	m.On("Provision", Request{}).Return("id", nil, nil)
+
+	p.Provision(ctx, Request{})
+}
+
+func TestWithTimeout_Timeout_Cleanup(t *testing.T) {
+	m := new(mockProvisioner)
+	p := withTimeout(m, time.Millisecond*500, time.Millisecond*500)
+
+	m.On("Provision", Request{}).Return("id", nil, nil).Run(func(mock.Arguments) {
+		time.Sleep(time.Millisecond * 750)
+	})
+
+	id, _, err := p.Provision(ctx, Request{})
+	assert.NoError(t, err)
+	assert.Equal(t, "id", id)
+}
+
+func TestWithTimeout_GraceTimeout(t *testing.T) {
+	m := new(mockProvisioner)
+	p := withTimeout(m, time.Millisecond*500, time.Millisecond*500)
+
+	m.On("Provision", Request{}).Return("id", nil, nil).Run(func(mock.Arguments) {
+		time.Sleep(time.Millisecond * 1500)
+	})
+
+	_, _, err := p.Provision(ctx, Request{})
+	assert.Equal(t, context.DeadlineExceeded, err)
+}
+
 type mockProvisioner struct {
 	mock.Mock
 }
@@ -101,6 +136,10 @@ type mockProvisioner struct {
 func (m *mockProvisioner) Provision(_ context.Context, req Request) (string, interface{}, error) {
 	args := m.Called(req)
 	return args.String(0), args.Get(1), args.Error(2)
+}
+
+func (m *mockProvisioner) Properties() interface{} {
+	return nil
 }
 
 type mockHTTPClient struct {

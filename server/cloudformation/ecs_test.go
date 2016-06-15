@@ -3,6 +3,9 @@ package cloudformation
 import (
 	"errors"
 	"testing"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -44,6 +47,47 @@ func TestECSServiceResource_Create(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+}
+
+func TestECSServiceResource_Create_Canceled(t *testing.T) {
+	e := new(mockECS)
+	p := &ECSServiceResource{
+		ecs:     e,
+		postfix: func() string { return "-A" },
+	}
+
+	e.On("CreateService", &ecs.CreateServiceInput{
+		ServiceName:  aws.String("acme-inc-web-A"),
+		Cluster:      aws.String("cluster"),
+		DesiredCount: aws.Int64(1),
+	}).Return(&ecs.CreateServiceOutput{
+		Service: &ecs.Service{
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A"),
+		},
+	}, nil)
+
+	ctx, cancel := context.WithCancel(ctx)
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A")},
+	}).Return(nil).Run(func(mock.Arguments) {
+		cancel()
+		time.Sleep(1 * time.Second)
+	})
+
+	_, data, err := p.Provision(ctx, Request{
+		RequestType: Create,
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
+		OldResourceProperties: &ECSServiceProperties{},
+	})
+	assert.Equal(t, context.Canceled, err)
 	assert.Nil(t, data)
 
 	e.AssertExpectations(t)

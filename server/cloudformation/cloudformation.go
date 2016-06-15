@@ -21,6 +21,15 @@ import (
 	"github.com/remind101/pkg/reporter"
 )
 
+var (
+	// Allow custom resource provisioners this amount of time do their
+	// thing.
+	ProvisioningTimeout = time.Duration(20 * time.Minute)
+
+	// And this amount of time to cleanup when they're canceled.
+	ProvisioningGraceTimeout = time.Duration(1 * time.Minute)
+)
+
 // Provisioner is something that can provision custom resources.
 type Provisioner interface {
 	// Provision should do the appropriate provisioning, then return:
@@ -28,6 +37,64 @@ type Provisioner interface {
 	// 1. The physical id that was created, if any.
 	// 2. The data to return.
 	Provision(context.Context, Request) (string, interface{}, error)
+
+	// Properties should return an instance of a type that the properties
+	// can be json.Unmarshalled into.
+	Properties() interface{}
+}
+
+type ProvisionerFunc func(context.Context, Request) (string, interface{}, error)
+
+func (fn ProvisionerFunc) Provision(ctx context.Context, r Request) (string, interface{}, error) {
+	return fn(ctx, r)
+}
+
+// withTimeout wraps a Provisioner with a context.WithTimeout.
+func withTimeout(p Provisioner, timeout time.Duration, grace time.Duration) Provisioner {
+
+	return &timeoutProvisioner{
+		Provisioner: p,
+		timeout:     timeout,
+		grace:       grace,
+	}
+}
+
+type result struct {
+	id   string
+	data interface{}
+	err  error
+}
+
+type timeoutProvisioner struct {
+	Provisioner
+	timeout time.Duration
+	grace   time.Duration
+}
+
+func (p *timeoutProvisioner) Provision(ctx context.Context, r Request) (string, interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, p.timeout)
+	defer cancel()
+
+	done := make(chan result)
+	go func() {
+		id, data, err := p.Provisioner.Provision(ctx, r)
+		done <- result{id, data, err}
+	}()
+
+	select {
+	case r := <-done:
+		return r.id, r.data, r.err
+	case <-ctx.Done():
+		// When the context is canceled, give the provisioner
+		// some extra time to cleanup.
+		<-time.After(p.grace)
+		select {
+		case r := <-done:
+			return r.id, r.data, r.err
+		default:
+			return "", nil, ctx.Err()
+		}
+	}
 }
 
 // Possible request types.
@@ -189,19 +256,29 @@ type CustomResourceProvisioner struct {
 // NewCustomResourceProvisioner returns a new CustomResourceProvisioner with an
 // sqs client configured from config.
 func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *CustomResourceProvisioner {
-	return &CustomResourceProvisioner{
-		Provisioners: map[string]Provisioner{
-			"Custom::InstancePort": &InstancePortsProvisioner{
-				ports: lb.NewDBPortAllocator(db),
-			},
-			"Custom::ECSService": &ECSServiceResource{
-				ecs:     ecs.New(config),
-				postfix: postfix,
-			},
-		},
-		client: http.DefaultClient,
-		sqs:    sqs.New(config),
+	p := &CustomResourceProvisioner{
+		Provisioners: make(map[string]Provisioner),
+		client:       http.DefaultClient,
+		sqs:          sqs.New(config),
 	}
+
+	p.add("Custom::InstancePort", &InstancePortsProvisioner{
+		ports: lb.NewDBPortAllocator(db),
+	})
+
+	p.add("Custom::ECSService", &ECSServiceResource{
+		ecs:     ecs.New(config),
+		postfix: postfix,
+	})
+
+	return p
+}
+
+// add adds a custom resource provisioner.
+func (c *CustomResourceProvisioner) add(resourceName string, p Provisioner) {
+	// Wrap the provisioner with timeouts.
+	p = withTimeout(p, ProvisioningTimeout, ProvisioningGraceTimeout)
+	c.Provisioners[resourceName] = p
 }
 
 // Start starts pulling requests from the queue and provisioning them.
@@ -220,10 +297,11 @@ func (c *CustomResourceProvisioner) Start() {
 		}
 
 		for _, m := range resp.Messages {
-			if err := c.handle(ctx, m); err != nil {
-				reporter.Report(ctx, err)
-				continue
-			}
+			go func(m *sqs.Message) {
+				if err := c.handle(ctx, m); err != nil {
+					reporter.Report(ctx, err)
+				}
+			}(m)
 		}
 	}
 }
@@ -254,26 +332,8 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
 	}
 
-	p, ok := c.Provisioners[req.ResourceType]
-	if !ok {
-		return fmt.Errorf("no provisioner for %v", req.ResourceType)
-	}
-
-	// If the provisioner defines a type for the properties, let's unmarhsal
-	// into that Go type.
-	if p, ok := p.(interface {
-		Properties() interface{}
-	}); ok {
-		req.ResourceProperties = p.Properties()
-		req.OldResourceProperties = p.Properties()
-		err = json.Unmarshal([]byte(m.Message), &req)
-		if err != nil {
-			return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
-		}
-	}
-
 	resp := NewResponseFromRequest(req)
-	resp.PhysicalResourceId, resp.Data, err = p.Provision(ctx, req)
+	resp.PhysicalResourceId, resp.Data, err = c.provision(ctx, m, req)
 	switch err {
 	case nil:
 		resp.Status = StatusSuccess
@@ -313,6 +373,24 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	}
 
 	return nil
+}
+
+func (c *CustomResourceProvisioner) provision(ctx context.Context, m Message, req Request) (string, interface{}, error) {
+	p, ok := c.Provisioners[req.ResourceType]
+	if !ok {
+		return "", nil, fmt.Errorf("no provisioner for %v", req.ResourceType)
+	}
+
+	// If the provisioner defines a type for the properties, let's unmarhsal
+	// into that Go type.
+	req.ResourceProperties = p.Properties()
+	req.OldResourceProperties = p.Properties()
+	err := json.Unmarshal([]byte(m.Message), &req)
+	if err != nil {
+		return "", nil, fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
+	}
+
+	return p.Provision(ctx, req)
 }
 
 // IntValue defines an int64 type that can parse integers as strings from json.

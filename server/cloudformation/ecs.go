@@ -122,14 +122,25 @@ func (p *ECSServiceResource) create(ctx context.Context, properties *ECSServiceP
 	}
 
 	arn := resp.Service.ServiceArn
-	if err := p.ecs.WaitUntilServicesStable(&ecs.DescribeServicesInput{
-		Cluster:  properties.Cluster,
-		Services: []*string{arn},
-	}); err != nil {
-		// We're ignoring this error, because the service was created,
-		// and if the service doesn't stabilize, it's better to just let
-		// the stack finish creating than rolling back.
-		reporter.Report(ctx, err)
+
+	stabilized := make(chan struct{})
+	go func() {
+		if err := p.ecs.WaitUntilServicesStable(&ecs.DescribeServicesInput{
+			Cluster:  properties.Cluster,
+			Services: []*string{arn},
+		}); err != nil {
+			// We're ignoring this error, because the service was created,
+			// and if the service doesn't stabilize, it's better to just let
+			// the stack finish creating than rolling back.
+			reporter.Report(ctx, err)
+		}
+		close(stabilized)
+	}()
+
+	select {
+	case <-stabilized:
+	case <-ctx.Done():
+		return *arn, ctx.Err()
 	}
 
 	return *arn, nil
