@@ -99,7 +99,8 @@ func TestEmpireTemplate(t *testing.T) {
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
-					"ECS_UPDATES": "fast",
+					"ECS_SERVICE":         "custom",
+					"ECS_TASK_DEFINITION": "custom",
 				},
 				Processes: []*scheduler.Process{
 					{
@@ -175,6 +176,7 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	err := tmpl.Execute(buf, app)
+	t.Logf("Template size: %d bytes", buf.Len())
 	assert.NoError(t, err)
 	assert.Condition(t, func() bool {
 		return buf.Len() < MaxTemplateSize

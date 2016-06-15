@@ -198,6 +198,11 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 				ecs:     ecs.New(config),
 				postfix: postfix,
 			},
+			"Custom::Environment": &EnvironmentResource{},
+			"Custom::ECSTaskDefinition": &ECSTaskDefinitionResource{
+				ecs:     ecs.New(config),
+				postfix: postfix,
+			},
 		},
 		client: http.DefaultClient,
 		sqs:    sqs.New(config),
@@ -254,26 +259,8 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
 	}
 
-	p, ok := c.Provisioners[req.ResourceType]
-	if !ok {
-		return fmt.Errorf("no provisioner for %v", req.ResourceType)
-	}
-
-	// If the provisioner defines a type for the properties, let's unmarhsal
-	// into that Go type.
-	if p, ok := p.(interface {
-		Properties() interface{}
-	}); ok {
-		req.ResourceProperties = p.Properties()
-		req.OldResourceProperties = p.Properties()
-		err = json.Unmarshal([]byte(m.Message), &req)
-		if err != nil {
-			return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
-		}
-	}
-
 	resp := NewResponseFromRequest(req)
-	resp.PhysicalResourceId, resp.Data, err = p.Provision(req)
+	resp.PhysicalResourceId, resp.Data, err = c.provision(m, req)
 	switch err {
 	case nil:
 		resp.Status = StatusSuccess
@@ -313,6 +300,27 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	}
 
 	return nil
+}
+
+func (c *CustomResourceProvisioner) provision(m Message, req Request) (string, interface{}, error) {
+	p, ok := c.Provisioners[req.ResourceType]
+	if !ok {
+		return "", nil, fmt.Errorf("no provisioner for %v", req.ResourceType)
+	}
+
+	// If the provisioner defines a type for the properties, let's unmarhsal
+	// into that Go type.
+	if p, ok := p.(interface {
+		Properties() interface{}
+	}); ok {
+		req.ResourceProperties = p.Properties()
+		req.OldResourceProperties = p.Properties()
+		err := json.Unmarshal([]byte(m.Message), &req)
+		if err != nil {
+			return "", nil, fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
+		}
+	}
+	return p.Provision(req)
 }
 
 // IntValue defines an int64 type that can parse integers as strings from json.

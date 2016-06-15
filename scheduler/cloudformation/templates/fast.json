@@ -64,6 +64,16 @@
     }
   },
   "Resources": {
+    "AppEnv": {
+      "Properties": {
+        "Environment": {
+          "ECS_SERVICE": "custom",
+          "ECS_TASK_DEFINITION": "custom"
+        },
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::Environment"
+    },
     "CNAME": {
       "Condition": "DNSCondition",
       "Properties": {
@@ -88,6 +98,13 @@
       },
       "Type": "Custom::InstancePort",
       "Version": "1.0"
+    },
+    "webEnv": {
+      "Properties": {
+        "Environment": null,
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::Environment"
     },
     "webLoadBalancer": {
       "Properties": {
@@ -145,12 +162,12 @@
         "ServiceName": "acme-inc-web",
         "ServiceToken": "sns topic arn",
         "TaskDefinition": {
-          "Ref": "webTaskDefinition"
+          "Ref": "webTD"
         }
       },
       "Type": "Custom::ECSService"
     },
-    "webTaskDefinition": {
+    "webTD": {
       "Properties": {
         "ContainerDefinitions": [
           {
@@ -166,12 +183,10 @@
             },
             "Environment": [
               {
-                "Name": "ECS_UPDATES",
-                "Value": "fast"
+                "Ref": "AppEnv"
               },
               {
-                "Name": "PORT",
-                "Value": "8080"
+                "Ref": "webEnv"
               }
             ],
             "Essential": true,
@@ -198,9 +213,20 @@
             ]
           }
         ],
+        "Family": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
         "Volumes": []
       },
-      "Type": "AWS::ECS::TaskDefinition"
+      "Type": "Custom::ECSTaskDefinition"
+    },
+    "workerEnv": {
+      "Properties": {
+        "Environment": {
+          "FOO": "BAR"
+        },
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::Environment"
     },
     "workerService": {
       "Properties": {
@@ -212,12 +238,12 @@
         "ServiceName": "acme-inc-worker",
         "ServiceToken": "sns topic arn",
         "TaskDefinition": {
-          "Ref": "workerTaskDefinition"
+          "Ref": "workerTD"
         }
       },
       "Type": "Custom::ECSService"
     },
-    "workerTaskDefinition": {
+    "workerTD": {
       "Properties": {
         "ContainerDefinitions": [
           {
@@ -233,12 +259,10 @@
             },
             "Environment": [
               {
-                "Name": "ECS_UPDATES",
-                "Value": "fast"
+                "Ref": "AppEnv"
               },
               {
-                "Name": "FOO",
-                "Value": "BAR"
+                "Ref": "workerEnv"
               }
             ],
             "Essential": true,
@@ -249,9 +273,11 @@
             "Ulimits": []
           }
         ],
+        "Family": "acme-inc-worker",
+        "ServiceToken": "sns topic arn",
         "Volumes": []
       },
-      "Type": "AWS::ECS::TaskDefinition"
+      "Type": "Custom::ECSTaskDefinition"
     }
   }
 }
