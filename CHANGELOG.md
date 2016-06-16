@@ -4,9 +4,11 @@
 
 **Features**
 
-**Bugs**
+**Improvements**
 
 * The Custom::ECSService custom resource now waits for newly created ECS services to stabilize [#878](https://github.com/remind101/empire/pull/878)
+
+**Bugs**
 
 **Performance**
 
