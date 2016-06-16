@@ -6,15 +6,19 @@ import (
 	"reflect"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/remind101/pkg/reporter"
 )
 
 type ecsClient interface {
 	CreateService(*ecs.CreateServiceInput) (*ecs.CreateServiceOutput, error)
 	DeleteService(*ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	WaitUntilServicesStable(*ecs.DescribeServicesInput) error
 }
 
 type LoadBalancer struct {
@@ -47,17 +51,17 @@ func (p *ECSServiceResource) Properties() interface{} {
 	return &ECSServiceProperties{}
 }
 
-func (p *ECSServiceResource) Provision(req Request) (string, interface{}, error) {
+func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
 
 	switch req.RequestType {
 	case Create:
-		id, err := p.create(properties)
+		id, err := p.create(ctx, properties)
 		return id, nil, err
 	case Delete:
 		id := req.PhysicalResourceId
-		err := p.delete(aws.String(id), properties.Cluster)
+		err := p.delete(ctx, aws.String(id), properties.Cluster)
 		return id, nil, err
 	case Update:
 		id := req.PhysicalResourceId
@@ -66,7 +70,7 @@ func (p *ECSServiceResource) Provision(req Request) (string, interface{}, error)
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
-			id, err := p.create(properties)
+			id, err := p.create(ctx, properties)
 			if err != nil {
 				return oldId, nil, err
 			}
@@ -90,7 +94,7 @@ func (p *ECSServiceResource) Provision(req Request) (string, interface{}, error)
 	}
 }
 
-func (p *ECSServiceResource) create(properties *ECSServiceProperties) (string, error) {
+func (p *ECSServiceResource) create(ctx context.Context, properties *ECSServiceProperties) (string, error) {
 	var loadBalancers []*ecs.LoadBalancer
 	for _, v := range properties.LoadBalancers {
 		loadBalancers = append(loadBalancers, &ecs.LoadBalancer{
@@ -117,10 +121,32 @@ func (p *ECSServiceResource) create(properties *ECSServiceProperties) (string, e
 		return "", fmt.Errorf("error creating service: %v", err)
 	}
 
-	return *resp.Service.ServiceArn, nil
+	arn := resp.Service.ServiceArn
+
+	stabilized := make(chan struct{})
+	go func() {
+		if err := p.ecs.WaitUntilServicesStable(&ecs.DescribeServicesInput{
+			Cluster:  properties.Cluster,
+			Services: []*string{arn},
+		}); err != nil {
+			// We're ignoring this error, because the service was created,
+			// and if the service doesn't stabilize, it's better to just let
+			// the stack finish creating than rolling back.
+			reporter.Report(ctx, err)
+		}
+		close(stabilized)
+	}()
+
+	select {
+	case <-stabilized:
+	case <-ctx.Done():
+		return *arn, ctx.Err()
+	}
+
+	return *arn, nil
 }
 
-func (p *ECSServiceResource) delete(service, cluster *string) error {
+func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *string) error {
 	// We have to scale the service down to 0, before we're able to
 	// destroy it.
 	if _, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{

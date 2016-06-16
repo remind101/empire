@@ -3,6 +3,9 @@ package cloudformation
 import (
 	"errors"
 	"testing"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -28,7 +31,12 @@ func TestECSServiceResource_Create(t *testing.T) {
 		},
 	}, nil)
 
-	id, data, err := p.Provision(Request{
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A")},
+	}).Return(nil)
+
+	id, data, err := p.Provision(ctx, Request{
 		RequestType: Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
@@ -39,6 +47,47 @@ func TestECSServiceResource_Create(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+}
+
+func TestECSServiceResource_Create_Canceled(t *testing.T) {
+	e := new(mockECS)
+	p := &ECSServiceResource{
+		ecs:     e,
+		postfix: func() string { return "-A" },
+	}
+
+	e.On("CreateService", &ecs.CreateServiceInput{
+		ServiceName:  aws.String("acme-inc-web-A"),
+		Cluster:      aws.String("cluster"),
+		DesiredCount: aws.Int64(1),
+	}).Return(&ecs.CreateServiceOutput{
+		Service: &ecs.Service{
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A"),
+		},
+	}, nil)
+
+	ctx, cancel := context.WithCancel(ctx)
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A")},
+	}).Return(nil).Run(func(mock.Arguments) {
+		cancel()
+		time.Sleep(1 * time.Second)
+	})
+
+	_, data, err := p.Provision(ctx, Request{
+		RequestType: Create,
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: intValue(1),
+		},
+		OldResourceProperties: &ECSServiceProperties{},
+	})
+	assert.Equal(t, context.Canceled, err)
 	assert.Nil(t, data)
 
 	e.AssertExpectations(t)
@@ -57,7 +106,7 @@ func TestECSServiceResource_Update(t *testing.T) {
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 	}).Return(&ecs.UpdateServiceOutput{}, nil)
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
@@ -98,7 +147,12 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 		},
 	}, nil)
 
-	id, data, err := p.Provision(Request{
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("clusterB"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B")},
+	}).Return(nil)
+
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A",
 		ResourceProperties: &ECSServiceProperties{
@@ -138,7 +192,7 @@ func TestECSServiceResource_Delete(t *testing.T) {
 		Cluster: aws.String("cluster"),
 	}).Return(&ecs.DeleteServiceOutput{}, nil)
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
@@ -171,7 +225,7 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 		DesiredCount: aws.Int64(0),
 	}).Return(&ecs.UpdateServiceOutput{}, awserr.New("ServiceNotActiveException", "Service was not ACTIVE", errors.New("")))
 
-	id, data, err := p.Provision(Request{
+	id, data, err := p.Provision(ctx, Request{
 		RequestType:        Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
@@ -262,4 +316,9 @@ func (m *mockECS) UpdateService(input *ecs.UpdateServiceInput) (*ecs.UpdateServi
 func (m *mockECS) DeleteService(input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DeleteServiceOutput), args.Error(1)
+}
+
+func (m *mockECS) WaitUntilServicesStable(input *ecs.DescribeServicesInput) error {
+	args := m.Called(input)
+	return args.Error(0)
 }
