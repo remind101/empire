@@ -131,7 +131,9 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Description": "When set to `true`, CNAME's will be altered",
 		},
 		restartParameter: map[string]string{
-			"Type": "String",
+			"Type":        "String",
+			"Description": "Key used to trigger a restart of an app",
+			"Default":     "default",
 		},
 	}
 	conditions := map[string]interface{}{

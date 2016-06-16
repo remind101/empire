@@ -62,7 +62,6 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 		},
 		Tags: []*cloudformation.Tag{
@@ -134,7 +133,6 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
@@ -189,7 +187,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 				StackStatus: aws.String("CREATE_COMPLETE"),
 				Parameters: []*cloudformation.Parameter{
 					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
 				},
@@ -202,7 +199,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
@@ -219,6 +215,57 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 			{Type: "web", Instances: 1},
 		},
 	}, SubmitOptions{
+		Done: done,
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, <-done)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Restart(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:           aws.String("acme-inc"),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	done := make(chan error)
+	err = s.RestartWithOptions(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, RestartOptions{
 		Done: done,
 	})
 	assert.NoError(t, err)

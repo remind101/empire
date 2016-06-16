@@ -54,6 +54,8 @@
       "Type": "String"
     },
     "RestartKey": {
+      "Default": "default",
+      "Description": "Key used to trigger a restart of an app",
       "Type": "String"
     },
     "apiScale": {
