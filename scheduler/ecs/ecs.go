@@ -208,6 +208,11 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
 	return nil
 }
 
+// Restart restarts all of the processes for the app.
+func (m *Scheduler) Restart(ctx context.Context, app *scheduler.App, ptype string) error {
+	return m.Submit(ctx, app)
+}
+
 // Remove removes all of the AWS resources for this app.
 func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 	return m.RemoveWithOptions(ctx, appID, RemoveOptions{})

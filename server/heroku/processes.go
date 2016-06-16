@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
@@ -145,9 +146,15 @@ type DeleteProcesses struct {
 func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	vars := httpx.Vars(ctx)
 	pid := vars["pid"]
-
-	if vars["ptype"] != "" {
-		return errNotImplemented("Restarting a process type is currently not implemented.")
+	ptype := vars["ptype"]
+	if vars["either"] != "" {
+		e := vars["either"]
+		u := uuid.Parse(e)
+		if u == nil {
+			ptype = e
+		} else {
+			pid = e
+		}
 	}
 
 	a, err := findApp(ctx, h)
@@ -164,6 +171,7 @@ func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseW
 		User:    UserFromContext(ctx),
 		App:     a,
 		PID:     pid,
+		PTYPE:   ptype,
 		Message: m,
 	}); err != nil {
 		return err

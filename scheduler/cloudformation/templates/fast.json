@@ -56,7 +56,13 @@
     "RestartKey": {
       "Type": "String"
     },
+    "webRestartKey": {
+      "Type": "String"
+    },
     "webScale": {
+      "Type": "String"
+    },
+    "workerRestartKey": {
       "Type": "String"
     },
     "workerScale": {
@@ -159,6 +165,9 @@
             ],
             "Cpu": 256,
             "DockerLabels": {
+              "cloudformation.process-restart-key": {
+                "Ref": "webRestartKey"
+              },
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
               },
@@ -226,6 +235,9 @@
             ],
             "Cpu": 0,
             "DockerLabels": {
+              "cloudformation.process-restart-key": {
+                "Ref": "workerRestartKey"
+              },
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
               },
