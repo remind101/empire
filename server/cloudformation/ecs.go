@@ -2,7 +2,6 @@ package cloudformation
 
 import (
 	"fmt"
-	"math/rand"
 	"reflect"
 	"strings"
 
@@ -41,10 +40,6 @@ type ECSServiceProperties struct {
 // ECSServiceResource is a Provisioner that creates and updates ECS services.
 type ECSServiceResource struct {
 	ecs ecsClient
-
-	// postfix returns a string that should be appended when creating new
-	// ecs services.
-	postfix func() string
 }
 
 func (p *ECSServiceResource) Properties() interface{} {
@@ -57,7 +52,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 
 	switch req.RequestType {
 	case Create:
-		id, err := p.create(ctx, properties)
+		id, err := p.create(ctx, hashRequest(req), properties)
 		return id, nil, err
 	case Delete:
 		id := req.PhysicalResourceId
@@ -70,7 +65,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
-			id, err := p.create(ctx, properties)
+			id, err := p.create(ctx, hashRequest(req), properties)
 			if err != nil {
 				return oldId, nil, err
 			}
@@ -94,7 +89,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 	}
 }
 
-func (p *ECSServiceResource) create(ctx context.Context, properties *ECSServiceProperties) (string, error) {
+func (p *ECSServiceResource) create(ctx context.Context, clientToken string, properties *ECSServiceProperties) (string, error) {
 	var loadBalancers []*ecs.LoadBalancer
 	for _, v := range properties.LoadBalancers {
 		loadBalancers = append(loadBalancers, &ecs.LoadBalancer{
@@ -106,10 +101,11 @@ func (p *ECSServiceResource) create(ctx context.Context, properties *ECSServiceP
 
 	var serviceName *string
 	if properties.ServiceName != nil {
-		serviceName = aws.String(*properties.ServiceName + p.postfix())
+		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, clientToken))
 	}
 
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
+		ClientToken:    aws.String(clientToken),
 		ServiceName:    serviceName,
 		Cluster:        properties.Cluster,
 		DesiredCount:   properties.DesiredCount.Value(),
@@ -194,17 +190,4 @@ func requiresReplacement(new, old *ECSServiceProperties) bool {
 	}
 
 	return false
-}
-
-var letters = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
-
-// Generates a random 12 character string (similar to how standard
-// CloudFormation works).
-func postfix() string {
-	n := 12
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return fmt.Sprintf("-%s", string(b))
 }

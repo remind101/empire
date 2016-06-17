@@ -10,6 +10,8 @@
 
 **Bugs**
 
+* Fixed a bug where multiple duplicate ECS services could be created by the CloudFormation backend, when using the `Custom::ECSService` resource [#884](https://github.com/remind101/empire/pull/884).
+
 **Performance**
 
 **Security**

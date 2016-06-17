@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/remind101/empire/pkg/base62"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
@@ -51,7 +53,6 @@ func (fn ProvisionerFunc) Provision(ctx context.Context, r Request) (string, int
 
 // withTimeout wraps a Provisioner with a context.WithTimeout.
 func withTimeout(p Provisioner, timeout time.Duration, grace time.Duration) Provisioner {
-
 	return &timeoutProvisioner{
 		Provisioner: p,
 		timeout:     timeout,
@@ -267,8 +268,7 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 	})
 
 	p.add("Custom::ECSService", &ECSServiceResource{
-		ecs:     ecs.New(config),
-		postfix: postfix,
+		ecs: ecs.New(config),
 	})
 
 	return p
@@ -425,4 +425,11 @@ func (i *IntValue) Value() *int64 {
 	}
 	p := int64(*i)
 	return &p
+}
+
+// hashRequest returns a compact unique identifier for the request.
+func hashRequest(r Request) string {
+	h := fnv.New64()
+	h.Write([]byte(fmt.Sprintf("%s.%s", r.StackId, r.RequestId)))
+	return base62.Encode(h.Sum64())
 }
