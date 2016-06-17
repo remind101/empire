@@ -1,9 +1,6 @@
 package cloudformation
 
 import (
-	"bytes"
-	"crypto/sha1"
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -12,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/remind101/empire/pkg/base62"
+	"github.com/remind101/empire/pkg/hashstructure"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -33,44 +32,20 @@ type LoadBalancer struct {
 type ECSServiceProperties struct {
 	ServiceName    *string
 	Cluster        *string
-	DesiredCount   *IntValue
-	LoadBalancers  []LoadBalancer
+	DesiredCount   *IntValue      `hash:"ignore"`
+	LoadBalancers  []LoadBalancer `hash:"set"`
 	Role           *string
-	TaskDefinition *string
+	TaskDefinition *string `hash:"ignore"`
 }
 
-// Replacement signature returns a deterministic string representing the fields
-// that, when changed, require a replacement of the ECS service. This can be
-// used to compare ECSServiceProperties to see if a replacement is required.
-func (p *ECSServiceProperties) ReplacementSignature() string {
-	buf := new(bytes.Buffer)
-
-	s := func(v *string) string {
-		if v != nil {
-			return *v
-		}
-		return ""
+// Hash returns the Sum64 hash of the properties that, when updated, would
+// require a replacement.
+func (p *ECSServiceProperties) Hash() (uint64, error) {
+	h, err := hashstructure.Hash(p, nil)
+	if err != nil {
+		err = fmt.Errorf("error hashing properties: %v", err)
 	}
-
-	d := func(v *IntValue) string {
-		if v != nil {
-			return fmt.Sprintf("%d", *v)
-		}
-		return ""
-	}
-
-	// These properties cannot be updated.
-	fmt.Fprintf(buf, "ServiceName: %s\n", s(p.ServiceName))
-	fmt.Fprintf(buf, "Cluster: %s\n", s(p.Cluster))
-	fmt.Fprintf(buf, "Role: %s\n", s(p.Role))
-	fmt.Fprintf(buf, "LoadBalancers:\n")
-	for _, l := range p.LoadBalancers {
-		fmt.Fprintf(buf, "  LoadBalancerName: %s\n", s(l.LoadBalancerName))
-		fmt.Fprintf(buf, "  ContainerPort: %s\n", d(l.ContainerPort))
-		fmt.Fprintf(buf, "  ContainerName: %s\n", s(l.ContainerName))
-	}
-
-	return buf.String()
+	return h, err
 }
 
 // ECSServiceResource is a Provisioner that creates and updates ECS services.
@@ -97,7 +72,14 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 	case Update:
 		id := req.PhysicalResourceId
 
-		if requiresReplacement(properties, oldProperties) {
+		// Compare the hash of the properties to determine if a
+		// replacement is required.
+		replace, err := requiresReplacement(properties, oldProperties)
+		if err != nil {
+			return id, nil, fmt.Errorf("error hashing properties: %v", err)
+		}
+
+		if replace {
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
@@ -113,7 +95,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 			return id, nil, err
 		}
 
-		_, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
+		_, err = p.ecs.UpdateService(&ecs.UpdateServiceInput{
 			Service:        aws.String(id),
 			Cluster:        properties.Cluster,
 			DesiredCount:   properties.DesiredCount.Value(),
@@ -137,7 +119,11 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 
 	var serviceName *string
 	if properties.ServiceName != nil {
-		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, postfix(properties)))
+		s, err := postfix(properties)
+		if err != nil {
+			return "", fmt.Errorf("error hashing properties: %v", err)
+		}
+		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, s))
 	}
 
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
@@ -204,18 +190,13 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 	return nil
 }
 
-// Certain parameters cannot be updated on existing services, so we need to
-// create a new physical resource.
-func requiresReplacement(new, old *ECSServiceProperties) bool {
-	return new.ReplacementSignature() != old.ReplacementSignature()
-}
-
 // It's important that the postfix we append to the service name
 // is deterministic based on the non replaceable fields of the
 // service, otherwise ClientToken has no effect on idempotency.
-func postfix(p *ECSServiceProperties) string {
-	h := sha1.New()
-	h.Write([]byte(p.ReplacementSignature()))
-	b := h.Sum(nil)
-	return strings.Replace(base64.URLEncoding.EncodeToString(b), "=", "", -1)
+func postfix(p *ECSServiceProperties) (string, error) {
+	h, err := hashstructure.Hash(p, nil)
+	if err != nil {
+		return "", err
+	}
+	return base62.Encode(h), nil
 }
