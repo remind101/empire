@@ -1,4 +1,5 @@
-// Package base62 implements conversion to and from base62. Useful for url shorteners.
+// Package base62 implements conversion to base62. Useful for generating short
+// ASCII strings.
 package base62
 
 // characters used for conversion
