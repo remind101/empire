@@ -254,74 +254,6 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestECSServiceProperties_Hash(t *testing.T) {
-	tests := []struct {
-		sum        uint64
-		properties []ECSServiceProperties
-	}{
-		// Basic properties with load balancer.
-		{
-			0x8ebd4c1c20c5d11b,
-			[]ECSServiceProperties{
-				{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: intValue(1), LoadBalancers: []LoadBalancer{{LoadBalancerName: aws.String("loadbalancer"), ContainerPort: intValue(9000), ContainerName: aws.String("web")}}},
-			},
-		},
-
-		// Ordering of load balancers shouldn't matter.
-		{
-			0x7814aa8442a961a2,
-			[]ECSServiceProperties{
-				{
-					LoadBalancers: []LoadBalancer{
-						{
-							LoadBalancerName: aws.String("a"),
-							ContainerPort:    intValue(9000),
-							ContainerName:    aws.String("web"),
-						},
-						{
-							LoadBalancerName: aws.String("b"),
-							ContainerPort:    intValue(9001),
-							ContainerName:    aws.String("web2"),
-						},
-					},
-				},
-				{
-					LoadBalancers: []LoadBalancer{
-						{
-							LoadBalancerName: aws.String("b"),
-							ContainerPort:    intValue(9001),
-							ContainerName:    aws.String("web2"),
-						},
-						{
-							LoadBalancerName: aws.String("a"),
-							ContainerPort:    intValue(9000),
-							ContainerName:    aws.String("web"),
-						},
-					},
-				},
-			},
-		},
-
-		// TaskDefinition/DesiredCount should be ignored when
-		// calculating the hash.
-		{
-			0xb086a4a528b366aa,
-			[]ECSServiceProperties{
-				{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: intValue(1)},
-				{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: intValue(0)},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		for _, p := range tt.properties {
-			h, err := p.Hash()
-			assert.NoError(t, err)
-			assert.Equal(t, tt.sum, h)
-		}
-	}
-}
-
 func TestRequiresReplacement(t *testing.T) {
 	tests := []struct {
 		new, old ECSServiceProperties
@@ -370,8 +302,7 @@ func TestRequiresReplacement(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Log(i)
-		out, err := requiresReplacement(&tt.new, &tt.old)
-		assert.NoError(t, err)
+		out := requiresReplacement(&tt.new, &tt.old)
 		assert.Equal(t, tt.out, out)
 	}
 }

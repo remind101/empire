@@ -2,6 +2,7 @@ package cloudformation
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -9,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/remind101/empire/pkg/hashstructure"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -31,20 +31,10 @@ type LoadBalancer struct {
 type ECSServiceProperties struct {
 	ServiceName    *string
 	Cluster        *string
-	DesiredCount   *IntValue      `hash:"ignore"`
-	LoadBalancers  []LoadBalancer `hash:"set"`
+	DesiredCount   *IntValue
+	LoadBalancers  []LoadBalancer
 	Role           *string
-	TaskDefinition *string `hash:"ignore"`
-}
-
-// Hash returns the Sum64 hash of the properties that, when updated, would
-// require a replacement.
-func (p *ECSServiceProperties) Hash() (uint64, error) {
-	h, err := hashstructure.Hash(p, nil)
-	if err != nil {
-		err = fmt.Errorf("error hashing properties: %v", err)
-	}
-	return h, err
+	TaskDefinition *string
 }
 
 // ECSServiceResource is a Provisioner that creates and updates ECS services.
@@ -71,14 +61,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 	case Update:
 		id := req.PhysicalResourceId
 
-		// Compare the hash of the properties to determine if a
-		// replacement is required.
-		replace, err := requiresReplacement(properties, oldProperties)
-		if err != nil {
-			return id, nil, fmt.Errorf("failed to determine if replacement is required: %v", err)
-		}
-
-		if replace {
+		if requiresReplacement(properties, oldProperties) {
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
@@ -94,7 +77,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 			return id, nil, err
 		}
 
-		_, err = p.ecs.UpdateService(&ecs.UpdateServiceInput{
+		_, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
 			Service:        aws.String(id),
 			Cluster:        properties.Cluster,
 			DesiredCount:   properties.DesiredCount.Value(),
@@ -183,4 +166,28 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 	}
 
 	return nil
+}
+
+// Certain parameters cannot be updated on existing services, so we need to
+// create a new physical resource.
+func requiresReplacement(new, old *ECSServiceProperties) bool {
+	eq := reflect.DeepEqual
+
+	if !eq(new.Cluster, old.Cluster) {
+		return true
+	}
+
+	if !eq(new.Role, old.Role) {
+		return true
+	}
+
+	if !eq(new.ServiceName, old.ServiceName) {
+		return true
+	}
+
+	if !eq(new.LoadBalancers, old.LoadBalancers) {
+		return true
+	}
+
+	return false
 }

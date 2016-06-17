@@ -433,20 +433,3 @@ func hashRequest(r Request) string {
 	h.Write([]byte(fmt.Sprintf("%s.%s", r.StackId, r.RequestId)))
 	return base62.Encode(h.Sum64())
 }
-
-// Determines whether the resource requires a replacement.
-func requiresReplacement(a, b interface {
-	Hash() (uint64, error)
-}) (bool, error) {
-	h1, err := a.Hash()
-	if err != nil {
-		return false, err
-	}
-
-	h2, err := b.Hash()
-	if err != nil {
-		return false, err
-	}
-
-	return h1 != h2, nil
-}
