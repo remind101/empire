@@ -870,7 +870,10 @@
     },
 
     "CustomResourcesQueue": {
-      "Type": "AWS::SQS::Queue"
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "VisibilityTimeout": "1800"
+      }
     },
 
     "CustomResourcesQueuePolicy": {

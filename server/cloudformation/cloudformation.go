@@ -2,7 +2,9 @@ package cloudformation
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -51,7 +53,6 @@ func (fn ProvisionerFunc) Provision(ctx context.Context, r Request) (string, int
 
 // withTimeout wraps a Provisioner with a context.WithTimeout.
 func withTimeout(p Provisioner, timeout time.Duration, grace time.Duration) Provisioner {
-
 	return &timeoutProvisioner{
 		Provisioner: p,
 		timeout:     timeout,
@@ -425,4 +426,11 @@ func (i *IntValue) Value() *int64 {
 	}
 	p := int64(*i)
 	return &p
+}
+
+// hashRequest returns a compact unique identifier for the request.
+func hashRequest(r Request) string {
+	h := sha1.New()
+	h.Write([]byte(fmt.Sprintf("%s.%s", r.StackId, r.RequestId)))
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

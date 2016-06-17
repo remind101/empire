@@ -22,6 +22,7 @@ func TestECSServiceResource_Create(t *testing.T) {
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
+		ClientToken:  aws.String("OlLOeAlQ1NlpeSolWc1RnX7oxyc="),
 		ServiceName:  aws.String("acme-inc-web-A"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
@@ -60,6 +61,7 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
+		ClientToken:  aws.String("OlLOeAlQ1NlpeSolWc1RnX7oxyc="),
 		ServiceName:  aws.String("acme-inc-web-A"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
@@ -137,6 +139,7 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
+		ClientToken:    aws.String("OlLOeAlQ1NlpeSolWc1RnX7oxyc="),
 		ServiceName:    aws.String("acme-inc-web-B"),
 		Cluster:        aws.String("clusterB"),
 		DesiredCount:   aws.Int64(2),
