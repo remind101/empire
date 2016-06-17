@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/remind101/empire/pkg/base62"
 	"github.com/remind101/empire/pkg/hashstructure"
 	"github.com/remind101/pkg/reporter"
 )
@@ -119,11 +118,7 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 
 	var serviceName *string
 	if properties.ServiceName != nil {
-		s, err := postfix(properties)
-		if err != nil {
-			return "", fmt.Errorf("error generating postfix: %v", err)
-		}
-		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, s))
+		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, clientToken))
 	}
 
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
@@ -188,15 +183,4 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 	}
 
 	return nil
-}
-
-// It's important that the postfix we append to the service name
-// is deterministic based on the non updateable fields of the
-// service, otherwise ClientToken has no effect on idempotency.
-func postfix(p *ECSServiceProperties) (string, error) {
-	h, err := p.Hash()
-	if err != nil {
-		return "", err
-	}
-	return base62.Encode(h), nil
 }

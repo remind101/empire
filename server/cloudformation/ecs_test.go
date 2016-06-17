@@ -21,22 +21,24 @@ func TestECSServiceResource_Create(t *testing.T) {
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
-		ClientToken:  aws.String("OlLOeAlQ1NlpeSolWc1RnX7oxyc="),
-		ServiceName:  aws.String("acme-inc-web-aXHWS9eq2wT"),
+		ClientToken:  aws.String("dxRU5tYsnzt"),
+		ServiceName:  aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
-			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-aXHWS9eq2wT"),
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 		},
 	}, nil)
 
 	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-aXHWS9eq2wT")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
 	}).Return(nil)
 
 	id, data, err := p.Provision(ctx, Request{
+		StackId:     "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
 		RequestType: Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
@@ -46,7 +48,7 @@ func TestECSServiceResource_Create(t *testing.T) {
 		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-aXHWS9eq2wT", id)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
 	assert.Nil(t, data)
 
 	e.AssertExpectations(t)
@@ -59,26 +61,28 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
-		ClientToken:  aws.String("OlLOeAlQ1NlpeSolWc1RnX7oxyc="),
-		ServiceName:  aws.String("acme-inc-web-aXHWS9eq2wT"),
+		ClientToken:  aws.String("dxRU5tYsnzt"),
+		ServiceName:  aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
-			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-aXHWS9eq2wT"),
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 		},
 	}, nil)
 
 	ctx, cancel := context.WithCancel(ctx)
 	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-aXHWS9eq2wT")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
 	}).Return(nil).Run(func(mock.Arguments) {
 		cancel()
 		time.Sleep(1 * time.Second)
 	})
 
 	_, data, err := p.Provision(ctx, Request{
+		StackId:     "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
 		RequestType: Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
@@ -107,6 +111,8 @@ func TestECSServiceResource_Update(t *testing.T) {
 	}).Return(&ecs.UpdateServiceOutput{}, nil)
 
 	id, data, err := p.Provision(ctx, Request{
+		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
 		RequestType:        Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
@@ -136,25 +142,27 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
-		ClientToken:    aws.String("OlLOeAlQ1NlpeSolWc1RnX7oxyc="),
-		ServiceName:    aws.String("acme-inc-web-8ru9dOZLwNe"),
+		ClientToken:    aws.String("dxRU5tYsnzt"),
+		ServiceName:    aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:        aws.String("clusterB"),
 		DesiredCount:   aws.Int64(2),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
-			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-8ru9dOZLwNe"),
+			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 		},
 	}, nil)
 
 	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("clusterB"),
-		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-8ru9dOZLwNe")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
 	}).Return(nil)
 
 	id, data, err := p.Provision(ctx, Request{
+		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
 		RequestType:        Update,
-		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-aXHWS9eq2wT",
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterB"),
 			ServiceName:    aws.String("acme-inc-web"),
@@ -169,7 +177,7 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-8ru9dOZLwNe", id)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
 	assert.Nil(t, data)
 
 	e.AssertExpectations(t)

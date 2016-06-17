@@ -2,11 +2,10 @@ package cloudformation
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -18,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/remind101/empire/pkg/base62"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
@@ -429,9 +429,9 @@ func (i *IntValue) Value() *int64 {
 
 // hashRequest returns a compact unique identifier for the request.
 func hashRequest(r Request) string {
-	h := sha1.New()
+	h := fnv.New64()
 	h.Write([]byte(fmt.Sprintf("%s.%s", r.StackId, r.RequestId)))
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+	return base62.Encode(h.Sum64())
 }
 
 // Determines whether the resource requires a replacement.
