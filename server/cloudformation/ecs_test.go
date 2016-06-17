@@ -300,8 +300,7 @@ func TestRequiresReplacement(t *testing.T) {
 		},
 	}
 
-	for i, tt := range tests {
-		t.Log(i)
+	for _, tt := range tests {
 		out := requiresReplacement(&tt.new, &tt.old)
 		assert.Equal(t, tt.out, out)
 	}
