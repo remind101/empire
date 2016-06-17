@@ -76,7 +76,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 		// replacement is required.
 		replace, err := requiresReplacement(properties, oldProperties)
 		if err != nil {
-			return id, nil, fmt.Errorf("error hashing properties: %v", err)
+			return id, nil, fmt.Errorf("failed to determine if replacement is required: %v", err)
 		}
 
 		if replace {
@@ -121,7 +121,7 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 	if properties.ServiceName != nil {
 		s, err := postfix(properties)
 		if err != nil {
-			return "", fmt.Errorf("error hashing properties: %v", err)
+			return "", fmt.Errorf("error generating postfix: %v", err)
 		}
 		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, s))
 	}
@@ -191,7 +191,7 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 }
 
 // It's important that the postfix we append to the service name
-// is deterministic based on the non replaceable fields of the
+// is deterministic based on the non updateable fields of the
 // service, otherwise ClientToken has no effect on idempotency.
 func postfix(p *ECSServiceProperties) (string, error) {
 	h, err := p.Hash()
