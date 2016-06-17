@@ -268,8 +268,7 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 	})
 
 	p.add("Custom::ECSService", &ECSServiceResource{
-		ecs:     ecs.New(config),
-		postfix: postfix,
+		ecs: ecs.New(config),
 	})
 
 	return p

@@ -1,9 +1,10 @@
 package cloudformation
 
 import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
-	"math/rand"
-	"reflect"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -38,13 +39,43 @@ type ECSServiceProperties struct {
 	TaskDefinition *string
 }
 
+// Replacement signature returns a deterministic string representing the fields
+// that, when changed, require a replacement of the ECS service. This can be
+// used to compare ECSServiceProperties to see if a replacement is required.
+func (p *ECSServiceProperties) ReplacementSignature() string {
+	buf := new(bytes.Buffer)
+
+	s := func(v *string) string {
+		if v != nil {
+			return *v
+		}
+		return ""
+	}
+
+	d := func(v *IntValue) string {
+		if v != nil {
+			return fmt.Sprintf("%d", *v)
+		}
+		return ""
+	}
+
+	// These properties cannot be updated.
+	fmt.Fprintf(buf, "ServiceName: %s\n", s(p.ServiceName))
+	fmt.Fprintf(buf, "Cluster: %s\n", s(p.Cluster))
+	fmt.Fprintf(buf, "Role: %s\n", s(p.Role))
+	fmt.Fprintf(buf, "LoadBalancers:\n")
+	for _, l := range p.LoadBalancers {
+		fmt.Fprintf(buf, "  LoadBalancerName: %s\n", s(l.LoadBalancerName))
+		fmt.Fprintf(buf, "  ContainerPort: %s\n", d(l.ContainerPort))
+		fmt.Fprintf(buf, "  ContainerName: %s\n", s(l.ContainerName))
+	}
+
+	return buf.String()
+}
+
 // ECSServiceResource is a Provisioner that creates and updates ECS services.
 type ECSServiceResource struct {
 	ecs ecsClient
-
-	// postfix returns a string that should be appended when creating new
-	// ecs services.
-	postfix func() string
 }
 
 func (p *ECSServiceResource) Properties() interface{} {
@@ -106,7 +137,7 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 
 	var serviceName *string
 	if properties.ServiceName != nil {
-		serviceName = aws.String(*properties.ServiceName + p.postfix())
+		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, postfix(properties)))
 	}
 
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
@@ -176,36 +207,15 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 // Certain parameters cannot be updated on existing services, so we need to
 // create a new physical resource.
 func requiresReplacement(new, old *ECSServiceProperties) bool {
-	eq := reflect.DeepEqual
-
-	if !eq(new.Cluster, old.Cluster) {
-		return true
-	}
-
-	if !eq(new.Role, old.Role) {
-		return true
-	}
-
-	if !eq(new.ServiceName, old.ServiceName) {
-		return true
-	}
-
-	if !eq(new.LoadBalancers, old.LoadBalancers) {
-		return true
-	}
-
-	return false
+	return new.ReplacementSignature() != old.ReplacementSignature()
 }
 
-var letters = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
-
-// Generates a random 12 character string (similar to how standard
-// CloudFormation works).
-func postfix() string {
-	n := 12
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return fmt.Sprintf("-%s", string(b))
+// It's important that the postfix we append to the service name
+// is deterministic based on the non replaceable fields of the
+// service, otherwise ClientToken has no effect on idempotency.
+func postfix(p *ECSServiceProperties) string {
+	h := sha1.New()
+	h.Write([]byte(p.ReplacementSignature()))
+	b := h.Sum(nil)
+	return strings.Replace(base64.URLEncoding.EncodeToString(b), "=", "", -1)
 }
