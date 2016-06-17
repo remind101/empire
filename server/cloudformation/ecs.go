@@ -194,7 +194,7 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 // is deterministic based on the non replaceable fields of the
 // service, otherwise ClientToken has no effect on idempotency.
 func postfix(p *ECSServiceProperties) (string, error) {
-	h, err := hashstructure.Hash(p, nil)
+	h, err := p.Hash()
 	if err != nil {
 		return "", err
 	}
