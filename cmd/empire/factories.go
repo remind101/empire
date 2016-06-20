@@ -133,12 +133,12 @@ func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Migra
 
 	es, err := newECSScheduler(db, c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating ecs scheduler: %v", err)
 	}
 
 	cs, err := newCloudFormationScheduler(db, c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating cloudformation scheduler: %v", err)
 	}
 
 	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
