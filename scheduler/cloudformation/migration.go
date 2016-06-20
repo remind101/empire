@@ -64,7 +64,7 @@ func NewMigrationScheduler(db *sql.DB, c *Scheduler, e *ecs.Scheduler) *Migratio
 func (s *MigrationScheduler) Backend(appID string) (scheduler.Scheduler, error) {
 	backend, err := s.backend(appID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching backend: %v", err)
 	}
 
 	switch backend {
