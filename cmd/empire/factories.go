@@ -122,6 +122,10 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 		return nil, fmt.Errorf("unknown scheduler: %s", c.String(FlagScheduler))
 	}
 
+	if err != nil {
+		return nil, fmt.Errorf("error creating scheduler: %v", err)
+	}
+
 	return &scheduler.AttachedRunner{
 		Scheduler: s,
 		Runner:    r,
