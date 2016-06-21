@@ -189,6 +189,38 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, o
 	return tx.Commit()
 }
 
+// RestartOptions are options provided to RestartWithOptions.
+type RestartOptions struct {
+	// Done is a channel that is sent on when the stack is fully updated.
+	Done chan error
+}
+
+func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App) error {
+	return s.RestartWithOptions(ctx, app, RestartOptions{})
+}
+
+func (s *Scheduler) RestartWithOptions(ctx context.Context, app *scheduler.App, opts RestartOptions) error {
+	if opts.Done == nil {
+		opts.Done = make(chan error)
+	}
+
+	stackName, err := s.stackName(app.ID)
+	if err != nil {
+		return err
+	}
+
+	return s.updateStack(&cloudformation.UpdateStackInput{
+		StackName:           aws.String(stackName),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{
+				ParameterKey:   aws.String(restartParameter),
+				ParameterValue: aws.String(newUUID()),
+			},
+		},
+	}, opts.Done)
+}
+
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
@@ -245,11 +277,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		{
 			ParameterKey:   aws.String("DNS"),
 			ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
-		},
-		// FIXME: Remove this in favor of a Restart method.
-		{
-			ParameterKey:   aws.String(restartParameter),
-			ParameterValue: aws.String(newUUID()),
 		},
 	}
 	for _, p := range app.Processes {
