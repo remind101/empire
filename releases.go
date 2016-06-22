@@ -314,12 +314,12 @@ func environment(vars Vars) map[string]string {
 
 func processExposure(app *App, process string) *scheduler.Exposure {
 	// For now, only the `web` process can be exposed.
-	if process != WebProcessType {
+	if process != webProcessType {
 		return nil
 	}
 
 	exposure := &scheduler.Exposure{
-		External: app.Exposure == ExposePublic,
+		External: app.Exposure == exposePublic,
 	}
 
 	switch app.Cert {

@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	ExposePrivate = "private"
-	ExposePublic  = "public"
+	exposePrivate = "private"
+	exposePublic  = "public"
 )
 
 // NamePattern is a regex pattern that app names must conform to.
@@ -27,20 +27,26 @@ func appNameFromRepo(repo string) string {
 	return p[len(p)-1]
 }
 
-// App represents an app.
+// App represents an Empire application.
 type App struct {
+	// A unique uuid that identifies the application.
 	ID string
 
+	// The name of the application.
 	Name string
 
+	// If provided, the Docker repo that this application is linked to.
+	// Deployments to Empire, which don't specify an application, will use
+	// this field to determine what app an image should be deployed to.
 	Repo *string
 
-	// Valid values are empire.ExposePrivate and empire.ExposePublic.
+	// Valid values are exposePrivate and exposePublic.
 	Exposure string
 
 	// The name of an SSL cert for the web process of this app.
 	Cert string
 
+	// The time that this application was created.
 	CreatedAt *time.Time
 }
 
@@ -58,7 +64,7 @@ func (a *App) BeforeCreate() error {
 	a.CreatedAt = &t
 
 	if a.Exposure == "" {
-		a.Exposure = ExposePrivate
+		a.Exposure = exposePrivate
 	}
 
 	return a.IsValid()

@@ -16,11 +16,8 @@ import (
 )
 
 const (
-	// WebPort is the default PORT to set on web processes.
-	WebPort = 8080
-
-	// WebProcessType is the process type we assume are web server processes.
-	WebProcessType = "web"
+	// webProcessType is the process type we assume are web server processes.
+	webProcessType = "web"
 )
 
 // Various errors that may be returned.
@@ -86,7 +83,7 @@ type Empire struct {
 func New(db *DB) *Empire {
 	e := &Empire{
 		LogsStreamer: logsDisabled,
-		EventStream:  NullEventStream,
+		EventStream:  nullEventStream,
 
 		DB: db,
 		db: db.DB,
@@ -731,9 +728,9 @@ func newJSONMessageError(err error) jsonmessage.JSONMessage {
 // docker client, then attempt to extract the the Procfile, or fallback to the
 // CMD directive in the Dockerfile.
 func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
-	e := MultiExtractor(
-		NewFileExtractor(c.Client),
-		NewCMDExtractor(c.Client),
+	e := multiExtractor(
+		newFileExtractor(c.Client),
+		newCMDExtractor(c.Client),
 	)
 
 	return ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {

@@ -14,11 +14,17 @@ import (
 
 // Config represents a collection of environment variables.
 type Config struct {
-	ID   string
+	// A unique uuid representing this Config.
+	ID string
+
+	// The environment variables in this config.
 	Vars Vars
 
+	// The id of the app that this config relates to.
 	AppID string
-	App   *App
+
+	// The app that this config relates to.
+	App *App
 }
 
 // newConfig initializes a new config based on the old config, with the new

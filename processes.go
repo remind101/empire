@@ -16,12 +16,11 @@ var DefaultQuantities = map[string]int{
 	"web": 1,
 }
 
-// Command represents the actual shell command that gets executed for a given
-// ProcessType.
+// Command represents a command and it's arguments. For example:
 type Command []string
 
 // ParseCommand parses a string into a Command, taking quotes and other shell
-// words into account.
+// words into account. For example:
 func ParseCommand(command string) (Command, error) {
 	return shellwords.Parse(command)
 }

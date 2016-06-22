@@ -8,8 +8,11 @@ import (
 
 // AccessToken represents a token that allow access to the api.
 type AccessToken struct {
+	// The encoded token.
 	Token string
-	User  *User
+
+	// The user that this AccessToken belongs to.
+	User *User
 }
 
 // IsValid returns nil if the AccessToken is valid.

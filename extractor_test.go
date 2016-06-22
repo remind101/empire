@@ -22,7 +22,7 @@ func TestCMDExtractor(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	e := CMDExtractor{
+	e := cmdExtractor{
 		client: c,
 	}
 
@@ -63,7 +63,7 @@ func TestProcfileExtractor(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	e := FileExtractor{
+	e := fileExtractor{
 		client: c,
 	}
 
@@ -104,9 +104,9 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	e := MultiExtractor(
-		NewFileExtractor(c),
-		NewCMDExtractor(c),
+	e := multiExtractor(
+		newFileExtractor(c),
+		newCMDExtractor(c),
 	)
 
 	got, err := e.Extract(nil, image.Image{
