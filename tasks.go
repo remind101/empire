@@ -11,11 +11,22 @@ import (
 
 // Task represents a running process.
 type Task struct {
-	Name        string
-	Type        string
-	Command     Command
-	State       string
-	UpdatedAt   time.Time
+	// The name of the task.
+	Name string
+
+	// The name of the process that this task is for.
+	Type string
+
+	// The command that this task is running.
+	Command Command
+
+	// The state of the task.
+	State string
+
+	// The time that the state was recorded.
+	UpdatedAt time.Time
+
+	// The constraints of the Process.
 	Constraints Constraints
 }
 

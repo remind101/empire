@@ -1,3 +1,5 @@
+// Package heroku provides a Heroku Platform API compatible http.Handler
+// implementation for Empire.
 package heroku
 
 import (

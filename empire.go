@@ -706,6 +706,8 @@ func (e *ValidationError) Error() string {
 	return e.Err.Error()
 }
 
+// MessageRequiredError is an error implementation, which is returned by Empire
+// when a commit message is required for the operation.
 type MessageRequiredError struct{}
 
 func (e *MessageRequiredError) Error() string {

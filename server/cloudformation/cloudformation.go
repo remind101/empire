@@ -1,3 +1,5 @@
+// Package cloudformation provides a server for the CloudFormation interface to
+// Empire.
 package cloudformation
 
 import (

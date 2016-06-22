@@ -69,7 +69,7 @@ func multiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
 			}
 
 			// Try the next one
-			if _, ok := err.(*ProcfileError); ok {
+			if _, ok := err.(*procfileError); ok {
 				continue
 			}
 
@@ -77,7 +77,7 @@ func multiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
 			return p, err
 		}
 
-		return nil, &ProcfileError{
+		return nil, &procfileError{
 			Err: errors.New("no suitable Procfile extractor found"),
 		}
 	})
@@ -110,7 +110,7 @@ func (e *fileExtractor) Extract(_ context.Context, img image.Image, w io.Writer)
 
 	b, err := e.copyFile(c.ID, pfile)
 	if err != nil {
-		return nil, &ProcfileError{Err: err}
+		return nil, &procfileError{Err: err}
 	}
 
 	return b, nil
@@ -167,11 +167,11 @@ func (e *fileExtractor) copyFile(containerID, path string) ([]byte, error) {
 }
 
 // Example instance: Procfile doesn't exist
-type ProcfileError struct {
+type procfileError struct {
 	Err error
 }
 
-func (e *ProcfileError) Error() string {
+func (e *procfileError) Error() string {
 	return fmt.Sprintf("Procfile not found: %s", e.Err)
 }
 
@@ -196,7 +196,7 @@ func formationFromProcfile(p procfile.Procfile) (Formation, error) {
 	case procfile.ExtendedProcfile:
 		return formationFromExtendedProcfile(p)
 	default:
-		return nil, &ProcfileError{
+		return nil, &procfileError{
 			Err: errors.New("unknown Procfile format"),
 		}
 	}

@@ -67,11 +67,20 @@ func (c Command) String() string {
 
 // Process holds configuration information about a Process.
 type Process struct {
-	Command  Command              `json:"Command,omitempty"`
-	Quantity int                  `json:"Quantity,omitempty"`
-	Memory   constraints.Memory   `json:"Memory,omitempty"`
+	// Command is the command to run.
+	Command Command `json:"Command,omitempty"`
+
+	// Quantity is the desired number of instances of this process.
+	Quantity int `json:"Quantity,omitempty"`
+
+	// The memory constraints, in bytes.
+	Memory constraints.Memory `json:"Memory,omitempty"`
+
+	// The amount of CPU share to give.
 	CPUShare constraints.CPUShare `json:"CPUShare,omitempty"`
-	Nproc    constraints.Nproc    `json:"Nproc,omitempty"`
+
+	// The allow number of unix processes within the container.
+	Nproc constraints.Nproc `json:"Nproc,omitempty"`
 }
 
 // Constraints returns a constraints.Constraints from this Process definition.

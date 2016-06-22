@@ -12,24 +12,43 @@ import (
 )
 
 // Release is a combination of a Config and a Slug, which form a deployable
-// release.
+// release. Releases are generally considered immutable, the only operation that
+// changes a release is when altering the Quantity or Constraints inside the
+// Formation.
 type Release struct {
-	ID      string
+	// A unique uuid to identify this release.
+	ID string
+
+	// An auto incremented ID for this release, scoped to the application.
 	Version int
 
+	// The id of the application that this release relates to.
 	AppID string
-	App   *App
 
+	// The application that this release relates to.
+	App *App
+
+	// The id of the config that this release uses.
 	ConfigID string
-	Config   *Config
 
+	// The config that this release uses.
+	Config *Config
+
+	// The id of the slug that this release uses.
 	SlugID string
-	Slug   *Slug
 
+	// The Slug that this release uses.
+	Slug *Slug
+
+	// The process formation to use.
 	Formation Formation
 
+	// A description for the release. Usually contains the reason for why
+	// the release was created (e.g. deployment, config changes, etc).
 	Description string
-	CreatedAt   *time.Time
+
+	// The time that this release was created.
+	CreatedAt *time.Time
 }
 
 // BeforeCreate sets created_at before inserting.

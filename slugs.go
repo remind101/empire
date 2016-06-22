@@ -11,8 +11,13 @@ import (
 
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
-	ID       string
-	Image    image.Image
+	// A unique uuid that identifies this slug.
+	ID string
+
+	// The Docker image that this slug is for.
+	Image image.Image
+
+	// The raw Procfile that was extracted from the Docker image.
 	Procfile []byte
 }
 
