@@ -1,5 +1,5 @@
-// Package empire provides the core API to the Empire PaaS. This provides a
-// simple API to performing actions like creating applications, setting
+// Package empire provides the core internal API to Empire. This provides a
+// simple API for performing actions like creating applications, setting
 // environment variables and performing deployments.
 //
 // Consumers of this API are usually in-process control layers, like the Heroku
