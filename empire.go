@@ -33,11 +33,8 @@ var (
 	}
 )
 
-// Empire provides the core API to the Empire PaaS. This provides a simple API
-// to performing actions like creating applications, setting environment
-// variables and performing deployments. Consumers of this API are usually
-// in-process control layers, like the Heroku Platform API compatibility layer,
-// and the GitHub Deployments integration.
+// Empire provides the core public API for Empire. Refer to the package
+// documentation for details.
 type Empire struct {
 	DB *DB
 	db *gorm.DB
