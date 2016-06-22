@@ -273,8 +273,8 @@ func (fn EventStreamFunc) PublishEvent(event Event) error {
 	return fn(event)
 }
 
-// nullEventStream an events service that does nothing.
-var nullEventStream = EventStreamFunc(func(event Event) error {
+// NullEventStream an events service that does nothing.
+var NullEventStream = EventStreamFunc(func(event Event) error {
 	return nil
 })
 

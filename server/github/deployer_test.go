@@ -28,7 +28,7 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 
 	b := new(bytes.Buffer)
 
-	e.On("Deploy", empire.DeploymentsCreateOpts{
+	e.On("Deploy", empire.DeployOpts{
 		User: &empire.User{Name: "ejholmes"},
 		Image: image.Image{
 			Repository: "remind101/acme-inc",
@@ -51,7 +51,7 @@ type mockEmpire struct {
 	mock.Mock
 }
 
-func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeploymentsCreateOpts) (*empire.Release, error) {
+func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeployOpts) (*empire.Release, error) {
 	w := opts.Output
 	if err := dockerutil.FakePull(image.Image{Repository: "remind101/acme-inc", Tag: "latest"}, w); err != nil {
 		panic(err)

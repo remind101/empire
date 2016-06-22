@@ -16,7 +16,7 @@ type deployerService struct {
 }
 
 // deploy does the actual deployment
-func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeploymentsCreateOpts) (*Release, error) {
+func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeployOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this
@@ -64,7 +64,7 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts Deployme
 
 // Deploy is a thin wrapper around deploy to that adds the error to the
 // jsonmessage stream.
-func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeploymentsCreateOpts) (*Release, error) {
+func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeployOpts) (*Release, error) {
 	var msg jsonmessage.JSONMessage
 
 	r, err := s.deploy(ctx, db, opts)

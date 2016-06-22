@@ -83,7 +83,7 @@ type Empire struct {
 func New(db *DB) *Empire {
 	e := &Empire{
 		LogsStreamer: logsDisabled,
-		EventStream:  nullEventStream,
+		EventStream:  NullEventStream,
 
 		DB: db,
 		db: db.DB,
@@ -523,9 +523,9 @@ func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, err
 	return r, e.PublishEvent(opts.Event())
 }
 
-// DeploymentsCreateOpts represents options that can be passed when deploying to
+// DeployOpts represents options that can be passed when deploying to
 // an application.
-type DeploymentsCreateOpts struct {
+type DeployOpts struct {
 	// User the user that is triggering the deployment.
 	User *User
 
@@ -546,7 +546,7 @@ type DeploymentsCreateOpts struct {
 	Message string
 }
 
-func (opts DeploymentsCreateOpts) Event() DeployEvent {
+func (opts DeployOpts) Event() DeployEvent {
 	e := DeployEvent{
 		User:    opts.User.Name,
 		Image:   opts.Image.String(),
@@ -560,12 +560,12 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	return e
 }
 
-func (opts DeploymentsCreateOpts) Validate(e *Empire) error {
+func (opts DeployOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
 }
 
 // Deploy deploys an image and streams the output to w.
-func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
