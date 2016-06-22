@@ -21,9 +21,9 @@ type Config struct {
 	App   *App
 }
 
-// NewConfig initializes a new config based on the old config, with the new
+// newConfig initializes a new config based on the old config, with the new
 // variables provided.
-func NewConfig(old *Config, vars Vars) *Config {
+func newConfig(old *Config, vars Vars) *Config {
 	v := mergeVars(old.Vars, vars)
 
 	return &Config{
@@ -126,7 +126,7 @@ func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*C
 		return nil, err
 	}
 
-	c, err := configsCreate(db, NewConfig(old, vars))
+	c, err := configsCreate(db, newConfig(old, vars))
 	if err != nil {
 		return c, err
 	}

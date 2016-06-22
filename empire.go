@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -14,12 +15,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-var (
-	// DefaultOptions is a default Options instance that can be passed when
-	// intializing a new Empire.
-	DefaultOptions = Options{}
-)
-
 const (
 	// WebPort is the default PORT to set on web processes.
 	WebPort = 8080
@@ -28,12 +23,24 @@ const (
 	WebProcessType = "web"
 )
 
-// Options is provided to New to configure the Empire services.
-type Options struct {
-	Secret string
-}
+// Various errors that may be returned.
+var (
+	ErrDomainInUse        = errors.New("Domain currently in use by another app.")
+	ErrDomainAlreadyAdded = errors.New("Domain already added to this app.")
+	ErrDomainNotFound     = errors.New("Domain could not be found.")
+	ErrUserName           = errors.New("Name is required")
+	ErrNoReleases         = errors.New("no releases")
+	// ErrInvalidName is used to indicate that the app name is not valid.
+	ErrInvalidName = &ValidationError{
+		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
+	}
+)
 
-// Empire is a context object that contains a collection of services.
+// Empire provides the core API to the Empire PaaS. This provides a simple API
+// to performing actions like creating applications, setting environment
+// variables and performing deployments. Consumers of this API are usually
+// in-process control layers, like the Heroku Platform API compatibility layer,
+// and the GitHub Deployments integration.
 type Empire struct {
 	DB *DB
 	db *gorm.DB
@@ -48,6 +55,9 @@ type Empire struct {
 	runner       *runnerService
 	slugs        *slugsService
 	certs        *certsService
+
+	// Secret is used to sign JWT access tokens.
+	Secret []byte
 
 	// Scheduler is the backend scheduler used to run applications.
 	Scheduler scheduler.Scheduler
@@ -73,7 +83,7 @@ type Empire struct {
 }
 
 // New returns a new Empire instance.
-func New(db *DB, options Options) *Empire {
+func New(db *DB) *Empire {
 	e := &Empire{
 		LogsStreamer: logsDisabled,
 		EventStream:  NullEventStream,
@@ -82,7 +92,7 @@ func New(db *DB, options Options) *Empire {
 		db: db.DB,
 	}
 
-	e.accessTokens = &accessTokensService{Secret: []byte(options.Secret)}
+	e.accessTokens = &accessTokensService{Empire: e}
 	e.apps = &appsService{Empire: e}
 	e.configs = &configsService{Empire: e}
 	e.deployer = &deployerService{Empire: e}

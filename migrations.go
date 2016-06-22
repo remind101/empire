@@ -10,7 +10,7 @@ import (
 	"github.com/remind101/migrate"
 )
 
-var Migrations = []migrate.Migration{
+var migrations = []migrate.Migration{
 	{
 		ID: 1,
 		Up: migrate.Queries([]string{

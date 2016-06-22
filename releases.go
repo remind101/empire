@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,8 +10,6 @@ import (
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
-
-var ErrNoReleases = errors.New("no releases")
 
 // Release is a combination of a Config and a Slug, which form a deployable
 // release.

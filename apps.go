@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -17,20 +16,13 @@ const (
 	ExposePublic  = "public"
 )
 
-var (
-	// ErrInvalidName is used to indicate that the app name is not valid.
-	ErrInvalidName = &ValidationError{
-		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
-	}
-)
-
 // NamePattern is a regex pattern that app names must conform to.
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
-// AppNameFromRepo generates a name from a Repo
+// appNameFromRepo generates a name from a Repo
 //
 //	remind101/r101-api => r101-api
-func AppNameFromRepo(repo string) string {
+func appNameFromRepo(repo string) string {
 	p := strings.Split(repo, "/")
 	return p[len(p)-1]
 }
@@ -102,13 +94,6 @@ func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
 	}
 
 	return scope.Scope(db)
-}
-
-// AppID returns a scope to find an app by id.
-func AppID(id string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", id)
-	}
 }
 
 type appsService struct {
@@ -195,7 +180,7 @@ func appsEnsureRepo(db *gorm.DB, app *App, repo string) error {
 // appsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
 func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
-	n := AppNameFromRepo(repo)
+	n := appNameFromRepo(repo)
 	a, err := appsFind(db, AppsQuery{Name: &n})
 	if err != nil && err != gorm.RecordNotFound {
 		return a, err

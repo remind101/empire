@@ -1,20 +1,12 @@
 package empire
 
 import (
-	"errors"
-
 	"golang.org/x/net/context"
 
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/pkg/timex"
-)
-
-var (
-	ErrDomainInUse        = errors.New("Domain currently in use by another app.")
-	ErrDomainAlreadyAdded = errors.New("Domain already added to this app.")
-	ErrDomainNotFound     = errors.New("Domain could not be found.")
 )
 
 type Domain struct {

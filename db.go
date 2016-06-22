@@ -65,7 +65,7 @@ func OpenDB(uri string) (*DB, error) {
 
 // MigrateUp migrates the database to the latest version of the schema.
 func (db *DB) MigrateUp() error {
-	return db.migrator.Exec(migrate.Up, Migrations...)
+	return db.migrator.Exec(migrate.Up, migrations...)
 }
 
 // Reset resets the database to a pristine state.

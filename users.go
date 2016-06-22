@@ -1,9 +1,5 @@
 package empire
 
-import "errors"
-
-var ErrUserName = errors.New("Name is required")
-
 // User represents a user of Empire.
 type User struct {
 	Name        string `json:"name"`
