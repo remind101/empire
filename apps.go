@@ -64,7 +64,7 @@ func (a *App) BeforeCreate() error {
 	return a.IsValid()
 }
 
-// AppsQuery is a Scope implementation for common things to filter releases
+// AppsQuery is a scope implementation for common things to filter releases
 // by.
 type AppsQuery struct {
 	// If provided, an App ID to find.
@@ -77,23 +77,23 @@ type AppsQuery struct {
 	Repo *string
 }
 
-// Scope implements the Scope interface.
-func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q AppsQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if q.ID != nil {
-		scope = append(scope, ID(*q.ID))
+		scope = append(scope, idEquals(*q.ID))
 	}
 
 	if q.Name != nil {
-		scope = append(scope, FieldEquals("name", *q.Name))
+		scope = append(scope, fieldEquals("name", *q.Name))
 	}
 
 	if q.Repo != nil {
-		scope = append(scope, FieldEquals("repo", *q.Repo))
+		scope = append(scope, fieldEquals("repo", *q.Repo))
 	}
 
-	return scope.Scope(db)
+	return scope.scope(db)
 }
 
 type appsService struct {
@@ -200,16 +200,16 @@ func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
 }
 
 // appsFind finds a single app given the scope.
-func appsFind(db *gorm.DB, scope Scope) (*App, error) {
+func appsFind(db *gorm.DB, scope scope) (*App, error) {
 	var app App
 	return &app, first(db, scope, &app)
 }
 
 // apps finds all apps matching the scope.
-func apps(db *gorm.DB, scope Scope) ([]*App, error) {
+func apps(db *gorm.DB, scope scope) ([]*App, error) {
 	var apps []*App
 	// Default to ordering by name.
-	scope = ComposedScope{Order("name"), scope}
+	scope = composedScope{order("name"), scope}
 	return apps, find(db, scope, &apps)
 }
 

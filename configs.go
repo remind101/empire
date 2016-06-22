@@ -77,7 +77,7 @@ func (v Vars) Value() (driver.Value, error) {
 	return h.Value()
 }
 
-// ConfigsQuery is a Scope implementation for common things to filter releases
+// ConfigsQuery is a scope implementation for common things to filter releases
 // by.
 type ConfigsQuery struct {
 	// If provided, returns finds the config with the given id.
@@ -87,25 +87,25 @@ type ConfigsQuery struct {
 	App *App
 }
 
-// Scope implements the Scope interface.
-func (q ConfigsQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q ConfigsQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if q.ID != nil {
-		scope = append(scope, ID(*q.ID))
+		scope = append(scope, idEquals(*q.ID))
 	}
 
 	if q.App != nil {
-		scope = append(scope, ForApp(q.App))
+		scope = append(scope, forApp(q.App))
 	}
 
-	return scope.Scope(db)
+	return scope.scope(db)
 }
 
 // configsFind returns the first matching config.
-func configsFind(db *gorm.DB, scope Scope) (*Config, error) {
+func configsFind(db *gorm.DB, scope scope) (*Config, error) {
 	var config Config
-	scope = ComposedScope{Order("created_at desc"), scope}
+	scope = composedScope{order("created_at desc"), scope}
 	return &config, first(db, scope, &config)
 }
 
