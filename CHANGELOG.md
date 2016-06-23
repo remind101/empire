@@ -7,6 +7,7 @@
 **Improvements**
 
 * The Custom::ECSService custom resource now waits for newly created ECS services to stabilize [#878](https://github.com/remind101/empire/pull/878)
+* The CloudFormation backend now uses the Custom::ECSService resource instead of AWS::ECS::Service, by default [#877](https://github.com/remind101/empire/pull/877)
 
 **Bugs**
 

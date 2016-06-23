@@ -27,7 +27,7 @@
                 [
                   "web",
                   {
-                    "Ref": "web"
+                    "Ref": "webService"
                   }
                 ]
               ]
@@ -38,7 +38,7 @@
                 [
                   "api",
                   {
-                    "Ref": "api"
+                    "Ref": "apiService"
                   }
                 ]
               ]
@@ -81,28 +81,6 @@
         "Type": "CNAME"
       },
       "Type": "AWS::Route53::RecordSet"
-    },
-    "api": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "apiScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "api",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "apiLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "TaskDefinition": {
-          "Ref": "apiTaskDefinition"
-        }
-      },
-      "Type": "AWS::ECS::Service"
     },
     "api8080InstancePort": {
       "Properties": {
@@ -172,6 +150,30 @@
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
+    "apiService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "apiScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "api",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "apiLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-api",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "apiTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
     "apiTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
@@ -212,28 +214,6 @@
         "Volumes": []
       },
       "Type": "AWS::ECS::TaskDefinition"
-    },
-    "web": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "webScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "web",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "webLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "TaskDefinition": {
-          "Ref": "webTaskDefinition"
-        }
-      },
-      "Type": "AWS::ECS::Service"
     },
     "web8080InstancePort": {
       "Properties": {
@@ -290,6 +270,30 @@
         ]
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
     },
     "webTaskDefinition": {
       "Properties": {
