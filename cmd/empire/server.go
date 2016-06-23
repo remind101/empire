@@ -45,6 +45,8 @@ func runServer(c *cli.Context) {
 		}
 
 		log.Fatal(err)
+	} else {
+		log.Println("Health checks passed")
 	}
 
 	if c.String(FlagCustomResourcesQueue) != "" {
