@@ -255,7 +255,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		})
 	}
 
-	done := make(chan error)
+	done := make(chan error, 1)
 	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
