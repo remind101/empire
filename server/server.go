@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/remind101/empire"
@@ -64,7 +65,7 @@ func githubWebhook(r *http.Request) bool {
 // HealthHandler is an http.Handler that returns the health of empire.
 type HealthHandler struct {
 	// A function that returns true if empire is healthy.
-	IsHealthy func() bool
+	IsHealthy func() error
 }
 
 // NewHealthHandler returns a new HealthHandler using the IsHealthy method from
@@ -76,13 +77,14 @@ func NewHealthHandler(e *empire.Empire) *HealthHandler {
 }
 
 func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWriter, r *http.Request) error {
-	var status = http.StatusOK
-
-	if !h.IsHealthy() {
-		status = http.StatusServiceUnavailable
+	err := h.IsHealthy()
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		return nil
 	}
 
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusServiceUnavailable)
+	io.WriteString(w, err.Error())
 
 	return nil
 }

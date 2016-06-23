@@ -27,3 +27,7 @@ func TestMigrations(t *testing.T) {
 	err = db.migrator.Exec(migrate.Up, Migrations...)
 	assert.NoError(t, err)
 }
+
+func TestLatestSchema(t *testing.T) {
+	assert.Equal(t, 17, latestSchema())
+}
