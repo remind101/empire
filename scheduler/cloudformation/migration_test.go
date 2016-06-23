@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/stretchr/testify/assert"
@@ -104,7 +105,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 	// Step1: Create the CloudFormation stack without making any DNS
 	// changes.
 	c.On("SubmitWithOptions", app, SubmitOptions{
-		NoDNS: true,
+		NoDNS: aws.Bool(true),
 	}).Return(nil)
 
 	err = s.Submit(context.Background(), app)
@@ -117,7 +118,9 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 	// remove the existing ECS resources.
 	app.Env[MigrationEnvVar] = "step2"
 
-	c.On("Submit", app).Return(nil)
+	c.On("SubmitWithOptions", app, SubmitOptions{
+		NoDNS: aws.Bool(false),
+	}).Return(nil)
 	e.On("RemoveWithOptions", app.ID, ecs.RemoveOptions{
 		NoDNS: true,
 	}).Return(nil)
@@ -172,7 +175,7 @@ func TestMigrationScheduler_Migrate_Rollback(t *testing.T) {
 	}
 
 	c.On("SubmitWithOptions", app, SubmitOptions{
-		NoDNS: true,
+		NoDNS: aws.Bool(true),
 	}).Return(nil).Twice()
 
 	err = s.Submit(context.Background(), app)

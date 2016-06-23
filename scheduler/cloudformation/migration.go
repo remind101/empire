@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
 )
@@ -129,7 +130,7 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 		// Submit to cloudformation and wait for it to complete successfully.
 		// Don't make any DNS changes.
 		if err := s.cloudformation.SubmitWithOptions(ctx, app, SubmitOptions{
-			NoDNS: true,
+			NoDNS: aws.Bool(true),
 		}); err != nil {
 			return fmt.Errorf("error creating CloudFormation stack: %v", err)
 		}
@@ -148,7 +149,9 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 
 		// The user may have already manually enabled the DNS change,
 		// but let's make sure.
-		if err := s.cloudformation.Submit(ctx, app); err != nil {
+		if err := s.cloudformation.SubmitWithOptions(ctx, app, SubmitOptions{
+			NoDNS: aws.Bool(false),
+		}); err != nil {
 			return fmt.Errorf("error updating CloudFormation stack: %v", err)
 		}
 
