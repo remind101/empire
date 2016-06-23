@@ -123,7 +123,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error creating scheduler: %v", err)
+		return nil, fmt.Errorf("failed to initialize %s scheduler: %v", c.String(FlagScheduler), err)
 	}
 
 	return &scheduler.AttachedRunner{
