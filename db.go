@@ -10,6 +10,18 @@ import (
 	"github.com/remind101/migrate"
 )
 
+// IncompatibleSchemaError is an error that gets returned from
+// CheckSchemaVersion.
+type IncompatibleSchemaError struct {
+	SchemaVersion         int
+	ExpectedSchemaVersion int
+}
+
+// Error implements the error interface.
+func (e *IncompatibleSchemaError) Error() string {
+	return fmt.Sprintf("expected database schema to be at version %d, but was %d", e.ExpectedSchemaVersion, e.SchemaVersion)
+}
+
 // DB wraps a gorm.DB and provides the datastore layer for Empire.
 type DB struct {
 	*gorm.DB
@@ -74,8 +86,43 @@ func (db *DB) Reset() error {
 }
 
 // IsHealthy checks that we can connect to the database.
-func (db *DB) IsHealthy() bool {
-	return db.DB.DB().Ping() == nil
+func (db *DB) IsHealthy() error {
+	if err := db.DB.DB().Ping(); err != nil {
+		return err
+	}
+
+	if err := db.CheckSchemaVersion(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CheckSchemaVersion verifies that the actual database schema matches the
+// version that this version of Empire expects.
+func (db *DB) CheckSchemaVersion() error {
+	schemaVersion, err := db.SchemaVersion()
+	if err != nil {
+		return fmt.Errorf("error fetching schema version: %v", err)
+	}
+
+	expectedSchemaVersion := latestSchema()
+	if schemaVersion != expectedSchemaVersion {
+		return &IncompatibleSchemaError{
+			SchemaVersion:         schemaVersion,
+			ExpectedSchemaVersion: expectedSchemaVersion,
+		}
+	}
+
+	return nil
+}
+
+// SchemaVersion returns the current schema version.
+func (db *DB) SchemaVersion() (int, error) {
+	sql := `select version from schema_migrations order by version desc limit 1`
+	var schemaVersion int
+	err := db.DB.DB().QueryRow(sql).Scan(&schemaVersion)
+	return schemaVersion, err
 }
 
 // Debug puts the db in debug mode, which logs all queries.

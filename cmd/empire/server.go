@@ -37,6 +37,16 @@ func runServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 
+	// Do a preliminary health check to make sure everything is good at
+	// boot.
+	if err := e.IsHealthy(); err != nil {
+		if err, ok := err.(*empire.IncompatibleSchemaError); ok {
+			log.Fatal(fmt.Errorf("%v. You can resolve this error by running the migrations with `empire migrate` or with the `--automigrate` flag", err))
+		}
+
+		log.Fatal(err)
+	}
+
 	if c.String(FlagCustomResourcesQueue) != "" {
 		p, err := newCloudFormationCustomResourceProvisioner(db, c)
 		if err != nil {

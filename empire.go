@@ -689,7 +689,7 @@ func (e *Empire) Reset() error {
 
 // IsHealthy returns true if Empire is healthy, which means it can connect to
 // the services it depends on.
-func (e *Empire) IsHealthy() bool {
+func (e *Empire) IsHealthy() error {
 	return e.DB.IsHealthy()
 }
 
