@@ -37,6 +37,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -75,8 +76,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	done := make(chan error)
-	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
+	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
@@ -85,12 +85,8 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 				Instances: 1,
 			},
 		},
-	}, SubmitOptions{
-		Done: done,
 	})
 	assert.NoError(t, err)
-
-	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -105,6 +101,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -142,15 +139,64 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	done := make(chan error)
-	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
+	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
-	}, SubmitOptions{
-		Done: done,
 	})
 	assert.NoError(t, err)
-	assert.NoError(t, <-done)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Submit_UpdateError(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		wait:           true,
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, errors.New("stack update failed"))
+
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	})
+	assert.EqualError(t, err, `error updating stack: stack update failed`)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -165,6 +211,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -211,18 +258,14 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	done := make(chan error)
-	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
+	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 		Processes: []*scheduler.Process{
 			{Type: "web", Instances: 1},
 		},
-	}, SubmitOptions{
-		Done: done,
 	})
 	assert.NoError(t, err)
-	assert.NoError(t, <-done)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -237,6 +280,7 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -276,6 +320,7 @@ func TestScheduler_Remove(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -319,6 +364,7 @@ func TestScheduler_Remove_NoCFStack(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -347,6 +393,7 @@ func TestScheduler_Remove_NoDBStack_NoCFStack(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -370,6 +417,7 @@ func TestScheduler_Instances(t *testing.T) {
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
 		Cluster:        "cluster",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		ecs:            e,
@@ -505,6 +553,7 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
 		Cluster:        "cluster",
+		wait:           true,
 		cloudformation: c,
 		s3:             x,
 		ecs:            e,
