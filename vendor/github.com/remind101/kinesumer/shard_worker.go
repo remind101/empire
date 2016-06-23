@@ -125,7 +125,7 @@ func (s *ShardWorker) RunWorker() {
 		sequence = aws.StringValue(s.shard.SequenceNumberRange.StartingSequenceNumber)
 
 		s.errHandler(NewError(EWarn, "Using "+s.defaultIteratorType, nil))
-		it = s.TryGetShardIterator(s.defaultIteratorType, "", time.Time{})
+		it = s.TryGetShardIterator(s.defaultIteratorType, "", s.shardIteratorTimestamp)
 	} else {
 		it = s.TryGetShardIterator("AFTER_SEQUENCE_NUMBER", sequence, time.Time{})
 	}

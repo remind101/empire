@@ -622,52 +622,52 @@
 			"revisionTime": "2016-02-04T11:21:13+07:00"
 		},
 		{
-			"checksumSHA1": "4b0x2WtLZCJfDwkoVTKoXg0xIdo=",
+			"checksumSHA1": "ux+3hFzyoS3Heeh6WVwAazjT7gY=",
 			"path": "github.com/remind101/kinesumer",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "FdiKHAnU1nO2OCOTOcaOAlDqVf0=",
 			"path": "github.com/remind101/kinesumer/checkpointers/empty",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "+7yfgn4ueBsxKJiTVWZU1UIJ0sw=",
 			"path": "github.com/remind101/kinesumer/checkpointers/redis",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "Uh1NAlguNxsRhoHneHEFXI9tkFc=",
 			"path": "github.com/remind101/kinesumer/interface",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "6C4v6jJpRrm4hgywaiY07MZMuws=",
 			"path": "github.com/remind101/kinesumer/mocks",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "BmPdsDCUIQnATsnthfkHx6+bC/0=",
 			"path": "github.com/remind101/kinesumer/provisioners/empty",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "j4QxZSAwyVsZX9d6x/b/As3u950=",
 			"path": "github.com/remind101/kinesumer/provisioners/redis",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"checksumSHA1": "E6aJdo/dYEjJUxjnJXqPHMhKPws=",
 			"path": "github.com/remind101/kinesumer/redispool",
-			"revision": "b3b4a1db93720b72b32ac3fde5e9bf95f90582ed",
-			"revisionTime": "2016-05-16T21:37:33Z"
+			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
+			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
 			"path": "github.com/remind101/migrate",
