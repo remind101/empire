@@ -208,30 +208,9 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return err
 	}
 
-	buf := new(bytes.Buffer)
-	if err := s.Template.Execute(buf, app); err != nil {
+	t, err := s.createTemplate(ctx, app)
+	if err != nil {
 		return err
-	}
-
-	key := fmt.Sprintf("%s/%s/%x", app.Name, app.ID, sha1.Sum(buf.Bytes()))
-
-	_, err = s.s3.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(s.Bucket),
-		Key:         aws.String(fmt.Sprintf("/%s", key)),
-		Body:        bytes.NewReader(buf.Bytes()),
-		ContentType: aws.String("application/json"),
-	})
-	if err != nil {
-		return fmt.Errorf("error uploading stack template to s3: %v", err)
-	}
-
-	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
-
-	_, err = s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
-		TemplateURL: aws.String(url),
-	})
-	if err != nil {
-		return &templateValidationError{templateURL: url, err: err, templateBody: buf}
 	}
 
 	tags := append(s.Tags,
@@ -267,19 +246,19 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		StackName: aws.String(stackName),
 	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
-		if err := s.createStack(&cloudformation.CreateStackInput{
-			StackName:   aws.String(stackName),
-			TemplateURL: aws.String(url),
-			Tags:        tags,
-			Parameters:  parameters,
+		if err := s.createStack(&createStackInput{
+			StackName:  aws.String(stackName),
+			Template:   t,
+			Tags:       tags,
+			Parameters: parameters,
 		}, done); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
 	} else if err == nil {
-		if err := s.updateStack(&cloudformation.UpdateStackInput{
-			StackName:   aws.String(stackName),
-			TemplateURL: aws.String(url),
-			Parameters:  parameters,
+		if err := s.updateStack(&updateStackInput{
+			StackName:  aws.String(stackName),
+			Template:   t,
+			Parameters: parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
 		}, done); err != nil {
@@ -298,15 +277,67 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	return nil
 }
 
+// createTemplate takes a scheduler.App, and returns a validated cloudformation
+// template.
+func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App) (*cloudformationTemplate, error) {
+	buf := new(bytes.Buffer)
+	if err := s.Template.Execute(buf, app); err != nil {
+		return nil, err
+	}
+
+	key := fmt.Sprintf("%s/%s/%x", app.Name, app.ID, sha1.Sum(buf.Bytes()))
+	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
+
+	if _, err := s.s3.PutObject(&s3.PutObjectInput{
+		Bucket:      aws.String(s.Bucket),
+		Key:         aws.String(fmt.Sprintf("/%s", key)),
+		Body:        bytes.NewReader(buf.Bytes()),
+		ContentType: aws.String("application/json"),
+	}); err != nil {
+		return nil, fmt.Errorf("error uploading stack template to s3: %v", err)
+	}
+
+	resp, err := s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String(url),
+	})
+	if err != nil {
+		return nil, &templateValidationError{templateURL: url, err: err, templateBody: buf}
+	}
+
+	return &cloudformationTemplate{
+		URL:        aws.String(url),
+		Parameters: resp.Parameters,
+	}, nil
+}
+
+// cloudformationTemplate represents a validated CloudFormation template.
+type cloudformationTemplate struct {
+	URL        *string
+	Parameters []*cloudformation.TemplateParameter
+}
+
+// createStackInput are options provided to createStack.
+type createStackInput struct {
+	StackName  *string
+	Parameters []*cloudformation.Parameter
+	Tags       []*cloudformation.Tag
+	Template   *cloudformationTemplate
+}
+
 // createStack creates a new CloudFormation stack with the given input. This
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
-func (s *Scheduler) createStack(input *cloudformation.CreateStackInput, done chan error) error {
+func (s *Scheduler) createStack(input *createStackInput, done chan error) error {
 	waiter := s.cloudformation.WaitUntilStackCreateComplete
 
 	submitted := make(chan error)
 	fn := func() error {
-		_, err := s.cloudformation.CreateStack(input)
+		_, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+			StackName:   input.StackName,
+			TemplateURL: input.Template.URL,
+			Tags:        input.Tags,
+			Parameters:  input.Parameters,
+		})
 		submitted <- err
 		return err
 	}
@@ -317,11 +348,18 @@ func (s *Scheduler) createStack(input *cloudformation.CreateStackInput, done cha
 	return <-submitted
 }
 
+// updateStackInput are options provided to update a stack.
+type updateStackInput struct {
+	StackName  *string
+	Parameters []*cloudformation.Parameter
+	Template   *cloudformationTemplate
+}
+
 // updateStack updates an existing CloudFormation stack with the given input.
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, done chan error) error {
+func (s *Scheduler) updateStack(input *updateStackInput, done chan error) error {
 	waiter := s.cloudformation.WaitUntilStackUpdateComplete
 
 	locked := make(chan struct{})
@@ -418,41 +456,23 @@ func (s *Scheduler) waitUntilStackOperationComplete(lock *pglock.AdvisoryLock, w
 }
 
 // executeStackUpdate performs a stack update.
-func (s *Scheduler) executeStackUpdate(input *cloudformation.UpdateStackInput) error {
+func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 	stack, err := s.stack(input.StackName)
 	if err != nil {
 		return err
 	}
 
-	// If we're updating a stack, without changing the template, merge in
-	// existing parameters with their previous value.
-	if input.UsePreviousTemplate != nil && *input.UsePreviousTemplate == true {
-		// The parameters that the stack defines. We need to make sure that we
-		// provide all parameters in the update (lame).
-		definedParams := make(map[string]bool)
-		for _, p := range stack.Parameters {
-			definedParams[*p.ParameterKey] = true
-		}
-
-		// The parameters that are provided in this update.
-		providedParams := make(map[string]bool)
-		for _, p := range input.Parameters {
-			providedParams[*p.ParameterKey] = true
-		}
-
-		// Fill in any parameters that weren't provided with their default
-		// value.
-		for k := range definedParams {
-			if !providedParams[k] {
-				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
-					ParameterKey:     aws.String(k),
-					UsePreviousValue: aws.Bool(true),
-				})
-			}
-		}
+	i := &cloudformation.UpdateStackInput{
+		StackName:  input.StackName,
+		Parameters: updateParameters(input.Parameters, stack, input.Template),
+	}
+	if input.Template != nil {
+		i.TemplateURL = input.Template.URL
+	} else {
+		i.UsePreviousTemplate = aws.Bool(true)
 	}
 
-	_, err = s.cloudformation.UpdateStack(input)
+	_, err = s.cloudformation.UpdateStack(i)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
@@ -819,6 +839,58 @@ func chunkStrings(s []*string, size int) [][]*string {
 		s = s[end:]
 	}
 	return chunks
+}
+
+// updateParameters returns the parameters that should be provided in an
+// UpdateStack operation.
+func updateParameters(provided []*cloudformation.Parameter, stack *cloudformation.Stack, template *cloudformationTemplate) []*cloudformation.Parameter {
+	parameters := provided[:]
+
+	// This tracks the names of the parameters that have pre-existing values
+	// on the stack.
+	existingParams := make(map[string]bool)
+	for _, p := range stack.Parameters {
+		existingParams[*p.ParameterKey] = true
+	}
+
+	// These are the parameters that can be set for the stack. If a template
+	// is provided, then these are the parameters defined in the template.
+	// If no template is provided, then these are the parameters that the
+	// stack provides.
+	settableParams := make(map[string]bool)
+	if template != nil {
+		for _, p := range template.Parameters {
+			settableParams[*p.ParameterKey] = true
+		}
+	} else {
+		settableParams = existingParams
+	}
+
+	// The parameters that are provided in this update.
+	providedParams := make(map[string]bool)
+	for _, p := range parameters {
+		providedParams[*p.ParameterKey] = true
+	}
+
+	// Fill in any parameters that weren't provided with their previous
+	// value, if available
+	for k := range settableParams {
+		notProvided := !providedParams[k]
+		hasExistingValue := existingParams[k]
+
+		// If the parameter hasn't been provided with an explicit value,
+		// and the stack has this parameter set, we'll use the previous
+		// value. Not doing this would result in the parameters
+		// `Default` getting used.
+		if notProvided && hasExistingValue {
+			parameters = append(parameters, &cloudformation.Parameter{
+				ParameterKey:     aws.String(k),
+				UsePreviousValue: aws.Bool(true),
+			})
+		}
+	}
+
+	return parameters
 }
 
 // stackLackKey returns the key to use when obtaining an advisory lock for a

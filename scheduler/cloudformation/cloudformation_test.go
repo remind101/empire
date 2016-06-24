@@ -359,7 +359,11 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 
 	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+	}).Return(&cloudformation.ValidateTemplateOutput{
+		Parameters: []*cloudformation.TemplateParameter{
+			{ParameterKey: aws.String("webScale")},
+		},
+	}, nil)
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
@@ -382,6 +386,81 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+		Processes: []*scheduler.Process{
+			{Type: "web", Instances: 1},
+		},
+	})
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		wait:           true,
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{
+		Parameters: []*cloudformation.TemplateParameter{
+			{ParameterKey: aws.String("DNS")},
+			{ParameterKey: aws.String("RestartKey")},
+			{ParameterKey: aws.String("webScale")},
+		},
+	}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("false")},
+					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("DNS"), UsePreviousValue: aws.Bool(true)},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
@@ -789,6 +868,84 @@ func TestChunkStrings(t *testing.T) {
 
 	for _, tt := range tests {
 		out := chunkStrings(tt.in, 2)
+		assert.Equal(t, tt.out, out)
+	}
+}
+
+func TestUpdateParameters(t *testing.T) {
+	tests := []struct {
+		parameters []*cloudformation.Parameter
+		stack      *cloudformation.Stack
+		template   *cloudformationTemplate
+
+		out []*cloudformation.Parameter
+	}{
+		// Simple scenario, overwriting a parameter value with a new
+		// value.
+		{
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+			&cloudformation.Stack{
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("a"), ParameterValue: aws.String("true")},
+					{ParameterKey: aws.String("b"), ParameterValue: aws.String("false")},
+				},
+			},
+			nil,
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+				{ParameterKey: aws.String("b"), UsePreviousValue: aws.Bool(true)},
+			},
+		},
+
+		// Updating with a new template, that doesn't provide one of the
+		// values.
+		{
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+			&cloudformation.Stack{
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("a"), ParameterValue: aws.String("true")},
+					{ParameterKey: aws.String("b"), ParameterValue: aws.String("false")},
+				},
+			},
+			&cloudformationTemplate{
+				Parameters: []*cloudformation.TemplateParameter{
+					{ParameterKey: aws.String("a")},
+				},
+			},
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+		},
+
+		// Updating a stack that has a new parameter, but setting it to
+		// the default.
+		{
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+			&cloudformation.Stack{
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("a"), ParameterValue: aws.String("true")},
+				},
+			},
+			&cloudformationTemplate{
+				Parameters: []*cloudformation.TemplateParameter{
+					{ParameterKey: aws.String("a")},
+					{ParameterKey: aws.String("b")},
+				},
+			},
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		out := updateParameters(tt.parameters, tt.stack, tt.template)
 		assert.Equal(t, tt.out, out)
 	}
 }
