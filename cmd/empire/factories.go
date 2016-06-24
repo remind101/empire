@@ -86,18 +86,17 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	e := empire.New(db, empire.Options{
-		Secret: c.String(FlagSecret),
-	})
+	e := empire.New(db)
 	e.Scheduler = scheduler
-	if logs != nil {
-		e.LogsStreamer = logs
-	}
+	e.Secret = []byte(c.String(FlagSecret))
 	e.EventStream = empire.AsyncEvents(streams)
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
+	if logs != nil {
+		e.LogsStreamer = logs
+	}
 
 	return e, nil
 }

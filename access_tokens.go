@@ -8,8 +8,11 @@ import (
 
 // AccessToken represents a token that allow access to the api.
 type AccessToken struct {
+	// The encoded token.
 	Token string
-	User  *User
+
+	// The user that this AccessToken belongs to.
+	User *User
 }
 
 // IsValid returns nil if the AccessToken is valid.
@@ -22,13 +25,13 @@ func (t *AccessToken) IsValid() error {
 }
 
 type accessTokensService struct {
-	Secret []byte // Secret used to sign jwt tokens.
+	*Empire
 }
 
 // AccessTokensCreate "creates" the token by jwt signing it and setting the
 // Token value.
 func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessToken, error) {
-	signed, err := SignToken(s.Secret, token)
+	signed, err := signToken(s.Secret, token)
 	if err != nil {
 		return token, err
 	}
@@ -39,7 +42,7 @@ func (s *accessTokensService) AccessTokensCreate(token *AccessToken) (*AccessTok
 }
 
 func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, error) {
-	at, err := ParseToken(s.Secret, token)
+	at, err := parseToken(s.Secret, token)
 	if err != nil {
 		switch err.(type) {
 		case *jwt.ValidationError:
@@ -56,15 +59,15 @@ func (s *accessTokensService) AccessTokensFind(token string) (*AccessToken, erro
 	return at, at.IsValid()
 }
 
-// SignToken jwt signs the token and adds the signature to the Token field.
-func SignToken(secret []byte, token *AccessToken) (string, error) {
+// signToken jwt signs the token and adds the signature to the Token field.
+func signToken(secret []byte, token *AccessToken) (string, error) {
 	t := accessTokenToJwt(token)
 	return t.SignedString(secret)
 }
 
-// ParseToken parses a string token, verifies it, and returns an AccessToken
+// parseToken parses a string token, verifies it, and returns an AccessToken
 // instance.
-func ParseToken(secret []byte, token string) (*AccessToken, error) {
+func parseToken(secret []byte, token string) (*AccessToken, error) {
 	t, err := jwtParse(secret, token)
 
 	if err != nil {

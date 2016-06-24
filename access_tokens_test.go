@@ -8,7 +8,7 @@ import (
 var testSecret = []byte("secret")
 
 func TestAccessTokensFind(t *testing.T) {
-	s := &accessTokensService{Secret: testSecret}
+	s := &accessTokensService{Empire: &Empire{Secret: testSecret}}
 
 	at, err := s.AccessTokensFind("")
 	if err != nil {

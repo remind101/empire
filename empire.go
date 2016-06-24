@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -14,26 +15,26 @@ import (
 	"golang.org/x/net/context"
 )
 
-var (
-	// DefaultOptions is a default Options instance that can be passed when
-	// intializing a new Empire.
-	DefaultOptions = Options{}
-)
-
 const (
-	// WebPort is the default PORT to set on web processes.
-	WebPort = 8080
-
-	// WebProcessType is the process type we assume are web server processes.
-	WebProcessType = "web"
+	// webProcessType is the process type we assume are web server processes.
+	webProcessType = "web"
 )
 
-// Options is provided to New to configure the Empire services.
-type Options struct {
-	Secret string
-}
+// Various errors that may be returned.
+var (
+	ErrDomainInUse        = errors.New("Domain currently in use by another app.")
+	ErrDomainAlreadyAdded = errors.New("Domain already added to this app.")
+	ErrDomainNotFound     = errors.New("Domain could not be found.")
+	ErrUserName           = errors.New("Name is required")
+	ErrNoReleases         = errors.New("no releases")
+	// ErrInvalidName is used to indicate that the app name is not valid.
+	ErrInvalidName = &ValidationError{
+		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
+	}
+)
 
-// Empire is a context object that contains a collection of services.
+// Empire provides the core public API for Empire. Refer to the package
+// documentation for details.
 type Empire struct {
 	DB *DB
 	db *gorm.DB
@@ -48,6 +49,9 @@ type Empire struct {
 	runner       *runnerService
 	slugs        *slugsService
 	certs        *certsService
+
+	// Secret is used to sign JWT access tokens.
+	Secret []byte
 
 	// Scheduler is the backend scheduler used to run applications.
 	Scheduler scheduler.Scheduler
@@ -73,7 +77,7 @@ type Empire struct {
 }
 
 // New returns a new Empire instance.
-func New(db *DB, options Options) *Empire {
+func New(db *DB) *Empire {
 	e := &Empire{
 		LogsStreamer: logsDisabled,
 		EventStream:  NullEventStream,
@@ -82,7 +86,7 @@ func New(db *DB, options Options) *Empire {
 		db: db.DB,
 	}
 
-	e.accessTokens = &accessTokensService{Secret: []byte(options.Secret)}
+	e.accessTokens = &accessTokensService{Empire: e}
 	e.apps = &appsService{Empire: e}
 	e.configs = &configsService{Empire: e}
 	e.deployer = &deployerService{Empire: e}
@@ -516,9 +520,9 @@ func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, err
 	return r, e.PublishEvent(opts.Event())
 }
 
-// DeploymentsCreateOpts represents options that can be passed when deploying to
+// DeployOpts represents options that can be passed when deploying to
 // an application.
-type DeploymentsCreateOpts struct {
+type DeployOpts struct {
 	// User the user that is triggering the deployment.
 	User *User
 
@@ -539,7 +543,7 @@ type DeploymentsCreateOpts struct {
 	Message string
 }
 
-func (opts DeploymentsCreateOpts) Event() DeployEvent {
+func (opts DeployOpts) Event() DeployEvent {
 	e := DeployEvent{
 		User:    opts.User.Name,
 		Image:   opts.Image.String(),
@@ -553,12 +557,12 @@ func (opts DeploymentsCreateOpts) Event() DeployEvent {
 	return e
 }
 
-func (opts DeploymentsCreateOpts) Validate(e *Empire) error {
+func (opts DeployOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
 }
 
 // Deploy deploys an image and streams the output to w.
-func (e *Empire) Deploy(ctx context.Context, opts DeploymentsCreateOpts) (*Release, error) {
+func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -702,6 +706,8 @@ func (e *ValidationError) Error() string {
 	return e.Err.Error()
 }
 
+// MessageRequiredError is an error implementation, which is returned by Empire
+// when a commit message is required for the operation.
 type MessageRequiredError struct{}
 
 func (e *MessageRequiredError) Error() string {
@@ -721,9 +727,9 @@ func newJSONMessageError(err error) jsonmessage.JSONMessage {
 // docker client, then attempt to extract the the Procfile, or fallback to the
 // CMD directive in the Dockerfile.
 func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
-	e := MultiExtractor(
-		NewFileExtractor(c.Client),
-		NewCMDExtractor(c.Client),
+	e := multiExtractor(
+		newFileExtractor(c.Client),
+		newCMDExtractor(c.Client),
 	)
 
 	return ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {

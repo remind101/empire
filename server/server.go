@@ -1,3 +1,6 @@
+// Package server provides an http.Handler implementation that includes the
+// Heroku Platform API compatibility layer, GitHub Deployments integration and a
+// simple health check.
 package server
 
 import (

@@ -1,20 +1,12 @@
 package empire
 
 import (
-	"errors"
-
 	"golang.org/x/net/context"
 
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/pkg/timex"
-)
-
-var (
-	ErrDomainInUse        = errors.New("Domain currently in use by another app.")
-	ErrDomainAlreadyAdded = errors.New("Domain already added to this app.")
-	ErrDomainNotFound     = errors.New("Domain could not be found.")
 )
 
 type Domain struct {
@@ -82,7 +74,7 @@ func (s *domainsService) DomainsDestroy(ctx context.Context, db *gorm.DB, domain
 	return nil
 }
 
-// DomainsQuery is a Scope implementation for common things to filter releases
+// DomainsQuery is a scope implementation for common things to filter releases
 // by.
 type DomainsQuery struct {
 	// If provided, finds domains matching the given hostname.
@@ -92,29 +84,29 @@ type DomainsQuery struct {
 	App *App
 }
 
-// Scope implements the Scope interface.
-func (q DomainsQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q DomainsQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if q.Hostname != nil {
-		scope = append(scope, FieldEquals("hostname", *q.Hostname))
+		scope = append(scope, fieldEquals("hostname", *q.Hostname))
 	}
 
 	if q.App != nil {
-		scope = append(scope, ForApp(q.App))
+		scope = append(scope, forApp(q.App))
 	}
 
-	return scope.Scope(db)
+	return scope.scope(db)
 }
 
 // domainsFind returns the first matching domain.
-func domainsFind(db *gorm.DB, scope Scope) (*Domain, error) {
+func domainsFind(db *gorm.DB, scope scope) (*Domain, error) {
 	var domain Domain
 	return &domain, first(db, scope, &domain)
 }
 
 // domains returns all domains matching the scope.
-func domains(db *gorm.DB, scope Scope) ([]*Domain, error) {
+func domains(db *gorm.DB, scope scope) ([]*Domain, error) {
 	var domains []*Domain
 	return domains, find(db, scope, &domains)
 }

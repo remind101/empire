@@ -1,3 +1,5 @@
+// Package procfile provides methods for parsing standard and extended
+// Procfiles.
 package procfile
 
 import (

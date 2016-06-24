@@ -16,12 +16,11 @@ var DefaultQuantities = map[string]int{
 	"web": 1,
 }
 
-// Command represents the actual shell command that gets executed for a given
-// ProcessType.
+// Command represents a command and it's arguments. For example:
 type Command []string
 
 // ParseCommand parses a string into a Command, taking quotes and other shell
-// words into account.
+// words into account. For example:
 func ParseCommand(command string) (Command, error) {
 	return shellwords.Parse(command)
 }
@@ -68,11 +67,20 @@ func (c Command) String() string {
 
 // Process holds configuration information about a Process.
 type Process struct {
-	Command  Command              `json:"Command,omitempty"`
-	Quantity int                  `json:"Quantity,omitempty"`
-	Memory   constraints.Memory   `json:"Memory,omitempty"`
+	// Command is the command to run.
+	Command Command `json:"Command,omitempty"`
+
+	// Quantity is the desired number of instances of this process.
+	Quantity int `json:"Quantity,omitempty"`
+
+	// The memory constraints, in bytes.
+	Memory constraints.Memory `json:"Memory,omitempty"`
+
+	// The amount of CPU share to give.
 	CPUShare constraints.CPUShare `json:"CPUShare,omitempty"`
-	Nproc    constraints.Nproc    `json:"Nproc,omitempty"`
+
+	// The allow number of unix processes within the container.
+	Nproc constraints.Nproc `json:"Nproc,omitempty"`
 }
 
 // Constraints returns a constraints.Constraints from this Process definition.

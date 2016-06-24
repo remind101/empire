@@ -45,7 +45,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		db.Debug()
 	}
 
-	e := empire.New(db, empire.DefaultOptions)
+	e := empire.New(db)
 	e.Scheduler = scheduler.NewFakeScheduler()
 	e.ProcfileExtractor = empire.ProcfileExtractorFunc(ExtractProcfile)
 	e.RunRecorder = empire.RecordTo(ioutil.Discard)

@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -12,27 +11,44 @@ import (
 	"golang.org/x/net/context"
 )
 
-var ErrNoReleases = errors.New("no releases")
-
 // Release is a combination of a Config and a Slug, which form a deployable
-// release.
+// release. Releases are generally considered immutable, the only operation that
+// changes a release is when altering the Quantity or Constraints inside the
+// Formation.
 type Release struct {
-	ID      string
+	// A unique uuid to identify this release.
+	ID string
+
+	// An auto incremented ID for this release, scoped to the application.
 	Version int
 
+	// The id of the application that this release relates to.
 	AppID string
-	App   *App
 
+	// The application that this release relates to.
+	App *App
+
+	// The id of the config that this release uses.
 	ConfigID string
-	Config   *Config
 
+	// The config that this release uses.
+	Config *Config
+
+	// The id of the slug that this release uses.
 	SlugID string
-	Slug   *Slug
 
+	// The Slug that this release uses.
+	Slug *Slug
+
+	// The process formation to use.
 	Formation Formation
 
+	// A description for the release. Usually contains the reason for why
+	// the release was created (e.g. deployment, config changes, etc).
 	Description string
-	CreatedAt   *time.Time
+
+	// The time that this release was created.
+	CreatedAt *time.Time
 }
 
 // BeforeCreate sets created_at before inserting.
@@ -42,7 +58,7 @@ func (r *Release) BeforeCreate() error {
 	return nil
 }
 
-// ReleasesQuery is a Scope implementation for common things to filter releases
+// ReleasesQuery is a scope implementation for common things to filter releases
 // by.
 type ReleasesQuery struct {
 	// If provided, an app to filter by.
@@ -55,21 +71,21 @@ type ReleasesQuery struct {
 	Range headerutil.Range
 }
 
-// Scope implements the Scope interface.
-func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q ReleasesQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if app := q.App; app != nil {
-		scope = append(scope, FieldEquals("app_id", app.ID))
+		scope = append(scope, fieldEquals("app_id", app.ID))
 	}
 
 	if version := q.Version; version != nil {
-		scope = append(scope, FieldEquals("version", *version))
+		scope = append(scope, fieldEquals("version", *version))
 	}
 
-	scope = append(scope, Range(q.Range.WithDefaults(q.DefaultRange())))
+	scope = append(scope, inRange(q.Range.WithDefaults(q.DefaultRange())))
 
-	return scope.Scope(db)
+	return scope.scope(db)
 }
 
 // DefaultRange returns the default headerutil.Range used if values aren't
@@ -158,13 +174,13 @@ func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App)
 }
 
 // These associations are always available on a Release.
-var releasesPreload = Preload("App", "Config", "Slug")
+var releasesPreload = preload("App", "Config", "Slug")
 
 // releasesFind returns the first matching release.
-func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
+func releasesFind(db *gorm.DB, scope scope) (*Release, error) {
 	var release Release
 
-	scope = ComposedScope{releasesPreload, scope}
+	scope = composedScope{releasesPreload, scope}
 	if err := first(db, scope, &release); err != nil {
 		return &release, err
 	}
@@ -173,9 +189,9 @@ func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
 }
 
 // releases returns all releases matching the scope.
-func releases(db *gorm.DB, scope Scope) ([]*Release, error) {
+func releases(db *gorm.DB, scope scope) ([]*Release, error) {
 	var releases []*Release
-	scope = ComposedScope{releasesPreload, scope}
+	scope = composedScope{releasesPreload, scope}
 	return releases, find(db, scope, &releases)
 }
 
@@ -317,12 +333,12 @@ func environment(vars Vars) map[string]string {
 
 func processExposure(app *App, process string) *scheduler.Exposure {
 	// For now, only the `web` process can be exposed.
-	if process != WebProcessType {
+	if process != webProcessType {
 		return nil
 	}
 
 	exposure := &scheduler.Exposure{
-		External: app.Exposure == ExposePublic,
+		External: app.Exposure == exposePublic,
 	}
 
 	switch app.Cert {

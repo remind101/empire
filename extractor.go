@@ -16,10 +16,9 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
-var (
-	// ProcfileName is the name of the Procfile file.
-	ProcfileName = "Procfile"
-)
+// Procfile is the name of the Procfile file that Empire will use to
+// determine the process formation.
+const Procfile = "Procfile"
 
 // ProcfileExtractor represents something that can extract a Procfile from an image.
 type ProcfileExtractor interface {
@@ -32,19 +31,19 @@ func (fn ProcfileExtractorFunc) Extract(ctx context.Context, image image.Image, 
 	return fn(ctx, image, w)
 }
 
-// CommandExtractor is an Extractor implementation that returns a Procfile based
+// cmdExtractor is an Extractor implementation that returns a Procfile based
 // on the CMD directive in the Dockerfile. It makes the assumption that the cmd
 // is a "web" process.
-type CMDExtractor struct {
+type cmdExtractor struct {
 	// Client is the docker client to use to pull the container image.
 	client *docker.Client
 }
 
-func NewCMDExtractor(c *docker.Client) *CMDExtractor {
-	return &CMDExtractor{client: c}
+func newCMDExtractor(c *docker.Client) *cmdExtractor {
+	return &cmdExtractor{client: c}
 }
 
-func (e *CMDExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) ([]byte, error) {
+func (e *cmdExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) ([]byte, error) {
 	i, err := e.client.InspectImage(img.String())
 	if err != nil {
 		return nil, err
@@ -57,9 +56,9 @@ func (e *CMDExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) 
 	})
 }
 
-// MultiExtractor is an Extractor implementation that tries multiple Extractors
+// multiExtractor is an Extractor implementation that tries multiple Extractors
 // in succession until one succeeds.
-func MultiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
+func multiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
 	return ProcfileExtractorFunc(func(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
 		for _, extractor := range extractors {
 			p, err := extractor.Extract(ctx, image, w)
@@ -70,7 +69,7 @@ func MultiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
 			}
 
 			// Try the next one
-			if _, ok := err.(*ProcfileError); ok {
+			if _, ok := err.(*procfileError); ok {
 				continue
 			}
 
@@ -78,25 +77,25 @@ func MultiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
 			return p, err
 		}
 
-		return nil, &ProcfileError{
+		return nil, &procfileError{
 			Err: errors.New("no suitable Procfile extractor found"),
 		}
 	})
 }
 
-// FileExtractor is an implementation of the Extractor interface that extracts
+// fileExtractor is an implementation of the Extractor interface that extracts
 // the Procfile from the images WORKDIR.
-type FileExtractor struct {
+type fileExtractor struct {
 	// Client is the docker client to use to pull the container image.
 	client *docker.Client
 }
 
-func NewFileExtractor(c *docker.Client) *FileExtractor {
-	return &FileExtractor{client: c}
+func newFileExtractor(c *docker.Client) *fileExtractor {
+	return &fileExtractor{client: c}
 }
 
 // Extract implements Extractor Extract.
-func (e *FileExtractor) Extract(_ context.Context, img image.Image, w io.Writer) ([]byte, error) {
+func (e *fileExtractor) Extract(_ context.Context, img image.Image, w io.Writer) ([]byte, error) {
 	c, err := e.createContainer(img)
 	if err != nil {
 		return nil, err
@@ -111,7 +110,7 @@ func (e *FileExtractor) Extract(_ context.Context, img image.Image, w io.Writer)
 
 	b, err := e.copyFile(c.ID, pfile)
 	if err != nil {
-		return nil, &ProcfileError{Err: err}
+		return nil, &procfileError{Err: err}
 	}
 
 	return b, nil
@@ -119,7 +118,7 @@ func (e *FileExtractor) Extract(_ context.Context, img image.Image, w io.Writer)
 
 // procfile returns the path to the Procfile. If the container has a WORKDIR
 // set, then this will return a path to the Procfile within that directory.
-func (e *FileExtractor) procfile(id string) (string, error) {
+func (e *fileExtractor) procfile(id string) (string, error) {
 	p := ""
 
 	c, err := e.client.InspectContainer(id)
@@ -131,11 +130,11 @@ func (e *FileExtractor) procfile(id string) (string, error) {
 		p = c.Config.WorkingDir
 	}
 
-	return path.Join(p, ProcfileName), nil
+	return path.Join(p, Procfile), nil
 }
 
 // createContainer creates a new docker container for the given docker image.
-func (e *FileExtractor) createContainer(img image.Image) (*docker.Container, error) {
+func (e *fileExtractor) createContainer(img image.Image) (*docker.Container, error) {
 	return e.client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
 			Image: img.String(),
@@ -144,14 +143,14 @@ func (e *FileExtractor) createContainer(img image.Image) (*docker.Container, err
 }
 
 // removeContainer removes a container by its ID.
-func (e *FileExtractor) removeContainer(containerID string) error {
+func (e *fileExtractor) removeContainer(containerID string) error {
 	return e.client.RemoveContainer(docker.RemoveContainerOptions{
 		ID: containerID,
 	})
 }
 
 // copyFile copies a file from a container.
-func (e *FileExtractor) copyFile(containerID, path string) ([]byte, error) {
+func (e *fileExtractor) copyFile(containerID, path string) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := e.client.CopyFromContainer(docker.CopyFromContainerOptions{
 		Container:    containerID,
@@ -168,11 +167,11 @@ func (e *FileExtractor) copyFile(containerID, path string) ([]byte, error) {
 }
 
 // Example instance: Procfile doesn't exist
-type ProcfileError struct {
+type procfileError struct {
 	Err error
 }
 
-func (e *ProcfileError) Error() string {
+func (e *procfileError) Error() string {
 	return fmt.Sprintf("Procfile not found: %s", e.Err)
 }
 
@@ -197,7 +196,7 @@ func formationFromProcfile(p procfile.Procfile) (Formation, error) {
 	case procfile.ExtendedProcfile:
 		return formationFromExtendedProcfile(p)
 	default:
-		return nil, &ProcfileError{
+		return nil, &procfileError{
 			Err: errors.New("unknown Procfile format"),
 		}
 	}

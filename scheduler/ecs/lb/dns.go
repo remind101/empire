@@ -1,7 +1,6 @@
 package lb
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -9,9 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/route53"
 )
-
-// errHostedZone is returned when the hosted zone is not found.
-var errHostedZone = errors.New("hosted zone not found, unable to update records")
 
 // Nameserver represents a service for creating dns records.
 type Nameserver interface {

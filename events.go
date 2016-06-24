@@ -291,30 +291,30 @@ func (streams MultiEventStream) PublishEvent(e Event) error {
 	return result.ErrorOrNil()
 }
 
-// AsyncEventStream wraps an array of EventStreams to publish events
+// asyncEventStream wraps an array of EventStreams to publish events
 // asynchronously in a goroutine
-type AsyncEventStream struct {
-	EventStream
+type asyncEventStream struct {
+	e      EventStream
 	events chan Event
 }
 
 // AsyncEvents returns a new AsyncEventStream that will buffer upto 100 events
 // before applying backpressure.
-func AsyncEvents(e EventStream) *AsyncEventStream {
-	s := &AsyncEventStream{
-		EventStream: e,
-		events:      make(chan Event, 100),
+func AsyncEvents(e EventStream) EventStream {
+	s := &asyncEventStream{
+		e:      e,
+		events: make(chan Event, 100),
 	}
 	go s.start()
 	return s
 }
 
-func (e *AsyncEventStream) PublishEvent(event Event) error {
+func (e *asyncEventStream) PublishEvent(event Event) error {
 	e.events <- event
 	return nil
 }
 
-func (e *AsyncEventStream) start() {
+func (e *asyncEventStream) start() {
 	for event := range e.events {
 		err := e.publishEvent(event)
 		if err != nil {
@@ -323,7 +323,7 @@ func (e *AsyncEventStream) start() {
 	}
 }
 
-func (e *AsyncEventStream) publishEvent(event Event) (err error) {
+func (e *asyncEventStream) publishEvent(event Event) (err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			var ok bool
@@ -334,25 +334,6 @@ func (e *AsyncEventStream) publishEvent(event Event) (err error) {
 			err = fmt.Errorf("panic: %v", v)
 		}
 	}()
-	err = e.EventStream.PublishEvent(event)
+	err = e.e.PublishEvent(event)
 	return
-}
-
-// prettyDelta is a fmt.Stringer that formats a delta by prefixing it with a `+`
-// or `-`.
-type prettyDelta struct {
-	delta int
-}
-
-// String implements the fmt.Stringer interface.
-func (d prettyDelta) String() string {
-	if d.delta > 0 {
-		return fmt.Sprintf("+%d", d.delta)
-	}
-
-	if d.delta < 0 {
-		return fmt.Sprintf("-%d", d.delta*-1)
-	}
-
-	return fmt.Sprintf("no change")
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func TestComposedScope(t *testing.T) {
-	var scope ComposedScope
+	var scope composedScope
 
 	a, b := make(chan struct{}), make(chan struct{})
 
@@ -21,7 +21,7 @@ func TestComposedScope(t *testing.T) {
 
 	db := &gorm.DB{}
 
-	go scope.Scope(db)
+	go scope.scope(db)
 
 	select {
 	case <-a:
@@ -38,8 +38,8 @@ func TestComposedScope(t *testing.T) {
 
 // MockScope is a Scope implementation that closes the channel when it is
 // called.
-func MockScope(called chan struct{}) Scope {
-	return ScopeFunc(func(db *gorm.DB) *gorm.DB {
+func MockScope(called chan struct{}) scope {
+	return scopeFunc(func(db *gorm.DB) *gorm.DB {
 		close(called)
 		return db
 	})
@@ -47,7 +47,7 @@ func MockScope(called chan struct{}) Scope {
 
 // scopeTest is a struct for testing scopes.
 type scopeTest struct {
-	scope Scope
+	scope scope
 	sql   string
 	vars  []interface{}
 }
@@ -73,11 +73,11 @@ func (tests scopeTests) Run(t testing.TB) {
 	}
 }
 
-// conditionSql takes a Scope and generates the condition sql that gorm will use
+// conditionSql takes a scope and generates the condition sql that gorm will use
 // for the query.
-func conditionSql(scope Scope) (sql string, vars []interface{}) {
+func conditionSql(scope scope) (sql string, vars []interface{}) {
 	db, _ := gorm.Open("postgres", &gosql.DB{})
-	ds := scope.Scope(&db).NewScope(nil)
+	ds := scope.scope(&db).NewScope(nil)
 	sql = strings.TrimSpace(ds.CombinedConditionSql())
 	vars = ds.SqlVars
 	return

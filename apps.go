@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -13,42 +12,41 @@ import (
 )
 
 const (
-	ExposePrivate = "private"
-	ExposePublic  = "public"
-)
-
-var (
-	// ErrInvalidName is used to indicate that the app name is not valid.
-	ErrInvalidName = &ValidationError{
-		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
-	}
+	exposePrivate = "private"
+	exposePublic  = "public"
 )
 
 // NamePattern is a regex pattern that app names must conform to.
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
-// AppNameFromRepo generates a name from a Repo
+// appNameFromRepo generates a name from a Repo
 //
 //	remind101/r101-api => r101-api
-func AppNameFromRepo(repo string) string {
+func appNameFromRepo(repo string) string {
 	p := strings.Split(repo, "/")
 	return p[len(p)-1]
 }
 
-// App represents an app.
+// App represents an Empire application.
 type App struct {
+	// A unique uuid that identifies the application.
 	ID string
 
+	// The name of the application.
 	Name string
 
+	// If provided, the Docker repo that this application is linked to.
+	// Deployments to Empire, which don't specify an application, will use
+	// this field to determine what app an image should be deployed to.
 	Repo *string
 
-	// Valid values are empire.ExposePrivate and empire.ExposePublic.
+	// Valid values are exposePrivate and exposePublic.
 	Exposure string
 
 	// The name of an SSL cert for the web process of this app.
 	Cert string
 
+	// The time that this application was created.
 	CreatedAt *time.Time
 }
 
@@ -66,13 +64,13 @@ func (a *App) BeforeCreate() error {
 	a.CreatedAt = &t
 
 	if a.Exposure == "" {
-		a.Exposure = ExposePrivate
+		a.Exposure = exposePrivate
 	}
 
 	return a.IsValid()
 }
 
-// AppsQuery is a Scope implementation for common things to filter releases
+// AppsQuery is a scope implementation for common things to filter releases
 // by.
 type AppsQuery struct {
 	// If provided, an App ID to find.
@@ -85,30 +83,23 @@ type AppsQuery struct {
 	Repo *string
 }
 
-// Scope implements the Scope interface.
-func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q AppsQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if q.ID != nil {
-		scope = append(scope, ID(*q.ID))
+		scope = append(scope, idEquals(*q.ID))
 	}
 
 	if q.Name != nil {
-		scope = append(scope, FieldEquals("name", *q.Name))
+		scope = append(scope, fieldEquals("name", *q.Name))
 	}
 
 	if q.Repo != nil {
-		scope = append(scope, FieldEquals("repo", *q.Repo))
+		scope = append(scope, fieldEquals("repo", *q.Repo))
 	}
 
-	return scope.Scope(db)
-}
-
-// AppID returns a scope to find an app by id.
-func AppID(id string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", id)
-	}
+	return scope.scope(db)
 }
 
 type appsService struct {
@@ -195,7 +186,7 @@ func appsEnsureRepo(db *gorm.DB, app *App, repo string) error {
 // appsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
 func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
-	n := AppNameFromRepo(repo)
+	n := appNameFromRepo(repo)
 	a, err := appsFind(db, AppsQuery{Name: &n})
 	if err != nil && err != gorm.RecordNotFound {
 		return a, err
@@ -215,16 +206,16 @@ func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
 }
 
 // appsFind finds a single app given the scope.
-func appsFind(db *gorm.DB, scope Scope) (*App, error) {
+func appsFind(db *gorm.DB, scope scope) (*App, error) {
 	var app App
 	return &app, first(db, scope, &app)
 }
 
 // apps finds all apps matching the scope.
-func apps(db *gorm.DB, scope Scope) ([]*App, error) {
+func apps(db *gorm.DB, scope scope) ([]*App, error) {
 	var apps []*App
 	// Default to ordering by name.
-	scope = ComposedScope{Order("name"), scope}
+	scope = composedScope{order("name"), scope}
 	return apps, find(db, scope, &apps)
 }
 

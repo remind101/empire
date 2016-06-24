@@ -15,16 +15,16 @@ func TestMigrations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = db.migrator.Exec(migrate.Up, Migrations...)
+	err = db.migrator.Exec(migrate.Up, migrations...)
 	assert.NoError(t, err)
 
 	err = db.Reset()
 	assert.NoError(t, err)
 
-	err = db.migrator.Exec(migrate.Down, Migrations...)
+	err = db.migrator.Exec(migrate.Down, migrations...)
 	assert.NoError(t, err)
 
-	err = db.migrator.Exec(migrate.Up, Migrations...)
+	err = db.migrator.Exec(migrate.Up, migrations...)
 	assert.NoError(t, err)
 }
 
