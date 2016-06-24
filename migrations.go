@@ -550,5 +550,5 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 // latestSchema returns the schema version that this version of Empire should be
 // using.
 func latestSchema() int {
-	return Migrations[len(Migrations)-1].ID
+	return migrations[len(migrations)-1].ID
 }
