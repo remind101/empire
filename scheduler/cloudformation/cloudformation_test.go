@@ -730,6 +730,84 @@ func TestChunkStrings(t *testing.T) {
 	}
 }
 
+func TestUpdateParameters(t *testing.T) {
+	tests := []struct {
+		parameters []*cloudformation.Parameter
+		stack      *cloudformation.Stack
+		template   *cloudformationTemplate
+
+		out []*cloudformation.Parameter
+	}{
+		// Simple scenario, overwriting a parameter value with a new
+		// value.
+		{
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+			&cloudformation.Stack{
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("a"), ParameterValue: aws.String("true")},
+					{ParameterKey: aws.String("b"), ParameterValue: aws.String("false")},
+				},
+			},
+			nil,
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+				{ParameterKey: aws.String("b"), UsePreviousValue: aws.Bool(true)},
+			},
+		},
+
+		// Updating with a new template, that doesn't provide one of the
+		// values.
+		{
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+			&cloudformation.Stack{
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("a"), ParameterValue: aws.String("true")},
+					{ParameterKey: aws.String("b"), ParameterValue: aws.String("false")},
+				},
+			},
+			&cloudformationTemplate{
+				Parameters: []*cloudformation.TemplateParameter{
+					{ParameterKey: aws.String("a")},
+				},
+			},
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+		},
+
+		// Updating a stack that has a new parameter, but setting it to
+		// the default.
+		{
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+			&cloudformation.Stack{
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("a"), ParameterValue: aws.String("true")},
+				},
+			},
+			&cloudformationTemplate{
+				Parameters: []*cloudformation.TemplateParameter{
+					{ParameterKey: aws.String("a")},
+					{ParameterKey: aws.String("b")},
+				},
+			},
+			[]*cloudformation.Parameter{
+				{ParameterKey: aws.String("a"), ParameterValue: aws.String("false")},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		out := updateParameters(tt.parameters, tt.stack, tt.template)
+		assert.Equal(t, tt.out, out)
+	}
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {

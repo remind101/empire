@@ -460,47 +460,9 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 		return err
 	}
 
-	// This tracks the names of the parameters that have pre-existing values
-	// on the stack.
-	existingParams := make(map[string]bool)
-	// The parameters that the stack defines. We need to make sure that we
-	// provide all parameters in the update (lame).
-	for _, p := range stack.Parameters {
-		existingParams[*p.ParameterKey] = true
-	}
-
-	// The params that the stack template allows to be set.
-	settableParams := make(map[string]bool)
-	if input.Template != nil {
-		for _, p := range input.Template.Parameters {
-			settableParams[*p.ParameterKey] = true
-		}
-	} else {
-		settableParams = existingParams
-	}
-
-	// The parameters that are provided in this update.
-	providedParams := make(map[string]bool)
-	for _, p := range input.Parameters {
-		providedParams[*p.ParameterKey] = true
-	}
-
-	// Fill in any parameters that weren't provided with their previous
-	// value, if available
-	for k := range settableParams {
-		if !providedParams[k] {
-			if existingParams[k] {
-				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
-					ParameterKey:     aws.String(k),
-					UsePreviousValue: aws.Bool(true),
-				})
-			}
-		}
-	}
-
 	i := &cloudformation.UpdateStackInput{
 		StackName:  input.StackName,
-		Parameters: input.Parameters,
+		Parameters: updateParameters(input.Parameters, stack, input.Template),
 	}
 	if input.Template != nil {
 		i.TemplateURL = input.Template.URL
@@ -875,6 +837,58 @@ func chunkStrings(s []*string, size int) [][]*string {
 		s = s[end:]
 	}
 	return chunks
+}
+
+// updateParameters returns the parameters that should be provided in an
+// UpdateStack operation.
+func updateParameters(provided []*cloudformation.Parameter, stack *cloudformation.Stack, template *cloudformationTemplate) []*cloudformation.Parameter {
+	parameters := provided[:]
+
+	// This tracks the names of the parameters that have pre-existing values
+	// on the stack.
+	existingParams := make(map[string]bool)
+	for _, p := range stack.Parameters {
+		existingParams[*p.ParameterKey] = true
+	}
+
+	// These are the parameters that can be set for the stack. If a template
+	// is provided, then these are the parameters defined in the template.
+	// If no template is provided, then these are the parameters that the
+	// stack provides.
+	settableParams := make(map[string]bool)
+	if template != nil {
+		for _, p := range template.Parameters {
+			settableParams[*p.ParameterKey] = true
+		}
+	} else {
+		settableParams = existingParams
+	}
+
+	// The parameters that are provided in this update.
+	providedParams := make(map[string]bool)
+	for _, p := range parameters {
+		providedParams[*p.ParameterKey] = true
+	}
+
+	// Fill in any parameters that weren't provided with their previous
+	// value, if available
+	for k := range settableParams {
+		notProvided := !providedParams[k]
+		hasExistingValue := existingParams[k]
+
+		// If the parameter hasn't been provided with an explicit value,
+		// and the stack has this parameter set, we'll use the previous
+		// value. Not doing this would result in the parameters
+		// `Default` getting used.
+		if notProvided && hasExistingValue {
+			parameters = append(parameters, &cloudformation.Parameter{
+				ParameterKey:     aws.String(k),
+				UsePreviousValue: aws.Bool(true),
+			})
+		}
+	}
+
+	return parameters
 }
 
 // stackLackKey returns the key to use when obtaining an advisory lock for a
