@@ -25,7 +25,7 @@ build: Dockerfile
 ci: cmds test vet
 
 test: build/emp
-	go test $(shell go list ./... | grep -v /vendor/)
+	go test -race $(shell go list ./... | grep -v /vendor/)
 
 vet:
 	go vet $(shell go list ./... | grep -v /vendor/)

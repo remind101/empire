@@ -214,7 +214,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 
 	v2Done := make(chan struct{})
 	go func() {
-		r, err = e.Deploy(context.Background(), empire.DeployOpts{
+		r, err := e.Deploy(context.Background(), empire.DeployOpts{
 			User:   user,
 			Output: ioutil.Discard,
 			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
