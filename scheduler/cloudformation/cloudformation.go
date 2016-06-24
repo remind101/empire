@@ -344,7 +344,6 @@ func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, done cha
 		// around, so we return. But, if the stack update times out, or
 		// there's an error, that information is essentially silenced.
 		return nil
-	case err = <-submitted:
 	case <-locked:
 		// if a lock is obtained within the time frame, we might as well
 		// just wait for the update to get submitted.
