@@ -224,12 +224,13 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
 
-	_, err = s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+	resp, err := s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
 		TemplateURL: aws.String(url),
 	})
 	if err != nil {
 		return &templateValidationError{templateURL: url, err: err, templateBody: buf}
 	}
+	templateParameters := resp.Parameters
 
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
@@ -279,7 +280,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Parameters:  parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, done); err != nil {
+		}, templateParameters, done); err != nil {
 			return err
 		}
 	} else {
@@ -318,14 +319,14 @@ func (s *Scheduler) createStack(input *cloudformation.CreateStackInput, done cha
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, done chan error) error {
+func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, templateParameters []*cloudformation.TemplateParameter, done chan error) error {
 	waiter := s.cloudformation.WaitUntilStackUpdateComplete
 
 	locked := make(chan struct{})
 	submitted := make(chan error)
 	fn := func() error {
 		close(locked)
-		err := s.executeStackUpdate(input)
+		err := s.executeStackUpdate(input, templateParameters)
 		submitted <- err
 		return err
 	}
@@ -416,32 +417,42 @@ func (s *Scheduler) waitUntilStackOperationComplete(lock *pglock.AdvisoryLock, w
 }
 
 // executeStackUpdate performs a stack update.
-func (s *Scheduler) executeStackUpdate(input *cloudformation.UpdateStackInput) error {
+func (s *Scheduler) executeStackUpdate(input *cloudformation.UpdateStackInput, templateParameters []*cloudformation.TemplateParameter) error {
 	stack, err := s.stack(input.StackName)
 	if err != nil {
 		return err
 	}
 
-	// If we're updating a stack, without changing the template, merge in
-	// existing parameters with their previous value.
-	if input.UsePreviousTemplate != nil && *input.UsePreviousTemplate == true {
-		// The parameters that the stack defines. We need to make sure that we
-		// provide all parameters in the update (lame).
-		definedParams := make(map[string]bool)
-		for _, p := range stack.Parameters {
-			definedParams[*p.ParameterKey] = true
-		}
+	// This tracks the names of the parameters that have pre-existing values
+	// on the stack.
+	existingParams := make(map[string]bool)
+	// The parameters that the stack defines. We need to make sure that we
+	// provide all parameters in the update (lame).
+	for _, p := range stack.Parameters {
+		existingParams[*p.ParameterKey] = true
+	}
 
-		// The parameters that are provided in this update.
-		providedParams := make(map[string]bool)
-		for _, p := range input.Parameters {
-			providedParams[*p.ParameterKey] = true
+	// The params that the stack template allows to be set.
+	settableParams := make(map[string]bool)
+	if templateParameters != nil {
+		for _, p := range templateParameters {
+			settableParams[*p.ParameterKey] = true
 		}
+	} else {
+		settableParams = existingParams
+	}
 
-		// Fill in any parameters that weren't provided with their default
-		// value.
-		for k := range definedParams {
-			if !providedParams[k] {
+	// The parameters that are provided in this update.
+	providedParams := make(map[string]bool)
+	for _, p := range input.Parameters {
+		providedParams[*p.ParameterKey] = true
+	}
+
+	// Fill in any parameters that weren't provided with their previous
+	// value, if available
+	for k := range settableParams {
+		if !providedParams[k] {
+			if existingParams[k] {
 				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
 					ParameterKey:     aws.String(k),
 					UsePreviousValue: aws.Bool(true),

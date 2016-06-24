@@ -223,7 +223,11 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 
 	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+	}).Return(&cloudformation.ValidateTemplateOutput{
+		Parameters: []*cloudformation.TemplateParameter{
+			{ParameterKey: aws.String("webScale")},
+		},
+	}, nil)
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
@@ -246,6 +250,81 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		Parameters: []*cloudformation.Parameter{
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+		Processes: []*scheduler.Process{
+			{Type: "web", Instances: 1},
+		},
+	})
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		wait:           true,
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{
+		Parameters: []*cloudformation.TemplateParameter{
+			{ParameterKey: aws.String("DNS")},
+			{ParameterKey: aws.String("RestartKey")},
+			{ParameterKey: aws.String("webScale")},
+		},
+	}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("false")},
+					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
+				},
+			},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+			{ParameterKey: aws.String("DNS"), UsePreviousValue: aws.Bool(true)},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
