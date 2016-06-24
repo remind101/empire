@@ -185,7 +185,6 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("true")},
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, errors.New("stack update failed"))
