@@ -41,6 +41,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -104,6 +105,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -147,6 +149,138 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
+func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		wait:           true,
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+		after: func(d time.Duration) <-chan time.Time {
+			if d == lockWait {
+				// Return a channel that receives immediately.
+				ch := make(chan time.Time)
+				close(ch)
+				return ch
+			}
+
+			return time.After(d)
+		},
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	})
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		wait:           true,
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+		after: func(d time.Duration) <-chan time.Time {
+			if d == stackOperationTimeout {
+				// Return a channel that receives immediately.
+				ch := make(chan time.Time)
+				close(ch)
+				return ch
+			}
+
+			return time.After(d)
+		},
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	})
+	assert.EqualError(t, err, `timed out waiting for stack operation to complete`)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
 func TestScheduler_Submit_UpdateError(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
@@ -160,6 +294,7 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -212,6 +347,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -279,6 +415,7 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -319,6 +456,7 @@ func TestScheduler_Remove(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -363,6 +501,7 @@ func TestScheduler_Remove_NoCFStack(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -392,6 +531,7 @@ func TestScheduler_Remove_NoDBStack_NoCFStack(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	err := s.Remove(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
@@ -417,6 +557,7 @@ func TestScheduler_Instances(t *testing.T) {
 		s3:             x,
 		ecs:            e,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -553,6 +694,7 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 		s3:             x,
 		ecs:            e,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")

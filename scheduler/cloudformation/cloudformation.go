@@ -145,6 +145,8 @@ type Scheduler struct {
 	s3 s3Client
 
 	db *sql.DB
+
+	after func(time.Duration) <-chan time.Time
 }
 
 // NewScheduler returns a new Scheduler instance.
@@ -154,6 +156,7 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 		ecs:            ecs.New(config),
 		s3:             s3.New(config),
 		db:             db,
+		after:          time.After,
 	}
 }
 
@@ -322,7 +325,7 @@ func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, done cha
 	waiter := s.cloudformation.WaitUntilStackUpdateComplete
 
 	locked := make(chan struct{})
-	submitted := make(chan error)
+	submitted := make(chan error, 1)
 	fn := func() error {
 		close(locked)
 		err := s.executeStackUpdate(input)
@@ -336,12 +339,11 @@ func (s *Scheduler) updateStack(input *cloudformation.UpdateStackInput, done cha
 
 	var err error
 	select {
-	case <-time.After(lockWait):
+	case <-s.after(lockWait):
 		// FIXME: At this point, we don't want to affect UX by waiting
 		// around, so we return. But, if the stack update times out, or
 		// there's an error, that information is essentially silenced.
 		return nil
-	case err = <-submitted:
 	case <-locked:
 		// if a lock is obtained within the time frame, we might as well
 		// just wait for the update to get submitted.
@@ -407,7 +409,7 @@ func (s *Scheduler) waitUntilStackOperationComplete(lock *pglock.AdvisoryLock, w
 
 	var err error
 	select {
-	case <-time.After(stackOperationTimeout):
+	case <-s.after(stackOperationTimeout):
 		err = errors.New("timed out waiting for stack operation to complete")
 	case err = <-errCh:
 	}
