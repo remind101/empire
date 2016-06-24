@@ -158,7 +158,7 @@ type Scheduler struct {
 func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 	return &Scheduler{
 		cloudformation: cloudformation.New(config),
-		ecs:            ecs.New(config),
+		ecs:            ecsWithCaching(ecs.New(config)),
 		s3:             s3.New(config),
 		db:             db,
 		after:          time.After,
