@@ -1,15 +1,17 @@
+machine:
+  environment:
+    GO15VENDOREXPERIMENT: 1
+
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/remind101
     - mkdir -p ~/.go_workspace/src/github.com/remind101
     - cp -R ~/kinesumer ~/.go_workspace/src/github.com/remind101/kinesumer
 
-
 dependencies:
   override:
-    - go get github.com/tools/godep
-    - godep go install github.com/remind101/kinesumer/...
+    - /bin/true
 
 test:
   override:
-    - godep go test
+    - cd ~/.go_workspace/src/github.com/remind101/kinesumer && go test
