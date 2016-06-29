@@ -36,6 +36,8 @@ var newUUID = uuid.New
 // values.
 const servicesOutput = "Services"
 
+const deploymentsOutput = "Deployments"
+
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
 

@@ -156,6 +156,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 	}
 
 	serviceMappings := []map[string]interface{}{}
+	deploymentMappings := []map[string]interface{}{}
 
 	// The standard AWS::ECS::Service resource's default behavior is to wait
 	// for services to stabilize when you update them. While this is a
@@ -366,6 +367,17 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 				[]interface{}{p.Type, map[string]string{"Ref": service}},
 			},
 		})
+		deploymentMappings = append(deploymentMappings, map[string]interface{}{
+			"Fn::Join": []interface{}{
+				"=",
+				[]interface{}{p.Type, map[string][]string{
+					"Fn::GetAtt": []string{
+						service,
+						"DeploymentId",
+					},
+				}},
+			},
+		})
 		resources[service] = map[string]interface{}{
 			"Type":       ecsServiceType,
 			"Properties": serviceProperties,
@@ -378,6 +390,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 			"Fn::Join": []interface{}{
 				",",
 				serviceMappings,
+			},
+		},
+	}
+	outputs[deploymentsOutput] = map[string]interface{}{
+		"Value": map[string]interface{}{
+			"Fn::Join": []interface{}{
+				",",
+				deploymentMappings,
 			},
 		},
 	}
