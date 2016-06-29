@@ -419,6 +419,7 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
