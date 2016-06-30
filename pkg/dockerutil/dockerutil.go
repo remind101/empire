@@ -57,7 +57,7 @@ type DecodedJSONMessageWriter struct {
 // Write decodes the jsonmessage stream in the bytes, and writes the decoded
 // plain text to the underlying io.Writer.
 func (w *DecodedJSONMessageWriter) Write(b []byte) (int, error) {
-	err := jsonmessage.DisplayJSONMessagesStream(bytes.NewReader(b), w.w, w.fd, false)
+	err := jsonmessage.DisplayJSONMessagesStream(bytes.NewReader(b), w.w, w.fd, false, nil)
 	if err != nil {
 		if err, ok := err.(*jsonmessage.JSONError); ok {
 			w.err = err

@@ -66,5 +66,5 @@ func runDeploy(cmd *Command, args []string) {
 	}()
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)
-	must(jsonmessage.DisplayJSONMessagesStream(r, os.Stdout, outFd, isTerminalOut))
+	must(jsonmessage.DisplayJSONMessagesStream(r, os.Stdout, outFd, isTerminalOut, nil))
 }
