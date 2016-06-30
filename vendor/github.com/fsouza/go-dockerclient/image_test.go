@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,11 +22,14 @@ import (
 func newTestClient(rt *FakeRoundTripper) Client {
 	endpoint := "http://localhost:4243"
 	u, _ := parseEndpoint("http://localhost:4243", false)
+	testAPIVersion, _ := NewAPIVersion("1.17")
 	client := Client{
 		HTTPClient:             &http.Client{Transport: rt},
+		Dialer:                 &net.Dialer{},
 		endpoint:               endpoint,
 		endpointURL:            u,
 		SkipServerVersionCheck: true,
+		serverAPIVersion:       testAPIVersion,
 	}
 	return client
 }
@@ -239,7 +243,14 @@ func TestInspectImage(t *testing.T) {
      "Created":"2013-03-23T22:24:18.818426Z",
      "Container":"3d67245a8d72ecf13f33dffac9f79dcdf70f75acb84d308770391510e0c23ad0",
      "ContainerConfig":{"Memory":1},
-     "VirtualSize":12345
+     "VirtualSize":12345,
+     "RootFS": {
+       "Type": "layers",
+       "Layers": [
+         "sha256:05a0deb2e405eb3095ab646dc1695a26bffe8bd4071e3af90efcf16e9d3f6d93",
+         "sha256:4c5db681b9aa9ab1cf666ec969a810c8ff4410e70e06394670dc4f3bf595532f"
+       ]
+    }
 }`
 
 	created, err := time.Parse(time.RFC3339Nano, "2013-03-23T22:24:18.818426Z")
@@ -256,6 +267,13 @@ func TestInspectImage(t *testing.T) {
 			Memory: 1,
 		},
 		VirtualSize: 12345,
+		RootFS: &RootFS{
+			Type: "layers",
+			Layers: []string{
+				"sha256:05a0deb2e405eb3095ab646dc1695a26bffe8bd4071e3af90efcf16e9d3f6d93",
+				"sha256:4c5db681b9aa9ab1cf666ec969a810c8ff4410e70e06394670dc4f3bf595532f",
+			},
+		},
 	}
 	fakeRT := &FakeRoundTripper{message: body, status: http.StatusOK}
 	client := newTestClient(fakeRT)
@@ -677,7 +695,11 @@ func TestBuildImageParameters(t *testing.T) {
 		Memory:              1024,
 		Memswap:             2048,
 		CPUShares:           10,
+		CPUQuota:            7500,
+		CPUPeriod:           100000,
 		CPUSetCPUs:          "0-3",
+		Ulimits:             []ULimit{{Name: "nofile", Soft: 100, Hard: 200}},
+		BuildArgs:           []BuildArg{{Name: "SOME_VAR", Value: "some_value"}},
 		InputStream:         &buf,
 		OutputStream:        &buf,
 	}
@@ -696,7 +718,11 @@ func TestBuildImageParameters(t *testing.T) {
 		"memory":     {"1024"},
 		"memswap":    {"2048"},
 		"cpushares":  {"10"},
+		"cpuquota":   {"7500"},
+		"cpuperiod":  {"100000"},
 		"cpusetcpus": {"0-3"},
+		"ulimits":    {`[{"Name":"nofile","Soft":100,"Hard":200}]`},
+		"buildargs":  {`{"SOME_VAR":"some_value"}`},
 	}
 	got := map[string][]string(req.URL.Query())
 	if !reflect.DeepEqual(got, expected) {
@@ -958,6 +984,47 @@ func TestSearchImages(t *testing.T) {
 	}
 	client := newTestClient(&FakeRoundTripper{message: body, status: http.StatusOK})
 	result, err := client.SearchImages("cassandra")
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("SearchImages: Wrong return value. Want %#v. Got %#v.", expected, result)
+	}
+}
+
+func TestSearchImagesEx(t *testing.T) {
+	body := `[
+	{
+		"description":"A container with Cassandra 2.0.3",
+		"is_official":true,
+		"is_automated":true,
+		"name":"poklet/cassandra",
+		"star_count":17
+	},
+	{
+		"description":"A container with Cassandra 2.0.3",
+		"is_official":true,
+		"is_automated":false,
+		"name":"poklet/cassandra",
+		"star_count":17
+	}
+	,
+	{
+		"description":"A container with Cassandra 2.0.3",
+		"is_official":false,
+		"is_automated":true,
+		"name":"poklet/cassandra",
+		"star_count":17
+	}
+]`
+	var expected []APIImageSearch
+	err := json.Unmarshal([]byte(body), &expected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := newTestClient(&FakeRoundTripper{message: body, status: http.StatusOK})
+	auth := AuthConfiguration{}
+	result, err := client.SearchImagesEx("cassandra", auth)
 	if err != nil {
 		t.Error(err)
 	}
