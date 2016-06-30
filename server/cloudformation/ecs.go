@@ -54,7 +54,7 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 	switch req.RequestType {
 	case Create:
 		id, deploymentId, err := p.create(ctx, hashRequest(req), properties)
-		if err != nil {
+		if err == nil {
 			data["DeploymentId"] = deploymentId
 		}
 		return id, data, err
