@@ -94,7 +94,7 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.Equal(t, context.Canceled, err)
-	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+	assert.Equal(t, data, map[string]string{})
 
 	e.AssertExpectations(t)
 }
