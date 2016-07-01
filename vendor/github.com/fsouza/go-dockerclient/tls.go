@@ -68,9 +68,8 @@ func tlsDialWithDialer(dialer *net.Dialer, network, addr string, config *tls.Con
 	// from the hostname we're connecting to.
 	if config.ServerName == "" {
 		// Make a copy to avoid polluting argument or default.
-		c := *config
-		c.ServerName = hostname
-		config = &c
+		config = copyTLSConfig(config)
+		config.ServerName = hostname
 	}
 
 	conn := tls.Client(rawConn, config)
@@ -95,6 +94,25 @@ func tlsDialWithDialer(dialer *net.Dialer, network, addr string, config *tls.Con
 	return &tlsClientCon{conn, rawConn}, nil
 }
 
-func tlsDial(network, addr string, config *tls.Config) (net.Conn, error) {
-	return tlsDialWithDialer(new(net.Dialer), network, addr, config)
+// this exists to silent an error message in go vet
+func copyTLSConfig(cfg *tls.Config) *tls.Config {
+	return &tls.Config{
+		Certificates:             cfg.Certificates,
+		CipherSuites:             cfg.CipherSuites,
+		ClientAuth:               cfg.ClientAuth,
+		ClientCAs:                cfg.ClientCAs,
+		ClientSessionCache:       cfg.ClientSessionCache,
+		CurvePreferences:         cfg.CurvePreferences,
+		InsecureSkipVerify:       cfg.InsecureSkipVerify,
+		MaxVersion:               cfg.MaxVersion,
+		MinVersion:               cfg.MinVersion,
+		NameToCertificate:        cfg.NameToCertificate,
+		NextProtos:               cfg.NextProtos,
+		PreferServerCipherSuites: cfg.PreferServerCipherSuites,
+		Rand:                   cfg.Rand,
+		RootCAs:                cfg.RootCAs,
+		ServerName:             cfg.ServerName,
+		SessionTicketKey:       cfg.SessionTicketKey,
+		SessionTicketsDisabled: cfg.SessionTicketsDisabled,
+	}
 }
