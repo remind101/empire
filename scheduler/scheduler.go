@@ -118,7 +118,7 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App) error
+	Submit(context.Context, *App, chan string) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error

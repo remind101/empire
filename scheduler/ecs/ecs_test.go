@@ -91,7 +91,7 @@ func TestScheduler_Submit(t *testing.T) {
 		{Name: "lb-1234", InstancePort: 8080},
 	}, nil)
 
-	if err := m.Submit(context.Background(), fakeApp); err != nil {
+	if err := m.Submit(context.Background(), fakeApp, make(chan string)); err != nil {
 		t.Fatal(err)
 	}
 }

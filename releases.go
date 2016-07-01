@@ -152,7 +152,8 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 // Release submits a release to the scheduler.
 func (s *releasesService) Release(ctx context.Context, release *Release) error {
 	a := newSchedulerApp(release)
-	return s.Scheduler.Submit(ctx, a)
+	status := make(chan string)
+	return s.Scheduler.Submit(ctx, a, status)
 }
 
 // ReleaseApp will find the last release for an app and release it.
