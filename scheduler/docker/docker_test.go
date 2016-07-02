@@ -24,7 +24,7 @@ func TestScheduler_InstancesFromAttachedRuns(t *testing.T) {
 	d.On("ListContainers", docker.ListContainersOptions{
 		Filters: map[string][]string{
 			"label": []string{
-				"attached-run=true",
+				"run",
 				"empire.app.id=2cdc4941-e36d-4855-a0ec-51525db4a500",
 			},
 		},
@@ -40,7 +40,7 @@ func TestScheduler_InstancesFromAttachedRuns(t *testing.T) {
 		},
 		Config: &docker.Config{
 			Labels: map[string]string{
-				"attached-run":       "true",
+				"run":                "attached",
 				"empire.app.id":      "2cdc4941-e36d-4855-a0ec-51525db4a500",
 				"empire.app.process": "run",
 			},
@@ -80,10 +80,40 @@ func TestScheduler_Stop(t *testing.T) {
 		docker: d,
 	}
 
+	d.On("InspectContainer", "container_id").Return(&docker.Container{
+		ID: "container_id",
+		Config: &docker.Config{
+			Labels: map[string]string{
+				"run": "attached",
+			},
+		},
+	}, nil)
+
 	d.On("StopContainer", "container_id", uint(10)).Return(nil)
 
 	err := s.Stop(ctx, "container_id")
 	assert.NoError(t, err)
+
+	d.AssertExpectations(t)
+}
+
+func TestScheduler_Stop_ContainerNotStartedByEmpire(t *testing.T) {
+	d := new(mockDockerClient)
+	s := Scheduler{
+		docker: d,
+	}
+
+	d.On("InspectContainer", "container_id").Return(&docker.Container{
+		ID: "container_id",
+		Config: &docker.Config{
+			Labels: map[string]string{
+			// Missing the run label
+			},
+		},
+	}, nil)
+
+	err := s.Stop(ctx, "container_id")
+	assert.Error(t, err)
 
 	d.AssertExpectations(t)
 }
@@ -99,7 +129,7 @@ func TestAttachedScheduler_Stop_ContainerNotFound(t *testing.T) {
 		dockerScheduler: ds,
 	}
 
-	d.On("StopContainer", "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c", uint(10)).Return(&docker.NoSuchContainer{
+	d.On("InspectContainer", "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c").Return(nil, &docker.NoSuchContainer{
 		ID: "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c",
 	})
 
@@ -138,7 +168,11 @@ func (m *mockDockerClient) ListContainers(opts docker.ListContainersOptions) ([]
 
 func (m *mockDockerClient) InspectContainer(id string) (*docker.Container, error) {
 	args := m.Called(id)
-	return args.Get(0).(*docker.Container), args.Error(1)
+	var container *docker.Container
+	if v := args.Get(0); v != nil {
+		container = v.(*docker.Container)
+	}
+	return container, args.Error(1)
 }
 
 func (m *mockDockerClient) StopContainer(ctx context.Context, id string, timeout uint) error {

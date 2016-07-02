@@ -32,9 +32,9 @@ type dockerClient interface {
 }
 
 const (
-	// Label that determines whether the container is from an attached run
-	// or not. The value of this label will be the app id.
-	attachedRunLabel = "attached-run"
+	// Label that determines whether the container is from a one-off run or
+	// not. The value of this label will be `attached` or `detached`.
+	runLabel = "run"
 
 	// Label that determines what app the run relates to.
 	appLabel = "empire.app.id"
@@ -135,7 +135,7 @@ func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, p *scheduler.Pr
 	}
 
 	labels := scheduler.Labels(app, p)
-	labels[attachedRunLabel] = "true"
+	labels[runLabel] = "attached"
 
 	if err := s.docker.PullImage(ctx, docker.PullImageOptions{
 		Registry:     p.Image.Registry,
@@ -211,7 +211,7 @@ func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) (
 	containers, err := s.docker.ListContainers(docker.ListContainersOptions{
 		Filters: map[string][]string{
 			"label": []string{
-				fmt.Sprintf("%s=true", attachedRunLabel),
+				fmt.Sprintf("%s", runLabel),
 				fmt.Sprintf("%s=%s", appLabel, app),
 			},
 		},
@@ -247,6 +247,20 @@ func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) (
 
 // Stop stops the given container.
 func (s *Scheduler) Stop(ctx context.Context, containerID string) error {
+	container, err := s.docker.InspectContainer(containerID)
+	if err != nil {
+		return err
+	}
+
+	// Some extra protection around stopping containers. We don't want to
+	// allow users to stop containers that may have been started outside of
+	// Empire.
+	if _, ok := container.Config.Labels[runLabel]; !ok {
+		return &docker.NoSuchContainer{
+			ID: containerID,
+		}
+	}
+
 	if err := s.docker.StopContainer(ctx, containerID, stopContainerTimeout); err != nil {
 		return err
 	}
