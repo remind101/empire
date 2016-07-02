@@ -8,13 +8,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/fsouza/go-dockerclient"
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/httpmock"
 	"github.com/remind101/empire/pkg/image"
 )
 
 func TestCMDExtractor(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	)).Add(httpmock.PathHandler(t,
 		"GET /images/remind101:acme-inc/json",
 		200, `{ "Config": { "Cmd": ["/go/bin/app","server"] } }`,
 	))
@@ -47,6 +50,9 @@ func TestCMDExtractor(t *testing.T) {
 
 func TestProcfileExtractor(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	)).Add(httpmock.PathHandler(t,
 		"POST /containers/create",
 		200, `{ "ID": "abc" }`,
 	)).Add(httpmock.PathHandler(t,
@@ -80,11 +86,53 @@ func TestProcfileExtractor(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Extract() => %q; want %q", got, want)
 	}
+}
 
+func TestProcfileExtractor_Docker12(t *testing.T) {
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.24" }`,
+	)).Add(httpmock.PathHandler(t,
+		"POST /containers/create",
+		200, `{ "ID": "abc" }`,
+	)).Add(httpmock.PathHandler(t,
+		"GET /containers/abc/json",
+		200, `{}`,
+	)).Add(httpmock.PathHandler(t,
+		"GET /containers/abc/archive",
+		200, tarProcfile(t),
+	)).Add(httpmock.PathHandler(t,
+		"DELETE /containers/abc",
+		200, `{}`,
+	))
+
+	c, s := newTestDockerClient(t, api)
+	defer s.Close()
+
+	e := fileExtractor{
+		client: c,
+	}
+
+	got, err := e.Extract(nil, image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []byte(`web: rails server`)
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Extract() => %q; want %q", got, want)
+	}
 }
 
 func TestProcfileFallbackExtractor(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	)).Add(httpmock.PathHandler(t,
 		"POST /containers/create",
 		200, `{ "ID": "abc" }`,
 	)).Add(httpmock.PathHandler(t,
@@ -130,10 +178,10 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 }
 
 // newTestDockerClient returns a docker.Client configured to talk to the given http.Handler
-func newTestDockerClient(t *testing.T, fakeDockerAPI http.Handler) (*docker.Client, *httptest.Server) {
+func newTestDockerClient(t *testing.T, fakeDockerAPI http.Handler) (*dockerutil.Client, *httptest.Server) {
 	s := httptest.NewServer(fakeDockerAPI)
 
-	c, err := docker.NewClient(s.URL)
+	c, err := dockerutil.NewClient(nil, s.URL, "")
 	if err != nil {
 		t.Fatal(err)
 	}
