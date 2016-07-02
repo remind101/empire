@@ -80,12 +80,36 @@ func TestScheduler_Stop(t *testing.T) {
 		docker: d,
 	}
 
-	d.On("StopContainer", "container_id", uint(30)).Return(nil)
+	d.On("StopContainer", "container_id", uint(10)).Return(nil)
 
 	err := s.Stop(ctx, "container_id")
 	assert.NoError(t, err)
 
 	d.AssertExpectations(t)
+}
+
+func TestAttachedScheduler_Stop_ContainerNotFound(t *testing.T) {
+	w := new(mockScheduler)
+	d := new(mockDockerClient)
+	ds := &Scheduler{
+		docker: d,
+	}
+	s := &attachedScheduler{
+		Scheduler:       w,
+		dockerScheduler: ds,
+	}
+
+	d.On("StopContainer", "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c", uint(10)).Return(&docker.NoSuchContainer{
+		ID: "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c",
+	})
+
+	w.On("Stop", "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c").Return(nil)
+
+	err := s.Stop(ctx, "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c")
+	assert.NoError(t, err)
+
+	d.AssertExpectations(t)
+	w.AssertExpectations(t)
 }
 
 func TestParseEnv(t *testing.T) {
@@ -119,5 +143,15 @@ func (m *mockDockerClient) InspectContainer(id string) (*docker.Container, error
 
 func (m *mockDockerClient) StopContainer(ctx context.Context, id string, timeout uint) error {
 	args := m.Called(id, timeout)
+	return args.Error(0)
+}
+
+type mockScheduler struct {
+	scheduler.Scheduler
+	mock.Mock
+}
+
+func (m *mockScheduler) Stop(ctx context.Context, id string) error {
+	args := m.Called(id)
 	return args.Error(0)
 }
