@@ -70,6 +70,22 @@ func TestScheduler_InstancesFromAttachedRuns(t *testing.T) {
 		State:     "RUNNING",
 		UpdatedAt: time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 	}, instances[0])
+
+	d.AssertExpectations(t)
+}
+
+func TestScheduler_Stop(t *testing.T) {
+	d := new(mockDockerClient)
+	s := Scheduler{
+		docker: d,
+	}
+
+	d.On("StopContainer", "container_id", uint(30)).Return(nil)
+
+	err := s.Stop(ctx, "container_id")
+	assert.NoError(t, err)
+
+	d.AssertExpectations(t)
 }
 
 func TestParseEnv(t *testing.T) {
@@ -99,4 +115,9 @@ func (m *mockDockerClient) ListContainers(opts docker.ListContainersOptions) ([]
 func (m *mockDockerClient) InspectContainer(id string) (*docker.Container, error) {
 	args := m.Called(id)
 	return args.Get(0).(*docker.Container), args.Error(1)
+}
+
+func (m *mockDockerClient) StopContainer(ctx context.Context, id string, timeout uint) error {
+	args := m.Called(id, timeout)
+	return args.Error(0)
 }

@@ -16,6 +16,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+// The amount of time to wait for a container to stop before sending a SIGKILL.
+const stopContainerTimeout = 10 // Seconds
+
+// dockerClient defines the Docker client interface we use.
 type dockerClient interface {
 	InspectContainer(string) (*docker.Container, error)
 	ListContainers(docker.ListContainersOptions) ([]docker.APIContainers, error)
@@ -23,6 +27,7 @@ type dockerClient interface {
 	CreateContainer(context.Context, docker.CreateContainerOptions) (*docker.Container, error)
 	RemoveContainer(context.Context, docker.RemoveContainerOptions) error
 	StartContainer(context.Context, string, *docker.HostConfig) error
+	StopContainer(context.Context, string, uint) error
 	AttachToContainer(context.Context, docker.AttachToContainerOptions) error
 }
 
@@ -81,6 +86,20 @@ func (s *attachedScheduler) Instances(ctx context.Context, app string) ([]*sched
 	}
 
 	return append(instances, attachedInstances...), nil
+}
+
+// Stop checks if there's an attached run matching the given id, and stops that
+// container if there is. Otherwise, it delegates to the wrapped Scheduler.
+func (s *attachedScheduler) Stop(ctx context.Context, maybeContainerID string) error {
+	err := s.dockerScheduler.Stop(ctx, maybeContainerID)
+
+	// If there's no container with this ID, delegate to the wrapped
+	// scheduler.
+	if _, ok := err.(*docker.NoSuchContainer); ok {
+		return s.Scheduler.Stop(ctx, maybeContainerID)
+	}
+
+	return err
 }
 
 // Scheduler provides an implementation of the scheduler.Scheduler interface
@@ -213,6 +232,15 @@ func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) (
 	}
 
 	return instances, nil
+}
+
+// Stop stops the given container.
+func (s *Scheduler) Stop(ctx context.Context, containerID string) error {
+	if err := s.docker.StopContainer(ctx, containerID, stopContainerTimeout); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func parseEnv(env []string) map[string]string {
