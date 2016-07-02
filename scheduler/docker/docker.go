@@ -75,17 +75,28 @@ func (s *attachedScheduler) Run(ctx context.Context, app *scheduler.App, process
 // Instances returns a combination of instances from the wrapped scheduler, as
 // well as instances from attached runs.
 func (s *attachedScheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+	type instancesResult struct {
+		instances []*scheduler.Instance
+		err       error
+	}
+
+	ch := make(chan instancesResult, 1)
+	go func() {
+		attachedInstances, err := s.dockerScheduler.InstancesFromAttachedRuns(ctx, app)
+		ch <- instancesResult{attachedInstances, err}
+	}()
+
 	instances, err := s.Scheduler.Instances(ctx, app)
 	if err != nil {
 		return instances, err
 	}
 
-	attachedInstances, err := s.dockerScheduler.InstancesFromAttachedRuns(ctx, app)
-	if err != nil {
+	result := <-ch
+	if err := result.err; err != nil {
 		return instances, err
 	}
 
-	return append(instances, attachedInstances...), nil
+	return append(instances, result.instances...), nil
 }
 
 // Stop checks if there's an attached run matching the given id, and stops that
