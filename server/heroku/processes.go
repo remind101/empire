@@ -18,9 +18,10 @@ type Dyno heroku.Dyno
 
 func newDyno(task *empire.Task) *Dyno {
 	return &Dyno{
+		Id:        task.ID,
 		Command:   task.Command.String(),
 		Type:      task.Type,
-		Name:      task.Name,
+		Name:      fmt.Sprintf("%s.%s.%s", task.Release, task.Type, task.ID),
 		State:     task.State,
 		Size:      task.Constraints.String(),
 		UpdatedAt: task.UpdatedAt,
