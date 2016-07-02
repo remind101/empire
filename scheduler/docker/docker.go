@@ -1,17 +1,17 @@
 // Package docker implements the Scheduler interface backed by the Docker API.
-// This implementation is not recommended for production use, but can be used in
-// development for testing.
 package docker
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
+	"code.google.com/p/go-uuid/uuid"
+
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/scheduler"
 	"golang.org/x/net/context"
 )
@@ -19,6 +19,11 @@ import (
 type dockerClient interface {
 	InspectContainer(string) (*docker.Container, error)
 	ListContainers(docker.ListContainersOptions) ([]docker.APIContainers, error)
+	PullImage(context.Context, docker.PullImageOptions) error
+	CreateContainer(context.Context, docker.CreateContainerOptions) (*docker.Container, error)
+	RemoveContainer(context.Context, docker.RemoveContainerOptions) error
+	StartContainer(context.Context, string, *docker.HostConfig) error
+	AttachToContainer(context.Context, docker.AttachToContainerOptions) error
 }
 
 const (
@@ -81,7 +86,6 @@ func (s *attachedScheduler) Instances(ctx context.Context, app string) ([]*sched
 // Scheduler provides an implementation of the scheduler.Scheduler interface
 // backed by Docker.
 type Scheduler struct {
-	runner *runner.Runner
 	docker dockerClient
 }
 
@@ -89,7 +93,6 @@ type Scheduler struct {
 // interact with Docker.
 func NewScheduler(client *dockerutil.Client) *Scheduler {
 	return &Scheduler{
-		runner: runner.NewRunner(client),
 		docker: client,
 	}
 }
@@ -103,16 +106,67 @@ func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, p *scheduler.Pr
 
 	labels := scheduler.Labels(app, p)
 	labels[attachedRunLabel] = "true"
-	return s.runner.Run(ctx, runner.RunOpts{
-		Image:     p.Image,
-		Command:   p.Command,
-		Env:       scheduler.Env(app, p),
-		Memory:    int64(p.MemoryLimit),
-		CPUShares: int64(p.CPUShares),
-		Labels:    labels,
-		Input:     in,
-		Output:    out,
+
+	if err := s.docker.PullImage(ctx, docker.PullImageOptions{
+		Registry:     p.Image.Registry,
+		Repository:   p.Image.Repository,
+		Tag:          p.Image.Tag,
+		OutputStream: replaceNL(out),
+	}); err != nil {
+		return fmt.Errorf("error pulling image: %v", err)
+	}
+
+	container, err := s.docker.CreateContainer(ctx, docker.CreateContainerOptions{
+		Name: uuid.New(),
+		Config: &docker.Config{
+			Tty:          true,
+			AttachStdin:  true,
+			AttachStdout: true,
+			AttachStderr: true,
+			OpenStdin:    true,
+			Memory:       int64(p.MemoryLimit),
+			CPUShares:    int64(p.CPUShares),
+			Image:        p.Image.String(),
+			Cmd:          p.Command,
+			Env:          envKeys(scheduler.Env(app, p)),
+			Labels:       labels,
+		},
+		HostConfig: &docker.HostConfig{
+			LogConfig: docker.LogConfig{
+				Type: "json-file",
+			},
+		},
 	})
+	if err != nil {
+		return fmt.Errorf("error creating container: %v", err)
+	}
+	defer s.docker.RemoveContainer(ctx, docker.RemoveContainerOptions{
+		ID:            container.ID,
+		RemoveVolumes: true,
+		Force:         true,
+	})
+
+	if err := s.docker.StartContainer(ctx, container.ID, nil); err != nil {
+		return fmt.Errorf("error starting container: %v", err)
+	}
+	defer tryClose(out)
+
+	if err := s.docker.AttachToContainer(ctx, docker.AttachToContainerOptions{
+		Container:    container.ID,
+		InputStream:  in,
+		OutputStream: out,
+		ErrorStream:  out,
+		Logs:         true,
+		Stream:       true,
+		Stdin:        true,
+		Stdout:       true,
+		Stderr:       true,
+		RawTerminal:  true,
+	}); err != nil {
+		return fmt.Errorf("error attaching to container: %v", err)
+	}
+
+	return nil
 }
 
 func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
@@ -168,4 +222,38 @@ func parseEnv(env []string) map[string]string {
 		m[parts[0]] = parts[1]
 	}
 	return m
+}
+
+func envKeys(env map[string]string) []string {
+	var s []string
+
+	for k, v := range env {
+		s = append(s, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	return s
+}
+
+func tryClose(w io.Writer) error {
+	if w, ok := w.(io.Closer); ok {
+		return w.Close()
+	}
+
+	return nil
+}
+
+// replaceNL returns an io.Writer that will replace "\n" with "\r\n" in the
+// stream.
+var replaceNL = func(w io.Writer) io.Writer {
+	o, n := []byte("\n"), []byte("\r\n")
+	return writerFunc(func(p []byte) (int, error) {
+		return w.Write(bytes.Replace(p, o, n, -1))
+	})
+}
+
+// writerFunc is a function that implements io.Writer.
+type writerFunc func([]byte) (int, error)
+
+func (f writerFunc) Write(p []byte) (int, error) {
+	return f(p)
 }
