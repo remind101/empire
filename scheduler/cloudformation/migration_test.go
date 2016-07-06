@@ -35,7 +35,7 @@ func TestMigrationScheduler_NewApp(t *testing.T) {
 
 	c.On("Submit", app).Return(nil)
 
-	err := s.Submit(context.Background(), app, make(chan string))
+	err := s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -68,7 +68,7 @@ func TestMigrationScheduler_OldApp(t *testing.T) {
 
 	e.On("Submit", app).Return(nil)
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -108,7 +108,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 		NoDNS: aws.Bool(true),
 	}).Return(nil)
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -125,7 +125,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 		NoDNS: true,
 	}).Return(nil)
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -136,7 +136,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 
 	c.On("Submit", app).Return(err)
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -178,12 +178,12 @@ func TestMigrationScheduler_Migrate_Rollback(t *testing.T) {
 		NoDNS: aws.Bool(true),
 	}).Return(nil).Twice()
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	// Let's assume the the CloudFormation stack that was created got rolled
 	// back, so they manually delete the stack and try again.
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -217,13 +217,13 @@ func TestMigrationScheduler_Migrate_InvalidStateTransitions(t *testing.T) {
 		},
 	}
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error migrating app from ecs to step2: cannot transition from ecs to step2")
 
 	app.Env[MigrationEnvVar] = "step3"
 
-	err = s.Submit(context.Background(), app, make(chan string))
+	err = s.Submit(context.Background(), app, scheduler.NewEventChan())
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error migrating app from ecs to step3: cannot transition to step3")
 
@@ -236,7 +236,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, _ chan string) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, _ scheduler.EventChan) error {
 	args := m.Called(app)
 	return args.Error(0)
 }
@@ -254,7 +254,7 @@ type mockCloudFormationScheduler struct {
 	mockScheduler
 }
 
-func (m *mockCloudFormationScheduler) SubmitWithOptions(_ context.Context, app *scheduler.App, _ chan string, opts SubmitOptions) error {
+func (m *mockCloudFormationScheduler) SubmitWithOptions(_ context.Context, app *scheduler.App, _ scheduler.EventChan, opts SubmitOptions) error {
 	args := m.Called(app, opts)
 	return args.Error(0)
 }

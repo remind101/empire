@@ -126,6 +126,16 @@ func (e *Empire) requireMessages(m string) error {
 	return nil
 }
 
+type DoneChan chan error
+
+func NewDoneChan() DoneChan {
+	return make(DoneChan, 1)
+}
+
+func NewEventChan() scheduler.EventChan {
+	return scheduler.NewEventChan()
+}
+
 // CreateOpts are options that are provided when creating a new application.
 type CreateOpts struct {
 	// User performing the action.
@@ -541,6 +551,12 @@ type DeployOpts struct {
 
 	// Commit message
 	Message string
+
+	// Events channel where scheduler events will be published to while deploying
+	Events scheduler.EventChan
+
+	// Done channel which will be published to when the deploy is complete
+	Done DoneChan
 }
 
 func (opts DeployOpts) Event() DeployEvent {

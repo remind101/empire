@@ -160,13 +160,12 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 		s3:             s3.New(config),
 		db:             db,
 		after:          time.After,
-		wait:           true,
 	}
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, status chan string) error {
-	return s.SubmitWithOptions(ctx, app, status, SubmitOptions{})
+func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, events scheduler.EventChan) error {
+	return s.SubmitWithOptions(ctx, app, events, SubmitOptions{})
 }
 
 // SubmitOptions are options provided to SubmitWithOptions.
@@ -177,13 +176,13 @@ type SubmitOptions struct {
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, status chan string, opts SubmitOptions) error {
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, events scheduler.EventChan, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app, status, opts)
+	err = s.submit(ctx, tx, app, events, opts)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -193,7 +192,7 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, s
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, status chan string, opts SubmitOptions) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, events scheduler.EventChan, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -278,29 +277,36 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		}
 	}
 
-	done = make(chan error, 1)
-	s.waitForDeploymentToStabilize(ctx, stackName, done)
-	if err := <-done; err != nil {
-		return err
-	}
+	go s.waitForDeploymentToStabilize(ctx, app, stackName, events, done)
 	return nil
 }
 
-func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, name string, done chan error) {
+func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, app *scheduler.App, name string, events scheduler.EventChan, done chan error) {
+	if events == nil {
+		events = make(scheduler.EventChan)
+	}
+
+	events <- scheduler.Event{Message: fmt.Sprintf("Updating stack \"%s\"", name)}
+	if err := <-done; err != nil {
+		events <- scheduler.Event{Error: err}
+		return
+	}
+	events <- scheduler.Event{Message: "Stack updated"}
+
 	stack, err := s.stack(&name)
 	if err != nil {
-		done <- err
+		events <- scheduler.Event{Error: err}
 		return
 	}
 
 	deployments := s.output(stack, deploymentsOutput)
 	services := s.output(stack, servicesOutput)
 	if deployments == nil {
-		done <- fmt.Errorf("deployments output missing from stack")
+		events <- scheduler.Event{Error: fmt.Errorf("deployments output missing from stack")}
 		return
 	}
 	if services == nil {
-		done <- fmt.Errorf("services output missing from stack")
+		events <- scheduler.Event{Error: fmt.Errorf("services output missing from stack")}
 		return
 	}
 
@@ -308,50 +314,56 @@ func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, name strin
 	deploymentIDs := extractProcessData(*deployments.OutputValue)
 
 	if len(arns) == 0 {
-		done <- fmt.Errorf("no services found in output")
+		events <- scheduler.Event{Error: fmt.Errorf("no services found in output")}
 		return
 	}
 	if len(deploymentIDs) == 0 {
-		done <- fmt.Errorf("no deploymentIDs found in output")
+		events <- scheduler.Event{Error: fmt.Errorf("no deploymentIDs found in output")}
 		return
 	}
 
 	var serviceIDs []*string
 	arnToDeploymentID := make(map[string]string)
+	arnToProcessName := make(map[string]string)
 	for p, a := range arns {
 		id, err := arn.ResourceID(a)
 		if err != nil {
-			done <- fmt.Errorf("error retrieving id from arn: %v", err)
+			events <- scheduler.Event{Error: fmt.Errorf("error retrieving id from arn: %v", err)}
 			return
 		}
 		deploymentID, ok := deploymentIDs[p]
 		if !ok {
-			done <- fmt.Errorf("deployment id not found for process: %v", p)
+			events <- scheduler.Event{Error: fmt.Errorf("deployment id not found for process: %v", p)}
 			return
 		}
 
 		arnToDeploymentID[a] = deploymentID
+		arnToProcessName[a] = p
 		serviceIDs = append(serviceIDs, aws.String(id))
 	}
 
-	completed := false
-	check := func() {
+	check := func() bool {
 		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
 			Cluster:  aws.String(s.Cluster),
 			Services: serviceIDs,
 		})
 		if err != nil {
-			completed = true
-			done <- fmt.Errorf("error describing services: %v", err)
-			return
+			events <- scheduler.Event{Error: fmt.Errorf("error describing services: %v", err)}
+			return true
 		}
 
+		var completed []bool
 		for _, service := range status.Services {
 			deploymentID, ok := arnToDeploymentID[*service.ServiceArn]
 			if !ok {
-				completed = true
-				done <- fmt.Errorf("missing arn for deploymentID: %s", deploymentID)
-				return
+				events <- scheduler.Event{Error: fmt.Errorf("missing deploymentID for arn: %s", *service.ServiceArn)}
+				return true
+			}
+
+			name, ok := arnToProcessName[*service.ServiceArn]
+			if !ok {
+				events <- scheduler.Event{Error: fmt.Errorf("missing process name for arn: %s", *service.ServiceArn)}
+				return true
 			}
 
 			primary := false
@@ -361,22 +373,36 @@ func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, name strin
 					primary = *deployment.Status == "PRIMARY"
 				}
 			}
+
+			var status string
 			if primary && stable {
-				fmt.Printf("[DEBUG] Deployment stable: %s (%s)\n", deploymentID, *service.ServiceArn)
+				status = "stable"
 			} else if primary {
-				fmt.Printf("[DEBUG] Deployment in progress: %s (%s)\n", deploymentID, *service.ServiceArn)
+				status = "in progress"
 			} else {
-				fmt.Printf("[DEBUG] Deployment superseded: %s (%s)\n", deploymentID, *service.ServiceArn)
+				status = "superseded by newer release"
 			}
-			completed = !primary || primary && stable
+			events <- scheduler.Event{
+				Message: fmt.Sprintf("Deployment %s for %s", status, name),
+			}
+			complete := !primary || primary && stable
+			if complete {
+				completed = append(completed, complete)
+			}
 		}
+		return len(completed) == len(status.Services)
 	}
 
+	completed := false
 	for !completed {
 		<-s.after(2 * time.Second)
-		check()
+		completed = check()
 	}
-	done <- nil
+
+	events <- scheduler.Event{
+		Message: fmt.Sprintf("Closing event stream for release %s", app.Release),
+		Close:   true,
+	}
 }
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
@@ -434,13 +460,12 @@ func (s *Scheduler) createStack(input *createStackInput, done chan error) error 
 
 	submitted := make(chan error)
 	fn := func() error {
-		resp, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+		_, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
 			StackName:   input.StackName,
 			TemplateURL: input.Template.URL,
 			Tags:        input.Tags,
 			Parameters:  input.Parameters,
 		})
-		fmt.Println("[DEBUG] Create Stack response:", resp)
 		submitted <- err
 		return err
 	}
@@ -575,7 +600,7 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 		i.UsePreviousTemplate = aws.Bool(true)
 	}
 
-	resp, err := s.cloudformation.UpdateStack(i)
+	_, err = s.cloudformation.UpdateStack(i)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
@@ -585,8 +610,6 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 
 		return fmt.Errorf("error updating stack: %v", err)
 	}
-	fmt.Println("[DEBUG] Update stack response:", resp)
-
 	return nil
 }
 

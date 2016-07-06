@@ -518,7 +518,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, _ chan string) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, _ scheduler.EventChan) error {
 	args := m.Called(app)
 	return args.Error(0)
 }

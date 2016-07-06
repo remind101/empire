@@ -152,7 +152,7 @@ func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*C
 		Config:      c,
 		Slug:        release.Slug,
 		Description: configsApplyReleaseDesc(opts),
-	})
+	}, nil)
 	return c, err
 }
 

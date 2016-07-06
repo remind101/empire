@@ -118,7 +118,7 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App, chan string) error
+	Submit(context.Context, *App, EventChan) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
@@ -151,4 +151,16 @@ func merge(envs ...map[string]string) map[string]string {
 		}
 	}
 	return merged
+}
+
+type Event struct {
+	Error   error
+	Message string
+	Close   bool
+}
+
+type EventChan chan Event
+
+func NewEventChan() EventChan {
+	return make(EventChan)
 }

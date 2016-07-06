@@ -18,7 +18,7 @@ func NewFakeScheduler() *FakeScheduler {
 	}
 }
 
-func (m *FakeScheduler) Submit(ctx context.Context, app *App, status chan string) error {
+func (m *FakeScheduler) Submit(ctx context.Context, app *App, events EventChan) error {
 	m.apps[app.ID] = app
 	return nil
 }
