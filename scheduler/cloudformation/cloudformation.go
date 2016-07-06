@@ -342,6 +342,7 @@ func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, app *sched
 		serviceIDs = append(serviceIDs, aws.String(id))
 	}
 
+	dedupe := make(map[string]bool)
 	check := func() bool {
 		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
 			Cluster:  aws.String(s.Cluster),
@@ -382,8 +383,11 @@ func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, app *sched
 			} else {
 				status = "superseded by newer release"
 			}
-			events <- scheduler.Event{
-				Message: fmt.Sprintf("Deployment %s for %s", status, name),
+			message := fmt.Sprintf("Deployment %s for %s", status, name)
+			d := fmt.Sprintf("%s:%s", *service.ServiceArn, message)
+			if _, ok := dedupe[d]; !ok {
+				events <- scheduler.Event{Message: message}
+				dedupe[d] = true
 			}
 			complete := !primary || primary && stable
 			if complete {
