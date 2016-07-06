@@ -30,6 +30,9 @@ func (h *PostDeploys) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	// We ignore errors here since this is a streaming endpoint,
 	// and the error is handled in the response message
 	_, _ = h.Deploy(ctx, *opts)
+	if err = <-opts.Done; err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -56,6 +59,8 @@ func newDeployOpts(ctx context.Context, w http.ResponseWriter, req *http.Request
 		Image:   form.Image,
 		Output:  streamhttp.StreamingResponseWriter(w),
 		Message: m,
+		Events:  empire.NewEventChan(),
+		Done:    empire.NewDoneChan(),
 	}
 	return &opts, nil
 }

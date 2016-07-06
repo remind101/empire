@@ -164,7 +164,7 @@ func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) ([
 		return nil, err
 	}
 
-	err = s.releases.Release(ctx, release)
+	err = s.releases.Release(ctx, release, nil)
 	if err != nil {
 		return ps, err
 	}

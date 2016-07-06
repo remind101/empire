@@ -36,6 +36,8 @@ var newUUID = uuid.New
 // values.
 const servicesOutput = "Services"
 
+const deploymentsOutput = "Deployments"
+
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
 
@@ -97,6 +99,7 @@ type ecsClient interface {
 	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 }
 
 // s3Client duck types the s3.S3 interface that we use.
@@ -161,8 +164,8 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
-	return s.SubmitWithOptions(ctx, app, SubmitOptions{})
+func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, events scheduler.EventChan) error {
+	return s.SubmitWithOptions(ctx, app, events, SubmitOptions{})
 }
 
 // SubmitOptions are options provided to SubmitWithOptions.
@@ -173,13 +176,13 @@ type SubmitOptions struct {
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, opts SubmitOptions) error {
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, events scheduler.EventChan, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app, opts)
+	err = s.submit(ctx, tx, app, events, opts)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -189,7 +192,7 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, o
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, opts SubmitOptions) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, events scheduler.EventChan, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -274,7 +277,136 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		}
 	}
 
+	go s.waitForDeploymentToStabilize(ctx, app, stackName, events, done)
 	return nil
+}
+
+func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, app *scheduler.App, name string, events scheduler.EventChan, done chan error) {
+	if events == nil {
+		events = make(scheduler.EventChan)
+	}
+
+	events <- scheduler.Event{Message: fmt.Sprintf("Updating stack \"%s\"", name)}
+	if err := <-done; err != nil {
+		events <- scheduler.Event{Error: err}
+		return
+	}
+	events <- scheduler.Event{Message: "Stack updated"}
+
+	stack, err := s.stack(&name)
+	if err != nil {
+		events <- scheduler.Event{Error: err}
+		return
+	}
+
+	deployments := s.output(stack, deploymentsOutput)
+	services := s.output(stack, servicesOutput)
+	if deployments == nil {
+		events <- scheduler.Event{Error: fmt.Errorf("deployments output missing from stack")}
+		return
+	}
+	if services == nil {
+		events <- scheduler.Event{Error: fmt.Errorf("services output missing from stack")}
+		return
+	}
+
+	arns := extractProcessData(*services.OutputValue)
+	deploymentIDs := extractProcessData(*deployments.OutputValue)
+
+	if len(arns) == 0 {
+		events <- scheduler.Event{Error: fmt.Errorf("no services found in output")}
+		return
+	}
+	if len(deploymentIDs) == 0 {
+		events <- scheduler.Event{Error: fmt.Errorf("no deploymentIDs found in output")}
+		return
+	}
+
+	var serviceIDs []*string
+	arnToDeploymentID := make(map[string]string)
+	arnToProcessName := make(map[string]string)
+	for p, a := range arns {
+		id, err := arn.ResourceID(a)
+		if err != nil {
+			events <- scheduler.Event{Error: fmt.Errorf("error retrieving id from arn: %v", err)}
+			return
+		}
+		deploymentID, ok := deploymentIDs[p]
+		if !ok {
+			events <- scheduler.Event{Error: fmt.Errorf("deployment id not found for process: %v", p)}
+			return
+		}
+
+		arnToDeploymentID[a] = deploymentID
+		arnToProcessName[a] = p
+		serviceIDs = append(serviceIDs, aws.String(id))
+	}
+
+	dedupe := make(map[string]bool)
+	check := func() bool {
+		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(s.Cluster),
+			Services: serviceIDs,
+		})
+		if err != nil {
+			events <- scheduler.Event{Error: fmt.Errorf("error describing services: %v", err)}
+			return true
+		}
+
+		var completed []bool
+		for _, service := range status.Services {
+			deploymentID, ok := arnToDeploymentID[*service.ServiceArn]
+			if !ok {
+				events <- scheduler.Event{Error: fmt.Errorf("missing deploymentID for arn: %s", *service.ServiceArn)}
+				return true
+			}
+
+			name, ok := arnToProcessName[*service.ServiceArn]
+			if !ok {
+				events <- scheduler.Event{Error: fmt.Errorf("missing process name for arn: %s", *service.ServiceArn)}
+				return true
+			}
+
+			primary := false
+			stable := len(service.Deployments) == 1
+			for _, deployment := range service.Deployments {
+				if *deployment.Id == deploymentID {
+					primary = *deployment.Status == "PRIMARY"
+				}
+			}
+
+			var status string
+			if primary && stable {
+				status = "stable"
+			} else if primary {
+				status = "in progress"
+			} else {
+				status = "superseded by newer release"
+			}
+			message := fmt.Sprintf("Deployment %s for %s", status, name)
+			d := fmt.Sprintf("%s:%s", *service.ServiceArn, message)
+			if _, ok := dedupe[d]; !ok {
+				events <- scheduler.Event{Message: message}
+				dedupe[d] = true
+			}
+			complete := !primary || primary && stable
+			if complete {
+				completed = append(completed, complete)
+			}
+		}
+		return len(completed) == len(status.Services)
+	}
+
+	completed := false
+	for !completed {
+		<-s.after(2 * time.Second)
+		completed = check()
+	}
+
+	events <- scheduler.Event{
+		Message: fmt.Sprintf("Closing event stream for release %s", app.Release),
+		Close:   true,
+	}
 }
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
@@ -482,7 +614,6 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 
 		return fmt.Errorf("error updating stack: %v", err)
 	}
-
 	return nil
 }
 
@@ -495,6 +626,16 @@ func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
 		return nil, err
 	}
 	return resp.Stacks[0], nil
+}
+
+// output returns the cloudformation.Output that matches the given key.
+func (s *Scheduler) output(stack *cloudformation.Stack, key string) (output *cloudformation.Output) {
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == key {
+			output = o
+		}
+	}
+	return
 }
 
 // Remove removes the CloudFormation stack for the given app.
@@ -674,21 +815,11 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, err
 	}
 
-	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
+	stack, err := s.stack(aws.String(stackName))
 	if err != nil {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
-
-	stack := resp.Stacks[0]
-
-	var output *cloudformation.Output
-	for _, o := range stack.Outputs {
-		if *o.OutputKey == servicesOutput {
-			output = o
-		}
-	}
+	output := s.output(stack, servicesOutput)
 	if output == nil {
 		// Nothing to do but wait until the outputs are set.
 		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
@@ -698,7 +829,7 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
 	}
 
-	return extractServices(*output.OutputValue), nil
+	return extractProcessData(*output.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
@@ -756,9 +887,9 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 	return stackName, err
 }
 
-// extractServices extracts a map that maps the process name to the ARN of the
-// associated ECS service.
-func extractServices(value string) map[string]string {
+// extractProcessData extracts a map that maps the process name to some
+// corresponding value.
+func extractProcessData(value string) map[string]string {
 	services := make(map[string]string)
 	pairs := strings.Split(value, ",")
 

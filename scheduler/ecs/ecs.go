@@ -186,7 +186,7 @@ func (m *Scheduler) RemoveCNAMEs(ctx context.Context, appID string) error {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
+func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App, events scheduler.EventChan) error {
 	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err

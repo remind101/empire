@@ -85,7 +85,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 				Instances: 1,
 			},
 		},
-	})
+	}, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -142,7 +142,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
-	})
+	}, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -208,7 +208,7 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
-	})
+	}, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -274,7 +274,7 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
-	})
+	}, scheduler.NewEventChan())
 	assert.EqualError(t, err, `timed out waiting for stack operation to complete`)
 
 	c.AssertExpectations(t)
@@ -327,7 +327,7 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
-	})
+	}, scheduler.NewEventChan())
 	assert.EqualError(t, err, `error updating stack: stack update failed`)
 
 	c.AssertExpectations(t)
@@ -399,7 +399,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		Processes: []*scheduler.Process{
 			{Type: "web", Instances: 1},
 		},
-	})
+	}, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -475,7 +475,7 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 		Processes: []*scheduler.Process{
 			{Type: "web", Instances: 1},
 		},
-	})
+	}, scheduler.NewEventChan())
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -512,7 +512,7 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
-	})
+	}, scheduler.NewEventChan())
 	assert.EqualError(t, err, `TemplateValidationError:
   Template URL: https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f
   Template Size: 2 bytes
@@ -845,9 +845,9 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestExtractServices(t *testing.T) {
+func TestExtractProcessData(t *testing.T) {
 	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
-	services := extractServices(output)
+	services := extractProcessData(output)
 	expected := map[string]string{
 		"statuses":       "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO",
 		"statuses_retry": "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N",

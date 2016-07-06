@@ -57,7 +57,7 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 		Config:      config,
 		Slug:        slug,
 		Description: desc,
-	})
+	}, opts.Events)
 
 	return r, err
 }
@@ -77,6 +77,34 @@ func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {
 		return r, err
 	}
-
+	go s.streamEvents(opts)
 	return r, err
+}
+
+func (s *deployerService) streamEvents(opts DeployOpts) {
+	for event := range opts.Events {
+		var msg string
+		if event.Error != nil {
+			msg = fmt.Sprintf("Error: %s", event.Error.Error())
+		} else {
+			if event.Message != "" {
+				msg = fmt.Sprintf("Status: %s", event.Message)
+			}
+		}
+
+		if msg != "" {
+			m := jsonmessage.JSONMessage{Status: msg}
+			if err := json.NewEncoder(opts.Output).Encode(&m); err != nil {
+				close(opts.Events)
+				opts.Done <- err
+				return
+			}
+		}
+
+		if event.Error != nil || event.Close {
+			close(opts.Events)
+			opts.Done <- event.Error
+			return
+		}
+	}
 }
