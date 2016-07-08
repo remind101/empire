@@ -567,15 +567,8 @@ func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 		return nil, err
 	}
 
-	tx := e.db.Begin()
-
-	r, err := e.deployer.Deploy(ctx, tx, opts)
+	r, err := e.deployer.Deploy(ctx, opts)
 	if err != nil {
-		tx.Rollback()
-		return r, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
 		return r, err
 	}
 
