@@ -4,10 +4,10 @@ package scheduler
 
 import (
 	"io"
+	"sync"
 	"time"
 
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/empire/status"
 	"golang.org/x/net/context"
 )
 
@@ -119,7 +119,7 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App, status.StatusStream) error
+	Submit(context.Context, *App, StatusStream) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
@@ -152,4 +152,82 @@ func merge(envs ...map[string]string) map[string]string {
 		}
 	}
 	return merged
+}
+
+type Status struct {
+	// A friendly human readable message about the status change.
+	Message string
+}
+
+// String implements the fmt.Stringer interface.
+func (s *Status) String() string {
+	return s.Message
+}
+
+// StatusStream is an interface for publishing status updates while a scheduler
+// is executing.
+type StatusStream interface {
+	// Publish publishes an update to the status stream
+	Publish(Status)
+
+	// Done finalizes the status stream
+	Done(error)
+}
+
+type SubscribableStream interface {
+	Subscribe() <-chan Status
+	Error() error
+}
+
+// stream implements the StatusStream interface with support for subscribing to
+// updates published to the stream.
+type stream struct {
+	sync.Mutex
+	done bool
+	err  error
+	ch   chan Status
+}
+
+// NewStatusStream returns a new instance of the default status stream.
+func NewStatusStream() StatusStream {
+	return &stream{ch: make(chan Status, 100)}
+}
+
+func (s *stream) Publish(status Status) {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.done {
+		// TODO look into using log here
+		panic("Publish called on finalized status stream")
+	}
+
+	s.publish(status)
+}
+
+func (s *stream) publish(status Status) {
+	select {
+	case s.ch <- status:
+	default:
+		// Drop
+	}
+}
+
+func (s *stream) Subscribe() <-chan Status {
+	return s.ch
+}
+
+func (s *stream) Done(err error) {
+	s.Lock()
+	defer s.Unlock()
+
+	if !s.done {
+		s.done = true
+		s.err = err
+		close(s.ch)
+	}
+}
+
+func (s *stream) Error() error {
+	return s.err
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
-	"github.com/remind101/empire/status"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -237,7 +236,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss status.StatusStream) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	args := m.Called(app)
 	return args.Error(0)
 }
@@ -255,7 +254,7 @@ type mockCloudFormationScheduler struct {
 	mockScheduler
 }
 
-func (m *mockCloudFormationScheduler) SubmitWithOptions(_ context.Context, app *scheduler.App, ss status.StatusStream, opts SubmitOptions) error {
+func (m *mockCloudFormationScheduler) SubmitWithOptions(_ context.Context, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	args := m.Called(app, opts)
 	return args.Error(0)
 }

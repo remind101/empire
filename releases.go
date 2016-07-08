@@ -7,7 +7,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/status"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -105,7 +104,7 @@ type releasesService struct {
 }
 
 // Create creates a new release then submits it to the scheduler.
-func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release, ss status.StatusStream) (*Release, error) {
+func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release, ss scheduler.StatusStream) (*Release, error) {
 	// Lock all releases for the given application to ensure that the
 	// release version is updated automically.
 	if err := db.Exec(`select 1 from releases where app_id = ? for update`, r.App.ID).Error; err != nil {
@@ -151,7 +150,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 }
 
 // Release submits a release to the scheduler.
-func (s *releasesService) Release(ctx context.Context, release *Release, ss status.StatusStream) error {
+func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream) error {
 	a := newSchedulerApp(release)
 	return s.Scheduler.Submit(ctx, a, ss)
 }

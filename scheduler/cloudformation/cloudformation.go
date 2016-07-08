@@ -25,7 +25,6 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/status"
 	"golang.org/x/net/context"
 )
 
@@ -162,7 +161,7 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss status.StatusStream) error {
+func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	return s.SubmitWithOptions(ctx, app, ss, SubmitOptions{})
 }
 
@@ -174,7 +173,7 @@ type SubmitOptions struct {
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, ss status.StatusStream, opts SubmitOptions) error {
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -193,7 +192,7 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, s
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, ss status.StatusStream, opts SubmitOptions) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate

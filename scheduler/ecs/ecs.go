@@ -18,7 +18,6 @@ import (
 	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs/lb"
-	"github.com/remind101/empire/status"
 	"golang.org/x/net/context"
 )
 
@@ -187,7 +186,7 @@ func (m *Scheduler) RemoveCNAMEs(ctx context.Context, appID string) error {
 // removed from ECS. For example, if you previously submitted an app with a
 // `web` and `worker` process, then submit an app with the `web` process, the
 // ECS service for the old `worker` process will be removed.
-func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss status.StatusStream) error {
+func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	processes, err := m.Processes(ctx, app.ID)
 	if err != nil {
 		return err
@@ -206,6 +205,9 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss status.St
 		}
 	}
 
+	if ss != nil {
+		ss.Done(nil)
+	}
 	return nil
 }
 

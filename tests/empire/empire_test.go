@@ -14,7 +14,6 @@ import (
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/status"
 	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -519,7 +518,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss status.StatusStream) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	args := m.Called(app)
 	return args.Error(0)
 }

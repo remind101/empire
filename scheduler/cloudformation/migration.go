@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
-	"github.com/remind101/empire/status"
 )
 
 // This is the environment variable in the application that determines what step
@@ -41,7 +40,7 @@ type MigrationScheduler struct {
 	// The scheduler that we want to migrate to.
 	cloudformation interface {
 		scheduler.Scheduler
-		SubmitWithOptions(context.Context, *scheduler.App, status.StatusStream, SubmitOptions) error
+		SubmitWithOptions(context.Context, *scheduler.App, scheduler.StatusStream, SubmitOptions) error
 	}
 
 	// The scheduler we're migrating from.
@@ -92,7 +91,7 @@ func (s *MigrationScheduler) backend(appID string) (string, error) {
 	return backend, err
 }
 
-func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App, ss status.StatusStream) error {
+func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	state, err := s.backend(app.ID)
 	if err != nil {
 		return err
@@ -116,7 +115,7 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App, ss 
 // Migrate submits the app to the CloudFormation scheduler, waits for the stack
 // to successfully create, then removes the old API managed resources using the
 // ECS scheduler.
-func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, ss status.StatusStream, state, desiredState string) error {
+func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, state, desiredState string) error {
 	errTransition := fmt.Errorf("cannot transition from %s to %s", state, desiredState)
 
 	// Whether or not we're re-trying a state transition.
