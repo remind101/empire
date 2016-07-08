@@ -7,8 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
+
+	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/pkg/logger"
 )
 
 type App struct {
@@ -168,7 +170,7 @@ func (s *Status) String() string {
 // is executing.
 type StatusStream interface {
 	// Publish publishes an update to the status stream
-	Publish(Status)
+	Publish(context.Context, Status)
 
 	// Done finalizes the status stream
 	Done(error)
@@ -193,13 +195,13 @@ func NewStatusStream() StatusStream {
 	return &stream{ch: make(chan Status, 100)}
 }
 
-func (s *stream) Publish(status Status) {
+func (s *stream) Publish(ctx context.Context, status Status) {
 	s.Lock()
 	defer s.Unlock()
 
 	if s.done {
-		// TODO look into using log here
-		panic("Publish called on finalized status stream")
+		logger.Warn(ctx, "Publish called on a finalized stream")
+		return
 	}
 
 	s.publish(status)
