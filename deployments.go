@@ -3,9 +3,11 @@ package empire
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/status"
 	"golang.org/x/net/context"
 )
 
@@ -57,7 +59,7 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 		Config:      config,
 		Slug:        slug,
 		Description: desc,
-	})
+	}, opts.Updates)
 
 	return r, err
 }
@@ -78,5 +80,22 @@ func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 		return r, err
 	}
 
+	if s, ok := opts.Updates.(status.SubscribableStream); ok {
+		for update := range s.Subscribe() {
+			msg := fmt.Sprintf("Status: %s", update.String())
+			write(msg, opts.Output)
+		}
+
+		if err := s.Error(); err != nil {
+			msg := fmt.Sprintf("Error: %s", err.Error())
+			write(msg, opts.Output)
+		}
+	}
+
 	return r, err
+}
+
+func write(msg string, output io.Writer) error {
+	m := jsonmessage.JSONMessage{Status: msg}
+	return json.NewEncoder(output).Encode(&m)
 }

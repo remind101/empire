@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/status"
 	"golang.org/x/net/context"
 )
 
@@ -118,7 +119,7 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App) error
+	Submit(context.Context, *App, status.StatusStream) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error

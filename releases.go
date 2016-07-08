@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/status"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -104,7 +105,7 @@ type releasesService struct {
 }
 
 // Create creates a new release then submits it to the scheduler.
-func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (*Release, error) {
+func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release, ss status.StatusStream) (*Release, error) {
 	// Lock all releases for the given application to ensure that the
 	// release version is updated automically.
 	if err := db.Exec(`select 1 from releases where app_id = ? for update`, r.App.ID).Error; err != nil {
@@ -127,7 +128,7 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (
 	}
 
 	// Schedule the new release onto the cluster.
-	return r, s.Release(ctx, r)
+	return r, s.Release(ctx, r, ss)
 }
 
 // Rolls back to a specific release version.
@@ -146,13 +147,13 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 		Slug:        r.Slug,
 		Formation:   r.Formation,
 		Description: desc,
-	})
+	}, nil)
 }
 
 // Release submits a release to the scheduler.
-func (s *releasesService) Release(ctx context.Context, release *Release) error {
+func (s *releasesService) Release(ctx context.Context, release *Release, ss status.StatusStream) error {
 	a := newSchedulerApp(release)
-	return s.Scheduler.Submit(ctx, a)
+	return s.Scheduler.Submit(ctx, a, ss)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -170,7 +171,7 @@ func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App)
 		return nil
 	}
 
-	return s.Release(ctx, release)
+	return s.Release(ctx, release, nil)
 }
 
 // These associations are always available on a Release.

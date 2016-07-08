@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/remind101/empire/status"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -18,7 +19,7 @@ func NewFakeScheduler() *FakeScheduler {
 	}
 }
 
-func (m *FakeScheduler) Submit(ctx context.Context, app *App) error {
+func (m *FakeScheduler) Submit(ctx context.Context, app *App, ss status.StatusStream) error {
 	m.apps[app.ID] = app
 	return nil
 }
