@@ -18,7 +18,7 @@ type deployerService struct {
 }
 
 // deploy does the actual deployment
-func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeployOpts) (*Release, error) {
+func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, ss status.StatusStream, opts DeployOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this
@@ -59,7 +59,7 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 		Config:      config,
 		Slug:        slug,
 		Description: desc,
-	}, opts.Updates)
+	}, ss)
 
 	return r, err
 }
@@ -69,7 +69,8 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeployOpts) (*Release, error) {
 	var msg jsonmessage.JSONMessage
 
-	r, err := s.deploy(ctx, db, opts)
+	stream := status.NewStatusStream()
+	r, err := s.deploy(ctx, db, stream, opts)
 	if err != nil {
 		msg = newJSONMessageError(err)
 	} else {
@@ -80,7 +81,8 @@ func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 		return r, err
 	}
 
-	if s, ok := opts.Updates.(status.SubscribableStream); ok {
+	if s, ok := stream.(status.SubscribableStream); ok {
+		fmt.Println("subscribing")
 		for update := range s.Subscribe() {
 			msg := fmt.Sprintf("Status: %s", update.String())
 			write(msg, opts.Output)

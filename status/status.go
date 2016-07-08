@@ -47,7 +47,7 @@ type stream struct {
 }
 
 // NewStatusStream returns a new instance of the default status stream.
-func NewStatusStream() *stream {
+func NewStatusStream() StatusStream {
 	return &stream{ch: make(chan Status, 100)}
 }
 

@@ -56,7 +56,6 @@ func newDeployOpts(ctx context.Context, w http.ResponseWriter, req *http.Request
 		Image:   form.Image,
 		Output:  streamhttp.StreamingResponseWriter(w),
 		Message: m,
-		Updates: empire.NewStatusStream(),
 	}
 	return &opts, nil
 }

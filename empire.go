@@ -12,7 +12,6 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/status"
 	"golang.org/x/net/context"
 )
 
@@ -542,9 +541,6 @@ type DeployOpts struct {
 
 	// Commit message
 	Message string
-
-	// Updates is a stream to publish status updates to during deploy
-	Updates status.StatusStream
 }
 
 func (opts DeployOpts) Event() DeployEvent {
@@ -749,8 +745,4 @@ func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
 
 		return e.Extract(ctx, img, w)
 	})
-}
-
-func NewStatusStream() status.StatusStream {
-	return status.NewStatusStream()
 }
