@@ -186,6 +186,9 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, s
 		return err
 	}
 
+	if ss != nil {
+		ss.Done(nil)
+	}
 	return tx.Commit()
 }
 
