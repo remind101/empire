@@ -3,12 +3,14 @@
 package scheduler
 
 import (
+	"encoding/json"
 	"io"
 	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/pkg/logger"
 )
@@ -170,66 +172,54 @@ func (s *Status) String() string {
 // is executing.
 type StatusStream interface {
 	// Publish publishes an update to the status stream
-	Publish(context.Context, Status)
+	Publish(context.Context, Status) error
 
 	// Done finalizes the status stream
 	Done(error)
+
+	// Wait returns a channel that receives once Done() is called. Consumers
+	// should call the Err() method to determine if an error occurred.
+	Wait() <-chan struct{}
+
+	// Returns the error from calling Done().
+	Err() error
 }
 
-type SubscribableStream interface {
-	Subscribe() <-chan Status
-	Error() error
-}
-
-// stream implements the StatusStream interface with support for subscribing to
-// updates published to the stream.
-type stream struct {
+// jsonmessageStatusStream implements the StatusStream interface with support
+// for writing jsonmessages to the provided io.Writer
+type jsonmessageStatusStream struct {
 	sync.Mutex
-	done bool
+	done chan struct{}
 	err  error
-	ch   chan Status
+	w    io.Writer
 }
 
-// NewStatusStream returns a new instance of the default status stream.
-func NewStatusStream() StatusStream {
-	return &stream{ch: make(chan Status, 100)}
+// NewJSONMessageStream returns a new instance of the default status stream.
+func NewJSONMessageStream(w io.Writer) StatusStream {
+	return &jsonmessageStatusStream{w: w, done: make(chan struct{}, 1)}
 }
 
-func (s *stream) Publish(ctx context.Context, status Status) {
-	s.Lock()
-	defer s.Unlock()
-
-	if s.done {
-		logger.Warn(ctx, "Publish called on a finalized stream")
-		return
-	}
-
-	s.publish(status)
-}
-
-func (s *stream) publish(status Status) {
+func (s *jsonmessageStatusStream) Publish(ctx context.Context, status Status) error {
 	select {
-	case s.ch <- status:
+	case <-s.done:
+		logger.Warn(ctx, "Publish called on a finalized stream")
+		return nil
 	default:
-		// Drop
 	}
+	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: status.Message})
 }
 
-func (s *stream) Subscribe() <-chan Status {
-	return s.ch
-}
-
-func (s *stream) Done(err error) {
+func (s *jsonmessageStatusStream) Done(err error) {
 	s.Lock()
 	defer s.Unlock()
-
-	if !s.done {
-		s.done = true
-		s.err = err
-		close(s.ch)
-	}
+	close(s.done)
+	s.err = err
 }
 
-func (s *stream) Error() error {
+func (s *jsonmessageStatusStream) Err() error {
 	return s.err
+}
+
+func (s *jsonmessageStatusStream) Wait() <-chan struct{} {
+	return s.done
 }

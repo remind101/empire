@@ -70,7 +70,7 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 	var msg jsonmessage.JSONMessage
 
 	tx := s.db.Begin()
-	stream := scheduler.NewStatusStream()
+	stream := scheduler.NewJSONMessageStream(opts.Output)
 	r, err := s.deploy(ctx, tx, stream, opts)
 	if err != nil {
 		tx.Rollback()
@@ -91,19 +91,12 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 		return r, err
 	}
 
-	if s, ok := stream.(scheduler.SubscribableStream); ok {
-		for update := range s.Subscribe() {
-			msg := fmt.Sprintf("Status: %s", update.String())
-			if err := write(msg, opts.Output); err != nil {
-				return r, err
-			}
-		}
+	<-stream.Wait()
 
-		if err := s.Error(); err != nil {
-			msg := fmt.Sprintf("Error: %s", err.Error())
-			if err := write(msg, opts.Output); err != nil {
-				return r, err
-			}
+	if err := stream.Err(); err != nil {
+		msg := fmt.Sprintf("Error: %s", err.Error())
+		if err := write(msg, opts.Output); err != nil {
+			return r, err
 		}
 	}
 
