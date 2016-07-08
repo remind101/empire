@@ -131,10 +131,6 @@ type Scheduler struct {
 	// Any additional tags to add to stacks.
 	Tags []*cloudformation.Tag
 
-	// When true, alls to Submit won't return until the stack has
-	// successfully updated/created.
-	wait bool
-
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -185,9 +181,6 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, s
 		return err
 	}
 
-	if ss != nil {
-		ss.Done(nil)
-	}
 	return tx.Commit()
 }
 
@@ -215,6 +208,8 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	if err != nil {
 		return err
 	}
+
+	ss.Publish(ctx, scheduler.Status{Message: fmt.Sprintf("Created CloudFormation template: %v", *t.URL)})
 
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
@@ -244,7 +239,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		})
 	}
 
-	done := make(chan error, 1)
 	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
@@ -254,27 +248,21 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Template:   t,
 			Tags:       tags,
 			Parameters: parameters,
-		}, done); err != nil {
+		}, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
 	} else if err == nil {
-		if err := s.updateStack(&updateStackInput{
+		if err := s.updateStack(ctx, &updateStackInput{
 			StackName:  aws.String(stackName),
 			Template:   t,
 			Parameters: parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, done); err != nil {
+		}, ss); err != nil {
 			return err
 		}
 	} else {
 		return fmt.Errorf("error describing stack: %v", err)
-	}
-
-	if s.wait {
-		if err := <-done; err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -330,7 +318,7 @@ type createStackInput struct {
 // createStack creates a new CloudFormation stack with the given input. This
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
-func (s *Scheduler) createStack(input *createStackInput, done chan error) error {
+func (s *Scheduler) createStack(input *createStackInput, ss scheduler.StatusStream) error {
 	waiter := s.cloudformation.WaitUntilStackCreateComplete
 
 	submitted := make(chan error)
@@ -345,7 +333,7 @@ func (s *Scheduler) createStack(input *createStackInput, done chan error) error 
 		return err
 	}
 	go func() {
-		done <- s.performStackOperation(*input.StackName, fn, waiter)
+		ss.Done(s.performStackOperation(*input.StackName, fn, waiter))
 	}()
 
 	return <-submitted
@@ -362,25 +350,35 @@ type updateStackInput struct {
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(input *updateStackInput, done chan error) error {
-	waiter := s.cloudformation.WaitUntilStackUpdateComplete
+func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ss scheduler.StatusStream) error {
+	waiter := func(input *cloudformation.DescribeStacksInput) error {
+		ss.Publish(ctx, scheduler.Status{Message: fmt.Sprintf("Waiting for stack update to complete")})
+		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
+		ss.Publish(ctx, scheduler.Status{Message: fmt.Sprintf("Stack stabilized")})
+		return err
+	}
 
 	locked := make(chan struct{})
 	submitted := make(chan error, 1)
 	fn := func() error {
 		close(locked)
 		err := s.executeStackUpdate(input)
+		if err == nil {
+			ss.Publish(ctx, scheduler.Status{Message: fmt.Sprintf("Stack update submitted")})
+		}
 		submitted <- err
 		return err
 	}
 
 	go func() {
-		done <- s.performStackOperation(*input.StackName, fn, waiter)
+		ss.Done(s.performStackOperation(*input.StackName, fn, waiter))
 	}()
 
 	var err error
 	select {
 	case <-s.after(lockWait):
+		ss.Publish(ctx, scheduler.Status{Message: fmt.Sprintf("Waiting for existing stack operation to complete")})
+
 		// FIXME: At this point, we don't want to affect UX by waiting
 		// around, so we return. But, if the stack update times out, or
 		// there's an error, that information is essentially silenced.

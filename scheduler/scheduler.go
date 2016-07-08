@@ -4,6 +4,7 @@ package scheduler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -206,7 +207,7 @@ func (s *jsonmessageStatusStream) Publish(ctx context.Context, status Status) er
 		return nil
 	default:
 	}
-	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: status.Message})
+	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: %s", status.Message)})
 }
 
 func (s *jsonmessageStatusStream) Done(err error) {
