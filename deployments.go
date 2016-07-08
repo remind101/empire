@@ -81,15 +81,23 @@ func (s *deployerService) Deploy(ctx context.Context, db *gorm.DB, opts DeployOp
 		return r, err
 	}
 
+	if err != nil {
+		return r, err
+	}
+
 	if s, ok := stream.(scheduler.SubscribableStream); ok {
 		for update := range s.Subscribe() {
 			msg := fmt.Sprintf("Status: %s", update.String())
-			write(msg, opts.Output)
+			if err := write(msg, opts.Output); err != nil {
+				return r, err
+			}
 		}
 
 		if err := s.Error(); err != nil {
 			msg := fmt.Sprintf("Error: %s", err.Error())
-			write(msg, opts.Output)
+			if err := write(msg, opts.Output); err != nil {
+				return r, err
+			}
 		}
 	}
 
