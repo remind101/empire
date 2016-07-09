@@ -238,9 +238,6 @@ type mockScheduler struct {
 
 func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	args := m.Called(app)
-	if ss != nil {
-		ss.Done(nil)
-	}
 	return args.Error(0)
 }
 

@@ -79,8 +79,5 @@ type mockScheduler struct {
 
 func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	m.image <- app.Processes[0].Image.String()
-	if ss != nil {
-		ss.Done(nil)
-	}
 	return nil
 }

@@ -204,10 +204,6 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler
 			return err
 		}
 	}
-
-	if ss != nil {
-		ss.Done(nil)
-	}
 	return nil
 }
 

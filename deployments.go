@@ -3,7 +3,6 @@ package empire
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/jinzhu/gorm"
@@ -91,19 +90,5 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 		return r, err
 	}
 
-	<-stream.Wait()
-
-	if err := stream.Err(); err != nil {
-		msg := fmt.Sprintf("Error: %s", err.Error())
-		if err := write(msg, opts.Output); err != nil {
-			return r, err
-		}
-	}
-
 	return r, err
-}
-
-func write(msg string, output io.Writer) error {
-	m := jsonmessage.JSONMessage{Status: msg}
-	return json.NewEncoder(output).Encode(&m)
 }

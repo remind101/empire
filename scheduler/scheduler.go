@@ -5,14 +5,12 @@ package scheduler
 import (
 	"encoding/json"
 	"io"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/pkg/logger"
 )
 
 type App struct {
@@ -123,6 +121,10 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
+	// When StatusStream is nil, Submit should return as quickly as possible,
+	// usually when the new version has been received, and validated. If
+	// StatusStream is not nil, it's recommended that the method not return until
+	// the deployment has fully completed.
 	Submit(context.Context, *App, StatusStream) error
 
 	// Remove removes the App.
@@ -173,53 +175,19 @@ func (s *Status) String() string {
 type StatusStream interface {
 	// Publish publishes an update to the status stream
 	Publish(context.Context, Status) error
-
-	// Done finalizes the status stream
-	Done(error)
-
-	// Wait returns a channel that receives once Done() is called. Consumers
-	// should call the Err() method to determine if an error occurred.
-	Wait() <-chan struct{}
-
-	// Returns the error from calling Done().
-	Err() error
 }
 
 // jsonmessageStatusStream implements the StatusStream interface with support
 // for writing jsonmessages to the provided io.Writer
 type jsonmessageStatusStream struct {
-	sync.Mutex
-	done chan struct{}
-	err  error
-	w    io.Writer
+	w io.Writer
 }
 
 // NewJSONMessageStream returns a new instance of the default status stream.
 func NewJSONMessageStream(w io.Writer) StatusStream {
-	return &jsonmessageStatusStream{w: w, done: make(chan struct{}, 1)}
+	return &jsonmessageStatusStream{w: w}
 }
 
 func (s *jsonmessageStatusStream) Publish(ctx context.Context, status Status) error {
-	select {
-	case <-s.done:
-		logger.Warn(ctx, "Publish called on a finalized stream")
-		return nil
-	default:
-	}
 	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: status.Message})
-}
-
-func (s *jsonmessageStatusStream) Done(err error) {
-	s.Lock()
-	defer s.Unlock()
-	close(s.done)
-	s.err = err
-}
-
-func (s *jsonmessageStatusStream) Err() error {
-	return s.err
-}
-
-func (s *jsonmessageStatusStream) Wait() <-chan struct{} {
-	return s.done
 }
