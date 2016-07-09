@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -131,6 +132,43 @@ func TestEmpireTemplate(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			"cron.json",
+			&scheduler.App{
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Processes: []*scheduler.Process{
+					{
+						Type:      "send-emails",
+						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:   []string{"./bin/send-emails"},
+						Schedule:  scheduler.CRONSchedule("* * * * *"),
+						Instances: 1,
+						Labels: map[string]string{
+							"empire.app.process": "send-emails",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Nproc:       256,
+					},
+					{
+						Type:      "vacuum",
+						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:   []string{"./bin/vacuum"},
+						Schedule:  scheduler.CRONSchedule("* * * * *"),
+						Instances: 0,
+						Labels: map[string]string{
+							"empire.app.process": "vacuum",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Nproc:       256,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -179,6 +217,23 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	assert.Condition(t, func() bool {
 		return buf.Len() < MaxTemplateSize
 	}, fmt.Sprintf("template must be smaller than %d, was %d", MaxTemplateSize, buf.Len()))
+}
+
+func TestScheduleExpression(t *testing.T) {
+	tests := []struct {
+		schedule   scheduler.Schedule
+		expression string
+	}{
+		{scheduler.CRONSchedule("0 12 * * ? *"), "cron(0 12 * * ? *)"},
+		{5 * time.Minute, "rate(5 minutes)"},
+		{1 * time.Minute, "rate(1 minute)"},
+		{24 * time.Hour, "rate(1440 minutes)"},
+	}
+
+	for _, tt := range tests {
+		expression := scheduleExpression(tt.schedule)
+		assert.Equal(t, tt.expression, expression)
+	}
 }
 
 func newTemplate() *EmpireTemplate {

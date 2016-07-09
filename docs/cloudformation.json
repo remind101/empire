@@ -406,6 +406,31 @@
             {
               "Effect": "Allow",
               "Action": [
+                "lambda:CreateFunction",
+                "lambda:DeleteFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:GetFunctionConfiguration",
+                "lambda:AddPermission",
+                "lambda:RemovePermission"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "events:PutRule",
+                "events:DeleteRule",
+                "events:DescribeRule",
+                "events:EnableRule",
+                "events:DisableRule",
+                "events:PutTargets",
+                "events:RemoveTargets"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "sqs:ReceiveMessage",
                 "sqs:DeleteMessage"
               ],
@@ -542,7 +567,11 @@
             {
               "Effect": "Allow",
               "Principal": {
-                "Service": [ "ecs.amazonaws.com" ]
+                "Service": [
+                  "ecs.amazonaws.com",
+                  "events.amazonaws.com",
+                  "lambda.amazonaws.com"
+                ]
               },
               "Action": [ "sts:AssumeRole" ]
             }
@@ -573,6 +602,25 @@
               "Resource": [
                 "*"
               ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "lambda:InvokeFunction"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ecs:RunTask"
+              ],
+              "Resource": "*",
+              "Condition": {
+                "ArnEquals": {
+                  "ecs:cluster": { "Fn::Join": ["", ["arn:aws:ecs:", { "Ref": "AWS::Region" }, ":", { "Ref": "AWS::AccountId" }, ":cluster/", { "Ref": "Cluster" }]] }
+                }
+              }
             }
           ]
         }

@@ -37,8 +37,16 @@ worker:
 
 **Command**
 
-Specifies the command that should be run when executing this process 
+Specifies the command that should be run when executing this process.
 
 ```yaml
 command: ./bin/web
+```
+
+**Cron**
+
+When provided, signifies that the process is a scheduled process. The value should be a valid cron expression.
+
+```yaml
+cron: * * * * * * // Run once every minute
 ```

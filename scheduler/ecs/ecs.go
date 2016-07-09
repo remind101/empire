@@ -324,6 +324,10 @@ func (m *Scheduler) Stop(ctx context.Context, instanceID string) error {
 
 // CreateProcess creates an ECS service for the process.
 func (m *Scheduler) CreateProcess(ctx context.Context, app *scheduler.App, p *scheduler.Process) error {
+	if p.Schedule != nil {
+		return errors.New("%s: scheduled processes are not supported by this backend")
+	}
+
 	loadBalancer, err := m.loadBalancer(ctx, app, p)
 	if err != nil {
 		return err

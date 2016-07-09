@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -17,7 +18,15 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
+	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
+)
+
+var (
+	Ref    = troposphere.Ref
+	GetAtt = troposphere.GetAtt
+	Equals = troposphere.Equals
+	Join   = troposphere.Join
 )
 
 const (
@@ -32,6 +41,8 @@ const (
 
 	defaultConnectionDrainingTimeout int64 = 30
 	defaultCNAMETTL                        = 60
+
+	runTaskFunction = "RunTaskFunction"
 )
 
 // This implements the Template interface to create a suitable CloudFormation
@@ -60,7 +71,8 @@ type EmpireTemplate struct {
 	// The Subnet IDs to assign when creating external load balancers.
 	ExternalSubnetIDs []string
 
-	// The name of the ECS Service IAM role.
+	// The name or ARN of the IAM role to allow ECS, CloudWatch Events, and Lambda
+	// to assume.
 	ServiceRole string
 
 	// The ARN of the SNS topic to provision instance ports.
@@ -124,38 +136,101 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 }
 
 // Build builds a Go representation of a CloudFormation template for the app.
-func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
-	parameters := map[string]interface{}{
-		"DNS": map[string]string{
-			"Type":        "String",
-			"Description": "When set to `true`, CNAME's will be altered",
-			"Default":     "true",
-		},
-		restartParameter: map[string]string{
-			"Type": "String",
-		},
+func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error) {
+	tmpl := troposphere.NewTemplate()
+
+	tmpl.Parameters["DNS"] = troposphere.Parameter{
+		Type:        "String",
+		Description: "When set to `true`, CNAME's will be altered",
+		Default:     "true",
 	}
-	conditions := map[string]interface{}{
-		"DNSCondition": map[string]interface{}{
-			"Fn::Equals": []interface{}{
-				map[string]string{
-					"Ref": "DNS",
-				},
-				"true",
+	tmpl.Parameters[restartParameter] = troposphere.Parameter{Type: "String"}
+	tmpl.Conditions["DNSCondition"] = Equals(Ref("DNS"), "true")
+	tmpl.Outputs["Release"] = troposphere.Output{Value: app.Release}
+	tmpl.Outputs["EmpireVersion"] = troposphere.Output{Value: empire.Version}
+
+	serviceMappings := []interface{}{}
+	scheduledProcesses := map[string]string{}
+
+	for _, p := range app.Processes {
+		tmpl.Parameters[scaleParameter(p.Type)] = troposphere.Parameter{
+			Type: "String",
+		}
+
+		switch {
+		case p.Schedule != nil:
+			// To save space in the template, avoid adding the
+			// resources if the process is scaled down.
+			if p.Instances > 0 {
+				scheduledProcesses[p.Type] = t.addScheduledTask(tmpl, app, p)
+			}
+		default:
+			service := t.addService(tmpl, app, p)
+			serviceMappings = append(serviceMappings, Join("=", p.Type, Ref(service)))
+		}
+	}
+
+	if len(scheduledProcesses) > 0 {
+		// LambdaFunction that will be used to trigger a RunTask.
+		tmpl.Resources[runTaskFunction] = runTaskResource(t.serviceRoleArn())
+	}
+
+	tmpl.Outputs[servicesOutput] = troposphere.Output{Value: Join(",", serviceMappings...)}
+
+	return tmpl, nil
+}
+
+func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (taskDefinition string) {
+	key := processResourceName(p.Type)
+
+	// The task definition that will be used to run the ECS task.
+	containerDefinition := containerDefinition(t.ContainerDefinition(app, p))
+	taskDefinition = fmt.Sprintf("%sTaskDefinition", key)
+	tmpl.Resources[taskDefinition] = troposphere.Resource{
+		Type: "AWS::ECS::TaskDefinition",
+		Properties: map[string]interface{}{
+			"ContainerDefinitions": []interface{}{
+				containerDefinition,
 			},
-		},
-	}
-	resources := map[string]interface{}{}
-	outputs := map[string]interface{}{
-		"Release": map[string]interface{}{
-			"Value": app.Release,
-		},
-		"EmpireVersion": map[string]interface{}{
-			"Value": empire.Version,
+			"Volumes": []interface{}{},
 		},
 	}
 
-	serviceMappings := []map[string]interface{}{}
+	schedule := fmt.Sprintf("%sTrigger", key)
+	tmpl.Resources[schedule] = troposphere.Resource{
+		Type: "AWS::Events::Rule",
+		Properties: map[string]interface{}{
+			"Description":        fmt.Sprintf("Rule to periodically trigger the `%s` scheduled task", p.Type),
+			"ScheduleExpression": scheduleExpression(p.Schedule),
+			"RoleArn":            t.serviceRoleArn(),
+			"State":              "ENABLED",
+			"Targets": []interface{}{
+				map[string]interface{}{
+					"Arn":   GetAtt(runTaskFunction, "Arn"),
+					"Id":    "f",
+					"Input": Join("", `{"taskDefinition":"`, Ref(taskDefinition), `","count":`, Ref(scaleParameter(p.Type)), `,"cluster":"`, t.Cluster, `","startedBy": "`, app.ID, `"}`),
+				},
+			},
+		},
+	}
+
+	// Allow CloudWatch events to invoke the RunTask function.
+	lambdaPermission := fmt.Sprintf("%sTriggerPermission", key)
+	tmpl.Resources[lambdaPermission] = troposphere.Resource{
+		Type: "AWS::Lambda::Permission",
+		Properties: map[string]interface{}{
+			"FunctionName": GetAtt(runTaskFunction, "Arn"),
+			"SourceArn":    GetAtt(schedule, "Arn"),
+			"Action":       "lambda:InvokeFunction",
+			"Principal":    "events.amazonaws.com",
+		},
+	}
+
+	return taskDefinition
+}
+
+func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string) {
+	key := processResourceName(p.Type)
 
 	// The standard AWS::ECS::Service resource's default behavior is to wait
 	// for services to stabilize when you update them. While this is a
@@ -171,223 +246,163 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (interface{}, error) {
 		ecsServiceType = "AWS::ECS::Service"
 	}
 
-	for _, p := range app.Processes {
-		cd := t.ContainerDefinition(app, p)
+	cd := t.ContainerDefinition(app, p)
 
-		key := processResourceName(p.Type)
+	portMappings := []map[string]interface{}{}
 
-		parameters[scaleParameter(p.Type)] = map[string]string{
-			"Type": "String",
+	loadBalancers := []map[string]interface{}{}
+	if p.Exposure != nil {
+		scheme := schemeInternal
+		sg := t.InternalSecurityGroupID
+		subnets := t.InternalSubnetIDs
+
+		if p.Exposure.External {
+			scheme = schemeExternal
+			sg = t.ExternalSecurityGroupID
+			subnets = t.ExternalSubnetIDs
 		}
 
-		portMappings := []map[string]interface{}{}
+		instancePort := fmt.Sprintf("%s%dInstancePort", key, ContainerPort)
+		tmpl.Resources[instancePort] = troposphere.Resource{
+			Type:    "Custom::InstancePort",
+			Version: "1.0",
+			Properties: map[string]interface{}{
+				"ServiceToken": t.CustomResourcesTopic,
+			},
+		}
 
-		loadBalancers := []map[string]interface{}{}
-		if p.Exposure != nil {
-			scheme := schemeInternal
-			sg := t.InternalSecurityGroupID
-			subnets := t.InternalSubnetIDs
+		listeners := []map[string]interface{}{
+			map[string]interface{}{
+				"LoadBalancerPort": 80,
+				"Protocol":         "http",
+				"InstancePort":     GetAtt(instancePort, "InstancePort"),
+				"InstanceProtocol": "http",
+			},
+		}
 
-			if p.Exposure.External {
-				scheme = schemeExternal
-				sg = t.ExternalSecurityGroupID
-				subnets = t.ExternalSubnetIDs
+		if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
+			var cert interface{}
+			if _, err := arn.Parse(e.Cert); err == nil {
+				cert = e.Cert
+			} else {
+				cert = Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/", e.Cert)
 			}
 
-			instancePort := fmt.Sprintf("%s%dInstancePort", key, ContainerPort)
-			resources[instancePort] = map[string]interface{}{
-				"Type":    "Custom::InstancePort",
-				"Version": "1.0",
-				"Properties": map[string]interface{}{
-					"ServiceToken": t.CustomResourcesTopic,
-				},
-			}
-
-			listeners := []map[string]interface{}{
-				map[string]interface{}{
-					"LoadBalancerPort": 80,
-					"Protocol":         "http",
-					"InstancePort": map[string][]string{
-						"Fn::GetAtt": []string{
-							instancePort,
-							"InstancePort",
-						},
-					},
-					"InstanceProtocol": "http",
-				},
-			}
-
-			if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
-				var cert interface{}
-				if _, err := arn.Parse(e.Cert); err == nil {
-					cert = e.Cert
-				} else {
-					cert = map[string]interface{}{
-						"Fn::Join": []interface{}{
-							"",
-							[]interface{}{"arn:aws:iam::", map[string]string{"Ref": "AWS::AccountId"}, ":server-certificate/", e.Cert},
-						},
-					}
-				}
-
-				listeners = append(listeners, map[string]interface{}{
-					"LoadBalancerPort": 443,
-					"Protocol":         "https",
-					"InstancePort": map[string][]string{
-						"Fn::GetAtt": []string{
-							instancePort,
-							"InstancePort",
-						},
-					},
-					"SSLCertificateId": cert,
-					"InstanceProtocol": "http",
-				})
-			}
-
-			portMappings = append(portMappings, map[string]interface{}{
-				"ContainerPort": ContainerPort,
-				"HostPort": map[string][]string{
-					"Fn::GetAtt": []string{
-						instancePort,
-						"InstancePort",
-					},
-				},
+			listeners = append(listeners, map[string]interface{}{
+				"LoadBalancerPort": 443,
+				"Protocol":         "https",
+				"InstancePort":     GetAtt(instancePort, "InstancePort"),
+				"SSLCertificateId": cert,
+				"InstanceProtocol": "http",
 			})
-			cd.Environment = append(cd.Environment, &ecs.KeyValuePair{
-				Name:  aws.String("PORT"),
-				Value: aws.String(fmt.Sprintf("%d", ContainerPort)),
-			})
-
-			loadBalancer := fmt.Sprintf("%sLoadBalancer", key)
-			loadBalancers = append(loadBalancers, map[string]interface{}{
-				"ContainerName": p.Type,
-				"ContainerPort": ContainerPort,
-				"LoadBalancerName": map[string]string{
-					"Ref": loadBalancer,
-				},
-			})
-			resources[loadBalancer] = map[string]interface{}{
-				"Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-				"Properties": map[string]interface{}{
-					"Scheme":         scheme,
-					"SecurityGroups": []string{sg},
-					"Subnets":        subnets,
-					"Listeners":      listeners,
-					"CrossZone":      true,
-					"Tags": []map[string]string{
-						map[string]string{
-							"Key":   "empire.app.process",
-							"Value": p.Type,
-						},
-					},
-					"ConnectionDrainingPolicy": map[string]interface{}{
-						"Enabled": true,
-						"Timeout": defaultConnectionDrainingTimeout,
-					},
-				},
-			}
-
-			if p.Type == "web" {
-				resources["CNAME"] = map[string]interface{}{
-					"Type":      "AWS::Route53::RecordSet",
-					"Condition": "DNSCondition",
-					"Properties": map[string]interface{}{
-						"HostedZoneId": *t.HostedZone.Id,
-						"Name":         fmt.Sprintf("%s.%s", app.Name, *t.HostedZone.Name),
-						"Type":         "CNAME",
-						"TTL":          defaultCNAMETTL,
-						"ResourceRecords": []map[string][]string{
-							map[string][]string{
-								"Fn::GetAtt": []string{loadBalancer, "DNSName"},
-							},
-						},
-					},
-				}
-			}
 		}
 
-		labels := map[string]interface{}{}
-		for k, v := range cd.DockerLabels {
-			labels[k] = v
-		}
-		labels["cloudformation.restart-key"] = map[string]string{"Ref": restartParameter}
-
-		taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
-		containerDefinition := map[string]interface{}{
-			"Name":         *cd.Name,
-			"Command":      cd.Command,
-			"Cpu":          *cd.Cpu,
-			"Image":        *cd.Image,
-			"Essential":    *cd.Essential,
-			"Memory":       *cd.Memory,
-			"Environment":  cd.Environment,
-			"PortMappings": portMappings,
-			"DockerLabels": labels,
-			"Ulimits":      cd.Ulimits,
-		}
-		if cd.LogConfiguration != nil {
-			containerDefinition["LogConfiguration"] = cd.LogConfiguration
-		}
-		resources[taskDefinition] = map[string]interface{}{
-			"Type": "AWS::ECS::TaskDefinition",
-			"Properties": map[string]interface{}{
-				"ContainerDefinitions": []interface{}{
-					containerDefinition,
-				},
-				"Volumes": []interface{}{},
-			},
-		}
-
-		service := fmt.Sprintf("%s", key)
-		serviceProperties := map[string]interface{}{
-			"Cluster": t.Cluster,
-			"DesiredCount": map[string]string{
-				"Ref": scaleParameter(p.Type),
-			},
-			"LoadBalancers": loadBalancers,
-			"TaskDefinition": map[string]string{
-				"Ref": taskDefinition,
-			},
-		}
-		if ecsServiceType == "Custom::ECSService" {
-			// It's not possible to change the type of a resource,
-			// so we have to change the name of the service resource
-			// to something different (just append "Service").
-			service = fmt.Sprintf("%sService", service)
-			serviceProperties["ServiceName"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
-			serviceProperties["ServiceToken"] = t.CustomResourcesTopic
-		}
-		if len(loadBalancers) > 0 {
-			serviceProperties["Role"] = t.ServiceRole
-		}
-		serviceMappings = append(serviceMappings, map[string]interface{}{
-			"Fn::Join": []interface{}{
-				"=",
-				[]interface{}{p.Type, map[string]string{"Ref": service}},
-			},
+		portMappings = append(portMappings, map[string]interface{}{
+			"ContainerPort": ContainerPort,
+			"HostPort":      GetAtt(instancePort, "InstancePort"),
 		})
-		resources[service] = map[string]interface{}{
-			"Type":       ecsServiceType,
-			"Properties": serviceProperties,
+		cd.Environment = append(cd.Environment, &ecs.KeyValuePair{
+			Name:  aws.String("PORT"),
+			Value: aws.String(fmt.Sprintf("%d", ContainerPort)),
+		})
+
+		loadBalancer := fmt.Sprintf("%sLoadBalancer", key)
+		loadBalancers = append(loadBalancers, map[string]interface{}{
+			"ContainerName":    p.Type,
+			"ContainerPort":    ContainerPort,
+			"LoadBalancerName": Ref(loadBalancer),
+		})
+		tmpl.Resources[loadBalancer] = troposphere.Resource{
+			Type: "AWS::ElasticLoadBalancing::LoadBalancer",
+			Properties: map[string]interface{}{
+				"Scheme":         scheme,
+				"SecurityGroups": []string{sg},
+				"Subnets":        subnets,
+				"Listeners":      listeners,
+				"CrossZone":      true,
+				"Tags": []map[string]string{
+					map[string]string{
+						"Key":   "empire.app.process",
+						"Value": p.Type,
+					},
+				},
+				"ConnectionDrainingPolicy": map[string]interface{}{
+					"Enabled": true,
+					"Timeout": defaultConnectionDrainingTimeout,
+				},
+			},
 		}
 
+		if p.Type == "web" {
+			tmpl.Resources["CNAME"] = troposphere.Resource{
+				Type:      "AWS::Route53::RecordSet",
+				Condition: "DNSCondition",
+				Properties: map[string]interface{}{
+					"HostedZoneId":    *t.HostedZone.Id,
+					"Name":            fmt.Sprintf("%s.%s", app.Name, *t.HostedZone.Name),
+					"Type":            "CNAME",
+					"TTL":             defaultCNAMETTL,
+					"ResourceRecords": []interface{}{GetAtt(loadBalancer, "DNSName")},
+				},
+			}
+		}
 	}
 
-	outputs[servicesOutput] = map[string]interface{}{
-		"Value": map[string]interface{}{
-			"Fn::Join": []interface{}{
-				",",
-				serviceMappings,
+	taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
+	containerDefinition := containerDefinition(cd)
+
+	// TODO: We have to override all of the labels, because we can add a
+	// map[string]string to ecs.ContainerDefinition.DockerLabels.
+	labels := map[string]interface{}{}
+	for k, v := range cd.DockerLabels {
+		labels[k] = v
+	}
+	labels["cloudformation.restart-key"] = Ref(restartParameter)
+	containerDefinition["DockerLabels"] = labels
+	containerDefinition["PortMappings"] = portMappings
+
+	tmpl.Resources[taskDefinition] = troposphere.Resource{
+		Type: "AWS::ECS::TaskDefinition",
+		Properties: map[string]interface{}{
+			"ContainerDefinitions": []interface{}{
+				containerDefinition,
 			},
+			"Volumes": []interface{}{},
 		},
 	}
 
-	return map[string]interface{}{
-		"Parameters": parameters,
-		"Conditions": conditions,
-		"Resources":  resources,
-		"Outputs":    outputs,
-	}, nil
+	service := fmt.Sprintf("%s", key)
+	serviceProperties := map[string]interface{}{
+		"Cluster":        t.Cluster,
+		"DesiredCount":   Ref(scaleParameter(p.Type)),
+		"LoadBalancers":  loadBalancers,
+		"TaskDefinition": Ref(taskDefinition),
+	}
+	if ecsServiceType == "Custom::ECSService" {
+		// It's not possible to change the type of a resource,
+		// so we have to change the name of the service resource
+		// to something different (just append "Service").
+		service = fmt.Sprintf("%sService", service)
+		serviceProperties["ServiceName"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+		serviceProperties["ServiceToken"] = t.CustomResourcesTopic
+	}
+	if len(loadBalancers) > 0 {
+		serviceProperties["Role"] = t.ServiceRole
+	}
+	tmpl.Resources[service] = troposphere.Resource{
+		Type:       ecsServiceType,
+		Properties: serviceProperties,
+	}
+	return service
+}
+
+// If the ServiceRole option is not an ARN, it will return a CloudFormation
+// expression that expands the ServiceRole to an ARN.
+func (t *EmpireTemplate) serviceRoleArn() interface{} {
+	if _, err := arn.Parse(t.ServiceRole); err == nil {
+		return t.ServiceRole
+	}
+	return Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":role/", t.ServiceRole)
 }
 
 // envByKey implements the sort.Interface interface to sort the environment
@@ -482,3 +497,76 @@ func processResourceName(process string) string {
 func scaleParameter(process string) string {
 	return fmt.Sprintf("%sScale", processResourceName(process))
 }
+
+func containerDefinition(cd *ecs.ContainerDefinition) map[string]interface{} {
+	containerDefinition := map[string]interface{}{
+		"Name":         *cd.Name,
+		"Command":      cd.Command,
+		"Cpu":          *cd.Cpu,
+		"Image":        *cd.Image,
+		"Essential":    *cd.Essential,
+		"Memory":       *cd.Memory,
+		"Environment":  cd.Environment,
+		"DockerLabels": cd.DockerLabels,
+		"Ulimits":      cd.Ulimits,
+	}
+	if cd.LogConfiguration != nil {
+		containerDefinition["LogConfiguration"] = cd.LogConfiguration
+	}
+	return containerDefinition
+}
+
+func scheduleExpression(s scheduler.Schedule) string {
+	switch v := s.(type) {
+	case scheduler.CRONSchedule:
+		return fmt.Sprintf("cron(%s)", v)
+	case time.Duration:
+		var units = "minute"
+		var minutes = int64(v / time.Minute)
+		if minutes > 1 {
+			units += "s"
+		}
+		return fmt.Sprintf("rate(%d %s)", minutes, units)
+	default:
+		panic("unknown scheduler expression")
+	}
+}
+
+// runTaskResource returns a troposphere resource that will create a lambda
+// function that can be used to run an ECS task.
+func runTaskResource(role interface{}) troposphere.Resource {
+	return troposphere.Resource{
+		Type: "AWS::Lambda::Function",
+		Properties: map[string]interface{}{
+			"Description": fmt.Sprintf("Lambda function to run an ECS task"),
+			"Handler":     "index.handler",
+			"Role":        role,
+			"Runtime":     "python2.7",
+			"Code": map[string]interface{}{
+				"ZipFile": runTaskCode,
+			},
+		},
+	}
+}
+
+// A simple lambda function that can be used to trigger an ecs.RunTask.
+const runTaskCode = `
+import boto3
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+ecs = boto3.client('ecs')
+
+def handler(event, context):
+  logger.info('Request Received')
+  logger.info(event)
+
+  resp = ecs.run_task(
+    cluster=event['cluster'],
+    taskDefinition=event['taskDefinition'],
+    count=event['count'],
+    startedBy=event['startedBy'])
+
+  return map(lambda x: x['taskArn'], resp['tasks'])`

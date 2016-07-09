@@ -317,6 +317,7 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 		CPUShares:   uint(p.CPUShare),
 		Nproc:       uint(p.Nproc),
 		Exposure:    processExposure(release.App, name),
+		Schedule:    processSchedule(name, p),
 	}
 }
 
@@ -351,6 +352,14 @@ func processExposure(app *App, process string) *scheduler.Exposure {
 	}
 
 	return exposure
+}
+
+func processSchedule(name string, p Process) scheduler.Schedule {
+	if p.Cron != nil {
+		return scheduler.CRONSchedule(*p.Cron)
+	}
+
+	return nil
 }
 
 func appendMessageToDescription(main string, user *User, message string) string {

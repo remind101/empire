@@ -81,6 +81,10 @@ type Process struct {
 
 	// The allow number of unix processes within the container.
 	Nproc constraints.Nproc `json:"Nproc,omitempty"`
+
+	// A cron expression. If provided, the process will be run as a
+	// scheduled task.
+	Cron *string `json:"cron,omitempty"`
 }
 
 // Constraints returns a constraints.Constraints from this Process definition.

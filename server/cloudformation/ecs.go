@@ -155,6 +155,11 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 			// removed already.
 			return nil
 		}
+		if err, ok := err.(awserr.Error); ok && strings.Contains(err.Message(), "Service not found") {
+			// If the service is not active, it was probably manually
+			// removed already.
+			return nil
+		}
 		return fmt.Errorf("error scaling service to 0: %v", err)
 	}
 

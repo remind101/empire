@@ -1,0 +1,170 @@
+{
+  "Conditions": {
+    "DNSCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "DNS"
+        },
+        "true"
+      ]
+    }
+  },
+  "Outputs": {
+    "EmpireVersion": {
+      "Value": "0.10.1"
+    },
+    "Release": {
+      "Value": "v1"
+    },
+    "Services": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          []
+        ]
+      }
+    }
+  },
+  "Parameters": {
+    "DNS": {
+      "Type": "String",
+      "Description": "When set to `true`, CNAME's will be altered",
+      "Default": "true"
+    },
+    "RestartKey": {
+      "Type": "String"
+    },
+    "sendemailsScale": {
+      "Type": "String"
+    },
+    "vacuumScale": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "RunTaskFunction": {
+      "Properties": {
+        "Code": {
+          "ZipFile": "\nimport boto3\nimport logging\n\nlogger = logging.getLogger()\nlogger.setLevel(logging.INFO)\n\necs = boto3.client('ecs')\n\ndef handler(event, context):\n  logger.info('Request Received')\n  logger.info(event)\n\n  resp = ecs.run_task(\n    cluster=event['cluster'],\n    taskDefinition=event['taskDefinition'],\n    count=event['count'],\n    startedBy=event['startedBy'])\n\n  return map(lambda x: x['taskArn'], resp['tasks'])"
+        },
+        "Description": "Lambda function to run an ECS task",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:iam::",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":role/",
+              "ecsServiceRole"
+            ]
+          ]
+        },
+        "Runtime": "python2.7"
+      },
+      "Type": "AWS::Lambda::Function"
+    },
+    "sendemailsTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/send-emails"
+            ],
+            "Cpu": 256,
+            "DockerLabels": {
+              "empire.app.process": "send-emails"
+            },
+            "Environment": [],
+            "Essential": true,
+            "Image": "remind101/acme-inc:latest",
+            "Memory": 128,
+            "Name": "send-emails",
+            "Ulimits": [
+              {
+                "HardLimit": 256,
+                "Name": "nproc",
+                "SoftLimit": 256
+              }
+            ]
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    },
+    "sendemailsTrigger": {
+      "Properties": {
+        "Description": "Rule to periodically trigger the `send-emails` scheduled task",
+        "RoleArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:iam::",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":role/",
+              "ecsServiceRole"
+            ]
+          ]
+        },
+        "ScheduleExpression": "cron(* * * * *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "RunTaskFunction",
+                "Arn"
+              ]
+            },
+            "Id": "f",
+            "Input": {
+              "Fn::Join": [
+                "",
+                [
+                  "{\"taskDefinition\":\"",
+                  {
+                    "Ref": "sendemailsTaskDefinition"
+                  },
+                  "\",\"count\":",
+                  {
+                    "Ref": "sendemailsScale"
+                  },
+                  ",\"cluster\":\"",
+                  "cluster",
+                  "\",\"startedBy\": \"",
+                  "1234",
+                  "\"}"
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "Type": "AWS::Events::Rule"
+    },
+    "sendemailsTriggerPermission": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "RunTaskFunction",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "sendemailsTrigger",
+            "Arn"
+          ]
+        }
+      },
+      "Type": "AWS::Lambda::Permission"
+    }
+  }
+}
