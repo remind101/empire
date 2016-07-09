@@ -50,7 +50,7 @@ type AttachedScheduler struct {
 	// returned from the wrapped scheduler. This is currently an
 	// experimental feature, since it requires that multiple Empire
 	// processes interact with a single Docker daemon.
-	ShowRuns bool
+	ShowAttached bool
 
 	scheduler.Scheduler
 	dockerScheduler *Scheduler
@@ -81,7 +81,7 @@ func (s *AttachedScheduler) Run(ctx context.Context, app *scheduler.App, process
 // Instances returns a combination of instances from the wrapped scheduler, as
 // well as instances from attached runs.
 func (s *AttachedScheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
-	if !s.ShowRuns {
+	if !s.ShowAttached {
 		return s.Scheduler.Instances(ctx, app)
 	}
 
@@ -112,6 +112,10 @@ func (s *AttachedScheduler) Instances(ctx context.Context, app string) ([]*sched
 // Stop checks if there's an attached run matching the given id, and stops that
 // container if there is. Otherwise, it delegates to the wrapped Scheduler.
 func (s *AttachedScheduler) Stop(ctx context.Context, maybeContainerID string) error {
+	if !s.ShowAttached {
+		return s.Scheduler.Stop(ctx, maybeContainerID)
+	}
+
 	err := s.dockerScheduler.Stop(ctx, maybeContainerID)
 
 	// If there's no container with this ID, delegate to the wrapped

@@ -127,6 +127,7 @@ func TestAttachedScheduler_Stop_ContainerNotFound(t *testing.T) {
 	s := &AttachedScheduler{
 		Scheduler:       w,
 		dockerScheduler: ds,
+		ShowAttached:    true,
 	}
 
 	d.On("InspectContainer", "d9ad8d2f-318d-4abd-9d58-ece9a5ca423c").Return(nil, &docker.NoSuchContainer{

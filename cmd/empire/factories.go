@@ -130,7 +130,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	}
 
 	a := docker.RunAttachedWithDocker(s, d)
-	a.ShowRuns = c.Bool(FlagXShowAttached)
+	a.ShowAttached = c.Bool(FlagXShowAttached)
 	return a, nil
 }
 
