@@ -63,30 +63,35 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, ss scheduler.
 	return r, err
 }
 
+func (s *deployerService) deployInTransaction(ctx context.Context, stream scheduler.StatusStream, opts DeployOpts) (*Release, error) {
+	tx := s.db.Begin()
+	r, err := s.deploy(ctx, tx, stream, opts)
+	if err != nil {
+		tx.Rollback()
+		return r, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return r, err
+	}
+
+	return r, err
+}
+
 // Deploy is a thin wrapper around deploy to that adds the error to the
 // jsonmessage stream.
 func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	var msg jsonmessage.JSONMessage
 
-	tx := s.db.Begin()
 	stream := scheduler.NewJSONMessageStream(opts.Output)
-	r, err := s.deploy(ctx, tx, stream, opts)
+	r, err := s.deployInTransaction(ctx, stream, opts)
 	if err != nil {
-		tx.Rollback()
 		msg = newJSONMessageError(err)
 	} else {
 		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
 	}
 
 	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {
-		return r, err
-	}
-
-	if err != nil {
-		return r, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
 		return r, err
 	}
 
