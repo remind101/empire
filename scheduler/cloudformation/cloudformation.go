@@ -131,10 +131,6 @@ type Scheduler struct {
 	// Any additional tags to add to stacks.
 	Tags []*cloudformation.Tag
 
-	// When true, alls to Submit won't return until the stack has
-	// successfully updated/created.
-	wait bool
-
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -267,7 +263,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return fmt.Errorf("error describing stack: %v", err)
 	}
 
-	if s.wait {
+	if ss != nil {
 		if err := <-done; err != nil {
 			return err
 		}

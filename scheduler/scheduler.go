@@ -174,8 +174,20 @@ func (s *Status) String() string {
 // is executing.
 type StatusStream interface {
 	// Publish publishes an update to the status stream
-	Publish(context.Context, Status) error
+	Publish(Status) error
 }
+
+// StatusStreamFunc is a function that implements the Statusstream interface
+type StatusStreamFunc func(Status) error
+
+func (fn StatusStreamFunc) Publish(status Status) error {
+	return fn(status)
+}
+
+// NullStatusStream a status stream that does nothing.
+var NullStatusStream = StatusStreamFunc(func(status Status) error {
+	return nil
+})
 
 // jsonmessageStatusStream implements the StatusStream interface with support
 // for writing jsonmessages to the provided io.Writer
@@ -188,6 +200,6 @@ func NewJSONMessageStream(w io.Writer) StatusStream {
 	return &jsonmessageStatusStream{w: w}
 }
 
-func (s *jsonmessageStatusStream) Publish(ctx context.Context, status Status) error {
+func (s *jsonmessageStatusStream) Publish(status Status) error {
 	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: status.Message})
 }
