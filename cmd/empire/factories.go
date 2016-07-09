@@ -129,7 +129,9 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 		return nil, err
 	}
 
-	return docker.RunAttachedWithDocker(s, d), nil
+	a := docker.RunAttachedWithDocker(s, d)
+	a.ShowRuns = c.Bool(FlagXShowAttached)
+	return a, nil
 }
 
 func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.MigrationScheduler, error) {

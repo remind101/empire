@@ -124,7 +124,7 @@ func TestAttachedScheduler_Stop_ContainerNotFound(t *testing.T) {
 	ds := &Scheduler{
 		docker: d,
 	}
-	s := &attachedScheduler{
+	s := &AttachedScheduler{
 		Scheduler:       w,
 		dockerScheduler: ds,
 	}

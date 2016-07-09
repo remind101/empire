@@ -43,17 +43,23 @@ const (
 	processLabel = "empire.app.process"
 )
 
-// attachedScheduler wraps a Scheduler to run attached processes using the Docker
+// AttachedScheduler wraps a Scheduler to run attached processes using the Docker
 // scheduler.
-type attachedScheduler struct {
+type AttachedScheduler struct {
+	// If set, attached run instances will be merged in with instances
+	// returned from the wrapped scheduler. This is currently an
+	// experimental feature, since it requires that multiple Empire
+	// processes interact with a single Docker daemon.
+	ShowRuns bool
+
 	scheduler.Scheduler
 	dockerScheduler *Scheduler
 }
 
 // RunAttachedWithDocker wraps a Scheduler to run attached Run's using a Docker
 // client.
-func RunAttachedWithDocker(s scheduler.Scheduler, client *dockerutil.Client) scheduler.Scheduler {
-	return &attachedScheduler{
+func RunAttachedWithDocker(s scheduler.Scheduler, client *dockerutil.Client) *AttachedScheduler {
+	return &AttachedScheduler{
 		Scheduler:       s,
 		dockerScheduler: NewScheduler(client),
 	}
@@ -61,7 +67,7 @@ func RunAttachedWithDocker(s scheduler.Scheduler, client *dockerutil.Client) sch
 
 // Run runs attached processes using the docker scheduler, and detached
 // processes using the wrapped scheduler.
-func (s *attachedScheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+func (s *AttachedScheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
 	// Attached means stdout, stdin is attached.
 	attached := out != nil || in != nil
 
@@ -74,7 +80,11 @@ func (s *attachedScheduler) Run(ctx context.Context, app *scheduler.App, process
 
 // Instances returns a combination of instances from the wrapped scheduler, as
 // well as instances from attached runs.
-func (s *attachedScheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+func (s *AttachedScheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+	if !s.ShowRuns {
+		return s.Scheduler.Instances(ctx, app)
+	}
+
 	type instancesResult struct {
 		instances []*scheduler.Instance
 		err       error
@@ -101,7 +111,7 @@ func (s *attachedScheduler) Instances(ctx context.Context, app string) ([]*sched
 
 // Stop checks if there's an attached run matching the given id, and stops that
 // container if there is. Otherwise, it delegates to the wrapped Scheduler.
-func (s *attachedScheduler) Stop(ctx context.Context, maybeContainerID string) error {
+func (s *AttachedScheduler) Stop(ctx context.Context, maybeContainerID string) error {
 	err := s.dockerScheduler.Stop(ctx, maybeContainerID)
 
 	// If there's no container with this ID, delegate to the wrapped
