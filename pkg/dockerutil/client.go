@@ -8,8 +8,11 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerauth"
-	"github.com/remind101/pkg/trace"
 )
+
+// The /containers/{name:.*}/copy endpoint was removed in this version of the
+// Docker API.
+var dockerAPI124, _ = docker.NewAPIVersion("1.24")
 
 // NewDockerClient returns a new docker.Client using the given socket and certificate path.
 func NewDockerClient(socket, certPath string) (*docker.Client, error) {
@@ -36,6 +39,8 @@ type Client struct {
 	// AuthProvider is the dockerauth.AuthProvider that will be used for pulling
 	// images.
 	AuthProvider dockerauth.AuthProvider
+
+	apiVersion docker.APIVersion
 }
 
 // NewClient returns a new Client instance.
@@ -44,7 +49,7 @@ func NewClient(authProvider dockerauth.AuthProvider, socket, certPath string) (*
 	if err != nil {
 		return nil, err
 	}
-	return newClient(authProvider, c), nil
+	return newClient(authProvider, c)
 }
 
 // NewClientFromEnv returns a new Client instance configured by the DOCKER_*
@@ -54,14 +59,29 @@ func NewClientFromEnv(authProvider dockerauth.AuthProvider) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newClient(authProvider, c), nil
+	return newClient(authProvider, c)
 }
 
-func newClient(authProvider dockerauth.AuthProvider, c *docker.Client) *Client {
+func newClient(authProvider dockerauth.AuthProvider, c *docker.Client) (*Client, error) {
 	if authProvider == nil {
 		authProvider = dockerauth.NewMultiAuthProvider()
 	}
-	return &Client{AuthProvider: authProvider, Client: c}
+
+	env, err := c.Version()
+	if err != nil {
+		return nil, fmt.Errorf("error getting Docker version: %v", err)
+	}
+
+	apiVersion, err := docker.NewAPIVersion(env.Get("ApiVersion"))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		AuthProvider: authProvider,
+		Client:       c,
+		apiVersion:   apiVersion,
+	}, nil
 }
 
 // PullImage wraps the docker clients PullImage to handle authentication.
@@ -78,45 +98,38 @@ func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) er
 		return err
 	}
 
-	ctx, done := trace.Trace(ctx)
-	err = c.Client.PullImage(opts, authConf)
-	done(err, "PullImage", "registry", opts.Registry, "repository", opts.Repository, "tag", opts.Tag)
-	return err
+	return c.Client.PullImage(opts, authConf)
 }
 
 func (c *Client) CreateContainer(ctx context.Context, opts docker.CreateContainerOptions) (*docker.Container, error) {
-	ctx, done := trace.Trace(ctx)
-	container, err := c.Client.CreateContainer(opts)
-	done(err, "CreateContainer", "image", opts.Config.Image)
-	return container, err
+	return c.Client.CreateContainer(opts)
 }
 
 func (c *Client) StartContainer(ctx context.Context, id string, config *docker.HostConfig) error {
-	ctx, done := trace.Trace(ctx)
-	err := c.Client.StartContainer(id, config)
-	done(err, "StartContainer", "id", id)
-	return err
+	return c.Client.StartContainer(id, config)
 }
 
 func (c *Client) AttachToContainer(ctx context.Context, opts docker.AttachToContainerOptions) error {
-	ctx, done := trace.Trace(ctx)
-	err := c.Client.AttachToContainer(opts)
-	done(err, "AttachToContainer", "container", opts.Container)
-	return err
+	return c.Client.AttachToContainer(opts)
 }
 
 func (c *Client) StopContainer(ctx context.Context, id string, timeout uint) error {
-	ctx, done := trace.Trace(ctx)
-	err := c.Client.StopContainer(id, timeout)
-	done(err, "StopContainer", "id", id, "timeout", timeout)
-	return err
+	return c.Client.StopContainer(id, timeout)
 }
 
 func (c *Client) RemoveContainer(ctx context.Context, opts docker.RemoveContainerOptions) error {
-	ctx, done := trace.Trace(ctx)
-	err := c.Client.RemoveContainer(opts)
-	done(err, "RemoveContainer", "id", opts.ID)
-	return err
+	return c.Client.RemoveContainer(opts)
+}
+
+func (c *Client) CopyFromContainer(ctx context.Context, options docker.CopyFromContainerOptions) error {
+	if c.apiVersion.GreaterThanOrEqualTo(dockerAPI124) {
+		return c.Client.DownloadFromContainer(options.Container, docker.DownloadFromContainerOptions{
+			OutputStream: options.OutputStream,
+			Path:         options.Resource,
+		})
+	}
+
+	return c.Client.CopyFromContainer(options)
 }
 
 func authConfiguration(provider dockerauth.AuthProvider, registry string) (docker.AuthConfiguration, error) {
