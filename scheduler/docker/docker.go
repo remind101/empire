@@ -43,6 +43,12 @@ const (
 	processLabel = "empire.app.process"
 )
 
+// Values for `runLabel`.
+const (
+	Attached = "attached"
+	Detached = "detached"
+)
+
 // AttachedScheduler wraps a Scheduler to run attached processes using the Docker
 // scheduler.
 type AttachedScheduler struct {
@@ -149,7 +155,7 @@ func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, p *scheduler.Pr
 	}
 
 	labels := scheduler.Labels(app, p)
-	labels[runLabel] = "attached"
+	labels[runLabel] = Attached
 
 	if err := s.docker.PullImage(ctx, docker.PullImageOptions{
 		Registry:     p.Image.Registry,
@@ -220,14 +226,21 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 // InstancesFromAttachedRuns returns Instances that were started from attached
 // runs.
 func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+	// Filter only docker containers that were started as an attached run.
+	attached := fmt.Sprintf("%s=%s", runLabel, Attached)
+	return s.instances(ctx, app, attached)
+}
+
+// instances returns docker container instances for this app, optionally
+// filtered with labels.
+func (s *Scheduler) instances(ctx context.Context, app string, labels ...string) ([]*scheduler.Instance, error) {
 	var instances []*scheduler.Instance
 
 	containers, err := s.docker.ListContainers(docker.ListContainersOptions{
 		Filters: map[string][]string{
-			"label": []string{
-				fmt.Sprintf("%s", runLabel),
+			"label": append([]string{
 				fmt.Sprintf("%s=%s", appLabel, app),
-			},
+			}, labels...),
 		},
 	})
 	if err != nil {

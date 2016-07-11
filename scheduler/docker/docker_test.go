@@ -24,8 +24,8 @@ func TestScheduler_InstancesFromAttachedRuns(t *testing.T) {
 	d.On("ListContainers", docker.ListContainersOptions{
 		Filters: map[string][]string{
 			"label": []string{
-				"run",
 				"empire.app.id=2cdc4941-e36d-4855-a0ec-51525db4a500",
+				"run=attached",
 			},
 		},
 	}).Return([]docker.APIContainers{
