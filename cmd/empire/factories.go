@@ -23,9 +23,9 @@ import (
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/ecsutil"
-	"github.com/remind101/empire/pkg/runner"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
+	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
@@ -104,12 +104,11 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 // Scheduler ============================
 
 func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
-	r, err := newDockerRunner(c)
-	if err != nil {
-		return nil, err
-	}
+	var (
+		s   scheduler.Scheduler
+		err error
+	)
 
-	var s scheduler.Scheduler
 	switch c.String(FlagScheduler) {
 	case "ecs":
 		s, err = newECSScheduler(db, c)
@@ -125,10 +124,14 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 		return nil, fmt.Errorf("failed to initialize %s scheduler: %v", c.String(FlagScheduler), err)
 	}
 
-	return &scheduler.AttachedRunner{
-		Scheduler: s,
-		Runner:    r,
-	}, nil
+	d, err := newDockerClient(c)
+	if err != nil {
+		return nil, err
+	}
+
+	a := docker.RunAttachedWithDocker(s, d)
+	a.ShowAttached = c.Bool(FlagXShowAttached)
+	return a, nil
 }
 
 func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.MigrationScheduler, error) {
@@ -252,14 +255,6 @@ func newConfigProvider(c *cli.Context) client.ConfigProvider {
 	}
 
 	return p
-}
-
-func newDockerRunner(c *cli.Context) (*runner.Runner, error) {
-	client, err := newDockerClient(c)
-	if err != nil {
-		return nil, err
-	}
-	return runner.NewRunner(client), nil
 }
 
 // DockerClient ========================

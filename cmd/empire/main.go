@@ -63,6 +63,9 @@ const (
 	FlagLogsStreamer = "logs.streamer"
 
 	FlagEnvironment = "environment"
+
+	// Expiremental flags.
+	FlagXShowAttached = "x.showattached"
 )
 
 // Commands are the subcommands that are available.
@@ -325,6 +328,11 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagMessagesRequired,
 		Usage:  "If true, messages will be required for empire actions that emit events.",
 		EnvVar: "EMPIRE_MESSAGES_REQUIRED",
+	},
+	cli.BoolFlag{
+		Name:   FlagXShowAttached,
+		Usage:  "If true, attached runs will be shown in `emp ps` output.",
+		EnvVar: "EMPIRE_X_SHOW_ATTACHED",
 	},
 }
 

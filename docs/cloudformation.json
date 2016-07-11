@@ -776,6 +776,10 @@
               {
                 "Name": "EMPIRE_GITHUB_TEAM_ID",
                 "Value": { "Ref": "GitHubTeamId" }
+              },
+              {
+                "Name": "EMPIRE_X_SHOW_ATTACHED",
+                "Value": "true"
               }
             ],
             "Command": ["server", "-automigrate=true"],
