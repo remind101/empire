@@ -3,10 +3,8 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 // ResponseWriter provides an implementation of the http.ResponseWriter
@@ -61,25 +59,4 @@ func (fw *flushWriter) Write(p []byte) (n int, err error) {
 		fw.f.Flush()
 	}
 	return
-}
-
-// Heartbeat sends the null character periodically, to keep the connection alive.
-func Heartbeat(outStream io.Writer, interval time.Duration) chan struct{} {
-	stop := make(chan struct{})
-	t := time.NewTicker(interval)
-
-	go func() {
-		for {
-			select {
-			case <-t.C:
-				fmt.Fprintf(outStream, "\x00")
-				continue
-			case <-stop:
-				t.Stop()
-				return
-			}
-		}
-	}()
-
-	return stop
 }

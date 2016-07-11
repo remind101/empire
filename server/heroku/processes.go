@@ -3,12 +3,10 @@ package heroku
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
-	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -107,8 +105,6 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 			Header:   header,
 		}
 		defer stream.Close()
-		// Prevent the ELB idle connection timeout to close the connection.
-		defer close(streamhttp.Heartbeat(stream, 10*time.Second))
 
 		opts.Input = stream
 		opts.Output = stream

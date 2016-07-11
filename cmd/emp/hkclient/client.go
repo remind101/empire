@@ -3,10 +3,12 @@ package hkclient
 import (
 	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/remind101/empire/pkg/heroku"
 )
@@ -46,7 +48,9 @@ func New(nrc *NetRc, agent string) (*Clients, error) {
 		Debug:     debug,
 	}
 
-	tr := &http.Transport{}
+	tr := &http.Transport{
+		Dial: dial(),
+	}
 	ste.Client.HTTP = &http.Client{Transport: tr}
 
 	if disableSSLVerify || os.Getenv("HEROKU_SSL_VERIFY") == "disable" {
@@ -65,4 +69,21 @@ func New(nrc *NetRc, agent string) (*Clients, error) {
 	}
 
 	return &ste, nil
+}
+
+type dialer struct {
+	*net.Dialer
+}
+
+func dial() func(network, address string) (net.Conn, error) {
+	return (&dialer{
+		Dialer: &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		},
+	}).Dial
+}
+
+func (d *dialer) Dial(network, address string) (net.Conn, error) {
+	return d.Dialer.Dial(network, address)
 }
