@@ -47,7 +47,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 
 	e := empire.New(db)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(ExtractProcfile)
+	e.ProcfileExtractor = ExtractProcfile(nil)
 	e.RunRecorder = empire.RecordTo(ioutil.Discard)
 
 	if err := e.Reset(); err != nil {
@@ -93,16 +93,38 @@ func Run(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// ExtractProcfile extracts a fake Procfile.
-func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-	p, err := procfile.Marshal(procfile.ExtendedProcfile{
-		"web": procfile.Process{
-			Command: []string{"./bin/web"},
-		},
-	})
-	if err != nil {
-		return nil, err
+// defaultProcfile represents a basic Procfile, which can be used in integration
+// tests.
+var defaultProcfile = procfile.ExtendedProcfile{
+	"web": procfile.Process{
+		Command: []string{"./bin/web"},
+	},
+	"worker": procfile.Process{
+		Command: []string{"./bin/worker"},
+	},
+	"scheduled": procfile.Process{
+		Command: []string{"./bin/scheduled"},
+		Cron: func() *string {
+			everyMinute := "* * * * * *"
+			return &everyMinute
+		}(),
+	},
+}
+
+// Returns a function that can be used as a Procfile extract for Empire. It
+// writes a fake Docker pull to w, and extracts the given Procfile in yaml
+// format.
+func ExtractProcfile(pf procfile.Procfile) empire.ProcfileExtractor {
+	if pf == nil {
+		pf = defaultProcfile
 	}
 
-	return p, dockerutil.FakePull(img, w)
+	return empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+		p, err := procfile.Marshal(pf)
+		if err != nil {
+			return nil, err
+		}
+
+		return p, dockerutil.FakePull(img, w)
+	})
 }
