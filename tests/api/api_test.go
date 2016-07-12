@@ -1,11 +1,13 @@
 package api_test
 
 import (
-	"net/http/httptest"
 	"testing"
 
-	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/server"
+	"github.com/remind101/empire/server/auth"
 )
 
 var (
@@ -22,9 +24,11 @@ func TestMain(m *testing.M) {
 
 // NewTestClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
-func NewTestClient(t testing.TB) (*heroku.Client, *httptest.Server) {
+func NewTestClient(t testing.TB) (*heroku.Client, *empiretest.Server) {
 	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
+	s := empiretest.NewTestServer(t, e, server.Options{
+		Authenticator: auth.Anyone(&empire.User{Name: "fake"}),
+	})
 
 	c := &heroku.Client{
 		Username: "",

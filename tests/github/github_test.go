@@ -2,23 +2,20 @@ package github_test
 
 import (
 	"io/ioutil"
-	"net/http/httptest"
 	"testing"
 
 	"golang.org/x/net/context"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"
-	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPing(t *testing.T) {
-	e := empiretest.NewEmpire(t)
-	c, s := NewTestClient(t, e)
-	defer s.Close()
+	c := newClient(t)
+	defer c.Close()
 
 	if _, err := c.Ping(hooker.DefaultPing); err != nil {
 		t.Fatal(err)
@@ -26,13 +23,12 @@ func TestPing(t *testing.T) {
 }
 
 func TestDeployment(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	c := newClient(t)
+	defer c.Close()
+
 	s := new(mockScheduler)
 	s.image = make(chan string, 1)
-	e.Scheduler = s
-
-	c, sv := NewTestClient(t, e)
-	defer sv.Close()
+	c.Empire.Scheduler = s
 
 	var d events.Deployment
 	d.Repository.FullName = "remind101/acme-inc"
@@ -60,16 +56,25 @@ func TestMain(m *testing.M) {
 	empiretest.Run(m)
 }
 
-// NewTestClient will return a new heroku.Client that's configured to interact
+type client struct {
+	*empiretest.Server
+	*hooker.Client
+}
+
+// newClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
-func NewTestClient(t testing.TB, e *empire.Empire) (*hooker.Client, *httptest.Server) {
+func newClient(t testing.TB) *client {
+	e := empiretest.NewEmpire(t)
 	s := empiretest.NewServer(t, e)
 
 	c := hooker.NewClient(nil)
 	c.URL = s.URL
 	c.Secret = "abcd"
 
-	return c, s
+	return &client{
+		Server: s,
+		Client: c,
+	}
 }
 
 type mockScheduler struct {
