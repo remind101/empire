@@ -697,10 +697,10 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 }
 
 // Stop stops the given ECS task.
-func (s *Scheduler) Stop(ctx context.Context, instanceID string) error {
+func (s *Scheduler) Stop(ctx context.Context, taskID string) error {
 	_, err := s.ecs.StopTask(&ecs.StopTaskInput{
 		Cluster: aws.String(s.Cluster),
-		Task:    aws.String(instanceID),
+		Task:    aws.String(taskID),
 	})
 	return err
 }

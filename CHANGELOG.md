@@ -4,6 +4,9 @@
 
 **Features**
 
+* Empire now includes experimental support for showing attached runs in `emp ps`. This can be enabled with the `--x.showattached` flag, or `EMPIRE_X_SHOW_ATTACHED` [#911](https://github.com/remind101/empire/pull/911)
+* Empire now includes experimental support for scheduled tasks [#919](https://github.com/remind101/empire/pull/919)
+
 **Improvements**
 
 * The Custom::ECSService custom resource now waits for newly created ECS services to stabilize [#878](https://github.com/remind101/empire/pull/878)
@@ -14,6 +17,7 @@
 
 * Fixed a bug where multiple duplicate ECS services could be created by the CloudFormation backend, when using the `Custom::ECSService` resource [#884](https://github.com/remind101/empire/pull/884).
 * Fixed a bug where the lock obtained during stack operations was not always unlocked. [#892](https://github.com/remind101/empire/pull/892)
+* Fixed an issue where Procfile's would not be extracted when Docker 1.12+ was used. [#915](https://github.com/remind101/empire/pull/915)
 
 **Performance**
 

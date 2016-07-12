@@ -49,12 +49,6 @@ type Process struct {
 	// Labels to set on the container.
 	Labels map[string]string
 
-	// Exposure is the level of exposure for this process.
-	Exposure *Exposure
-
-	// Instances is the desired instances of this service to run.
-	Instances uint
-
 	// The amount of RAM to allocate to this process in bytes.
 	MemoryLimit uint
 
@@ -64,7 +58,22 @@ type Process struct {
 
 	// ulimit -u
 	Nproc uint
+
+	// Instances is the desired instances of this service to run.
+	Instances uint
+
+	// Exposure is the level of exposure for this process.
+	Exposure *Exposure
+
+	// Can be used to setup a CRON schedule to run this task periodically.
+	Schedule Schedule
 }
+
+// Schedule represents a Schedule for scheduled tasks that run periodically.
+type Schedule interface{}
+
+// CRONSchedule is a Schedule implementation that represents a CRON expression.
+type CRONSchedule string
 
 // Exposure controls the exposure settings for a process.
 type Exposure struct {

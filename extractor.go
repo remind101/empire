@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 
@@ -36,14 +37,14 @@ func (fn ProcfileExtractorFunc) Extract(ctx context.Context, image image.Image, 
 // is a "web" process.
 type cmdExtractor struct {
 	// Client is the docker client to use to pull the container image.
-	client *docker.Client
+	client *dockerutil.Client
 }
 
-func newCMDExtractor(c *docker.Client) *cmdExtractor {
+func newCMDExtractor(c *dockerutil.Client) *cmdExtractor {
 	return &cmdExtractor{client: c}
 }
 
-func (e *cmdExtractor) Extract(_ context.Context, img image.Image, _ io.Writer) ([]byte, error) {
+func (e *cmdExtractor) Extract(ctx context.Context, img image.Image, _ io.Writer) ([]byte, error) {
 	i, err := e.client.InspectImage(img.String())
 	if err != nil {
 		return nil, err
@@ -87,28 +88,28 @@ func multiExtractor(extractors ...ProcfileExtractor) ProcfileExtractor {
 // the Procfile from the images WORKDIR.
 type fileExtractor struct {
 	// Client is the docker client to use to pull the container image.
-	client *docker.Client
+	client *dockerutil.Client
 }
 
-func newFileExtractor(c *docker.Client) *fileExtractor {
+func newFileExtractor(c *dockerutil.Client) *fileExtractor {
 	return &fileExtractor{client: c}
 }
 
 // Extract implements Extractor Extract.
-func (e *fileExtractor) Extract(_ context.Context, img image.Image, w io.Writer) ([]byte, error) {
-	c, err := e.createContainer(img)
+func (e *fileExtractor) Extract(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+	c, err := e.createContainer(ctx, img)
 	if err != nil {
 		return nil, err
 	}
 
-	defer e.removeContainer(c.ID)
+	defer e.removeContainer(ctx, c.ID)
 
-	pfile, err := e.procfile(c.ID)
+	pfile, err := e.procfile(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := e.copyFile(c.ID, pfile)
+	b, err := e.copyFile(ctx, c.ID, pfile)
 	if err != nil {
 		return nil, &procfileError{Err: err}
 	}
@@ -118,7 +119,7 @@ func (e *fileExtractor) Extract(_ context.Context, img image.Image, w io.Writer)
 
 // procfile returns the path to the Procfile. If the container has a WORKDIR
 // set, then this will return a path to the Procfile within that directory.
-func (e *fileExtractor) procfile(id string) (string, error) {
+func (e *fileExtractor) procfile(ctx context.Context, id string) (string, error) {
 	p := ""
 
 	c, err := e.client.InspectContainer(id)
@@ -134,8 +135,8 @@ func (e *fileExtractor) procfile(id string) (string, error) {
 }
 
 // createContainer creates a new docker container for the given docker image.
-func (e *fileExtractor) createContainer(img image.Image) (*docker.Container, error) {
-	return e.client.CreateContainer(docker.CreateContainerOptions{
+func (e *fileExtractor) createContainer(ctx context.Context, img image.Image) (*docker.Container, error) {
+	return e.client.CreateContainer(ctx, docker.CreateContainerOptions{
 		Config: &docker.Config{
 			Image: img.String(),
 		},
@@ -143,16 +144,16 @@ func (e *fileExtractor) createContainer(img image.Image) (*docker.Container, err
 }
 
 // removeContainer removes a container by its ID.
-func (e *fileExtractor) removeContainer(containerID string) error {
-	return e.client.RemoveContainer(docker.RemoveContainerOptions{
+func (e *fileExtractor) removeContainer(ctx context.Context, containerID string) error {
+	return e.client.RemoveContainer(ctx, docker.RemoveContainerOptions{
 		ID: containerID,
 	})
 }
 
 // copyFile copies a file from a container.
-func (e *fileExtractor) copyFile(containerID, path string) ([]byte, error) {
+func (e *fileExtractor) copyFile(ctx context.Context, containerID, path string) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := e.client.CopyFromContainer(docker.CopyFromContainerOptions{
+	if err := e.client.CopyFromContainer(ctx, docker.CopyFromContainerOptions{
 		Container:    containerID,
 		Resource:     path,
 		OutputStream: &buf,
@@ -242,6 +243,7 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 
 		f[name] = Process{
 			Command: cmd,
+			Cron:    process.Cron,
 		}
 	}
 

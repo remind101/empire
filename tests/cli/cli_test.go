@@ -2,11 +2,7 @@ package cli_test
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/url"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -15,8 +11,17 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/empire/empiretest/cli"
 	"github.com/remind101/pkg/timex"
 )
+
+// empPath can be used to change what binary is used to run the tests.
+const empPath = "../../build/emp"
+
+var fakeUser = &empire.User{
+	Name:        "fake",
+	GitHubToken: "token",
+}
 
 func DeployCommand(tag, version string) Command {
 	return Command{
@@ -55,80 +60,6 @@ func resetNow() {
 	now(fakeNow)
 }
 
-// cli runs an cli command against a server.
-func cli(t testing.TB, token, url, command string) string {
-	cmd := NewCmd(url, command)
-	cmd.Authorize(token)
-
-	b, err := cmd.CombinedOutput()
-	t.Log(fmt.Sprintf("\n$ %s\n%s", command, string(b)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return string(b)
-}
-
-// Cmd represents an cli command.
-type Cmd struct {
-	*exec.Cmd
-
-	// The Heroku API URL.
-	URL string
-}
-
-func NewCmd(url, command string) *Cmd {
-	args := strings.Split(command, " ")
-
-	p, err := filepath.Abs("../../build/emp")
-	if err != nil {
-		return nil
-	}
-
-	cmd := exec.Command(p, args...)
-	cmd.Env = []string{
-		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
-		"TERM=screen-256color",
-		"TZ=America/Los_Angeles",
-		fmt.Sprintf("EMPIRE_API_URL=%s", url),
-	}
-
-	return &Cmd{
-		Cmd: cmd,
-		URL: url,
-	}
-}
-
-func (c *Cmd) Authorize(token string) {
-	netrc, err := writeNetrc(token, c.URL)
-	if err != nil {
-		panic(err)
-	}
-
-	c.Cmd.Env = append(c.Cmd.Env, fmt.Sprintf("NETRC_PATH=%s", netrc.Name()))
-}
-
-func writeNetrc(token, uri string) (*os.File, error) {
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		return f, err
-	}
-	defer f.Close()
-
-	u, err := url.Parse(uri)
-	if err != nil {
-		return f, err
-	}
-
-	if _, err := io.WriteString(f, `machine `+u.Host+`
-  login foo@example.com
-  password `+token); err != nil {
-		return f, err
-	}
-
-	return f, nil
-}
-
 type Command struct {
 	// Command represents a cli command to run.
 	Command string
@@ -138,19 +69,30 @@ type Command struct {
 }
 
 func run(t testing.TB, commands []Command) {
-	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
-	defer s.Close()
+	cli := newCLI(t)
+	defer cli.Close()
 
-	token, err := e.AccessTokensCreate(&empire.AccessToken{
-		User: &empire.User{Name: "fake", GitHubToken: "token"},
+	token, err := cli.Empire.AccessTokensCreate(&empire.AccessToken{
+		User: fakeUser,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	if err := cli.Authorize(fakeUser.Name, token.Token); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, cmd := range commands {
-		got := cli(t, token.Token, s.URL, cmd.Command)
+		args := strings.Split(cmd.Command, " ")
+
+		b, err := cli.Command(args...).CombinedOutput()
+		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, string(b)))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got := string(b)
 
 		if want, ok := cmd.Output.(string); ok {
 			if want != "" {
@@ -166,4 +108,48 @@ func run(t testing.TB, commands []Command) {
 			}
 		}
 	}
+}
+
+// CLI wraps an empire instance, a server and a CLI as one unit, which can be
+// used to execute emp commands.
+type CLI struct {
+	*empiretest.Server
+	*cli.CLI
+}
+
+// newCLI returns a new CLI instance.
+func newCLI(t testing.TB) *CLI {
+	e := empiretest.NewEmpire(t)
+	s := empiretest.NewServer(t, e)
+	return newCLIWithServer(t, s)
+}
+
+func newCLIWithServer(t testing.TB, s *empiretest.Server) *CLI {
+	path, err := filepath.Abs(empPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	u, err := url.Parse(s.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cli, err := cli.New(path, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return &CLI{
+		CLI:    cli,
+		Server: s,
+	}
+}
+
+func (c *CLI) Close() {
+	if err := c.CLI.Close(); err != nil {
+		panic(err)
+	}
+
+	c.Server.Close()
 }

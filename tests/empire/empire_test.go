@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"sort"
 	"testing"
 	"time"
 
@@ -113,6 +114,23 @@ func TestEmpire_Deploy(t *testing.T) {
 		},
 		Processes: []*scheduler.Process{
 			{
+				Type:        "scheduled",
+				Image:       img,
+				Command:     []string{"./bin/scheduled"},
+				Schedule:    scheduler.CRONSchedule("* * * * * *"),
+				Instances:   0,
+				MemoryLimit: 536870912,
+				CPUShares:   256,
+				Nproc:       256,
+				Env: map[string]string{
+					"EMPIRE_PROCESS": "scheduled",
+					"SOURCE":         "acme-inc.scheduled.v1",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "scheduled",
+				},
+			},
+			{
 				Type:    "web",
 				Image:   img,
 				Command: []string{"./bin/web"},
@@ -129,6 +147,22 @@ func TestEmpire_Deploy(t *testing.T) {
 				},
 				Labels: map[string]string{
 					"empire.app.process": "web",
+				},
+			},
+			{
+				Type:        "worker",
+				Image:       img,
+				Command:     []string{"./bin/worker"},
+				Instances:   0,
+				MemoryLimit: 536870912,
+				CPUShares:   256,
+				Nproc:       256,
+				Env: map[string]string{
+					"EMPIRE_PROCESS": "worker",
+					"SOURCE":         "acme-inc.worker.v1",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "worker",
 				},
 			},
 		},
@@ -175,12 +209,10 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		return procfile.Marshal(procfile.ExtendedProcfile{
-			"web": procfile.Process{
-				Command: []string{"./bin/web"},
-			},
-		})
+	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+		"web": procfile.Process{
+			Command: []string{"./bin/web"},
+		},
 	})
 
 	user := &empire.User{Name: "ejholmes"}
@@ -394,6 +426,11 @@ func TestEmpire_Set(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
+	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+		"web": procfile.Process{
+			Command: []string{"./bin/web"},
+		},
+	})
 
 	user := &empire.User{Name: "ejholmes"}
 
@@ -518,7 +555,18 @@ type mockScheduler struct {
 	mock.Mock
 }
 
+type processesByType []*scheduler.Process
+
+func (e processesByType) Len() int           { return len(e) }
+func (e processesByType) Less(i, j int) bool { return e[i].Type < e[j].Type }
+func (e processesByType) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
 func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	// mock.Mock checks the order of slices, so sort by process name.
+	p := processesByType(app.Processes)
+	sort.Sort(p)
+	app.Processes = p
+
 	args := m.Called(app)
 	return args.Error(0)
 }

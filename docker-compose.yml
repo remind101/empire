@@ -14,6 +14,7 @@ server:
     EMPIRE_DATABASE_URL: postgres://postgres:postgres@db/postgres?sslmode=disable
     DOCKER_HOST: unix:///var/run/docker.sock
     EMPIRE_SCHEDULER: cloudformation-migration
+    EMPIRE_X_SHOW_ATTACHED: 'true'
 db:
   image: postgres
   ports:
