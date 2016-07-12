@@ -156,6 +156,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 	tmpl.Outputs["Release"] = troposphere.Output{Value: app.Release}
 
 	serviceMappings := []interface{}{}
+	deploymentMappings := []interface{}{}
 	scheduledProcesses := map[string]string{}
 
 	for _, p := range app.Processes {
@@ -173,6 +174,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 		default:
 			service := t.addService(tmpl, app, p)
 			serviceMappings = append(serviceMappings, Join("=", p.Type, Ref(service)))
+			deploymentMappings = append(deploymentMappings, Join("=", p.Type, GetAtt(service, "DeploymentId")))
 		}
 	}
 
@@ -182,6 +184,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 	}
 
 	tmpl.Outputs[servicesOutput] = troposphere.Output{Value: Join(",", serviceMappings...)}
+	tmpl.Outputs[deploymentsOutput] = troposphere.Output{Value: Join(",", deploymentMappings...)}
 
 	return tmpl, nil
 }

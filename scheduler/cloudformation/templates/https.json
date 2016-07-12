@@ -10,6 +10,43 @@
     }
   },
   "Outputs": {
+    "Deployments": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Fn::GetAtt": [
+                      "webService",
+                      "DeploymentId"
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "api",
+                  {
+                    "Fn::GetAtt": [
+                      "apiService",
+                      "DeploymentId"
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    },
     "EmpireVersion": {
       "Value": "x.x.x"
     },
