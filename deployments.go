@@ -88,8 +88,10 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 	r, err := s.deployInTransaction(ctx, stream, opts)
 	if err != nil {
 		msg = newJSONMessageError(err)
-	} else {
+	} else if stream == nil {
 		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
+	} else {
+		scheduler.Publish(stream, fmt.Sprintf("Finished processing events for release v%d of %s", r.Version, r.App.Name))
 	}
 
 	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {

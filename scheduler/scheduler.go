@@ -4,6 +4,7 @@ package scheduler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 
@@ -210,5 +211,12 @@ func NewJSONMessageStream(w io.Writer) StatusStream {
 }
 
 func (s *jsonmessageStatusStream) Publish(status Status) error {
-	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: status.Message})
+	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: %s", status.Message)})
+}
+
+func Publish(stream StatusStream, msg string) error {
+	if stream != nil {
+		return stream.Publish(Status{Message: msg})
+	}
+	return nil
 }
