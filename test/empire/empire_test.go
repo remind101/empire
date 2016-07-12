@@ -11,10 +11,10 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/test"
 	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -32,11 +32,11 @@ func init() {
 // Run the tests with empiretest.Run, which will lock access to the database
 // since it can't be shared by parallel tests.
 func TestMain(m *testing.M) {
-	empiretest.Run(m)
+	test.Run(m)
 }
 
 func TestEmpire_AccessTokens(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 
 	token := &empire.AccessToken{
 		User: &empire.User{Name: "ejholmes"},
@@ -61,7 +61,7 @@ func TestEmpire_AccessTokens(t *testing.T) {
 }
 
 func TestEmpire_CertsAttach(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
 
@@ -85,7 +85,7 @@ func TestEmpire_CertsAttach(t *testing.T) {
 }
 
 func TestEmpire_Deploy(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
 
@@ -180,7 +180,7 @@ func TestEmpire_Deploy(t *testing.T) {
 }
 
 func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
 	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
@@ -206,10 +206,10 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 }
 
 func TestEmpire_Deploy_Concurrent(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+	e.ProcfileExtractor = test.ExtractProcfile(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},
 		},
@@ -272,7 +272,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 }
 
 func TestEmpire_Run(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 
 	user := &empire.User{Name: "ejholmes"}
 
@@ -346,7 +346,7 @@ func TestEmpire_Run(t *testing.T) {
 }
 
 func TestEmpire_Run_WithConstraints(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 
 	user := &empire.User{Name: "ejholmes"}
 
@@ -423,10 +423,10 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 }
 
 func TestEmpire_Set(t *testing.T) {
-	e := empiretest.NewEmpire(t)
+	e := test.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
-	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+	e.ProcfileExtractor = test.ExtractProcfile(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},
 		},

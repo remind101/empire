@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
+	"github.com/remind101/empire/test"
 )
 
 func TestLogin(t *testing.T) {
-	s := empiretest.NewTestServer(t, nil, server.Options{
+	s := test.NewTestServer(t, nil, server.Options{
 		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
 	})
 
@@ -34,7 +34,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginUnauthorized(t *testing.T) {
-	s := empiretest.NewTestServer(t, nil, server.Options{
+	s := test.NewTestServer(t, nil, server.Options{
 		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
 	})
 
@@ -57,7 +57,7 @@ func TestLoginUnauthorized(t *testing.T) {
 }
 
 func TestLoginTwoFactor(t *testing.T) {
-	s := empiretest.NewTestServer(t, nil, server.Options{
+	s := test.NewTestServer(t, nil, server.Options{
 		Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
 	})
 

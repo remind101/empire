@@ -8,8 +8,8 @@ import (
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"
-	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,20 +53,20 @@ func TestDeployment(t *testing.T) {
 // Run the tests with empiretest.Run, which will lock access to the database
 // since it can't be shared by parallel tests.
 func TestMain(m *testing.M) {
-	empiretest.Run(m)
+	test.Run(m)
 }
 
 // Client wraps an empiretest.Server and a hooker.Client as a single unit.
 type Client struct {
-	*empiretest.Server
+	*test.Server
 	*hooker.Client
 }
 
 // newClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
 func newClient(t testing.TB) *Client {
-	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
+	e := test.NewEmpire(t)
+	s := test.NewServer(t, e)
 
 	c := hooker.NewClient(nil)
 	c.URL = s.URL

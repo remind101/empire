@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/empiretest"
-	"github.com/remind101/empire/empiretest/cli"
+	"github.com/remind101/empire/test"
+	"github.com/remind101/empire/test/cli"
 	"github.com/remind101/pkg/timex"
 )
 
@@ -31,7 +31,7 @@ Status: Created new release ` + version + ` for acme-inc`,
 // Run the tests with empiretest.Run, which will lock access to the database
 // since it can't be shared by parallel tests.
 func TestMain(m *testing.M) {
-	empiretest.Run(m)
+	test.Run(m)
 }
 
 var fakeNow = time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
@@ -105,18 +105,18 @@ func run(t testing.TB, commands []Command) {
 // CLI wraps an empire instance, a server and a CLI as one unit, which can be
 // used to execute emp commands.
 type CLI struct {
-	*empiretest.Server
+	*test.Server
 	*cli.CLI
 }
 
 // newCLI returns a new CLI instance.
 func newCLI(t testing.TB) *CLI {
-	e := empiretest.NewEmpire(t)
-	s := empiretest.NewServer(t, e)
+	e := test.NewEmpire(t)
+	s := test.NewServer(t, e)
 	return newCLIWithServer(t, s)
 }
 
-func newCLIWithServer(t testing.TB, s *empiretest.Server) *CLI {
+func newCLIWithServer(t testing.TB, s *test.Server) *CLI {
 	path, err := filepath.Abs("../../build/emp")
 	if err != nil {
 		t.Fatal(err)

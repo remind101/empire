@@ -1,4 +1,4 @@
-package empiretest
+package test
 
 import (
 	"io"
