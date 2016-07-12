@@ -103,8 +103,18 @@ type releasesService struct {
 	*Empire
 }
 
-// Create creates a new release then submits it to the scheduler.
-func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release, ss scheduler.StatusStream) (*Release, error) {
+// CreateAndRelease creates a new release then submits it to the scheduler.
+func (s *releasesService) CreateAndRelease(ctx context.Context, db *gorm.DB, r *Release, ss scheduler.StatusStream) (*Release, error) {
+	r, err := s.Create(ctx, db, r)
+	if err != nil {
+		return r, err
+	}
+	// Schedule the new release onto the cluster.
+	return r, s.Release(ctx, r, ss)
+}
+
+// Create creates a new release.
+func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (*Release, error) {
 	// Lock all releases for the given application to ensure that the
 	// release version is updated automically.
 	if err := db.Exec(`select 1 from releases where app_id = ? for update`, r.App.ID).Error; err != nil {
@@ -122,12 +132,7 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release, s
 	}
 
 	r, err := releasesCreate(db, r)
-	if err != nil {
-		return r, err
-	}
-
-	// Schedule the new release onto the cluster.
-	return r, s.Release(ctx, r, ss)
+	return r, err
 }
 
 // Rolls back to a specific release version.
@@ -140,7 +145,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
 	desc = appendMessageToDescription(desc, opts.User, opts.Message)
-	return s.Create(ctx, db, &Release{
+	return s.CreateAndRelease(ctx, db, &Release{
 		App:         app,
 		Config:      r.Config,
 		Slug:        r.Slug,

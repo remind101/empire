@@ -16,8 +16,8 @@ type deployerService struct {
 	*Empire
 }
 
-// deploy does the actual deployment
-func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, ss scheduler.StatusStream, opts DeployOpts) (*Release, error) {
+// createRelease creates a new release that can be deployed
+func (s *deployerService) createRelease(ctx context.Context, db *gorm.DB, ss scheduler.StatusStream, opts DeployOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this
@@ -58,24 +58,21 @@ func (s *deployerService) deploy(ctx context.Context, db *gorm.DB, ss scheduler.
 		Config:      config,
 		Slug:        slug,
 		Description: desc,
-	}, ss)
-
+	})
 	return r, err
 }
 
 func (s *deployerService) deployInTransaction(ctx context.Context, stream scheduler.StatusStream, opts DeployOpts) (*Release, error) {
 	tx := s.db.Begin()
-	r, err := s.deploy(ctx, tx, stream, opts)
+	r, err := s.createRelease(ctx, tx, stream, opts)
 	if err != nil {
 		tx.Rollback()
 		return r, err
 	}
-
 	if err := tx.Commit().Error; err != nil {
 		return r, err
 	}
-
-	return r, err
+	return r, s.releases.Release(ctx, r, stream)
 }
 
 // Deploy is a thin wrapper around deploy to that adds the error to the
@@ -94,6 +91,5 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {
 		return r, err
 	}
-
 	return r, err
 }
