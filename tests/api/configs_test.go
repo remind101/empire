@@ -9,15 +9,15 @@ import (
 )
 
 func TestConfigVarUpdate(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
 	env := "production"
-	v := mustConfigVarUpdate(t, c, "acme-inc", map[string]*string{
+	v := mustConfigVarUpdate(t, c.Client, "acme-inc", map[string]*string{
 		"RAILS_ENV": &env,
 	})
 
@@ -31,19 +31,19 @@ func TestConfigVarUpdate(t *testing.T) {
 }
 
 func TestConfigVarUpdateDelete(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
 	env := "production"
-	mustConfigVarUpdate(t, c, "acme-inc", map[string]*string{
+	mustConfigVarUpdate(t, c.Client, "acme-inc", map[string]*string{
 		"RAILS_ENV": &env,
 	})
 
-	v := mustConfigVarUpdate(t, c, "acme-inc", map[string]*string{
+	v := mustConfigVarUpdate(t, c.Client, "acme-inc", map[string]*string{
 		"RAILS_ENV": nil,
 	})
 
@@ -55,19 +55,19 @@ func TestConfigVarUpdateDelete(t *testing.T) {
 }
 
 func TestConfigVarInfo(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
 	env := "production"
-	mustConfigVarUpdate(t, c, "acme-inc", map[string]*string{
+	mustConfigVarUpdate(t, c.Client, "acme-inc", map[string]*string{
 		"RAILS_ENV": &env,
 	})
 
-	v := mustConfigVarInfo(t, c, "acme-inc")
+	v := mustConfigVarInfo(t, c.Client, "acme-inc")
 
 	expected := map[string]string{
 		"RAILS_ENV": "production",

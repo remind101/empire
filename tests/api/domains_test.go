@@ -7,10 +7,10 @@ import (
 )
 
 func TestDomainCreate(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{Name: "acme-inc"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
 
 	d, err := c.DomainCreate("acme-inc", "example.com")
 	if err != nil {
@@ -24,11 +24,11 @@ func TestDomainCreate(t *testing.T) {
 }
 
 func TestDomainCreateAlreadyInUse(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{Name: "acme-inc"})
-	mustAppCreate(t, c, empire.App{Name: "acme-corp"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-corp"})
 
 	_, err := c.DomainCreate("acme-inc", "example.com")
 	if err != nil {
@@ -42,10 +42,10 @@ func TestDomainCreateAlreadyInUse(t *testing.T) {
 }
 
 func TestDomainCreateAlreadyAdded(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{Name: "acme-inc"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
 
 	_, err := c.DomainCreate("acme-inc", "example.com")
 	if err != nil {
@@ -59,10 +59,10 @@ func TestDomainCreateAlreadyAdded(t *testing.T) {
 }
 
 func TestDomainDestroy(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{Name: "acme-inc"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
 
 	_, err := c.DomainCreate("acme-inc", "example.com")
 	if err != nil {
@@ -75,11 +75,11 @@ func TestDomainDestroy(t *testing.T) {
 }
 
 func TestDomainDestroyNotFound(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{Name: "acme-inc"})
-	mustAppCreate(t, c, empire.App{Name: "acme-corp"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
+	mustAppCreate(t, c.Client, empire.App{Name: "acme-corp"})
 
 	// Try to remove non existent domain
 	err := c.DomainDelete("acme-inc", "example.com")

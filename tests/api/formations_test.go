@@ -7,13 +7,13 @@ import (
 )
 
 func TestFormationBatchUpdate(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 
 	q := 2
-	f := mustFormationBatchUpdate(t, c, "acme-inc", []heroku.FormationBatchUpdateOpts{
+	f := mustFormationBatchUpdate(t, c.Client, "acme-inc", []heroku.FormationBatchUpdateOpts{
 		{
 			Process:  "web",
 			Quantity: &q,

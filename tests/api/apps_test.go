@@ -11,10 +11,10 @@ import (
 )
 
 func TestAppCreate(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	app := mustAppCreate(t, c, empire.App{
+	app := mustAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
@@ -24,11 +24,11 @@ func TestAppCreate(t *testing.T) {
 }
 
 func TestAttachCert(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
 	appName := "acme-inc"
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: appName,
 	})
 
@@ -44,14 +44,14 @@ func TestAttachCert(t *testing.T) {
 }
 
 func TestAppList(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
-	apps := mustAppList(t, c)
+	apps := mustAppList(t, c.Client)
 
 	if len(apps) != 1 {
 		t.Fatal("Expected an app")
@@ -63,21 +63,21 @@ func TestAppList(t *testing.T) {
 }
 
 func TestAppDelete(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
-	mustAppDelete(t, c, "acme-inc")
+	mustAppDelete(t, c.Client, "acme-inc")
 }
 
 func TestOrganizationAppCreate(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	app := mustOrganizationAppCreate(t, c, empire.App{
+	app := mustOrganizationAppCreate(t, c.Client, empire.App{
 		Name: "acme-inc",
 	})
 
@@ -87,20 +87,20 @@ func TestOrganizationAppCreate(t *testing.T) {
 }
 
 func TestAppDeploy(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
 	// App name should be different than acme-inc so we don't get a false
 	// positive if the release is created based off the DefaultImage name
 	appName := "my-app"
 
-	mustAppCreate(t, c, empire.App{
+	mustAppCreate(t, c.Client, empire.App{
 		Name: appName,
 	})
 
-	mustAppDeploy(t, c, appName, DefaultImage)
+	mustAppDeploy(t, c.Client, appName, DefaultImage)
 
-	myAppReleases := mustReleaseList(t, c, appName)
+	myAppReleases := mustReleaseList(t, c.Client, appName)
 	if len(myAppReleases) != 1 {
 		t.Fatal("Expected a release")
 	}
@@ -110,16 +110,16 @@ func TestAppDeploy(t *testing.T) {
 	}
 
 	// Deploy remind101/acme-inc which should infer acme-inc app name
-	mustDeploy(t, c, DefaultImage)
-	acmeIncAppReleases := mustReleaseList(t, c, "acme-inc")
+	mustDeploy(t, c.Client, DefaultImage)
+	acmeIncAppReleases := mustReleaseList(t, c.Client, "acme-inc")
 	if len(acmeIncAppReleases) != 1 {
 		t.Fatal("Expected a release for acme-inc")
 	}
 }
 
 func TestAppDeployResourceDoesNotExist(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
 	var (
 		f       DeployForm

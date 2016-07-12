@@ -1,11 +1,10 @@
 package api_test
 
 import (
-	"net/http/httptest"
 	"testing"
 
-	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/empiretest"
+	"github.com/remind101/empire/pkg/heroku"
 )
 
 var (
@@ -20,9 +19,15 @@ func TestMain(m *testing.M) {
 	empiretest.Run(m)
 }
 
+// Client wraps an Empire test server and an hk client as a single unit.
+type Client struct {
+	*empiretest.Server
+	*heroku.Client
+}
+
 // NewTestClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
-func NewTestClient(t testing.TB) (*heroku.Client, *httptest.Server) {
+func NewTestClient(t testing.TB) *Client {
 	e := empiretest.NewEmpire(t)
 	s := empiretest.NewServer(t, e)
 
@@ -32,5 +37,12 @@ func NewTestClient(t testing.TB) (*heroku.Client, *httptest.Server) {
 	}
 	c.URL = s.URL
 
-	return c, s
+	return &Client{
+		Client: c,
+		Server: s,
+	}
+}
+
+func (c *Client) Close() error {
+	return c.Server.Close()
 }

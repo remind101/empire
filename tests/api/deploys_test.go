@@ -12,10 +12,10 @@ type DeployForm struct {
 }
 
 func TestDeploy(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 }
 
 func mustDeploy(t testing.TB, c *heroku.Client, image string) {

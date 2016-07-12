@@ -57,9 +57,15 @@ func NewEmpire(t testing.TB) *empire.Empire {
 	return e
 }
 
+// Server wraps an empire.Empire instance and an httpest.Server as one unit.
+type Server struct {
+	*empire.Empire
+	*httptest.Server
+}
+
 // NewServer builds a new empire.Empire instance and returns an httptest.Server
 // running the empire API.
-func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
+func NewServer(t testing.TB, e *empire.Empire) *Server {
 	var opts server.Options
 	opts.GitHub.Webhooks.Secret = "abcd"
 	opts.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
@@ -69,13 +75,22 @@ func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
 }
 
 // NewTestServer returns a new httptest.Server for testing empire's http server.
-func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *httptest.Server {
+func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server {
 	if e == nil {
 		e = NewEmpire(t)
 	}
 
 	s := server.New(e, opts)
-	return httptest.NewServer(middleware.Handler(context.Background(), s))
+
+	return &Server{
+		Empire: e,
+		Server: httptest.NewServer(middleware.Handler(context.Background(), s)),
+	}
+}
+
+func (c *Server) Close() error {
+	c.Server.Close()
+	return nil
 }
 
 var dblock = "/tmp/empire.lock"

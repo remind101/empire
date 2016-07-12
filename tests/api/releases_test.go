@@ -7,12 +7,12 @@ import (
 )
 
 func TestReleaseList(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 
-	releases := mustReleaseList(t, c, "acme-inc")
+	releases := mustReleaseList(t, c.Client, "acme-inc")
 
 	if len(releases) != 1 {
 		t.Fatal("Expected a release")
@@ -24,12 +24,12 @@ func TestReleaseList(t *testing.T) {
 }
 
 func TestReleaseInfo(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 
-	release := mustReleaseInfo(t, c, "acme-inc", "1")
+	release := mustReleaseInfo(t, c.Client, "acme-inc", "1")
 
 	if got, want := release.Version, 1; got != want {
 		t.Fatalf("Version => %v; want %v", got, want)
@@ -37,15 +37,15 @@ func TestReleaseInfo(t *testing.T) {
 }
 
 func TestReleaseRollback(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
 	// Deploy twice
-	mustDeploy(t, c, DefaultImage)
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 
 	// Rollback to the first deploy.
-	mustReleaseRollback(t, c, "acme-inc", "1")
+	mustReleaseRollback(t, c.Client, "acme-inc", "1")
 }
 
 func mustReleaseList(t testing.TB, c *heroku.Client, appName string) []heroku.Release {

@@ -7,13 +7,13 @@ import (
 )
 
 func TestProcessesGet(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 
 	q := 1
-	mustFormationBatchUpdate(t, c, "acme-inc", []heroku.FormationBatchUpdateOpts{
+	mustFormationBatchUpdate(t, c.Client, "acme-inc", []heroku.FormationBatchUpdateOpts{
 		{
 			Process:  "web",
 			Quantity: &q,
@@ -35,10 +35,10 @@ func TestProcessesGet(t *testing.T) {
 }
 
 func TestProcessesPost(t *testing.T) {
-	c, s := NewTestClient(t)
-	defer s.Close()
+	c := NewTestClient(t)
+	defer c.Close()
 
-	mustDeploy(t, c, DefaultImage)
+	mustDeploy(t, c.Client, DefaultImage)
 	a := false
 
 	if _, err := c.DynoCreate("acme-inc", "bash", &heroku.DynoCreateOpts{
