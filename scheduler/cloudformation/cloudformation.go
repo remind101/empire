@@ -327,7 +327,16 @@ type createStackInput struct {
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
 func (s *Scheduler) createStack(input *createStackInput, done chan error, ss scheduler.StatusStream) error {
-	waiter := s.cloudformation.WaitUntilStackCreateComplete
+	waiter := func(input *cloudformation.DescribeStacksInput) error {
+		if err := scheduler.Publish(ss, "Creating stack"); err != nil {
+			return err
+		}
+		err := s.cloudformation.WaitUntilStackCreateComplete(input)
+		if err == nil {
+			err = scheduler.Publish(ss, "Stack created")
+		}
+		return err
+	}
 
 	submitted := make(chan error)
 	fn := func() error {
