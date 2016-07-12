@@ -541,6 +541,9 @@ type DeployOpts struct {
 
 	// Commit message
 	Message string
+
+	// Stream boolean for whether or not a status stream should be created.
+	Stream bool
 }
 
 func (opts DeployOpts) Event() DeployEvent {

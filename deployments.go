@@ -80,7 +80,11 @@ func (s *deployerService) deployInTransaction(ctx context.Context, stream schedu
 func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	var msg jsonmessage.JSONMessage
 
-	stream := scheduler.NewJSONMessageStream(opts.Output)
+	var stream scheduler.StatusStream
+	if opts.Stream {
+		stream = scheduler.NewJSONMessageStream(opts.Output)
+	}
+
 	r, err := s.deployInTransaction(ctx, stream, opts)
 	if err != nil {
 		msg = newJSONMessageError(err)

@@ -10,16 +10,26 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 )
 
+var stream bool
+
 var cmdDeploy = &Command{
 	Run:             maybeMessage(runDeploy),
-	Usage:           "deploy [<registry>]<image>:[<tag>]",
+	Usage:           "deploy [<registry>]<image>:[<tag>] [-s]",
 	OptionalApp:     true,
 	OptionalMessage: true,
 	Category:        "deploy",
 	Short:           "deploy a docker image",
 	Long: `
 Deploy is used to deploy a docker image to an app.
+
+Options:
+
+    -s enable the status stream during the deployment. If this is enabled, the
+    command will wait until the scheduler has finished deploying the new
+    release.
+
 Examples:
+
     $ emp deploy remind101/acme-inc:latest
     Pulling repository remind101/acme-inc
     345c7524bc96: Download complete
@@ -36,8 +46,13 @@ Examples:
 `,
 }
 
+func init() {
+	cmdDeploy.Flag.BoolVarP(&stream, "stream", "s", false, "boolean to enable the status stream")
+}
+
 type PostDeployForm struct {
-	Image string `json:"image"`
+	Image  string `json:"image"`
+	Stream bool   `json:"stream"`
 }
 
 func runDeploy(cmd *Command, args []string) {
@@ -49,7 +64,7 @@ func runDeploy(cmd *Command, args []string) {
 
 	image := args[0]
 	message := getMessage()
-	form := &PostDeployForm{Image: image}
+	form := &PostDeployForm{Image: image, Stream: stream}
 
 	var endpoint string
 	appName, _ := app()
