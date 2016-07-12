@@ -59,6 +59,7 @@ func resetNow() {
 func cli(t testing.TB, token, url, command string) string {
 	cmd := NewCmd(url, command)
 	cmd.Authorize(token)
+	defer cmd.Close()
 
 	b, err := cmd.CombinedOutput()
 	t.Log(fmt.Sprintf("\n$ %s\n%s", command, string(b)))
@@ -75,6 +76,8 @@ type Cmd struct {
 
 	// The Heroku API URL.
 	URL string
+
+	netrc *os.File
 }
 
 func NewCmd(url, command string) *Cmd {
@@ -85,48 +88,42 @@ func NewCmd(url, command string) *Cmd {
 		return nil
 	}
 
+	netrc, err := ioutil.TempFile("", "")
+	if err != nil {
+		return nil
+	}
+
 	cmd := exec.Command(p, args...)
 	cmd.Env = []string{
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 		"TERM=screen-256color",
 		"TZ=America/Los_Angeles",
 		fmt.Sprintf("EMPIRE_API_URL=%s", url),
+		fmt.Sprintf("NETRC_PATH=%s", netrc.Name()),
 	}
 
 	return &Cmd{
-		Cmd: cmd,
-		URL: url,
+		Cmd:   cmd,
+		URL:   url,
+		netrc: netrc,
 	}
 }
 
 func (c *Cmd) Authorize(token string) {
-	netrc, err := writeNetrc(token, c.URL)
+	u, err := url.Parse(c.URL)
 	if err != nil {
 		panic(err)
 	}
 
-	c.Cmd.Env = append(c.Cmd.Env, fmt.Sprintf("NETRC_PATH=%s", netrc.Name()))
-}
-
-func writeNetrc(token, uri string) (*os.File, error) {
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		return f, err
-	}
-	defer f.Close()
-
-	u, err := url.Parse(uri)
-	if err != nil {
-		return f, err
-	}
-
-	if _, err := io.WriteString(f, `machine `+u.Host+`
+	if _, err := io.WriteString(c.netrc, `machine `+u.Host+`
   login foo@example.com
   password `+token); err != nil {
-		return f, err
+		panic(err)
 	}
+}
 
-	return f, nil
+func (c *Cmd) Close() error {
+	return c.netrc.Close()
 }
 
 type Command struct {
