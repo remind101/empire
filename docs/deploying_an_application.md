@@ -124,6 +124,36 @@ ADD . /code/
 web: /code/run.sh
 ```
 
+### Scheduled processes
+
+**NOTE:** This feature is currently experimental, and requires the CloudFormation backend.
+
+Processes that should run at scheduled times can be configured in the extended procfile by setting a `cron` expression:
+
+```
+scheduled-job:
+  command: ./bin/scheduled-job
+  cron: * * * * * * // Run once every minute
+```
+
+Like other non-web processes, scheduled processes are disabled by default. To enable a scheduled job, simply scale it up:
+
+```console
+$ emp scale scheduled-job=1
+```
+
+If you want to run more than 1 instance of the process when the cron expression triggers, you can scale it to a value greater than 1:
+
+```console
+$ emp scale scheduled-job=5 # Run 5 of these every minute
+```
+
+To disable a scheduled job, simply scale it back down to 0:
+
+```console
+$ emp scale scheduled-job=0
+```
+
 ## Environment variables
 
 TODO

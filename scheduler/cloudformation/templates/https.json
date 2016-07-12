@@ -50,9 +50,9 @@
   },
   "Parameters": {
     "DNS": {
-      "Default": "true",
+      "Type": "String",
       "Description": "When set to `true`, CNAME's will be altered",
-      "Type": "String"
+      "Default": "true"
     },
     "RestartKey": {
       "Type": "String"
