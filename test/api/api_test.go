@@ -25,9 +25,9 @@ type Client struct {
 	*heroku.Client
 }
 
-// NewTestClient will return a new heroku.Client that's configured to interact
+// newClient will return a new heroku.Client that's configured to interact
 // with a instance of the empire HTTP server.
-func NewTestClient(t testing.TB) *Client {
+func newClient(t testing.TB) *Client {
 	e := test.NewEmpire(t)
 	s := test.NewServer(t, e)
 

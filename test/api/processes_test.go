@@ -7,7 +7,7 @@ import (
 )
 
 func TestProcessesGet(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustDeploy(t, c.Client, DefaultImage)
@@ -35,7 +35,7 @@ func TestProcessesGet(t *testing.T) {
 }
 
 func TestProcessesPost(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustDeploy(t, c.Client, DefaultImage)

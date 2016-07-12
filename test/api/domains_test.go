@@ -7,7 +7,7 @@ import (
 )
 
 func TestDomainCreate(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
@@ -24,7 +24,7 @@ func TestDomainCreate(t *testing.T) {
 }
 
 func TestDomainCreateAlreadyInUse(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
@@ -42,7 +42,7 @@ func TestDomainCreateAlreadyInUse(t *testing.T) {
 }
 
 func TestDomainCreateAlreadyAdded(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
@@ -59,7 +59,7 @@ func TestDomainCreateAlreadyAdded(t *testing.T) {
 }
 
 func TestDomainDestroy(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})
@@ -75,7 +75,7 @@ func TestDomainDestroy(t *testing.T) {
 }
 
 func TestDomainDestroyNotFound(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{Name: "acme-inc"})

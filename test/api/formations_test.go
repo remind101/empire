@@ -7,7 +7,7 @@ import (
 )
 
 func TestFormationBatchUpdate(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustDeploy(t, c.Client, DefaultImage)

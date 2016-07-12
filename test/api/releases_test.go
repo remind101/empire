@@ -7,7 +7,7 @@ import (
 )
 
 func TestReleaseList(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustDeploy(t, c.Client, DefaultImage)
@@ -24,7 +24,7 @@ func TestReleaseList(t *testing.T) {
 }
 
 func TestReleaseInfo(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustDeploy(t, c.Client, DefaultImage)
@@ -37,7 +37,7 @@ func TestReleaseInfo(t *testing.T) {
 }
 
 func TestReleaseRollback(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	// Deploy twice

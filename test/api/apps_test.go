@@ -11,7 +11,7 @@ import (
 )
 
 func TestAppCreate(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	app := mustAppCreate(t, c.Client, empire.App{
@@ -24,7 +24,7 @@ func TestAppCreate(t *testing.T) {
 }
 
 func TestAttachCert(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	appName := "acme-inc"
@@ -44,7 +44,7 @@ func TestAttachCert(t *testing.T) {
 }
 
 func TestAppList(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{
@@ -63,7 +63,7 @@ func TestAppList(t *testing.T) {
 }
 
 func TestAppDelete(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{
@@ -74,7 +74,7 @@ func TestAppDelete(t *testing.T) {
 }
 
 func TestOrganizationAppCreate(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	app := mustOrganizationAppCreate(t, c.Client, empire.App{
@@ -87,7 +87,7 @@ func TestOrganizationAppCreate(t *testing.T) {
 }
 
 func TestAppDeploy(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	// App name should be different than acme-inc so we don't get a false
@@ -118,7 +118,7 @@ func TestAppDeploy(t *testing.T) {
 }
 
 func TestAppDeployResourceDoesNotExist(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	var (

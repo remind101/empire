@@ -12,7 +12,7 @@ type DeployForm struct {
 }
 
 func TestDeploy(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustDeploy(t, c.Client, DefaultImage)

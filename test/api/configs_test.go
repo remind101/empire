@@ -9,7 +9,7 @@ import (
 )
 
 func TestConfigVarUpdate(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{
@@ -31,7 +31,7 @@ func TestConfigVarUpdate(t *testing.T) {
 }
 
 func TestConfigVarUpdateDelete(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{
@@ -55,7 +55,7 @@ func TestConfigVarUpdateDelete(t *testing.T) {
 }
 
 func TestConfigVarInfo(t *testing.T) {
-	c := NewTestClient(t)
+	c := newClient(t)
 	defer c.Close()
 
 	mustAppCreate(t, c.Client, empire.App{
