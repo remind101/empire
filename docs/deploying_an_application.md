@@ -30,7 +30,7 @@ worker:
   command: celery -A tasks worker --loglevel=info
 ```
 
-The extended Procfile formation is documented [here][extended-procfile].
+The extended Procfile format is documented [here][extended-procfile].
 
 Whichever format you use, the file would be named `Procfile`, and live at the directory root for your application.
 
