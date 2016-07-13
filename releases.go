@@ -131,8 +131,7 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (
 		}
 	}
 
-	r, err := releasesCreate(db, r)
-	return r, err
+	return releasesCreate(db, r)
 }
 
 // Rolls back to a specific release version.
