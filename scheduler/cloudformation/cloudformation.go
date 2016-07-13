@@ -99,6 +99,7 @@ type ecsClient interface {
 	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 }
 
 // s3Client duck types the s3.S3 interface that we use.
@@ -270,9 +271,127 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		if err := <-done; err != nil {
 			return err
 		}
+		done = make(chan error, 1)
+		s.waitForDeploymentToStabilize(ctx, stackName, ss, done)
+		if err = <-done; err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, name string, ss scheduler.StatusStream, done chan error) {
+	stack, err := s.stack(&name)
+	if err != nil {
+		done <- err
+		return
+	}
+
+	deployments := s.output(stack, deploymentsOutput)
+	services := s.output(stack, servicesOutput)
+	if deployments == nil {
+		done <- fmt.Errorf("deployments output missing from stack")
+		return
+	}
+	if services == nil {
+		done <- fmt.Errorf("services output missing from stack")
+		return
+	}
+
+	arns := extractProcessData(*services.OutputValue)
+	deploymentIDs := extractProcessData(*deployments.OutputValue)
+
+	if len(arns) == 0 {
+		done <- fmt.Errorf("no services found in output")
+		return
+	}
+	if len(deploymentIDs) == 0 {
+		done <- fmt.Errorf("no deploymentIDs found in output")
+		return
+	}
+
+	var serviceIDs []*string
+	arnToDeploymentID := make(map[string]string)
+	arnToProcessName := make(map[string]string)
+	for p, a := range arns {
+		id, err := arn.ResourceID(a)
+		if err != nil {
+			done <- fmt.Errorf("error retrieving id from arn: %v", err)
+			return
+		}
+		deploymentID, ok := deploymentIDs[p]
+		if !ok {
+			done <- fmt.Errorf("deployment id not found for process: %v", p)
+			return
+		}
+
+		arnToDeploymentID[a] = deploymentID
+		arnToProcessName[a] = p
+		serviceIDs = append(serviceIDs, aws.String(id))
+	}
+
+	dedupe := make(map[string]bool)
+	check := func() bool {
+		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(s.Cluster),
+			Services: serviceIDs,
+		})
+		if err != nil {
+			done <- fmt.Errorf("error describing services: %v", err)
+			return true
+		}
+
+		var completed []bool
+		for _, service := range status.Services {
+			deploymentID, ok := arnToDeploymentID[*service.ServiceArn]
+			if !ok {
+				done <- fmt.Errorf("missing arn for deploymentID: %s", deploymentID)
+				return true
+			}
+
+			name, ok := arnToProcessName[*service.ServiceArn]
+			if !ok {
+				done <- fmt.Errorf("missing process name for arn: %s", *service.ServiceArn)
+				return true
+			}
+
+			primary := false
+			stable := len(service.Deployments) == 1
+			for _, deployment := range service.Deployments {
+				if *deployment.Id == deploymentID {
+					primary = *deployment.Status == "PRIMARY"
+				}
+			}
+
+			var status string
+			if primary && stable {
+				status = "stable"
+			} else if primary {
+				status = "in progress"
+			} else {
+				status = "superseded by newer release"
+			}
+			msg := fmt.Sprintf("Deployment %s for %s", status, name)
+			d := fmt.Sprintf("%s:%s", *service.ServiceArn, msg)
+			if _, ok := dedupe[d]; !ok {
+				scheduler.Publish(ss, msg)
+				dedupe[d] = true
+			}
+			complete := !primary || primary && stable
+			if complete {
+				completed = append(completed, complete)
+			}
+		}
+		return len(completed) == len(status.Services)
+	}
+
+	completed := false
+	for !completed {
+		<-s.after(2 * time.Second)
+		completed = check()
+	}
+	done <- nil
 }
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
@@ -514,6 +633,16 @@ func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
 	return resp.Stacks[0], nil
 }
 
+// output returns the cloudformation.Output that matches the given key.
+func (s *Scheduler) output(stack *cloudformation.Stack, key string) (output *cloudformation.Output) {
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == key {
+			output = o
+		}
+	}
+	return
+}
+
 // Remove removes the CloudFormation stack for the given app.
 func (s *Scheduler) Remove(ctx context.Context, appID string) error {
 	tx, err := s.db.Begin()
@@ -691,21 +820,12 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, err
 	}
 
-	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
+	stack, err := s.stack(aws.String(stackName))
 	if err != nil {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
 
-	stack := resp.Stacks[0]
-
-	var output *cloudformation.Output
-	for _, o := range stack.Outputs {
-		if *o.OutputKey == servicesOutput {
-			output = o
-		}
-	}
+	output := s.output(stack, servicesOutput)
 	if output == nil {
 		// Nothing to do but wait until the outputs are set.
 		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
@@ -715,7 +835,7 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
 	}
 
-	return extractServices(*output.OutputValue), nil
+	return extractProcessData(*output.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
@@ -773,18 +893,18 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 	return stackName, err
 }
 
-// extractServices extracts a map that maps the process name to the ARN of the
-// associated ECS service.
-func extractServices(value string) map[string]string {
-	services := make(map[string]string)
+// extractProcessData extracts a map that maps the process name to some
+// corresponding value.
+func extractProcessData(value string) map[string]string {
+	data := make(map[string]string)
 	pairs := strings.Split(value, ",")
 
 	for _, p := range pairs {
 		parts := strings.Split(p, "=")
-		services[parts[0]] = parts[1]
+		data[parts[0]] = parts[1]
 	}
 
-	return services
+	return data
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
