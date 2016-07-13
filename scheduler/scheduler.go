@@ -12,6 +12,7 @@ import (
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/pkg/logger"
 )
 
 type App struct {
@@ -214,9 +215,10 @@ func (s *jsonmessageStatusStream) Publish(status Status) error {
 	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: %s", status.Message)})
 }
 
-func Publish(stream StatusStream, msg string) error {
+func Publish(ctx context.Context, stream StatusStream, msg string) {
 	if stream != nil {
-		return stream.Publish(Status{Message: msg})
+		if err := stream.Publish(Status{Message: msg}); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error publishing to stream: %v", err))
+		}
 	}
-	return nil
 }
