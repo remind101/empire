@@ -32,7 +32,8 @@ func DeployCommand(tag, version string) Command {
 345c7524bc96: Pulling dependent layers
 a1dd7097a8e8: Download complete
 Status: Image is up to date for remind101/acme-inc:` + tag + `
-Status: Created new release ` + version + ` for acme-inc`,
+Status: Created new release ` + version + ` for acme-inc
+Status: Finished processing events for release ` + version + `of acme-inc`,
 	}
 }
 
