@@ -82,7 +82,10 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 
 	r, err := s.createInTransaction(ctx, stream, opts)
 	if err != nil {
-		return r, write(opts, newJSONMessageError(err))
+		if err := write(opts, newJSONMessageError(err)); err != nil {
+			return r, err
+		}
+		return r, err
 	}
 
 	msg := jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
@@ -96,7 +99,11 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 	} else {
 		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Finished processing events for release v%d of %s", r.Version, r.App.Name)}
 	}
-	return r, write(opts, msg)
+
+	if err := write(opts, msg); err != nil {
+		return r, err
+	}
+	return r, err
 }
 
 func write(opts DeployOpts, msg jsonmessage.JSONMessage) error {
