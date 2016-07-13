@@ -60,6 +60,7 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 		Image:  img,
 		Output: p,
 		User:   &empire.User{Name: event.Deployment.Creator.Login},
+		Stream: true,
 	})
 	if err != nil {
 		return err

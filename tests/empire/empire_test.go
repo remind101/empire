@@ -561,7 +561,7 @@ func (e processesByType) Len() int           { return len(e) }
 func (e processesByType) Less(i, j int) bool { return e[i].Type < e[j].Type }
 func (e processesByType) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	// mock.Mock checks the order of slices, so sort by process name.
 	p := processesByType(app.Processes)
 	sort.Sort(p)

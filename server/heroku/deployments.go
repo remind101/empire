@@ -17,7 +17,8 @@ type PostDeploys struct {
 
 // PostDeployForm is the form object that represents the POST body.
 type PostDeployForm struct {
-	Image image.Image
+	Image  image.Image
+	Stream bool
 }
 
 // ServeHTTPContext implements the Handler interface.
@@ -56,6 +57,7 @@ func newDeployOpts(ctx context.Context, w http.ResponseWriter, req *http.Request
 		Image:   form.Image,
 		Output:  streamhttp.StreamingResponseWriter(w),
 		Message: m,
+		Stream:  form.Stream,
 	}
 	return &opts, nil
 }

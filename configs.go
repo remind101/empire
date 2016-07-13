@@ -147,12 +147,12 @@ func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*C
 	}
 
 	// Create new release based on new config and old slug
-	_, err = s.releases.Create(ctx, db, &Release{
+	_, err = s.releases.CreateAndRelease(ctx, db, &Release{
 		App:         release.App,
 		Config:      c,
 		Slug:        release.Slug,
 		Description: configsApplyReleaseDesc(opts),
-	})
+	}, nil)
 	return c, err
 }
 

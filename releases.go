@@ -103,7 +103,17 @@ type releasesService struct {
 	*Empire
 }
 
-// Create creates a new release then submits it to the scheduler.
+// CreateAndRelease creates a new release then submits it to the scheduler.
+func (s *releasesService) CreateAndRelease(ctx context.Context, db *gorm.DB, r *Release, ss scheduler.StatusStream) (*Release, error) {
+	r, err := s.Create(ctx, db, r)
+	if err != nil {
+		return r, err
+	}
+	// Schedule the new release onto the cluster.
+	return r, s.Release(ctx, r, ss)
+}
+
+// Create creates a new release.
 func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (*Release, error) {
 	// Lock all releases for the given application to ensure that the
 	// release version is updated automically.
@@ -121,13 +131,7 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (
 		}
 	}
 
-	r, err := releasesCreate(db, r)
-	if err != nil {
-		return r, err
-	}
-
-	// Schedule the new release onto the cluster.
-	return r, s.Release(ctx, r)
+	return releasesCreate(db, r)
 }
 
 // Rolls back to a specific release version.
@@ -140,19 +144,19 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
 	desc = appendMessageToDescription(desc, opts.User, opts.Message)
-	return s.Create(ctx, db, &Release{
+	return s.CreateAndRelease(ctx, db, &Release{
 		App:         app,
 		Config:      r.Config,
 		Slug:        r.Slug,
 		Formation:   r.Formation,
 		Description: desc,
-	})
+	}, nil)
 }
 
 // Release submits a release to the scheduler.
-func (s *releasesService) Release(ctx context.Context, release *Release) error {
+func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream) error {
 	a := newSchedulerApp(release)
-	return s.Scheduler.Submit(ctx, a)
+	return s.Scheduler.Submit(ctx, a, ss)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -170,7 +174,7 @@ func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App)
 		return nil
 	}
 
-	return s.Release(ctx, release)
+	return s.Release(ctx, release, nil)
 }
 
 // These associations are always available on a Release.

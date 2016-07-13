@@ -541,6 +541,9 @@ type DeployOpts struct {
 
 	// Commit message
 	Message string
+
+	// Stream boolean for whether or not a status stream should be created.
+	Stream bool
 }
 
 func (opts DeployOpts) Event() DeployEvent {
@@ -567,15 +570,8 @@ func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 		return nil, err
 	}
 
-	tx := e.db.Begin()
-
-	r, err := e.deployer.Deploy(ctx, tx, opts)
+	r, err := e.deployer.Deploy(ctx, opts)
 	if err != nil {
-		tx.Rollback()
-		return r, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
 		return r, err
 	}
 

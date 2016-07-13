@@ -3,11 +3,16 @@
 package scheduler
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
+
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/pkg/logger"
 )
 
 type App struct {
@@ -127,7 +132,11 @@ type Scheduler interface {
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App) error
+	// When StatusStream is nil, Submit should return as quickly as possible,
+	// usually when the new version has been received, and validated. If
+	// StatusStream is not nil, it's recommended that the method not return until
+	// the deployment has fully completed.
+	Submit(context.Context, *App, StatusStream) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
@@ -160,4 +169,56 @@ func merge(envs ...map[string]string) map[string]string {
 		}
 	}
 	return merged
+}
+
+type Status struct {
+	// A friendly human readable message about the status change.
+	Message string
+}
+
+// String implements the fmt.Stringer interface.
+func (s *Status) String() string {
+	return s.Message
+}
+
+// StatusStream is an interface for publishing status updates while a scheduler
+// is executing.
+type StatusStream interface {
+	// Publish publishes an update to the status stream
+	Publish(Status) error
+}
+
+// StatusStreamFunc is a function that implements the Statusstream interface
+type StatusStreamFunc func(Status) error
+
+func (fn StatusStreamFunc) Publish(status Status) error {
+	return fn(status)
+}
+
+// NullStatusStream a status stream that does nothing.
+var NullStatusStream = StatusStreamFunc(func(status Status) error {
+	return nil
+})
+
+// jsonmessageStatusStream implements the StatusStream interface with support
+// for writing jsonmessages to the provided io.Writer
+type jsonmessageStatusStream struct {
+	w io.Writer
+}
+
+// NewJSONMessageStream returns a new instance of the default status stream.
+func NewJSONMessageStream(w io.Writer) StatusStream {
+	return &jsonmessageStatusStream{w: w}
+}
+
+func (s *jsonmessageStatusStream) Publish(status Status) error {
+	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: %s", status.Message)})
+}
+
+func Publish(ctx context.Context, stream StatusStream, msg string) {
+	if stream != nil {
+		if err := stream.Publish(Status{Message: msg}); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error publishing to stream: %v", err))
+		}
+	}
 }

@@ -82,7 +82,7 @@ type mockScheduler struct {
 	image chan string
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	m.image <- app.Processes[0].Image.String()
 	return nil
 }

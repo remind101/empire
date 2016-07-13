@@ -131,10 +131,6 @@ type Scheduler struct {
 	// Any additional tags to add to stacks.
 	Tags []*cloudformation.Tag
 
-	// When true, alls to Submit won't return until the stack has
-	// successfully updated/created.
-	wait bool
-
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -161,8 +157,8 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
-	return s.SubmitWithOptions(ctx, app, SubmitOptions{})
+func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	return s.SubmitWithOptions(ctx, app, ss, SubmitOptions{})
 }
 
 // SubmitOptions are options provided to SubmitWithOptions.
@@ -173,23 +169,22 @@ type SubmitOptions struct {
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, opts SubmitOptions) error {
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app, opts)
+	err = s.submit(ctx, tx, app, ss, opts)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-
 	return tx.Commit()
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, opts SubmitOptions) error {
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -213,6 +208,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return err
 	}
 
+	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v", *t.URL))
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
 		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
@@ -246,29 +242,29 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		StackName: aws.String(stackName),
 	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
-		if err := s.createStack(&createStackInput{
+		if err := s.createStack(ctx, &createStackInput{
 			StackName:  aws.String(stackName),
 			Template:   t,
 			Tags:       tags,
 			Parameters: parameters,
-		}, done); err != nil {
+		}, done, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
 	} else if err == nil {
-		if err := s.updateStack(&updateStackInput{
+		if err := s.updateStack(ctx, &updateStackInput{
 			StackName:  aws.String(stackName),
 			Template:   t,
 			Parameters: parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, done); err != nil {
+		}, done, ss); err != nil {
 			return err
 		}
 	} else {
 		return fmt.Errorf("error describing stack: %v", err)
 	}
 
-	if s.wait {
+	if ss != nil {
 		if err := <-done; err != nil {
 			return err
 		}
@@ -327,8 +323,15 @@ type createStackInput struct {
 // createStack creates a new CloudFormation stack with the given input. This
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
-func (s *Scheduler) createStack(input *createStackInput, done chan error) error {
-	waiter := s.cloudformation.WaitUntilStackCreateComplete
+func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, done chan error, ss scheduler.StatusStream) error {
+	waiter := func(input *cloudformation.DescribeStacksInput) error {
+		scheduler.Publish(ctx, ss, "Creating stack")
+		err := s.cloudformation.WaitUntilStackCreateComplete(input)
+		if err == nil {
+			scheduler.Publish(ctx, ss, "Stack created")
+		}
+		return err
+	}
 
 	submitted := make(chan error)
 	fn := func() error {
@@ -342,7 +345,7 @@ func (s *Scheduler) createStack(input *createStackInput, done chan error) error 
 		return err
 	}
 	go func() {
-		done <- s.performStackOperation(*input.StackName, fn, waiter)
+		done <- s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
 	}()
 
 	return <-submitted
@@ -359,25 +362,36 @@ type updateStackInput struct {
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(input *updateStackInput, done chan error) error {
-	waiter := s.cloudformation.WaitUntilStackUpdateComplete
+func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, done chan error, ss scheduler.StatusStream) error {
+	waiter := func(input *cloudformation.DescribeStacksInput) error {
+		scheduler.Publish(ctx, ss, "Waiting for stack update to complete")
+		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
+		if err == nil {
+			scheduler.Publish(ctx, ss, "Stack update complete")
+		}
+		return err
+	}
 
 	locked := make(chan struct{})
 	submitted := make(chan error, 1)
 	fn := func() error {
 		close(locked)
 		err := s.executeStackUpdate(input)
+		if err == nil {
+			scheduler.Publish(ctx, ss, "Stack update submitted")
+		}
 		submitted <- err
 		return err
 	}
 
 	go func() {
-		done <- s.performStackOperation(*input.StackName, fn, waiter)
+		done <- s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
 	}()
 
 	var err error
 	select {
 	case <-s.after(lockWait):
+		scheduler.Publish(ctx, ss, "Waiting for existing stack operation to complete")
 		// FIXME: At this point, we don't want to affect UX by waiting
 		// around, so we return. But, if the stack update times out, or
 		// there's an error, that information is essentially silenced.
@@ -400,7 +414,7 @@ func (s *Scheduler) updateStack(input *updateStackInput, done chan error) error 
 //   until the other stack operation has completed.
 // * If there is another pending stack operation, it will be replaced by the new
 //   update.
-func (s *Scheduler) performStackOperation(stackName string, fn func() error, waiter func(*cloudformation.DescribeStacksInput) error) error {
+func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter func(*cloudformation.DescribeStacksInput) error, ss scheduler.StatusStream) error {
 	l, err := newAdvisoryLock(s.db, stackName)
 	if err != nil {
 		return err
@@ -418,6 +432,7 @@ func (s *Scheduler) performStackOperation(stackName string, fn func() error, wai
 		//
 		// TODO: Should we return an error here?
 		if err == pglock.Canceled {
+			scheduler.Publish(ctx, ss, "Operation superseded by newer release")
 			return nil
 		}
 		return fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)

@@ -34,6 +34,7 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 			Repository: "remind101/acme-inc",
 			Tag:        "abcd123",
 		},
+		Stream: true,
 	}).Return(nil)
 
 	err := d.Deploy(context.Background(), event, b)
