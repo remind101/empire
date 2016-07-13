@@ -375,7 +375,7 @@ func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, name strin
 			msg := fmt.Sprintf("Deployment %s for %s", status, name)
 			d := fmt.Sprintf("%s:%s", *service.ServiceArn, msg)
 			if _, ok := dedupe[d]; !ok {
-				scheduler.Publish(ss, msg)
+				scheduler.Publish(ctx, ss, msg)
 				dedupe[d] = true
 			}
 			complete := !primary || primary && stable
