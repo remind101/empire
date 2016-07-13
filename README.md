@@ -3,6 +3,7 @@
 [![readthedocs badge](https://readthedocs.org/projects/pip/badge/?version=latest)](http://empire.readthedocs.org/en/latest/)
 [![Circle CI](https://circleci.com/gh/remind101/empire.svg?style=shield)](https://circleci.com/gh/remind101/empire)
 [![Slack Status](https://empire-slack.herokuapp.com/badge.svg)](https://empire-slack.herokuapp.com)
+[![Dependency Status](https://dependencyci.com/github/remind101/empire/badge)](https://dependencyci.com/github/remind101/empire)
 
 ![Empire](empire.png)
 
