@@ -832,9 +832,9 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestExtractServices(t *testing.T) {
+func TextExtractProcessData(t *testing.T) {
 	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
-	services := extractServices(output)
+	services := extractProcessData(output)
 	expected := map[string]string{
 		"statuses":       "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO",
 		"statuses_retry": "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N",
