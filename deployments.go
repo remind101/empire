@@ -62,40 +62,43 @@ func (s *deployerService) createRelease(ctx context.Context, db *gorm.DB, ss sch
 	return r, err
 }
 
-func (s *deployerService) deployInTransaction(ctx context.Context, stream scheduler.StatusStream, opts DeployOpts) (*Release, error) {
+func (s *deployerService) createInTransaction(ctx context.Context, stream scheduler.StatusStream, opts DeployOpts) (*Release, error) {
 	tx := s.db.Begin()
 	r, err := s.createRelease(ctx, tx, stream, opts)
 	if err != nil {
 		tx.Rollback()
 		return r, err
 	}
-	if err := tx.Commit().Error; err != nil {
-		return r, err
-	}
-	return r, s.releases.Release(ctx, r, stream)
+	return r, tx.Commit().Error
 }
 
 // Deploy is a thin wrapper around deploy to that adds the error to the
 // jsonmessage stream.
 func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
-	var msg jsonmessage.JSONMessage
-
 	var stream scheduler.StatusStream
 	if opts.Stream {
 		stream = scheduler.NewJSONMessageStream(opts.Output)
 	}
 
-	r, err := s.deployInTransaction(ctx, stream, opts)
+	r, err := s.createInTransaction(ctx, stream, opts)
 	if err != nil {
-		msg = newJSONMessageError(err)
-	} else if stream == nil {
-		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
-	} else {
-		scheduler.Publish(ctx, stream, fmt.Sprintf("Finished processing events for release v%d of %s", r.Version, r.App.Name))
+		return r, write(opts, newJSONMessageError(err))
 	}
 
-	if err := json.NewEncoder(opts.Output).Encode(&msg); err != nil {
+	msg := jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Created new release v%d for %s", r.Version, r.App.Name)}
+	if err := write(opts, msg); err != nil {
 		return r, err
 	}
-	return r, err
+
+	err = s.releases.Release(ctx, r, stream)
+	if err != nil {
+		msg = newJSONMessageError(err)
+	} else {
+		msg = jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: Finished processing events for release v%d of %s", r.Version, r.App.Name)}
+	}
+	return r, write(opts, msg)
+}
+
+func write(opts DeployOpts, msg jsonmessage.JSONMessage) error {
+	return json.NewEncoder(opts.Output).Encode(&msg)
 }
