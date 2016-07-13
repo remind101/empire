@@ -55,7 +55,7 @@ func newDeployOpts(ctx context.Context, w http.ResponseWriter, req *http.Request
 	opts := empire.DeployOpts{
 		User:    UserFromContext(ctx),
 		Image:   form.Image,
-		Output:  streamhttp.StreamingResponseWriter(w),
+		Output:  empire.NewDeploymentStream(streamhttp.StreamingResponseWriter(w)),
 		Message: m,
 		Stream:  form.Stream,
 	}

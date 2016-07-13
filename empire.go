@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/dockerutil"
@@ -535,9 +534,9 @@ type DeployOpts struct {
 	// Environment is the environment where the image is being deployed
 	Environment string
 
-	// Output is an io.Writer where deployment output and events will be
-	// streamed in jsonmessage format.
-	Output io.Writer
+	// Output is a DeploymentStream where deployment output and events will
+	// be streamed in jsonmessage format.
+	Output *DeploymentStream
 
 	// Commit message
 	Message string
@@ -708,15 +707,6 @@ type MessageRequiredError struct{}
 
 func (e *MessageRequiredError) Error() string {
 	return "Missing required option: 'Message'"
-}
-
-func newJSONMessageError(err error) jsonmessage.JSONMessage {
-	return jsonmessage.JSONMessage{
-		ErrorMessage: err.Error(),
-		Error: &jsonmessage.JSONError{
-			Message: err.Error(),
-		},
-	}
 }
 
 // PullAndExtract returns a ProcfileExtractor that will pull the image using the

@@ -3,14 +3,12 @@
 package scheduler
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
 
 	"golang.org/x/net/context"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/pkg/logger"
 )
@@ -199,21 +197,6 @@ func (fn StatusStreamFunc) Publish(status Status) error {
 var NullStatusStream = StatusStreamFunc(func(status Status) error {
 	return nil
 })
-
-// jsonmessageStatusStream implements the StatusStream interface with support
-// for writing jsonmessages to the provided io.Writer
-type jsonmessageStatusStream struct {
-	w io.Writer
-}
-
-// NewJSONMessageStream returns a new instance of the default status stream.
-func NewJSONMessageStream(w io.Writer) StatusStream {
-	return &jsonmessageStatusStream{w: w}
-}
-
-func (s *jsonmessageStatusStream) Publish(status Status) error {
-	return json.NewEncoder(s.w).Encode(jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: %s", status.Message)})
-}
 
 func Publish(ctx context.Context, stream StatusStream, msg string) {
 	if stream != nil {
