@@ -47,7 +47,7 @@ Status: Finished processing events for release v2 of acme-inc`,
 a1dd7097a8e8: Download complete
 Status: Image is up to date for remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2
 Status: Created new release v1 for my-app
-Status: Finished processing events for release v1 of acme-inc`,
+Status: Finished processing events for release v1 of my-app`,
 		},
 		{
 			"releases -a my-app",
