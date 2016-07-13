@@ -39,8 +39,17 @@ func TestEmpireTemplate(t *testing.T) {
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"PORT": "8080",
+						},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPExposure{},
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+							},
 						},
 						Labels: map[string]string{
 							"empire.app.process": "web",
@@ -86,10 +95,19 @@ func TestEmpireTemplate(t *testing.T) {
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPExposure{},
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+							},
 						},
 						Labels: map[string]string{
 							"empire.app.process": "web",
+						},
+						Env: map[string]string{
+							"PORT": "8080",
 						},
 						MemoryLimit: 128 * bytesize.MB,
 						CPUShares:   256,
@@ -121,18 +139,46 @@ func TestEmpireTemplate(t *testing.T) {
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"PORT": "8080",
+						},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPSExposure{
-								Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+								{
+									Host:      443,
+									Container: 8080,
+									Protocol: &scheduler.HTTPS{
+										Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+									},
+								},
 							},
 						},
 					},
 					{
 						Type:    "api",
 						Command: []string{"./bin/api"},
+						Env: map[string]string{
+							"PORT": "8080",
+						},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPSExposure{
-								Cert: "AcmeIncDotCom", // Simple cert format.
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+								{
+									Host:      443,
+									Container: 8080,
+									Protocol: &scheduler.HTTPS{
+										Cert: "AcmeIncDotCom", // Simple cert format.
+									},
+								},
 							},
 						},
 					},
@@ -153,18 +199,46 @@ func TestEmpireTemplate(t *testing.T) {
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"PORT": "8080",
+						},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPSExposure{
-								Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+								{
+									Host:      443,
+									Container: 8080,
+									Protocol: &scheduler.HTTPS{
+										Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+									},
+								},
 							},
 						},
 					},
 					{
 						Type:    "api",
 						Command: []string{"./bin/api"},
+						Env: map[string]string{
+							"PORT": "8080",
+						},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPSExposure{
-								Cert: "AcmeIncDotCom", // Simple cert format.
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+								{
+									Host:      443,
+									Container: 8080,
+									Protocol: &scheduler.HTTPS{
+										Cert: "AcmeIncDotCom", // Simple cert format
+									},
+								},
 							},
 						},
 					},
@@ -187,12 +261,19 @@ func TestEmpireTemplate(t *testing.T) {
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
 						Env: map[string]string{
-							"B":   "foo",
-							"A":   "foo",
-							"FOO": "bar",
+							"B":    "foo",
+							"A":    "foo",
+							"FOO":  "bar",
+							"PORT": "8080",
 						},
 						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPExposure{},
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+							},
 						},
 						Labels: map[string]string{
 							"empire.app.process": "web",

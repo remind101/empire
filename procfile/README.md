@@ -54,3 +54,18 @@ This can be used to alias a common command, or by enforcing whitelisting of comm
 ```yaml
 noservice: true
 ```
+
+**Ports**
+
+This allows you to define what ports to expose, and what protocol to expose them with. This works similarly to the `ports:` attribute in docker-compose.yml.
+
+```yaml
+ports:
+  # Map port 80 on the container, as port 80 on the load balancer, using the default protocol.
+  - "80"
+  # Map port 8080 on the container, as port 80 on the load balancer, using the default protocol.
+  - "80:8080"
+  # Map port 5678 on the container, as port 5678 on the load balancer, using the tcp protocol.
+  - "5678":
+      protocol: "tcp"
+```

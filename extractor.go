@@ -241,10 +241,32 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 			return nil, errors.New("unknown command format")
 		}
 
+		var ports []Port
+
+		for _, port := range process.Ports {
+			protocol := port.Protocol
+			if protocol == "" {
+				switch port.Host {
+				case 80, 8080:
+					protocol = "http"
+				case 443:
+					protocol = "https"
+				default:
+					protocol = "tcp"
+				}
+			}
+			ports = append(ports, Port{
+				Host:      port.Host,
+				Container: port.Container,
+				Protocol:  protocol,
+			})
+		}
+
 		f[name] = Process{
 			Command:   cmd,
 			Cron:      process.Cron,
 			NoService: process.NoService,
+			Ports:     ports,
 		}
 	}
 

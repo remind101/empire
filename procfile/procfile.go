@@ -3,8 +3,11 @@
 package procfile
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
+	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -25,6 +28,90 @@ type Process struct {
 	Command   interface{} `yaml:"command"`
 	Cron      *string     `yaml:"cron,omitempty"`
 	NoService bool        `yaml:"noservice,omitempty"`
+	Ports     []Port      `yaml:"ports,omitempty"`
+}
+
+// Port represents a port mapping.
+type Port struct {
+	Host      int
+	Container int
+	Protocol  string
+}
+
+// ParsePort parses a string into a Port.
+func ParsePort(s string) (p Port, err error) {
+	if strings.Contains(s, ":") {
+		return portFromHostContainer(s)
+	}
+
+	var port int
+	port, err = toPort(s)
+	if err != nil {
+		return
+	}
+	p.Host = port
+	p.Container = port
+	return
+}
+
+// Parses a `hostport:containerport` string into a Port.
+func portFromHostContainer(hostContainer string) (p Port, err error) {
+	var host, container int
+	parts := strings.SplitN(hostContainer, ":", 2)
+	host, err = toPort(parts[0])
+	if err != nil {
+		return
+	}
+	container, err = toPort(parts[1])
+	if err != nil {
+		return
+	}
+
+	p.Host = host
+	p.Container = container
+	return
+}
+
+func toPort(s string) (port int, err error) {
+	port, err = strconv.Atoi(s)
+	if err != nil {
+		err = fmt.Errorf("error converting %s to port from: %v", s, err)
+	}
+	return
+}
+
+func (p *Port) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	err := unmarshal(&s)
+	if err == nil {
+		port, err := ParsePort(s)
+		if err != nil {
+			return err
+		}
+
+		*p = port
+		return nil
+	}
+
+	m := make(map[interface{}]map[interface{}]interface{})
+	err = unmarshal(&m)
+	if err == nil {
+		if len(m) > 1 {
+			return fmt.Errorf("invalid port format")
+		}
+
+		for k, v := range m {
+			port, err := ParsePort(k.(string))
+			if err != nil {
+				return err
+			}
+			*p = port
+			p.Protocol = v[interface{}("protocol")].(string)
+			return nil
+		}
+	}
+
+	return err
 }
 
 // StandardProcfile represents a standard Procfile.
