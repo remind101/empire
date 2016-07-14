@@ -388,8 +388,10 @@ func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, name strin
 
 	completed := false
 	for !completed {
-		<-s.after(2 * time.Second)
 		completed = check()
+		if !completed {
+			<-s.after(2 * time.Second)
+		}
 	}
 	done <- nil
 }
