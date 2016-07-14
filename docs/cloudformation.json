@@ -472,7 +472,8 @@
                 "cloudformation:ListStackResources",
                 "cloudformation:DescribeStackResource",
                 "cloudformation:DescribeStacks",
-                "cloudformation:ValidateTemplate"
+                "cloudformation:ValidateTemplate",
+                "cloudformation:DescribeStackEvents"
               ],
               "Resource": ["*"]
             },

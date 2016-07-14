@@ -11,6 +11,7 @@ import (
 	"hash/crc32"
 	"html/template"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -86,6 +87,8 @@ type cloudformationClient interface {
 	WaitUntilStackCreateComplete(*cloudformation.DescribeStacksInput) error
 	WaitUntilStackUpdateComplete(*cloudformation.DescribeStacksInput) error
 	ValidateTemplate(*cloudformation.ValidateTemplateInput) (*cloudformation.ValidateTemplateOutput, error)
+	DescribeStackEvents(*cloudformation.DescribeStackEventsInput) (*cloudformation.DescribeStackEventsOutput, error)
+	DescribeStackEventsPages(*cloudformation.DescribeStackEventsInput, func(p *cloudformation.DescribeStackEventsOutput, lastPage bool) (shouldContinue bool)) error
 }
 
 // ecsClient duck types the ecs.ECS interface that we use.
@@ -358,6 +361,12 @@ type updateStackInput struct {
 	Template   *cloudformationTemplate
 }
 
+type stackEvents []*cloudformation.StackEvent
+
+func (p stackEvents) Len() int           { return len(p) }
+func (p stackEvents) Less(i, j int) bool { return p[i].Timestamp.Before(*p[j].Timestamp) }
+func (p stackEvents) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
 // updateStack updates an existing CloudFormation stack with the given input.
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
@@ -365,7 +374,62 @@ type updateStackInput struct {
 func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, done chan error, ss scheduler.StatusStream) error {
 	waiter := func(input *cloudformation.DescribeStacksInput) error {
 		scheduler.Publish(ctx, ss, "Waiting for stack update to complete")
-		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
+		wait := make(chan error)
+		go func() {
+			wait <- s.cloudformation.WaitUntilStackUpdateComplete(input)
+		}()
+
+		resp, err := s.cloudformation.DescribeStackEvents(&cloudformation.DescribeStackEventsInput{
+			StackName: input.StackName,
+		})
+		if err != nil {
+			return err
+		}
+		startEvent := resp.StackEvents[0]
+		seen := make(map[string]bool)
+
+		tick := time.Tick(time.Second * 10)
+		for {
+			select {
+			case err = <-wait:
+				// Do one last describe
+				break
+			case <-tick:
+				if err = s.cloudformation.DescribeStackEventsPages(&cloudformation.DescribeStackEventsInput{
+					StackName: input.StackName,
+				}, func(p *cloudformation.DescribeStackEventsOutput, lastPage bool) (shouldContinue bool) {
+					shouldContinue = true
+
+					var events stackEvents
+					for _, event := range p.StackEvents {
+						id := *event.EventId
+						if id == *startEvent.EventId {
+							shouldContinue = false
+							break
+						}
+						events = append(events, event)
+					}
+
+					sort.Sort(events)
+
+					for _, event := range events {
+						id := *event.EventId
+						if _, ok := seen[id]; !ok {
+							seen[id] = true
+							scheduler.Publish(ctx, ss, fmt.Sprintf("%s[%s]: %s", *event.LogicalResourceId, *event.ResourceType, *event.ResourceStatus))
+						}
+					}
+
+					return
+				}); err != nil {
+					break
+				}
+				continue
+			default:
+				continue
+			}
+			break
+		}
 		if err == nil {
 			scheduler.Publish(ctx, ss, "Stack update complete")
 		}
