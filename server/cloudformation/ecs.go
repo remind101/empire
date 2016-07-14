@@ -89,9 +89,11 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string
 			TaskDefinition: properties.TaskDefinition,
 		})
 		if err == nil {
-			primary, err := getPrimaryDeployment(resp.Service)
-			if err == nil {
-				data["DeploymentId"] = *primary.Id
+			d := primaryDeployment(resp.Service)
+			if d != nil {
+				data["DeploymentId"] = *d.Id
+			} else {
+				err = fmt.Errorf("no primary deployment found")
 			}
 		}
 		return id, data, err
@@ -128,9 +130,9 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 		return "", "", fmt.Errorf("error creating service: %v", err)
 	}
 
-	primaryDeployment, err := getPrimaryDeployment(resp.Service)
-	if err != nil {
-		return "", "", fmt.Errorf("error retrieving primary deployment: %v", err)
+	d := primaryDeployment(resp.Service)
+	if d == nil {
+		return "", "", fmt.Errorf("no primary deployment found")
 	}
 
 	arn := resp.Service.ServiceArn
@@ -152,10 +154,10 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 	select {
 	case <-stabilized:
 	case <-ctx.Done():
-		return *arn, *primaryDeployment.Id, ctx.Err()
+		return *arn, *d.Id, ctx.Err()
 	}
 
-	return *arn, *primaryDeployment.Id, nil
+	return *arn, *d.Id, nil
 }
 
 func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *string) error {
@@ -213,15 +215,11 @@ func requiresReplacement(new, old *ECSServiceProperties) bool {
 	return false
 }
 
-func getPrimaryDeployment(service *ecs.Service) (deployment *ecs.Deployment, err error) {
+func primaryDeployment(service *ecs.Service) *ecs.Deployment {
 	for _, d := range service.Deployments {
 		if d.Status != nil && *d.Status == "PRIMARY" {
-			deployment = d
-			break
+			return d
 		}
 	}
-	if deployment == nil {
-		err = fmt.Errorf("no primary deployment available")
-	}
-	return
+	return nil
 }
