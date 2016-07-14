@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/remind101/empire/pkg/constraints"
@@ -11,8 +10,11 @@ import (
 
 // Task represents a running process.
 type Task struct {
-	// The name of the task.
-	Name string
+	// The id of the task.
+	ID string
+
+	// The release that this task relates to.
+	Release string
 
 	// The name of the process that this task is for.
 	Type string
@@ -59,7 +61,8 @@ func taskFromInstance(i *scheduler.Instance) *Task {
 	}
 
 	return &Task{
-		Name:    fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
+		ID:      i.ID,
+		Release: version,
 		Type:    string(i.Process.Type),
 		Command: Command(i.Process.Command),
 		Constraints: Constraints{
