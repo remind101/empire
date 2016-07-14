@@ -40,7 +40,10 @@ func newRootContext(c *cli.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	l := newLogger()
+	l, err := newLogger(c)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx := context.Background()
 	if r != nil {
@@ -367,11 +370,17 @@ func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
 
 // Logger ==============================
 
-func newLogger() log15.Logger {
+func newLogger(c *cli.Context) (log15.Logger, error) {
 	l := log15.New()
-	h := log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
+	lvl := c.String(FlagLogLevel)
+	log.Println(fmt.Sprintf("Using log level %s", lvl))
+	v, err := log15.LvlFromString(c.String(FlagLogLevel))
+	if err != nil {
+		return l, err
+	}
+	h := log15.LvlFilterHandler(v, log15.StreamHandler(os.Stdout, log15.LogfmtFormat()))
 	l.SetHandler(log15.LazyHandler(h))
-	return l
+	return l, err
 }
 
 // Reporter ============================
