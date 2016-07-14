@@ -358,7 +358,7 @@ func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
 
 		return empire.RecordToCloudWatch(group, newConfigProvider(c)), nil
 	case "stdout":
-		log.Println("Using Stdout run logs backend:")
+		log.Println("Using Stdout run logs backend")
 		return empire.RecordTo(os.Stdout), nil
 	default:
 		panic(fmt.Sprintf("unknown run logs backend: %v", backend))
