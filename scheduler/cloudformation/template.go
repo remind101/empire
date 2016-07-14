@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/troposphere"
@@ -79,6 +78,9 @@ type EmpireTemplate struct {
 	CustomResourcesTopic string
 
 	LogConfiguration *ecs.LogConfiguration
+
+	// Any extra outputs to attach to the template.
+	ExtraOutputs map[string]troposphere.Output
 }
 
 // Validate checks that all of the expected values are provided.
@@ -146,8 +148,12 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 	}
 	tmpl.Parameters[restartParameter] = troposphere.Parameter{Type: "String"}
 	tmpl.Conditions["DNSCondition"] = Equals(Ref("DNS"), "true")
+
+	for k, v := range t.ExtraOutputs {
+		tmpl.Outputs[k] = v
+	}
+
 	tmpl.Outputs["Release"] = troposphere.Output{Value: app.Release}
-	tmpl.Outputs["EmpireVersion"] = troposphere.Output{Value: empire.Version}
 
 	serviceMappings := []interface{}{}
 	scheduledProcesses := map[string]string{}

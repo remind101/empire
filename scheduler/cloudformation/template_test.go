@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -248,6 +249,11 @@ func newTemplate() *EmpireTemplate {
 		HostedZone: &route53.HostedZone{
 			Id:   aws.String("Z3DG6IL3SJCGPX"),
 			Name: aws.String("empire"),
+		},
+		ExtraOutputs: map[string]troposphere.Output{
+			"EmpireVersion": troposphere.Output{
+				Value: "x.x.x",
+			},
 		},
 	}
 }

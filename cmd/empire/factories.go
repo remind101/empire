@@ -23,6 +23,7 @@ import (
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/ecsutil"
+	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
@@ -173,6 +174,9 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.
 		ServiceRole:             c.String(FlagECSServiceRole),
 		CustomResourcesTopic:    c.String(FlagCustomResourcesTopic),
 		LogConfiguration:        logConfiguration,
+		ExtraOutputs: map[string]troposphere.Output{
+			"EmpireVersion": troposphere.Output{Value: empire.Version},
+		},
 	}
 
 	if err := t.Validate(); err != nil {
