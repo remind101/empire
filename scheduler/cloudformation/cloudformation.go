@@ -287,8 +287,8 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 }
 
 func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream, done chan error) {
-	deployments := s.output(stack, deploymentsOutput)
-	services := s.output(stack, servicesOutput)
+	deployments := output(stack, deploymentsOutput)
+	services := output(stack, servicesOutput)
 	if deployments == nil {
 		done <- fmt.Errorf("deployments output missing from stack")
 		return
@@ -650,16 +650,6 @@ func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
 	return resp.Stacks[0], nil
 }
 
-// output returns the cloudformation.Output that matches the given key.
-func (s *Scheduler) output(stack *cloudformation.Stack, key string) (output *cloudformation.Output) {
-	for _, o := range stack.Outputs {
-		if *o.OutputKey == key {
-			output = o
-		}
-	}
-	return
-}
-
 // Remove removes the CloudFormation stack for the given app.
 func (s *Scheduler) Remove(ctx context.Context, appID string) error {
 	tx, err := s.db.Begin()
@@ -842,8 +832,8 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
 
-	output := s.output(stack, servicesOutput)
-	if output == nil {
+	o := output(stack, servicesOutput)
+	if o == nil {
 		// Nothing to do but wait until the outputs are set.
 		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
 			return nil, nil
@@ -852,7 +842,7 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
 	}
 
-	return extractProcessData(*output.OutputValue), nil
+	return extractProcessData(*o.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
@@ -1079,4 +1069,14 @@ func (e *templateValidationError) Error() string {
   Template Size: %d bytes
   Error: %v`
 	return fmt.Sprintf(t, e.templateURL, e.templateBody.Len(), e.err)
+}
+
+// output returns the cloudformation.Output that matches the given key.
+func output(stack *cloudformation.Stack, key string) (output *cloudformation.Output) {
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == key {
+			output = o
+		}
+	}
+	return
 }
