@@ -303,8 +303,8 @@ func (d *deploymentStatus) String() string {
 	return d.status
 }
 
-func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments map[string]*ecsDeployment) <-chan deploymentStatus {
-	ch := make(chan deploymentStatus)
+func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments map[string]*ecsDeployment) <-chan *deploymentStatus {
+	ch := make(chan *deploymentStatus)
 
 	wait := func(deployments map[string]*ecsDeployment) error {
 		arns := make([]*string, 0, len(deployments))
@@ -334,12 +334,12 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 			}
 
 			if primary && stable {
-				ch <- deploymentStatus{d, "stable"}
+				ch <- &deploymentStatus{d, "stable"}
 				delete(deployments, *service.ServiceArn)
 			} else if primary {
 				// do nothing
 			} else {
-				ch <- deploymentStatus{d, "inactive"}
+				ch <- &deploymentStatus{d, "inactive"}
 				return nil
 			}
 		}
