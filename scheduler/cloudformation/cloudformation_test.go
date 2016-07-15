@@ -100,7 +100,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
@@ -197,7 +197,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
@@ -297,7 +297,7 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
@@ -397,7 +397,7 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
@@ -411,7 +411,7 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 	}, scheduler.NullStatusStream)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, `timed out waiting for stack operation to complete`)
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -486,7 +486,7 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
@@ -589,7 +589,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
@@ -715,7 +715,7 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 
 	e.On("DescribeServices", &ecs.DescribeServicesInput{
 		Cluster:  aws.String("cluster"),
-		Services: []*string{aws.String("acme-inc-web")},
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{

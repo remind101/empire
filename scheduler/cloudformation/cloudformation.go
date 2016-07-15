@@ -269,26 +269,25 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	}
 
 	if ss != nil {
-		if err := s.waitUntilStable(ctx, output, ss); err != nil {
+		o := <-output
+		if o.err != nil || o.stack == nil {
+			return o.err
+		}
+		if err := s.waitUntilStable(ctx, o.stack, ss); err != nil {
 			logger.Warn(ctx, fmt.Sprintf("error waiting for submit to stabilize: %v", err))
 		}
 	}
 	return nil
 }
 
-func (s *Scheduler) waitUntilStable(ctx context.Context, o chan stackOperationOutput, ss scheduler.StatusStream) error {
-	output := <-o
-	if output.err != nil || output.stack == nil {
-		return output.err
-	}
-
-	deployments, err := deploymentsToWatch(output.stack)
+func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream) error {
+	deployments, err := deploymentsToWatch(stack)
 	if err != nil {
 		return err
 	}
 	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
 	for status := range deploymentStatuses {
-		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.service, status))
+		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
 	}
 	// TODO publish notification to empire
 	return nil
@@ -303,62 +302,56 @@ func (d *deploymentStatus) String() string {
 	return d.status
 }
 
-type deploymentIndex struct {
-	index      int
-	deployment *ecsDeployment
-}
-
-func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments []*ecsDeployment) <-chan deploymentStatus {
+func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments map[string]*ecsDeployment) <-chan deploymentStatus {
 	ch := make(chan deploymentStatus)
 
-	go func(deployments []*ecsDeployment) {
-		for len(deployments) > 0 {
-			var serviceIDs []*string
-			arnToDeployment := make(map[string]*deploymentIndex)
-			for i, d := range deployments {
-				serviceIDs = append(serviceIDs, aws.String(d.serviceID))
-				arnToDeployment[d.serviceARN] = &deploymentIndex{i, d}
-			}
-
-			status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
-				Cluster:  aws.String(s.Cluster),
-				Services: serviceIDs,
-			})
-			if err != nil {
-				logger.Warn(ctx, fmt.Sprintf("error describing services: %v", err))
-				close(ch)
-				return
-			}
-
-			for _, service := range status.Services {
-				d, ok := arnToDeployment[*service.ServiceArn]
-				if !ok {
-					logger.Warn(ctx, fmt.Sprintf("missing deployment for: %s", service.ServiceArn))
-					close(ch)
-					return
-				}
-				primary := false
-				stable := len(service.Deployments) == 1
-				for _, deployment := range service.Deployments {
-					if *deployment.Id == d.deployment.ID {
-						primary = *deployment.Status == "PRIMARY"
-					}
-				}
-
-				if primary && stable {
-					ch <- deploymentStatus{d.deployment, "stable"}
-					deployments = append(deployments[:d.index], deployments[d.index+1:]...)
-				} else if primary {
-					// do nothing
-				} else {
-					ch <- deploymentStatus{d.deployment, "inactive"}
-					close(ch)
-					return
-				}
-			}
+	wait := func(deployments map[string]*ecsDeployment) error {
+		arns := make([]*string, 0, len(deployments))
+		for arn := range deployments {
+			arns = append(arns, aws.String(arn))
 		}
 
-		close(ch)
+		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(s.Cluster),
+			Services: arns,
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, service := range status.Services {
+			d, ok := deployments[*service.ServiceArn]
+			if !ok {
+				return fmt.Errorf("missing deployment for: %s", service.ServiceArn)
+			}
+			primary := false
+			stable := len(service.Deployments) == 1
+			for _, deployment := range service.Deployments {
+				if *deployment.Id == d.ID {
+					primary = *deployment.Status == "PRIMARY"
+				}
+			}
+
+			if primary && stable {
+				ch <- deploymentStatus{d, "stable"}
+				delete(deployments, *service.ServiceArn)
+			} else if primary {
+				// do nothing
+			} else {
+				ch <- deploymentStatus{d, "inactive"}
+				return nil
+			}
+		}
+		return nil
+	}
+
+	go func(deployments map[string]*ecsDeployment) {
+		for len(deployments) > 0 {
+			if err := wait(deployments); err != nil {
+				logger.Warn(ctx, fmt.Sprintf("error waiting for services to stabilize: %v", err))
+			}
+			close(ch)
+		}
 	}(deployments)
 
 	return ch
@@ -1046,14 +1039,12 @@ func output(stack *cloudformation.Stack, key string) (output *cloudformation.Out
 }
 
 type ecsDeployment struct {
-	service    string
-	serviceID  string
-	serviceARN string
-	ID         string
+	process string
+	ID      string
 }
 
-// deploymentsToWatch returns an array of ecsDeployment for the given cloudformation stack
-func deploymentsToWatch(stack *cloudformation.Stack) ([]*ecsDeployment, error) {
+// deploymentsToWatch returns an array of ecsDeployments for the given cloudformation stack
+func deploymentsToWatch(stack *cloudformation.Stack) (map[string]*ecsDeployment, error) {
 	deployments := output(stack, deploymentsOutput)
 	services := output(stack, servicesOutput)
 	if deployments == nil {
@@ -1073,22 +1064,16 @@ func deploymentsToWatch(stack *cloudformation.Stack) ([]*ecsDeployment, error) {
 		return nil, fmt.Errorf("no deploymentIDs found in output")
 	}
 
-	var ecsDeployments []*ecsDeployment
+	ecsDeployments := make(map[string]*ecsDeployment)
 	for p, a := range arns {
-		id, err := arn.ResourceID(a)
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving id from arn: %v", err)
-		}
 		deploymentID, ok := deploymentIDs[p]
 		if !ok {
 			return nil, fmt.Errorf("deployment id not found for process: %v", p)
 		}
-		ecsDeployments = append(ecsDeployments, &ecsDeployment{
-			service:    p,
-			serviceID:  id,
-			serviceARN: a,
-			ID:         deploymentID,
-		})
+		ecsDeployments[a] = &ecsDeployment{
+			process: p,
+			ID:      deploymentID,
+		}
 	}
 	return ecsDeployments, nil
 }
