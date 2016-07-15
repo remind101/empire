@@ -350,9 +350,10 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 		for len(deployments) > 0 {
 			if err := wait(deployments); err != nil {
 				logger.Warn(ctx, fmt.Sprintf("error waiting for services to stabilize: %v", err))
+				break
 			}
-			close(ch)
 		}
+		close(ch)
 	}(deployments)
 
 	return ch
