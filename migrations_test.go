@@ -31,3 +31,18 @@ func TestMigrations(t *testing.T) {
 func TestLatestSchema(t *testing.T) {
 	assert.Equal(t, 18, latestSchema())
 }
+
+func TestNoDuplicateMigrations(t *testing.T) {
+	visited := make(map[int]bool)
+	expectedID := 1
+	for _, m := range migrations {
+		if visited[m.ID] {
+			t.Fatalf("Migration %d appears more than once", m.ID)
+		}
+		visited[m.ID] = true
+		if m.ID != expectedID {
+			t.Fatalf("Expected migration %d after %d, but got %d", expectedID, expectedID-1, m.ID)
+		}
+		expectedID++
+	}
+}
