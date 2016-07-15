@@ -238,7 +238,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		})
 	}
 
-	done := make(chan error, 1)
 	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
@@ -248,7 +247,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Template:   t,
 			Tags:       tags,
 			Parameters: parameters,
-		}, done, ss); err != nil {
+		}, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
 	} else if err == nil {
@@ -258,17 +257,11 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Parameters: parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, done, ss); err != nil {
+		}, ss); err != nil {
 			return err
 		}
 	} else {
 		return fmt.Errorf("error describing stack: %v", err)
-	}
-
-	if ss != nil {
-		if err := <-done; err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -329,9 +322,8 @@ type createStackInput struct {
 // createStack creates a new CloudFormation stack with the given input. This
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
-func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, done chan error, ss scheduler.StatusStream) error {
+func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, ss scheduler.StatusStream) error {
 	waiter := func(input *cloudformation.DescribeStacksInput) error {
-		scheduler.Publish(ctx, ss, "Creating stack")
 		err := s.cloudformation.WaitUntilStackCreateComplete(input)
 		if err == nil {
 			scheduler.Publish(ctx, ss, "Stack created")
@@ -339,22 +331,18 @@ func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, do
 		return err
 	}
 
-	submitted := make(chan error)
 	fn := func() error {
+		scheduler.Publish(ctx, ss, "Creating stack")
 		_, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
 			StackName:   input.StackName,
 			TemplateURL: input.Template.URL,
 			Tags:        input.Tags,
 			Parameters:  input.Parameters,
 		})
-		submitted <- err
 		return err
 	}
-	go func() {
-		done <- s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
-	}()
 
-	return <-submitted
+	return s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
 }
 
 // updateStackInput are options provided to update a stack.
@@ -368,7 +356,7 @@ type updateStackInput struct {
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, done chan error, ss scheduler.StatusStream) error {
+func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ss scheduler.StatusStream) error {
 	waiter := func(input *cloudformation.DescribeStacksInput) error {
 		scheduler.Publish(ctx, ss, "Waiting for stack update to complete")
 		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
@@ -378,37 +366,19 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, do
 		return err
 	}
 
-	locked := make(chan struct{})
-	submitted := make(chan error, 1)
 	fn := func() error {
-		close(locked)
+		ss.Publish(scheduler.Status{
+			State:   scheduler.StateLatched,
+			Message: "Starting update",
+		})
 		err := s.executeStackUpdate(input)
 		if err == nil {
 			scheduler.Publish(ctx, ss, "Stack update submitted")
 		}
-		submitted <- err
 		return err
 	}
 
-	go func() {
-		done <- s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
-	}()
-
-	var err error
-	select {
-	case <-s.after(lockWait):
-		scheduler.Publish(ctx, ss, "Waiting for existing stack operation to complete")
-		// FIXME: At this point, we don't want to affect UX by waiting
-		// around, so we return. But, if the stack update times out, or
-		// there's an error, that information is essentially silenced.
-		return nil
-	case <-locked:
-		// if a lock is obtained within the time frame, we might as well
-		// just wait for the update to get submitted.
-		err = <-submitted
-	}
-
-	return err
+	return s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
 }
 
 // performStackOperation encapsulates the process of obtaining the stack

@@ -78,12 +78,7 @@ func (s *deployerService) createInTransaction(ctx context.Context, stream schedu
 func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	w := opts.Output
 
-	var stream scheduler.StatusStream
-	if opts.Stream {
-		stream = w
-	}
-
-	r, err := s.createInTransaction(ctx, stream, opts)
+	r, err := s.createInTransaction(ctx, w, opts)
 	if err != nil {
 		return r, w.Error(err)
 	}
@@ -92,7 +87,12 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 		return r, err
 	}
 
-	if err := s.releases.Release(ctx, r, stream); err != nil {
+	var waitState *scheduler.State
+	if !opts.Stream {
+		s := scheduler.StateSubmitted
+		waitState = &s
+	}
+	if err := s.releases.Release(ctx, r, stream, waitState); err != nil {
 		return r, w.Error(err)
 	}
 
@@ -104,13 +104,16 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 type DeploymentStream struct {
 	w   io.Writer
 	enc *json.Encoder
+
+	stateChanges chan scheduler.State
 }
 
 // NewDeploymentStream wraps the io.Writer as a DeploymentStream.
 func NewDeploymentStream(w io.Writer) *DeploymentStream {
 	return &DeploymentStream{
-		w:   w,
-		enc: json.NewEncoder(w),
+		w:            w,
+		enc:          json.NewEncoder(w),
+		stateChanges: make(chan scheduler.State, 100),
 	}
 }
 
@@ -119,6 +122,14 @@ func NewDeploymentStream(w io.Writer) *DeploymentStream {
 // jsonmessage format.
 func (w *DeploymentStream) Write(b []byte) (int, error) {
 	return w.w.Write(b)
+}
+
+func (w *DeploymentState) ChangeState(state scheduler.State) error {
+	select {
+	case w.stateChanges <- state:
+	default:
+	}
+	return nil
 }
 
 // Publish implements the scheduler.StatusStream interface.
@@ -153,4 +164,16 @@ func newJSONMessageError(err error) jsonmessage.JSONMessage {
 			Message: err.Error(),
 		},
 	}
+}
+
+func waitUntil(state scheduler.State, changes chan scheduler.State) <-chan struct{} {
+	ch := make(chan struct{})
+	go func() {
+		for s := range changes {
+			if s == state {
+				close(ch)
+			}
+		}
+	}()
+	return ch
 }

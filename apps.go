@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -120,7 +121,8 @@ func (s *appsService) Restart(ctx context.Context, db *gorm.DB, opts RestartOpts
 		return s.Scheduler.Stop(ctx, opts.PID)
 	}
 
-	return s.releases.ReleaseApp(ctx, db, opts.App)
+	waitState := scheduler.StateLatched
+	return s.releases.ReleaseApp(ctx, db, opts.App, &waitState)
 }
 
 func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) ([]*Process, error) {

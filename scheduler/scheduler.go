@@ -169,7 +169,18 @@ func merge(envs ...map[string]string) map[string]string {
 	return merged
 }
 
+type State int
+
+const (
+	StatePending State = iota
+	StateLatched
+	StateSubmitted
+	StateCompleted
+)
+
 type Status struct {
+	State
+
 	// A friendly human readable message about the status change.
 	Message string
 }
@@ -182,6 +193,9 @@ func (s *Status) String() string {
 // StatusStream is an interface for publishing status updates while a scheduler
 // is executing.
 type StatusStream interface {
+	// Signifies a state change.
+	ChangeState(State) error
+
 	// Publish publishes an update to the status stream
 	Publish(Status) error
 }

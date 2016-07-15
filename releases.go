@@ -154,9 +154,27 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 }
 
 // Release submits a release to the scheduler.
-func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream) error {
+func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream, waitState *scheduler.State) error {
 	a := newSchedulerApp(release)
 	return s.Scheduler.Submit(ctx, a, ss)
+}
+
+func (s *releasesService) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, waitState *scheduler.State) error {
+	if waitState != nil {
+		errCh := make(chan error)
+		go func() {
+			errCh <- s.Scheduler.Submit(ctx, app, ss)
+		}()
+
+		select {
+		case <-waitUntil(*waitState):
+			return nil
+		case err := <-errCh:
+			return err
+		}
+	} else {
+		return s.Scheduler.Submit(ctx, app, ss)
+	}
 }
 
 // ReleaseApp will find the last release for an app and release it.
