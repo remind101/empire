@@ -212,7 +212,8 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return err
 	}
 
-	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v", *t.URL))
+	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
+
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
 		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
@@ -377,22 +378,27 @@ func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App) (*cl
 		return nil, fmt.Errorf("error uploading stack template to s3: %v", err)
 	}
 
+	t := &cloudformationTemplate{
+		URL:  aws.String(url),
+		Size: buf.Len(),
+	}
+
 	resp, err := s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
 		TemplateURL: aws.String(url),
 	})
 	if err != nil {
-		return nil, &templateValidationError{templateURL: url, err: err, templateBody: buf}
+		return t, &templateValidationError{template: t, err: err}
 	}
 
-	return &cloudformationTemplate{
-		URL:        aws.String(url),
-		Parameters: resp.Parameters,
-	}, nil
+	t.Parameters = resp.Parameters
+
+	return t, nil
 }
 
 // cloudformationTemplate represents a validated CloudFormation template.
 type cloudformationTemplate struct {
 	URL        *string
+	Size       int
 	Parameters []*cloudformation.TemplateParameter
 }
 
@@ -1015,9 +1021,8 @@ func newAdvisoryLock(db *sql.DB, stackName string) (*pglock.AdvisoryLock, error)
 // templateValidationError wraps an error from ValidateTemplate to provide more
 // information.
 type templateValidationError struct {
-	templateURL  string
-	templateBody *bytes.Buffer
-	err          error
+	template *cloudformationTemplate
+	err      error
 }
 
 func (e *templateValidationError) Error() string {
@@ -1025,7 +1030,7 @@ func (e *templateValidationError) Error() string {
   Template URL: %s
   Template Size: %d bytes
   Error: %v`
-	return fmt.Sprintf(t, e.templateURL, e.templateBody.Len(), e.err)
+	return fmt.Sprintf(t, *e.template.URL, e.template.Size, e.err)
 }
 
 // output returns the cloudformation.Output that matches the given key.

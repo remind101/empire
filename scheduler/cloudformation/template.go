@@ -251,9 +251,6 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
 	ecsServiceType := "Custom::ECSService"
-	if app.Env["ECS_SERVICE"] == "standard" {
-		ecsServiceType = "AWS::ECS::Service"
-	}
 
 	cd := t.ContainerDefinition(app, p)
 
@@ -380,20 +377,14 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 		},
 	}
 
-	service := fmt.Sprintf("%s", key)
+	service := fmt.Sprintf("%sService", key)
 	serviceProperties := map[string]interface{}{
 		"Cluster":        t.Cluster,
 		"DesiredCount":   Ref(scaleParameter(p.Type)),
 		"LoadBalancers":  loadBalancers,
 		"TaskDefinition": Ref(taskDefinition),
-	}
-	if ecsServiceType == "Custom::ECSService" {
-		// It's not possible to change the type of a resource,
-		// so we have to change the name of the service resource
-		// to something different (just append "Service").
-		service = fmt.Sprintf("%sService", service)
-		serviceProperties["ServiceName"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
-		serviceProperties["ServiceToken"] = t.CustomResourcesTopic
+		"ServiceName":    fmt.Sprintf("%s-%s", app.Name, p.Type),
+		"ServiceToken":   t.CustomResourcesTopic,
 	}
 	if len(loadBalancers) > 0 {
 		serviceProperties["Role"] = t.ServiceRole

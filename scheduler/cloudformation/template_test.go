@@ -95,46 +95,6 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
-			"standard.json",
-			&scheduler.App{
-				ID:      "1234",
-				Release: "v1",
-				Name:    "acme-inc",
-				Env: map[string]string{
-					"ECS_SERVICE": "standard",
-				},
-				Processes: []*scheduler.Process{
-					{
-						Type:    "web",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command: []string{"./bin/web"},
-						Exposure: &scheduler.Exposure{
-							Type: &scheduler.HTTPExposure{},
-						},
-						Labels: map[string]string{
-							"empire.app.process": "web",
-						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
-					},
-					{
-						Type:    "worker",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command: []string{"./bin/worker"},
-						Labels: map[string]string{
-							"empire.app.process": "worker",
-						},
-						Env: map[string]string{
-							"FOO": "BAR",
-						},
-					},
-				},
-			},
-		},
-
-		{
 			"cron.json",
 			&scheduler.App{
 				ID:      "1234",

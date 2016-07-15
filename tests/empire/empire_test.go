@@ -171,7 +171,7 @@ func TestEmpire_Deploy(t *testing.T) {
 	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
@@ -191,7 +191,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 	// app.
 	_, err := e.Deploy(context.Background(), empire.DeployOpts{
 		User:   &empire.User{Name: "ejholmes"},
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc"},
 	})
 	assert.Error(t, err)
@@ -220,7 +220,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	// Create the first release for this app.
 	r, err := e.Deploy(context.Background(), empire.DeployOpts{
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc"},
 	})
 	assert.NoError(t, err)
@@ -248,7 +248,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	go func() {
 		r, err := e.Deploy(context.Background(), empire.DeployOpts{
 			User:   user,
-			Output: ioutil.Discard,
+			Output: empire.NewDeploymentStream(ioutil.Discard),
 			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
 		})
 		assert.NoError(t, err)
@@ -260,7 +260,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 
 	r, err = e.Deploy(context.Background(), empire.DeployOpts{
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v3"},
 	})
 	assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestEmpire_Run(t *testing.T) {
 	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
@@ -360,7 +360,7 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
@@ -495,7 +495,7 @@ func TestEmpire_Set(t *testing.T) {
 	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
