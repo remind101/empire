@@ -25,6 +25,7 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -268,131 +269,99 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	}
 
 	if ss != nil {
-		o := <-output
-		if o.Err != nil {
-			return o.Err
-		}
-		// indicates that the stack operation was cancelled, not an error, but
-		// we don't need to wait.
-		if o.Stack == nil {
-			return nil
-		}
-		done := make(chan error, 1)
-		s.waitForDeploymentToStabilize(ctx, o.Stack, ss, done)
-		if err = <-done; err != nil {
-			return err
+		if err := s.waitUntilStable(ctx, output, ss); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error waiting for submit to stabilize: %v", err))
 		}
 	}
 	return nil
 }
 
-func (s *Scheduler) waitForDeploymentToStabilize(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream, done chan error) {
-	deployments := output(stack, deploymentsOutput)
-	services := output(stack, servicesOutput)
-	if deployments == nil {
-		done <- fmt.Errorf("deployments output missing from stack")
-		return
-	}
-	if services == nil {
-		done <- fmt.Errorf("services output missing from stack")
-		return
+func (s *Scheduler) waitUntilStable(ctx context.Context, o chan stackOperationOutput, ss scheduler.StatusStream) error {
+	output := <-o
+	if output.err != nil || output.stack == nil {
+		return output.err
 	}
 
-	arns := extractProcessData(*services.OutputValue)
-	deploymentIDs := extractProcessData(*deployments.OutputValue)
-
-	if len(arns) == 0 {
-		done <- fmt.Errorf("no services found in output")
-		return
+	deployments, err := deploymentsToWatch(output.stack)
+	if err != nil {
+		return err
 	}
-	if len(deploymentIDs) == 0 {
-		done <- fmt.Errorf("no deploymentIDs found in output")
-		return
+	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
+	for status := range deploymentStatuses {
+		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.service, status))
 	}
+	// TODO publish notification to empire
+	return nil
+}
 
-	var serviceIDs []*string
-	arnToDeploymentID := make(map[string]string)
-	arnToProcessName := make(map[string]string)
-	for p, a := range arns {
-		id, err := arn.ResourceID(a)
-		if err != nil {
-			done <- fmt.Errorf("error retrieving id from arn: %v", err)
-			return
-		}
-		deploymentID, ok := deploymentIDs[p]
-		if !ok {
-			done <- fmt.Errorf("deployment id not found for process: %v", p)
-			return
-		}
+type deploymentStatus struct {
+	deployment *ecsDeployment
+	status     string
+}
 
-		arnToDeploymentID[a] = deploymentID
-		arnToProcessName[a] = p
-		serviceIDs = append(serviceIDs, aws.String(id))
-	}
+func (d *deploymentStatus) String() string {
+	return d.status
+}
 
-	dedupe := make(map[string]bool)
-	check := func() bool {
-		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
-			Cluster:  aws.String(s.Cluster),
-			Services: serviceIDs,
-		})
-		if err != nil {
-			done <- fmt.Errorf("error describing services: %v", err)
-			return true
-		}
+type deploymentIndex struct {
+	index      int
+	deployment *ecsDeployment
+}
 
-		var completed []bool
-		for _, service := range status.Services {
-			deploymentID, ok := arnToDeploymentID[*service.ServiceArn]
-			if !ok {
-				done <- fmt.Errorf("missing arn for deploymentID: %s", deploymentID)
-				return true
+func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments []*ecsDeployment) <-chan deploymentStatus {
+	ch := make(chan deploymentStatus)
+
+	go func(deployments []*ecsDeployment) {
+		for len(deployments) > 0 {
+			var serviceIDs []*string
+			arnToDeployment := make(map[string]*deploymentIndex)
+			for i, d := range deployments {
+				serviceIDs = append(serviceIDs, aws.String(d.serviceID))
+				arnToDeployment[d.serviceARN] = &deploymentIndex{i, d}
 			}
 
-			name, ok := arnToProcessName[*service.ServiceArn]
-			if !ok {
-				done <- fmt.Errorf("missing process name for arn: %s", *service.ServiceArn)
-				return true
+			status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+				Cluster:  aws.String(s.Cluster),
+				Services: serviceIDs,
+			})
+			if err != nil {
+				logger.Warn(ctx, fmt.Sprintf("error describing services: %v", err))
+				close(ch)
+				return
 			}
 
-			primary := false
-			stable := len(service.Deployments) == 1
-			for _, deployment := range service.Deployments {
-				if *deployment.Id == deploymentID {
-					primary = *deployment.Status == "PRIMARY"
+			for _, service := range status.Services {
+				d, ok := arnToDeployment[*service.ServiceArn]
+				if !ok {
+					logger.Warn(ctx, fmt.Sprintf("missing deployment for: %s", service.ServiceArn))
+					close(ch)
+					return
+				}
+				primary := false
+				stable := len(service.Deployments) == 1
+				for _, deployment := range service.Deployments {
+					if *deployment.Id == d.deployment.ID {
+						primary = *deployment.Status == "PRIMARY"
+					}
+				}
+
+				if primary && stable {
+					ch <- deploymentStatus{d.deployment, "stable"}
+					deployments = append(deployments[:d.index], deployments[d.index+1:]...)
+				} else if primary {
+					// do nothing
+				} else {
+					ch <- deploymentStatus{d.deployment, "inactive"}
+					close(ch)
+					return
 				}
 			}
-
-			var status string
-			if primary && stable {
-				status = "stable"
-			} else if primary {
-				status = "in progress"
-			} else {
-				status = "superseded by newer release"
-			}
-			msg := fmt.Sprintf("Deployment %s for %s", status, name)
-			d := fmt.Sprintf("%s:%s", *service.ServiceArn, msg)
-			if _, ok := dedupe[d]; !ok {
-				scheduler.Publish(ctx, ss, msg)
-				dedupe[d] = true
-			}
-			complete := !primary || primary && stable
-			if complete {
-				completed = append(completed, complete)
-			}
 		}
-		return len(completed) == len(status.Services)
-	}
 
-	completed := false
-	for !completed {
-		completed = check()
-		if !completed {
-			<-s.after(2 * time.Second)
-		}
-	}
-	done <- nil
+		close(ch)
+	}(deployments)
+
+	return ch
 }
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
@@ -528,8 +497,8 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 }
 
 type stackOperationOutput struct {
-	Err   error
-	Stack *cloudformation.Stack
+	err   error
+	stack *cloudformation.Stack
 }
 
 // performStackOperation encapsulates the process of obtaining the stack
@@ -545,14 +514,14 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 	var output stackOperationOutput
 	l, err := newAdvisoryLock(s.db, stackName)
 	if err != nil {
-		output.Err = err
+		output.err = err
 		return output
 	}
 
 	// Cancel any pending stack operation, since this one obsoletes older
 	// operations.
 	if err := l.CancelPending(); err != nil {
-		output.Err = fmt.Errorf("error canceling pending stack operation: %v", err)
+		output.err = fmt.Errorf("error canceling pending stack operation: %v", err)
 		return output
 	}
 
@@ -565,14 +534,14 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 			scheduler.Publish(ctx, ss, "Operation superseded by newer release")
 			return output
 		}
-		output.Err = fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
+		output.err = fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
 		return output
 	}
 	defer l.Unlock()
 
 	// Once the lock has been obtained, let's perform the stack operation.
 	if err := fn(); err != nil {
-		output.Err = err
+		output.err = err
 		return output
 	}
 
@@ -585,11 +554,11 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 	// Wait until this stack operation has completed. The lock will be
 	// unlocked when this function returns.
 	if err := s.waitUntilStackOperationComplete(l, wait); err != nil {
-		output.Err = err
+		output.err = err
 		return output
 	}
 
-	output.Stack, output.Err = s.stack(&stackName)
+	output.stack, output.err = s.stack(&stackName)
 	return output
 }
 
@@ -1079,4 +1048,52 @@ func output(stack *cloudformation.Stack, key string) (output *cloudformation.Out
 		}
 	}
 	return
+}
+
+type ecsDeployment struct {
+	service    string
+	serviceID  string
+	serviceARN string
+	ID         string
+}
+
+// deploymentsToWatch returns an array of ecsDeployment for the given cloudformation stack
+func deploymentsToWatch(stack *cloudformation.Stack) ([]*ecsDeployment, error) {
+	deployments := output(stack, deploymentsOutput)
+	services := output(stack, servicesOutput)
+	if deployments == nil {
+		return nil, fmt.Errorf("deployments output missing from stack")
+	}
+	if services == nil {
+		return nil, fmt.Errorf("services output missing from stack")
+	}
+
+	arns := extractProcessData(*services.OutputValue)
+	deploymentIDs := extractProcessData(*deployments.OutputValue)
+
+	if len(arns) == 0 {
+		return nil, fmt.Errorf("no services found in output")
+	}
+	if len(deploymentIDs) == 0 {
+		return nil, fmt.Errorf("no deploymentIDs found in output")
+	}
+
+	var ecsDeployments []*ecsDeployment
+	for p, a := range arns {
+		id, err := arn.ResourceID(a)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving id from arn: %v", err)
+		}
+		deploymentID, ok := deploymentIDs[p]
+		if !ok {
+			return nil, fmt.Errorf("deployment id not found for process: %v", p)
+		}
+		ecsDeployments = append(ecsDeployments, &ecsDeployment{
+			service:    p,
+			serviceID:  id,
+			serviceARN: a,
+			ID:         deploymentID,
+		})
+	}
+	return ecsDeployments, nil
 }
