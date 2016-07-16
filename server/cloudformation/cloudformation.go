@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"golang.org/x/net/context"
@@ -58,10 +57,8 @@ type CustomResourceProvisioner struct {
 	// provisioning.
 	Provisioners map[string]customresources.Provisioner
 
-	client interface {
-		Do(*http.Request) (*http.Response, error)
-	}
-	sqs sqsClient
+	sendResponse func(customresources.Request, customresources.Response) error
+	sqs          sqsClient
 }
 
 // NewCustomResourceProvisioner returns a new CustomResourceProvisioner with an
@@ -69,7 +66,7 @@ type CustomResourceProvisioner struct {
 func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *CustomResourceProvisioner {
 	p := &CustomResourceProvisioner{
 		Provisioners: make(map[string]customresources.Provisioner),
-		client:       http.DefaultClient,
+		sendResponse: customresources.SendResponse,
 		sqs:          sqs.New(config),
 	}
 
@@ -143,7 +140,19 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	}
 
 	resp := customresources.NewResponseFromRequest(req)
-	resp.PhysicalResourceId, resp.Data, err = c.provision(ctx, m, req)
+
+	// CloudFormation is weird. PhysicalResourceId is required when creating
+	// a resource, but if the creation fails, how would we have a physical
+	// resource id? In cases where a Create request fails, we set the
+	// physical resource id to `failed/Create`. When a delete request comes
+	// in to delete that resource, we just send back a SUCCESS response so
+	// CloudFormation is happy.
+	if req.RequestType == customresources.Delete && req.PhysicalResourceId == fmt.Sprintf("failed/%s", customresources.Create) {
+		resp.PhysicalResourceId = req.PhysicalResourceId
+	} else {
+		resp.PhysicalResourceId, resp.Data, err = c.provision(ctx, m, req)
+	}
+
 	switch err {
 	case nil:
 		resp.Status = customresources.StatusSuccess
@@ -152,6 +161,15 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 			"response", resp,
 		)
 	default:
+		// A physical resource id is required, so if a Create request
+		// fails, and there's no physical resource id, CloudFormation
+		// will only say `Invalid PhysicalResourceId` in the status
+		// Reason instead of the actual error that caused the Create to
+		// fail.
+		if req.RequestType == customresources.Create && resp.PhysicalResourceId == "" {
+			resp.PhysicalResourceId = fmt.Sprintf("failed/%s", req.RequestType)
+		}
+
 		resp.Status = customresources.StatusFailed
 		resp.Reason = err.Error()
 		logger.Error(ctx, "cloudformation.provision.error",
@@ -161,7 +179,7 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		)
 	}
 
-	return customresources.SendResponseWithClient(client, req, resp)
+	return c.sendResponse(req, resp)
 }
 
 func (c *CustomResourceProvisioner) provision(ctx context.Context, m Message, req customresources.Request) (string, interface{}, error) {

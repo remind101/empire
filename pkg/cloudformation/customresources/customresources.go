@@ -120,7 +120,7 @@ type Response struct {
 	// Describes the reason for a failure response.
 	//
 	// Required if Status is FAILED; optional otherwise.
-	Reason string `json:"Reason"`
+	Reason string `json:"Reason,omitempty"`
 
 	// This value should be an identifier unique to the custom resource
 	// vendor, and can be up to 1Kb in size. The value must be a non-empty
@@ -144,7 +144,7 @@ type Response struct {
 	// Optional, custom resource provider-defined name-value pairs to send
 	// with the response. The values provided here can be accessed by name
 	// in the template with Fn::GetAtt.
-	Data interface{} `json:"Data"`
+	Data interface{} `json:"Data,omitempty"`
 }
 
 // NewResponseFromRequest initializes a new Response from a Request, filling in
@@ -164,7 +164,22 @@ func SendResponse(req Request, response Response) error {
 
 // SendResponseWithClient uploads the response to the requests signed
 // ResponseURL.
-func SendResponseWithClient(client *http.Client, req Request, response Response) error {
+func SendResponseWithClient(client interface {
+	Do(*http.Request) (*http.Response, error)
+}, req Request, response Response) error {
+	c := ResponseClient{client}
+	return c.SendResponse(req, response)
+}
+
+// ResponseClient is a client that can send responses to a requests ResponseURL.
+type ResponseClient struct {
+	client interface {
+		Do(*http.Request) (*http.Response, error)
+	}
+}
+
+// SendResponse sends the response to the request's ResponseURL.
+func (c *ResponseClient) SendResponse(req Request, response Response) error {
 	raw, err := json.Marshal(response)
 	if err != nil {
 		return err
@@ -175,7 +190,7 @@ func SendResponseWithClient(client *http.Client, req Request, response Response)
 		return err
 	}
 
-	resp, err := client.Do(r)
+	resp, err := c.client.Do(r)
 	if err != nil {
 		return err
 	}
