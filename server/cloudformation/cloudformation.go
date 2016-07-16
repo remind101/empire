@@ -153,6 +153,12 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		resp.PhysicalResourceId, resp.Data, err = c.provision(ctx, m, req)
 	}
 
+	// Allow provisioners to just return "" to indicate that the physical
+	// resource id did not change.
+	if resp.PhysicalResourceId == "" && req.PhysicalResourceId != "" {
+		resp.PhysicalResourceId = req.PhysicalResourceId
+	}
+
 	switch err {
 	case nil:
 		resp.Status = customresources.StatusSuccess
