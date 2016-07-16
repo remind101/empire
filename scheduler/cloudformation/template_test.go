@@ -109,6 +109,8 @@ func TestEmpireTemplate(t *testing.T) {
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
 						Env: map[string]string{
+							"B":   "foo",
+							"A":   "foo",
 							"FOO": "bar",
 						},
 						Exposure: &scheduler.Exposure{

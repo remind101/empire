@@ -257,18 +257,11 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	}
 
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
-		var env []interface{}
-		for k, v := range app.Env {
-			env = append(env, map[string]interface{}{
-				"Name":  k,
-				"Value": v,
-			})
-		}
 		tmpl.Resources[appEnvironment] = troposphere.Resource{
 			Type: "Custom::ECSEnvironment",
 			Properties: map[string]interface{}{
 				"ServiceToken": t.CustomResourcesTopic,
-				"Environment":  env,
+				"Environment":  sortedEnvironment(app.Env),
 			},
 		}
 	}
@@ -395,18 +388,11 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 		taskDefinition = fmt.Sprintf("%sTD", key)
 
 		processEnvironment := fmt.Sprintf("%sEnvironment", key)
-		var env []interface{}
-		for k, v := range p.Env {
-			env = append(env, map[string]interface{}{
-				"Name":  k,
-				"Value": v,
-			})
-		}
 		tmpl.Resources[processEnvironment] = troposphere.Resource{
 			Type: "Custom::ECSEnvironment",
 			Properties: map[string]interface{}{
 				"ServiceToken": t.CustomResourcesTopic,
-				"Environment":  env,
+				"Environment":  sortedEnvironment(p.Env),
 			},
 		}
 
@@ -457,13 +443,13 @@ func (t *EmpireTemplate) serviceRoleArn() interface{} {
 	return Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":role/", t.ServiceRole)
 }
 
-// envByKey implements the sort.Interface interface to sort the environment
+// ecsEnv implements the sort.Interface interface to sort the environment
 // variables by key in alphabetical order.
-type envByKey []*ecs.KeyValuePair
+type ecsEnv []*ecs.KeyValuePair
 
-func (e envByKey) Len() int           { return len(e) }
-func (e envByKey) Less(i, j int) bool { return *e[i].Name < *e[j].Name }
-func (e envByKey) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+func (e ecsEnv) Len() int           { return len(e) }
+func (e ecsEnv) Less(i, j int) bool { return *e[i].Name < *e[j].Name }
+func (e ecsEnv) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 
 // ContainerDefinition generates an ECS ContainerDefinition for a process.
 func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Process) *ecs.ContainerDefinition {
@@ -472,16 +458,6 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 		ss := s
 		command = append(command, &ss)
 	}
-
-	environment := envByKey{}
-	for k, v := range scheduler.Env(app, p) {
-		environment = append(environment, &ecs.KeyValuePair{
-			Name:  aws.String(k),
-			Value: aws.String(v),
-		})
-	}
-
-	sort.Sort(environment)
 
 	labels := make(map[string]*string)
 	for k, v := range scheduler.Labels(app, p) {
@@ -506,7 +482,7 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 		Image:            aws.String(p.Image.String()),
 		Essential:        aws.Bool(true),
 		Memory:           aws.Int64(int64(p.MemoryLimit / bytesize.MB)),
-		Environment:      environment,
+		Environment:      sortedEnvironment(scheduler.Env(app, p)),
 		LogConfiguration: t.LogConfiguration,
 		DockerLabels:     labels,
 		Ulimits:          ulimits,
@@ -566,6 +542,20 @@ func containerDefinition(cd *ecs.ContainerDefinition) map[string]interface{} {
 		containerDefinition["LogConfiguration"] = cd.LogConfiguration
 	}
 	return containerDefinition
+}
+
+// sortedEnvironment takes a map[string]string and returns a sorted slice of
+// ecs.KeyValuePair.
+func sortedEnvironment(environment map[string]string) []*ecs.KeyValuePair {
+	e := ecsEnv{}
+	for k, v := range environment {
+		e = append(e, &ecs.KeyValuePair{
+			Name:  aws.String(k),
+			Value: aws.String(v),
+		})
+	}
+	sort.Sort(e)
+	return e
 }
 
 func scheduleExpression(s scheduler.Schedule) string {

@@ -92,6 +92,14 @@
       "Properties": {
         "Environment": [
           {
+            "Name": "A",
+            "Value": "foo"
+          },
+          {
+            "Name": "B",
+            "Value": "foo"
+          },
+          {
             "Name": "FOO",
             "Value": "bar"
           }
