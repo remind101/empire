@@ -17,20 +17,14 @@ The standard Procfile format is specified in https://devcenter.heroku.com/articl
 
 ### Extended
 
-The extended Procfile format is Empire specific and implements a subset of the attributes defined in the [docker-compose.yml](https://docs.docker.com/compose/yml/) format. The extended Procfile format gives you more control, and allows you to configure things like health checks for the individual processes. An example of an extended Procfile might look like:
+The extended Procfile format is Empire specific and implements a subset of the attributes defined in the [docker-compose.yml](https://docs.docker.com/compose/yml/) format. The extended Procfile format gives you more control, and allows you to configure additional settings. An example of an extended Procfile might look like:
 
 ```yaml
 web:
   command: ./bin/web
-  expose:
-    type: tcp
-    check:
-      healthy_threshold: 2
-      unhealthy_threshold: 10
-worker:
-  command: ./bin/worker
-  environment:
-    DEFAULT_VAR: "var"
+scheduled-job:
+  command: ./bin/scheduled-job
+  cron: '0/2 * * * ? *'
 ```
 
 #### Attributes
