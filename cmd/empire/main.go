@@ -16,6 +16,7 @@ const (
 	FlagEventsBackend    = "events.backend"
 	FlagRunLogsBackend   = "runlogs.backend"
 	FlagMessagesRequired = "messages.required"
+	FlagLogLevel         = "log.level"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -333,6 +334,12 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagXShowAttached,
 		Usage:  "If true, attached runs will be shown in `emp ps` output.",
 		EnvVar: "EMPIRE_X_SHOW_ATTACHED",
+	},
+	cli.StringFlag{
+		Name:   FlagLogLevel,
+		Value:  "info",
+		Usage:  "Specify the log level for the empire server. You can use this to enable debug logs by specifying `debug`.",
+		EnvVar: "EMPIRE_LOG_LEVEL",
 	},
 }
 
