@@ -379,6 +379,9 @@ func newLogger(c *cli.Context) (log15.Logger, error) {
 		return l, err
 	}
 	h := log15.LvlFilterHandler(v, log15.StreamHandler(os.Stdout, log15.LogfmtFormat()))
+	if lvl == "debug" {
+		h = log15.CallerFileHandler(h)
+	}
 	l.SetHandler(log15.LazyHandler(h))
 	return l, err
 }
