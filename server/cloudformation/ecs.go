@@ -181,23 +181,23 @@ func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *strin
 }
 
 type PortMapping struct {
-	ContainerPort *IntValue
-	HostPort      *IntValue
+	ContainerPort *customresources.IntValue
+	HostPort      *customresources.IntValue
 }
 
 type Ulimit struct {
 	Name      *string
-	HardLimit *IntValue
-	SoftLimit *IntValue
+	HardLimit *customresources.IntValue
+	SoftLimit *customresources.IntValue
 }
 
 type ContainerDefinition struct {
 	Name             *string
 	Command          []*string
-	Cpu              *IntValue
+	Cpu              *customresources.IntValue
 	Image            *string
 	Essential        *string
-	Memory           *IntValue
+	Memory           *customresources.IntValue
 	PortMappings     []PortMapping
 	DockerLabels     map[string]*string
 	Ulimits          []Ulimit
@@ -224,19 +224,19 @@ func (p *ECSTaskDefinitionResource) Properties() interface{} {
 	return &ECSTaskDefinitionProperties{}
 }
 
-func (p *ECSTaskDefinitionResource) Provision(ctx context.Context, req Request) (string, interface{}, error) {
+func (p *ECSTaskDefinitionResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSTaskDefinitionProperties)
 
 	switch req.RequestType {
-	case Create:
-		id, err := p.register(properties, hashRequest(req))
+	case customresources.Create:
+		id, err := p.register(properties, req.Hash())
 		return id, nil, err
-	case Delete:
+	case customresources.Delete:
 		id := req.PhysicalResourceId
 		err := p.delete(id)
 		return id, nil, err
-	case Update:
-		id, err := p.register(properties, hashRequest(req))
+	case customresources.Update:
+		id, err := p.register(properties, req.Hash())
 		return id, nil, err
 	default:
 		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
@@ -344,17 +344,17 @@ func (p *ECSEnvironmentResource) Properties() interface{} {
 	return &ECSEnvironmentProperties{}
 }
 
-func (p *ECSEnvironmentResource) Provision(ctx context.Context, req Request) (string, interface{}, error) {
+func (p *ECSEnvironmentResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSEnvironmentProperties)
 
 	switch req.RequestType {
-	case Create:
+	case customresources.Create:
 		id, err := p.environmentStore.store(properties.Environment)
 		return id, nil, err
-	case Delete:
+	case customresources.Delete:
 		id := req.PhysicalResourceId
 		return id, nil, nil
-	case Update:
+	case customresources.Update:
 		id, err := p.environmentStore.store(properties.Environment)
 		return id, nil, err
 	default:

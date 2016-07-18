@@ -299,8 +299,8 @@ func TestECSTaskDefinition_Create(t *testing.T) {
 		},
 	}, nil)
 
-	id, data, err := p.Provision(ctx, Request{
-		RequestType: Create,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType: customresources.Create,
 		ResourceProperties: &ECSTaskDefinitionProperties{
 			Family: aws.String("acme-inc-web"),
 			ContainerDefinitions: []ContainerDefinition{
@@ -334,8 +334,8 @@ func TestECSEnvironment_Create(t *testing.T) {
 		},
 	}).Return("56152438-5fef-4c96-bbe1-9cf92022ae75", nil)
 
-	id, data, err := p.Provision(ctx, Request{
-		RequestType: Create,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType: customresources.Create,
 		ResourceProperties: &ECSEnvironmentProperties{
 			Environment: []*ecs.KeyValuePair{
 				{
