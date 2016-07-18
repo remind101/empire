@@ -1,6 +1,7 @@
 package github
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/ejholmes/hookshot/events"
@@ -56,11 +57,16 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 	// stream.
 	p := dockerutil.DecodeJSONMessageStream(w)
 
+	message := event.Deployment.Description
+	if message == "" {
+		message = fmt.Sprintf("GitHub deployment #%d of %s", event.Deployment.ID, event.Repository.FullName)
+	}
 	_, err = d.empire.Deploy(ctx, empire.DeployOpts{
-		Image:  img,
-		Output: empire.NewDeploymentStream(p),
-		User:   &empire.User{Name: event.Deployment.Creator.Login},
-		Stream: true,
+		Image:   img,
+		Output:  empire.NewDeploymentStream(p),
+		User:    &empire.User{Name: event.Deployment.Creator.Login},
+		Stream:  true,
+		Message: message,
 	})
 	if err != nil {
 		return err
