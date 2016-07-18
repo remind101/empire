@@ -148,7 +148,14 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
 	}
 
-	logger.Info(ctx, "cloudformation.provision.request")
+	logger.Info(ctx, "cloudformation.provision.request",
+		"request_id", req.RequestId,
+		"stack_id", req.StackId,
+		"request_type", req.RequestType,
+		"resource_type", req.ResourceType,
+		"logical_resource_id", req.LogicalResourceId,
+		"physical_resource_id", req.PhysicalResourceId,
+	)
 
 	resp := customresources.NewResponseFromRequest(req)
 
@@ -173,7 +180,11 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	switch err {
 	case nil:
 		resp.Status = customresources.StatusSuccess
-		logger.Info(ctx, "cloudformation.provision.success")
+		logger.Info(ctx, "cloudformation.provision.success",
+			"request_id", req.RequestId,
+			"stack_id", req.StackId,
+			"physical_resource_id", resp.PhysicalResourceId,
+		)
 	default:
 		// A physical resource id is required, so if a Create request
 		// fails, and there's no physical resource id, CloudFormation
@@ -186,7 +197,11 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 
 		resp.Status = customresources.StatusFailed
 		resp.Reason = err.Error()
-		logger.Error(ctx, "cloudformation.provision.error", "err", err.Error())
+		logger.Error(ctx, "cloudformation.provision.error",
+			"request_id", req.RequestId,
+			"stack_id", req.StackId,
+			"err", err.Error(),
+		)
 	}
 
 	return c.sendResponse(req, resp)
