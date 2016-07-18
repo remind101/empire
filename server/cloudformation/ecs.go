@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -22,7 +23,7 @@ type ecsClient interface {
 
 type LoadBalancer struct {
 	ContainerName    *string
-	ContainerPort    *IntValue
+	ContainerPort    *customresources.IntValue
 	LoadBalancerName *string
 }
 
@@ -31,7 +32,7 @@ type LoadBalancer struct {
 type ECSServiceProperties struct {
 	ServiceName    *string
 	Cluster        *string
-	DesiredCount   *IntValue
+	DesiredCount   *customresources.IntValue
 	LoadBalancers  []LoadBalancer
 	Role           *string
 	TaskDefinition *string
@@ -46,26 +47,26 @@ func (p *ECSServiceResource) Properties() interface{} {
 	return &ECSServiceProperties{}
 }
 
-func (p *ECSServiceResource) Provision(ctx context.Context, req Request) (string, interface{}, error) {
+func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
 
 	switch req.RequestType {
-	case Create:
-		id, err := p.create(ctx, hashRequest(req), properties)
+	case customresources.Create:
+		id, err := p.create(ctx, req.Hash(), properties)
 		return id, nil, err
-	case Delete:
+	case customresources.Delete:
 		id := req.PhysicalResourceId
 		err := p.delete(ctx, aws.String(id), properties.Cluster)
 		return id, nil, err
-	case Update:
+	case customresources.Update:
 		id := req.PhysicalResourceId
 
 		if requiresReplacement(properties, oldProperties) {
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
-			id, err := p.create(ctx, hashRequest(req), properties)
+			id, err := p.create(ctx, req.Hash(), properties)
 			if err != nil {
 				return oldId, nil, err
 			}
