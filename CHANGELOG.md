@@ -14,6 +14,7 @@
 * The CloudFormation backend now uses the Custom::ECSService resource instead of AWS::ECS::Service, by default [#877](https://github.com/remind101/empire/pull/877)
 * The database schema version is now checked at boot, as well as in the http health checks. [#893](https://github.com/remind101/empire/pull/893)
 * The log level within empire can now be configured when starting the service. [#929](https://github.com/remind101/empire/issues/929)
+* The CloudFormation backend now has experimental support for a `Custom::ECSTaskDefinition` resource that greatly reduces the size of generated templates. [#935](https://github.com/remind101/empire/pull/935)
 
 **Bugs**
 
