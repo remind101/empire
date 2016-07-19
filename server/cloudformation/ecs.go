@@ -50,11 +50,15 @@ func (p *ECSServiceResource) Properties() interface{} {
 func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
+	data := make(map[string]string)
 
 	switch req.RequestType {
 	case customresources.Create:
-		id, err := p.create(ctx, req.Hash(), properties)
-		return id, nil, err
+		id, deploymentId, err := p.create(ctx, req.Hash(), properties)
+		if err == nil {
+			data["DeploymentId"] = deploymentId
+		}
+		return id, data, err
 	case customresources.Delete:
 		id := req.PhysicalResourceId
 		err := p.delete(ctx, aws.String(id), properties.Cluster)
@@ -66,31 +70,40 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
-			id, err := p.create(ctx, req.Hash(), properties)
+			id, deploymentId, err := p.create(ctx, req.Hash(), properties)
 			if err != nil {
 				return oldId, nil, err
 			}
+			data["DeploymentId"] = deploymentId
 
 			// There's no need to delete the old service here, since
 			// CloudFormation will send us a DELETE request for the old
 			// service.
 
-			return id, nil, err
+			return id, data, err
 		}
 
-		_, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
+		resp, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
 			Service:        aws.String(id),
 			Cluster:        properties.Cluster,
 			DesiredCount:   properties.DesiredCount.Value(),
 			TaskDefinition: properties.TaskDefinition,
 		})
-		return id, nil, err
+		if err == nil {
+			d := primaryDeployment(resp.Service)
+			if d != nil {
+				data["DeploymentId"] = *d.Id
+			} else {
+				err = fmt.Errorf("no primary deployment found")
+			}
+		}
+		return id, data, err
 	default:
 		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
 	}
 }
 
-func (p *ECSServiceResource) create(ctx context.Context, clientToken string, properties *ECSServiceProperties) (string, error) {
+func (p *ECSServiceResource) create(ctx context.Context, clientToken string, properties *ECSServiceProperties) (string, string, error) {
 	var loadBalancers []*ecs.LoadBalancer
 	for _, v := range properties.LoadBalancers {
 		loadBalancers = append(loadBalancers, &ecs.LoadBalancer{
@@ -115,7 +128,12 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 		LoadBalancers:  loadBalancers,
 	})
 	if err != nil {
-		return "", fmt.Errorf("error creating service: %v", err)
+		return "", "", fmt.Errorf("error creating service: %v", err)
+	}
+
+	d := primaryDeployment(resp.Service)
+	if d == nil {
+		return "", "", fmt.Errorf("no primary deployment found")
 	}
 
 	arn := resp.Service.ServiceArn
@@ -137,10 +155,10 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 	select {
 	case <-stabilized:
 	case <-ctx.Done():
-		return *arn, ctx.Err()
+		return *arn, *d.Id, ctx.Err()
 	}
 
-	return *arn, nil
+	return *arn, *d.Id, nil
 }
 
 func (p *ECSServiceResource) delete(ctx context.Context, service, cluster *string) error {
@@ -196,4 +214,13 @@ func requiresReplacement(new, old *ECSServiceProperties) bool {
 	}
 
 	return false
+}
+
+func primaryDeployment(service *ecs.Service) *ecs.Deployment {
+	for _, d := range service.Deployments {
+		if d.Status != nil && *d.Status == "PRIMARY" {
+			return d
+		}
+	}
+	return nil
 }

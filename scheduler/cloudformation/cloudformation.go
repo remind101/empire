@@ -25,6 +25,7 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -35,6 +36,8 @@ var newUUID = uuid.New
 // This output is expected to be a comma delimited list of `process=servicearn`
 // values.
 const servicesOutput = "Services"
+
+const deploymentsOutput = "Deployments"
 
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
@@ -97,6 +100,7 @@ type ecsClient interface {
 	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 }
 
 // s3Client duck types the s3.S3 interface that we use.
@@ -238,7 +242,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		})
 	}
 
-	done := make(chan error, 1)
+	output := make(chan stackOperationOutput, 1)
 	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
@@ -248,7 +252,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Template:   t,
 			Tags:       tags,
 			Parameters: parameters,
-		}, done, ss); err != nil {
+		}, output, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
 	} else if err == nil {
@@ -258,7 +262,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			Parameters: parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, done, ss); err != nil {
+		}, output, ss); err != nil {
 			return err
 		}
 	} else {
@@ -266,12 +270,96 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	}
 
 	if ss != nil {
-		if err := <-done; err != nil {
-			return err
+		o := <-output
+		if o.err != nil || o.stack == nil {
+			return o.err
+		}
+		if err := s.waitUntilStable(ctx, o.stack, ss); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error waiting for submit to stabilize: %v", err))
 		}
 	}
-
 	return nil
+}
+
+func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream) error {
+	deployments, err := deploymentsToWatch(stack)
+	if err != nil {
+		return err
+	}
+	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
+	for status := range deploymentStatuses {
+		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
+	}
+	// TODO publish notification to empire
+	return nil
+}
+
+type deploymentStatus struct {
+	deployment *ecsDeployment
+	status     string
+}
+
+func (d *deploymentStatus) String() string {
+	return d.status
+}
+
+func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments map[string]*ecsDeployment) <-chan *deploymentStatus {
+	ch := make(chan *deploymentStatus)
+
+	wait := func(deployments map[string]*ecsDeployment) (bool, error) {
+		arns := make([]*string, 0, len(deployments))
+		for arn := range deployments {
+			arns = append(arns, aws.String(arn))
+		}
+
+		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(s.Cluster),
+			Services: arns,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		for _, service := range status.Services {
+			d, ok := deployments[*service.ServiceArn]
+			if !ok {
+				return false, fmt.Errorf("missing deployment for: %s", service.ServiceArn)
+			}
+			primary := false
+			stable := len(service.Deployments) == 1
+			for _, deployment := range service.Deployments {
+				if *deployment.Id == d.ID {
+					primary = *deployment.Status == "PRIMARY"
+				}
+			}
+
+			if primary && stable {
+				ch <- &deploymentStatus{d, "stable"}
+				delete(deployments, *service.ServiceArn)
+			} else if primary {
+				// do nothing
+			} else {
+				ch <- &deploymentStatus{d, "inactive"}
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+
+	go func(deployments map[string]*ecsDeployment) {
+		keepWaiting := true
+		var err error
+		for keepWaiting && len(deployments) > 0 {
+			keepWaiting, err = wait(deployments)
+			if err != nil {
+				logger.Warn(ctx, fmt.Sprintf("error waiting for services to stabilize: %v", err))
+				break
+			}
+		}
+		close(ch)
+	}(deployments)
+
+	return ch
 }
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
@@ -329,7 +417,7 @@ type createStackInput struct {
 // createStack creates a new CloudFormation stack with the given input. This
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
-func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, done chan error, ss scheduler.StatusStream) error {
+func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
 	waiter := func(input *cloudformation.DescribeStacksInput) error {
 		scheduler.Publish(ctx, ss, "Creating stack")
 		err := s.cloudformation.WaitUntilStackCreateComplete(input)
@@ -351,7 +439,8 @@ func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, do
 		return err
 	}
 	go func() {
-		done <- s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
+		stack, err := s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
+		output <- stackOperationOutput{stack, err}
 	}()
 
 	return <-submitted
@@ -368,7 +457,7 @@ type updateStackInput struct {
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, done chan error, ss scheduler.StatusStream) error {
+func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
 	waiter := func(input *cloudformation.DescribeStacksInput) error {
 		scheduler.Publish(ctx, ss, "Waiting for stack update to complete")
 		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
@@ -391,7 +480,8 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, do
 	}
 
 	go func() {
-		done <- s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
+		stack, err := s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
+		output <- stackOperationOutput{stack, err}
 	}()
 
 	var err error
@@ -411,6 +501,11 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, do
 	return err
 }
 
+type stackOperationOutput struct {
+	stack *cloudformation.Stack
+	err   error
+}
+
 // performStackOperation encapsulates the process of obtaining the stack
 // operation lock, performing the stack operation, waiting for it to complete,
 // then unlocking the stack operation lock.
@@ -420,16 +515,16 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, do
 //   until the other stack operation has completed.
 // * If there is another pending stack operation, it will be replaced by the new
 //   update.
-func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter func(*cloudformation.DescribeStacksInput) error, ss scheduler.StatusStream) error {
+func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter func(*cloudformation.DescribeStacksInput) error, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
 	l, err := newAdvisoryLock(s.db, stackName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Cancel any pending stack operation, since this one obsoletes older
 	// operations.
 	if err := l.CancelPending(); err != nil {
-		return fmt.Errorf("error canceling pending stack operation: %v", err)
+		return nil, fmt.Errorf("error canceling pending stack operation: %v", err)
 	}
 
 	if err := l.Lock(); err != nil {
@@ -439,15 +534,15 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 		// TODO: Should we return an error here?
 		if err == pglock.Canceled {
 			scheduler.Publish(ctx, ss, "Operation superseded by newer release")
-			return nil
+			return nil, nil
 		}
-		return fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
+		return nil, fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
 	}
 	defer l.Unlock()
 
 	// Once the lock has been obtained, let's perform the stack operation.
 	if err := fn(); err != nil {
-		return err
+		return nil, err
 	}
 
 	wait := func() error {
@@ -457,8 +552,12 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 	}
 
 	// Wait until this stack operation has completed. The lock will be
-	// unlocked when this returns.
-	return s.waitUntilStackOperationComplete(l, wait)
+	// unlocked when this function returns.
+	if err := s.waitUntilStackOperationComplete(l, wait); err != nil {
+		return nil, err
+	}
+
+	return s.stack(&stackName)
 }
 
 // waitUntilStackOperationComplete waits until wait returns, or it times out.
@@ -695,22 +794,13 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, err
 	}
 
-	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
+	stack, err := s.stack(aws.String(stackName))
 	if err != nil {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
 
-	stack := resp.Stacks[0]
-
-	var output *cloudformation.Output
-	for _, o := range stack.Outputs {
-		if *o.OutputKey == servicesOutput {
-			output = o
-		}
-	}
-	if output == nil {
+	o := output(stack, servicesOutput)
+	if o == nil {
 		// Nothing to do but wait until the outputs are set.
 		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
 			return nil, nil
@@ -719,7 +809,7 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
 	}
 
-	return extractServices(*output.OutputValue), nil
+	return extractProcessData(*o.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
@@ -777,18 +867,18 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 	return stackName, err
 }
 
-// extractServices extracts a map that maps the process name to the ARN of the
-// associated ECS service.
-func extractServices(value string) map[string]string {
-	services := make(map[string]string)
+// extractProcessData extracts a map that maps the process name to some
+// corresponding value.
+func extractProcessData(value string) map[string]string {
+	data := make(map[string]string)
 	pairs := strings.Split(value, ",")
 
 	for _, p := range pairs {
 		parts := strings.Split(p, "=")
-		services[parts[0]] = parts[1]
+		data[parts[0]] = parts[1]
 	}
 
-	return services
+	return data
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
@@ -945,4 +1035,54 @@ func (e *templateValidationError) Error() string {
   Template Size: %d bytes
   Error: %v`
 	return fmt.Sprintf(t, *e.template.URL, e.template.Size, e.err)
+}
+
+// output returns the cloudformation.Output that matches the given key.
+func output(stack *cloudformation.Stack, key string) (output *cloudformation.Output) {
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == key {
+			output = o
+		}
+	}
+	return
+}
+
+type ecsDeployment struct {
+	process string
+	ID      string
+}
+
+// deploymentsToWatch returns an array of ecsDeployments for the given cloudformation stack
+func deploymentsToWatch(stack *cloudformation.Stack) (map[string]*ecsDeployment, error) {
+	deployments := output(stack, deploymentsOutput)
+	services := output(stack, servicesOutput)
+	if deployments == nil {
+		return nil, fmt.Errorf("deployments output missing from stack")
+	}
+	if services == nil {
+		return nil, fmt.Errorf("services output missing from stack")
+	}
+
+	arns := extractProcessData(*services.OutputValue)
+	deploymentIDs := extractProcessData(*deployments.OutputValue)
+
+	if len(arns) == 0 {
+		return nil, fmt.Errorf("no services found in output")
+	}
+	if len(deploymentIDs) == 0 {
+		return nil, fmt.Errorf("no deploymentIDs found in output")
+	}
+
+	ecsDeployments := make(map[string]*ecsDeployment)
+	for p, a := range arns {
+		deploymentID, ok := deploymentIDs[p]
+		if !ok {
+			return nil, fmt.Errorf("deployment id not found for process: %v", p)
+		}
+		ecsDeployments[a] = &ecsDeployment{
+			process: p,
+			ID:      deploymentID,
+		}
+	}
+	return ecsDeployments, nil
 }

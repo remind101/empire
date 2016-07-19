@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,10 +35,13 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
+		ecs:            e,
 		s3:             x,
 		db:             db,
 		after:          func(time.Duration) <-chan time.Time { return nil },
@@ -56,7 +60,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
-	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id acme-inc does not exist", errors.New("")))
+	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id acme-inc does not exist", errors.New(""))).Once()
 
 	c.On("CreateStack", &cloudformation.CreateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -74,6 +78,38 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	c.On("WaitUntilStackCreateComplete", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -97,10 +133,13 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
+		ecs:            e,
 		s3:             x,
 		db:             db,
 		after:          func(time.Duration) <-chan time.Time { return nil },
@@ -123,7 +162,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		Stacks: []*cloudformation.Stack{
 			{StackStatus: aws.String("CREATE_COMPLETE")},
 		},
-	}, nil)
+	}, nil).Once()
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -137,11 +176,160 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("2"), Status: aws.String("ACTIVE")},
+				},
+			},
+		},
+	}, nil).Once()
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")},
+				},
+			},
+		},
+	}, nil).Once()
+
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 	}, scheduler.NullStatusStream)
 	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Submit_Superseded(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		Cluster:        "cluster",
+		cloudformation: c,
+		ecs:            e,
+		s3:             x,
+		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil).Once()
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("2"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("1"), Status: aws.String("INACTIVE")},
+				},
+			},
+		},
+	}, nil)
+
+	stream := &storedStatusStream{}
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, stream)
+	assert.NoError(t, err)
+	contains := false
+	for _, status := range stream.statuses {
+		contains = strings.Contains(status.String(), "inactive")
+	}
+	assert.True(t, contains, "Expected inactive status update")
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -153,9 +341,12 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
+		ecs:            e,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -188,7 +379,7 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 		Stacks: []*cloudformation.Stack{
 			{StackStatus: aws.String("CREATE_COMPLETE")},
 		},
-	}, nil)
+	}, nil).Once()
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -201,6 +392,38 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -218,10 +441,13 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
+		ecs:            e,
 		s3:             x,
 		db:             db,
 		after: func(d time.Duration) <-chan time.Time {
@@ -253,7 +479,7 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 		Stacks: []*cloudformation.Stack{
 			{StackStatus: aws.String("CREATE_COMPLETE")},
 		},
-	}, nil)
+	}, nil).Once()
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -266,6 +492,38 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -283,13 +541,18 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
+		ecs:            e,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after: func(time.Duration) <-chan time.Time {
+			return nil
+		},
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -309,7 +572,7 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 		Stacks: []*cloudformation.Stack{
 			{StackStatus: aws.String("CREATE_COMPLETE")},
 		},
-	}, nil)
+	}, nil).Once()
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -318,6 +581,38 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, errors.New("stack update failed"))
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -335,9 +630,12 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
+		ecs:            e,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -372,7 +670,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 				},
 			},
 		},
-	}, nil)
+	}, nil).Once()
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -386,6 +684,38 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -406,9 +736,12 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 
 	x := new(mockS3Client)
 	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
+		ecs:            e,
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -446,7 +779,23 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 				},
 			},
 		},
-	}, nil)
+	}, nil).Once()
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Parameters: []*cloudformation.Parameter{
+					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("false")},
+					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
+				},
+			},
+		},
+	}, nil).Once()
 
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
@@ -461,6 +810,38 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
@@ -484,6 +865,7 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -524,6 +906,7 @@ func TestScheduler_Remove(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -568,6 +951,7 @@ func TestScheduler_Remove_NoCFStack(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -597,6 +981,7 @@ func TestScheduler_Remove_NoDBStack_NoCFStack(t *testing.T) {
 	s := &Scheduler{
 		Template:       template.Must(template.New("t").Parse("{}")),
 		Bucket:         "bucket",
+		Cluster:        "cluster",
 		cloudformation: c,
 		s3:             x,
 		db:             db,
@@ -832,9 +1217,9 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestExtractServices(t *testing.T) {
+func TextExtractProcessData(t *testing.T) {
 	output := "statuses=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO,statuses_retry=arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N"
-	services := extractServices(output)
+	services := extractProcessData(output)
 	expected := map[string]string{
 		"statuses":       "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statuses-16NM105QFD6UO",
 		"statuses_retry": "arn:aws:ecs:us-east-1:897883143566:service/stage-app-statusesretry-DKG2XMH75H5N",
@@ -952,6 +1337,15 @@ func newDB(t testing.TB) *sql.DB {
 	return db
 }
 
+type storedStatusStream struct {
+	statuses []scheduler.Status
+}
+
+func (s *storedStatusStream) Publish(status scheduler.Status) error {
+	s.statuses = append(s.statuses, status)
+	return nil
+}
+
 type mockCloudFormationClient struct {
 	cloudformationClient
 	mock.Mock
@@ -1031,4 +1425,9 @@ func (m *mockECSClient) DescribeTasks(input *ecs.DescribeTasksInput) (*ecs.Descr
 func (m *mockECSClient) DescribeTaskDefinition(input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DescribeTaskDefinitionOutput), args.Error(1)
+}
+
+func (m *mockECSClient) DescribeServices(input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.DescribeServicesOutput), args.Error(1)
 }
