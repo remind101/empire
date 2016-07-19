@@ -99,13 +99,9 @@ func (c *CustomResourceProvisioner) add(resourceName string, p customresources.P
 
 // Start starts pulling requests from the queue and provisioning them.
 func (c *CustomResourceProvisioner) Start() {
-	for i := 0; i < 10; i++ {
-		go c.worker()
-	}
-}
+	t := time.Tick(10 * time.Second)
 
-func (c *CustomResourceProvisioner) worker() {
-	for {
+	for range t {
 		ctx := c.Context
 
 		resp, err := c.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
