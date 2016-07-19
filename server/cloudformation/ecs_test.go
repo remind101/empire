@@ -444,10 +444,18 @@ func TestECSEnvironment_Update(t *testing.T) {
 					Name:  aws.String("FOO"),
 					Value: aws.String("bar"),
 				},
+				{
+					Name:  aws.String("BAR"),
+					Value: aws.String("foo"),
+				},
 			},
 		},
 		OldResourceProperties: &ECSEnvironmentProperties{
 			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("BAR"),
+					Value: aws.String("foo"),
+				},
 				{
 					Name:  aws.String("FOO"),
 					Value: aws.String("bar"),

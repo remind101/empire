@@ -341,7 +341,7 @@ func (p *ECSTaskDefinitionResource) delete(arn string) error {
 // ECSEnvironmentProperties are the properties provided to the
 // Custom::ECSEnvironment custom resource.
 type ECSEnvironmentProperties struct {
-	Environment []*ecs.KeyValuePair
+	Environment []*ecs.KeyValuePair `hash:"set"`
 }
 
 func (p *ECSEnvironmentProperties) ReplacementHash() (uint64, error) {
