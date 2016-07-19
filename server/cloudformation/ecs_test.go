@@ -258,10 +258,10 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 func TestECSTaskDefinition_Create(t *testing.T) {
 	e := new(mockECS)
 	s := new(mockEnvironmentStore)
-	p := &ECSTaskDefinitionResource{
+	p := newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
 		ecs:              e,
 		environmentStore: s,
-	}
+	})
 
 	s.On("fetch", "003483d3-74b8-465d-8c2e-06e005dda776").Return([]*ecs.KeyValuePair{
 		{
@@ -323,9 +323,9 @@ func TestECSTaskDefinition_Create(t *testing.T) {
 
 func TestECSEnvironment_Create(t *testing.T) {
 	s := new(mockEnvironmentStore)
-	p := &ECSEnvironmentResource{
+	p := newECSEnvironmentProvisioner(&ECSEnvironmentResource{
 		environmentStore: s,
-	}
+	})
 
 	s.On("store", []*ecs.KeyValuePair{
 		{
@@ -354,9 +354,9 @@ func TestECSEnvironment_Create(t *testing.T) {
 
 func TestECSEnvironment_Update(t *testing.T) {
 	s := new(mockEnvironmentStore)
-	p := &ECSEnvironmentResource{
+	p := newECSEnvironmentProvisioner(&ECSEnvironmentResource{
 		environmentStore: s,
-	}
+	})
 
 	id, data, err := p.Provision(ctx, customresources.Request{
 		RequestType:        customresources.Update,

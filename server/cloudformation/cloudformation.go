@@ -79,13 +79,13 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 	})
 
 	store := &dbEnvironmentStore{db}
-	p.add("Custom::ECSEnvironment", &ECSEnvironmentResource{
+	p.add("Custom::ECSEnvironment", newECSEnvironmentProvisioner(&ECSEnvironmentResource{
 		environmentStore: store,
-	})
-	p.add("Custom::ECSTaskDefinition", &ECSTaskDefinitionResource{
+	}))
+	p.add("Custom::ECSTaskDefinition", newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
 		ecs:              ecs.New(config),
 		environmentStore: store,
-	})
+	}))
 
 	return p
 }
@@ -227,4 +227,66 @@ func (c *CustomResourceProvisioner) provision(ctx context.Context, m Message, re
 	}
 
 	return p.Provision(ctx, req)
+}
+
+type properties interface {
+	ReplacementHash() (uint64, error)
+}
+
+// provisioner provides convenience over the customresources.Provisioner
+// interface.
+type provisioner struct {
+	properties func() properties
+
+	Create func(context.Context, customresources.Request) (string, interface{}, error)
+	Update func(context.Context, customresources.Request) (string, interface{}, error)
+	Delete func(context.Context, customresources.Request) error
+}
+
+func (p *provisioner) Properties() interface{} {
+	return p.properties()
+}
+
+func (p *provisioner) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+	switch req.RequestType {
+	case customresources.Create:
+		return p.Create(ctx, req)
+	case customresources.Update:
+		n := req.ResourceProperties.(properties)
+		o := req.OldResourceProperties.(properties)
+
+		replace, err := requiresReplacement(n, o)
+		if err != nil {
+			return req.PhysicalResourceId, nil, err
+		}
+
+		// If the new properties require a replacement of the resource,
+		// perform a Create. CloudFormation will send us a request to
+		// delete the old resource later.
+		if replace {
+			return p.Create(ctx, req)
+		}
+
+		return p.Update(ctx, req)
+	case customresources.Delete:
+		return req.PhysicalResourceId, nil, p.Delete(ctx, req)
+	default:
+		panic(fmt.Sprintf("unable to handle %s request", req.RequestType))
+	}
+}
+
+// requiresReplacement returns true if the new properties require a replacement
+// of the old properties.
+func requiresReplacement(n, o properties) (bool, error) {
+	a, err := n.ReplacementHash()
+	if err != nil {
+		return false, err
+	}
+
+	b, err := o.ReplacementHash()
+	if err != nil {
+		return false, err
+	}
+
+	return a != b, nil
 }

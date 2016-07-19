@@ -215,6 +215,10 @@ type ECSTaskDefinitionProperties struct {
 	ContainerDefinitions []ContainerDefinition
 }
 
+func (p *ECSTaskDefinitionProperties) ReplacementHash() (uint64, error) {
+	return hashstructure.Hash(p, nil)
+}
+
 // ECSTaskDefinitionResource is a custom resource that provisions ECS task
 // definitions.
 type ECSTaskDefinitionResource struct {
@@ -222,27 +226,31 @@ type ECSTaskDefinitionResource struct {
 	environmentStore environmentStore
 }
 
-func (p *ECSTaskDefinitionResource) Properties() interface{} {
-	return &ECSTaskDefinitionProperties{}
+func newECSTaskDefinitionProvisioner(resource *ECSTaskDefinitionResource) *provisioner {
+	return &provisioner{
+		properties: func() properties {
+			return &ECSTaskDefinitionProperties{}
+		},
+		Create: resource.Create,
+		Update: resource.Update,
+		Delete: resource.Delete,
+	}
 }
 
-func (p *ECSTaskDefinitionResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+func (p *ECSTaskDefinitionResource) Create(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSTaskDefinitionProperties)
+	id, err := p.register(properties, req.Hash())
+	return id, nil, err
+}
 
-	switch req.RequestType {
-	case customresources.Create:
-		id, err := p.register(properties, req.Hash())
-		return id, nil, err
-	case customresources.Delete:
-		id := req.PhysicalResourceId
-		err := p.delete(id)
-		return id, nil, err
-	case customresources.Update:
-		id, err := p.register(properties, req.Hash())
-		return id, nil, err
-	default:
-		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
-	}
+func (p *ECSTaskDefinitionResource) Update(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+	properties := req.ResourceProperties.(*ECSTaskDefinitionProperties)
+	id, err := p.register(properties, req.Hash())
+	return id, nil, err
+}
+
+func (p *ECSTaskDefinitionResource) Delete(ctx context.Context, req customresources.Request) error {
+	return p.delete(req.PhysicalResourceId)
 }
 
 func (p *ECSTaskDefinitionResource) resolvedEnvironment(ids ...string) ([]*ecs.KeyValuePair, error) {
@@ -346,34 +354,32 @@ type ECSEnvironmentResource struct {
 	environmentStore environmentStore
 }
 
-func (p *ECSEnvironmentResource) Properties() interface{} {
-	return &ECSEnvironmentProperties{}
+func newECSEnvironmentProvisioner(resource *ECSEnvironmentResource) *provisioner {
+	return &provisioner{
+		properties: func() properties {
+			return &ECSEnvironmentProperties{}
+		},
+		Create: resource.Create,
+		Update: resource.Update,
+		Delete: resource.Delete,
+	}
 }
 
-func (p *ECSEnvironmentResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+func (p *ECSEnvironmentResource) Create(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSEnvironmentProperties)
-	oldProperties := req.ResourceProperties.(*ECSEnvironmentProperties)
+	id, err := p.environmentStore.store(properties.Environment)
+	return id, nil, err
+}
 
-	switch req.RequestType {
-	case customresources.Create:
-		id, err := p.environmentStore.store(properties.Environment)
-		return id, nil, err
-	case customresources.Delete:
-		id := req.PhysicalResourceId
-		return id, nil, nil
-	case customresources.Update:
-		id := req.PhysicalResourceId
-		replace, err := requiresReplacement(properties, oldProperties)
-		if err != nil {
-			return id, nil, err
-		}
-		if replace {
-			id, err = p.environmentStore.store(properties.Environment)
-		}
-		return id, nil, err
-	default:
-		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
-	}
+func (p *ECSEnvironmentResource) Update(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+	// Updates of ECSEnvironment will generate a replacement resource, so if
+	// we've reached this point, it means that the environment is the same
+	// as it was before.
+	return req.PhysicalResourceId, nil, nil
+}
+
+func (p *ECSEnvironmentResource) Delete(ctx context.Context, req customresources.Request) error {
+	return nil
 }
 
 // environmentStore is a storage engine for storing environment variables for
@@ -445,22 +451,4 @@ func serviceRequiresReplacement(new, old *ECSServiceProperties) bool {
 	}
 
 	return false
-}
-
-// requiresReplacement returns true if the new properties require a replacement
-// of the old properties.
-func requiresReplacement(n, o interface {
-	ReplacementHash() (uint64, error)
-}) (bool, error) {
-	a, err := n.ReplacementHash()
-	if err != nil {
-		return false, err
-	}
-
-	b, err := o.ReplacementHash()
-	if err != nil {
-		return false, err
-	}
-
-	return a != b, nil
 }
