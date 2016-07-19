@@ -189,19 +189,51 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 }
 
 func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (taskDefinition string) {
+	taskDefinitionType := "AWS::ECS::TaskDefinition"
+
+	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
+		taskDefinitionType = "Custom::ECSTaskDefinition"
+	}
+
 	key := processResourceName(p.Type)
 
+	cd := t.ContainerDefinition(app, p)
 	// The task definition that will be used to run the ECS task.
-	containerDefinition := containerDefinition(t.ContainerDefinition(app, p))
 	taskDefinition = fmt.Sprintf("%sTaskDefinition", key)
-	tmpl.Resources[taskDefinition] = troposphere.Resource{
-		Type: "AWS::ECS::TaskDefinition",
-		Properties: map[string]interface{}{
-			"ContainerDefinitions": []interface{}{
-				containerDefinition,
+	containerDefinition := containerDefinition(cd)
+
+	taskDefinitionProperties := map[string]interface{}{
+		"Volumes": []interface{}{},
+	}
+	if taskDefinitionType == "Custom::ECSTaskDefinition" {
+		taskDefinition = fmt.Sprintf("%sTD", key)
+
+		processEnvironment := fmt.Sprintf("%sEnvironment", key)
+		tmpl.Resources[processEnvironment] = troposphere.Resource{
+			Type: "Custom::ECSEnvironment",
+			Properties: map[string]interface{}{
+				"ServiceToken": t.CustomResourcesTopic,
+				"Environment":  sortedEnvironment(p.Env),
 			},
-			"Volumes": []interface{}{},
-		},
+		}
+
+		containerDefinition["Environment"] = []interface{}{
+			Ref(appEnvironment),
+			Ref(processEnvironment),
+		}
+		taskDefinitionProperties["ServiceToken"] = t.CustomResourcesTopic
+		taskDefinitionProperties["Family"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+	} else {
+		containerDefinition["Environment"] = cd.Environment
+	}
+
+	taskDefinitionProperties["ContainerDefinitions"] = []interface{}{
+		containerDefinition,
+	}
+
+	tmpl.Resources[taskDefinition] = troposphere.Resource{
+		Type:       taskDefinitionType,
+		Properties: taskDefinitionProperties,
 	}
 
 	schedule := fmt.Sprintf("%sTrigger", key)
