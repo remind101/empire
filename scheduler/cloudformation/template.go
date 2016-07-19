@@ -189,14 +189,14 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 }
 
 func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (taskDefinition string) {
-	taskDefinitionType := taskDefinitionType(app)
+	taskDefinitionType := taskDefinitionResourceType(app)
 
 	key := processResourceName(p.Type)
 
 	cd := t.ContainerDefinition(app, p)
 	// The task definition that will be used to run the ECS task.
 	taskDefinition = fmt.Sprintf("%sTaskDefinition", key)
-	containerDefinition := containerDefinition(cd)
+	containerDefinition := cloudformationContainerDefinition(cd)
 
 	taskDefinitionProperties := map[string]interface{}{
 		"Volumes": []interface{}{},
@@ -278,7 +278,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
 	ecsServiceType := "Custom::ECSService"
-	taskDefinitionType := taskDefinitionType(app)
+	taskDefinitionType := taskDefinitionResourceType(app)
 
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
 		tmpl.Resources[appEnvironment] = troposphere.Resource{
@@ -393,7 +393,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	}
 
 	taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
-	containerDefinition := containerDefinition(cd)
+	containerDefinition := cloudformationContainerDefinition(cd)
 
 	// TODO: We have to override all of the labels, because we can add a
 	// map[string]string to ecs.ContainerDefinition.DockerLabels.
@@ -550,7 +550,9 @@ func scaleParameter(process string) string {
 	return fmt.Sprintf("%sScale", processResourceName(process))
 }
 
-func containerDefinition(cd *ecs.ContainerDefinition) map[string]interface{} {
+// cloudformationContainerDefinition returns the CloudFormation representation
+// of a ecs.ContainerDefinition.
+func cloudformationContainerDefinition(cd *ecs.ContainerDefinition) map[string]interface{} {
 	containerDefinition := map[string]interface{}{
 		"Name":         *cd.Name,
 		"Command":      cd.Command,
@@ -600,7 +602,7 @@ func scheduleExpression(s scheduler.Schedule) string {
 
 // Returns the name of the CloudFormation resource that should be used to create
 // custom task definitions.
-func taskDefinitionType(app *scheduler.App) string {
+func taskDefinitionResourceType(app *scheduler.App) string {
 	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
 		return "Custom::ECSTaskDefinition"
 	}
