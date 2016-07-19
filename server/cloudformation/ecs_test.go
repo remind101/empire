@@ -352,7 +352,40 @@ func TestECSEnvironment_Create(t *testing.T) {
 	s.AssertExpectations(t)
 }
 
-func TestRequiresReplacement(t *testing.T) {
+func TestECSEnvironment_Update(t *testing.T) {
+	s := new(mockEnvironmentStore)
+	p := &ECSEnvironmentResource{
+		environmentStore: s,
+	}
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Update,
+		PhysicalResourceId: "56152438-5fef-4c96-bbe1-9cf92022ae75",
+		ResourceProperties: &ECSEnvironmentProperties{
+			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("FOO"),
+					Value: aws.String("bar"),
+				},
+			},
+		},
+		OldResourceProperties: &ECSEnvironmentProperties{
+			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("FOO"),
+					Value: aws.String("bar"),
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "56152438-5fef-4c96-bbe1-9cf92022ae75", id)
+	assert.Nil(t, data)
+
+	s.AssertExpectations(t)
+}
+
+func TestServiceRequiresReplacement(t *testing.T) {
 	tests := []struct {
 		new, old ECSServiceProperties
 		out      bool
@@ -399,7 +432,7 @@ func TestRequiresReplacement(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		out := requiresReplacement(&tt.new, &tt.old)
+		out := serviceRequiresReplacement(&tt.new, &tt.old)
 		assert.Equal(t, tt.out, out)
 	}
 }

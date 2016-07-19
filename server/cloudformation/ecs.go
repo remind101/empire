@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/mitchellh/hashstructure"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/pkg/reporter"
 )
@@ -68,7 +69,8 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.
 	case customresources.Update:
 		id := req.PhysicalResourceId
 
-		if requiresReplacement(properties, oldProperties) {
+		// TODO: Update this to use hashstructure.
+		if serviceRequiresReplacement(properties, oldProperties) {
 			// If we can't update the service, we'll need to create a new
 			// one, and destroy the old one.
 			oldId := id
@@ -333,6 +335,10 @@ type ECSEnvironmentProperties struct {
 	Environment []*ecs.KeyValuePair
 }
 
+func (p *ECSEnvironmentProperties) ReplacementHash() (uint64, error) {
+	return hashstructure.Hash(p, nil)
+}
+
 // ECSEnvironmentResource is a custom resource that takes some environment
 // variables, stores them, then returns a unique identifier to represent the
 // environment, which can be used with the ECSTaskDefinitionResource.
@@ -346,6 +352,7 @@ func (p *ECSEnvironmentResource) Properties() interface{} {
 
 func (p *ECSEnvironmentResource) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	properties := req.ResourceProperties.(*ECSEnvironmentProperties)
+	oldProperties := req.ResourceProperties.(*ECSEnvironmentProperties)
 
 	switch req.RequestType {
 	case customresources.Create:
@@ -355,7 +362,14 @@ func (p *ECSEnvironmentResource) Provision(ctx context.Context, req customresour
 		id := req.PhysicalResourceId
 		return id, nil, nil
 	case customresources.Update:
-		id, err := p.environmentStore.store(properties.Environment)
+		id := req.PhysicalResourceId
+		replace, err := requiresReplacement(properties, oldProperties)
+		if err != nil {
+			return id, nil, err
+		}
+		if replace {
+			id, err = p.environmentStore.store(properties.Environment)
+		}
 		return id, nil, err
 	default:
 		return "", nil, fmt.Errorf("%s is not supported", req.RequestType)
@@ -411,7 +425,7 @@ func (s *dbEnvironmentStore) fetch(id string) ([]*ecs.KeyValuePair, error) {
 
 // Certain parameters cannot be updated on existing services, so we need to
 // create a new physical resource.
-func requiresReplacement(new, old *ECSServiceProperties) bool {
+func serviceRequiresReplacement(new, old *ECSServiceProperties) bool {
 	eq := reflect.DeepEqual
 
 	if !eq(new.Cluster, old.Cluster) {
@@ -431,4 +445,22 @@ func requiresReplacement(new, old *ECSServiceProperties) bool {
 	}
 
 	return false
+}
+
+// requiresReplacement returns true if the new properties require a replacement
+// of the old properties.
+func requiresReplacement(n, o interface {
+	ReplacementHash() (uint64, error)
+}) (bool, error) {
+	a, err := n.ReplacementHash()
+	if err != nil {
+		return false, err
+	}
+
+	b, err := o.ReplacementHash()
+	if err != nil {
+		return false, err
+	}
+
+	return a != b, nil
 }
