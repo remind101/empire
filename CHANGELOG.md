@@ -13,13 +13,14 @@
 * The Custom::ECSService custom resource now waits for newly created ECS services to stabilize [#878](https://github.com/remind101/empire/pull/878)
 * The CloudFormation backend now uses the Custom::ECSService resource instead of AWS::ECS::Service, by default [#877](https://github.com/remind101/empire/pull/877)
 * The database schema version is now checked at boot, as well as in the http health checks. [#893](https://github.com/remind101/empire/pull/893)
-* The log level within empire can now be configured when starting the service. [#929]((https://github.com/remind101/empire/issues/929)
+* The log level within empire can now be configured when starting the service. [#929](https://github.com/remind101/empire/issues/929)
 
 **Bugs**
 
 * Fixed a bug where multiple duplicate ECS services could be created by the CloudFormation backend, when using the `Custom::ECSService` resource [#884](https://github.com/remind101/empire/pull/884).
 * Fixed a bug where the lock obtained during stack operations was not always unlocked. [#892](https://github.com/remind101/empire/pull/892)
 * Fixed an issue where Procfile's would not be extracted when Docker 1.12+ was used. [#915](https://github.com/remind101/empire/pull/915)
+* Fixed a bug where the failed creation of a custom resources could cause a CloudFormation stack to fail to rollback. [#938](https://github.com/remind101/empire/pull/938)
 
 **Performance**
 

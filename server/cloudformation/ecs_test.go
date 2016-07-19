@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -37,14 +38,14 @@ func TestECSServiceResource_Create(t *testing.T) {
 		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
 	}).Return(nil)
 
-	id, data, err := p.Provision(ctx, Request{
+	id, data, err := p.Provision(ctx, customresources.Request{
 		StackId:     "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
 		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
-		RequestType: Create,
+		RequestType: customresources.Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{},
 	})
@@ -82,14 +83,14 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	})
 
-	_, data, err := p.Provision(ctx, Request{
+	_, data, err := p.Provision(ctx, customresources.Request{
 		StackId:     "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
 		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
-		RequestType: Create,
+		RequestType: customresources.Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{},
 	})
@@ -122,21 +123,21 @@ func TestECSServiceResource_Update(t *testing.T) {
 		nil,
 	)
 
-	id, data, err := p.Provision(ctx, Request{
+	id, data, err := p.Provision(ctx, customresources.Request{
 		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
 		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
-		RequestType:        Update,
+		RequestType:        customresources.Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("cluster"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(2),
+			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("cluster"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(1),
+			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
 		},
 	})
@@ -171,21 +172,21 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
 	}).Return(nil)
 
-	id, data, err := p.Provision(ctx, Request{
+	id, data, err := p.Provision(ctx, customresources.Request{
 		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
 		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
-		RequestType:        Update,
+		RequestType:        customresources.Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterB"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(2),
+			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterA"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(1),
+			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
 		},
 	})
@@ -223,18 +224,18 @@ func TestECSServiceResource_Delete(t *testing.T) {
 		Cluster: aws.String("cluster"),
 	}).Return(&ecs.DeleteServiceOutput{}, nil)
 
-	id, data, err := p.Provision(ctx, Request{
-		RequestType:        Delete,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 	})
 	assert.NoError(t, err)
@@ -256,18 +257,18 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 		DesiredCount: aws.Int64(0),
 	}).Return(&ecs.UpdateServiceOutput{}, awserr.New("ServiceNotActiveException", "Service was not ACTIVE", errors.New("")))
 
-	id, data, err := p.Provision(ctx, Request{
-		RequestType:        Delete,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 	})
 	assert.NoError(t, err)
@@ -283,14 +284,14 @@ func TestRequiresReplacement(t *testing.T) {
 		out      bool
 	}{
 		{
-			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: intValue(1)},
-			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: intValue(0)},
+			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: customresources.Int(1)},
+			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: customresources.Int(0)},
 			false,
 		},
 
 		{
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elb")}}},
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elb")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
 			false,
 		},
 
@@ -317,8 +318,8 @@ func TestRequiresReplacement(t *testing.T) {
 
 		// Can't change load balancers
 		{
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elbB")}}},
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elbA")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbB")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbA")}}},
 			true,
 		},
 	}
