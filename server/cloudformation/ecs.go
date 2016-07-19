@@ -243,10 +243,11 @@ func (p *ECSTaskDefinitionResource) Create(ctx context.Context, req customresour
 	return id, nil, err
 }
 
-func (p *ECSTaskDefinitionResource) Update(ctx context.Context, req customresources.Request) (string, interface{}, error) {
-	properties := req.ResourceProperties.(*ECSTaskDefinitionProperties)
-	id, err := p.register(properties, req.Hash())
-	return id, nil, err
+func (p *ECSTaskDefinitionResource) Update(ctx context.Context, req customresources.Request) (interface{}, error) {
+	// Updates of ECSTaskDefinition will generate a replacement resource, so
+	// if we've reached this point, it means that the environment is the
+	// same as it was before.
+	return nil, nil
 }
 
 func (p *ECSTaskDefinitionResource) Delete(ctx context.Context, req customresources.Request) error {
@@ -371,11 +372,11 @@ func (p *ECSEnvironmentResource) Create(ctx context.Context, req customresources
 	return id, nil, err
 }
 
-func (p *ECSEnvironmentResource) Update(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+func (p *ECSEnvironmentResource) Update(ctx context.Context, req customresources.Request) (interface{}, error) {
 	// Updates of ECSEnvironment will generate a replacement resource, so if
 	// we've reached this point, it means that the environment is the same
 	// as it was before.
-	return req.PhysicalResourceId, nil, nil
+	return nil, nil
 }
 
 func (p *ECSEnvironmentResource) Delete(ctx context.Context, req customresources.Request) error {

@@ -321,6 +321,83 @@ func TestECSTaskDefinition_Create(t *testing.T) {
 	s.AssertExpectations(t)
 }
 
+func TestECSTaskDefinition_Update(t *testing.T) {
+	e := new(mockECS)
+	s := new(mockEnvironmentStore)
+	p := newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
+		ecs:              e,
+		environmentStore: s,
+	})
+
+	s.On("fetch", "003483d3-74b8-465d-8c2e-06e005dda776").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+	}, nil)
+
+	s.On("fetch", "4f3f884b-8337-4847-9b81-141b5e322559").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("BAR"),
+			Value: aws.String("foo"),
+		},
+	}, nil)
+
+	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("acme-inc-web-f3ASgQEwwCZ"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			{
+				Environment: []*ecs.KeyValuePair{
+					{
+						Name:  aws.String("FOO"),
+						Value: aws.String("bar"),
+					},
+					{
+						Name:  aws.String("BAR"),
+						Value: aws.String("foo"),
+					},
+				},
+			},
+		},
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web"),
+		},
+	}, nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType: customresources.Update,
+		ResourceProperties: &ECSTaskDefinitionProperties{
+			Family: aws.String("acme-inc-web"),
+			ContainerDefinitions: []ContainerDefinition{
+				{
+					Environment: []string{
+						"003483d3-74b8-465d-8c2e-06e005dda776",
+						"4f3f884b-8337-4847-9b81-141b5e322559",
+					},
+				},
+			},
+		},
+		OldResourceProperties: &ECSTaskDefinitionProperties{
+			Family: aws.String("acme-inc-web"),
+			ContainerDefinitions: []ContainerDefinition{
+				{
+					Environment: []string{
+						"003483d3-74b8-465d-8c2e-06e005dda776",
+						"ccc8a1ac-32f9-4576-bec6-4ca36520deb3",
+					},
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+	s.AssertExpectations(t)
+}
+
 func TestECSEnvironment_Create(t *testing.T) {
 	s := new(mockEnvironmentStore)
 	p := newECSEnvironmentProvisioner(&ECSEnvironmentResource{

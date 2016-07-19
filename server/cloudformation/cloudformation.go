@@ -239,7 +239,7 @@ type provisioner struct {
 	properties func() properties
 
 	Create func(context.Context, customresources.Request) (string, interface{}, error)
-	Update func(context.Context, customresources.Request) (string, interface{}, error)
+	Update func(context.Context, customresources.Request) (interface{}, error)
 	Delete func(context.Context, customresources.Request) error
 }
 
@@ -267,7 +267,9 @@ func (p *provisioner) Provision(ctx context.Context, req customresources.Request
 			return p.Create(ctx, req)
 		}
 
-		return p.Update(ctx, req)
+		id := req.PhysicalResourceId
+		data, err := p.Update(ctx, req)
+		return id, data, err
 	case customresources.Delete:
 		return req.PhysicalResourceId, nil, p.Delete(ctx, req)
 	default:
