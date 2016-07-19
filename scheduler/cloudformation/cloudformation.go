@@ -306,7 +306,7 @@ func (d *deploymentStatus) String() string {
 func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments map[string]*ecsDeployment) <-chan *deploymentStatus {
 	ch := make(chan *deploymentStatus)
 
-	wait := func(deployments map[string]*ecsDeployment) error {
+	wait := func(deployments map[string]*ecsDeployment) (bool, error) {
 		arns := make([]*string, 0, len(deployments))
 		for arn := range deployments {
 			arns = append(arns, aws.String(arn))
@@ -317,13 +317,13 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 			Services: arns,
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		for _, service := range status.Services {
 			d, ok := deployments[*service.ServiceArn]
 			if !ok {
-				return fmt.Errorf("missing deployment for: %s", service.ServiceArn)
+				return false, fmt.Errorf("missing deployment for: %s", service.ServiceArn)
 			}
 			primary := false
 			stable := len(service.Deployments) == 1
@@ -340,15 +340,18 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 				// do nothing
 			} else {
 				ch <- &deploymentStatus{d, "inactive"}
-				return nil
+				return false, nil
 			}
 		}
-		return nil
+		return true, nil
 	}
 
 	go func(deployments map[string]*ecsDeployment) {
-		for len(deployments) > 0 {
-			if err := wait(deployments); err != nil {
+		keepWaiting := true
+		var err error
+		for keepWaiting && len(deployments) > 0 {
+			keepWaiting, err = wait(deployments)
+			if err != nil {
 				logger.Warn(ctx, fmt.Sprintf("error waiting for services to stabilize: %v", err))
 				break
 			}

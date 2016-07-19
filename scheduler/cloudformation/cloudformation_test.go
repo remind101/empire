@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"strings"
 	"testing"
 	"time"
 
@@ -201,17 +202,134 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	}).Return(&ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{
 			{
-				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
-				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+				ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("2"), Status: aws.String("ACTIVE")},
+				},
 			},
 		},
-	}, nil)
+	}, nil).Once()
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")},
+				},
+			},
+		},
+	}, nil).Once()
 
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
 	}, scheduler.NullStatusStream)
 	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
+func TestScheduler_Submit_Superseded(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		Cluster:        "cluster",
+		cloudformation: c,
+		ecs:            e,
+		s3:             x,
+		db:             db,
+		after:          func(time.Duration) <-chan time.Time { return nil },
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil).Once()
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("2"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("1"), Status: aws.String("INACTIVE")},
+				},
+			},
+		},
+	}, nil)
+
+	stream := &storedStatusStream{}
+	err := s.Submit(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, stream)
+	assert.NoError(t, err)
+	contains := false
+	for _, status := range stream.statuses {
+		contains = strings.Contains(status.String(), "inactive")
+	}
+	assert.True(t, contains, "Expected inactive status update")
 
 	c.AssertExpectations(t)
 	x.AssertExpectations(t)
@@ -1217,6 +1335,15 @@ func newDB(t testing.TB) *sql.DB {
 		t.Fatal(err)
 	}
 	return db
+}
+
+type storedStatusStream struct {
+	statuses []scheduler.Status
+}
+
+func (s *storedStatusStream) Publish(status scheduler.Status) error {
+	s.statuses = append(s.statuses, status)
+	return nil
 }
 
 type mockCloudFormationClient struct {
