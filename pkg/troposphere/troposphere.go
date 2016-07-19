@@ -2,6 +2,8 @@
 // primitives for building CloudFormation templates.
 package troposphere
 
+import "fmt"
+
 // Template represents a CloudFormation template that can be built.
 type Template struct {
 	Conditions map[string]interface{}
@@ -18,6 +20,14 @@ func NewTemplate() *Template {
 		Parameters: make(map[string]Parameter),
 		Resources:  make(map[string]Resource),
 	}
+}
+
+// AddResource adds a named resource to the template.
+func (t *Template) AddResource(resource NamedResource) {
+	if _, ok := t.Resources[resource.Name]; ok {
+		panic(fmt.Sprintf("%s is already defined in the template", resource.Name))
+	}
+	t.Resources[resource.Name] = resource.Resource
 }
 
 // Parameter represents a CloudFormation parameter.
@@ -38,4 +48,10 @@ type Resource struct {
 	Properties interface{} `json:"Properties,omitempty"`
 	Type       interface{} `json:"Type,omitempty"`
 	Version    interface{} `json:"Version,omitempty"`
+}
+
+// NamedResource bundles a resource to a name.
+type NamedResource struct {
+	Name     string
+	Resource Resource
 }

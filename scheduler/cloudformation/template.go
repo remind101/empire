@@ -44,6 +44,8 @@ const (
 	runTaskFunction = "RunTaskFunction"
 
 	appEnvironment = "AppEnvironment"
+
+	restartLabel = "cloudformation.restart-key"
 )
 
 // This implements the Template interface to create a suitable CloudFormation
@@ -160,7 +162,21 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 	serviceMappings := []interface{}{}
 	scheduledProcesses := map[string]string{}
 
+	if taskDefinitionResourceType(app) == "Custom::ECSTaskDefinition" {
+		tmpl.Resources[appEnvironment] = troposphere.Resource{
+			Type: "Custom::ECSEnvironment",
+			Properties: map[string]interface{}{
+				"ServiceToken": t.CustomResourcesTopic,
+				"Environment":  sortedEnvironment(app.Env),
+			},
+		}
+	}
+
 	for _, p := range app.Processes {
+		if p.Env == nil {
+			p.Env = make(map[string]string)
+		}
+
 		tmpl.Parameters[scaleParameter(p.Type)] = troposphere.Parameter{
 			Type: "String",
 		}
@@ -170,7 +186,8 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 			// To save space in the template, avoid adding the
 			// resources if the process is scaled down.
 			if p.Instances > 0 {
-				scheduledProcesses[p.Type] = t.addScheduledTask(tmpl, app, p)
+				taskDefinition := t.addScheduledTask(tmpl, app, p)
+				scheduledProcesses[p.Type] = taskDefinition.Name
 			}
 		default:
 			service := t.addService(tmpl, app, p)
@@ -188,21 +205,20 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 	return tmpl, nil
 }
 
-func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (taskDefinition string) {
-	taskDefinitionType := taskDefinitionResourceType(app)
-
+func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (troposphere.NamedResource, *ContainerDefinitionProperties) {
 	key := processResourceName(p.Type)
+	// The task definition that will be used to run the ECS task.
+	taskDefinition := troposphere.NamedResource{
+		Name: fmt.Sprintf("%sTaskDefinition", key),
+	}
 
 	cd := t.ContainerDefinition(app, p)
-	// The task definition that will be used to run the ECS task.
-	taskDefinition = fmt.Sprintf("%sTaskDefinition", key)
 	containerDefinition := cloudformationContainerDefinition(cd)
 
-	taskDefinitionProperties := map[string]interface{}{
-		"Volumes": []interface{}{},
-	}
+	var taskDefinitionProperties interface{}
+	taskDefinitionType := taskDefinitionResourceType(app)
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
-		taskDefinition = fmt.Sprintf("%sTD", key)
+		taskDefinition.Name = fmt.Sprintf("%sTD", key)
 
 		processEnvironment := fmt.Sprintf("%sEnvironment", key)
 		tmpl.Resources[processEnvironment] = troposphere.Resource{
@@ -213,24 +229,41 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 			},
 		}
 
-		containerDefinition["Environment"] = []interface{}{
+		containerDefinition.Environment = []interface{}{
 			Ref(appEnvironment),
 			Ref(processEnvironment),
 		}
-		taskDefinitionProperties["ServiceToken"] = t.CustomResourcesTopic
-		taskDefinitionProperties["Family"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
+		taskDefinitionProperties = &CustomTaskDefinitionProperties{
+			Volumes:      []interface{}{},
+			ServiceToken: t.CustomResourcesTopic,
+			Family:       fmt.Sprintf("%s-%s", app.Name, p.Type),
+			ContainerDefinitions: []*ContainerDefinitionProperties{
+				containerDefinition,
+			},
+		}
 	} else {
-		containerDefinition["Environment"] = cd.Environment
+		containerDefinition.Environment = cd.Environment
+		taskDefinitionProperties = &TaskDefinitionProperties{
+			Volumes: []interface{}{},
+			ContainerDefinitions: []*ContainerDefinitionProperties{
+				containerDefinition,
+			},
+		}
 	}
 
-	taskDefinitionProperties["ContainerDefinitions"] = []interface{}{
-		containerDefinition,
-	}
-
-	tmpl.Resources[taskDefinition] = troposphere.Resource{
+	taskDefinition.Resource = troposphere.Resource{
 		Type:       taskDefinitionType,
 		Properties: taskDefinitionProperties,
 	}
+	tmpl.AddResource(taskDefinition)
+
+	return taskDefinition, containerDefinition
+}
+
+func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) troposphere.NamedResource {
+	key := processResourceName(p.Type)
+
+	taskDefinition, _ := t.addTaskDefinition(tmpl, app, p)
 
 	schedule := fmt.Sprintf("%sTrigger", key)
 	tmpl.Resources[schedule] = troposphere.Resource{
@@ -278,21 +311,8 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
 	ecsServiceType := "Custom::ECSService"
-	taskDefinitionType := taskDefinitionResourceType(app)
 
-	if taskDefinitionType == "Custom::ECSTaskDefinition" {
-		tmpl.Resources[appEnvironment] = troposphere.Resource{
-			Type: "Custom::ECSEnvironment",
-			Properties: map[string]interface{}{
-				"ServiceToken": t.CustomResourcesTopic,
-				"Environment":  sortedEnvironment(app.Env),
-			},
-		}
-	}
-
-	cd := t.ContainerDefinition(app, p)
-
-	portMappings := []map[string]interface{}{}
+	var portMappings []*PortMappingProperties
 
 	loadBalancers := []map[string]interface{}{}
 	if p.Exposure != nil {
@@ -341,14 +361,11 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			})
 		}
 
-		portMappings = append(portMappings, map[string]interface{}{
-			"ContainerPort": ContainerPort,
-			"HostPort":      GetAtt(instancePort, "InstancePort"),
+		portMappings = append(portMappings, &PortMappingProperties{
+			ContainerPort: ContainerPort,
+			HostPort:      GetAtt(instancePort, "InstancePort"),
 		})
-		cd.Environment = append(cd.Environment, &ecs.KeyValuePair{
-			Name:  aws.String("PORT"),
-			Value: aws.String(fmt.Sprintf("%d", ContainerPort)),
-		})
+		p.Env["PORT"] = fmt.Sprintf("%d", ContainerPort)
 
 		loadBalancer := fmt.Sprintf("%sLoadBalancer", key)
 		loadBalancers = append(loadBalancers, map[string]interface{}{
@@ -392,52 +409,10 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 		}
 	}
 
-	taskDefinition := fmt.Sprintf("%sTaskDefinition", key)
-	containerDefinition := cloudformationContainerDefinition(cd)
+	taskDefinition, containerDefinition := t.addTaskDefinition(tmpl, app, p)
 
-	// TODO: We have to override all of the labels, because we can add a
-	// map[string]string to ecs.ContainerDefinition.DockerLabels.
-	labels := map[string]interface{}{}
-	for k, v := range cd.DockerLabels {
-		labels[k] = v
-	}
-	labels["cloudformation.restart-key"] = Ref(restartParameter)
-	containerDefinition["DockerLabels"] = labels
-	containerDefinition["PortMappings"] = portMappings
-
-	taskDefinitionProperties := map[string]interface{}{
-		"Volumes": []interface{}{},
-	}
-	if taskDefinitionType == "Custom::ECSTaskDefinition" {
-		taskDefinition = fmt.Sprintf("%sTD", key)
-
-		processEnvironment := fmt.Sprintf("%sEnvironment", key)
-		tmpl.Resources[processEnvironment] = troposphere.Resource{
-			Type: "Custom::ECSEnvironment",
-			Properties: map[string]interface{}{
-				"ServiceToken": t.CustomResourcesTopic,
-				"Environment":  sortedEnvironment(p.Env),
-			},
-		}
-
-		containerDefinition["Environment"] = []interface{}{
-			Ref(appEnvironment),
-			Ref(processEnvironment),
-		}
-		taskDefinitionProperties["ServiceToken"] = t.CustomResourcesTopic
-		taskDefinitionProperties["Family"] = fmt.Sprintf("%s-%s", app.Name, p.Type)
-	} else {
-		containerDefinition["Environment"] = cd.Environment
-	}
-
-	taskDefinitionProperties["ContainerDefinitions"] = []interface{}{
-		containerDefinition,
-	}
-
-	tmpl.Resources[taskDefinition] = troposphere.Resource{
-		Type:       taskDefinitionType,
-		Properties: taskDefinitionProperties,
-	}
+	containerDefinition.DockerLabels[restartLabel] = Ref(restartParameter)
+	containerDefinition.PortMappings = portMappings
 
 	service := fmt.Sprintf("%sService", key)
 	serviceProperties := map[string]interface{}{
@@ -552,22 +527,27 @@ func scaleParameter(process string) string {
 
 // cloudformationContainerDefinition returns the CloudFormation representation
 // of a ecs.ContainerDefinition.
-func cloudformationContainerDefinition(cd *ecs.ContainerDefinition) map[string]interface{} {
-	containerDefinition := map[string]interface{}{
-		"Name":         *cd.Name,
-		"Command":      cd.Command,
-		"Cpu":          *cd.Cpu,
-		"Image":        *cd.Image,
-		"Essential":    *cd.Essential,
-		"Memory":       *cd.Memory,
-		"Environment":  cd.Environment,
-		"DockerLabels": cd.DockerLabels,
-		"Ulimits":      cd.Ulimits,
+func cloudformationContainerDefinition(cd *ecs.ContainerDefinition) *ContainerDefinitionProperties {
+	labels := make(map[string]interface{})
+	for k, v := range cd.DockerLabels {
+		labels[k] = *v
+	}
+
+	c := &ContainerDefinitionProperties{
+		Name:         *cd.Name,
+		Command:      cd.Command,
+		Cpu:          *cd.Cpu,
+		Image:        *cd.Image,
+		Essential:    *cd.Essential,
+		Memory:       *cd.Memory,
+		Environment:  cd.Environment,
+		DockerLabels: labels,
+		Ulimits:      cd.Ulimits,
 	}
 	if cd.LogConfiguration != nil {
-		containerDefinition["LogConfiguration"] = cd.LogConfiguration
+		c.LogConfiguration = cd.LogConfiguration
 	}
-	return containerDefinition
+	return c
 }
 
 // sortedEnvironment takes a map[string]string and returns a sorted slice of

@@ -245,6 +245,10 @@
           {
             "Name": "FOO",
             "Value": "bar"
+          },
+          {
+            "Name": "PORT",
+            "Value": "8080"
           }
         ],
         "ServiceToken": "sns topic arn"
