@@ -189,11 +189,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 }
 
 func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (taskDefinition string) {
-	taskDefinitionType := "AWS::ECS::TaskDefinition"
-
-	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
-		taskDefinitionType = "Custom::ECSTaskDefinition"
-	}
+	taskDefinitionType := taskDefinitionType(app)
 
 	key := processResourceName(p.Type)
 
@@ -282,11 +278,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 	// resources intead, which does not wait for the service to stabilize
 	// after updating.
 	ecsServiceType := "Custom::ECSService"
-	taskDefinitionType := "AWS::ECS::TaskDefinition"
-
-	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
-		taskDefinitionType = "Custom::ECSTaskDefinition"
-	}
+	taskDefinitionType := taskDefinitionType(app)
 
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
 		tmpl.Resources[appEnvironment] = troposphere.Resource{
@@ -604,6 +596,15 @@ func scheduleExpression(s scheduler.Schedule) string {
 	default:
 		panic("unknown scheduler expression")
 	}
+}
+
+// Returns the name of the CloudFormation resource that should be used to create
+// custom task definitions.
+func taskDefinitionType(app *scheduler.App) string {
+	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
+		return "Custom::ECSTaskDefinition"
+	}
+	return "AWS::ECS::TaskDefinition"
 }
 
 // runTaskResource returns a troposphere resource that will create a lambda
