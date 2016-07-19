@@ -243,7 +243,7 @@ func (p *ECSTaskDefinitionResource) Provision(ctx context.Context, req customres
 	}
 }
 
-func (p *ECSTaskDefinitionResource) mergedEnvironment(ids ...string) ([]*ecs.KeyValuePair, error) {
+func (p *ECSTaskDefinitionResource) resolvedEnvironment(ids ...string) ([]*ecs.KeyValuePair, error) {
 	var env []*ecs.KeyValuePair
 	for _, id := range ids {
 		e, err := p.environmentStore.fetch(id)
@@ -264,7 +264,7 @@ func (p *ECSTaskDefinitionResource) register(properties *ECSTaskDefinitionProper
 			essential    *bool
 		)
 
-		env, err := p.mergedEnvironment(c.Environment...)
+		env, err := p.resolvedEnvironment(c.Environment...)
 		if err != nil {
 			return "", err
 		}
@@ -333,9 +333,9 @@ type ECSEnvironmentProperties struct {
 	Environment []*ecs.KeyValuePair
 }
 
-// ECSEnvironmentResource is a custom resource that takes some encrypted
-// environment variables, stores them, then returns a unique identifier to
-// represent the environment.
+// ECSEnvironmentResource is a custom resource that takes some environment
+// variables, stores them, then returns a unique identifier to represent the
+// environment, which can be used with the ECSTaskDefinitionResource.
 type ECSEnvironmentResource struct {
 	environmentStore environmentStore
 }
