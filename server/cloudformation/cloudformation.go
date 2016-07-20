@@ -78,6 +78,15 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 		ecs: ecs.New(config),
 	})
 
+	store := &dbEnvironmentStore{db}
+	p.add("Custom::ECSEnvironment", newECSEnvironmentProvisioner(&ECSEnvironmentResource{
+		environmentStore: store,
+	}))
+	p.add("Custom::ECSTaskDefinition", newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
+		ecs:              ecs.New(config),
+		environmentStore: store,
+	}))
+
 	return p
 }
 
@@ -139,6 +148,15 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
 	}
 
+	logger.Info(ctx, "cloudformation.provision.request",
+		"request_id", req.RequestId,
+		"stack_id", req.StackId,
+		"request_type", req.RequestType,
+		"resource_type", req.ResourceType,
+		"logical_resource_id", req.LogicalResourceId,
+		"physical_resource_id", req.PhysicalResourceId,
+	)
+
 	resp := customresources.NewResponseFromRequest(req)
 
 	// CloudFormation is weird. PhysicalResourceId is required when creating
@@ -162,9 +180,10 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	switch err {
 	case nil:
 		resp.Status = customresources.StatusSuccess
-		logger.Info(ctx, "cloudformation.provision",
-			"request", req,
-			"response", resp,
+		logger.Info(ctx, "cloudformation.provision.success",
+			"request_id", req.RequestId,
+			"stack_id", req.StackId,
+			"physical_resource_id", resp.PhysicalResourceId,
 		)
 	default:
 		// A physical resource id is required, so if a Create request
@@ -179,8 +198,8 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		resp.Status = customresources.StatusFailed
 		resp.Reason = err.Error()
 		logger.Error(ctx, "cloudformation.provision.error",
-			"request", req,
-			"response", resp,
+			"request_id", req.RequestId,
+			"stack_id", req.StackId,
 			"err", err.Error(),
 		)
 	}
@@ -204,4 +223,68 @@ func (c *CustomResourceProvisioner) provision(ctx context.Context, m Message, re
 	}
 
 	return p.Provision(ctx, req)
+}
+
+type properties interface {
+	ReplacementHash() (uint64, error)
+}
+
+// provisioner provides convenience over the customresources.Provisioner
+// interface.
+type provisioner struct {
+	properties func() properties
+
+	Create func(context.Context, customresources.Request) (string, interface{}, error)
+	Update func(context.Context, customresources.Request) (interface{}, error)
+	Delete func(context.Context, customresources.Request) error
+}
+
+func (p *provisioner) Properties() interface{} {
+	return p.properties()
+}
+
+func (p *provisioner) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+	switch req.RequestType {
+	case customresources.Create:
+		return p.Create(ctx, req)
+	case customresources.Update:
+		n := req.ResourceProperties.(properties)
+		o := req.OldResourceProperties.(properties)
+
+		replace, err := requiresReplacement(n, o)
+		if err != nil {
+			return req.PhysicalResourceId, nil, err
+		}
+
+		// If the new properties require a replacement of the resource,
+		// perform a Create. CloudFormation will send us a request to
+		// delete the old resource later.
+		if replace {
+			return p.Create(ctx, req)
+		}
+
+		id := req.PhysicalResourceId
+		data, err := p.Update(ctx, req)
+		return id, data, err
+	case customresources.Delete:
+		return req.PhysicalResourceId, nil, p.Delete(ctx, req)
+	default:
+		panic(fmt.Sprintf("unable to handle %s request", req.RequestType))
+	}
+}
+
+// requiresReplacement returns true if the new properties require a replacement
+// of the old properties.
+func requiresReplacement(n, o properties) (bool, error) {
+	a, err := n.ReplacementHash()
+	if err != nil {
+		return false, err
+	}
+
+	b, err := o.ReplacementHash()
+	if err != nil {
+		return false, err
+	}
+
+	return a != b, nil
 }
