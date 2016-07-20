@@ -5,6 +5,7 @@ package cloudformation
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -53,14 +54,14 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 		sendResponse:  customresources.SendResponse,
 	}
 
-	p.add("Custom::InstancePort", &InstancePortsProvisioner{
+	p.add("Custom::InstancePort", newInstancePortsProvisioner(&InstancePortsResource{
 		ports: lb.NewDBPortAllocator(db),
-	})
+	}))
 
 	ecs := newECSClient(config)
-	p.add("Custom::ECSService", &ECSServiceResource{
+	p.add("Custom::ECSService", newECSServiceProvisioner(&ECSServiceResource{
 		ecs: ecs,
-	})
+	}))
 
 	store := &dbEnvironmentStore{db}
 	p.add("Custom::ECSEnvironment", newECSEnvironmentProvisioner(&ECSEnvironmentResource{
@@ -191,6 +192,9 @@ type provisioner struct {
 }
 
 func (p *provisioner) Properties() interface{} {
+	if p.properties == nil {
+		return nil
+	}
 	return p.properties()
 }
 
@@ -215,6 +219,9 @@ func (p *provisioner) Provision(ctx context.Context, req customresources.Request
 		}
 
 		id := req.PhysicalResourceId
+		if p.Update == nil {
+			return id, nil, errors.New("resource does not support updates")
+		}
 		data, err := p.Update(ctx, req)
 		return id, data, err
 	case customresources.Delete:
