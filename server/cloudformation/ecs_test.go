@@ -50,9 +50,9 @@ func TestRetryer(t *testing.T) {
 
 func TestECSServiceResource_Create(t *testing.T) {
 	e := new(mockECS)
-	p := &ECSServiceResource{
+	p := newECSServiceProvisioner(&ECSServiceResource{
 		ecs: e,
-	}
+	})
 
 	e.On("CreateService", &ecs.CreateServiceInput{
 		ClientToken:  aws.String("dxRU5tYsnzt"),
@@ -91,9 +91,9 @@ func TestECSServiceResource_Create(t *testing.T) {
 
 func TestECSServiceResource_Create_Canceled(t *testing.T) {
 	e := new(mockECS)
-	p := &ECSServiceResource{
+	p := newECSServiceProvisioner(&ECSServiceResource{
 		ecs: e,
-	}
+	})
 
 	e.On("CreateService", &ecs.CreateServiceInput{
 		ClientToken:  aws.String("dxRU5tYsnzt"),
@@ -128,16 +128,16 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.Equal(t, context.Canceled, err)
-	assert.Equal(t, data, map[string]string{})
+	assert.Equal(t, map[string]string{"DeploymentId": "New"}, data)
 
 	e.AssertExpectations(t)
 }
 
 func TestECSServiceResource_Update(t *testing.T) {
 	e := new(mockECS)
-	p := &ECSServiceResource{
+	p := newECSServiceProvisioner(&ECSServiceResource{
 		ecs: e,
-	}
+	})
 
 	e.On("UpdateService", &ecs.UpdateServiceInput{
 		Service:        aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
@@ -183,9 +183,9 @@ func TestECSServiceResource_Update(t *testing.T) {
 
 func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	e := new(mockECS)
-	p := &ECSServiceResource{
+	p := newECSServiceProvisioner(&ECSServiceResource{
 		ecs: e,
-	}
+	})
 
 	e.On("CreateService", &ecs.CreateServiceInput{
 		ClientToken:    aws.String("dxRU5tYsnzt"),
@@ -232,9 +232,9 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 
 func TestECSServiceResource_Delete(t *testing.T) {
 	e := new(mockECS)
-	p := &ECSServiceResource{
+	p := newECSServiceProvisioner(&ECSServiceResource{
 		ecs: e,
-	}
+	})
 
 	e.On("UpdateService", &ecs.UpdateServiceInput{
 		Service:      aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
@@ -280,9 +280,9 @@ func TestECSServiceResource_Delete(t *testing.T) {
 
 func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 	e := new(mockECS)
-	p := &ECSServiceResource{
+	p := newECSServiceProvisioner(&ECSServiceResource{
 		ecs: e,
-	}
+	})
 
 	e.On("UpdateService", &ecs.UpdateServiceInput{
 		Service:      aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
@@ -485,11 +485,22 @@ func TestECSEnvironment_Create(t *testing.T) {
 	s.AssertExpectations(t)
 }
 
-func TestECSEnvironment_Update(t *testing.T) {
+func TestECSEnvironment_Update_RequiresReplacement(t *testing.T) {
 	s := new(mockEnvironmentStore)
 	p := newECSEnvironmentProvisioner(&ECSEnvironmentResource{
 		environmentStore: s,
 	})
+
+	s.On("store", []*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+		{
+			Name:  aws.String("BAR"),
+			Value: aws.String("foo"),
+		},
+	}).Return("56152438-5fef-4c96-bbe1-9cf92022ae75", nil)
 
 	id, data, err := p.Provision(ctx, customresources.Request{
 		RequestType:        customresources.Update,
@@ -528,52 +539,53 @@ func TestECSEnvironment_Update(t *testing.T) {
 
 func TestServiceRequiresReplacement(t *testing.T) {
 	tests := []struct {
-		new, old ECSServiceProperties
+		new, old properties
 		out      bool
 	}{
 		{
-			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: customresources.Int(1)},
-			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: customresources.Int(0)},
+			&ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: customresources.Int(1)},
+			&ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: customresources.Int(0)},
 			false,
 		},
 
 		{
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
+			&ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
+			&ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
 			false,
 		},
 
 		// Can't change clusters.
 		{
-			ECSServiceProperties{Cluster: aws.String("clusterB")},
-			ECSServiceProperties{Cluster: aws.String("clusterA")},
+			&ECSServiceProperties{Cluster: aws.String("clusterB")},
+			&ECSServiceProperties{Cluster: aws.String("clusterA")},
 			true,
 		},
 
 		// Can't change name.
 		{
-			ECSServiceProperties{ServiceName: aws.String("acme-inc-B")},
-			ECSServiceProperties{ServiceName: aws.String("acme-inc-A")},
+			&ECSServiceProperties{ServiceName: aws.String("acme-inc-B")},
+			&ECSServiceProperties{ServiceName: aws.String("acme-inc-A")},
 			true,
 		},
 
 		// Can't change role.
 		{
-			ECSServiceProperties{Role: aws.String("roleB")},
-			ECSServiceProperties{Role: aws.String("roleA")},
+			&ECSServiceProperties{Role: aws.String("roleB")},
+			&ECSServiceProperties{Role: aws.String("roleA")},
 			true,
 		},
 
 		// Can't change load balancers
 		{
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbB")}}},
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbA")}}},
+			&ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbB")}}},
+			&ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbA")}}},
 			true,
 		},
 	}
 
 	for _, tt := range tests {
-		out := serviceRequiresReplacement(&tt.new, &tt.old)
+		out, err := requiresReplacement(tt.new, tt.old)
+		assert.NoError(t, err)
 		assert.Equal(t, tt.out, out)
 	}
 }
