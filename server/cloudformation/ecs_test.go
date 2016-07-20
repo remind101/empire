@@ -2,6 +2,7 @@ package cloudformation
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -9,11 +10,43 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestRetryer(t *testing.T) {
+	r := newRetryer()
+
+	var min, max, total time.Duration
+	for i := 0; i < r.NumMaxRetries; i++ {
+		retryCount := i
+		x := i
+		if x > 8 {
+			x = 8
+		}
+
+		min += time.Duration((1<<uint(x))*500) * time.Millisecond
+		max += time.Duration((1<<uint(x))*1000) * time.Millisecond
+
+		delay := r.RetryRules(&request.Request{
+			RetryCount: retryCount,
+			HTTPResponse: &http.Response{
+				StatusCode: 503,
+			},
+		})
+		total += delay
+		t.Logf("delay(%d): %v", i, delay)
+	}
+	t.Logf("total(min): %v", min)
+	t.Logf("total(max): %v", max)
+	t.Logf("total(real): %v", total)
+
+	assert.True(t, total > min)
+	assert.True(t, total < max)
+}
 
 func TestECSServiceResource_Create(t *testing.T) {
 	e := new(mockECS)
