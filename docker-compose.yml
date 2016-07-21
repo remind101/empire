@@ -17,5 +17,3 @@ server:
     EMPIRE_X_SHOW_ATTACHED: 'true'
 db:
   image: postgres
-  ports:
-    - "5432:5432"
