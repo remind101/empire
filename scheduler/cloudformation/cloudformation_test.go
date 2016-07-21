@@ -45,7 +45,7 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		ecs:            e,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -143,7 +143,7 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		ecs:            e,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -251,7 +251,7 @@ func TestScheduler_Submit_Superseded(t *testing.T) {
 		ecs:            e,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -551,9 +551,7 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 		ecs:            e,
 		s3:             x,
 		db:             db,
-		after: func(time.Duration) <-chan time.Time {
-			return nil
-		},
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -640,7 +638,7 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -746,7 +744,7 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -870,7 +868,7 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	x.On("PutObject", &s3.PutObjectInput{
@@ -911,7 +909,7 @@ func TestScheduler_Remove(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -956,7 +954,7 @@ func TestScheduler_Remove_NoCFStack(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -986,7 +984,7 @@ func TestScheduler_Remove_NoDBStack_NoCFStack(t *testing.T) {
 		cloudformation: c,
 		s3:             x,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	err := s.Remove(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
@@ -1011,7 +1009,7 @@ func TestScheduler_Instances(t *testing.T) {
 		s3:             x,
 		ecs:            e,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -1147,7 +1145,7 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 		s3:             x,
 		ecs:            e,
 		db:             db,
-		after:          func(time.Duration) <-chan time.Time { return nil },
+		after:          fakeAfter,
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
@@ -1440,4 +1438,15 @@ func (m *mockECSClient) DescribeTaskDefinition(input *ecs.DescribeTaskDefinition
 func (m *mockECSClient) DescribeServices(input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DescribeServicesOutput), args.Error(1)
+}
+
+// fakeAfter is a helper function that will resolve immediately
+// except in cases where a lockWait is specified.
+func fakeAfter(d time.Duration) <-chan time.Time {
+	if d == lockWait || d == stackOperationTimeout {
+		return nil
+	}
+	ch := make(chan time.Time)
+	close(ch)
+	return ch
 }
