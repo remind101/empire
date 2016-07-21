@@ -142,9 +142,9 @@ func (q *SQSDispatcher) handle(ctx context.Context, handle func(context.Context,
 	}
 }
 
-// extendMessageVisibilityTimeout extends the messages visibility timeout
-// extends the timeout by VisibilityHeartbeat, and returns a channel that will
-// receive after half of VisibilityTimeout has elapsed.
+// extendMessageVisibilityTimeout extends the messages visibility timeout by
+// VisibilityHeartbeat, and returns a channel that will receive after half of
+// VisibilityTimeout has elapsed.
 func (q *SQSDispatcher) extendMessageVisibilityTimeout(receiptHandle *string) (<-chan time.Time, error) {
 	visibilityTimeout := int64(float64(q.VisibilityHeartbeat) / float64(time.Second))
 
