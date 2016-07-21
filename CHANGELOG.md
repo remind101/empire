@@ -25,6 +25,8 @@
 
 **Performance**
 
+* Performance of creating/updating/deleting custom resources in the CloudFormation backend has been improved. [#942](https://github.com/remind101/empire/pull/942)
+
 **Security**
 
 ## 0.10.1 (2016-06-14)
