@@ -22,6 +22,7 @@
 * Fixed a bug where the lock obtained during stack operations was not always unlocked. [#892](https://github.com/remind101/empire/pull/892)
 * Fixed an issue where Procfile's would not be extracted when Docker 1.12+ was used. [#915](https://github.com/remind101/empire/pull/915)
 * Fixed a bug where the failed creation of a custom resources could cause a CloudFormation stack to fail to rollback. [#938](https://github.com/remind101/empire/pull/938)
+* Fixed a bug where we were getting rate limited while waiting for deployments to stabilize. [#946](https://github.com/remind101/empire/issues/946)
 
 **Performance**
 
