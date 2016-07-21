@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -326,7 +327,7 @@ func TestScheduler_Submit_Superseded(t *testing.T) {
 	}, stream)
 	assert.NoError(t, err)
 	contains := false
-	for _, status := range stream.statuses {
+	for _, status := range stream.Statuses() {
 		contains = strings.Contains(status.String(), "inactive")
 	}
 	assert.True(t, contains, "Expected inactive status update")
@@ -1338,12 +1339,21 @@ func newDB(t testing.TB) *sql.DB {
 }
 
 type storedStatusStream struct {
+	sync.Mutex
 	statuses []scheduler.Status
 }
 
 func (s *storedStatusStream) Publish(status scheduler.Status) error {
+	s.Lock()
+	defer s.Unlock()
 	s.statuses = append(s.statuses, status)
 	return nil
+}
+
+func (s *storedStatusStream) Statuses() []scheduler.Status {
+	s.Lock()
+	defer s.Unlock()
+	return s.statuses
 }
 
 type mockCloudFormationClient struct {
