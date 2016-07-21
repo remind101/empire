@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/mitchellh/hashstructure"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
@@ -26,6 +27,20 @@ type ecsClient interface {
 	WaitUntilServicesStable(*ecs.DescribeServicesInput) error
 	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	DeregisterTaskDefinition(*ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error)
+}
+
+// newECSClient returns a new ecs.ECS instance, that has more relaxed retry
+// timeouts.
+func newECSClient(config client.ConfigProvider) *ecs.ECS {
+	return ecs.New(config, &aws.Config{
+		Retryer: newRetryer(),
+	})
+}
+
+func newRetryer() client.DefaultRetryer {
+	return client.DefaultRetryer{
+		NumMaxRetries: 10,
+	}
 }
 
 type LoadBalancer struct {

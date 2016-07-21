@@ -210,3 +210,8 @@ func (m *mockSQSClient) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.Delet
 	args := m.Called(input)
 	return args.Get(0).(*sqs.DeleteMessageOutput), args.Error(1)
 }
+
+func (m *mockSQSClient) ChangeMessageVisibility(input *sqs.ChangeMessageVisibilityInput) (*sqs.ChangeMessageVisibilityOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*sqs.ChangeMessageVisibilityOutput), args.Error(1)
+}

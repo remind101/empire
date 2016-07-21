@@ -10,14 +10,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
-	"github.com/remind101/pkg/reporter"
 )
 
 var (
@@ -35,47 +32,34 @@ type Message struct {
 	Message string `json:"Message"`
 }
 
-// sqsClient duck types the sqs.SQS interface.
-type sqsClient interface {
-	ReceiveMessage(*sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error)
-	DeleteMessage(*sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
-}
-
 // CustomResourceProvisioner polls for CloudFormation Custom Resource requests
 // from an sqs queue, provisions them, then responds back.
 type CustomResourceProvisioner struct {
-	// Root context.Context to use. If a reporter.Reporter is embedded,
-	// errors generated will be reporter there. If a logger.Logger is
-	// embedded, logging will be logged there.
-	Context context.Context
-
-	// The SQS queue url to listen for CloudFormation Custom Resource
-	// requests.
-	QueueURL string
+	*SQSDispatcher
 
 	// Provisioners routes a custom resource to the thing that should do the
 	// provisioning.
 	Provisioners map[string]customresources.Provisioner
 
 	sendResponse func(customresources.Request, customresources.Response) error
-	sqs          sqsClient
 }
 
 // NewCustomResourceProvisioner returns a new CustomResourceProvisioner with an
 // sqs client configured from config.
 func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *CustomResourceProvisioner {
 	p := &CustomResourceProvisioner{
-		Provisioners: make(map[string]customresources.Provisioner),
-		sendResponse: customresources.SendResponse,
-		sqs:          sqs.New(config),
+		SQSDispatcher: newSQSDispatcher(config),
+		Provisioners:  make(map[string]customresources.Provisioner),
+		sendResponse:  customresources.SendResponse,
 	}
 
 	p.add("Custom::InstancePort", &InstancePortsProvisioner{
 		ports: lb.NewDBPortAllocator(db),
 	})
 
+	ecs := newECSClient(config)
 	p.add("Custom::ECSService", &ECSServiceResource{
-		ecs: ecs.New(config),
+		ecs: ecs,
 	})
 
 	store := &dbEnvironmentStore{db}
@@ -83,7 +67,7 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 		environmentStore: store,
 	}))
 	p.add("Custom::ECSTaskDefinition", newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
-		ecs:              ecs.New(config),
+		ecs:              ecs,
 		environmentStore: store,
 	}))
 
@@ -97,41 +81,8 @@ func (c *CustomResourceProvisioner) add(resourceName string, p customresources.P
 	c.Provisioners[resourceName] = p
 }
 
-// Start starts pulling requests from the queue and provisioning them.
 func (c *CustomResourceProvisioner) Start() {
-	t := time.Tick(10 * time.Second)
-
-	for range t {
-		ctx := c.Context
-
-		resp, err := c.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl: aws.String(c.QueueURL),
-		})
-		if err != nil {
-			reporter.Report(ctx, err)
-			continue
-		}
-
-		for _, m := range resp.Messages {
-			go func(m *sqs.Message) {
-				if err := c.handle(ctx, m); err != nil {
-					reporter.Report(ctx, err)
-				}
-			}(m)
-		}
-	}
-}
-
-func (c *CustomResourceProvisioner) handle(ctx context.Context, message *sqs.Message) error {
-	err := c.Handle(ctx, message)
-	if err == nil {
-		_, err = c.sqs.DeleteMessage(&sqs.DeleteMessageInput{
-			QueueUrl:      aws.String(c.QueueURL),
-			ReceiptHandle: message.ReceiptHandle,
-		})
-	}
-
-	return err
+	c.SQSDispatcher.Start(c.Handle)
 }
 
 // Handle handles a single sqs.Message to perform the provisioning.
