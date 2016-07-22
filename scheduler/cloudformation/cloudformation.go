@@ -66,7 +66,8 @@ const (
 
 // ECS limits
 const (
-	MaxDescribeTasks = 100
+	MaxDescribeTasks    = 100
+	MaxDescribeServices = 10
 )
 
 // DefaultStackNameTemplate is the default text/template for generating a
@@ -312,15 +313,12 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 			arns = append(arns, aws.String(arn))
 		}
 
-		status, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
-			Cluster:  aws.String(s.Cluster),
-			Services: arns,
-		})
+		services, err := s.services(arns)
 		if err != nil {
 			return false, err
 		}
 
-		for _, service := range status.Services {
+		for _, service := range services {
 			d, ok := deployments[*service.ServiceArn]
 			if !ok {
 				return false, fmt.Errorf("missing deployment for: %s", service.ServiceArn)
@@ -723,6 +721,21 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 	}
 
 	return instances, nil
+}
+
+func (s *Scheduler) services(arns []*string) ([]*ecs.Service, error) {
+	var services []*ecs.Service
+	for _, chunk := range chunkStrings(arns, MaxDescribeServices) {
+		resp, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(s.Cluster),
+			Services: chunk,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error describing %d services: %v", len(chunk), err)
+		}
+		services = append(services, resp.Services...)
+	}
+	return services, nil
 }
 
 // tasks returns all of the ECS tasks for this app.
