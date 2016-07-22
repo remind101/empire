@@ -55,6 +55,10 @@ var (
 	// Controls the maximum amount of time we'll wait for a stack operation to
 	// complete before releasing the lock.
 	stackOperationTimeout = 10 * time.Minute
+
+	// Controls how long we'll wait between requests to describe services when
+	// waiting for a deployment to stabilize
+	pollServicesWait = 20 * time.Second
 )
 
 // CloudFormation limits
@@ -352,6 +356,9 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 			if err != nil {
 				logger.Warn(ctx, fmt.Sprintf("error waiting for services to stabilize: %v", err))
 				break
+			}
+			if keepWaiting {
+				<-s.after(pollServicesWait)
 			}
 		}
 		close(ch)
