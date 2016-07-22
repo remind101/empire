@@ -728,37 +728,49 @@
       "Type": "AWS::ECS::Cluster"
     },
 
+    "DBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for RDS DB Instance.",
+        "VpcId": { "Ref" : "Vpc" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp", "FromPort": "5432", "ToPort": "5432",
+            "SourceSecurityGroupId": { "Ref": "InstanceSecurityGroup" }
+          }
+        ]
+      }
+    },
+
+    "DBSubnetGroup": {
+      "Type" : "AWS::RDS::DBSubnetGroup",
+      "Properties" : {
+        "DBSubnetGroupDescription": "Subnet group for Empire db",
+        "SubnetIds" : [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }]
+      }
+    },
+
+    "DB": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBName": "empire",
+        "Engine": "postgres",
+        "EngineVersion": "9.5.2",
+        "MasterUsername": "empire",
+        "MasterUserPassword": "epoo9mohNg",
+        "DBInstanceClass": "db.t2.micro",
+        "DBSubnetGroupName": { "Ref": "DBSubnetGroup" },
+        "AllocatedStorage": 5,
+        "VPCSecurityGroups": [ { "Fn::GetAtt": [ "DBSecurityGroup", "GroupId" ] } ]
+      },
+      "DeletionPolicy": "Delete"
+    },
+
     "TaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Condition": "DemoMode",
       "Properties": {
         "ContainerDefinitions": [
-          {
-            "Name": "postgres",
-            "Image": "postgres:9.5",
-            "Cpu": 256,
-            "Memory": 256,
-            "EntryPoint": [],
-            "Environment": [],
-            "LogConfiguration": {
-              "LogDriver": "awslogs",
-              "Options": {
-                "awslogs-region": { "Ref": "AWS::Region" },
-                "awslogs-group": { "Ref": "PostgresLogGroup" }
-              }
-            },
-            "Command": [],
-            "PortMappings": [
-              {
-                "HostPort": 5432,
-                "ContainerPort": 5432
-              }
-            ],
-            "VolumesFrom": [],
-            "Links": [],
-            "MountPoints": [],
-            "Essential": "true"
-          },
           {
             "Name": "empire",
             "Image": { "Fn::Join": [":", ["remind101/empire", { "Ref": "EmpireVersion" }]] },
@@ -774,10 +786,6 @@
             },
             "Environment": [
               {
-                "Name": "WAIT_TIME",
-                "Value": "30"
-              },
-              {
                 "Name": "AWS_REGION",
                 "Value": { "Ref": "AWS::Region" }
               },
@@ -791,7 +799,7 @@
               },
               {
                 "Name": "EMPIRE_DATABASE_URL",
-                "Value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
+                "Value": { "Fn::Join": ["", ["postgres://empire:epoo9mohNg@", { "Fn::GetAtt": ["DB", "Endpoint.Address"] }, ":", { "Fn::GetAtt": ["DB", "Endpoint.Port"] } , "/empire"]] }
               },
               {
                 "Name": "EMPIRE_S3_TEMPLATE_BUCKET",
@@ -893,9 +901,6 @@
               }
             ],
             "VolumesFrom": [],
-            "Links": [
-              "postgres:postgres"
-            ],
             "MountPoints": [
               {
                 "SourceVolume": "dockerSocket",
