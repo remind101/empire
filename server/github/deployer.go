@@ -3,10 +3,12 @@ package github
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
+	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
@@ -100,6 +102,8 @@ func (d *TugboatDeployer) Deploy(ctx context.Context, event events.Deployment, o
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
+		defer close(streamhttp.Heartbeat(w, 10*time.Second))
+
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
 		w = io.MultiWriter(w, out)
