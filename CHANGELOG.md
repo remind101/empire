@@ -7,6 +7,7 @@
 * Empire now includes experimental support for showing attached runs in `emp ps`. This can be enabled with the `--x.showattached` flag, or `EMPIRE_X_SHOW_ATTACHED` [#911](https://github.com/remind101/empire/pull/911)
 * Empire now includes experimental support for scheduled tasks [#919](https://github.com/remind101/empire/pull/919)
 * Empire now supports streaming status updates from the scheduler while deploying [#888](https://github.com/remind101/empire/issues/888)
+* Empire now supports sending internal metrics to dogstatsd [#953](https://github.com/remind101/empire/pull/953)
 
 **Improvements**
 
