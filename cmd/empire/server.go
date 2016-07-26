@@ -21,18 +21,23 @@ import (
 )
 
 func runServer(c *cli.Context) {
+	ctx, err := newContext(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	port := c.String(FlagPort)
 
 	if c.Bool(FlagAutoMigrate) {
 		runMigrate(c)
 	}
 
-	db, err := newDB(c)
+	db, err := newDB(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	e, err := newEmpire(db, c)
+	e, err := newEmpire(db, ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,28 +55,17 @@ func runServer(c *cli.Context) {
 	}
 
 	if c.String(FlagCustomResourcesQueue) != "" {
-		p, err := newCloudFormationCustomResourceProvisioner(db, c)
-		if err != nil {
-			log.Fatal(err)
-		}
+		p := newCloudFormationCustomResourceProvisioner(db, ctx)
 		log.Printf("Starting CloudFormation custom resource provisioner")
 		go p.Start()
 	}
 
-	s, err := newServer(c, e)
-	if err != nil {
-		log.Fatal(err)
-	}
+	s := newServer(ctx, e)
 	log.Printf("Starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }
 
-func newServer(c *cli.Context, e *empire.Empire) (http.Handler, error) {
-	rootCtx, err := newRootContext(c)
-	if err != nil {
-		return nil, err
-	}
-
+func newServer(c *Context, e *empire.Empire) http.Handler {
 	var opts server.Options
 	opts.Authenticator = newAuthenticator(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
@@ -80,22 +74,17 @@ func newServer(c *cli.Context, e *empire.Empire) (http.Handler, error) {
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	h := middleware.Common(server.New(e, opts))
-	return middleware.Handler(rootCtx, h), nil
+	return middleware.Handler(c, h)
 }
 
-func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
-	ctx, err := newRootContext(c)
-	if err != nil {
-		return nil, err
-	}
-
-	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
+func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *Context) *cloudformation.CustomResourceProvisioner {
+	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), c)
 	p.QueueURL = c.String(FlagCustomResourcesQueue)
-	p.Context = ctx
-	return p, nil
+	p.Context = c
+	return p
 }
 
-func newImageBuilder(c *cli.Context) github.ImageBuilder {
+func newImageBuilder(c *Context) github.ImageBuilder {
 	builder := c.String(FlagGithubDeploymentsImageBuilder)
 
 	switch builder {
@@ -111,7 +100,7 @@ func newImageBuilder(c *cli.Context) github.ImageBuilder {
 	}
 }
 
-func newAuthenticator(c *cli.Context, e *empire.Empire) auth.Authenticator {
+func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
 	// an authenticator authenticating requests with a users empire acccess
 	// token.
 	authenticators := []auth.Authenticator{

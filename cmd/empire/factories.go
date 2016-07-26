@@ -7,14 +7,13 @@ import (
 	"net/url"
 	"os"
 
-	"golang.org/x/net/context"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecr"
-	"github.com/codegangsta/cli"
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/app"
@@ -28,43 +27,20 @@ import (
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/scheduler/ecs"
-	"github.com/remind101/pkg/logger"
+	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
 )
 
-// newRootContext returns a new root context.Context with an error reporter and
-// logger embedded in the context.
-func newRootContext(c *cli.Context) (context.Context, error) {
-	r, err := newReporter(c)
-	if err != nil {
-		return nil, err
-	}
-	l, err := newLogger(c)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := context.Background()
-	if r != nil {
-		ctx = reporter.WithReporter(ctx, r)
-	}
-	if l != nil {
-		ctx = logger.WithLogger(ctx, l)
-	}
-
-	return ctx, nil
-}
-
 // DB ===================================
 
-func newDB(c *cli.Context) (*empire.DB, error) {
+func newDB(c *Context) (*empire.DB, error) {
 	return empire.OpenDB(c.String(FlagDB))
 }
 
 // Empire ===============================
 
-func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
+func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 	docker, err := newDockerClient(c)
 	if err != nil {
 		return nil, err
@@ -107,7 +83,7 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 
 // Scheduler ============================
 
-func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
+func newScheduler(db *empire.DB, c *Context) (scheduler.Scheduler, error) {
 	var (
 		s   scheduler.Scheduler
 		err error
@@ -138,7 +114,7 @@ func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
 	return a, nil
 }
 
-func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.MigrationScheduler, error) {
+func newMigrationScheduler(db *empire.DB, c *Context) (*cloudformation.MigrationScheduler, error) {
 	log.Println("Using the CloudFormation Migration backend")
 
 	es, err := newECSScheduler(db, c)
@@ -154,15 +130,13 @@ func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Migra
 	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
 }
 
-func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.Scheduler, error) {
+func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
 
-	config := newConfigProvider(c)
-
 	zoneID := c.String(FlagRoute53InternalZoneID)
-	zone, err := cloudformation.HostedZone(config, zoneID)
+	zone, err := cloudformation.HostedZone(c, zoneID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +165,7 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.
 		tags = append(tags, &cf.Tag{Key: aws.String("environment"), Value: aws.String(env)})
 	}
 
-	s := cloudformation.NewScheduler(db.DB.DB(), config)
+	s := cloudformation.NewScheduler(db.DB.DB(), c)
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
 	s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
@@ -217,13 +191,13 @@ func prefixedStackName(prefix string) *template.Template {
 	return template.Must(template.New("stack_name").Parse(t))
 }
 
-func newECSScheduler(db *empire.DB, c *cli.Context) (*ecs.Scheduler, error) {
+func newECSScheduler(db *empire.DB, c *Context) (*ecs.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
 
 	config := ecs.Config{
-		AWS:                     newConfigProvider(c),
+		AWS:                     c,
 		Cluster:                 c.String(FlagECSCluster),
 		ServiceRole:             c.String(FlagECSServiceRole),
 		InternalSecurityGroupID: c.String(FlagELBSGPrivate),
@@ -252,21 +226,9 @@ func newECSScheduler(db *empire.DB, c *cli.Context) (*ecs.Scheduler, error) {
 	return s, nil
 }
 
-func newConfigProvider(c *cli.Context) client.ConfigProvider {
-	p := session.New()
-
-	if c.Bool(FlagAWSDebug) {
-		config := &aws.Config{}
-		config.WithLogLevel(aws.LogDebug)
-		p = session.New(config)
-	}
-
-	return p
-}
-
 // DockerClient ========================
 
-func newDockerClient(c *cli.Context) (*dockerutil.Client, error) {
+func newDockerClient(c *Context) (*dockerutil.Client, error) {
 	socket := c.String(FlagDockerSocket)
 	certPath := c.String(FlagDockerCert)
 	authProvider, err := newAuthProvider(c)
@@ -279,7 +241,7 @@ func newDockerClient(c *cli.Context) (*dockerutil.Client, error) {
 
 // LogStreamer =========================
 
-func newLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
+func newLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 	switch c.String(FlagLogsStreamer) {
 	case "kinesis":
 		return newKinesisLogsStreamer(c)
@@ -289,14 +251,14 @@ func newLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
 	}
 }
 
-func newKinesisLogsStreamer(c *cli.Context) (empire.LogsStreamer, error) {
+func newKinesisLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 	log.Println("Using Kinesis backend for log streaming")
 	return empire.NewKinesisLogsStreamer(), nil
 }
 
 // Events ==============================
 
-func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
+func newEventStreams(c *Context) (empire.MultiEventStream, error) {
 	var streams empire.MultiEventStream
 	switch c.String(FlagEventsBackend) {
 	case "sns":
@@ -326,14 +288,14 @@ func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
 	return streams, nil
 }
 
-func newAppEventStream(c *cli.Context) (empire.EventStream, error) {
-	e := app.NewEventStream(newConfigProvider(c))
+func newAppEventStream(c *Context) (empire.EventStream, error) {
+	e := app.NewEventStream(c)
 	log.Println("Using App (Kinesis) events backend")
 	return e, nil
 }
 
-func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {
-	e := sns.NewEventStream(newConfigProvider(c))
+func newSNSEventStream(c *Context) (empire.EventStream, error) {
+	e := sns.NewEventStream(c)
 	e.TopicARN = c.String(FlagSNSTopic)
 
 	log.Println("Using SNS events backend with the following configuration:")
@@ -342,15 +304,15 @@ func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {
 	return e, nil
 }
 
-func newStdoutEventStream(c *cli.Context) (empire.EventStream, error) {
-	e := stdout.NewEventStream(newConfigProvider(c))
+func newStdoutEventStream(c *Context) (empire.EventStream, error) {
+	e := stdout.NewEventStream(c)
 	log.Println("Using Stdout events backend")
 	return e, nil
 }
 
 // RunRecorder =========================
 
-func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
+func newRunRecorder(c *Context) (empire.RunRecorder, error) {
 	backend := c.String(FlagRunLogsBackend)
 	switch backend {
 	case "cloudwatch":
@@ -359,7 +321,7 @@ func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
 		log.Println("Using CloudWatch run logs backend with the following configuration:")
 		log.Println(fmt.Sprintf("  LogGroup: %s", group))
 
-		return empire.RecordToCloudWatch(group, newConfigProvider(c)), nil
+		return empire.RecordToCloudWatch(group, c), nil
 	case "stdout":
 		log.Println("Using Stdout run logs backend")
 		return empire.RecordTo(os.Stdout), nil
@@ -370,11 +332,11 @@ func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
 
 // Logger ==============================
 
-func newLogger(c *cli.Context) (log15.Logger, error) {
-	l := log15.New()
+func newLogger(c *Context) (log15.Logger, error) {
 	lvl := c.String(FlagLogLevel)
+	l := log15.New()
 	log.Println(fmt.Sprintf("Using log level %s", lvl))
-	v, err := log15.LvlFromString(c.String(FlagLogLevel))
+	v, err := log15.LvlFromString(lvl)
 	if err != nil {
 		return l, err
 	}
@@ -388,7 +350,7 @@ func newLogger(c *cli.Context) (log15.Logger, error) {
 
 // Reporter ============================
 
-func newReporter(c *cli.Context) (reporter.Reporter, error) {
+func newReporter(c *Context) (reporter.Reporter, error) {
 	u := c.String(FlagReporter)
 	if u == "" {
 		return nil, nil
@@ -418,13 +380,34 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 	return append(reporter.MultiReporter{}, reporter.NewLogReporter(), r), nil
 }
 
+// Stats =======================
+
+func newStats(c *Context) (stats.Stats, error) {
+	if addr := c.String(FlagDogStatsd); addr != "" {
+		return newDataDogStats(addr)
+	}
+
+	return stats.Null, nil
+}
+
+func newDataDogStats(addr string) (stats.Stats, error) {
+	s, err := stats.NewDataDog(addr)
+	if err != nil {
+		return nil, err
+	}
+	s.Namespace = "empire."
+	s.Tags = []string{
+		fmt.Sprintf("empire_version:%s", empire.Version),
+	}
+	return s, nil
+}
+
 // Auth provider =======================
 
-func newAuthProvider(c *cli.Context) (dockerauth.AuthProvider, error) {
-	awsSession := newConfigProvider(c)
+func newAuthProvider(c *Context) (dockerauth.AuthProvider, error) {
 	provider := dockerauth.NewMultiAuthProvider()
 	provider.AddProvider(dockerauth.NewECRAuthProvider(func(region string) dockerauth.ECR {
-		return ecr.New(awsSession, &aws.Config{Region: aws.String(region)})
+		return ecr.New(c, &aws.Config{Region: aws.String(region)})
 	}))
 
 	if dockerConfigPath := c.String(FlagDockerAuth); dockerConfigPath != "" {
@@ -444,4 +427,49 @@ func newAuthProvider(c *cli.Context) (dockerauth.AuthProvider, error) {
 	}
 
 	return provider, nil
+}
+
+func newConfigProvider(c *Context) client.ConfigProvider {
+	stats := c.Stats()
+	config := aws.NewConfig()
+
+	if c.Bool(FlagAWSDebug) {
+		config.WithLogLevel(aws.LogDebug)
+	}
+
+	s := session.New(config)
+
+	requestTags := func(r *request.Request) []string {
+		return []string{
+			fmt.Sprintf("service_name:%s", r.ClientInfo.ServiceName),
+			fmt.Sprintf("api_version:%s", r.ClientInfo.APIVersion),
+			fmt.Sprintf("operation:%s", r.Operation.Name),
+		}
+	}
+
+	s.Handlers.Send.PushBackNamed(request.NamedHandler{
+		Name: "empire.RequestMetrics",
+		Fn: func(r *request.Request) {
+			tags := requestTags(r)
+			stats.Inc(fmt.Sprintf("aws.request"), 1, 1.0, tags)
+			stats.Inc(fmt.Sprintf("aws.request.%s", r.ClientInfo.ServiceName), 1, 1.0, tags)
+			stats.Inc(fmt.Sprintf("aws.request.%s.%s", r.ClientInfo.ServiceName, r.Operation.Name), 1, 1.0, tags)
+		},
+	})
+	s.Handlers.ValidateResponse.PushBackNamed(request.NamedHandler{
+		Name: "empire.ResponseMetrics",
+		Fn: func(r *request.Request) {
+			tags := requestTags(r)
+			if r.Error != nil {
+				if err, ok := r.Error.(awserr.Error); ok {
+					tags = append(tags, fmt.Sprintf("error:%s", err.Code()))
+					stats.Inc(fmt.Sprintf("aws.request.error"), 1, 1.0, tags)
+					stats.Inc(fmt.Sprintf("aws.request.%s.error", r.ClientInfo.ServiceName), 1, 1.0, tags)
+					stats.Inc(fmt.Sprintf("aws.request.%s.%s.error", r.ClientInfo.ServiceName, r.Operation.Name), 1, 1.0, tags)
+				}
+			}
+		},
+	})
+
+	return s
 }

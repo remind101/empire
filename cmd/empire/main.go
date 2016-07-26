@@ -18,6 +18,8 @@ const (
 	FlagMessagesRequired = "messages.required"
 	FlagLogLevel         = "log.level"
 
+	FlagDogStatsd = "dogstatsd"
+
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
 	FlagGithubOrg          = "github.organization"
@@ -158,14 +160,35 @@ var Commands = []cli.Command{
 				Usage:  "When combined with the `--" + FlagGithubDeploymentsImageBuilder + "` flag when set to `conveyor`, this determines where the location of a Conveyor instance is to perform Docker image builds.",
 				EnvVar: "EMPIRE_CONVEYOR_URL",
 			},
-		}, append(EmpireFlags, DBFlags...)...),
+		}, append(CommonFlags, append(EmpireFlags, DBFlags...)...)...),
 		Action: runServer,
 	},
 	{
 		Name:   "migrate",
 		Usage:  "Migrate the database",
-		Flags:  DBFlags,
+		Flags:  append(CommonFlags, DBFlags...),
 		Action: runMigrate,
+	},
+}
+
+var CommonFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   FlagLogLevel,
+		Value:  "info",
+		Usage:  "Specify the log level for the empire server. You can use this to enable debug logs by specifying `debug`.",
+		EnvVar: "EMPIRE_LOG_LEVEL",
+	},
+	cli.StringFlag{
+		Name:   FlagDogStatsd,
+		Value:  "",
+		Usage:  "The address of a dogstatsd instance to send metrics to.",
+		EnvVar: "EMPIRE_DOGSTATSD",
+	},
+	cli.StringFlag{
+		Name:   FlagReporter,
+		Value:  "",
+		Usage:  "The error reporter to use. (e.g. hb://api.honeybadger.io?key=<apikey>&environment=production)",
+		EnvVar: "EMPIRE_REPORTER",
 	},
 }
 
@@ -272,12 +295,6 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_TOKEN_SECRET",
 	},
 	cli.StringFlag{
-		Name:   FlagReporter,
-		Value:  "",
-		Usage:  "The error reporter to use. (e.g. hb://api.honeybadger.io?key=<apikey>&environment=production)",
-		EnvVar: "EMPIRE_REPORTER",
-	},
-	cli.StringFlag{
 		Name:   FlagRunner,
 		Value:  "",
 		Usage:  "The location of the container runner api",
@@ -334,12 +351,6 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagXShowAttached,
 		Usage:  "If true, attached runs will be shown in `emp ps` output.",
 		EnvVar: "EMPIRE_X_SHOW_ATTACHED",
-	},
-	cli.StringFlag{
-		Name:   FlagLogLevel,
-		Value:  "info",
-		Usage:  "Specify the log level for the empire server. You can use this to enable debug logs by specifying `debug`.",
-		EnvVar: "EMPIRE_LOG_LEVEL",
 	},
 }
 
