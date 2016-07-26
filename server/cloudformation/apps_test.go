@@ -6,10 +6,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAppResourceProvision_Create(t *testing.T) {
+func TestEmpireAppResourceProvision_Create(t *testing.T) {
 	e := new(mockEmpire)
 	user := newUser()
 
@@ -26,9 +27,9 @@ func TestAppResourceProvision_Create(t *testing.T) {
 		Message: "Creating app via Cloudformation",
 	}).Once().Return(&app, nil)
 
-	resource := &AppResource{empire: e}
-	id, _, err := resource.Provision(Request{
-		RequestType: Create,
+	resource := &EmpireAppResource{empire: e}
+	id, _, err := resource.Provision(ctx, customresources.Request{
+		RequestType: customresources.Create,
 		ResourceProperties: &AppProperties{
 			Name: aws.String(app.Name),
 		},
@@ -38,7 +39,7 @@ func TestAppResourceProvision_Create(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestAppResource_Update(t *testing.T) {
+func TestEmpireAppResource_Update(t *testing.T) {
 	e := new(mockEmpire)
 
 	app := empire.App{
@@ -49,9 +50,9 @@ func TestAppResource_Update(t *testing.T) {
 		ID: &app.ID,
 	}).Once().Return(&app, nil)
 
-	resource := &AppResource{empire: e}
-	_, _, err := resource.Provision(Request{
-		RequestType:        Update,
+	resource := &EmpireAppResource{empire: e}
+	_, _, err := resource.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Update,
 		PhysicalResourceId: app.ID,
 		ResourceProperties: &AppProperties{},
 	})
@@ -59,7 +60,7 @@ func TestAppResource_Update(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestAppResourceProvision_Delete(t *testing.T) {
+func TestEmpireAppResourceProvision_Delete(t *testing.T) {
 	e := new(mockEmpire)
 	user := newUser()
 
@@ -76,9 +77,9 @@ func TestAppResourceProvision_Delete(t *testing.T) {
 		Message: "Destroying app via Cloudformation",
 	}).Once().Return(nil)
 
-	resource := &AppResource{empire: e}
-	id, _, err := resource.Provision(Request{
-		RequestType:        Delete,
+	resource := &EmpireAppResource{empire: e}
+	id, _, err := resource.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Delete,
 		PhysicalResourceId: app.ID,
 		ResourceProperties: &AppProperties{},
 	})

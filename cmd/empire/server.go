@@ -83,13 +83,13 @@ func newServer(c *cli.Context, e *empire.Empire) (http.Handler, error) {
 	return middleware.Handler(rootCtx, h), nil
 }
 
-func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
+func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
 	ctx, err := newRootContext(c)
 	if err != nil {
 		return nil, err
 	}
 
-	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
+	p := cloudformation.NewCustomResourceProvisioner(e, newConfigProvider(c))
 	p.QueueURL = c.String(FlagCustomResourcesQueue)
 	p.Context = ctx
 	return p, nil

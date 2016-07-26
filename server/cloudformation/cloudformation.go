@@ -3,7 +3,6 @@
 package cloudformation
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/pkg/logger"
@@ -46,7 +46,8 @@ type CustomResourceProvisioner struct {
 
 // NewCustomResourceProvisioner returns a new CustomResourceProvisioner with an
 // sqs client configured from config.
-func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *CustomResourceProvisioner {
+func NewCustomResourceProvisioner(empire *empire.Empire, config client.ConfigProvider) *CustomResourceProvisioner {
+	db := empire.DB.DB.DB()
 	p := &CustomResourceProvisioner{
 		SQSDispatcher: newSQSDispatcher(config),
 		Provisioners:  make(map[string]customresources.Provisioner),
@@ -70,6 +71,13 @@ func NewCustomResourceProvisioner(db *sql.DB, config client.ConfigProvider) *Cus
 		ecs:              ecs,
 		environmentStore: store,
 	}))
+
+	p.add("Custom::EmpireApp", &EmpireAppResource{
+		empire: empire,
+	})
+	p.add("Custom::EmpireAppEnvironment", &EmpireAppEnvironmentResource{
+		empire: empire,
+	})
 
 	return p
 }
@@ -238,4 +246,10 @@ func requiresReplacement(n, o properties) (bool, error) {
 	}
 
 	return a != b, nil
+}
+
+// newUser returns an empire.User that should be used by resources when making
+// requests to empire.
+func newUser() *empire.User {
+	return &empire.User{Name: "Cloudformation"}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 )
 
 // appClient mocks the Empire interface we use.
@@ -21,19 +22,21 @@ type AppProperties struct {
 	Name *string
 }
 
-// AppResource is a Provisioner that will manage an Empire application
-type AppResource struct {
+// EmpireAppResource is a Provisioner that will manage an Empire application
+type EmpireAppResource struct {
 	empire appClient
 }
 
-func (p *AppResource) Provision(req Request) (id string, data interface{}, err error) {
-	ctx := context.Background()
-	user := newUser()
+func (p *EmpireAppResource) Properties() interface{} {
+	return &AppProperties{}
+}
 
+func (p *EmpireAppResource) Provision(ctx context.Context, req customresources.Request) (id string, data interface{}, err error) {
+	user := newUser()
 	properties := req.ResourceProperties.(*AppProperties)
 
 	switch req.RequestType {
-	case Create:
+	case customresources.Create:
 		name := properties.Name
 		app, err := p.empire.AppsFind(empire.AppsQuery{
 			Name: name,
@@ -52,7 +55,7 @@ func (p *AppResource) Provision(req Request) (id string, data interface{}, err e
 		}
 
 		return app.ID, nil, nil
-	case Delete:
+	case customresources.Delete:
 		id := req.PhysicalResourceId
 		app, err := p.empire.AppsFind(empire.AppsQuery{
 			ID: &id,
@@ -71,7 +74,7 @@ func (p *AppResource) Provision(req Request) (id string, data interface{}, err e
 		}
 
 		return id, nil, nil
-	case Update:
+	case customresources.Update:
 		id := req.PhysicalResourceId
 
 		_, err := p.empire.AppsFind(empire.AppsQuery{

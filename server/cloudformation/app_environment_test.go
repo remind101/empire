@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hashicorp/go-multierror"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,8 +34,8 @@ func TestEmpireAppEnvironmentResourceProvision_Create(t *testing.T) {
 	}).Once().Return(&empire.Config{}, nil)
 
 	resource := &EmpireAppEnvironmentResource{empire: e}
-	id, _, err := resource.Provision(Request{
-		RequestType: Create,
+	id, _, err := resource.Provision(ctx, customresources.Request{
+		RequestType: customresources.Create,
 		ResourceProperties: &EnvironmentProperties{
 			AppId: &app.ID,
 			Variables: []Variable{
@@ -74,8 +75,8 @@ func TestEmpireAppEnvironmentResourceProvision_Update(t *testing.T) {
 	}).Once().Return(&empire.Config{}, nil)
 
 	resource := &EmpireAppEnvironmentResource{empire: e}
-	id, _, err := resource.Provision(Request{
-		RequestType:        Update,
+	id, _, err := resource.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Update,
 		PhysicalResourceId: app.ID,
 		ResourceProperties: &EnvironmentProperties{
 			AppId: &app.ID,
@@ -122,8 +123,8 @@ func TestEmpireAppEnvironmentResourceProvision_Delete(t *testing.T) {
 	}).Once().Return(&empire.Config{}, nil)
 
 	resource := &EmpireAppEnvironmentResource{empire: e}
-	id, _, err := resource.Provision(Request{
-		RequestType:        Delete,
+	id, _, err := resource.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Delete,
 		PhysicalResourceId: app.ID,
 		ResourceProperties: &EnvironmentProperties{
 			AppId: &app.ID,
@@ -140,8 +141,8 @@ func TestEmpireAppEnvironmentResourceProvision_Delete(t *testing.T) {
 }
 
 func TestVarsFromRequest(t *testing.T) {
-	vars, err := varsFromRequest(Request{
-		RequestType: Create,
+	vars, err := varsFromRequest(customresources.Request{
+		RequestType: customresources.Create,
 		ResourceProperties: &EnvironmentProperties{
 			Variables: []Variable{
 				Variable{Name: aws.String("FOO"), Value: aws.String("bar")},
@@ -158,8 +159,8 @@ func TestVarsFromRequest(t *testing.T) {
 }
 
 func TestVarsFromRequestMissingRequiredFields(t *testing.T) {
-	_, err := varsFromRequest(Request{
-		RequestType: Create,
+	_, err := varsFromRequest(customresources.Request{
+		RequestType: customresources.Create,
 		ResourceProperties: &EnvironmentProperties{
 			Variables: []Variable{
 				Variable{Value: aws.String("bar")},
@@ -175,8 +176,8 @@ func TestVarsFromRequestMissingRequiredFields(t *testing.T) {
 }
 
 func TestVarsFromUpdateRequest_DeletedVars(t *testing.T) {
-	vars, err := varsFromRequest(Request{
-		RequestType: Update,
+	vars, err := varsFromRequest(customresources.Request{
+		RequestType: customresources.Update,
 		ResourceProperties: &EnvironmentProperties{
 			Variables: []Variable{
 				Variable{Name: aws.String("FOO"), Value: aws.String("bar")},
@@ -198,8 +199,8 @@ func TestVarsFromUpdateRequest_DeletedVars(t *testing.T) {
 }
 
 func TestVarsFromDeleteRequest(t *testing.T) {
-	vars, err := varsFromRequest(Request{
-		RequestType: Delete,
+	vars, err := varsFromRequest(customresources.Request{
+		RequestType: customresources.Delete,
 		ResourceProperties: &EnvironmentProperties{
 			Variables: []Variable{
 				Variable{Name: aws.String("FOO"), Value: aws.String("bar")},

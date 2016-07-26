@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"golang.org/x/net/context"
 )
 
@@ -45,13 +46,12 @@ func (v *VariableError) Error() string {
 	return fmt.Sprintf("invalid variable [%d]: %s", v.index, v.err)
 }
 
-func (p *EmpireAppEnvironmentResource) Provision(req Request) (id string, data interface{}, err error) {
-	ctx := context.Background()
-	user := newUser()
+func (p *EmpireAppEnvironmentResource) Provision(ctx context.Context, req customresources.Request) (id string, data interface{}, err error) {
 	properties := req.ResourceProperties.(*EnvironmentProperties)
+	user := newUser()
 
 	switch req.RequestType {
-	case Create:
+	case customresources.Create:
 		if properties.AppId == nil || *properties.AppId == "" {
 			return "", nil, fmt.Errorf("missing parameter: AppId")
 		}
@@ -73,7 +73,7 @@ func (p *EmpireAppEnvironmentResource) Provision(req Request) (id string, data i
 	return
 }
 
-func (p *EmpireAppEnvironmentResource) setEnvironment(ctx context.Context, user *empire.User, app *empire.App, req Request) error {
+func (p *EmpireAppEnvironmentResource) setEnvironment(ctx context.Context, user *empire.User, app *empire.App, req customresources.Request) error {
 	vars, err := varsFromRequest(req)
 	if err != nil {
 		return err
@@ -81,11 +81,11 @@ func (p *EmpireAppEnvironmentResource) setEnvironment(ctx context.Context, user 
 
 	var action string
 	switch req.RequestType {
-	case Create:
+	case customresources.Create:
 		action = "Setting"
-	case Update:
+	case customresources.Update:
 		action = "Updating"
-	case Delete:
+	case customresources.Delete:
 		action = "Unsetting"
 	}
 
@@ -106,7 +106,7 @@ func isValid(index int, variable *Variable) error {
 	return err
 }
 
-func varsFromRequest(req Request) (empire.Vars, error) {
+func varsFromRequest(req customresources.Request) (empire.Vars, error) {
 	vars := make(empire.Vars)
 	var errors *multierror.Error
 
@@ -122,13 +122,13 @@ func varsFromRequest(req Request) (empire.Vars, error) {
 
 		var val *string
 		// If we're deleting the resource, we want to unset the variable
-		if req.RequestType != Delete {
+		if req.RequestType != customresources.Delete {
 			val = v.Value
 		}
 		vars[empire.Variable(*v.Name)] = val
 	}
 
-	if req.RequestType == Update {
+	if req.RequestType == customresources.Update {
 		for i, v := range oldProperties.Variables {
 			err := isValid(i, &v)
 			if err != nil {
