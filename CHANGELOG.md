@@ -28,6 +28,7 @@
 **Performance**
 
 * Performance of creating/updating/deleting custom resources in the CloudFormation backend has been improved. [#942](https://github.com/remind101/empire/pull/942)
+* ECS Task Definitions are now cached in memory for improved `emp ps` performance. [#902](https://github.com/remind101/empire/pull/902)
 
 **Security**
 
