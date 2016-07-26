@@ -7,7 +7,7 @@
       "ParameterGroups": [
         {
           "Label": { "default": "Empire" },
-          "Parameters": ["LaunchEmpire", "EmpireVersion", "EventsBackend", "RunLogsBackend"]
+          "Parameters": ["LaunchEmpire", "EmpireVersion", "EventsBackend", "RunLogsBackend", "Scheduler"]
         },
         {
           "Label": { "default": "GitHub Authentication" },
@@ -28,6 +28,7 @@
         "EmpireVersion": { "default": "Daemon version" },
         "EventsBackend": { "default": "Send events to" },
         "RunLogsBackend": { "default": "Send interactive run logs to" },
+        "Scheduler": { "default": "Backend to use to run applications" },
         "GitHubClientId": { "default": "Client ID" },
         "GitHubClientSecret": { "default": "Client Secret" },
         "GitHubOrganization": { "default": "Organization" },
@@ -56,10 +57,16 @@
       "Default": "master",
       "Description": "Docker tag to specify the version of Empire to run. This can be any git branch or sha."
     },
+    "Scheduler": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The scheduling backend to use to run applications. The default is to run applications with ECS.",
+      "AllowedValues": ["", "cloudformation"]
+    },
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "The AMI id of the AMI to run the instances with. This defaults to the official ECS ami.",
-      "Default": "ami-67a3a90d"
+      "Default": "ami-55870742"
     },
     "KeyName": {
       "Type": "String",
@@ -327,6 +334,9 @@
           "UnhealthyThreshold": "2",
           "Interval": "30",
           "Timeout": "5"
+        },
+        "ConnectionSettings": {
+          "IdleTimeout": 3600
         }
       }
     },
@@ -550,7 +560,11 @@
                 "logs:CreateLogStream",
                 "logs:PutLogEvents"
               ],
-              "Resource": { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "LogGroup" }, ":log-stream:*"]] }
+              "Resource": [
+                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "ApplicationLogGroup" }, ":log-stream:*"]] },
+                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "DaemonLogGroup" }, ":log-stream:*"]] },
+                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "PostgresLogGroup" }, ":log-stream:*"]] }
+              ]
             }
           ]
         }
@@ -666,6 +680,14 @@
 
     "AutoScalingGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "2",
+          "WaitOnResourceSignals": "true",
+          "PauseTime": "PT2M"
+        }
+      },
       "Properties": {
         "AvailabilityZones": { "Ref": "AvailabilityZones" },
         "VPCZoneIdentifier": [{ "Fn::Join" : [",", [ { "Ref" : "PubSubnetAz1" }, { "Ref" : "PubSubnetAz2" } ] ] }],
@@ -706,40 +728,70 @@
       "Type": "AWS::ECS::Cluster"
     },
 
+    "DBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for RDS DB Instance.",
+        "VpcId": { "Ref" : "Vpc" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp", "FromPort": "5432", "ToPort": "5432",
+            "SourceSecurityGroupId": { "Ref": "InstanceSecurityGroup" }
+          }
+        ]
+      }
+    },
+
+    "DBSubnetGroup": {
+      "Type" : "AWS::RDS::DBSubnetGroup",
+      "Properties" : {
+        "DBSubnetGroupDescription": "Subnet group for Empire db",
+        "SubnetIds" : [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }]
+      }
+    },
+
+    "DB": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBName": "empire",
+        "Engine": "postgres",
+        "EngineVersion": "9.5.2",
+        "MasterUsername": "empire",
+        "MasterUserPassword": "epoo9mohNg",
+        "DBInstanceClass": "db.t2.micro",
+        "DBSubnetGroupName": { "Ref": "DBSubnetGroup" },
+        "AllocatedStorage": 5,
+        "VPCSecurityGroups": [ { "Fn::GetAtt": [ "DBSecurityGroup", "GroupId" ] } ]
+      },
+      "DeletionPolicy": "Delete"
+    },
+
     "TaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Condition": "DemoMode",
       "Properties": {
         "ContainerDefinitions": [
           {
-            "Name": "postgres",
-            "Image": "postgres",
-            "Cpu": 512,
-            "Memory": 256,
-            "EntryPoint": [],
-            "Environment": [],
-            "Command": [],
-            "PortMappings": [
-              {
-                "HostPort": 5432,
-                "ContainerPort": 5432
-              }
-            ],
-            "VolumesFrom": [],
-            "Links": [],
-            "MountPoints": [],
-            "Essential": "true"
-          },
-          {
             "Name": "empire",
             "Image": { "Fn::Join": [":", ["remind101/empire", { "Ref": "EmpireVersion" }]] },
-            "Cpu": 512,
+            "Cpu": 256,
             "Memory": 256,
             "EntryPoint": [],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-region": { "Ref": "AWS::Region" },
+                "awslogs-group": { "Ref": "DaemonLogGroup" }
+              }
+            },
             "Environment": [
               {
                 "Name": "AWS_REGION",
                 "Value": { "Ref": "AWS::Region" }
+              },
+              {
+                "Name": "EMPIRE_SCHEDULER",
+                "Value": { "Ref": "Scheduler" }
               },
               {
                 "Name": "EMPIRE_ENVIRONMENT",
@@ -747,7 +799,7 @@
               },
               {
                 "Name": "EMPIRE_DATABASE_URL",
-                "Value": "postgres://postgres:postgres@postgres/postgres?sslmode=disable"
+                "Value": { "Fn::Join": ["", ["postgres://empire:epoo9mohNg@", { "Fn::GetAtt": ["DB", "Endpoint.Address"] }, ":", { "Fn::GetAtt": ["DB", "Endpoint.Port"] } , "/empire"]] }
               },
               {
                 "Name": "EMPIRE_S3_TEMPLATE_BUCKET",
@@ -799,7 +851,18 @@
               },
               {
                 "Name": "EMPIRE_CLOUDWATCH_LOG_GROUP",
-                "Value": { "Ref": "LogGroup" }
+                "Value": { "Ref": "ApplicationLogGroup" }
+              },
+              {
+                "Name": "EMPIRE_ECS_LOG_DRIVER",
+                "Value": "awslogs"
+              },
+              {
+                "Name": "EMPIRE_ECS_LOG_OPT",
+                "Value": { "Fn::Join": [",", [
+                  { "Fn::Join": ["=", ["awslogs-region", { "Ref": "AWS::Region" }]] },
+                  { "Fn::Join": ["=", ["awslogs-group", { "Ref": "ApplicationLogGroup" }]] }
+                ]] }
               },
               {
                 "Name": "EMPIRE_CUSTOM_RESOURCES_TOPIC",
@@ -838,9 +901,6 @@
               }
             ],
             "VolumesFrom": [],
-            "Links": [
-              "postgres:postgres"
-            ],
             "MountPoints": [
               {
                 "SourceVolume": "dockerSocket",
@@ -900,7 +960,23 @@
       }
     },
 
-    "LogGroup": {
+    "ApplicationLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Condition": "CloudWatchLogs",
+      "Properties": {
+        "RetentionInDays": 7
+      }
+    },
+
+    "PostgresLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Condition": "CloudWatchLogs",
+      "Properties": {
+        "RetentionInDays": 7
+      }
+    },
+
+    "DaemonLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Condition": "CloudWatchLogs",
       "Properties": {
