@@ -40,7 +40,9 @@
       "Default": "true"
     },
     "RestartKey": {
-      "Type": "String"
+      "Type": "String",
+      "Description": "Key used to trigger a restart of an app",
+      "Default": "default"
     },
     "sendemailsScale": {
       "Type": "String"

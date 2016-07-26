@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	newUUID = func() string { return "uuid" }
+	newTimestamp = func() string { return "now" }
 }
 
 func TestScheduler_Submit_NewStack(t *testing.T) {
@@ -67,7 +67,6 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 		},
 		Tags: []*cloudformation.Tag{
@@ -168,9 +167,6 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
-		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -276,9 +272,6 @@ func TestScheduler_Submit_Superseded(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
-		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -385,9 +378,6 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
-		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -485,9 +475,6 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
-		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
 
 	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
@@ -576,9 +563,6 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 	c.On("UpdateStack", &cloudformation.UpdateStackInput{
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
-		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
-		},
 	}).Return(&cloudformation.UpdateStackOutput{}, errors.New("stack update failed"))
 
 	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
@@ -663,7 +647,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 			{
 				StackStatus: aws.String("CREATE_COMPLETE"),
 				Parameters: []*cloudformation.Parameter{
-					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
 				},
@@ -675,7 +658,6 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 		},
 	}).Return(&cloudformation.UpdateStackOutput{}, nil)
@@ -759,7 +741,6 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 	}).Return(&cloudformation.ValidateTemplateOutput{
 		Parameters: []*cloudformation.TemplateParameter{
 			{ParameterKey: aws.String("DNS")},
-			{ParameterKey: aws.String("RestartKey")},
 			{ParameterKey: aws.String("webScale")},
 		},
 	}, nil)
@@ -772,7 +753,6 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 				StackStatus: aws.String("CREATE_COMPLETE"),
 				Parameters: []*cloudformation.Parameter{
 					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("false")},
-					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
 				},
@@ -788,7 +768,6 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 				StackStatus: aws.String("CREATE_COMPLETE"),
 				Parameters: []*cloudformation.Parameter{
 					{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("false")},
-					{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 					{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 					{ParameterKey: aws.String("workerScale"), ParameterValue: aws.String("0")},
 				},
@@ -800,7 +779,6 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 		StackName:   aws.String("acme-inc"),
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 		Parameters: []*cloudformation.Parameter{
-			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("uuid")},
 			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
 			{ParameterKey: aws.String("DNS"), UsePreviousValue: aws.Bool(true)},
 		},
@@ -1320,6 +1298,54 @@ func TestUpdateParameters(t *testing.T) {
 		out := updateParameters(tt.parameters, tt.stack, tt.template)
 		assert.Equal(t, tt.out, out)
 	}
+}
+
+func TestScheduler_Restart(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		cloudformation: c,
+		s3:             x,
+		db:             db,
+		after:          fakeAfter,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{StackStatus: aws.String("CREATE_COMPLETE")},
+		},
+	}, nil)
+
+	c.On("UpdateStack", &cloudformation.UpdateStackInput{
+		StackName:           aws.String("acme-inc"),
+		UsePreviousTemplate: aws.Bool(true),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("RestartKey"), ParameterValue: aws.String("now")},
+		},
+	}).Return(&cloudformation.UpdateStackOutput{}, nil)
+
+	c.On("WaitUntilStackUpdateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	err = s.Restart(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, scheduler.NullStatusStream)
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
 }
 
 func newDB(t testing.TB) *sql.DB {

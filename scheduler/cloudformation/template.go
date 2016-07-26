@@ -150,7 +150,11 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 		Description: "When set to `true`, CNAME's will be altered",
 		Default:     "true",
 	}
-	tmpl.Parameters[restartParameter] = troposphere.Parameter{Type: "String"}
+	tmpl.Parameters[restartParameter] = troposphere.Parameter{
+		Type:        "String",
+		Description: "Key used to trigger a restart of an app",
+		Default:     "default",
+	}
 	tmpl.Conditions["DNSCondition"] = Equals(Ref("DNS"), "true")
 
 	for k, v := range t.ExtraOutputs {

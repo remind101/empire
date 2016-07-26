@@ -96,6 +96,83 @@ func TestScheduler_Submit(t *testing.T) {
 	}
 }
 
+func TestScheduler_Restart(t *testing.T) {
+	h := awsutil.NewHandler([]awsutil.Cycle{
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.ListServices",
+				Body:       `{"cluster":"empire"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"serviceArns":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeServices",
+				Body:       `{"cluster":"empire","services":["arn:aws:ecs:us-east-1:249285743859:service/1234--web"]}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"services":[{"taskDefinition":"1234--web"}]}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.DescribeTaskDefinition",
+				Body:       `{"taskDefinition":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"taskDefinition":{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port 80"],"environment":[{"name":"USER","value":"foo"},{"name":"PORT","value":"8080"}],"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web"}]}}`,
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.RegisterTaskDefinition",
+				Body:       `{"containerDefinitions":[{"cpu":128,"command":["acme-inc", "web", "--port", "80"],"environment":[{"name":"USER","value":"foo"},{"name":"PORT","value":"8080"}],"dockerLabels":{"label1":"foo","label2":"bar"},"essential":true,"image":"remind101/acme-inc:latest","memory":128,"name":"web","portMappings":[{"containerPort":8080,"hostPort":8080}]}],"family":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       "",
+			},
+		},
+
+		awsutil.Cycle{
+			Request: awsutil.Request{
+				RequestURI: "/",
+				Operation:  "AmazonEC2ContainerServiceV20141113.UpdateService",
+				Body:       `{"cluster":"empire","desiredCount":0,"service":"1234--web","taskDefinition":"1234--web"}`,
+			},
+			Response: awsutil.Response{
+				StatusCode: 200,
+				Body:       `{"service": {}}`,
+			},
+		},
+	})
+	m, s := newTestScheduler(h)
+	defer s.Close()
+
+	m.lb.(*mockLBManager).On("LoadBalancers", map[string]string{
+		"AppID":       "1234",
+		"ProcessType": "web",
+	}).Return([]*lb.LoadBalancer{
+		{Name: "lb-1234", InstancePort: 8080},
+	}, nil)
+
+	if err := m.Restart(context.Background(), fakeApp, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestScheduler_scale(t *testing.T) {
 	h := awsutil.NewHandler([]awsutil.Cycle{
 		awsutil.Cycle{
