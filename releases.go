@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -12,27 +11,44 @@ import (
 	"golang.org/x/net/context"
 )
 
-var ErrNoReleases = errors.New("no releases")
-
 // Release is a combination of a Config and a Slug, which form a deployable
-// release.
+// release. Releases are generally considered immutable, the only operation that
+// changes a release is when altering the Quantity or Constraints inside the
+// Formation.
 type Release struct {
-	ID      string
+	// A unique uuid to identify this release.
+	ID string
+
+	// An auto incremented ID for this release, scoped to the application.
 	Version int
 
+	// The id of the application that this release relates to.
 	AppID string
-	App   *App
 
+	// The application that this release relates to.
+	App *App
+
+	// The id of the config that this release uses.
 	ConfigID string
-	Config   *Config
 
+	// The config that this release uses.
+	Config *Config
+
+	// The id of the slug that this release uses.
 	SlugID string
-	Slug   *Slug
 
+	// The Slug that this release uses.
+	Slug *Slug
+
+	// The process formation to use.
 	Formation Formation
 
+	// A description for the release. Usually contains the reason for why
+	// the release was created (e.g. deployment, config changes, etc).
 	Description string
-	CreatedAt   *time.Time
+
+	// The time that this release was created.
+	CreatedAt *time.Time
 }
 
 // BeforeCreate sets created_at before inserting.
@@ -42,7 +58,7 @@ func (r *Release) BeforeCreate() error {
 	return nil
 }
 
-// ReleasesQuery is a Scope implementation for common things to filter releases
+// ReleasesQuery is a scope implementation for common things to filter releases
 // by.
 type ReleasesQuery struct {
 	// If provided, an app to filter by.
@@ -55,21 +71,21 @@ type ReleasesQuery struct {
 	Range headerutil.Range
 }
 
-// Scope implements the Scope interface.
-func (q ReleasesQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q ReleasesQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if app := q.App; app != nil {
-		scope = append(scope, FieldEquals("app_id", app.ID))
+		scope = append(scope, fieldEquals("app_id", app.ID))
 	}
 
 	if version := q.Version; version != nil {
-		scope = append(scope, FieldEquals("version", *version))
+		scope = append(scope, fieldEquals("version", *version))
 	}
 
-	scope = append(scope, Range(q.Range.WithDefaults(q.DefaultRange())))
+	scope = append(scope, inRange(q.Range.WithDefaults(q.DefaultRange())))
 
-	return scope.Scope(db)
+	return scope.scope(db)
 }
 
 // DefaultRange returns the default headerutil.Range used if values aren't
@@ -87,7 +103,17 @@ type releasesService struct {
 	*Empire
 }
 
-// Create creates a new release then submits it to the scheduler.
+// CreateAndRelease creates a new release then submits it to the scheduler.
+func (s *releasesService) CreateAndRelease(ctx context.Context, db *gorm.DB, r *Release, ss scheduler.StatusStream) (*Release, error) {
+	r, err := s.Create(ctx, db, r)
+	if err != nil {
+		return r, err
+	}
+	// Schedule the new release onto the cluster.
+	return r, s.Release(ctx, r, ss)
+}
+
+// Create creates a new release.
 func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (*Release, error) {
 	// Lock all releases for the given application to ensure that the
 	// release version is updated automically.
@@ -105,13 +131,7 @@ func (s *releasesService) Create(ctx context.Context, db *gorm.DB, r *Release) (
 		}
 	}
 
-	r, err := releasesCreate(db, r)
-	if err != nil {
-		return r, err
-	}
-
-	// Schedule the new release onto the cluster.
-	return r, s.Release(ctx, r)
+	return releasesCreate(db, r)
 }
 
 // Rolls back to a specific release version.
@@ -124,19 +144,19 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 	desc := fmt.Sprintf("Rollback to v%d", version)
 	desc = appendMessageToDescription(desc, opts.User, opts.Message)
-	return s.Create(ctx, db, &Release{
+	return s.CreateAndRelease(ctx, db, &Release{
 		App:         app,
 		Config:      r.Config,
 		Slug:        r.Slug,
 		Formation:   r.Formation,
 		Description: desc,
-	})
+	}, nil)
 }
 
 // Release submits a release to the scheduler.
-func (s *releasesService) Release(ctx context.Context, release *Release) error {
+func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream) error {
 	a := newSchedulerApp(release)
-	return s.Scheduler.Submit(ctx, a)
+	return s.Scheduler.Submit(ctx, a, ss)
 }
 
 // ReleaseApp will find the last release for an app and release it.
@@ -154,17 +174,17 @@ func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App)
 		return nil
 	}
 
-	return s.Release(ctx, release)
+	return s.Release(ctx, release, nil)
 }
 
 // These associations are always available on a Release.
-var releasesPreload = Preload("App", "Config", "Slug")
+var releasesPreload = preload("App", "Config", "Slug")
 
 // releasesFind returns the first matching release.
-func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
+func releasesFind(db *gorm.DB, scope scope) (*Release, error) {
 	var release Release
 
-	scope = ComposedScope{releasesPreload, scope}
+	scope = composedScope{releasesPreload, scope}
 	if err := first(db, scope, &release); err != nil {
 		return &release, err
 	}
@@ -173,9 +193,9 @@ func releasesFind(db *gorm.DB, scope Scope) (*Release, error) {
 }
 
 // releases returns all releases matching the scope.
-func releases(db *gorm.DB, scope Scope) ([]*Release, error) {
+func releases(db *gorm.DB, scope scope) ([]*Release, error) {
 	var releases []*Release
-	scope = ComposedScope{releasesPreload, scope}
+	scope = composedScope{releasesPreload, scope}
 	return releases, find(db, scope, &releases)
 }
 
@@ -253,7 +273,6 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 }
 
 func newSchedulerApp(release *Release) *scheduler.App {
-
 	var processes []*scheduler.Process
 
 	for name, p := range release.Formation {
@@ -274,6 +293,7 @@ func newSchedulerApp(release *Release) *scheduler.App {
 	return &scheduler.App{
 		ID:        release.App.ID,
 		Name:      release.App.Name,
+		Release:   fmt.Sprintf("v%d", release.Version),
 		Processes: processes,
 		Env:       env,
 		Labels:    labels,
@@ -301,6 +321,7 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 		CPUShares:   uint(p.CPUShare),
 		Nproc:       uint(p.Nproc),
 		Exposure:    processExposure(release.App, name),
+		Schedule:    processSchedule(name, p),
 	}
 }
 
@@ -317,12 +338,12 @@ func environment(vars Vars) map[string]string {
 
 func processExposure(app *App, process string) *scheduler.Exposure {
 	// For now, only the `web` process can be exposed.
-	if process != WebProcessType {
+	if process != webProcessType {
 		return nil
 	}
 
 	exposure := &scheduler.Exposure{
-		External: app.Exposure == ExposePublic,
+		External: app.Exposure == exposePublic,
 	}
 
 	switch app.Cert {
@@ -335,6 +356,14 @@ func processExposure(app *App, process string) *scheduler.Exposure {
 	}
 
 	return exposure
+}
+
+func processSchedule(name string, p Process) scheduler.Schedule {
+	if p.Cron != nil {
+		return scheduler.CRONSchedule(*p.Cron)
+	}
+
+	return nil
 }
 
 func appendMessageToDescription(main string, user *User, message string) string {

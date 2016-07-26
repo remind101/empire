@@ -1,7 +1,11 @@
+// Package heroku provides a Heroku Platform API compatible http.Handler
+// implementation for Empire.
 package heroku
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -11,7 +15,7 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
-	"github.com/remind101/pkg/httpx/middleware"
+	"github.com/remind101/pkg/reporter"
 )
 
 // The Accept header that controls the api version. See
@@ -72,13 +76,16 @@ func New(e *empire.Empire, authenticator auth.Authenticator) httpx.Handler {
 	// Logs
 	r.Handle("/apps/{app}/log-sessions", &PostLogs{e}).Methods("POST") // hk log
 
-	errorHandler := func(err error, w http.ResponseWriter, r *http.Request) {
-		Error(w, err, http.StatusInternalServerError)
-	}
-
 	api := Authenticate(r, authenticator)
 
-	return middleware.HandleError(api, errorHandler)
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		err := api.ServeHTTPContext(ctx, w, r)
+		if err != nil {
+			Error(w, err, http.StatusInternalServerError)
+			reporter.Report(ctx, err)
+		}
+		return nil
+	})
 }
 
 // Encode json encodes v into w.
@@ -91,9 +98,21 @@ func Encode(w http.ResponseWriter, v interface{}) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
+// DecodeRequest json decodes the request body into v, optionally ignoring EOF
+// errors to handle cases where the request body might be empty.
+func DecodeRequest(r *http.Request, v interface{}, ignoreEOF bool) error {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		if err == io.EOF && ignoreEOF {
+			return nil
+		}
+		return fmt.Errorf("error decoding request body: %v", err)
+	}
+	return nil
+}
+
 // Decode json decodes the request body into v.
 func Decode(r *http.Request, v interface{}) error {
-	return json.NewDecoder(r.Body).Decode(v)
+	return DecodeRequest(r, v, false)
 }
 
 // Stream encodes and flushes data to the client.

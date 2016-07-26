@@ -10,7 +10,7 @@ import (
 	"github.com/remind101/migrate"
 )
 
-var Migrations = []migrate.Migration{
+var migrations = []migrate.Migration{
 	{
 		ID: 1,
 		Up: migrate.Queries([]string{
@@ -545,4 +545,25 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`DROP TABLE scheduler_migration`,
 		}),
 	},
+
+	// This migration adds a table that stores environment variables for the
+	// Custom::ECSEnvironment resource.
+	{
+		ID: 18,
+		Up: migrate.Queries([]string{
+			`CREATE TABLE ecs_environment (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  environment json NOT NULL
+)`,
+		}),
+		Down: migrate.Queries([]string{
+			`DROP TABLE ecs_environment`,
+		}),
+	},
+}
+
+// latestSchema returns the schema version that this version of Empire should be
+// using.
+func latestSchema() int {
+	return migrations[len(migrations)-1].ID
 }

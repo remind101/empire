@@ -3,16 +3,22 @@
 package scheduler
 
 import (
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
+
+	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/pkg/logger"
 )
 
 type App struct {
 	// The id of the app.
 	ID string
+
+	// An identifier that represents the version of this release.
+	Release string
 
 	// The name of the app.
 	Name string
@@ -43,12 +49,6 @@ type Process struct {
 	// Labels to set on the container.
 	Labels map[string]string
 
-	// Exposure is the level of exposure for this process.
-	Exposure *Exposure
-
-	// Instances is the desired instances of this service to run.
-	Instances uint
-
 	// The amount of RAM to allocate to this process in bytes.
 	MemoryLimit uint
 
@@ -58,7 +58,22 @@ type Process struct {
 
 	// ulimit -u
 	Nproc uint
+
+	// Instances is the desired instances of this service to run.
+	Instances uint
+
+	// Exposure is the level of exposure for this process.
+	Exposure *Exposure
+
+	// Can be used to setup a CRON schedule to run this task periodically.
+	Schedule Schedule
 }
+
+// Schedule represents a Schedule for scheduled tasks that run periodically.
+type Schedule interface{}
+
+// CRONSchedule is a Schedule implementation that represents a CRON expression.
+type CRONSchedule string
 
 // Exposure controls the exposure settings for a process.
 type Exposure struct {
@@ -105,11 +120,6 @@ type Instance struct {
 	UpdatedAt time.Time
 }
 
-type Scaler interface {
-	// Scale scales an app process.
-	Scale(ctx context.Context, app string, process string, instances uint) error
-}
-
 type Runner interface {
 	// Run runs a process.
 	Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error
@@ -117,11 +127,14 @@ type Runner interface {
 
 // Scheduler is an interface for interfacing with Services.
 type Scheduler interface {
-	Scaler
 	Runner
 
 	// Submit submits an app, creating it or updating it as necessary.
-	Submit(context.Context, *App) error
+	// When StatusStream is nil, Submit should return as quickly as possible,
+	// usually when the new version has been received, and validated. If
+	// StatusStream is not nil, it's recommended that the method not return until
+	// the deployment has fully completed.
+	Submit(context.Context, *App, StatusStream) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
@@ -154,4 +167,41 @@ func merge(envs ...map[string]string) map[string]string {
 		}
 	}
 	return merged
+}
+
+type Status struct {
+	// A friendly human readable message about the status change.
+	Message string
+}
+
+// String implements the fmt.Stringer interface.
+func (s *Status) String() string {
+	return s.Message
+}
+
+// StatusStream is an interface for publishing status updates while a scheduler
+// is executing.
+type StatusStream interface {
+	// Publish publishes an update to the status stream
+	Publish(Status) error
+}
+
+// StatusStreamFunc is a function that implements the Statusstream interface
+type StatusStreamFunc func(Status) error
+
+func (fn StatusStreamFunc) Publish(status Status) error {
+	return fn(status)
+}
+
+// NullStatusStream a status stream that does nothing.
+var NullStatusStream = StatusStreamFunc(func(status Status) error {
+	return nil
+})
+
+func Publish(ctx context.Context, stream StatusStream, msg string) {
+	if stream != nil {
+		if err := stream.Publish(Status{Message: msg}); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error publishing to stream: %v", err))
+		}
+	}
 }

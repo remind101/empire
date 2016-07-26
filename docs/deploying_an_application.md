@@ -30,7 +30,7 @@ worker:
   command: celery -A tasks worker --loglevel=info
 ```
 
-The extended Procfile formation is documented [here][extended-procfile].
+The extended Procfile format is documented [here][extended-procfile].
 
 Whichever format you use, the file would be named `Procfile`, and live at the directory root for your application.
 
@@ -123,6 +123,54 @@ ADD . /code/
 ```
 web: /code/run.sh
 ```
+
+### Scheduled processes
+
+**NOTE:** This feature is currently experimental, and requires the CloudFormation backend.
+
+Processes that should run at scheduled times can be configured in the extended procfile by setting a `cron` expression. The builtin support for running scheduled tasks has multiple advantages over using a process that runs cron inside the container:
+
+1. Scheduled tasks will not be killed during `emp deploy` or `emp restart`. If you have a long running task (e.g. a couple hours), those tasks will continue to run until completion.
+2. Memory and CPU constraints can be controlled on a per process basis, just like any other process in the Procfile.
+3. Scheduled tasks will show up in `emp ps` while they're running.
+
+To use scheduled processes, simply add a `cron: ` key when using the extended Procfile format:
+
+```yaml
+web:
+  command: ./bin/web
+scheduled-job:
+  command: ./bin/scheduled-job
+  cron: '0/2 * * * ? *' # Run once every 2 minutes
+```
+
+Like other non-web processes, scheduled processes are disabled by default. To enable a scheduled job, simply scale it up:
+
+```console
+$ emp scale scheduled-job=1
+```
+
+If you want to run more than 1 instance of the process when the cron expression triggers, you can scale it to a value greater than 1:
+
+```console
+$ emp scale scheduled-job=5 # Run 5 of these every minute
+```
+
+To disable a scheduled job, simply scale it back down to 0:
+
+```console
+$ emp scale scheduled-job=0
+```
+
+When the cron expression triggers, and a task is started, you'll be able to see it when using `emp ps`:
+
+```console
+$ emp ps
+v54.scheduled-job.9b649d34-b4f5-4fb7-bfe2-889d80dbd3c9  1X  RUNNING  11s  "./bin/scheduled-job"
+v54.web.fd130482-675f-4611-a599-eb0da1879a10            1X  RUNNING   9m  "./bin/web"
+```
+
+Refer to http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ScheduledEvents.html for details on the cron expression syntax.
 
 ## Environment variables
 

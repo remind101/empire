@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
 )
@@ -39,7 +40,7 @@ type MigrationScheduler struct {
 	// The scheduler that we want to migrate to.
 	cloudformation interface {
 		scheduler.Scheduler
-		SubmitWithOptions(context.Context, *scheduler.App, SubmitOptions) error
+		SubmitWithOptions(context.Context, *scheduler.App, scheduler.StatusStream, SubmitOptions) error
 	}
 
 	// The scheduler we're migrating from.
@@ -64,7 +65,7 @@ func NewMigrationScheduler(db *sql.DB, c *Scheduler, e *ecs.Scheduler) *Migratio
 func (s *MigrationScheduler) Backend(appID string) (scheduler.Scheduler, error) {
 	backend, err := s.backend(appID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching backend: %v", err)
 	}
 
 	switch backend {
@@ -90,7 +91,7 @@ func (s *MigrationScheduler) backend(appID string) (string, error) {
 	return backend, err
 }
 
-func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) error {
+func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	state, err := s.backend(app.ID)
 	if err != nil {
 		return err
@@ -98,7 +99,7 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 
 	desiredState := app.Env[MigrationEnvVar]
 	if desiredState != "" {
-		if err := s.Migrate(ctx, app, state, desiredState); err != nil {
+		if err := s.Migrate(ctx, app, ss, state, desiredState); err != nil {
 			return fmt.Errorf("error migrating app from %s to %s: %v", state, desiredState, err)
 		}
 		return nil
@@ -108,13 +109,13 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App) err
 	if err != nil {
 		return err
 	}
-	return b.Submit(ctx, app)
+	return b.Submit(ctx, app, ss)
 }
 
 // Migrate submits the app to the CloudFormation scheduler, waits for the stack
 // to successfully create, then removes the old API managed resources using the
 // ECS scheduler.
-func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, state, desiredState string) error {
+func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, state, desiredState string) error {
 	errTransition := fmt.Errorf("cannot transition from %s to %s", state, desiredState)
 
 	// Whether or not we're re-trying a state transition.
@@ -128,9 +129,8 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 
 		// Submit to cloudformation and wait for it to complete successfully.
 		// Don't make any DNS changes.
-		if err := s.cloudformation.SubmitWithOptions(ctx, app, SubmitOptions{
-			Wait:  false,
-			NoDNS: true,
+		if err := s.cloudformation.SubmitWithOptions(ctx, app, ss, SubmitOptions{
+			NoDNS: aws.Bool(true),
 		}); err != nil {
 			return fmt.Errorf("error creating CloudFormation stack: %v", err)
 		}
@@ -149,7 +149,9 @@ func (s *MigrationScheduler) Migrate(ctx context.Context, app *scheduler.App, st
 
 		// The user may have already manually enabled the DNS change,
 		// but let's make sure.
-		if err := s.cloudformation.Submit(ctx, app); err != nil {
+		if err := s.cloudformation.SubmitWithOptions(ctx, app, ss, SubmitOptions{
+			NoDNS: aws.Bool(false),
+		}); err != nil {
 			return fmt.Errorf("error updating CloudFormation stack: %v", err)
 		}
 
@@ -195,14 +197,6 @@ func (s *MigrationScheduler) Run(ctx context.Context, app *scheduler.App, proces
 		return err
 	}
 	return b.Run(ctx, app, process, in, out)
-}
-
-func (s *MigrationScheduler) Scale(ctx context.Context, appID, process string, instances uint) error {
-	b, err := s.Backend(appID)
-	if err != nil {
-		return err
-	}
-	return b.Scale(ctx, appID, process, instances)
 }
 
 func (s *MigrationScheduler) Stop(ctx context.Context, id string) error {

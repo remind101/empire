@@ -24,7 +24,7 @@ var (
 	DefaultConstraints = Constraints1X
 )
 
-// Constraints aliases empire.Constraints type to implement the
+// Constraints aliases the constraints.Constraints type to implement the
 // json.Unmarshaller interface.
 type Constraints constraints.Constraints
 

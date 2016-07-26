@@ -1,7 +1,6 @@
 package cli_test
 
 import (
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -12,15 +11,16 @@ import (
 )
 
 func TestLogin(t *testing.T) {
-	e := empiretest.NewEmpire(t)
-	s := httptest.NewServer(server.New(e, server.Options{
+	s := empiretest.NewTestServer(t, nil, server.Options{
 		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
-	}))
-	defer s.Close()
+	})
+
+	cli := newCLIWithServer(t, s)
+	defer cli.Close()
 
 	input := "fake\nbar\n"
 
-	cmd := NewCmd(s.URL, "login")
+	cmd := cli.Command("login")
 	cmd.Stdin = strings.NewReader(input)
 
 	out, err := cmd.CombinedOutput()
@@ -34,15 +34,16 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginUnauthorized(t *testing.T) {
-	e := empiretest.NewEmpire(t)
-	s := httptest.NewServer(server.New(e, server.Options{
+	s := empiretest.NewTestServer(t, nil, server.Options{
 		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
-	}))
-	defer s.Close()
+	})
+
+	cli := newCLIWithServer(t, s)
+	defer cli.Close()
 
 	input := "foo\nbar\n"
 
-	cmd := NewCmd(s.URL, "login")
+	cmd := cli.Command("login")
 	cmd.Stdin = strings.NewReader(input)
 
 	out, err := cmd.CombinedOutput()
@@ -56,15 +57,16 @@ func TestLoginUnauthorized(t *testing.T) {
 }
 
 func TestLoginTwoFactor(t *testing.T) {
-	e := empiretest.NewEmpire(t)
-	s := httptest.NewServer(server.New(e, server.Options{
+	s := empiretest.NewTestServer(t, nil, server.Options{
 		Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
-	}))
-	defer s.Close()
+	})
+
+	cli := newCLIWithServer(t, s)
+	defer cli.Close()
 
 	input := "twofactor\nbar\ncode\n"
 
-	cmd := NewCmd(s.URL, "login")
+	cmd := cli.Command("login")
 	cmd.Stdin = strings.NewReader(input)
 
 	out, err := cmd.CombinedOutput()

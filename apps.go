@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -13,42 +12,41 @@ import (
 )
 
 const (
-	ExposePrivate = "private"
-	ExposePublic  = "public"
-)
-
-var (
-	// ErrInvalidName is used to indicate that the app name is not valid.
-	ErrInvalidName = &ValidationError{
-		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
-	}
+	exposePrivate = "private"
+	exposePublic  = "public"
 )
 
 // NamePattern is a regex pattern that app names must conform to.
 var NamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,30}$`)
 
-// AppNameFromRepo generates a name from a Repo
+// appNameFromRepo generates a name from a Repo
 //
 //	remind101/r101-api => r101-api
-func AppNameFromRepo(repo string) string {
+func appNameFromRepo(repo string) string {
 	p := strings.Split(repo, "/")
 	return p[len(p)-1]
 }
 
-// App represents an app.
+// App represents an Empire application.
 type App struct {
+	// A unique uuid that identifies the application.
 	ID string
 
+	// The name of the application.
 	Name string
 
+	// If provided, the Docker repo that this application is linked to.
+	// Deployments to Empire, which don't specify an application, will use
+	// this field to determine what app an image should be deployed to.
 	Repo *string
 
-	// Valid values are empire.ExposePrivate and empire.ExposePublic.
+	// Valid values are exposePrivate and exposePublic.
 	Exposure string
 
 	// The name of an SSL cert for the web process of this app.
 	Cert string
 
+	// The time that this application was created.
 	CreatedAt *time.Time
 }
 
@@ -66,13 +64,13 @@ func (a *App) BeforeCreate() error {
 	a.CreatedAt = &t
 
 	if a.Exposure == "" {
-		a.Exposure = ExposePrivate
+		a.Exposure = exposePrivate
 	}
 
 	return a.IsValid()
 }
 
-// AppsQuery is a Scope implementation for common things to filter releases
+// AppsQuery is a scope implementation for common things to filter releases
 // by.
 type AppsQuery struct {
 	// If provided, an App ID to find.
@@ -85,30 +83,23 @@ type AppsQuery struct {
 	Repo *string
 }
 
-// Scope implements the Scope interface.
-func (q AppsQuery) Scope(db *gorm.DB) *gorm.DB {
-	var scope ComposedScope
+// scope implements the scope interface.
+func (q AppsQuery) scope(db *gorm.DB) *gorm.DB {
+	var scope composedScope
 
 	if q.ID != nil {
-		scope = append(scope, ID(*q.ID))
+		scope = append(scope, idEquals(*q.ID))
 	}
 
 	if q.Name != nil {
-		scope = append(scope, FieldEquals("name", *q.Name))
+		scope = append(scope, fieldEquals("name", *q.Name))
 	}
 
 	if q.Repo != nil {
-		scope = append(scope, FieldEquals("repo", *q.Repo))
+		scope = append(scope, fieldEquals("repo", *q.Repo))
 	}
 
-	return scope.Scope(db)
-}
-
-// AppID returns a scope to find an app by id.
-func AppID(id string) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("id = ?", id)
-	}
+	return scope.scope(db)
 }
 
 type appsService struct {
@@ -132,53 +123,53 @@ func (s *appsService) Restart(ctx context.Context, db *gorm.DB, opts RestartOpts
 	return s.releases.ReleaseApp(ctx, db, opts.App)
 }
 
-func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) (*Process, error) {
-	app, t, quantity, c := opts.App, opts.Process, opts.Quantity, opts.Constraints
+func (s *appsService) Scale(ctx context.Context, db *gorm.DB, opts ScaleOpts) ([]*Process, error) {
+	app := opts.App
 
 	release, err := releasesFind(db, ReleasesQuery{App: app})
 	if err != nil {
 		return nil, err
 	}
-
 	if release == nil {
 		return nil, &ValidationError{Err: fmt.Errorf("no releases for %s", app.Name)}
 	}
 
-	p, ok := release.Formation[t]
-	if !ok {
-		return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
-	}
-
 	event := opts.Event()
-	event.PreviousQuantity = p.Quantity
-	event.PreviousConstraints = p.Constraints()
 
-	// Update quantity for this process in the formation
-	p.Quantity = quantity
-	if c != nil {
-		p.SetConstraints(*c)
+	var ps []*Process
+	for i, up := range opts.Updates {
+		t, q, c := up.Process, up.Quantity, up.Constraints
+
+		p, ok := release.Formation[t]
+		if !ok {
+			return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
+		}
+
+		eventUpdate := event.Updates[i]
+		eventUpdate.PreviousQuantity = p.Quantity
+		eventUpdate.PreviousConstraints = p.Constraints()
+
+		// Update quantity for this process in the formation
+		p.Quantity = q
+		if c != nil {
+			p.SetConstraints(*c)
+		}
+
+		release.Formation[t] = p
+		ps = append(ps, &p)
 	}
-
-	release.Formation[t] = p
 
 	// Save the new formation.
 	if err := releasesUpdate(db, release); err != nil {
 		return nil, err
 	}
 
-	// If there are no changes to the process size, we can do a quick scale
-	// up, otherwise, we will resubmit the release to the scheduler.
-	if c == nil {
-		err = s.Scheduler.Scale(ctx, release.AppID, opts.Process, uint(quantity))
-	} else {
-		err = s.releases.Release(ctx, release)
-	}
-
+	err = s.releases.Release(ctx, release, nil)
 	if err != nil {
-		return &p, err
+		return ps, err
 	}
 
-	return &p, s.PublishEvent(event)
+	return ps, s.PublishEvent(event)
 }
 
 // appsEnsureRepo will set the repo if it's not set.
@@ -195,7 +186,7 @@ func appsEnsureRepo(db *gorm.DB, app *App, repo string) error {
 // appsFindOrCreateByRepo first attempts to find an app by repo, falling back to
 // creating a new app.
 func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
-	n := AppNameFromRepo(repo)
+	n := appNameFromRepo(repo)
 	a, err := appsFind(db, AppsQuery{Name: &n})
 	if err != nil && err != gorm.RecordNotFound {
 		return a, err
@@ -215,16 +206,16 @@ func appsFindOrCreateByRepo(db *gorm.DB, repo string) (*App, error) {
 }
 
 // appsFind finds a single app given the scope.
-func appsFind(db *gorm.DB, scope Scope) (*App, error) {
+func appsFind(db *gorm.DB, scope scope) (*App, error) {
 	var app App
 	return &app, first(db, scope, &app)
 }
 
 // apps finds all apps matching the scope.
-func apps(db *gorm.DB, scope Scope) ([]*App, error) {
+func apps(db *gorm.DB, scope scope) ([]*App, error) {
 	var apps []*App
 	// Default to ordering by name.
-	scope = ComposedScope{Order("name"), scope}
+	scope = composedScope{order("name"), scope}
 	return apps, find(db, scope, &apps)
 }
 

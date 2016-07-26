@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func TestMigrationScheduler_NewApp(t *testing.T) {
 
 	c.On("Submit", app).Return(nil)
 
-	err := s.Submit(context.Background(), app)
+	err := s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -67,7 +68,7 @@ func TestMigrationScheduler_OldApp(t *testing.T) {
 
 	e.On("Submit", app).Return(nil)
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -104,10 +105,10 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 	// Step1: Create the CloudFormation stack without making any DNS
 	// changes.
 	c.On("SubmitWithOptions", app, SubmitOptions{
-		NoDNS: true,
+		NoDNS: aws.Bool(true),
 	}).Return(nil)
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -117,12 +118,14 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 	// remove the existing ECS resources.
 	app.Env[MigrationEnvVar] = "step2"
 
-	c.On("Submit", app).Return(nil)
+	c.On("SubmitWithOptions", app, SubmitOptions{
+		NoDNS: aws.Bool(false),
+	}).Return(nil)
 	e.On("RemoveWithOptions", app.ID, ecs.RemoveOptions{
 		NoDNS: true,
 	}).Return(nil)
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -133,7 +136,7 @@ func TestMigrationScheduler_Migrate(t *testing.T) {
 
 	c.On("Submit", app).Return(err)
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -172,15 +175,15 @@ func TestMigrationScheduler_Migrate_Rollback(t *testing.T) {
 	}
 
 	c.On("SubmitWithOptions", app, SubmitOptions{
-		NoDNS: true,
+		NoDNS: aws.Bool(true),
 	}).Return(nil).Twice()
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	// Let's assume the the CloudFormation stack that was created got rolled
 	// back, so they manually delete the stack and try again.
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.NoError(t, err)
 
 	e.AssertExpectations(t)
@@ -214,13 +217,13 @@ func TestMigrationScheduler_Migrate_InvalidStateTransitions(t *testing.T) {
 		},
 	}
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error migrating app from ecs to step2: cannot transition from ecs to step2")
 
 	app.Env[MigrationEnvVar] = "step3"
 
-	err = s.Submit(context.Background(), app)
+	err = s.Submit(context.Background(), app, nil)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error migrating app from ecs to step3: cannot transition to step3")
 
@@ -233,7 +236,7 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
 	args := m.Called(app)
 	return args.Error(0)
 }
@@ -251,7 +254,7 @@ type mockCloudFormationScheduler struct {
 	mockScheduler
 }
 
-func (m *mockCloudFormationScheduler) SubmitWithOptions(_ context.Context, app *scheduler.App, opts SubmitOptions) error {
+func (m *mockCloudFormationScheduler) SubmitWithOptions(_ context.Context, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	args := m.Called(app, opts)
 	return args.Error(0)
 }

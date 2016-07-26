@@ -1,3 +1,5 @@
+// Package procfile provides methods for parsing standard and extended
+// Procfiles.
 package procfile
 
 import (
@@ -21,6 +23,7 @@ func (e ExtendedProcfile) version() string {
 
 type Process struct {
 	Command interface{} `yaml:"command"`
+	Cron    *string     `yaml:"cron,omitempty"`
 }
 
 // StandardProcfile represents a standard Procfile.

@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -29,12 +30,12 @@ func NewKinesisLogsStreamer() *KinesisLogsStreamer {
 func (s *KinesisLogsStreamer) StreamLogs(app *App, w io.Writer, duration time.Duration) error {
 	k, err := kinesumer.NewDefault(app.ID, duration)
 	if err != nil {
-		return err
+		return fmt.Errorf("error initializing kinesumer: %v", err)
 	}
 
 	_, err = k.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("error starting kinesumer: %v", err)
 	}
 	defer k.End()
 
@@ -42,7 +43,7 @@ func (s *KinesisLogsStreamer) StreamLogs(app *App, w io.Writer, duration time.Du
 		rec := <-k.Records()
 		msg := append(rec.Data(), '\n')
 		if _, err := w.Write(msg); err != nil {
-			return err
+			return fmt.Errorf("error writing kinesis record to log stream: %v", err)
 		}
 	}
 }

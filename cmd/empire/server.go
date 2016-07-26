@@ -16,6 +16,7 @@ import (
 	githubauth "github.com/remind101/empire/server/auth/github"
 	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
+	"github.com/remind101/empire/server/middleware"
 	"golang.org/x/oauth2"
 )
 
@@ -36,6 +37,18 @@ func runServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 
+	// Do a preliminary health check to make sure everything is good at
+	// boot.
+	if err := e.IsHealthy(); err != nil {
+		if err, ok := err.(*empire.IncompatibleSchemaError); ok {
+			log.Fatal(fmt.Errorf("%v. You can resolve this error by running the migrations with `empire migrate` or with the `--automigrate` flag", err))
+		}
+
+		log.Fatal(err)
+	} else {
+		log.Println("Health checks passed")
+	}
+
 	if c.String(FlagCustomResourcesQueue) != "" {
 		p, err := newCloudFormationCustomResourceProvisioner(e, c)
 		if err != nil {
@@ -45,12 +58,20 @@ func runServer(c *cli.Context) {
 		go p.Start()
 	}
 
-	s := newServer(c, e)
+	s, err := newServer(c, e)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("Starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }
 
-func newServer(c *cli.Context, e *empire.Empire) http.Handler {
+func newServer(c *cli.Context, e *empire.Empire) (http.Handler, error) {
+	rootCtx, err := newRootContext(c)
+	if err != nil {
+		return nil, err
+	}
+
 	var opts server.Options
 	opts.Authenticator = newAuthenticator(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
@@ -58,19 +79,19 @@ func newServer(c *cli.Context, e *empire.Empire) http.Handler {
 	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
-	return server.New(e, opts)
+	h := middleware.Common(server.New(e, opts))
+	return middleware.Handler(rootCtx, h), nil
 }
 
-func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
-	r, err := newReporter(c)
+func newCloudFormationCustomResourceProvisioner(db *empire.DB, c *cli.Context) (*cloudformation.CustomResourceProvisioner, error) {
+	ctx, err := newRootContext(c)
 	if err != nil {
 		return nil, err
 	}
 
-	p := cloudformation.NewCustomResourceProvisioner(e, newConfigProvider(c))
-	p.Logger = newLogger()
-	p.Reporter = r
+	p := cloudformation.NewCustomResourceProvisioner(db.DB.DB(), newConfigProvider(c))
 	p.QueueURL = c.String(FlagCustomResourcesQueue)
+	p.Context = ctx
 	return p, nil
 }
 

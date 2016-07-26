@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,8 +24,9 @@ func TestEmpireTemplate(t *testing.T) {
 		{
 			"basic.json",
 			&scheduler.App{
-				ID:   "1234",
-				Name: "acme-inc",
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
 				Env: map[string]string{
 					// These should get re-sorted in
 					// alphabetical order.
@@ -65,8 +68,9 @@ func TestEmpireTemplate(t *testing.T) {
 		{
 			"https.json",
 			&scheduler.App{
-				ID:   "1234",
-				Name: "acme-inc",
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
@@ -91,18 +95,24 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
-			"fast.json",
+			"custom.json",
 			&scheduler.App{
-				ID:   "1234",
-				Name: "acme-inc",
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
 				Env: map[string]string{
-					"ECS_UPDATES": "fast",
+					"ECS_TASK_DEFINITION": "custom",
 				},
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"B":   "foo",
+							"A":   "foo",
+							"FOO": "bar",
+						},
 						Exposure: &scheduler.Exposure{
 							Type: &scheduler.HTTPExposure{},
 						},
@@ -115,15 +125,54 @@ func TestEmpireTemplate(t *testing.T) {
 						Nproc:       256,
 					},
 					{
-						Type:    "worker",
-						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command: []string{"./bin/worker"},
+						Type:      "vacuum",
+						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:   []string{"./bin/vacuum"},
+						Schedule:  scheduler.CRONSchedule("* * * * *"),
+						Instances: 1,
 						Labels: map[string]string{
-							"empire.app.process": "worker",
+							"empire.app.process": "vacuum",
 						},
-						Env: map[string]string{
-							"FOO": "BAR",
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Nproc:       256,
+					},
+				},
+			},
+		},
+
+		{
+			"cron.json",
+			&scheduler.App{
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Processes: []*scheduler.Process{
+					{
+						Type:      "send-emails",
+						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:   []string{"./bin/send-emails"},
+						Schedule:  scheduler.CRONSchedule("* * * * *"),
+						Instances: 1,
+						Labels: map[string]string{
+							"empire.app.process": "send-emails",
 						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Nproc:       256,
+					},
+					{
+						Type:      "vacuum",
+						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:   []string{"./bin/vacuum"},
+						Schedule:  scheduler.CRONSchedule("* * * * *"),
+						Instances: 0,
+						Labels: map[string]string{
+							"empire.app.process": "vacuum",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Nproc:       256,
 					},
 				},
 			},
@@ -154,10 +203,11 @@ func TestEmpireTemplate_Large(t *testing.T) {
 		env[fmt.Sprintf("ENV_VAR_%d", i)] = fmt.Sprintf("value%d", i)
 	}
 	app := &scheduler.App{
-		ID:     "",
-		Name:   "bigappwithlotsofprocesses",
-		Env:    env,
-		Labels: labels,
+		ID:      "",
+		Release: "v1",
+		Name:    "bigappwithlotsofprocesses",
+		Env:     env,
+		Labels:  labels,
 	}
 
 	for i := 0; i < 60; i++ {
@@ -171,10 +221,28 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	err := tmpl.Execute(buf, app)
+	t.Logf("Template size: %d bytes", buf.Len())
 	assert.NoError(t, err)
 	assert.Condition(t, func() bool {
 		return buf.Len() < MaxTemplateSize
 	}, fmt.Sprintf("template must be smaller than %d, was %d", MaxTemplateSize, buf.Len()))
+}
+
+func TestScheduleExpression(t *testing.T) {
+	tests := []struct {
+		schedule   scheduler.Schedule
+		expression string
+	}{
+		{scheduler.CRONSchedule("0 12 * * ? *"), "cron(0 12 * * ? *)"},
+		{5 * time.Minute, "rate(5 minutes)"},
+		{1 * time.Minute, "rate(1 minute)"},
+		{24 * time.Hour, "rate(1440 minutes)"},
+	}
+
+	for _, tt := range tests {
+		expression := scheduleExpression(tt.schedule)
+		assert.Equal(t, tt.expression, expression)
+	}
 }
 
 func newTemplate() *EmpireTemplate {
@@ -189,6 +257,11 @@ func newTemplate() *EmpireTemplate {
 		HostedZone: &route53.HostedZone{
 			Id:   aws.String("Z3DG6IL3SJCGPX"),
 			Name: aws.String("empire"),
+		},
+		ExtraOutputs: map[string]troposphere.Output{
+			"EmpireVersion": troposphere.Output{
+				Value: "x.x.x",
+			},
 		},
 	}
 }

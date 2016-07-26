@@ -25,15 +25,18 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 	event.Repository.FullName = "remind101/acme-inc"
 	event.Deployment.Sha = "abcd123"
 	event.Deployment.Creator.Login = "ejholmes"
+	event.Deployment.ID = 53252
 
 	b := new(bytes.Buffer)
 
-	e.On("Deploy", empire.DeploymentsCreateOpts{
+	e.On("Deploy", empire.DeployOpts{
 		User: &empire.User{Name: "ejholmes"},
 		Image: image.Image{
 			Repository: "remind101/acme-inc",
 			Tag:        "abcd123",
 		},
+		Stream:  true,
+		Message: "GitHub deployment #53252 of remind101/acme-inc",
 	}).Return(nil)
 
 	err := d.Deploy(context.Background(), event, b)
@@ -51,7 +54,7 @@ type mockEmpire struct {
 	mock.Mock
 }
 
-func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeploymentsCreateOpts) (*empire.Release, error) {
+func (m *mockEmpire) Deploy(ctx context.Context, opts empire.DeployOpts) (*empire.Release, error) {
 	w := opts.Output
 	if err := dockerutil.FakePull(image.Image{Repository: "remind101/acme-inc", Tag: "latest"}, w); err != nil {
 		panic(err)

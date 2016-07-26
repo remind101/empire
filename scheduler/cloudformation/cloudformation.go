@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"html/template"
 	"io"
 	"strings"
@@ -22,7 +23,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
+	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
 
@@ -34,8 +37,29 @@ var newUUID = uuid.New
 // values.
 const servicesOutput = "Services"
 
+const deploymentsOutput = "Deployments"
+
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
+
+// Variables to control stack update locking.
+var (
+	// This controls how long a pending stack update has to wait in the queue before
+	// it gives up.
+	lockTimeout = 10 * time.Minute
+
+	// Controls how long we'll wait to obtain the stack update lock before we
+	// consider the update to be asynchronous.
+	lockWait = 2 * time.Second
+
+	// Controls the maximum amount of time we'll wait for a stack operation to
+	// complete before releasing the lock.
+	stackOperationTimeout = 10 * time.Minute
+
+	// Controls how long we'll wait between requests to describe services when
+	// waiting for a deployment to stabilize
+	pollServicesWait = 20 * time.Second
+)
 
 // CloudFormation limits
 //
@@ -46,7 +70,8 @@ const (
 
 // ECS limits
 const (
-	MaxDescribeTasks = 100
+	MaxDescribeTasks    = 100
+	MaxDescribeServices = 10
 )
 
 // DefaultStackNameTemplate is the default text/template for generating a
@@ -68,6 +93,7 @@ type cloudformationClient interface {
 	DescribeStacks(*cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error)
 	WaitUntilStackCreateComplete(*cloudformation.DescribeStacksInput) error
 	WaitUntilStackUpdateComplete(*cloudformation.DescribeStacksInput) error
+	ValidateTemplate(*cloudformation.ValidateTemplateInput) (*cloudformation.ValidateTemplateOutput, error)
 }
 
 // ecsClient duck types the ecs.ECS interface that we use.
@@ -79,6 +105,7 @@ type ecsClient interface {
 	RegisterTaskDefinition(*ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
+	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 }
 
 // s3Client duck types the s3.S3 interface that we use.
@@ -103,9 +130,6 @@ type Scheduler struct {
 	// The ECS cluster to run tasks in.
 	Cluster string
 
-	// If true, wait for stack updates and creates to complete.
-	Wait bool
-
 	// The name of the bucket to store templates in.
 	Bucket string
 
@@ -126,6 +150,8 @@ type Scheduler struct {
 	s3 s3Client
 
 	db *sql.DB
+
+	after func(time.Duration) <-chan time.Time
 }
 
 // NewScheduler returns a new Scheduler instance.
@@ -135,47 +161,39 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 		ecs:            ecs.New(config),
 		s3:             s3.New(config),
 		db:             db,
+		after:          time.After,
 	}
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App) error {
-	return s.SubmitWithOptions(ctx, app, SubmitOptions{
-		Wait: s.Wait,
-	})
+func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	return s.SubmitWithOptions(ctx, app, ss, SubmitOptions{})
 }
 
 // SubmitOptions are options provided to SubmitWithOptions.
 type SubmitOptions struct {
-	// If true, waits to for the stack to complete the create/update
-	// successfully.
-	Wait bool
-
 	// When true, does not make any changes to DNS. This is only used when
 	// migrating to this scheduler
-	NoDNS bool
+	NoDNS *bool
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, opts SubmitOptions) error {
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	err = s.submit(ctx, tx, app, opts)
+	err = s.submit(ctx, tx, app, ss, opts)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-
 	return tx.Commit()
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, opts SubmitOptions) error {
-	wait := opts.Wait
-
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
@@ -194,24 +212,12 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return err
 	}
 
-	buf := new(bytes.Buffer)
-	if err := s.Template.Execute(buf, app); err != nil {
+	t, err := s.createTemplate(ctx, app)
+	if err != nil {
 		return err
 	}
 
-	key := fmt.Sprintf("%s/%s/%x", app.Name, app.ID, sha1.Sum(buf.Bytes()))
-
-	_, err = s.s3.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(s.Bucket),
-		Key:         aws.String(fmt.Sprintf("/%s", key)),
-		Body:        bytes.NewReader(buf.Bytes()),
-		ContentType: aws.String("application/json"),
-	})
-	if err != nil {
-		return fmt.Errorf("error uploading stack template to s3: %v", err)
-	}
-
-	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
+	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
 
 	tags := append(s.Tags,
 		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
@@ -220,140 +226,400 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 
 	// Build parameters for the stack.
 	parameters := []*cloudformation.Parameter{
-		{
-			ParameterKey:   aws.String("DNS"),
-			ParameterValue: aws.String(fmt.Sprintf("%t", !opts.NoDNS)),
-		},
 		// FIXME: Remove this in favor of a Restart method.
 		{
 			ParameterKey:   aws.String(restartParameter),
 			ParameterValue: aws.String(newUUID()),
 		},
 	}
+
+	if opts.NoDNS != nil {
+		parameters = append(parameters, &cloudformation.Parameter{
+			ParameterKey:   aws.String("DNS"),
+			ParameterValue: aws.String(fmt.Sprintf("%t", *opts.NoDNS)),
+		})
+	}
+
 	for _, p := range app.Processes {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String(scaleParameter(p.Type)),
 			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
 		})
-
-		// FIXME: Remove this in favor of a RestartProcess method.
-		parameters = append(parameters, &cloudformation.Parameter{
-			ParameterKey:   aws.String(restartProcessParameter(p.Type)),
-			ParameterValue: aws.String(newUUID()),
-		})
 	}
 
-	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+	output := make(chan stackOperationOutput, 1)
+	_, err = s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackName),
 	})
 	if err, ok := err.(awserr.Error); ok && err.Message() == fmt.Sprintf("Stack with id %s does not exist", stackName) {
-		if _, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
-			StackName:   aws.String(stackName),
-			TemplateURL: aws.String(url),
-			Tags:        tags,
-			Parameters:  parameters,
-		}); err != nil {
+		if err := s.createStack(ctx, &createStackInput{
+			StackName:  aws.String(stackName),
+			Template:   t,
+			Tags:       tags,
+			Parameters: parameters,
+		}, output, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
 		}
-
-		if wait {
-			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-				StackName: aws.String(stackName),
-			}); err != nil {
-				return err
-			}
-		}
 	} else if err == nil {
-		if _, err := s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
-			StackName:   aws.String(stackName),
-			TemplateURL: aws.String(url),
-			Parameters:  parameters,
+		if err := s.updateStack(ctx, &updateStackInput{
+			StackName:  aws.String(stackName),
+			Template:   t,
+			Parameters: parameters,
 			// TODO: Update Go client
 			// Tags:         tags,
-		}, wait); err != nil {
+		}, output, ss); err != nil {
 			return err
 		}
 	} else {
 		return fmt.Errorf("error describing stack: %v", err)
 	}
 
+	if ss != nil {
+		o := <-output
+		if o.err != nil || o.stack == nil {
+			return o.err
+		}
+		if err := s.waitUntilStable(ctx, o.stack, ss); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error waiting for submit to stabilize: %v", err))
+		}
+	}
 	return nil
 }
 
-// updateStack performs a stack update, but waits for the stack to enter a
-// stable state before starting.
+func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream) error {
+	deployments, err := deploymentsToWatch(stack)
+	if err != nil {
+		return err
+	}
+	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
+	for status := range deploymentStatuses {
+		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
+	}
+	// TODO publish notification to empire
+	return nil
+}
+
+type deploymentStatus struct {
+	deployment *ecsDeployment
+	status     string
+}
+
+func (d *deploymentStatus) String() string {
+	return d.status
+}
+
+func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deployments map[string]*ecsDeployment) <-chan *deploymentStatus {
+	ch := make(chan *deploymentStatus)
+
+	wait := func(deployments map[string]*ecsDeployment) (bool, error) {
+		arns := make([]*string, 0, len(deployments))
+		for arn := range deployments {
+			arns = append(arns, aws.String(arn))
+		}
+
+		services, err := s.services(arns)
+		if err != nil {
+			return false, err
+		}
+
+		for _, service := range services {
+			d, ok := deployments[*service.ServiceArn]
+			if !ok {
+				return false, fmt.Errorf("missing deployment for: %s", service.ServiceArn)
+			}
+			primary := false
+			stable := len(service.Deployments) == 1
+			for _, deployment := range service.Deployments {
+				if *deployment.Id == d.ID {
+					primary = *deployment.Status == "PRIMARY"
+				}
+			}
+
+			if primary && stable {
+				ch <- &deploymentStatus{d, "stable"}
+				delete(deployments, *service.ServiceArn)
+			} else if primary {
+				// do nothing
+			} else {
+				ch <- &deploymentStatus{d, "inactive"}
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+
+	go func(deployments map[string]*ecsDeployment) {
+		keepWaiting := true
+		var err error
+		for keepWaiting && len(deployments) > 0 {
+			keepWaiting, err = wait(deployments)
+			if err != nil {
+				logger.Warn(ctx, fmt.Sprintf("error waiting for services to stabilize: %v", err))
+				break
+			}
+			if keepWaiting {
+				<-s.after(pollServicesWait)
+			}
+		}
+		close(ch)
+	}(deployments)
+
+	return ch
+}
+
+// createTemplate takes a scheduler.App, and returns a validated cloudformation
+// template.
+func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App) (*cloudformationTemplate, error) {
+	buf := new(bytes.Buffer)
+	if err := s.Template.Execute(buf, app); err != nil {
+		return nil, err
+	}
+
+	key := fmt.Sprintf("%s/%s/%x", app.Name, app.ID, sha1.Sum(buf.Bytes()))
+	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
+
+	if _, err := s.s3.PutObject(&s3.PutObjectInput{
+		Bucket:      aws.String(s.Bucket),
+		Key:         aws.String(fmt.Sprintf("/%s", key)),
+		Body:        bytes.NewReader(buf.Bytes()),
+		ContentType: aws.String("application/json"),
+	}); err != nil {
+		return nil, fmt.Errorf("error uploading stack template to s3: %v", err)
+	}
+
+	t := &cloudformationTemplate{
+		URL:  aws.String(url),
+		Size: buf.Len(),
+	}
+
+	resp, err := s.cloudformation.ValidateTemplate(&cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String(url),
+	})
+	if err != nil {
+		return t, &templateValidationError{template: t, err: err}
+	}
+
+	t.Parameters = resp.Parameters
+
+	return t, nil
+}
+
+// cloudformationTemplate represents a validated CloudFormation template.
+type cloudformationTemplate struct {
+	URL        *string
+	Size       int
+	Parameters []*cloudformation.TemplateParameter
+}
+
+// createStackInput are options provided to createStack.
+type createStackInput struct {
+	StackName  *string
+	Parameters []*cloudformation.Parameter
+	Tags       []*cloudformation.Tag
+	Template   *cloudformationTemplate
+}
+
+// createStack creates a new CloudFormation stack with the given input. This
+// function returns as soon as the stack creation has been submitted. It does
+// not wait for the stack creation to complete.
+func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
+	waiter := func(input *cloudformation.DescribeStacksInput) error {
+		scheduler.Publish(ctx, ss, "Creating stack")
+		err := s.cloudformation.WaitUntilStackCreateComplete(input)
+		if err == nil {
+			scheduler.Publish(ctx, ss, "Stack created")
+		}
+		return err
+	}
+
+	submitted := make(chan error)
+	fn := func() error {
+		_, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+			StackName:   input.StackName,
+			TemplateURL: input.Template.URL,
+			Tags:        input.Tags,
+			Parameters:  input.Parameters,
+		})
+		submitted <- err
+		return err
+	}
+	go func() {
+		stack, err := s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
+		output <- stackOperationOutput{stack, err}
+	}()
+
+	return <-submitted
+}
+
+// updateStackInput are options provided to update a stack.
+type updateStackInput struct {
+	StackName  *string
+	Parameters []*cloudformation.Parameter
+	Template   *cloudformationTemplate
+}
+
+// updateStack updates an existing CloudFormation stack with the given input.
+// If there are no other active updates, this function returns as soon as the
+// stack update has been submitted. If there are other updates, the function
+// returns after `lockTimeout` and the update continues in the background.
+func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
+	waiter := func(input *cloudformation.DescribeStacksInput) error {
+		scheduler.Publish(ctx, ss, "Waiting for stack update to complete")
+		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
+		if err == nil {
+			scheduler.Publish(ctx, ss, "Stack update complete")
+		}
+		return err
+	}
+
+	locked := make(chan struct{})
+	submitted := make(chan error, 1)
+	fn := func() error {
+		close(locked)
+		err := s.executeStackUpdate(input)
+		if err == nil {
+			scheduler.Publish(ctx, ss, "Stack update submitted")
+		}
+		submitted <- err
+		return err
+	}
+
+	go func() {
+		stack, err := s.performStackOperation(ctx, *input.StackName, fn, waiter, ss)
+		output <- stackOperationOutput{stack, err}
+	}()
+
+	var err error
+	select {
+	case <-s.after(lockWait):
+		scheduler.Publish(ctx, ss, "Waiting for existing stack operation to complete")
+		// FIXME: At this point, we don't want to affect UX by waiting
+		// around, so we return. But, if the stack update times out, or
+		// there's an error, that information is essentially silenced.
+		return nil
+	case <-locked:
+		// if a lock is obtained within the time frame, we might as well
+		// just wait for the update to get submitted.
+		err = <-submitted
+	}
+
+	return err
+}
+
+type stackOperationOutput struct {
+	stack *cloudformation.Stack
+	err   error
+}
+
+// performStackOperation encapsulates the process of obtaining the stack
+// operation lock, performing the stack operation, waiting for it to complete,
+// then unlocking the stack operation lock.
 //
-// TODO: Timeout?
-func (s *Scheduler) updateStack(stack *cloudformation.Stack, input *cloudformation.UpdateStackInput, wait bool) (*cloudformation.UpdateStackOutput, error) {
-	status := *stack.StackStatus
-	stackName := input.StackName
-
-	// If we're updating a stack, without changing the template, merge in
-	// existing parameters with their previous value.
-	if input.UsePreviousTemplate != nil && *input.UsePreviousTemplate == true {
-		// The parameters that the stack defines. We need to make sure that we
-		// provide all parameters in the update (lame).
-		definedParams := make(map[string]bool)
-		for _, p := range stack.Parameters {
-			definedParams[*p.ParameterKey] = true
-		}
-
-		// The parameters that are provided in this update.
-		providedParams := make(map[string]bool)
-		for _, p := range input.Parameters {
-			providedParams[*p.ParameterKey] = true
-		}
-
-		// Fill in any parameters that weren't provided with their default
-		// value.
-		for k := range definedParams {
-			if !providedParams[k] {
-				input.Parameters = append(input.Parameters, &cloudformation.Parameter{
-					ParameterKey:     aws.String(k),
-					UsePreviousValue: aws.Bool(true),
-				})
-			}
-		}
+// * If there are no operations currently in progress, the stack operation will execute.
+// * If there is a currently active stack operation, this operation will wait
+//   until the other stack operation has completed.
+// * If there is another pending stack operation, it will be replaced by the new
+//   update.
+func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter func(*cloudformation.DescribeStacksInput) error, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
+	l, err := newAdvisoryLock(s.db, stackName)
+	if err != nil {
+		return nil, err
 	}
 
-	// If there's currently an update happening, wait for it to
-	// complete.
-	if strings.Contains(status, "IN_PROGRESS") {
-		if strings.Contains(status, "CREATE") {
-			if err := s.cloudformation.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-				StackName: stackName,
-			}); err != nil {
-				return nil, err
-			}
-		} else if strings.Contains(status, "UPDATE") {
-			if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-				StackName: stackName,
-			}); err != nil {
-				return nil, err
-			}
-		}
+	// Cancel any pending stack operation, since this one obsoletes older
+	// operations.
+	if err := l.CancelPending(); err != nil {
+		return nil, fmt.Errorf("error canceling pending stack operation: %v", err)
 	}
 
-	resp, err := s.cloudformation.UpdateStack(input)
+	if err := l.Lock(); err != nil {
+		// This will happen when a newer stack update obsoletes
+		// this one. We simply return nil.
+		//
+		// TODO: Should we return an error here?
+		if err == pglock.Canceled {
+			scheduler.Publish(ctx, ss, "Operation superseded by newer release")
+			return nil, nil
+		}
+		return nil, fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
+	}
+	defer l.Unlock()
+
+	// Once the lock has been obtained, let's perform the stack operation.
+	if err := fn(); err != nil {
+		return nil, err
+	}
+
+	wait := func() error {
+		return waiter(&cloudformation.DescribeStacksInput{
+			StackName: aws.String(stackName),
+		})
+	}
+
+	// Wait until this stack operation has completed. The lock will be
+	// unlocked when this function returns.
+	if err := s.waitUntilStackOperationComplete(l, wait); err != nil {
+		return nil, err
+	}
+
+	return s.stack(&stackName)
+}
+
+// waitUntilStackOperationComplete waits until wait returns, or it times out.
+func (s *Scheduler) waitUntilStackOperationComplete(lock *pglock.AdvisoryLock, wait func() error) error {
+	errCh := make(chan error)
+	go func() { errCh <- wait() }()
+
+	var err error
+	select {
+	case <-s.after(stackOperationTimeout):
+		err = errors.New("timed out waiting for stack operation to complete")
+	case err = <-errCh:
+	}
+
+	return err
+}
+
+// executeStackUpdate performs a stack update.
+func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
+	stack, err := s.stack(input.StackName)
+	if err != nil {
+		return err
+	}
+
+	i := &cloudformation.UpdateStackInput{
+		StackName:  input.StackName,
+		Parameters: updateParameters(input.Parameters, stack, input.Template),
+	}
+	if input.Template != nil {
+		i.TemplateURL = input.Template.URL
+	} else {
+		i.UsePreviousTemplate = aws.Bool(true)
+	}
+
+	_, err = s.cloudformation.UpdateStack(i)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
-				return resp, nil
+				return nil
 			}
 		}
 
-		return resp, fmt.Errorf("error updating stack: %v", err)
+		return fmt.Errorf("error updating stack: %v", err)
 	}
 
-	if wait {
-		if err := s.cloudformation.WaitUntilStackUpdateComplete(&cloudformation.DescribeStacksInput{
-			StackName: stackName,
-		}); err != nil {
-			return resp, err
-		}
-	}
+	return nil
+}
 
-	return resp, nil
+// stack returns the cloudformation.Stack for the given stack name.
+func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
+	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+		StackName: stackName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Stacks[0], nil
 }
 
 // Remove removes the CloudFormation stack for the given app.
@@ -464,6 +730,21 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 	return instances, nil
 }
 
+func (s *Scheduler) services(arns []*string) ([]*ecs.Service, error) {
+	var services []*ecs.Service
+	for _, chunk := range chunkStrings(arns, MaxDescribeServices) {
+		resp, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
+			Cluster:  aws.String(s.Cluster),
+			Services: chunk,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error describing %d services: %v", len(chunk), err)
+		}
+		services = append(services, resp.Services...)
+	}
+	return services, nil
+}
+
 // tasks returns all of the ECS tasks for this app.
 func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	services, err := s.Services(app)
@@ -533,22 +814,13 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, err
 	}
 
-	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
+	stack, err := s.stack(aws.String(stackName))
 	if err != nil {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
 
-	stack := resp.Stacks[0]
-
-	var output *cloudformation.Output
-	for _, o := range stack.Outputs {
-		if *o.OutputKey == servicesOutput {
-			output = o
-		}
-	}
-	if output == nil {
+	o := output(stack, servicesOutput)
+	if o == nil {
 		// Nothing to do but wait until the outputs are set.
 		if *stack.StackStatus == cloudformation.StackStatusCreateInProgress {
 			return nil, nil
@@ -557,44 +829,15 @@ func (s *Scheduler) Services(appID string) (map[string]string, error) {
 		return nil, fmt.Errorf("stack didn't provide a \"%s\" output key", servicesOutput)
 	}
 
-	return extractServices(*output.OutputValue), nil
+	return extractProcessData(*o.OutputValue), nil
 }
 
 // Stop stops the given ECS task.
-func (s *Scheduler) Stop(ctx context.Context, instanceID string) error {
+func (s *Scheduler) Stop(ctx context.Context, taskID string) error {
 	_, err := s.ecs.StopTask(&ecs.StopTaskInput{
 		Cluster: aws.String(s.Cluster),
-		Task:    aws.String(instanceID),
+		Task:    aws.String(taskID),
 	})
-	return err
-}
-
-// Scale scales the ECS service for the given process to the desired number of
-// instances.
-func (s *Scheduler) Scale(ctx context.Context, appID string, process string, instances uint) error {
-	stackName, err := s.stackName(appID)
-	if err != nil {
-		return err
-	}
-
-	desc, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
-		StackName: aws.String(stackName),
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = s.updateStack(desc.Stacks[0], &cloudformation.UpdateStackInput{
-		StackName:           aws.String(stackName),
-		UsePreviousTemplate: aws.Bool(true),
-		Parameters: []*cloudformation.Parameter{
-			{
-				ParameterKey:   aws.String(scaleParameter(process)),
-				ParameterValue: aws.String(fmt.Sprintf("%d", instances)),
-			},
-		},
-	}, s.Wait)
-
 	return err
 }
 
@@ -644,18 +887,18 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 	return stackName, err
 }
 
-// extractServices extracts a map that maps the process name to the ARN of the
-// associated ECS service.
-func extractServices(value string) map[string]string {
-	services := make(map[string]string)
+// extractProcessData extracts a map that maps the process name to some
+// corresponding value.
+func extractProcessData(value string) map[string]string {
+	data := make(map[string]string)
 	pairs := strings.Split(value, ",")
 
 	for _, p := range pairs {
 		parts := strings.Split(p, "=")
-		services[parts[0]] = parts[1]
+		data[parts[0]] = parts[1]
 	}
 
-	return services
+	return data
 }
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
@@ -727,4 +970,139 @@ func chunkStrings(s []*string, size int) [][]*string {
 		s = s[end:]
 	}
 	return chunks
+}
+
+// updateParameters returns the parameters that should be provided in an
+// UpdateStack operation.
+func updateParameters(provided []*cloudformation.Parameter, stack *cloudformation.Stack, template *cloudformationTemplate) []*cloudformation.Parameter {
+	parameters := provided[:]
+
+	// This tracks the names of the parameters that have pre-existing values
+	// on the stack.
+	existingParams := make(map[string]bool)
+	for _, p := range stack.Parameters {
+		existingParams[*p.ParameterKey] = true
+	}
+
+	// These are the parameters that can be set for the stack. If a template
+	// is provided, then these are the parameters defined in the template.
+	// If no template is provided, then these are the parameters that the
+	// stack provides.
+	settableParams := make(map[string]bool)
+	if template != nil {
+		for _, p := range template.Parameters {
+			settableParams[*p.ParameterKey] = true
+		}
+	} else {
+		settableParams = existingParams
+	}
+
+	// The parameters that are provided in this update.
+	providedParams := make(map[string]bool)
+	for _, p := range parameters {
+		providedParams[*p.ParameterKey] = true
+	}
+
+	// Fill in any parameters that weren't provided with their previous
+	// value, if available
+	for k := range settableParams {
+		notProvided := !providedParams[k]
+		hasExistingValue := existingParams[k]
+
+		// If the parameter hasn't been provided with an explicit value,
+		// and the stack has this parameter set, we'll use the previous
+		// value. Not doing this would result in the parameters
+		// `Default` getting used.
+		if notProvided && hasExistingValue {
+			parameters = append(parameters, &cloudformation.Parameter{
+				ParameterKey:     aws.String(k),
+				UsePreviousValue: aws.Bool(true),
+			})
+		}
+	}
+
+	return parameters
+}
+
+// stackLackKey returns the key to use when obtaining an advisory lock for a
+// CloudFormation stack.
+func stackLockKey(stackName string) uint32 {
+	return crc32.ChecksumIEEE([]byte(fmt.Sprintf("stack_%s", stackName)))
+}
+
+// newAdvsiroyLock returns a new AdvisoryLock suitable for obtaining a lock to
+// perform the stack update.
+func newAdvisoryLock(db *sql.DB, stackName string) (*pglock.AdvisoryLock, error) {
+	l, err := pglock.NewAdvisoryLock(db, stackLockKey(stackName))
+	if err != nil {
+		return l, err
+	}
+	l.LockTimeout = lockTimeout
+	l.Context = fmt.Sprintf("stack %s", stackName)
+	return l, nil
+}
+
+// templateValidationError wraps an error from ValidateTemplate to provide more
+// information.
+type templateValidationError struct {
+	template *cloudformationTemplate
+	err      error
+}
+
+func (e *templateValidationError) Error() string {
+	t := `TemplateValidationError:
+  Template URL: %s
+  Template Size: %d bytes
+  Error: %v`
+	return fmt.Sprintf(t, *e.template.URL, e.template.Size, e.err)
+}
+
+// output returns the cloudformation.Output that matches the given key.
+func output(stack *cloudformation.Stack, key string) (output *cloudformation.Output) {
+	for _, o := range stack.Outputs {
+		if *o.OutputKey == key {
+			output = o
+		}
+	}
+	return
+}
+
+type ecsDeployment struct {
+	process string
+	ID      string
+}
+
+// deploymentsToWatch returns an array of ecsDeployments for the given cloudformation stack
+func deploymentsToWatch(stack *cloudformation.Stack) (map[string]*ecsDeployment, error) {
+	deployments := output(stack, deploymentsOutput)
+	services := output(stack, servicesOutput)
+	if deployments == nil {
+		return nil, fmt.Errorf("deployments output missing from stack")
+	}
+	if services == nil {
+		return nil, fmt.Errorf("services output missing from stack")
+	}
+
+	arns := extractProcessData(*services.OutputValue)
+	deploymentIDs := extractProcessData(*deployments.OutputValue)
+
+	if len(arns) == 0 {
+		return nil, fmt.Errorf("no services found in output")
+	}
+	if len(deploymentIDs) == 0 {
+		return nil, fmt.Errorf("no deploymentIDs found in output")
+	}
+
+	ecsDeployments := make(map[string]*ecsDeployment)
+	for p, a := range arns {
+		deploymentID, ok := deploymentIDs[p]
+		if !ok {
+			return nil, fmt.Errorf("deployment id not found for process: %v", p)
+		}
+		ecsDeployments[a] = &ecsDeployment{
+			process: p,
+			ID:      deploymentID,
+		}
+	}
+	return ecsDeployments, nil
 }

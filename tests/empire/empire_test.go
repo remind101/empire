@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"sort"
 	"testing"
 	"time"
 
@@ -98,8 +99,9 @@ func TestEmpire_Deploy(t *testing.T) {
 
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -111,6 +113,23 @@ func TestEmpire_Deploy(t *testing.T) {
 			"empire.app.release": "v1",
 		},
 		Processes: []*scheduler.Process{
+			{
+				Type:        "scheduled",
+				Image:       img,
+				Command:     []string{"./bin/scheduled"},
+				Schedule:    scheduler.CRONSchedule("* * * * * *"),
+				Instances:   0,
+				MemoryLimit: 536870912,
+				CPUShares:   256,
+				Nproc:       256,
+				Env: map[string]string{
+					"EMPIRE_PROCESS": "scheduled",
+					"SOURCE":         "acme-inc.scheduled.v1",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "scheduled",
+				},
+			},
 			{
 				Type:    "web",
 				Image:   img,
@@ -130,13 +149,29 @@ func TestEmpire_Deploy(t *testing.T) {
 					"empire.app.process": "web",
 				},
 			},
+			{
+				Type:        "worker",
+				Image:       img,
+				Command:     []string{"./bin/worker"},
+				Instances:   0,
+				MemoryLimit: 536870912,
+				CPUShares:   256,
+				Nproc:       256,
+				Env: map[string]string{
+					"EMPIRE_PROCESS": "worker",
+					"SOURCE":         "acme-inc.worker.v1",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "worker",
+				},
+			},
 		},
 	}).Return(nil)
 
-	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
@@ -154,9 +189,9 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 
 	// Deploying an image to an app that doesn't exist will create a new
 	// app.
-	_, err := e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	_, err := e.Deploy(context.Background(), empire.DeployOpts{
 		User:   &empire.User{Name: "ejholmes"},
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc"},
 	})
 	assert.Error(t, err)
@@ -174,20 +209,18 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		return procfile.Marshal(procfile.ExtendedProcfile{
-			"web": procfile.Process{
-				Command: []string{"./bin/web"},
-			},
-		})
+	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+		"web": procfile.Process{
+			Command: []string{"./bin/web"},
+		},
 	})
 
 	user := &empire.User{Name: "ejholmes"}
 
 	// Create the first release for this app.
-	r, err := e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	r, err := e.Deploy(context.Background(), empire.DeployOpts{
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc"},
 	})
 	assert.NoError(t, err)
@@ -213,9 +246,9 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 
 	v2Done := make(chan struct{})
 	go func() {
-		r, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+		r, err := e.Deploy(context.Background(), empire.DeployOpts{
 			User:   user,
-			Output: ioutil.Discard,
+			Output: empire.NewDeploymentStream(ioutil.Discard),
 			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
 		})
 		assert.NoError(t, err)
@@ -225,9 +258,9 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 
 	<-v2Started
 
-	r, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	r, err = e.Deploy(context.Background(), empire.DeployOpts{
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v3"},
 	})
 	assert.NoError(t, err)
@@ -250,10 +283,10 @@ func TestEmpire_Run(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
@@ -262,8 +295,9 @@ func TestEmpire_Run(t *testing.T) {
 	e.Scheduler = s
 
 	s.On("Run", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -323,10 +357,10 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
@@ -335,8 +369,9 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	e.Scheduler = s
 
 	s.On("Run", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -391,6 +426,11 @@ func TestEmpire_Set(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
+	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+		"web": procfile.Process{
+			Command: []string{"./bin/web"},
+		},
+	})
 
 	user := &empire.User{Name: "ejholmes"}
 
@@ -415,8 +455,9 @@ func TestEmpire_Set(t *testing.T) {
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -451,18 +492,19 @@ func TestEmpire_Set(t *testing.T) {
 		},
 	}).Once().Return(nil)
 
-	_, err = e.Deploy(context.Background(), empire.DeploymentsCreateOpts{
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
 		App:    app,
 		User:   user,
-		Output: ioutil.Discard,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  img,
 	})
 	assert.NoError(t, err)
 
 	// Remove the environment variable
 	s.On("Submit", &scheduler.App{
-		ID:   app.ID,
-		Name: "acme-inc",
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v2",
 		Env: map[string]string{
 			"EMPIRE_APPID":   app.ID,
 			"EMPIRE_APPNAME": "acme-inc",
@@ -513,7 +555,18 @@ type mockScheduler struct {
 	mock.Mock
 }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App) error {
+type processesByType []*scheduler.Process
+
+func (e processesByType) Len() int           { return len(e) }
+func (e processesByType) Less(i, j int) bool { return e[i].Type < e[j].Type }
+func (e processesByType) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
+func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	// mock.Mock checks the order of slices, so sort by process name.
+	p := processesByType(app.Processes)
+	sort.Sort(p)
+	app.Processes = p
+
 	args := m.Called(app)
 	return args.Error(0)
 }

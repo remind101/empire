@@ -2,6 +2,7 @@
 
 [![readthedocs badge](https://readthedocs.org/projects/pip/badge/?version=latest)](http://empire.readthedocs.org/en/latest/)
 [![Circle CI](https://circleci.com/gh/remind101/empire.svg?style=shield)](https://circleci.com/gh/remind101/empire)
+[![Slack Status](https://empire-slack.herokuapp.com/badge.svg)](https://empire-slack.herokuapp.com)
 
 ![Empire](empire.png)
 
@@ -161,6 +162,8 @@ Perform the following steps when releasing a new version:
 ## Community
 
 We have a google group, [empire-dev][empire-dev], where you can ask questions and engage with the Empire community.
+
+You can also [join](https://empire-slack.herokuapp.com/) our Slack team for discussions and support.
 
 [ecs]: http://aws.amazon.com/ecs/
 [docker]: https://github.com/docker/docker

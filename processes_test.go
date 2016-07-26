@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -103,4 +104,20 @@ func TestNewFormation(t *testing.T) {
 		f := tt.f.Merge(tt.other)
 		assert.Equal(t, tt.expected, f)
 	}
+}
+
+func ExampleCommand() {
+	cmd := Command{"/bin/ls", "-h"}
+	fmt.Println(cmd)
+}
+
+func ExampleParseCommand() {
+	cmd1, _ := ParseCommand(`/bin/ls -h`)
+	cmd2, _ := ParseCommand(`/bin/echo 'hello world'`)
+	fmt.Printf("%#v\n", cmd1)
+	fmt.Printf("%#v\n", cmd2)
+	// Output:
+	// empire.Command{"/bin/ls", "-h"}
+	// empire.Command{"/bin/echo", "hello world"}
+
 }

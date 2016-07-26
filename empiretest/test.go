@@ -19,6 +19,7 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
+	"github.com/remind101/empire/server/middleware"
 )
 
 var (
@@ -44,9 +45,9 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		db.Debug()
 	}
 
-	e := empire.New(db, empire.DefaultOptions)
+	e := empire.New(db)
 	e.Scheduler = scheduler.NewFakeScheduler()
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(ExtractProcfile)
+	e.ProcfileExtractor = ExtractProcfile(nil)
 	e.RunRecorder = empire.RecordTo(ioutil.Discard)
 
 	if err := e.Reset(); err != nil {
@@ -56,18 +57,37 @@ func NewEmpire(t testing.TB) *empire.Empire {
 	return e
 }
 
+type Server struct {
+	*empire.Empire
+	*httptest.Server
+}
+
 // NewServer builds a new empire.Empire instance and returns an httptest.Server
 // running the empire API.
-func NewServer(t testing.TB, e *empire.Empire) *httptest.Server {
+func NewServer(t testing.TB, e *empire.Empire) *Server {
+	var opts server.Options
+	opts.GitHub.Webhooks.Secret = "abcd"
+	opts.Authenticator = auth.NewAccessTokenAuthenticator(e)
+	opts.GitHub.Deployments.Environments = []string{"test"}
+	opts.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))
+	return NewTestServer(t, e, opts)
+}
+
+// NewTestServer returns a new httptest.Server for testing empire's http server.
+func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server {
 	if e == nil {
 		e = NewEmpire(t)
 	}
 
-	server.DefaultOptions.GitHub.Webhooks.Secret = "abcd"
-	server.DefaultOptions.Authenticator = auth.Anyone(&empire.User{Name: "fake"})
-	server.DefaultOptions.GitHub.Deployments.Environments = []string{"test"}
-	server.DefaultOptions.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))
-	return httptest.NewServer(server.New(e, server.DefaultOptions))
+	s := server.New(e, opts)
+	return &Server{
+		Empire: e,
+		Server: httptest.NewServer(middleware.Handler(context.Background(), s)),
+	}
+}
+
+func (s *Server) Close() {
+	s.Server.Close()
 }
 
 var dblock = "/tmp/empire.lock"
@@ -85,16 +105,38 @@ func Run(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// ExtractProcfile extracts a fake Procfile.
-func ExtractProcfile(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-	p, err := procfile.Marshal(procfile.ExtendedProcfile{
-		"web": procfile.Process{
-			Command: []string{"./bin/web"},
-		},
-	})
-	if err != nil {
-		return nil, err
+// defaultProcfile represents a basic Procfile, which can be used in integration
+// tests.
+var defaultProcfile = procfile.ExtendedProcfile{
+	"web": procfile.Process{
+		Command: []string{"./bin/web"},
+	},
+	"worker": procfile.Process{
+		Command: []string{"./bin/worker"},
+	},
+	"scheduled": procfile.Process{
+		Command: []string{"./bin/scheduled"},
+		Cron: func() *string {
+			everyMinute := "* * * * * *"
+			return &everyMinute
+		}(),
+	},
+}
+
+// Returns a function that can be used as a Procfile extract for Empire. It
+// writes a fake Docker pull to w, and extracts the given Procfile in yaml
+// format.
+func ExtractProcfile(pf procfile.Procfile) empire.ProcfileExtractor {
+	if pf == nil {
+		pf = defaultProcfile
 	}
 
-	return p, dockerutil.FakePull(img, w)
+	return empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+		p, err := procfile.Marshal(pf)
+		if err != nil {
+			return nil, err
+		}
+
+		return p, dockerutil.FakePull(img, w)
+	})
 }

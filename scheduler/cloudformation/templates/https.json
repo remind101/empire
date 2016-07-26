@@ -10,6 +10,49 @@
     }
   },
   "Outputs": {
+    "Deployments": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Fn::GetAtt": [
+                      "webService",
+                      "DeploymentId"
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "api",
+                  {
+                    "Fn::GetAtt": [
+                      "apiService",
+                      "DeploymentId"
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    "EmpireVersion": {
+      "Value": "x.x.x"
+    },
+    "Release": {
+      "Value": "v1"
+    },
     "Services": {
       "Value": {
         "Fn::Join": [
@@ -21,7 +64,7 @@
                 [
                   "web",
                   {
-                    "Ref": "web"
+                    "Ref": "webService"
                   }
                 ]
               ]
@@ -32,7 +75,7 @@
                 [
                   "api",
                   {
-                    "Ref": "api"
+                    "Ref": "apiService"
                   }
                 ]
               ]
@@ -44,19 +87,14 @@
   },
   "Parameters": {
     "DNS": {
+      "Type": "String",
       "Description": "When set to `true`, CNAME's will be altered",
-      "Type": "String"
+      "Default": "true"
     },
     "RestartKey": {
       "Type": "String"
     },
-    "apiRestartKey": {
-      "Type": "String"
-    },
     "apiScale": {
-      "Type": "String"
-    },
-    "webRestartKey": {
       "Type": "String"
     },
     "webScale": {
@@ -81,28 +119,6 @@
         "Type": "CNAME"
       },
       "Type": "AWS::Route53::RecordSet"
-    },
-    "api": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "apiScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "api",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "apiLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "TaskDefinition": {
-          "Ref": "apiTaskDefinition"
-        }
-      },
-      "Type": "AWS::ECS::Service"
     },
     "api8080InstancePort": {
       "Properties": {
@@ -172,6 +188,30 @@
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
+    "apiService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "apiScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "api",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "apiLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-api",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "apiTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
     "apiTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
@@ -182,17 +222,7 @@
             "Cpu": 0,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "apiRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               }
             },
             "Environment": [
@@ -222,28 +252,6 @@
         "Volumes": []
       },
       "Type": "AWS::ECS::TaskDefinition"
-    },
-    "web": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "webScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "web",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "webLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "TaskDefinition": {
-          "Ref": "webTaskDefinition"
-        }
-      },
-      "Type": "AWS::ECS::Service"
     },
     "web8080InstancePort": {
       "Properties": {
@@ -301,6 +309,30 @@
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
+    "webService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
     "webTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
@@ -311,17 +343,7 @@
             "Cpu": 0,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "webRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               }
             },
             "Environment": [

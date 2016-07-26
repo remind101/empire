@@ -4,7 +4,39 @@
 
 **Features**
 
-* Empire now uses CloudFormation to provision resources for applications [#814](https://github.com/remind101/empire/pull/814), [#803](https://github.com/remind101/empire/pull/803).
+* Empire now includes experimental support for showing attached runs in `emp ps`. This can be enabled with the `--x.showattached` flag, or `EMPIRE_X_SHOW_ATTACHED` [#911](https://github.com/remind101/empire/pull/911)
+* Empire now includes experimental support for scheduled tasks [#919](https://github.com/remind101/empire/pull/919)
+* Empire now supports streaming status updates from the scheduler while deploying [#888](https://github.com/remind101/empire/issues/888)
+* You can now provision Empire applications and set environment variables from CloudFormation stacks using the `Custom::EmpireApp` and `Custom::EmpireAppEnvironment` resources [#819](https://github.com/remind101/empire/pull/819)
+
+**Improvements**
+
+* The Custom::ECSService custom resource now waits for newly created ECS services to stabilize [#878](https://github.com/remind101/empire/pull/878)
+* The CloudFormation backend now uses the Custom::ECSService resource instead of AWS::ECS::Service, by default [#877](https://github.com/remind101/empire/pull/877)
+* The database schema version is now checked at boot, as well as in the http health checks. [#893](https://github.com/remind101/empire/pull/893)
+* The log level within empire can now be configured when starting the service. [#929](https://github.com/remind101/empire/issues/929)
+* The CloudFormation backend now has experimental support for a `Custom::ECSTaskDefinition` resource that greatly reduces the size of generated templates. [#935](https://github.com/remind101/empire/pull/935)
+
+**Bugs**
+
+* Fixed a bug where multiple duplicate ECS services could be created by the CloudFormation backend, when using the `Custom::ECSService` resource [#884](https://github.com/remind101/empire/pull/884).
+* Fixed a bug where the lock obtained during stack operations was not always unlocked. [#892](https://github.com/remind101/empire/pull/892)
+* Fixed an issue where Procfile's would not be extracted when Docker 1.12+ was used. [#915](https://github.com/remind101/empire/pull/915)
+* Fixed a bug where the failed creation of a custom resources could cause a CloudFormation stack to fail to rollback. [#938](https://github.com/remind101/empire/pull/938)
+* Fixed a bug where waiting for a deploy to stabilize was failing if you had more than 10 services. [#944](https://github.com/remind101/empire/issues/944)
+* Fixed an issue in the Tugboat integration where the log stream to a Tugboat instance could be closed. [#950](https://github.com/remind101/empire/pull/950)
+
+**Performance**
+
+* Performance of creating/updating/deleting custom resources in the CloudFormation backend has been improved. [#942](https://github.com/remind101/empire/pull/942)
+
+**Security**
+
+## 0.10.1 (2016-06-14)
+
+**Features**
+
+* Empire now contains expiremental support for using CloudFormation to provision resources for applications [#814](https://github.com/remind101/empire/pull/814), [#803](https://github.com/remind101/empire/pull/803).
 * Empire now supports requiring commit messages for all actions that emit an event via `--messages.required`. If a commit message is required for an action, emp will gracefully handle it and ask the user to input a value [#767](https://github.com/remind101/empire/issues/767).
 * You can now supply a commit message to any event that is published by Empire [#767](https://github.com/remind101/empire/issues/767).
 * Empire now supports deploying Docker images from the EC2 Container Registry [#730](https://github.com/remind101/empire/pull/730).
@@ -17,7 +49,7 @@
 * You can now specify the CPU and memory constraints for attached one-off tasks with the `-s` flag to `emp run` [#809](https://github.com/remind101/empire/pull/809)
 * You can now provide a duration to `emp log` with the `-d` flag to start streaming logs from a specific point in time ie (5m, 10m, 1h) [#829](https://github.com/remind101/empire/issues/829)
 * If log streaming is enabled, Empire will attempt to write events to the kinesis stream for the application [#832](https://github.com/remind101/empire/issues/832)
-* You can now provision Empire applications and set environment variables from CloudFormation stacks using the `Custom::EmpireApp` and `Custom::EmpireAppEnvironment` resources [#819](https://github.com/remind101/empire/pull/819)
+* Added Stdout event stream [#874](https://github.com/remind101/empire/issues/874)
 
 **Bugs**
 
@@ -32,6 +64,7 @@
 **Performance**
 
 * `emp ps` should be significantly faster for services running a lot of processes [#781](https://github.com/remind101/empire/pull/781)
+* Scaling multiple processes within the Cloudformation scheduler results in 1 update now instead of N [#844](https://github.com/remind101/empire/pull/844)
 
 **Security**
 

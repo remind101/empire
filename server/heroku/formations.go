@@ -39,20 +39,27 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return err
 	}
 
-	// Create the response object
-	var resp []*Formation
+	var updates []*empire.ProcessUpdate
 	for _, up := range form.Updates {
-		p, err := h.Scale(ctx, empire.ScaleOpts{
-			User:        UserFromContext(ctx),
-			App:         app,
+		updates = append(updates, &empire.ProcessUpdate{
 			Process:     up.Process,
 			Quantity:    up.Quantity,
 			Constraints: up.Size,
-			Message:     m,
 		})
-		if err != nil {
-			return err
-		}
+	}
+	ps, err := h.Scale(ctx, empire.ScaleOpts{
+		User:    UserFromContext(ctx),
+		App:     app,
+		Updates: updates,
+		Message: m,
+	})
+	if err != nil {
+		return err
+	}
+
+	var resp []*Formation
+	for i, p := range ps {
+		up := updates[i]
 		resp = append(resp, &Formation{
 			Type:     up.Process,
 			Quantity: p.Quantity,

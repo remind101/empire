@@ -1,11 +1,14 @@
 package github
 
 import (
+	"fmt"
 	"io"
+	"time"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
+	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
@@ -27,7 +30,7 @@ func (fn DeployerFunc) Deploy(ctx context.Context, event events.Deployment, w io
 
 // empire mocks the Empire interface we use.
 type empireClient interface {
-	Deploy(context.Context, empire.DeploymentsCreateOpts) (*empire.Release, error)
+	Deploy(context.Context, empire.DeployOpts) (*empire.Release, error)
 }
 
 // EmpireDeployer is a deployer implementation that uses the Deploy method in
@@ -56,10 +59,16 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 	// stream.
 	p := dockerutil.DecodeJSONMessageStream(w)
 
-	_, err = d.empire.Deploy(ctx, empire.DeploymentsCreateOpts{
-		Image:  img,
-		Output: p,
-		User:   &empire.User{Name: event.Deployment.Creator.Login},
+	message := event.Deployment.Description
+	if message == "" {
+		message = fmt.Sprintf("GitHub deployment #%d of %s", event.Deployment.ID, event.Repository.FullName)
+	}
+	_, err = d.empire.Deploy(ctx, empire.DeployOpts{
+		Image:   img,
+		Output:  empire.NewDeploymentStream(p),
+		User:    &empire.User{Name: event.Deployment.Creator.Login},
+		Stream:  true,
+		Message: message,
 	})
 	if err != nil {
 		return err
@@ -93,6 +102,8 @@ func (d *TugboatDeployer) Deploy(ctx context.Context, event events.Deployment, o
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
 	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
+		defer close(streamhttp.Heartbeat(w, 10*time.Second))
+
 		// Write logs to both tugboat as well as the writer we were
 		// provided (probably stdout).
 		w = io.MultiWriter(w, out)

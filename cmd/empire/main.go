@@ -12,9 +12,11 @@ import (
 const (
 	FlagPort             = "port"
 	FlagAutoMigrate      = "automigrate"
+	FlagScheduler        = "scheduler"
 	FlagEventsBackend    = "events.backend"
 	FlagRunLogsBackend   = "runlogs.backend"
 	FlagMessagesRequired = "messages.required"
+	FlagLogLevel         = "log.level"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -62,6 +64,9 @@ const (
 	FlagLogsStreamer = "logs.streamer"
 
 	FlagEnvironment = "environment"
+
+	// Expiremental flags.
+	FlagXShowAttached = "x.showattached"
 )
 
 // Commands are the subcommands that are available.
@@ -80,6 +85,12 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  FlagAutoMigrate,
 				Usage: "Whether to run the migrations at startup or not",
+			},
+			cli.StringFlag{
+				Name:   FlagScheduler,
+				Value:  "ecs",
+				Usage:  "The scheduling backend to use. Current options are `ecs`, `cloudformation-migration`, and `cloudformation`.",
+				EnvVar: "EMPIRE_SCHEDULER",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,
@@ -318,6 +329,17 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagMessagesRequired,
 		Usage:  "If true, messages will be required for empire actions that emit events.",
 		EnvVar: "EMPIRE_MESSAGES_REQUIRED",
+	},
+	cli.BoolFlag{
+		Name:   FlagXShowAttached,
+		Usage:  "If true, attached runs will be shown in `emp ps` output.",
+		EnvVar: "EMPIRE_X_SHOW_ATTACHED",
+	},
+	cli.StringFlag{
+		Name:   FlagLogLevel,
+		Value:  "info",
+		Usage:  "Specify the log level for the empire server. You can use this to enable debug logs by specifying `debug`.",
+		EnvVar: "EMPIRE_LOG_LEVEL",
 	},
 }
 

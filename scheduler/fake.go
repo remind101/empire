@@ -3,12 +3,14 @@ package scheduler
 import (
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 
 type FakeScheduler struct {
+	sync.Mutex
 	apps map[string]*App
 }
 
@@ -18,7 +20,9 @@ func NewFakeScheduler() *FakeScheduler {
 	}
 }
 
-func (m *FakeScheduler) Submit(ctx context.Context, app *App) error {
+func (m *FakeScheduler) Submit(ctx context.Context, app *App, ss StatusStream) error {
+	m.Lock()
+	defer m.Unlock()
 	m.apps[app.ID] = app
 	return nil
 }

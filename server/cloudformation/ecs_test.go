@@ -2,44 +2,133 @@ package cloudformation
 
 import (
 	"errors"
+	"net/http"
 	"testing"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
+func TestRetryer(t *testing.T) {
+	r := newRetryer()
+
+	var min, max, total time.Duration
+	for i := 0; i < r.NumMaxRetries; i++ {
+		retryCount := i
+		x := i
+		if x > 8 {
+			x = 8
+		}
+
+		min += time.Duration((1<<uint(x))*500) * time.Millisecond
+		max += time.Duration((1<<uint(x))*1000) * time.Millisecond
+
+		delay := r.RetryRules(&request.Request{
+			RetryCount: retryCount,
+			HTTPResponse: &http.Response{
+				StatusCode: 503,
+			},
+		})
+		total += delay
+		t.Logf("delay(%d): %v", i, delay)
+	}
+	t.Logf("total(min): %v", min)
+	t.Logf("total(max): %v", max)
+	t.Logf("total(real): %v", total)
+
+	assert.True(t, total > min)
+	assert.True(t, total < max)
+}
+
 func TestECSServiceResource_Create(t *testing.T) {
 	e := new(mockECS)
 	p := &ECSServiceResource{
-		ecs:     e,
-		postfix: func() string { return "-A" },
+		ecs: e,
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
-		ServiceName:  aws.String("acme-inc-web-A"),
+		ClientToken:  aws.String("dxRU5tYsnzt"),
+		ServiceName:  aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
-			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A"),
+			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
+			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
 		},
 	}, nil)
 
-	id, data, err := p.Provision(Request{
-		RequestType: Create,
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
+	}).Return(nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		StackId:     "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
+		RequestType: customresources.Create,
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A", id)
-	assert.Nil(t, data)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+
+	e.AssertExpectations(t)
+}
+
+func TestECSServiceResource_Create_Canceled(t *testing.T) {
+	e := new(mockECS)
+	p := &ECSServiceResource{
+		ecs: e,
+	}
+
+	e.On("CreateService", &ecs.CreateServiceInput{
+		ClientToken:  aws.String("dxRU5tYsnzt"),
+		ServiceName:  aws.String("acme-inc-web-dxRU5tYsnzt"),
+		Cluster:      aws.String("cluster"),
+		DesiredCount: aws.Int64(1),
+	}).Return(&ecs.CreateServiceOutput{
+		Service: &ecs.Service{
+			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
+			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
+		},
+	}, nil)
+
+	ctx, cancel := context.WithCancel(ctx)
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
+	}).Return(nil).Run(func(mock.Arguments) {
+		cancel()
+		time.Sleep(1 * time.Second)
+	})
+
+	_, data, err := p.Provision(ctx, customresources.Request{
+		StackId:     "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
+		RequestType: customresources.Create,
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:      aws.String("cluster"),
+			ServiceName:  aws.String("acme-inc-web"),
+			DesiredCount: customresources.Int(1),
+		},
+		OldResourceProperties: &ECSServiceProperties{},
+	})
+	assert.Equal(t, context.Canceled, err)
+	assert.Equal(t, data, map[string]string{})
 
 	e.AssertExpectations(t)
 }
@@ -55,27 +144,39 @@ func TestECSServiceResource_Update(t *testing.T) {
 		Cluster:        aws.String("cluster"),
 		DesiredCount:   aws.Int64(2),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
-	}).Return(&ecs.UpdateServiceOutput{}, nil)
+	}).Return(
+		&ecs.UpdateServiceOutput{
+			Service: &ecs.Service{
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("Old"), Status: aws.String("ACTIVE")},
+				},
+			},
+		},
+		nil,
+	)
 
-	id, data, err := p.Provision(Request{
-		RequestType:        Update,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
+		RequestType:        customresources.Update,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("cluster"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(2),
+			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("cluster"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(1),
+			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
 		},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
-	assert.Nil(t, data)
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
 
 	e.AssertExpectations(t)
 }
@@ -83,40 +184,48 @@ func TestECSServiceResource_Update(t *testing.T) {
 func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	e := new(mockECS)
 	p := &ECSServiceResource{
-		ecs:     e,
-		postfix: func() string { return "-B" },
+		ecs: e,
 	}
 
 	e.On("CreateService", &ecs.CreateServiceInput{
-		ServiceName:    aws.String("acme-inc-web-B"),
+		ClientToken:    aws.String("dxRU5tYsnzt"),
+		ServiceName:    aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:        aws.String("clusterB"),
 		DesiredCount:   aws.Int64(2),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
-			ServiceArn: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B"),
+			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
+			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
 		},
 	}, nil)
 
-	id, data, err := p.Provision(Request{
-		RequestType:        Update,
-		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-A",
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("clusterB"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
+	}).Return(nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
+		RequestType:        customresources.Update,
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterB"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(2),
+			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterA"),
 			ServiceName:    aws.String("acme-inc-web"),
-			DesiredCount:   intValue(1),
+			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-B", id)
-	assert.Nil(t, data)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
 
 	e.AssertExpectations(t)
 }
@@ -131,25 +240,35 @@ func TestECSServiceResource_Delete(t *testing.T) {
 		Service:      aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(0),
-	}).Return(&ecs.UpdateServiceOutput{}, nil)
+	}).Return(
+		&ecs.UpdateServiceOutput{
+			Service: &ecs.Service{
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("Old"), Status: aws.String("ACTIVE")},
+				},
+			},
+		},
+		nil,
+	)
 
 	e.On("DeleteService", &ecs.DeleteServiceInput{
 		Service: aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
 		Cluster: aws.String("cluster"),
 	}).Return(&ecs.DeleteServiceOutput{}, nil)
 
-	id, data, err := p.Provision(Request{
-		RequestType:        Delete,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 	})
 	assert.NoError(t, err)
@@ -171,18 +290,18 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 		DesiredCount: aws.Int64(0),
 	}).Return(&ecs.UpdateServiceOutput{}, awserr.New("ServiceNotActiveException", "Service was not ACTIVE", errors.New("")))
 
-	id, data, err := p.Provision(Request{
-		RequestType:        Delete,
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Delete,
 		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
 		ResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
-			DesiredCount: intValue(1),
+			DesiredCount: customresources.Int(1),
 		},
 	})
 	assert.NoError(t, err)
@@ -192,20 +311,235 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
-func TestRequiresReplacement(t *testing.T) {
+func TestECSTaskDefinition_Create(t *testing.T) {
+	e := new(mockECS)
+	s := new(mockEnvironmentStore)
+	p := newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
+		ecs:              e,
+		environmentStore: s,
+	})
+
+	s.On("fetch", "003483d3-74b8-465d-8c2e-06e005dda776").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+	}, nil)
+
+	s.On("fetch", "ccc8a1ac-32f9-4576-bec6-4ca36520deb3").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("BAR"),
+			Value: aws.String("foo"),
+		},
+	}, nil)
+
+	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("acme-inc-web-f3ASgQEwwCZ"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			{
+				Environment: []*ecs.KeyValuePair{
+					{
+						Name:  aws.String("FOO"),
+						Value: aws.String("bar"),
+					},
+					{
+						Name:  aws.String("BAR"),
+						Value: aws.String("foo"),
+					},
+				},
+			},
+		},
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web"),
+		},
+	}, nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType: customresources.Create,
+		ResourceProperties: &ECSTaskDefinitionProperties{
+			Family: aws.String("acme-inc-web"),
+			ContainerDefinitions: []ContainerDefinition{
+				{
+					Environment: []string{
+						"003483d3-74b8-465d-8c2e-06e005dda776",
+						"ccc8a1ac-32f9-4576-bec6-4ca36520deb3",
+					},
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+	s.AssertExpectations(t)
+}
+
+func TestECSTaskDefinition_Update(t *testing.T) {
+	e := new(mockECS)
+	s := new(mockEnvironmentStore)
+	p := newECSTaskDefinitionProvisioner(&ECSTaskDefinitionResource{
+		ecs:              e,
+		environmentStore: s,
+	})
+
+	s.On("fetch", "003483d3-74b8-465d-8c2e-06e005dda776").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+	}, nil)
+
+	s.On("fetch", "4f3f884b-8337-4847-9b81-141b5e322559").Return([]*ecs.KeyValuePair{
+		{
+			Name:  aws.String("BAR"),
+			Value: aws.String("foo"),
+		},
+	}, nil)
+
+	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("acme-inc-web-f3ASgQEwwCZ"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			{
+				Environment: []*ecs.KeyValuePair{
+					{
+						Name:  aws.String("FOO"),
+						Value: aws.String("bar"),
+					},
+					{
+						Name:  aws.String("BAR"),
+						Value: aws.String("foo"),
+					},
+				},
+			},
+		},
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web"),
+		},
+	}, nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType: customresources.Update,
+		ResourceProperties: &ECSTaskDefinitionProperties{
+			Family: aws.String("acme-inc-web"),
+			ContainerDefinitions: []ContainerDefinition{
+				{
+					Environment: []string{
+						"003483d3-74b8-465d-8c2e-06e005dda776",
+						"4f3f884b-8337-4847-9b81-141b5e322559",
+					},
+				},
+			},
+		},
+		OldResourceProperties: &ECSTaskDefinitionProperties{
+			Family: aws.String("acme-inc-web"),
+			ContainerDefinitions: []ContainerDefinition{
+				{
+					Environment: []string{
+						"003483d3-74b8-465d-8c2e-06e005dda776",
+						"ccc8a1ac-32f9-4576-bec6-4ca36520deb3",
+					},
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web", id)
+	assert.Nil(t, data)
+
+	e.AssertExpectations(t)
+	s.AssertExpectations(t)
+}
+
+func TestECSEnvironment_Create(t *testing.T) {
+	s := new(mockEnvironmentStore)
+	p := newECSEnvironmentProvisioner(&ECSEnvironmentResource{
+		environmentStore: s,
+	})
+
+	s.On("store", []*ecs.KeyValuePair{
+		{
+			Name:  aws.String("FOO"),
+			Value: aws.String("bar"),
+		},
+	}).Return("56152438-5fef-4c96-bbe1-9cf92022ae75", nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType: customresources.Create,
+		ResourceProperties: &ECSEnvironmentProperties{
+			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("FOO"),
+					Value: aws.String("bar"),
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "56152438-5fef-4c96-bbe1-9cf92022ae75", id)
+	assert.Nil(t, data)
+
+	s.AssertExpectations(t)
+}
+
+func TestECSEnvironment_Update(t *testing.T) {
+	s := new(mockEnvironmentStore)
+	p := newECSEnvironmentProvisioner(&ECSEnvironmentResource{
+		environmentStore: s,
+	})
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		RequestType:        customresources.Update,
+		PhysicalResourceId: "56152438-5fef-4c96-bbe1-9cf92022ae75",
+		ResourceProperties: &ECSEnvironmentProperties{
+			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("FOO"),
+					Value: aws.String("bar"),
+				},
+				{
+					Name:  aws.String("BAR"),
+					Value: aws.String("foo"),
+				},
+			},
+		},
+		OldResourceProperties: &ECSEnvironmentProperties{
+			Environment: []*ecs.KeyValuePair{
+				{
+					Name:  aws.String("BAR"),
+					Value: aws.String("foo"),
+				},
+				{
+					Name:  aws.String("FOO"),
+					Value: aws.String("bar"),
+				},
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "56152438-5fef-4c96-bbe1-9cf92022ae75", id)
+	assert.Nil(t, data)
+
+	s.AssertExpectations(t)
+}
+
+func TestServiceRequiresReplacement(t *testing.T) {
 	tests := []struct {
 		new, old ECSServiceProperties
 		out      bool
 	}{
 		{
-			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: intValue(1)},
-			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: intValue(0)},
+			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:2"), DesiredCount: customresources.Int(1)},
+			ECSServiceProperties{Cluster: aws.String("cluster"), TaskDefinition: aws.String("td:1"), DesiredCount: customresources.Int(0)},
 			false,
 		},
 
 		{
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elb")}}},
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elb")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elb")}}},
 			false,
 		},
 
@@ -232,14 +566,14 @@ func TestRequiresReplacement(t *testing.T) {
 
 		// Can't change load balancers
 		{
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elbB")}}},
-			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: intValue(8080), LoadBalancerName: aws.String("elbA")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbB")}}},
+			ECSServiceProperties{LoadBalancers: []LoadBalancer{{ContainerName: aws.String("web"), ContainerPort: customresources.Int(8080), LoadBalancerName: aws.String("elbA")}}},
 			true,
 		},
 	}
 
 	for _, tt := range tests {
-		out := requiresReplacement(&tt.new, &tt.old)
+		out := serviceRequiresReplacement(&tt.new, &tt.old)
 		assert.Equal(t, tt.out, out)
 	}
 }
@@ -262,4 +596,28 @@ func (m *mockECS) UpdateService(input *ecs.UpdateServiceInput) (*ecs.UpdateServi
 func (m *mockECS) DeleteService(input *ecs.DeleteServiceInput) (*ecs.DeleteServiceOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DeleteServiceOutput), args.Error(1)
+}
+
+func (m *mockECS) WaitUntilServicesStable(input *ecs.DescribeServicesInput) error {
+	args := m.Called(input)
+	return args.Error(0)
+}
+
+func (m *mockECS) RegisterTaskDefinition(input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.RegisterTaskDefinitionOutput), args.Error(1)
+}
+
+type mockEnvironmentStore struct {
+	mock.Mock
+}
+
+func (m *mockEnvironmentStore) store(env []*ecs.KeyValuePair) (string, error) {
+	args := m.Called(env)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockEnvironmentStore) fetch(id string) ([]*ecs.KeyValuePair, error) {
+	args := m.Called(id)
+	return args.Get(0).([]*ecs.KeyValuePair), args.Error(1)
 }

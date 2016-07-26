@@ -1,13 +1,16 @@
+// Package server provides an http.Handler implementation that includes the
+// Heroku Platform API compatibility layer, GitHub Deployments integration and a
+// simple health check.
 package server
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
-	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -32,7 +35,7 @@ type Options struct {
 	}
 }
 
-func New(e *empire.Empire, options Options) http.Handler {
+func New(e *empire.Empire, options Options) httpx.Handler {
 	r := httpx.NewRouter()
 
 	if options.GitHub.Webhooks.Secret != "" {
@@ -46,16 +49,13 @@ func New(e *empire.Empire, options Options) http.Handler {
 	}
 
 	// Mount the heroku api
-	h := heroku.New(e, options.Authenticator)
-	r.Headers("Accept", heroku.AcceptHeader).Handler(h)
+	hk := heroku.New(e, options.Authenticator)
+	r.Headers("Accept", heroku.AcceptHeader).Handler(hk)
 
 	// Mount health endpoint
 	r.Handle("/health", NewHealthHandler(e))
 
-	return middleware.Common(r, middleware.CommonOpts{
-		Reporter: e.Reporter,
-		Logger:   e.Logger,
-	})
+	return r
 }
 
 // githubWebhook is a MatcherFunc that matches requests that have an
@@ -68,7 +68,7 @@ func githubWebhook(r *http.Request) bool {
 // HealthHandler is an http.Handler that returns the health of empire.
 type HealthHandler struct {
 	// A function that returns true if empire is healthy.
-	IsHealthy func() bool
+	IsHealthy func() error
 }
 
 // NewHealthHandler returns a new HealthHandler using the IsHealthy method from
@@ -80,13 +80,14 @@ func NewHealthHandler(e *empire.Empire) *HealthHandler {
 }
 
 func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWriter, r *http.Request) error {
-	var status = http.StatusOK
-
-	if !h.IsHealthy() {
-		status = http.StatusServiceUnavailable
+	err := h.IsHealthy()
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		return nil
 	}
 
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusServiceUnavailable)
+	io.WriteString(w, err.Error())
 
 	return nil
 }

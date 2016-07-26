@@ -1,3 +1,5 @@
+// Package github provides an http.Handler implementation that allows Empire to
+// handle GitHub Deployments.
 package github
 
 import (

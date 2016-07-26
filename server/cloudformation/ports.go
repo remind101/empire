@@ -3,6 +3,10 @@ package cloudformation
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/remind101/empire/pkg/cloudformation/customresources"
+
+	"golang.org/x/net/context"
 )
 
 type portAllocator interface {
@@ -15,9 +19,13 @@ type InstancePortsProvisioner struct {
 	ports portAllocator
 }
 
-func (p *InstancePortsProvisioner) Provision(req Request) (id string, data interface{}, err error) {
+func (p *InstancePortsProvisioner) Properties() interface{} {
+	return nil
+}
+
+func (p *InstancePortsProvisioner) Provision(_ context.Context, req customresources.Request) (id string, data interface{}, err error) {
 	switch req.RequestType {
-	case Create:
+	case customresources.Create:
 		var port int64
 		port, err = p.ports.Get()
 		if err != nil {
@@ -25,7 +33,7 @@ func (p *InstancePortsProvisioner) Provision(req Request) (id string, data inter
 		}
 		id = fmt.Sprintf("%d", port)
 		data = map[string]int64{"InstancePort": port}
-	case Delete:
+	case customresources.Delete:
 		port, err2 := strconv.Atoi(req.PhysicalResourceId)
 		if err2 != nil {
 			err = fmt.Errorf("physical resource id should have been a port number: %v", err2)

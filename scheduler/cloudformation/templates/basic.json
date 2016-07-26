@@ -10,6 +10,49 @@
     }
   },
   "Outputs": {
+    "Deployments": {
+      "Value": {
+        "Fn::Join": [
+          ",",
+          [
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "web",
+                  {
+                    "Fn::GetAtt": [
+                      "webService",
+                      "DeploymentId"
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "Fn::Join": [
+                "=",
+                [
+                  "worker",
+                  {
+                    "Fn::GetAtt": [
+                      "workerService",
+                      "DeploymentId"
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    "EmpireVersion": {
+      "Value": "x.x.x"
+    },
+    "Release": {
+      "Value": "v1"
+    },
     "Services": {
       "Value": {
         "Fn::Join": [
@@ -21,7 +64,7 @@
                 [
                   "web",
                   {
-                    "Ref": "web"
+                    "Ref": "webService"
                   }
                 ]
               ]
@@ -32,7 +75,7 @@
                 [
                   "worker",
                   {
-                    "Ref": "worker"
+                    "Ref": "workerService"
                   }
                 ]
               ]
@@ -44,19 +87,14 @@
   },
   "Parameters": {
     "DNS": {
+      "Type": "String",
       "Description": "When set to `true`, CNAME's will be altered",
-      "Type": "String"
+      "Default": "true"
     },
     "RestartKey": {
       "Type": "String"
     },
-    "webRestartKey": {
-      "Type": "String"
-    },
     "webScale": {
-      "Type": "String"
-    },
-    "workerRestartKey": {
       "Type": "String"
     },
     "workerScale": {
@@ -81,28 +119,6 @@
         "Type": "CNAME"
       },
       "Type": "AWS::Route53::RecordSet"
-    },
-    "web": {
-      "Properties": {
-        "Cluster": "cluster",
-        "DesiredCount": {
-          "Ref": "webScale"
-        },
-        "LoadBalancers": [
-          {
-            "ContainerName": "web",
-            "ContainerPort": 8080,
-            "LoadBalancerName": {
-              "Ref": "webLoadBalancer"
-            }
-          }
-        ],
-        "Role": "ecsServiceRole",
-        "TaskDefinition": {
-          "Ref": "webTaskDefinition"
-        }
-      },
-      "Type": "AWS::ECS::Service"
     },
     "web8080InstancePort": {
       "Properties": {
@@ -148,6 +164,30 @@
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
+    "webService": {
+      "Properties": {
+        "Cluster": "cluster",
+        "DesiredCount": {
+          "Ref": "webScale"
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
+        "ServiceToken": "sns topic arn",
+        "TaskDefinition": {
+          "Ref": "webTaskDefinition"
+        }
+      },
+      "Type": "Custom::ECSService"
+    },
     "webTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
@@ -158,17 +198,7 @@
             "Cpu": 256,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "webRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               },
               "empire.app.process": "web"
             },
@@ -218,18 +248,20 @@
       },
       "Type": "AWS::ECS::TaskDefinition"
     },
-    "worker": {
+    "workerService": {
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
           "Ref": "workerScale"
         },
         "LoadBalancers": [],
+        "ServiceName": "acme-inc-worker",
+        "ServiceToken": "sns topic arn",
         "TaskDefinition": {
           "Ref": "workerTaskDefinition"
         }
       },
-      "Type": "AWS::ECS::Service"
+      "Type": "Custom::ECSService"
     },
     "workerTaskDefinition": {
       "Properties": {
@@ -241,17 +273,7 @@
             "Cpu": 0,
             "DockerLabels": {
               "cloudformation.restart-key": {
-                "Fn::Join": [
-                  "-",
-                  [
-                    {
-                      "Ref": "RestartKey"
-                    },
-                    {
-                      "Ref": "workerRestartKey"
-                    }
-                  ]
-                ]
+                "Ref": "RestartKey"
               },
               "empire.app.process": "worker"
             },
@@ -277,7 +299,6 @@
             "Image": "remind101/acme-inc:latest",
             "Memory": 0,
             "Name": "worker",
-            "PortMappings": [],
             "Ulimits": []
           }
         ],

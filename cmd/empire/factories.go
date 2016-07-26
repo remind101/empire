@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"os"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,16 +19,42 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
+	"github.com/remind101/empire/events/stdout"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/ecsutil"
-	"github.com/remind101/empire/pkg/runner"
+	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
+	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/scheduler/ecs"
+	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
 )
+
+// newRootContext returns a new root context.Context with an error reporter and
+// logger embedded in the context.
+func newRootContext(c *cli.Context) (context.Context, error) {
+	r, err := newReporter(c)
+	if err != nil {
+		return nil, err
+	}
+	l, err := newLogger(c)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	if r != nil {
+		ctx = reporter.WithReporter(ctx, r)
+	}
+	if l != nil {
+		ctx = logger.WithLogger(ctx, l)
+	}
+
+	return ctx, nil
+}
 
 // DB ===================================
 
@@ -38,11 +66,6 @@ func newDB(c *cli.Context) (*empire.DB, error) {
 
 func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 	docker, err := newDockerClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	reporter, err := newReporter(c)
 	if err != nil {
 		return nil, err
 	}
@@ -67,20 +90,17 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	e := empire.New(db, empire.Options{
-		Secret: c.String(FlagSecret),
-	})
-	e.Reporter = reporter
+	e := empire.New(db)
 	e.Scheduler = scheduler
-	if logs != nil {
-		e.LogsStreamer = logs
-	}
+	e.Secret = []byte(c.String(FlagSecret))
 	e.EventStream = empire.AsyncEvents(streams)
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
-	e.Logger = newLogger()
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
+	if logs != nil {
+		e.LogsStreamer = logs
+	}
 
 	return e, nil
 }
@@ -88,31 +108,47 @@ func newEmpire(db *empire.DB, c *cli.Context) (*empire.Empire, error) {
 // Scheduler ============================
 
 func newScheduler(db *empire.DB, c *cli.Context) (scheduler.Scheduler, error) {
-	r, err := newDockerRunner(c)
+	var (
+		s   scheduler.Scheduler
+		err error
+	)
+
+	switch c.String(FlagScheduler) {
+	case "ecs":
+		s, err = newECSScheduler(db, c)
+	case "cloudformation-migration":
+		s, err = newMigrationScheduler(db, c)
+	case "cloudformation":
+		s, err = newCloudFormationScheduler(db, c)
+	default:
+		return nil, fmt.Errorf("unknown scheduler: %s", c.String(FlagScheduler))
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize %s scheduler: %v", c.String(FlagScheduler), err)
+	}
+
+	d, err := newDockerClient(c)
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := newMigrationScheduler(db, c)
-	if err != nil {
-		return nil, err
-	}
-
-	return &scheduler.AttachedRunner{
-		Scheduler: s,
-		Runner:    r,
-	}, nil
+	a := docker.RunAttachedWithDocker(s, d)
+	a.ShowAttached = c.Bool(FlagXShowAttached)
+	return a, nil
 }
 
 func newMigrationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.MigrationScheduler, error) {
+	log.Println("Using the CloudFormation Migration backend")
+
 	es, err := newECSScheduler(db, c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating ecs scheduler: %v", err)
 	}
 
 	cs, err := newCloudFormationScheduler(db, c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating cloudformation scheduler: %v", err)
 	}
 
 	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
@@ -141,6 +177,9 @@ func newCloudFormationScheduler(db *empire.DB, c *cli.Context) (*cloudformation.
 		ServiceRole:             c.String(FlagECSServiceRole),
 		CustomResourcesTopic:    c.String(FlagCustomResourcesTopic),
 		LogConfiguration:        logConfiguration,
+		ExtraOutputs: map[string]troposphere.Output{
+			"EmpireVersion": troposphere.Output{Value: empire.Version},
+		},
 	}
 
 	if err := t.Validate(); err != nil {
@@ -225,14 +264,6 @@ func newConfigProvider(c *cli.Context) client.ConfigProvider {
 	return p
 }
 
-func newDockerRunner(c *cli.Context) (*runner.Runner, error) {
-	client, err := newDockerClient(c)
-	if err != nil {
-		return nil, err
-	}
-	return runner.NewRunner(client), nil
-}
-
 // DockerClient ========================
 
 func newDockerClient(c *cli.Context) (*dockerutil.Client, error) {
@@ -274,6 +305,12 @@ func newEventStreams(c *cli.Context) (empire.MultiEventStream, error) {
 			return streams, err
 		}
 		streams = append(streams, e)
+	case "stdout":
+		e, err := newStdoutEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
 	default:
 		e := empire.NullEventStream
 		streams = append(streams, e)
@@ -305,6 +342,12 @@ func newSNSEventStream(c *cli.Context) (empire.EventStream, error) {
 	return e, nil
 }
 
+func newStdoutEventStream(c *cli.Context) (empire.EventStream, error) {
+	e := stdout.NewEventStream(newConfigProvider(c))
+	log.Println("Using Stdout events backend")
+	return e, nil
+}
+
 // RunRecorder =========================
 
 func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
@@ -318,7 +361,7 @@ func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
 
 		return empire.RecordToCloudWatch(group, newConfigProvider(c)), nil
 	case "stdout":
-		log.Println("Using Stdout run logs backend:")
+		log.Println("Using Stdout run logs backend")
 		return empire.RecordTo(os.Stdout), nil
 	default:
 		panic(fmt.Sprintf("unknown run logs backend: %v", backend))
@@ -327,11 +370,20 @@ func newRunRecorder(c *cli.Context) (empire.RunRecorder, error) {
 
 // Logger ==============================
 
-func newLogger() log15.Logger {
+func newLogger(c *cli.Context) (log15.Logger, error) {
 	l := log15.New()
-	h := log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
+	lvl := c.String(FlagLogLevel)
+	log.Println(fmt.Sprintf("Using log level %s", lvl))
+	v, err := log15.LvlFromString(c.String(FlagLogLevel))
+	if err != nil {
+		return l, err
+	}
+	h := log15.LvlFilterHandler(v, log15.StreamHandler(os.Stdout, log15.LogfmtFormat()))
+	if lvl == "debug" {
+		h = log15.CallerFileHandler(h)
+	}
 	l.SetHandler(log15.LazyHandler(h))
-	return l
+	return l, err
 }
 
 // Reporter ============================
@@ -339,7 +391,7 @@ func newLogger() log15.Logger {
 func newReporter(c *cli.Context) (reporter.Reporter, error) {
 	u := c.String(FlagReporter)
 	if u == "" {
-		return empire.DefaultReporter, nil
+		return nil, nil
 	}
 
 	uri, err := url.Parse(u)
@@ -363,7 +415,7 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 
 	// Append here because `go vet` will complain about unkeyed fields,
 	// since it thinks MultiReporter is a struct literal.
-	return append(reporter.MultiReporter{}, empire.DefaultReporter, r), nil
+	return append(reporter.MultiReporter{}, reporter.NewLogReporter(), r), nil
 }
 
 // Auth provider =======================
