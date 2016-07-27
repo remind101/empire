@@ -43,7 +43,7 @@ func (e RunEvent) String() string {
 		attachment = "attached"
 	}
 
-	action := "started"
+	action := "started running"
 	if e.Finished {
 		action = "ran"
 	}
