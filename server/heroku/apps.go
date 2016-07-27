@@ -31,11 +31,7 @@ func newApps(as []*empire.App) []*App {
 	return apps
 }
 
-type GetApps struct {
-	*empire.Empire
-}
-
-func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetApps(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	apps, err := h.Apps(empire.AppsQuery{})
 	if err != nil {
 		return err
@@ -45,11 +41,7 @@ func (h *GetApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r
 	return Encode(w, newApps(apps))
 }
 
-type GetAppInfo struct {
-	*empire.Empire
-}
-
-func (h *GetAppInfo) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetAppInfo(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -59,11 +51,7 @@ func (h *GetAppInfo) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 	return Encode(w, newApp(a))
 }
 
-type DeleteApp struct {
-	*empire.Empire
-}
-
-func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) DeleteApp(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -85,11 +73,7 @@ func (h *DeleteApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter,
 	return NoContent(w)
 }
 
-type DeployApp struct {
-	*empire.Empire
-}
-
-func (h *DeployApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) DeployApp(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -108,11 +92,7 @@ type PostAppsForm struct {
 	Name string `json:"name"`
 }
 
-type PostApps struct {
-	*empire.Empire
-}
-
-func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostApps(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PostAppsForm
 
 	if err := Decode(r, &form); err != nil {
@@ -137,11 +117,7 @@ func (h *PostApps) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, 
 	return Encode(w, newApp(a))
 }
 
-type PatchApp struct {
-	*empire.Empire
-}
-
-func (h *PatchApp) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PatchApp(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err

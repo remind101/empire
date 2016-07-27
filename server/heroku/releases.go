@@ -36,11 +36,7 @@ func newReleases(rs []*empire.Release) []*Release {
 	return releases
 }
 
-type GetRelease struct {
-	*empire.Empire
-}
-
-func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetRelease(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -61,11 +57,7 @@ func (h *GetRelease) ServeHTTPContext(ctx context.Context, w http.ResponseWriter
 	return Encode(w, newRelease(rel))
 }
 
-type GetReleases struct {
-	*empire.Empire
-}
-
-func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetReleases(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -85,10 +77,6 @@ func (h *GetReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	return Encode(w, newReleases(rels))
 }
 
-type PostReleases struct {
-	*empire.Empire
-}
-
 type PostReleasesForm struct {
 	Version string `json:"release"`
 }
@@ -102,7 +90,7 @@ func (p *PostReleasesForm) ReleaseVersion() (int, error) {
 	return vers, nil
 }
 
-func (h *PostReleases) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostReleases(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PostReleasesForm
 
 	if err := Decode(r, &form); err != nil {

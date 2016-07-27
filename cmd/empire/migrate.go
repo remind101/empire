@@ -8,7 +8,12 @@ import (
 )
 
 func runMigrate(c *cli.Context) {
-	db, err := newDB(c)
+	ctx, err := newContext(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := newDB(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
