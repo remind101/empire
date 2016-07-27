@@ -18,7 +18,7 @@ const (
 	FlagMessagesRequired = "messages.required"
 	FlagLogLevel         = "log.level"
 
-	FlagDogStatsd = "dogstatsd"
+	FlagStats = "stats"
 
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -179,10 +179,10 @@ var CommonFlags = []cli.Flag{
 		EnvVar: "EMPIRE_LOG_LEVEL",
 	},
 	cli.StringFlag{
-		Name:   FlagDogStatsd,
+		Name:   FlagStats,
 		Value:  "",
-		Usage:  "The address of a dogstatsd instance to send metrics to.",
-		EnvVar: "EMPIRE_DOGSTATSD",
+		Usage:  "The stats backend to use. (e.g. statsd://localhost:8125)",
+		EnvVar: "EMPIRE_STATS",
 	},
 	cli.StringFlag{
 		Name:   FlagReporter,

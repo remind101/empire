@@ -383,15 +383,32 @@ func newHBReporter(key, env string) (reporter.Reporter, error) {
 // Stats =======================
 
 func newStats(c *Context) (stats.Stats, error) {
-	if addr := c.String(FlagDogStatsd); addr != "" {
-		return newDataDogStats(addr)
+	u := c.String(FlagStats)
+	if u == "" {
+		return stats.Null, nil
 	}
 
-	return stats.Null, nil
+	uri, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	switch uri.Scheme {
+	case "statsd":
+		return newStatsdStats(uri.Host)
+	case "dogstatsd":
+		return newDogstatsdStats(uri.Host)
+	default:
+		return stats.Null, nil
+	}
 }
 
-func newDataDogStats(addr string) (stats.Stats, error) {
-	s, err := stats.NewDataDog(addr)
+func newStatsdStats(addr string) (stats.Stats, error) {
+	return stats.NewStatsd(addr, "empire")
+}
+
+func newDogstatsdStats(addr string) (stats.Stats, error) {
+	s, err := stats.NewDogstatsd(addr)
 	if err != nil {
 		return nil, err
 	}

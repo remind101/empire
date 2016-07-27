@@ -319,6 +319,12 @@
 			"revision": "05450cdcf16c84d5b08dc9bb617250aa7b63c8ff"
 		},
 		{
+			"checksumSHA1": "EiqzAHnQNZ0xbLyZ+HptOLNa9h4=",
+			"path": "github.com/cactus/go-statsd-client/statsd",
+			"revision": "91c326c3f7bd20f0226d3d1c289dd9f8ce28d33d",
+			"revisionTime": "2016-05-30T18:57:10Z"
+		},
+		{
 			"comment": "1.2.0-26-gf7ebb76",
 			"path": "github.com/codegangsta/cli",
 			"revision": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
