@@ -116,11 +116,15 @@ func (s *Server) handle(method, path string, h httpx.HandlerFunc) {
 	name := handlerName(h)
 
 	fn := httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		tags := []string{
+			fmt.Sprintf("handler:%s", name),
+			fmt.Sprintf("user:%s", UserFromContext(ctx).Name),
+		}
 		start := time.Now()
 		err := h(ctx, w, r)
 		d := time.Since(start)
-		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, nil)
-		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", name), d, 1.0, nil)
+		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
+		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", name), d, 1.0, tags)
 		return err
 	})
 
