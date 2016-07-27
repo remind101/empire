@@ -17,6 +17,7 @@ import (
 	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/middleware"
+	"github.com/remind101/empire/stats"
 	"golang.org/x/oauth2"
 )
 
@@ -25,6 +26,9 @@ func runServer(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Send runtime metrics to stats backend.
+	go stats.Runtime(ctx.Stats())
 
 	port := c.String(FlagPort)
 

@@ -12,6 +12,7 @@ import (
 type Stats interface {
 	Inc(name string, value int64, rate float32, tags []string) error
 	Timing(name string, value time.Duration, rate float32, tags []string) error
+	Gauge(name string, value float32, rate float32, tags []string) error
 }
 
 type nullStats struct{}
@@ -21,6 +22,10 @@ func (s *nullStats) Inc(name string, value int64, rate float32, tags []string) e
 }
 
 func (s *nullStats) Timing(name string, value time.Duration, rate float32, tags []string) error {
+	return nil
+}
+
+func (s *nullStats) Gauge(name string, value float32, rate float32, tags []string) error {
 	return nil
 }
 
@@ -38,6 +43,10 @@ func (s *taggedStats) Inc(name string, value int64, rate float32, tags []string)
 
 func (s *taggedStats) Timing(name string, value time.Duration, rate float32, tags []string) error {
 	return s.stats.Timing(name, value, rate, append(tags, s.tags...))
+}
+
+func (s *taggedStats) Gauge(name string, value float32, rate float32, tags []string) error {
+	return s.stats.Gauge(name, value, rate, append(tags, s.tags...))
 }
 
 // WithStats returns a new context.Context with the Stats implementation
@@ -72,6 +81,13 @@ func Inc(ctx context.Context, name string, value int64, rate float32, tags []str
 func Timing(ctx context.Context, name string, value time.Duration, rate float32, tags []string) error {
 	if stats, ok := FromContext(ctx); ok {
 		return stats.Timing(name, value, rate, tags)
+	}
+	return nil
+}
+
+func Gauge(ctx context.Context, name string, value float32, rate float32, tags []string) error {
+	if stats, ok := FromContext(ctx); ok {
+		return stats.Gauge(name, value, rate, tags)
 	}
 	return nil
 }

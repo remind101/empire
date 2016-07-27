@@ -32,3 +32,7 @@ func (s *Dogstatsd) Timing(name string, value time.Duration, rate float32, tags 
 	timeInMilliseconds := float64(value / time.Millisecond)
 	return s.Client.TimeInMilliseconds(name, timeInMilliseconds, tags, float64(rate))
 }
+
+func (s *Dogstatsd) Gauge(name string, value float32, rate float32, tags []string) error {
+	return s.Client.Gauge(name, float64(value), tags, float64(rate))
+}
