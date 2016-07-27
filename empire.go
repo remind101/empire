@@ -451,10 +451,15 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 		opts.Output = io.MultiWriter(w, opts.Output)
 	}
 
+	if err := e.PublishEvent(event); err != nil {
+		return err
+	}
+
 	if err := e.runner.Run(ctx, opts); err != nil {
 		return err
 	}
 
+	event.Finish()
 	return e.PublishEvent(event)
 }
 
