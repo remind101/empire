@@ -36,3 +36,7 @@ func (s *Dogstatsd) Timing(name string, value time.Duration, rate float32, tags 
 func (s *Dogstatsd) Gauge(name string, value float32, rate float32, tags []string) error {
 	return s.Client.Gauge(name, float64(value), tags, float64(rate))
 }
+
+func (s *Dogstatsd) Histogram(name string, value float32, rate float32, tags []string) error {
+	return s.Client.Histogram(name, float64(value), tags, float64(rate))
+}

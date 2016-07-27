@@ -13,6 +13,7 @@ type Stats interface {
 	Inc(name string, value int64, rate float32, tags []string) error
 	Timing(name string, value time.Duration, rate float32, tags []string) error
 	Gauge(name string, value float32, rate float32, tags []string) error
+	Histogram(name string, value float32, rate float32, tags []string) error
 }
 
 type nullStats struct{}
@@ -26,6 +27,10 @@ func (s *nullStats) Timing(name string, value time.Duration, rate float32, tags 
 }
 
 func (s *nullStats) Gauge(name string, value float32, rate float32, tags []string) error {
+	return nil
+}
+
+func (s *nullStats) Histogram(name string, value float32, rate float32, tags []string) error {
 	return nil
 }
 
@@ -47,6 +52,10 @@ func (s *taggedStats) Timing(name string, value time.Duration, rate float32, tag
 
 func (s *taggedStats) Gauge(name string, value float32, rate float32, tags []string) error {
 	return s.stats.Gauge(name, value, rate, append(tags, s.tags...))
+}
+
+func (s *taggedStats) Histogram(name string, value float32, rate float32, tags []string) error {
+	return s.stats.Histogram(name, value, rate, append(tags, s.tags...))
 }
 
 // WithStats returns a new context.Context with the Stats implementation
@@ -88,6 +97,13 @@ func Timing(ctx context.Context, name string, value time.Duration, rate float32,
 func Gauge(ctx context.Context, name string, value float32, rate float32, tags []string) error {
 	if stats, ok := FromContext(ctx); ok {
 		return stats.Gauge(name, value, rate, tags)
+	}
+	return nil
+}
+
+func Histogram(ctx context.Context, name string, value float32, rate float32, tags []string) error {
+	if stats, ok := FromContext(ctx); ok {
+		return stats.Histogram(name, value, rate, tags)
 	}
 	return nil
 }

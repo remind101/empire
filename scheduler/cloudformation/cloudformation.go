@@ -25,6 +25,7 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
@@ -216,6 +217,10 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	if err != nil {
 		return err
 	}
+
+	stats.Histogram(ctx, "scheduler.cloudformation.template_size", float32(t.Size), 1.0, []string{
+		fmt.Sprintf("stack:%s", stackName),
+	})
 
 	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
 

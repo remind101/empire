@@ -33,3 +33,7 @@ func (s *Statsd) Timing(name string, value time.Duration, rate float32, tags []s
 func (s *Statsd) Gauge(name string, value float32, rate float32, tags []string) error {
 	return s.client.Gauge(name, int64(value), rate)
 }
+
+func (s *Statsd) Histogram(name string, value float32, rate float32, tags []string) error {
+	return s.client.Gauge(name, int64(value), rate)
+}
