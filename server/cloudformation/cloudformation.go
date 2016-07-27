@@ -258,8 +258,5 @@ func (p *metricsProvisioner) Provision(ctx context.Context, req customresources.
 	start := time.Now()
 	id, data, err := p.Provisioner.Provision(ctx, req)
 	stats.Timing(ctx, "cloudformation.provision", time.Since(start), 1.0, tags)
-	if err != nil {
-		stats.Inc(ctx, "cloudformation.provision.error", 1, 1.0, tags)
-	}
 	return id, data, err
 }
