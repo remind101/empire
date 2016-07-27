@@ -10,10 +10,6 @@ import (
 
 type Formation heroku.Formation
 
-type PatchFormation struct {
-	*empire.Empire
-}
-
 type PatchFormationForm struct {
 	Updates []struct {
 		Process  string              `json:"process"` // Refers to process type
@@ -22,7 +18,7 @@ type PatchFormationForm struct {
 	} `json:"updates"`
 }
 
-func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PatchFormation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PatchFormationForm
 
 	if err := Decode(r, &form); err != nil {
@@ -71,13 +67,8 @@ func (h *PatchFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	return Encode(w, resp)
 }
 
-// GetFormation returns the current Formation info for an App
-type GetFormation struct {
-	*empire.Empire
-}
-
 // ServeHTTPContext handles the http response
-func (h *GetFormation) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetFormation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	app, err := findApp(ctx, h)
 	if err != nil {
 		return err

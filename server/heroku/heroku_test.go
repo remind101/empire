@@ -8,6 +8,10 @@ import (
 	"github.com/remind101/empire"
 )
 
+func TestNew(t *testing.T) {
+	New(nil)
+}
+
 func TestEncode(t *testing.T) {
 	tests := []struct {
 		in  interface{}

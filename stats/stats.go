@@ -1,17 +1,26 @@
 // Package stats provides an interface for instrumenting Empire.
 package stats
 
-import "golang.org/x/net/context"
+import (
+	"time"
+
+	"golang.org/x/net/context"
+)
 
 // Stats provides an interface for generating instruments, like guages and
 // counts.
 type Stats interface {
 	Inc(name string, value int64, rate float32, tags []string) error
+	Timing(name string, value time.Duration, rate float32, tags []string) error
 }
 
 type nullStats struct{}
 
 func (s *nullStats) Inc(name string, value int64, rate float32, tags []string) error {
+	return nil
+}
+
+func (s *nullStats) Timing(name string, value time.Duration, rate float32, tags []string) error {
 	return nil
 }
 
@@ -25,6 +34,10 @@ type taggedStats struct {
 
 func (s *taggedStats) Inc(name string, value int64, rate float32, tags []string) error {
 	return s.stats.Inc(name, value, rate, append(tags, s.tags...))
+}
+
+func (s *taggedStats) Timing(name string, value time.Duration, rate float32, tags []string) error {
+	return s.stats.Timing(name, value, rate, append(tags, s.tags...))
 }
 
 // WithStats returns a new context.Context with the Stats implementation
@@ -52,6 +65,13 @@ func WithTags(ctx context.Context, tags []string) context.Context {
 func Inc(ctx context.Context, name string, value int64, rate float32, tags []string) error {
 	if stats, ok := FromContext(ctx); ok {
 		return stats.Inc(name, value, rate, tags)
+	}
+	return nil
+}
+
+func Timing(ctx context.Context, name string, value time.Duration, rate float32, tags []string) error {
+	if stats, ok := FromContext(ctx); ok {
+		return stats.Timing(name, value, rate, tags)
 	}
 	return nil
 }

@@ -21,11 +21,7 @@ func newDomain(d *empire.Domain) *Domain {
 	}
 }
 
-type GetDomains struct {
-	*empire.Empire
-}
-
-func (h *GetDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetDomains(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -44,11 +40,7 @@ type PostDomainsForm struct {
 	Hostname string `json:"hostname"`
 }
 
-type PostDomains struct {
-	*empire.Empire
-}
-
-func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostDomains(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -78,11 +70,7 @@ func (h *PostDomains) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	return Encode(w, newDomain(d))
 }
 
-type DeleteDomain struct {
-	*empire.Empire
-}
-
-func (h *DeleteDomain) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) DeleteDomain(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err

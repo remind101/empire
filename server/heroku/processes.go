@@ -37,11 +37,7 @@ func newDynos(tasks []*empire.Task) []*Dyno {
 	return dynos
 }
 
-type GetProcesses struct {
-	*empire.Empire
-}
-
-func (h *GetProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetProcesses(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	a, err := findApp(ctx, h)
 	if err != nil {
 		return err
@@ -64,11 +60,7 @@ type PostProcessForm struct {
 	Size    *empire.Constraints `json:"size"`
 }
 
-type PostProcess struct {
-	*empire.Empire
-}
-
-func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostProcess(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var form PostProcessForm
 
 	a, err := findApp(ctx, h)
@@ -138,11 +130,7 @@ func (h *PostProcess) ServeHTTPContext(ctx context.Context, w http.ResponseWrite
 	return nil
 }
 
-type DeleteProcesses struct {
-	*empire.Empire
-}
-
-func (h *DeleteProcesses) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) DeleteProcesses(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	vars := httpx.Vars(ctx)
 	pid := vars["pid"]
 
