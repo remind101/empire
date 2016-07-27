@@ -111,26 +111,20 @@ func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r 
 	return nil
 }
 
-var nameRegexp = regexp.MustCompile(`^.*\.(.*)-fm$`)
-
 // handle adds a new handler to the router, which also increments a counter.
 func (s *Server) handle(method, path string, h httpx.HandlerFunc) {
-	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
-	handlerName := nameRegexp.FindStringSubmatch(name)[1]
+	name := handlerName(h)
+
 	fn := httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		start := time.Now()
 		err := h(ctx, w, r)
 		d := time.Since(start)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, nil)
-		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", handlerName), d, 1.0, nil)
+		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", name), d, 1.0, nil)
 		return err
 	})
 
 	s.mux.HandleFunc(path, fn).Methods(method)
-}
-
-func (s *Server) Handle(path string, h httpx.Handler) *httpx.Route {
-	return s.mux.Handle(path, h)
 }
 
 // Encode json encodes v into w.
@@ -236,4 +230,13 @@ func UserFromContext(ctx context.Context) *empire.User {
 func findMessage(r *http.Request) (string, error) {
 	h := r.Header.Get(heroku.CommitMessageHeader)
 	return h, nil
+}
+
+var nameRegexp = regexp.MustCompile(`^.*\.(.*)-fm$`)
+
+// handlerName returns the name of the handler, which can be used as a metrics
+// postfix.
+func handlerName(h httpx.HandlerFunc) string {
+	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
+	return nameRegexp.FindStringSubmatch(name)[1]
 }

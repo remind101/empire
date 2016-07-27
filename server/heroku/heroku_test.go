@@ -6,10 +6,14 @@ import (
 	"testing"
 
 	"github.com/remind101/empire"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNew(t *testing.T) {
-	New(nil)
+func TestHandlerName(t *testing.T) {
+	s := &Server{}
+
+	n := handlerName(s.GetProcesses)
+	assert.Equal(t, "GetProcesses", n)
 }
 
 func TestEncode(t *testing.T) {
