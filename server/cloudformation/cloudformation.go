@@ -14,6 +14,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/empire/scheduler/ecs/lb"
+	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 )
 
@@ -86,7 +87,7 @@ func NewCustomResourceProvisioner(empire *empire.Empire, config client.ConfigPro
 func (c *CustomResourceProvisioner) add(resourceName string, p customresources.Provisioner) {
 	// Wrap the provisioner with timeouts.
 	p = customresources.WithTimeout(p, ProvisioningTimeout, ProvisioningGraceTimeout)
-	c.Provisioners[resourceName] = p
+	c.Provisioners[resourceName] = withMetrics(p)
 }
 
 func (c *CustomResourceProvisioner) Start() {
@@ -252,4 +253,24 @@ func requiresReplacement(n, o properties) (bool, error) {
 // requests to empire.
 func newUser() *empire.User {
 	return &empire.User{Name: "Cloudformation"}
+}
+
+type metricsProvisioner struct {
+	customresources.Provisioner
+}
+
+// withMetrics wraps the provisioner to record provisioning metrics.
+func withMetrics(p customresources.Provisioner) customresources.Provisioner {
+	return &metricsProvisioner{p}
+}
+
+func (p *metricsProvisioner) Provision(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+	tags := []string{
+		fmt.Sprintf("resource_type:%s", req.ResourceType),
+		fmt.Sprintf("request_type:%s", req.RequestType),
+	}
+	start := time.Now()
+	id, data, err := p.Provisioner.Provision(ctx, req)
+	stats.Timing(ctx, "cloudformation.provision", time.Since(start), 1.0, tags)
+	return id, data, err
 }

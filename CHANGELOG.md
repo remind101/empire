@@ -8,6 +8,7 @@
 * Empire now includes experimental support for scheduled tasks [#919](https://github.com/remind101/empire/pull/919)
 * Empire now supports streaming status updates from the scheduler while deploying [#888](https://github.com/remind101/empire/issues/888)
 * You can now provision Empire applications and set environment variables from CloudFormation stacks using the `Custom::EmpireApp` and `Custom::EmpireAppEnvironment` resources [#819](https://github.com/remind101/empire/pull/819)
+* Empire now supports sending internal metrics to statsd or dogstatsd [#953](https://github.com/remind101/empire/pull/953)
 
 **Improvements**
 
@@ -16,6 +17,7 @@
 * The database schema version is now checked at boot, as well as in the http health checks. [#893](https://github.com/remind101/empire/pull/893)
 * The log level within empire can now be configured when starting the service. [#929](https://github.com/remind101/empire/issues/929)
 * The CloudFormation backend now has experimental support for a `Custom::ECSTaskDefinition` resource that greatly reduces the size of generated templates. [#935](https://github.com/remind101/empire/pull/935)
+* `emp run` now publishes an event when it is ran [#954](https://github.com/remind101/empire/pull/954)
 
 **Bugs**
 
@@ -29,6 +31,7 @@
 **Performance**
 
 * Performance of creating/updating/deleting custom resources in the CloudFormation backend has been improved. [#942](https://github.com/remind101/empire/pull/942)
+* ECS Task Definitions are now cached in memory for improved `emp ps` performance. [#902](https://github.com/remind101/empire/pull/902)
 
 **Security**
 
