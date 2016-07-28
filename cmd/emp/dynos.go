@@ -15,7 +15,7 @@ import (
 
 var cmdDynos = &Command{
 	Run:      runDynos,
-	Usage:    "ps [<name>...]",
+	Usage:    "ps",
 	Alias:    "dynos",
 	NeedsApp: true,
 	Category: "dyno",
@@ -26,53 +26,33 @@ Lists processes. Shows the name, size, state, age, and command.
 Examples:
 
     $ emp ps
-    run.3794  2X  up   1m  bash
-    web.1     1X  up  15h  "blog /app /tmp/dst"
-    web.2     1X  up   8h  "blog /app /tmp/dst"
-
-    $ emp ps web
-    web.1     1X  up  15h  "blog /app /tmp/dst"
-    web.2     1X  up   8h  "blog /app /tmp/dst"
+    v1.run.e97e1f75e8ff                             2X  RUNNING   1m  bash
+    v1.web.dcc9a8c4-c0f8-4478-aa8a-f9148b362401     1X  RUNNING  15h  "blog /app /tmp/dst"
+    v1.web.2bcb6e08-ef99-447f-8e7a-416d94769010     1X  RUNNING   8h  "blog /app /tmp/dst"
 `,
 }
 
-func runDynos(cmd *Command, names []string) {
+func runDynos(cmd *Command, args []string) {
 	w := tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
 	defer w.Flush()
-
-	if len(names) > 1 {
+	if len(args) != 0 {
 		cmd.PrintUsage()
 		os.Exit(2)
 	}
-	listDynos(w, names)
+
+	listDynos(w)
 }
 
-func listDynos(w io.Writer, names []string) {
+func listDynos(w io.Writer) {
 	appname := mustApp()
 	dynos, err := client.DynoList(appname, nil)
 	must(err)
 	sort.Sort(DynosByName(dynos))
 
-	if len(names) == 0 {
-		for _, d := range dynos {
-			listDyno(w, &d)
-		}
-		return
+	for _, d := range dynos {
+		listDyno(w, &d)
 	}
-
-	for _, name := range names {
-		for _, d := range dynos {
-			if !strings.Contains(name, ".") {
-				if strings.HasPrefix(d.Name, name+".") {
-					listDyno(w, &d)
-				}
-			} else {
-				if d.Name == name {
-					listDyno(w, &d)
-				}
-			}
-		}
-	}
+	return
 }
 
 func listDyno(w io.Writer, d *heroku.Dyno) {
