@@ -18,6 +18,12 @@
 			"revision": "afe77d958c701557ec5dc56f6936fcc194d15520"
 		},
 		{
+			"checksumSHA1": "4M1EgCcu+6tGntb/psF0/Z8Tf9w=",
+			"path": "github.com/DataDog/datadog-go/statsd",
+			"revision": "cc2f4770f4d61871e19bfee967bc767fe730b0d9",
+			"revisionTime": "2016-03-29T13:52:53Z"
+		},
+		{
 			"checksumSHA1": "cd0bMwFvxcXV2eGQddRPPIWjJhk=",
 			"path": "github.com/aws/aws-sdk-go/aws",
 			"revision": "3c37d29820480639ff03fd66df00a0f27984f88d",
@@ -311,6 +317,12 @@
 		{
 			"path": "github.com/bgentry/testnet",
 			"revision": "05450cdcf16c84d5b08dc9bb617250aa7b63c8ff"
+		},
+		{
+			"checksumSHA1": "EiqzAHnQNZ0xbLyZ+HptOLNa9h4=",
+			"path": "github.com/cactus/go-statsd-client/statsd",
+			"revision": "91c326c3f7bd20f0226d3d1c289dd9f8ce28d33d",
+			"revisionTime": "2016-05-30T18:57:10Z"
 		},
 		{
 			"comment": "1.2.0-26-gf7ebb76",

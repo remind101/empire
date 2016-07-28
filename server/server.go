@@ -49,7 +49,8 @@ func New(e *empire.Empire, options Options) httpx.Handler {
 	}
 
 	// Mount the heroku api
-	hk := heroku.New(e, options.Authenticator)
+	hk := heroku.New(e)
+	hk.Authenticator = options.Authenticator
 	r.Headers("Accept", heroku.AcceptHeader).Handler(hk)
 
 	// Mount health endpoint

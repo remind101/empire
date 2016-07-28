@@ -16,7 +16,7 @@ func appendCommitMessage(main, commit string) string {
 	return output
 }
 
-// RunEvent is triggered when a user starts a one off process.
+// RunEvent is triggered when a user starts or stops a one off process.
 type RunEvent struct {
 	User     string
 	App      string
@@ -24,6 +24,7 @@ type RunEvent struct {
 	URL      string
 	Attached bool
 	Message  string
+	Finished bool
 
 	app *App
 }
@@ -32,12 +33,21 @@ func (e RunEvent) Event() string {
 	return "run"
 }
 
+func (e *RunEvent) Finish() {
+	e.Finished = true
+}
+
 func (e RunEvent) String() string {
 	attachment := "detached"
 	if e.Attached {
 		attachment = "attached"
 	}
-	msg := fmt.Sprintf("%s ran `%s` (%s) on %s", e.User, e.Command.String(), attachment, e.App)
+
+	action := "started running"
+	if e.Finished {
+		action = "ran"
+	}
+	msg := fmt.Sprintf("%s %s `%s` (%s) on %s", e.User, action, e.Command.String(), attachment, e.App)
 	if e.URL != "" {
 		msg = fmt.Sprintf("%s (<%s|logs>)", msg, e.URL)
 	}

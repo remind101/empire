@@ -14,7 +14,11 @@ import (
 
 var (
 	defaultVisibilityHeartbeat = 1 * time.Minute
-	defaultNumWorkers          = 10
+)
+
+const (
+	defaultNumWorkers = 10
+	defaultWaitTime   = 10 // seconds
 )
 
 // sqsClient duck types the sqs.SQS interface.
@@ -89,7 +93,8 @@ func (q *SQSDispatcher) start(handle func(context.Context, *sqs.Message) error) 
 			ctx := q.Context
 
 			resp, err := q.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
-				QueueUrl: aws.String(q.QueueURL),
+				QueueUrl:        aws.String(q.QueueURL),
+				WaitTimeSeconds: aws.Int64(defaultWaitTime),
 			})
 			if err != nil {
 				reporter.Report(ctx, err)
