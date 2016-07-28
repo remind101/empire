@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chzyer/readline"
 	"github.com/mgutz/ansi"
 	"github.com/remind101/empire/cmd/emp/hkclient"
 	"github.com/remind101/empire/pkg/heroku"
@@ -154,9 +154,11 @@ func askForMessage() (string, error) {
 	}
 
 	fmt.Println("A commit message is required, enter one below:")
-	fmt.Printf("> ")
-	reader := bufio.NewReader(os.Stdin)
-	message, err := reader.ReadString('\n')
+	reader, err := readline.New("> ")
+	if err != nil {
+		return "", err
+	}
+	message, err := reader.Readline()
 	return strings.Trim(message, " \n"), err
 }
 

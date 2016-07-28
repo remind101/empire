@@ -26,6 +26,7 @@
 * Fixed a bug where the failed creation of a custom resources could cause a CloudFormation stack to fail to rollback. [#938](https://github.com/remind101/empire/pull/938)
 * Fixed a bug where waiting for a deploy to stabilize was failing if you had more than 10 services. [#944](https://github.com/remind101/empire/issues/944)
 * Fixed an issue in the Tugboat integration where the log stream to a Tugboat instance could be closed. [#950](https://github.com/remind101/empire/pull/950)
+* Fixed an issue where typing commit message does not allow user to use arrow keys, etc. [#958](https://github.com/remind101/empire/pull/958)
 
 **Performance**
 
