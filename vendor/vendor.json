@@ -325,6 +325,12 @@
 			"revisionTime": "2016-05-30T18:57:10Z"
 		},
 		{
+			"checksumSHA1": "iQTOQ8FyP0qFPSd/f+1QW4fhzJk=",
+			"path": "github.com/chzyer/readline",
+			"revision": "62c6fe6193755f722b8b8788aa7357be55a50ff1",
+			"revisionTime": "2016-07-26T13:51:17Z"
+		},
+		{
 			"comment": "1.2.0-26-gf7ebb76",
 			"path": "github.com/codegangsta/cli",
 			"revision": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
