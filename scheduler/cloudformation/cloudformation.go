@@ -428,14 +428,7 @@ type createStackInput struct {
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
 func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
-	waiter := func(input *cloudformation.DescribeStacksInput) error {
-		scheduler.Publish(ctx, ss, "Creating stack")
-		err := s.cloudformation.WaitUntilStackCreateComplete(input)
-		if err == nil {
-			scheduler.Publish(ctx, ss, "Stack created")
-		}
-		return err
-	}
+	waiter := s.waitFor(ctx, createStack, ss)
 
 	submitted := make(chan error)
 	fn := func() error {
@@ -468,14 +461,7 @@ type updateStackInput struct {
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
 func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
-	waiter := func(input *cloudformation.DescribeStacksInput) error {
-		scheduler.Publish(ctx, ss, "Waiting for stack update to complete")
-		err := s.cloudformation.WaitUntilStackUpdateComplete(input)
-		if err == nil {
-			scheduler.Publish(ctx, ss, "Stack update complete")
-		}
-		return err
-	}
+	waiter := s.waitFor(ctx, updateStack, ss)
 
 	locked := make(chan struct{})
 	submitted := make(chan error, 1)
@@ -525,7 +511,7 @@ type stackOperationOutput struct {
 //   until the other stack operation has completed.
 // * If there is another pending stack operation, it will be replaced by the new
 //   update.
-func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter func(*cloudformation.DescribeStacksInput) error, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
+func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter waitFunc, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
 	l, err := newAdvisoryLock(s.db, stackName)
 	if err != nil {
 		return nil, err
@@ -890,6 +876,61 @@ func (s *Scheduler) stackName(appID string) (string, error) {
 		return "", errNoStack
 	}
 	return stackName, err
+}
+
+type stackOperation string
+
+const (
+	createStack = "CreateStack"
+	updateStack = "UpdateStack"
+)
+
+// waitFunc represents a function that can wait for a CloudFormation stack to
+// reach a certain state.
+type waitFunc func(*cloudformation.DescribeStacksInput) error
+
+// waiter holds information about a waitFunc.
+type waiter struct {
+	startMessage, successMessage string
+
+	wait func(cloudformationClient) waitFunc
+}
+
+// waiters maps a stack operation to the waiter that should be used to wait for
+// it to complete.
+var waiters = map[stackOperation]waiter{
+	createStack: {
+		"Creating stack",
+		"Stack created",
+		func(c cloudformationClient) waitFunc { return c.WaitUntilStackCreateComplete },
+	},
+	updateStack: {
+		"Updating stack",
+		"Stack updated",
+		func(c cloudformationClient) waitFunc { return c.WaitUntilStackUpdateComplete },
+	},
+}
+
+// waitFor returns a wait function that will wait for the given stack operation
+// to complete, and sends status messages to the status stream, and also records
+// metrics for how long the operation took.
+func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler.StatusStream) func(*cloudformation.DescribeStacksInput) error {
+	waiter := waiters[op]
+	wait := waiter.wait(s.cloudformation)
+
+	return func(input *cloudformation.DescribeStacksInput) error {
+		tags := []string{
+			fmt.Sprintf("stack:%s", *input.StackName),
+		}
+		scheduler.Publish(ctx, ss, waiter.startMessage)
+		start := time.Now()
+		err := wait(input)
+		stats.Timing(ctx, fmt.Sprintf("scheduler.cloudformation.%s", op), time.Since(start), 1.0, tags)
+		if err == nil {
+			scheduler.Publish(ctx, ss, waiter.successMessage)
+		}
+		return err
+	}
 }
 
 // extractProcessData extracts a map that maps the process name to some
