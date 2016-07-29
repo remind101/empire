@@ -1,7 +1,6 @@
 package cloudformation
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -128,6 +127,9 @@ func (q *SQSDispatcher) handle(ctx context.Context, handle func(context.Context,
 
 	var t <-chan time.Time
 	t, err = q.extendMessageVisibilityTimeout(message.ReceiptHandle)
+	if err != nil {
+		return
+	}
 
 	errCh := make(chan error)
 	go func() { errCh <- handle(ctx, message) }()
@@ -159,7 +161,7 @@ func (q *SQSDispatcher) extendMessageVisibilityTimeout(receiptHandle *string) (<
 		VisibilityTimeout: aws.Int64(visibilityTimeout),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error extending message visibility timeout: %v", err)
+		return nil, err
 	}
 
 	return q.after(q.VisibilityHeartbeat / 2), nil

@@ -442,7 +442,8 @@
               "Effect": "Allow",
               "Action": [
                 "sqs:ReceiveMessage",
-                "sqs:DeleteMessage"
+                "sqs:DeleteMessage",
+                "sqs:ChangeMessageVisibility"
               ],
               "Resource": { "Fn::GetAtt": ["CustomResourcesQueue", "Arn"] }
             },
@@ -542,6 +543,7 @@
               "Action": [
                 "route53:ListHostedZonesByName",
                 "route53:ChangeResourceRecordSets",
+                "route53:ListResourceRecordSets",
                 "route53:ListHostedZones",
                 "route53:GetHostedZone"
               ],
