@@ -473,8 +473,8 @@ func newConfigProvider(c *Context) client.ConfigProvider {
 			stats.Inc(fmt.Sprintf("aws.request.%s.%s", r.ClientInfo.ServiceName, r.Operation.Name), 1, 1.0, tags)
 		},
 	})
-	s.Handlers.ValidateResponse.PushBackNamed(request.NamedHandler{
-		Name: "empire.ResponseMetrics",
+	s.Handlers.Retry.PushFrontNamed(request.NamedHandler{
+		Name: "empire.ErrorMetrics",
 		Fn: func(r *request.Request) {
 			tags := requestTags(r)
 			if r.Error != nil {
