@@ -77,5 +77,5 @@ func (c *Context) ClientConfig(serviceName string, cfgs ...*aws.Config) client.C
 		c.awsConfigProvider = newConfigProvider(c)
 	}
 
-	return c.awsConfigProvider.ClientConfig(serviceName)
+	return c.awsConfigProvider.ClientConfig(serviceName, cfgs...)
 }
