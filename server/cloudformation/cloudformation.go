@@ -252,7 +252,7 @@ func requiresReplacement(n, o properties) (bool, error) {
 // newUser returns an empire.User that should be used by resources when making
 // requests to empire.
 func newUser() *empire.User {
-	return &empire.User{Name: "Cloudformation"}
+	return &empire.User{Name: "CloudFormation"}
 }
 
 type metricsProvisioner struct {
