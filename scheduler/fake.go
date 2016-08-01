@@ -27,6 +27,10 @@ func (m *FakeScheduler) Submit(ctx context.Context, app *App, ss StatusStream) e
 	return nil
 }
 
+func (m *FakeScheduler) Restart(ctx context.Context, app *App, ss StatusStream) error {
+	return m.Submit(ctx, app, ss)
+}
+
 func (m *FakeScheduler) Scale(ctx context.Context, app string, ptype string, instances uint) error {
 	if a, ok := m.apps[app]; ok {
 		var process *Process

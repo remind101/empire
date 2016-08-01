@@ -11,10 +11,10 @@ import (
 	"hash/crc32"
 	"html/template"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -30,8 +30,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-// newUUID returns a new UUID. Set to a var so we can stub it out in tests.
-var newUUID = uuid.New
+// newTimestamp returns the current time in seconds since epoch. Set to a var
+// so we can stub it out in tests.
+var newTimestamp = func() string { return strconv.FormatInt(time.Now().Unix(), 10) }
 
 // The name of the output key where process names are mapped to ECS services.
 // This output is expected to be a comma delimited list of `process=servicearn`
@@ -193,6 +194,23 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, s
 	return tx.Commit()
 }
 
+func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	stackName, err := s.stackName(app.ID)
+	if err != nil {
+		return err
+	}
+	output := make(chan stackOperationOutput, 1)
+	return s.updateStack(ctx, &updateStackInput{
+		StackName: aws.String(stackName),
+		Parameters: []*cloudformation.Parameter{
+			{
+				ParameterKey:   aws.String(restartParameter),
+				ParameterValue: aws.String(newTimestamp()),
+			},
+		},
+	}, output, ss)
+}
+
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
 	stackName, err := s.stackName(app.ID)
@@ -229,15 +247,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
 	)
 
-	// Build parameters for the stack.
-	parameters := []*cloudformation.Parameter{
-		// FIXME: Remove this in favor of a Restart method.
-		{
-			ParameterKey:   aws.String(restartParameter),
-			ParameterValue: aws.String(newUUID()),
-		},
-	}
-
+	var parameters []*cloudformation.Parameter
 	if opts.NoDNS != nil {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String("DNS"),

@@ -207,6 +207,11 @@ func (m *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler
 	return nil
 }
 
+// Restart restarts all of the processes for the app.
+func (m *Scheduler) Restart(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	return m.Submit(ctx, app, ss)
+}
+
 // Remove removes all of the AWS resources for this app.
 func (m *Scheduler) Remove(ctx context.Context, appID string) error {
 	return m.RemoveWithOptions(ctx, appID, RemoveOptions{})

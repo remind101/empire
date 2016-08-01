@@ -52,7 +52,7 @@ type MigrationScheduler struct {
 	db *sql.DB
 }
 
-// NewMigrationScheduler returns a new MigrationSchedeuler instance.
+// NewMigrationScheduler returns a new MigrationScheduler instance.
 func NewMigrationScheduler(db *sql.DB, c *Scheduler, e *ecs.Scheduler) *MigrationScheduler {
 	return &MigrationScheduler{
 		db:             db,
@@ -110,6 +110,14 @@ func (s *MigrationScheduler) Submit(ctx context.Context, app *scheduler.App, ss 
 		return err
 	}
 	return b.Submit(ctx, app, ss)
+}
+
+func (s *MigrationScheduler) Restart(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+	b, err := s.Backend(app.ID)
+	if err != nil {
+		return err
+	}
+	return b.Restart(ctx, app, ss)
 }
 
 // Migrate submits the app to the CloudFormation scheduler, waits for the stack
