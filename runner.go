@@ -73,6 +73,7 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 
 	a := newSchedulerApp(release)
 	p := newSchedulerProcess(release, "run", proc)
+	p.Labels["empire.user"] = opts.User.Name
 
 	// Add additional environment variables to the process.
 	for k, v := range opts.Env {
