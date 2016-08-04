@@ -324,6 +324,7 @@ func TestEmpire_Run(t *testing.T) {
 			},
 			Labels: map[string]string{
 				"empire.app.process": "run",
+				"empire.user":        "ejholmes",
 			},
 		}, nil, nil).Return(nil)
 
@@ -398,6 +399,7 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 			},
 			Labels: map[string]string{
 				"empire.app.process": "run",
+				"empire.user":        "ejholmes",
 			},
 		}, nil, nil).Return(nil)
 
