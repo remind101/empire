@@ -10,13 +10,15 @@ import (
 )
 
 const (
-	FlagPort             = "port"
-	FlagAutoMigrate      = "automigrate"
-	FlagScheduler        = "scheduler"
-	FlagEventsBackend    = "events.backend"
-	FlagRunLogsBackend   = "runlogs.backend"
-	FlagMessagesRequired = "messages.required"
-	FlagLogLevel         = "log.level"
+	FlagPort           = "port"
+	FlagAutoMigrate    = "automigrate"
+	FlagScheduler      = "scheduler"
+	FlagEventsBackend  = "events.backend"
+	FlagRunLogsBackend = "runlogs.backend"
+	FlagLogLevel       = "log.level"
+
+	FlagMessagesRequired       = "messages.required"
+	FlagRequireWhitelistedRuns = "runs.whitelist"
 
 	FlagStats = "stats"
 
@@ -346,6 +348,11 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagMessagesRequired,
 		Usage:  "If true, messages will be required for empire actions that emit events.",
 		EnvVar: "EMPIRE_MESSAGES_REQUIRED",
+	},
+	cli.BoolFlag{
+		Name:   FlagRequireWhitelistedRuns,
+		Usage:  "If true, `emp run` will only run commands that have been whitelisted in the Procfile.",
+		EnvVar: "EMPIRE_REQUIRE_WHITELISTED_RUNS",
 	},
 	cli.BoolFlag{
 		Name:   FlagXShowAttached,

@@ -278,7 +278,10 @@ func newSchedulerApp(release *Release) *scheduler.App {
 	var processes []*scheduler.Process
 
 	for name, p := range release.Formation {
-		processes = append(processes, newSchedulerProcess(release, name, p))
+		// Named "run" processes won't get any services attached.
+		if !p.Run {
+			processes = append(processes, newSchedulerProcess(release, name, p))
+		}
 	}
 
 	env := environment(release.Config.Vars)

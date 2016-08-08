@@ -244,6 +244,7 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 		f[name] = Process{
 			Command: cmd,
 			Cron:    process.Cron,
+			Run:     process.Run,
 		}
 	}
 

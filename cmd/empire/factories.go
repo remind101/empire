@@ -74,6 +74,7 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
+	e.RequireWhitelistedRuns = c.Bool(FlagRequireWhitelistedRuns)
 	if logs != nil {
 		e.LogsStreamer = logs
 	}

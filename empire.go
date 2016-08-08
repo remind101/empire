@@ -32,6 +32,17 @@ var (
 	}
 )
 
+// An error that is returned when RequireWhitelistedRuns is enabled, and
+// the command is not whitelisted in the Procfile.
+type CommandWhitelistError struct {
+	Command Command
+}
+
+// Error implements the error interface.
+func (c *CommandWhitelistError) Error() string {
+	return fmt.Sprintf("command not whitelisted: %v", c.Command)
+}
+
 // Empire provides the core public API for Empire. Refer to the package
 // documentation for details.
 type Empire struct {
@@ -73,6 +84,10 @@ type Empire struct {
 
 	// MessagesRequired is a boolean used to determine if messages should be required for events.
 	MessagesRequired bool
+
+	// If enabled, only commands that are marked as `run: true` in the
+	// Procfile will be allowed with `emp run`.
+	RequireWhitelistedRuns bool
 }
 
 // New returns a new Empire instance.

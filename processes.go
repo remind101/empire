@@ -70,6 +70,10 @@ type Process struct {
 	// Command is the command to run.
 	Command Command `json:"Command,omitempty"`
 
+	// Signifies that this is a named one off command and not a long lived
+	// service.
+	Run bool `json:"Run,omitempty"`
+
 	// Quantity is the desired number of instances of this process.
 	Quantity int `json:"Quantity,omitempty"`
 
