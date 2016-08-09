@@ -37,6 +37,8 @@
 
 **Security**
 
+* Empire now has a new `commands.allowed` flag that controls the behavior of what commands are allowed with `emp run`. This can be set to `procfile` to limit `emp run` to only allow commands defined in the Procfile.
+
 ## 0.10.1 (2016-06-14)
 
 **Features**

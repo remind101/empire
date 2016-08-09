@@ -45,12 +45,12 @@ When provided, signifies that the process is a scheduled process. The value shou
 cron: * * * * * * // Run once every minute
 ```
 
-**Run**
+**Noservice**
 
 When provided, signifies that the process is an "operational" one off command. These processes will not get any AWS resources attached to them.
 
 This can be used to alias a common command, or by enforcing whitelisting of commands for `emp run`.
 
 ```yaml
-run: true
+noservice: true
 ```

@@ -172,6 +172,37 @@ v54.web.fd130482-675f-4611-a599-eb0da1879a10            1X  RUNNING   9m  "./bin
 
 Refer to http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ScheduledEvents.html for details on the cron expression syntax.
 
+## Run only processes
+
+When using `emp run`, if the command you provide matches a process within the Procfile, it will invoke the command defined inside the process. For example, you might define a `migrate` process inside the Procfile, which users would use to run migrations:
+
+```console
+#!/bin/bash
+
+dir=${1:-up}
+exec bundle exec rake db:migrate:$dir
+```
+
+```yaml
+migrate:
+  command: ./bin/migrate
+```
+
+Now, users can invoke the `migrate` process like so:
+
+```console
+$ emp run migrate up
+$ emp run migrate down
+```
+
+You can add the `noservice: true` flag to tell Empire to not create any AWS resources for the process, for extra re-assurance that the process won't be scaled up.
+
+```yaml
+migrate:
+  command: ./bin/migrate
+  noservice: true
+```
+
 ## Environment variables
 
 TODO

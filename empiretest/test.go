@@ -122,8 +122,8 @@ var defaultProcfile = procfile.ExtendedProcfile{
 		}(),
 	},
 	"rake": procfile.Process{
-		Command: "bundle exec rake",
-		Run:     true,
+		Command:   "bundle exec rake",
+		NoService: true,
 	},
 }
 
