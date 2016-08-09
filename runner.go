@@ -68,7 +68,7 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 	}
 
 	if cmd, ok := release.Formation[procName]; ok {
-		proc.Command = cmd.Command
+		proc.Command = append(cmd.Command, opts.Command[1:])
 	} else {
 		if r.RequireWhitelistedRuns {
 			return &CommandWhitelistError{Command: opts.Command}
