@@ -32,15 +32,32 @@ var (
 	}
 )
 
-// An error that is returned when RequireWhitelistedRuns is enabled, and
-// the command is not whitelisted in the Procfile.
-type CommandWhitelistError struct {
+// AllowedCommands specifies what commands are allowed to be Run with Empire.
+type AllowedCommands int
+
+const (
+	// AllowCommandAny will allow any command to be run.
+	AllowCommandAny AllowedCommands = iota
+	// AllowCommandProcfile will only allow commands specified in the
+	// Procfile (the key itself) to be run. Any other command will return an
+	// error.
+	AllowCommandProcfile
+)
+
+// An error that is returned when a command is not whitelisted to be Run.
+type CommandNotAllowedError struct {
 	Command Command
 }
 
+// commandNotInFormation returns a new CommandNotAllowedError for a command
+// that's not in the formation.
+func commandNotInFormation(command Command, formation Formation) *CommandNotAllowedError {
+	return &CommandNotAllowedError{Command: command}
+}
+
 // Error implements the error interface.
-func (c *CommandWhitelistError) Error() string {
-	return fmt.Sprintf("command not whitelisted: %v", c.Command)
+func (c *CommandNotAllowedError) Error() string {
+	return fmt.Sprintf("command not allowed: %v\n", c.Command)
 }
 
 // Empire provides the core public API for Empire. Refer to the package
@@ -85,9 +102,9 @@ type Empire struct {
 	// MessagesRequired is a boolean used to determine if messages should be required for events.
 	MessagesRequired bool
 
-	// If enabled, only commands that are marked as `run: true` in the
-	// Procfile will be allowed with `emp run`.
-	RequireWhitelistedRuns bool
+	// Configures what type of commands are allowed to be run with the Run
+	// method. The zero value allows all commands to be run.
+	AllowedCommands AllowedCommands
 }
 
 // New returns a new Empire instance.

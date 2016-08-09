@@ -68,10 +68,10 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 	}
 
 	if cmd, ok := release.Formation[procName]; ok {
-		proc.Command = append(cmd.Command, opts.Command[1:])
+		proc.Command = append(cmd.Command, opts.Command[1:]...)
 	} else {
-		if r.RequireWhitelistedRuns {
-			return &CommandWhitelistError{Command: opts.Command}
+		if r.AllowedCommands == AllowCommandProcfile {
+			return commandNotInFormation(Command{procName}, release.Formation)
 		}
 
 		// This is an unnamed command, fallback to a generic proc name.

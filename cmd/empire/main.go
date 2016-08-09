@@ -17,8 +17,8 @@ const (
 	FlagRunLogsBackend = "runlogs.backend"
 	FlagLogLevel       = "log.level"
 
-	FlagMessagesRequired       = "messages.required"
-	FlagRequireWhitelistedRuns = "runs.whitelist"
+	FlagMessagesRequired = "messages.required"
+	FlagAllowedCommands  = "commands.allowed"
 
 	FlagStats = "stats"
 
@@ -349,10 +349,11 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "If true, messages will be required for empire actions that emit events.",
 		EnvVar: "EMPIRE_MESSAGES_REQUIRED",
 	},
-	cli.BoolFlag{
-		Name:   FlagRequireWhitelistedRuns,
-		Usage:  "If true, `emp run` will only run commands that have been whitelisted in the Procfile.",
-		EnvVar: "EMPIRE_REQUIRE_WHITELISTED_RUNS",
+	cli.StringFlag{
+		Name:   FlagAllowedCommands,
+		Value:  "any",
+		Usage:  "Specifies what commands are allowed when using `emp run`. Can be `any`, or `procfile`.",
+		EnvVar: "EMPIRE_ALLOWED_COMMANDS",
 	},
 	cli.BoolFlag{
 		Name:   FlagXShowAttached,
