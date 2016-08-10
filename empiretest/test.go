@@ -121,6 +121,10 @@ var defaultProcfile = procfile.ExtendedProcfile{
 			return &everyMinute
 		}(),
 	},
+	"rake": procfile.Process{
+		Command:   "bundle exec rake",
+		NoService: true,
+	},
 }
 
 // Returns a function that can be used as a Procfile extract for Empire. It

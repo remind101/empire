@@ -62,7 +62,22 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	proc := Process{Command: opts.Command, Quantity: 1}
+	procName := opts.Command[0]
+	proc := Process{
+		Quantity: 1,
+	}
+
+	if cmd, ok := release.Formation[procName]; ok {
+		proc.Command = append(cmd.Command, opts.Command[1:]...)
+	} else {
+		if r.AllowedCommands == AllowCommandProcfile {
+			return commandNotInFormation(Command{procName}, release.Formation)
+		}
+
+		// This is an unnamed command, fallback to a generic proc name.
+		procName = "run"
+		proc.Command = opts.Command
+	}
 
 	// Set the size of the process.
 	constraints := DefaultConstraints
@@ -72,7 +87,7 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 	proc.SetConstraints(constraints)
 
 	a := newSchedulerApp(release)
-	p := newSchedulerProcess(release, "run", proc)
+	p := newSchedulerProcess(release, procName, proc)
 	p.Labels["empire.user"] = opts.User.Name
 
 	// Add additional environment variables to the process.

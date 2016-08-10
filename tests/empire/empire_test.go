@@ -424,6 +424,97 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	s.AssertExpectations(t)
 }
 
+func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+	e.AllowedCommands = empire.AllowCommandProcfile
+
+	user := &empire.User{Name: "ejholmes"}
+
+	app, err := e.Create(context.Background(), empire.CreateOpts{
+		User: user,
+		Name: "acme-inc",
+	})
+	assert.NoError(t, err)
+
+	img := image.Image{Repository: "remind101/acme-inc"}
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+		App:    app,
+		User:   user,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
+		Image:  img,
+	})
+	assert.NoError(t, err)
+
+	s := new(mockScheduler)
+	e.Scheduler = s
+
+	err = e.Run(context.Background(), empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
+
+		// Detached Process
+		Output: nil,
+		Input:  nil,
+
+		Env: map[string]string{
+			"TERM": "xterm",
+		},
+	})
+	assert.IsType(t, &empire.CommandNotAllowedError{}, err)
+
+	s.On("Run", &scheduler.App{
+		ID:      app.ID,
+		Name:    "acme-inc",
+		Release: "v1",
+		Env: map[string]string{
+			"EMPIRE_APPID":   app.ID,
+			"EMPIRE_APPNAME": "acme-inc",
+			"EMPIRE_RELEASE": "v1",
+		},
+		Labels: map[string]string{
+			"empire.app.id":      app.ID,
+			"empire.app.name":    "acme-inc",
+			"empire.app.release": "v1",
+		},
+	},
+		&scheduler.Process{
+			Type:        "rake",
+			Image:       img,
+			Command:     []string{"bundle", "exec", "rake", "db:migrate"},
+			Instances:   1,
+			MemoryLimit: 536870912,
+			CPUShares:   256,
+			Nproc:       256,
+			Env: map[string]string{
+				"EMPIRE_PROCESS": "rake",
+				"SOURCE":         "acme-inc.rake.v1",
+				"TERM":           "xterm",
+			},
+			Labels: map[string]string{
+				"empire.app.process": "rake",
+				"empire.user":        "ejholmes",
+			},
+		}, nil, nil).Return(nil)
+
+	err = e.Run(context.Background(), empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: empire.MustParseCommand("rake db:migrate"),
+
+		// Detached Process
+		Output: nil,
+		Input:  nil,
+
+		Env: map[string]string{
+			"TERM": "xterm",
+		},
+	})
+	assert.NoError(t, err)
+
+	s.AssertExpectations(t)
+}
+
 func TestEmpire_Set(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)

@@ -22,8 +22,9 @@ func (e ExtendedProcfile) version() string {
 }
 
 type Process struct {
-	Command interface{} `yaml:"command"`
-	Cron    *string     `yaml:"cron,omitempty"`
+	Command   interface{} `yaml:"command"`
+	Cron      *string     `yaml:"cron,omitempty"`
+	NoService bool        `yaml:"noservice,omitempty"`
 }
 
 // StandardProcfile represents a standard Procfile.

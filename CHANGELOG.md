@@ -9,6 +9,7 @@
 * Empire now supports streaming status updates from the scheduler while deploying [#888](https://github.com/remind101/empire/issues/888)
 * Empire now supports sending internal metrics to statsd or dogstatsd [#953](https://github.com/remind101/empire/pull/953)
 * Attached and detached runs now have an `empire.user` label attached to them [#965](https://github.com/remind101/empire/pull/965)
+* You can now provide the name of a process defined in the Procfile when calling `emp run` [#967](https://github.com/remind101/empire/pull/967)
 
 **Improvements**
 
@@ -36,6 +37,8 @@
 * ECS Task Definitions are now cached in memory for improved `emp ps` performance. [#902](https://github.com/remind101/empire/pull/902)
 
 **Security**
+
+* Empire now has a new `commands.allowed` flag that controls the behavior of what commands are allowed with `emp run`. This can be set to `procfile` to limit `emp run` to only allow commands defined in the Procfile.
 
 ## 0.10.1 (2016-06-14)
 

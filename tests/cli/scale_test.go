@@ -17,7 +17,7 @@ func TestScale(t *testing.T) {
 		},
 		{
 			"scale -l -a acme-inc",
-			"scheduled=0:1X web=2:1X worker=0:1X",
+			"rake=0:1X scheduled=0:1X web=2:1X worker=0:1X",
 		},
 		{
 			"dynos -a acme-inc",
