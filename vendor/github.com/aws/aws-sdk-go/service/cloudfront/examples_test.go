@@ -16,7 +16,13 @@ var _ time.Duration
 var _ bytes.Buffer
 
 func ExampleCloudFront_CreateCloudFrontOriginAccessIdentity() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.CreateCloudFrontOriginAccessIdentityInput{
 		CloudFrontOriginAccessIdentityConfig: &cloudfront.OriginAccessIdentityConfig{ // Required
@@ -38,7 +44,13 @@ func ExampleCloudFront_CreateCloudFrontOriginAccessIdentity() {
 }
 
 func ExampleCloudFront_CreateDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.CreateDistributionInput{
 		DistributionConfig: &cloudfront.DistributionConfig{ // Required
@@ -252,8 +264,246 @@ func ExampleCloudFront_CreateDistribution() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudFront_CreateDistributionWithTags() {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
+
+	params := &cloudfront.CreateDistributionWithTagsInput{
+		DistributionConfigWithTags: &cloudfront.DistributionConfigWithTags{ // Required
+			DistributionConfig: &cloudfront.DistributionConfig{ // Required
+				CallerReference: aws.String("string"), // Required
+				Comment:         aws.String("string"), // Required
+				DefaultCacheBehavior: &cloudfront.DefaultCacheBehavior{ // Required
+					ForwardedValues: &cloudfront.ForwardedValues{ // Required
+						Cookies: &cloudfront.CookiePreference{ // Required
+							Forward: aws.String("ItemSelection"), // Required
+							WhitelistedNames: &cloudfront.CookieNames{
+								Quantity: aws.Int64(1), // Required
+								Items: []*string{
+									aws.String("string"), // Required
+									// More values...
+								},
+							},
+						},
+						QueryString: aws.Bool(true), // Required
+						Headers: &cloudfront.Headers{
+							Quantity: aws.Int64(1), // Required
+							Items: []*string{
+								aws.String("string"), // Required
+								// More values...
+							},
+						},
+					},
+					MinTTL:         aws.Int64(1),         // Required
+					TargetOriginId: aws.String("string"), // Required
+					TrustedSigners: &cloudfront.TrustedSigners{ // Required
+						Enabled:  aws.Bool(true), // Required
+						Quantity: aws.Int64(1),   // Required
+						Items: []*string{
+							aws.String("string"), // Required
+							// More values...
+						},
+					},
+					ViewerProtocolPolicy: aws.String("ViewerProtocolPolicy"), // Required
+					AllowedMethods: &cloudfront.AllowedMethods{
+						Items: []*string{ // Required
+							aws.String("Method"), // Required
+							// More values...
+						},
+						Quantity: aws.Int64(1), // Required
+						CachedMethods: &cloudfront.CachedMethods{
+							Items: []*string{ // Required
+								aws.String("Method"), // Required
+								// More values...
+							},
+							Quantity: aws.Int64(1), // Required
+						},
+					},
+					Compress:        aws.Bool(true),
+					DefaultTTL:      aws.Int64(1),
+					MaxTTL:          aws.Int64(1),
+					SmoothStreaming: aws.Bool(true),
+				},
+				Enabled: aws.Bool(true), // Required
+				Origins: &cloudfront.Origins{ // Required
+					Quantity: aws.Int64(1), // Required
+					Items: []*cloudfront.Origin{
+						{ // Required
+							DomainName: aws.String("string"), // Required
+							Id:         aws.String("string"), // Required
+							CustomHeaders: &cloudfront.CustomHeaders{
+								Quantity: aws.Int64(1), // Required
+								Items: []*cloudfront.OriginCustomHeader{
+									{ // Required
+										HeaderName:  aws.String("string"), // Required
+										HeaderValue: aws.String("string"), // Required
+									},
+									// More values...
+								},
+							},
+							CustomOriginConfig: &cloudfront.CustomOriginConfig{
+								HTTPPort:             aws.Int64(1),                       // Required
+								HTTPSPort:            aws.Int64(1),                       // Required
+								OriginProtocolPolicy: aws.String("OriginProtocolPolicy"), // Required
+								OriginSslProtocols: &cloudfront.OriginSslProtocols{
+									Items: []*string{ // Required
+										aws.String("SslProtocol"), // Required
+										// More values...
+									},
+									Quantity: aws.Int64(1), // Required
+								},
+							},
+							OriginPath: aws.String("string"),
+							S3OriginConfig: &cloudfront.S3OriginConfig{
+								OriginAccessIdentity: aws.String("string"), // Required
+							},
+						},
+						// More values...
+					},
+				},
+				Aliases: &cloudfront.Aliases{
+					Quantity: aws.Int64(1), // Required
+					Items: []*string{
+						aws.String("string"), // Required
+						// More values...
+					},
+				},
+				CacheBehaviors: &cloudfront.CacheBehaviors{
+					Quantity: aws.Int64(1), // Required
+					Items: []*cloudfront.CacheBehavior{
+						{ // Required
+							ForwardedValues: &cloudfront.ForwardedValues{ // Required
+								Cookies: &cloudfront.CookiePreference{ // Required
+									Forward: aws.String("ItemSelection"), // Required
+									WhitelistedNames: &cloudfront.CookieNames{
+										Quantity: aws.Int64(1), // Required
+										Items: []*string{
+											aws.String("string"), // Required
+											// More values...
+										},
+									},
+								},
+								QueryString: aws.Bool(true), // Required
+								Headers: &cloudfront.Headers{
+									Quantity: aws.Int64(1), // Required
+									Items: []*string{
+										aws.String("string"), // Required
+										// More values...
+									},
+								},
+							},
+							MinTTL:         aws.Int64(1),         // Required
+							PathPattern:    aws.String("string"), // Required
+							TargetOriginId: aws.String("string"), // Required
+							TrustedSigners: &cloudfront.TrustedSigners{ // Required
+								Enabled:  aws.Bool(true), // Required
+								Quantity: aws.Int64(1),   // Required
+								Items: []*string{
+									aws.String("string"), // Required
+									// More values...
+								},
+							},
+							ViewerProtocolPolicy: aws.String("ViewerProtocolPolicy"), // Required
+							AllowedMethods: &cloudfront.AllowedMethods{
+								Items: []*string{ // Required
+									aws.String("Method"), // Required
+									// More values...
+								},
+								Quantity: aws.Int64(1), // Required
+								CachedMethods: &cloudfront.CachedMethods{
+									Items: []*string{ // Required
+										aws.String("Method"), // Required
+										// More values...
+									},
+									Quantity: aws.Int64(1), // Required
+								},
+							},
+							Compress:        aws.Bool(true),
+							DefaultTTL:      aws.Int64(1),
+							MaxTTL:          aws.Int64(1),
+							SmoothStreaming: aws.Bool(true),
+						},
+						// More values...
+					},
+				},
+				CustomErrorResponses: &cloudfront.CustomErrorResponses{
+					Quantity: aws.Int64(1), // Required
+					Items: []*cloudfront.CustomErrorResponse{
+						{ // Required
+							ErrorCode:          aws.Int64(1), // Required
+							ErrorCachingMinTTL: aws.Int64(1),
+							ResponseCode:       aws.String("string"),
+							ResponsePagePath:   aws.String("string"),
+						},
+						// More values...
+					},
+				},
+				DefaultRootObject: aws.String("string"),
+				Logging: &cloudfront.LoggingConfig{
+					Bucket:         aws.String("string"), // Required
+					Enabled:        aws.Bool(true),       // Required
+					IncludeCookies: aws.Bool(true),       // Required
+					Prefix:         aws.String("string"), // Required
+				},
+				PriceClass: aws.String("PriceClass"),
+				Restrictions: &cloudfront.Restrictions{
+					GeoRestriction: &cloudfront.GeoRestriction{ // Required
+						Quantity:        aws.Int64(1),                     // Required
+						RestrictionType: aws.String("GeoRestrictionType"), // Required
+						Items: []*string{
+							aws.String("string"), // Required
+							// More values...
+						},
+					},
+				},
+				ViewerCertificate: &cloudfront.ViewerCertificate{
+					ACMCertificateArn:            aws.String("string"),
+					Certificate:                  aws.String("string"),
+					CertificateSource:            aws.String("CertificateSource"),
+					CloudFrontDefaultCertificate: aws.Bool(true),
+					IAMCertificateId:             aws.String("string"),
+					MinimumProtocolVersion:       aws.String("MinimumProtocolVersion"),
+					SSLSupportMethod:             aws.String("SSLSupportMethod"),
+				},
+				WebACLId: aws.String("string"),
+			},
+			Tags: &cloudfront.Tags{ // Required
+				Items: []*cloudfront.Tag{
+					{ // Required
+						Key:   aws.String("TagKey"), // Required
+						Value: aws.String("TagValue"),
+					},
+					// More values...
+				},
+			},
+		},
+	}
+	resp, err := svc.CreateDistributionWithTags(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudFront_CreateInvalidation() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.CreateInvalidationInput{
 		DistributionId: aws.String("string"), // Required
@@ -282,7 +532,13 @@ func ExampleCloudFront_CreateInvalidation() {
 }
 
 func ExampleCloudFront_CreateStreamingDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.CreateStreamingDistributionInput{
 		StreamingDistributionConfig: &cloudfront.StreamingDistributionConfig{ // Required
@@ -329,8 +585,79 @@ func ExampleCloudFront_CreateStreamingDistribution() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudFront_CreateStreamingDistributionWithTags() {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
+
+	params := &cloudfront.CreateStreamingDistributionWithTagsInput{
+		StreamingDistributionConfigWithTags: &cloudfront.StreamingDistributionConfigWithTags{ // Required
+			StreamingDistributionConfig: &cloudfront.StreamingDistributionConfig{ // Required
+				CallerReference: aws.String("string"), // Required
+				Comment:         aws.String("string"), // Required
+				Enabled:         aws.Bool(true),       // Required
+				S3Origin: &cloudfront.S3Origin{ // Required
+					DomainName:           aws.String("string"), // Required
+					OriginAccessIdentity: aws.String("string"), // Required
+				},
+				TrustedSigners: &cloudfront.TrustedSigners{ // Required
+					Enabled:  aws.Bool(true), // Required
+					Quantity: aws.Int64(1),   // Required
+					Items: []*string{
+						aws.String("string"), // Required
+						// More values...
+					},
+				},
+				Aliases: &cloudfront.Aliases{
+					Quantity: aws.Int64(1), // Required
+					Items: []*string{
+						aws.String("string"), // Required
+						// More values...
+					},
+				},
+				Logging: &cloudfront.StreamingLoggingConfig{
+					Bucket:  aws.String("string"), // Required
+					Enabled: aws.Bool(true),       // Required
+					Prefix:  aws.String("string"), // Required
+				},
+				PriceClass: aws.String("PriceClass"),
+			},
+			Tags: &cloudfront.Tags{ // Required
+				Items: []*cloudfront.Tag{
+					{ // Required
+						Key:   aws.String("TagKey"), // Required
+						Value: aws.String("TagValue"),
+					},
+					// More values...
+				},
+			},
+		},
+	}
+	resp, err := svc.CreateStreamingDistributionWithTags(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudFront_DeleteCloudFrontOriginAccessIdentity() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.DeleteCloudFrontOriginAccessIdentityInput{
 		Id:      aws.String("string"), // Required
@@ -350,7 +677,13 @@ func ExampleCloudFront_DeleteCloudFrontOriginAccessIdentity() {
 }
 
 func ExampleCloudFront_DeleteDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.DeleteDistributionInput{
 		Id:      aws.String("string"), // Required
@@ -370,7 +703,13 @@ func ExampleCloudFront_DeleteDistribution() {
 }
 
 func ExampleCloudFront_DeleteStreamingDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.DeleteStreamingDistributionInput{
 		Id:      aws.String("string"), // Required
@@ -390,7 +729,13 @@ func ExampleCloudFront_DeleteStreamingDistribution() {
 }
 
 func ExampleCloudFront_GetCloudFrontOriginAccessIdentity() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetCloudFrontOriginAccessIdentityInput{
 		Id: aws.String("string"), // Required
@@ -409,7 +754,13 @@ func ExampleCloudFront_GetCloudFrontOriginAccessIdentity() {
 }
 
 func ExampleCloudFront_GetCloudFrontOriginAccessIdentityConfig() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetCloudFrontOriginAccessIdentityConfigInput{
 		Id: aws.String("string"), // Required
@@ -428,7 +779,13 @@ func ExampleCloudFront_GetCloudFrontOriginAccessIdentityConfig() {
 }
 
 func ExampleCloudFront_GetDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetDistributionInput{
 		Id: aws.String("string"), // Required
@@ -447,7 +804,13 @@ func ExampleCloudFront_GetDistribution() {
 }
 
 func ExampleCloudFront_GetDistributionConfig() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetDistributionConfigInput{
 		Id: aws.String("string"), // Required
@@ -466,7 +829,13 @@ func ExampleCloudFront_GetDistributionConfig() {
 }
 
 func ExampleCloudFront_GetInvalidation() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetInvalidationInput{
 		DistributionId: aws.String("string"), // Required
@@ -486,7 +855,13 @@ func ExampleCloudFront_GetInvalidation() {
 }
 
 func ExampleCloudFront_GetStreamingDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetStreamingDistributionInput{
 		Id: aws.String("string"), // Required
@@ -505,7 +880,13 @@ func ExampleCloudFront_GetStreamingDistribution() {
 }
 
 func ExampleCloudFront_GetStreamingDistributionConfig() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.GetStreamingDistributionConfigInput{
 		Id: aws.String("string"), // Required
@@ -524,7 +905,13 @@ func ExampleCloudFront_GetStreamingDistributionConfig() {
 }
 
 func ExampleCloudFront_ListCloudFrontOriginAccessIdentities() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.ListCloudFrontOriginAccessIdentitiesInput{
 		Marker:   aws.String("string"),
@@ -544,7 +931,13 @@ func ExampleCloudFront_ListCloudFrontOriginAccessIdentities() {
 }
 
 func ExampleCloudFront_ListDistributions() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.ListDistributionsInput{
 		Marker:   aws.String("string"),
@@ -564,7 +957,13 @@ func ExampleCloudFront_ListDistributions() {
 }
 
 func ExampleCloudFront_ListDistributionsByWebACLId() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.ListDistributionsByWebACLIdInput{
 		WebACLId: aws.String("string"), // Required
@@ -585,7 +984,13 @@ func ExampleCloudFront_ListDistributionsByWebACLId() {
 }
 
 func ExampleCloudFront_ListInvalidations() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.ListInvalidationsInput{
 		DistributionId: aws.String("string"), // Required
@@ -606,7 +1011,13 @@ func ExampleCloudFront_ListInvalidations() {
 }
 
 func ExampleCloudFront_ListStreamingDistributions() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.ListStreamingDistributionsInput{
 		Marker:   aws.String("string"),
@@ -625,8 +1036,104 @@ func ExampleCloudFront_ListStreamingDistributions() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudFront_ListTagsForResource() {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
+
+	params := &cloudfront.ListTagsForResourceInput{
+		Resource: aws.String("ResourceARN"), // Required
+	}
+	resp, err := svc.ListTagsForResource(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudFront_TagResource() {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
+
+	params := &cloudfront.TagResourceInput{
+		Resource: aws.String("ResourceARN"), // Required
+		Tags: &cloudfront.Tags{ // Required
+			Items: []*cloudfront.Tag{
+				{ // Required
+					Key:   aws.String("TagKey"), // Required
+					Value: aws.String("TagValue"),
+				},
+				// More values...
+			},
+		},
+	}
+	resp, err := svc.TagResource(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudFront_UntagResource() {
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
+
+	params := &cloudfront.UntagResourceInput{
+		Resource: aws.String("ResourceARN"), // Required
+		TagKeys: &cloudfront.TagKeys{ // Required
+			Items: []*string{
+				aws.String("TagKey"), // Required
+				// More values...
+			},
+		},
+	}
+	resp, err := svc.UntagResource(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudFront_UpdateCloudFrontOriginAccessIdentity() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.UpdateCloudFrontOriginAccessIdentityInput{
 		CloudFrontOriginAccessIdentityConfig: &cloudfront.OriginAccessIdentityConfig{ // Required
@@ -650,7 +1157,13 @@ func ExampleCloudFront_UpdateCloudFrontOriginAccessIdentity() {
 }
 
 func ExampleCloudFront_UpdateDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.UpdateDistributionInput{
 		DistributionConfig: &cloudfront.DistributionConfig{ // Required
@@ -867,7 +1380,13 @@ func ExampleCloudFront_UpdateDistribution() {
 }
 
 func ExampleCloudFront_UpdateStreamingDistribution() {
-	svc := cloudfront.New(session.New())
+	sess, err := session.NewSession()
+	if err != nil {
+		fmt.Println("failed to create session,", err)
+		return
+	}
+
+	svc := cloudfront.New(sess)
 
 	params := &cloudfront.UpdateStreamingDistributionInput{
 		Id: aws.String("string"), // Required
