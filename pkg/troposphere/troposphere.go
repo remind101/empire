@@ -45,6 +45,7 @@ type Output struct {
 // Resource represents a CloudFormation Resource.
 type Resource struct {
 	Condition  interface{} `json:"Condition,omitempty"`
+	DependsOn  interface{} `json:"DependsOn,omitempty"`
 	Properties interface{} `json:"Properties,omitempty"`
 	Type       interface{} `json:"Type,omitempty"`
 	Version    interface{} `json:"Version,omitempty"`

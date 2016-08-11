@@ -66,11 +66,89 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			"basic-alb.json",
+			&scheduler.App{
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Env: map[string]string{
+					// These should get re-sorted in
+					// alphabetical order.
+					"C": "foo",
+					"A": "foobar",
+					"B": "bar",
+
+					"LOAD_BALANCER_TYPE": "alb",
+				},
+				Processes: []*scheduler.Process{
+					{
+						Type:    "web",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command: []string{"./bin/web"},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPExposure{},
+						},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Instances:   1,
+						Nproc:       256,
+					},
+					{
+						Type:    "worker",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command: []string{"./bin/worker"},
+						Labels: map[string]string{
+							"empire.app.process": "worker",
+						},
+						Env: map[string]string{
+							"FOO": "BAR",
+						},
+					},
+				},
+			},
+		},
+
+		{
 			"https.json",
 			&scheduler.App{
 				ID:      "1234",
 				Release: "v1",
 				Name:    "acme-inc",
+				Processes: []*scheduler.Process{
+					{
+						Type:    "web",
+						Command: []string{"./bin/web"},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPSExposure{
+								Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
+							},
+						},
+					},
+					{
+						Type:    "api",
+						Command: []string{"./bin/api"},
+						Exposure: &scheduler.Exposure{
+							Type: &scheduler.HTTPSExposure{
+								Cert: "AcmeIncDotCom", // Simple cert format.
+							},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			"https-alb.json",
+			&scheduler.App{
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Env: map[string]string{
+					"LOAD_BALANCER_TYPE": "alb",
+				},
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
