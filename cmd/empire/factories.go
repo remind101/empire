@@ -149,6 +149,7 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 	}
 
 	t := &cloudformation.EmpireTemplate{
+		VpcId:                   c.String(FlagELBVpcId),
 		Cluster:                 c.String(FlagECSCluster),
 		InternalSecurityGroupID: c.String(FlagELBSGPrivate),
 		ExternalSecurityGroupID: c.String(FlagELBSGPublic),

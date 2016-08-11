@@ -47,6 +47,7 @@ type LoadBalancer struct {
 	ContainerName    *string
 	ContainerPort    *customresources.IntValue
 	LoadBalancerName *string
+	TargetGroupArn   *string
 }
 
 // ECSServiceProperties represents the properties for the Custom::ECSService
@@ -133,6 +134,7 @@ func (p *ECSServiceResource) create(ctx context.Context, clientToken string, pro
 			ContainerName:    v.ContainerName,
 			ContainerPort:    v.ContainerPort.Value(),
 			LoadBalancerName: v.LoadBalancerName,
+			TargetGroupArn:   v.TargetGroupArn,
 		})
 	}
 

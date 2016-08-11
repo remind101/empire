@@ -507,16 +507,7 @@
             {
               "Effect": "Allow",
               "Action": [
-                "elasticloadbalancing:DeleteLoadBalancer",
-                "elasticloadbalancing:CreateLoadBalancer",
-                "elasticloadbalancing:DescribeLoadBalancers",
-                "elasticloadbalancing:DescribeTags",
-                "elasticloadbalancing:ConfigureHealthCheck",
-                "elasticloadbalancing:ModifyLoadBalancerAttributes",
-                "elasticloadbalancing:SetLoadBalancerListenerSSLCertificate",
-                "elasticloadbalancing:CreateLoadBalancerListeners",
-                "elasticloadbalancing:DeleteLoadBalancerListeners",
-                "elasticloadbalancing:SetLoadBalancerPoliciesOfListener"
+                "elasticloadbalancing:*"
               ],
               "Resource": ["*"]
             },

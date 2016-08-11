@@ -53,6 +53,7 @@ const (
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
+	FlagELBVpcId     = "elb.vpc.id"
 
 	FlagEC2SubnetsPrivate = "ec2.subnets.private"
 	FlagEC2SubnetsPublic  = "ec2.subnets.public"
@@ -277,6 +278,11 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "The ELB security group to assign public load balancers",
 		EnvVar: "EMPIRE_ELB_SG_PUBLIC",
+	},
+	cli.StringFlag{
+		Name:   FlagELBVpcId,
+		Usage:  "The comma separated private subnet ids",
+		EnvVar: "EMPIRE_ELB_VPC_ID",
 	},
 	cli.StringSliceFlag{
 		Name:   FlagEC2SubnetsPrivate,
