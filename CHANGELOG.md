@@ -7,6 +7,7 @@
 * Empire now includes experimental support for showing attached runs in `emp ps`. This can be enabled with the `--x.showattached` flag, or `EMPIRE_X_SHOW_ATTACHED` [#911](https://github.com/remind101/empire/pull/911)
 * Empire now includes experimental support for scheduled tasks [#919](https://github.com/remind101/empire/pull/919)
 * Empire now supports streaming status updates from the scheduler while deploying [#888](https://github.com/remind101/empire/issues/888)
+* You can now provision Empire applications and set environment variables from CloudFormation stacks using the `Custom::EmpireApp` and `Custom::EmpireAppEnvironment` resources [#819](https://github.com/remind101/empire/pull/819)
 * Empire now supports sending internal metrics to statsd or dogstatsd [#953](https://github.com/remind101/empire/pull/953)
 * Attached and detached runs now have an `empire.user` label attached to them [#965](https://github.com/remind101/empire/pull/965)
 * You can now provide the name of a process defined in the Procfile when calling `emp run` [#967](https://github.com/remind101/empire/pull/967)
