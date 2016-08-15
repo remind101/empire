@@ -81,7 +81,6 @@ There is also a `tests` directory that contains integration and functional tests
 To get started, run:
 
 ```console
-$ export GO15VENDOREXPERIMENT=1
 $ make bootstrap
 ```
 
