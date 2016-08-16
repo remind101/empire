@@ -512,12 +512,10 @@
 			"revision": "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
 		},
 		{
-			"path": "github.com/gorilla/context",
-			"revision": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
-		},
-		{
+			"checksumSHA1": "n9OhGpUzhYStt+4MSkagPOFaLlk=",
 			"path": "github.com/gorilla/mux",
-			"revision": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+			"revision": "780415097119f6f61c55475fe59b66f3c3e9ea53",
+			"revisionTime": "2016-08-01T17:00:46Z"
 		},
 		{
 			"checksumSHA1": "asmDhX/+sXdmgxWwi0wJNzaDhwo=",
@@ -720,14 +718,6 @@
 		{
 			"path": "github.com/remind101/newrelic/sdk",
 			"revision": "04b4810fa8c0ae0978c2d8e8c7ddc7e811d92d70"
-		},
-		{
-			"path": "github.com/remind101/pkg/httpx",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
-		},
-		{
-			"path": "github.com/remind101/pkg/httpx/middleware",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
 			"path": "github.com/remind101/pkg/logger",
