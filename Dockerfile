@@ -1,4 +1,4 @@
-FROM golang:1.7
+FROM golang:1.7.0
 MAINTAINER Eric Holmes <eric@remind101.com>
 
 LABEL version 0.11.0

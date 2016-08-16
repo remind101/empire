@@ -5,6 +5,7 @@
 **Improvements**
 
 * `emp ps` now displays the task's host. [#983](https://github.com/remind101/empire/pull/983)
+* The `empire` and `emp` binaries are now built with Go 1.7 [#971](https://github.com/remind101/empire/pull/971)
 
 ## 0.11.0 (2016-08-22)
 
