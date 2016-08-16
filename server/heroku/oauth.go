@@ -5,7 +5,6 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -26,7 +25,9 @@ func newAuthorization(token *empire.AccessToken) *Authorization {
 	}
 }
 
-func (h *Server) PostAuthorizations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostAuthorizations(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	at, err := h.Empire.AccessTokensCreate(&empire.AccessToken{
 		User: UserFromContext(ctx),
 	})

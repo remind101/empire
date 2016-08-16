@@ -1,6 +1,7 @@
 package ecs
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -16,7 +17,6 @@ import (
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/net/context"
 )
 
 func TestScheduler_Submit(t *testing.T) {

@@ -1,13 +1,13 @@
 package lb
 
 import (
+	"context"
 	"strings"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/elb"
-	"golang.org/x/net/context"
 )
 
 const (

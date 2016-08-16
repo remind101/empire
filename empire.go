@@ -1,6 +1,7 @@
 package empire // import "github.com/remind101/empire"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +12,6 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
-	"golang.org/x/net/context"
 )
 
 const (

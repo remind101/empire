@@ -2,6 +2,7 @@ package cloudformation
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,8 +11,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"

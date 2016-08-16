@@ -78,7 +78,7 @@ func newServer(c *Context, e *empire.Empire) http.Handler {
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	h := middleware.Common(server.New(e, opts))
-	return middleware.Handler(c, h)
+	return middleware.WithContext(h, c)
 }
 
 func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *Context) *cloudformation.CustomResourceProvisioner {

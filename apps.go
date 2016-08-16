@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/pkg/timex"
-	"golang.org/x/net/context"
 )
 
 const (

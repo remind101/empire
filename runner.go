@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -9,8 +10,6 @@ import (
 	"github.com/ejholmes/cloudwatch"
 
 	"code.google.com/p/go-uuid/uuid"
-
-	"golang.org/x/net/context"
 )
 
 // RunRecorder is a function that returns an io.Writer that will be written to

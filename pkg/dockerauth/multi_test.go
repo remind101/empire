@@ -1,8 +1,8 @@
 package dockerauth
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/stretchr/testify/assert"

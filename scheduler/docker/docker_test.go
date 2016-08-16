@@ -1,10 +1,9 @@
 package docker
 
 import (
+	"context"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/bytesize"

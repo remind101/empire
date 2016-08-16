@@ -3,6 +3,7 @@ package docker
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/scheduler"
-	"golang.org/x/net/context"
 )
 
 // The amount of time to wait for a container to stop before sending a SIGKILL.

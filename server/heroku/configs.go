@@ -4,11 +4,10 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
-	"golang.org/x/net/context"
 )
 
-func (h *Server) GetConfigs(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) GetConfigs(w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
 	}
@@ -22,14 +21,16 @@ func (h *Server) GetConfigs(ctx context.Context, w http.ResponseWriter, r *http.
 	return Encode(w, c.Vars)
 }
 
-func (h *Server) PatchConfigs(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PatchConfigs(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	var configVars empire.Vars
 
 	if err := Decode(r, &configVars); err != nil {
 		return err
 	}
 
-	a, err := findApp(ctx, h)
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,7 @@
 package cloudformation
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/remind101/empire"
 	"github.com/stretchr/testify/mock"

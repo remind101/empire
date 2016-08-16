@@ -4,52 +4,33 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire/server/auth"
-	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
-// Middleware for handling authentication.
-type Authentication struct {
-	authenticator auth.Authenticator
-
-	// handler is the wrapped httpx.Handler. This handler is called when the
-	// user is authenticated.
-	handler httpx.Handler
-}
-
-// Authenticat wraps an httpx.Handler in the Authentication middleware to authenticate
-// the request.
-func Authenticate(h httpx.Handler, auth auth.Authenticator) httpx.Handler {
-	return &Authentication{
-		authenticator: auth,
-		handler:       h,
-	}
-}
-
-// ServeHTTPContext implements the httpx.Handler interface. It will ensure that
-// there is a Bearer token present and that it is valid.
-func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+// Authenticat authenticates the request. If the user is not authenticated, an
+// error is returned. If the request is authenticated, the User is embedded in
+// the requets context.Context.
+func (h *Server) Authenticate(r *http.Request) (*http.Request, error) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
-		return ErrUnauthorized
+		return r, ErrUnauthorized
 	}
 
-	user, err := h.authenticator.Authenticate(username, password, r.Header.Get(HeaderTwoFactor))
+	user, err := h.Authenticator.Authenticate(username, password, r.Header.Get(HeaderTwoFactor))
 	if err != nil {
 		switch err {
 		case auth.ErrTwoFactor:
-			return ErrTwoFactor
+			return r, ErrTwoFactor
 		case auth.ErrForbidden:
-			return ErrUnauthorized
+			return r, ErrUnauthorized
 		}
 
 		if err, ok := err.(*auth.UnauthorizedError); ok {
-			return errUnauthorized(err)
+			return r, errUnauthorized(err)
 		}
 
-		return &ErrorResource{
+		return r, &ErrorResource{
 			Status:  http.StatusForbidden,
 			ID:      "forbidden",
 			Message: err.Error(),
@@ -57,14 +38,14 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	}
 
 	// Embed the associated user into the context.
-	ctx = WithUser(ctx, user)
+	r = r.WithContext(WithUser(r.Context(), user))
 
-	logger.Info(ctx,
+	logger.Info(r.Context(),
 		"authenticated",
 		"user", user.Name,
 	)
 
-	reporter.AddContext(ctx, "user", user.Name)
+	reporter.AddContext(r.Context(), "user", user.Name)
 
-	return h.handler.ServeHTTPContext(ctx, w, r)
+	return r, nil
 }

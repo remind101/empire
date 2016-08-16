@@ -3,9 +3,8 @@
 package ecsutil
 
 import (
+	"context"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"

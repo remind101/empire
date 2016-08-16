@@ -2,9 +2,8 @@ package github
 
 import (
 	"bytes"
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"

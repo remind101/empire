@@ -1,6 +1,7 @@
 package cloudformation
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
@@ -8,8 +9,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"

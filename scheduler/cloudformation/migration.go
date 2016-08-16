@@ -1,12 +1,11 @@
 package cloudformation
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"io"
-
-	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/remind101/empire/scheduler"

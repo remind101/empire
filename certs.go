@@ -1,8 +1,9 @@
 package empire
 
 import (
+	"context"
+
 	"github.com/jinzhu/gorm"
-	"golang.org/x/net/context"
 )
 
 type certsService struct {

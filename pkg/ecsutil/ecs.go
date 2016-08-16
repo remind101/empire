@@ -1,6 +1,7 @@
 package ecsutil
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/pkg/trace"
-	"golang.org/x/net/context"
 )
 
 // ECS represents our ECS client interface.

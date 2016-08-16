@@ -7,12 +7,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
-	"github.com/remind101/pkg/httpx"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -35,8 +34,8 @@ type Options struct {
 	}
 }
 
-func New(e *empire.Empire, options Options) httpx.Handler {
-	r := httpx.NewRouter()
+func New(e *empire.Empire, options Options) http.Handler {
+	r := mux.NewRouter()
 
 	if options.GitHub.Webhooks.Secret != "" {
 		// Mount GitHub webhooks
@@ -45,7 +44,7 @@ func New(e *empire.Empire, options Options) httpx.Handler {
 			Environments: options.GitHub.Deployments.Environments,
 			Deployer:     newDeployer(e, options),
 		})
-		r.Match(githubWebhook, g)
+		r.MatcherFunc(githubWebhook).Handler(g)
 	}
 
 	// Mount the heroku api
@@ -54,43 +53,41 @@ func New(e *empire.Empire, options Options) httpx.Handler {
 	r.Headers("Accept", heroku.AcceptHeader).Handler(hk)
 
 	// Mount health endpoint
-	r.Handle("/health", NewHealthHandler(e))
+	r.Handle("/health", newHealthHandler(e))
 
 	return r
 }
 
 // githubWebhook is a MatcherFunc that matches requests that have an
 // `X-GitHub-Event` header present.
-func githubWebhook(r *http.Request) bool {
+func githubWebhook(r *http.Request, rm *mux.RouteMatch) bool {
 	h := r.Header[http.CanonicalHeaderKey("X-GitHub-Event")]
 	return len(h) > 0
 }
 
-// HealthHandler is an http.Handler that returns the health of empire.
-type HealthHandler struct {
+// healthHandler is an http.Handler that returns the health of empire.
+type healthHandler struct {
 	// A function that returns true if empire is healthy.
 	IsHealthy func() error
 }
 
-// NewHealthHandler returns a new HealthHandler using the IsHealthy method from
+// newHealthHandler returns a new healthHandler using the IsHealthy method from
 // an Empire instance.
-func NewHealthHandler(e *empire.Empire) *HealthHandler {
-	return &HealthHandler{
+func newHealthHandler(e *empire.Empire) *healthHandler {
+	return &healthHandler{
 		IsHealthy: e.IsHealthy,
 	}
 }
 
-func (h *HealthHandler) ServeHTTPContext(_ context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := h.IsHealthy()
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
-		return nil
+		return
 	}
 
 	w.WriteHeader(http.StatusServiceUnavailable)
 	io.WriteString(w, err.Error())
-
-	return nil
 }
 
 // newDeployer generates a new github.Deployer implementation for the given

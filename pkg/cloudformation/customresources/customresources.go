@@ -4,6 +4,7 @@ package customresources
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/remind101/empire/pkg/base62"
-	"golang.org/x/net/context"
 )
 
 // Possible request types.

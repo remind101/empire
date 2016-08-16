@@ -12,8 +12,6 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
-	"github.com/remind101/pkg/httpx"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -33,7 +31,7 @@ type Options struct {
 	Deployer Deployer
 }
 
-func New(e *empire.Empire, opts Options) httpx.Handler {
+func New(e *empire.Empire, opts Options) http.Handler {
 	r := hookshot.NewRouter()
 
 	secret := opts.Secret
@@ -50,30 +48,28 @@ type DeploymentHandler struct {
 }
 
 func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	panic("expected ServeHTTPContext to be called")
-}
+	ctx := r.Context()
 
-func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var p events.Deployment
 
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return nil
+		return
 	}
 
 	if !currentEnvironment(p.Deployment.Environment, h.environments) {
 		w.WriteHeader(http.StatusNoContent)
 		fmt.Fprintf(w, "Ignore deployment to environment: %s", p.Deployment.Environment)
-		return nil
+		return
 	}
 	if err := h.Deploy(ctx, p, os.Stdout); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
+		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
 	io.WriteString(w, "Ok\n")
-	return nil
+	return
 }
 
 func currentEnvironment(eventEnv string, environments []string) bool {
