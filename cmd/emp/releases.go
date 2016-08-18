@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -226,7 +227,29 @@ func runRollback(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 	ver := strings.TrimPrefix(args[0], "v")
+	rollbackSafetyCheck(ver, appname)
+
 	rel, err := client.ReleaseRollback(appname, ver, message)
 	must(err)
 	log.Printf("Rolled back %s to v%s as v%d.\n", appname, ver, rel.Version)
+}
+
+func rollbackSafetyCheck(verStr, appname string) {
+	// Grab head release to get the current version
+	hrels, err := client.ReleaseList(appname, &heroku.ListRange{
+		Field:      "version",
+		Max:        1,
+		Descending: true,
+	})
+	must(err)
+
+	currVer := hrels[0].Version
+	verNum, err := strconv.Atoi(verStr)
+	must(err)
+
+	diff := currVer - verNum
+	if diff >= 10 {
+		warning := fmt.Sprintf("Attempting to rollback %d versions from v%d to v%d. Type v%d to continue:", diff, currVer, verNum, verNum)
+		mustConfirm(warning, fmt.Sprintf("v%s", verStr))
+	}
 }
