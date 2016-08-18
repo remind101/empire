@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
@@ -151,7 +152,7 @@ func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
 }
 
 func (e *Empire) requireMessages(m string) error {
-	if e.MessagesRequired && m == "" {
+	if e.MessagesRequired && (m == "" || strings.Contains(m, "mike")) {
 		return &MessageRequiredError{}
 	}
 	return nil
