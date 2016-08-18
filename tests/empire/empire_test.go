@@ -123,8 +123,9 @@ func TestEmpire_Deploy(t *testing.T) {
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_PROCESS": "scheduled",
-					"SOURCE":         "acme-inc.scheduled.v1",
+					"EMPIRE_PROCESS":       "scheduled",
+					"EMPIRE_PROCESS_SCALE": "0:536870912",
+					"SOURCE":               "acme-inc.scheduled.v1",
 				},
 				Labels: map[string]string{
 					"empire.app.process": "scheduled",
@@ -142,8 +143,9 @@ func TestEmpire_Deploy(t *testing.T) {
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_PROCESS": "web",
-					"SOURCE":         "acme-inc.web.v1",
+					"EMPIRE_PROCESS":       "web",
+					"EMPIRE_PROCESS_SCALE": "1:536870912",
+					"SOURCE":               "acme-inc.web.v1",
 				},
 				Labels: map[string]string{
 					"empire.app.process": "web",
@@ -158,8 +160,9 @@ func TestEmpire_Deploy(t *testing.T) {
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_PROCESS": "worker",
-					"SOURCE":         "acme-inc.worker.v1",
+					"EMPIRE_PROCESS":       "worker",
+					"EMPIRE_PROCESS_SCALE": "0:536870912",
+					"SOURCE":               "acme-inc.worker.v1",
 				},
 				Labels: map[string]string{
 					"empire.app.process": "worker",
@@ -318,9 +321,10 @@ func TestEmpire_Run(t *testing.T) {
 			CPUShares:   256,
 			Nproc:       256,
 			Env: map[string]string{
-				"EMPIRE_PROCESS": "run",
-				"SOURCE":         "acme-inc.run.v1",
-				"TERM":           "xterm",
+				"EMPIRE_PROCESS":       "run",
+				"EMPIRE_PROCESS_SCALE": "1:536870912",
+				"SOURCE":               "acme-inc.run.v1",
+				"TERM":                 "xterm",
 			},
 			Labels: map[string]string{
 				"empire.app.process": "run",
@@ -393,9 +397,10 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 			CPUShares:   512,
 			Nproc:       512,
 			Env: map[string]string{
-				"EMPIRE_PROCESS": "run",
-				"SOURCE":         "acme-inc.run.v1",
-				"TERM":           "xterm",
+				"EMPIRE_PROCESS":       "run",
+				"EMPIRE_PROCESS_SCALE": "1:1073741824",
+				"SOURCE":               "acme-inc.run.v1",
+				"TERM":                 "xterm",
 			},
 			Labels: map[string]string{
 				"empire.app.process": "run",
@@ -487,9 +492,10 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 			CPUShares:   256,
 			Nproc:       256,
 			Env: map[string]string{
-				"EMPIRE_PROCESS": "rake",
-				"SOURCE":         "acme-inc.rake.v1",
-				"TERM":           "xterm",
+				"EMPIRE_PROCESS":       "rake",
+				"EMPIRE_PROCESS_SCALE": "1:536870912",
+				"SOURCE":               "acme-inc.rake.v1",
+				"TERM":                 "xterm",
 			},
 			Labels: map[string]string{
 				"empire.app.process": "rake",
@@ -575,8 +581,9 @@ func TestEmpire_Set(t *testing.T) {
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_PROCESS": "web",
-					"SOURCE":         "acme-inc.web.v1",
+					"EMPIRE_PROCESS":       "web",
+					"EMPIRE_PROCESS_SCALE": "1:536870912",
+					"SOURCE":               "acme-inc.web.v1",
 				},
 				Labels: map[string]string{
 					"empire.app.process": "web",
@@ -621,8 +628,9 @@ func TestEmpire_Set(t *testing.T) {
 				CPUShares:   256,
 				Nproc:       256,
 				Env: map[string]string{
-					"EMPIRE_PROCESS": "web",
-					"SOURCE":         "acme-inc.web.v2",
+					"EMPIRE_PROCESS":       "web",
+					"EMPIRE_PROCESS_SCALE": "1:536870912",
+					"SOURCE":               "acme-inc.web.v2",
 				},
 				Labels: map[string]string{
 					"empire.app.process": "web",
