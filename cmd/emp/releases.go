@@ -249,14 +249,7 @@ func rollbackSafetyCheck(verStr, appname string) {
 
 	diff := currVer - verNum
 	if diff >= 10 {
-		var vconfirmation string
-		fmt.Printf("WARNING. Attempting to rollback %d versions from v%d to v%d.\n", diff, currVer, verNum)
-		fmt.Printf("To proceed, type v%d: ", verNum)
-		fmt.Scanln(&vconfirmation)
-		vconfirmation = strings.TrimPrefix(vconfirmation, "v")
-		if vconfirmation != verStr {
-			fmt.Println("Rollback confirmation did not match.")
-			os.Exit(2)
-		}
+		warning := fmt.Sprintf("Attempting to rollback %d versions from v%d to v%d. Type v%d to continue:", diff, currVer, verNum, verNum)
+		mustConfirm(warning, fmt.Sprintf("v%s", verStr))
 	}
 }
