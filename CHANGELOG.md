@@ -21,7 +21,8 @@
 * The log level within empire can now be configured when starting the service. [#929](https://github.com/remind101/empire/issues/929)
 * The CloudFormation backend now has experimental support for a `Custom::ECSTaskDefinition` resource that greatly reduces the size of generated templates. [#935](https://github.com/remind101/empire/pull/935)
 * The Scheduler now has a `Restart` method which will trigger a restart of all the processes within an app. Previously, a "Restart" just re-released the app. Now schedulers like the cloudformation backend can optimize how the restart is handled. [#697](https://github.com/remind101/empire/issues/697)
-* `emp run` now publishes an event when it is ran [#954](https://github.com/remind101/empire/pull/954)
+* `emp run` now publishes an event when it is ran. [#954](https://github.com/remind101/empire/pull/954)
+* `emp rollback` requires confirmation if rolling back more than 9 versions. [#975](https://github.com/remind101/empire/pull/975)
 
 **Bugs**
 
