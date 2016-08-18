@@ -306,8 +306,9 @@ func newSchedulerApp(release *Release) *scheduler.App {
 
 func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Process {
 	env := map[string]string{
-		"EMPIRE_PROCESS": name,
-		"SOURCE":         fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version),
+		"EMPIRE_PROCESS":       name,
+		"EMPIRE_PROCESS_SCALE": fmt.Sprintf("%d:%s", p.Quantity, p.Memory),
+		"SOURCE":               fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version),
 	}
 
 	labels := map[string]string{
