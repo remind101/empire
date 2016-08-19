@@ -12,6 +12,7 @@
 * Attached and detached runs now have an `empire.user` label attached to them [#965](https://github.com/remind101/empire/pull/965)
 * You can now provide the name of a process defined in the Procfile when calling `emp run` [#967](https://github.com/remind101/empire/pull/967)
 * Empire now includes experimental support for the new [Application Load Balancers](https://aws.amazon.com/blogs/aws/new-aws-application-load-balancer/) by setting the `LOAD_BALANCER_TYPE=alb` environment variable. [#969](https://github.com/remind101/empire/pull/969)
+* Empire now also sets an `EMPIRE_PROCESS_SCALE` environment variable, which includes the desired number of processes [#964](https://github.com/remind101/empire/issues/964)
 
 **Improvements**
 
