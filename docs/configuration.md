@@ -4,7 +4,13 @@ The following documents the various configuration parameters that you can use to
 
 ### GitHub Authentication
 
-**TODO**
+1. Create new OAuth application in Github
+   https://github.com/organizations/:orgname/settings/applications/new
+   https://github.com/settings/applications/new
+2. Get Client ID & Client Secret
+3. Use them in `EMPIRE_GITHUB_CLIENT_ID` and `EMPIRE_GITHUB_CLIENT_SECRET`
+
+It's recommended that you also set either `EMPIRE_GITHUB_ORGANIZATION`, or `EMPIRE_GITHUB_TEAM_ID` to ensure that only members of your GitHub organization/team are able to access your Empire environment.
 
 ### GitHub Deployments
 
@@ -93,3 +99,38 @@ exports.handler = function(event, context) {
   });
 };
 ```
+
+### Log Streaming
+
+By default, log streaming is deactivated in Empire. If you try to run
+`emp log -a <app>`, you will get the following response:
+
+```console
+$ emp log -a acme-inc
+Logs are disabled
+```
+
+To activate log streaming on Empire, you need to set the `EMPIRE_LOG_STREAMER`
+environment variable on your Empire instance(s). Right now the only value supported
+is `kinesis`, but we hope to support more in the future.
+
+When using Amazon Kinesis log streaming, Empire will try to read the logs from the
+Kinesis stream named after the app id (the UUID Empire automatically assigns to your app, upon creation). This means that the Kinesis streams need to pre-exist
+with logs in them before Empire can forward them to your terminal. We use [logspout-kinesis](https://github.com/remind101/logspout-kinesis) to do so. Our official [Empire AMI](https://github.com/remind101/empire_ami) also takes care of running logspout and activating Kinesis log streaming on Empire.
+
+
+### Show attached runs in `emp ps`
+
+If you set `EMPIRE_X_SHOW_ATTACHED=true`, then Empire will include containers started with `emp run` when using `emp ps`. However, in order for this to work properly, Empire needs to talk to a _single_ Docker daemon. There's a couple of ways to accomplish this:
+
+#### Run a single instance of Empire
+
+The easiest solution is to run a single Empire instance, pointed at the Docker daemon on the host it's running on. This has some obvious disadvantages for availability.
+
+#### Use a dedicated Docker host
+
+In this configuration, you would create a dedicated Docker host, exposing the Docker daemon API over tcp with tls. You would then point multiple Empire instances at this single Docker daemon.
+
+#### Use Docker Swarm
+
+Theoretically, you could point Empire at multiple Docker daemons that are connected via Docker swarm.
