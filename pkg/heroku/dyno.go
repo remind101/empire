@@ -22,6 +22,10 @@ type Dyno struct {
 	// unique identifier of this dyno
 	Id string `json:"id"`
 
+	ContainerInstanceID string `json:"container_instance_id"`
+
+	EC2InstanceID string `json:"ec2_instance_id"`
+
 	// the name of this process on this dyno
 	Name string `json:"name"`
 

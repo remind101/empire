@@ -1036,16 +1036,20 @@ func TestScheduler_Instances(t *testing.T) {
 	}).Return(&ecs.DescribeTasksOutput{
 		Tasks: []*ecs.Task{
 			{
-				TaskArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:task/0b69d5c0-d655-4695-98cd-5d2d526d9d5a"),
-				TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc-web:0"),
-				LastStatus:        aws.String("RUNNING"),
-				StartedAt:         &dt,
+				TaskArn:              aws.String("arn:aws:ecs:us-east-1:012345678910:task/0b69d5c0-d655-4695-98cd-5d2d526d9d5a"),
+				TaskDefinitionArn:    aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc-web:0"),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/container-instance-id-1"),
+				ClusterArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster-name-1"),
+				LastStatus:           aws.String("RUNNING"),
+				StartedAt:            &dt,
 			},
 			{
-				TaskArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:task/c09f0188-7f87-4b0f-bfc3-16296622b6fe"),
-				TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc--run:0"),
-				LastStatus:        aws.String("PENDING"),
-				CreatedAt:         &dt,
+				TaskArn:              aws.String("arn:aws:ecs:us-east-1:012345678910:task/c09f0188-7f87-4b0f-bfc3-16296622b6fe"),
+				TaskDefinitionArn:    aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc--run:0"),
+				ClusterArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster-name-2"),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/container-instance-id-2"),
+				LastStatus:           aws.String("PENDING"),
+				CreatedAt:            &dt,
 			},
 		},
 	}, nil)
@@ -1078,12 +1082,36 @@ func TestScheduler_Instances(t *testing.T) {
 		},
 	}, nil)
 
+	e.On("DescribeContainerInstances", &ecs.DescribeContainerInstancesInput{
+		Cluster:            aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster-name-1"),
+		ContainerInstances: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/container-instance-id-1")},
+	}).Return(&ecs.DescribeContainerInstancesOutput{
+		ContainerInstances: []*ecs.ContainerInstance{
+			{
+				Ec2InstanceId: aws.String("ec2-instance-id-1"),
+			},
+		},
+	}, nil)
+
+	e.On("DescribeContainerInstances", &ecs.DescribeContainerInstancesInput{
+		Cluster:            aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster-name-2"),
+		ContainerInstances: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/container-instance-id-2")},
+	}).Return(&ecs.DescribeContainerInstancesOutput{
+		ContainerInstances: []*ecs.ContainerInstance{
+			{
+				Ec2InstanceId: aws.String("ec2-instance-id-2"),
+			},
+		},
+	}, nil)
+
 	instances, err := s.Instances(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
 	assert.NoError(t, err)
 	assert.Equal(t, &scheduler.Instance{
-		ID:        "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
-		UpdatedAt: dt,
-		State:     "RUNNING",
+		ID:                  "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
+		ContainerInstanceID: "container-instance-id-1",
+		EC2InstanceID:       "ec2-instance-id-1",
+		UpdatedAt:           dt,
+		State:               "RUNNING",
 		Process: &scheduler.Process{
 			Type:        "web",
 			MemoryLimit: 256 * bytesize.MB,
@@ -1092,9 +1120,11 @@ func TestScheduler_Instances(t *testing.T) {
 		},
 	}, instances[0])
 	assert.Equal(t, &scheduler.Instance{
-		ID:        "c09f0188-7f87-4b0f-bfc3-16296622b6fe",
-		UpdatedAt: dt,
-		State:     "PENDING",
+		ID:                  "c09f0188-7f87-4b0f-bfc3-16296622b6fe",
+		ContainerInstanceID: "container-instance-id-2",
+		EC2InstanceID:       "ec2-instance-id-2",
+		UpdatedAt:           dt,
+		State:               "PENDING",
 		Process: &scheduler.Process{
 			Type:        "run",
 			MemoryLimit: 256 * bytesize.MB,
@@ -1464,6 +1494,11 @@ func (m *mockECSClient) DescribeTaskDefinition(input *ecs.DescribeTaskDefinition
 func (m *mockECSClient) DescribeServices(input *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DescribeServicesOutput), args.Error(1)
+}
+
+func (m *mockECSClient) DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.DescribeContainerInstancesOutput), args.Error(1)
 }
 
 // fakeAfter is a helper function that will resolve immediately

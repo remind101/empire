@@ -108,6 +108,7 @@ type ecsClient interface {
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
+	DescribeContainerInstances(*ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
 // s3Client duck types the s3.S3 interface that we use.
@@ -693,6 +694,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		return nil, err
 	}
 
+	containerInstances := make(map[string]*ecs.ContainerInstance)
 	taskDefinitions := make(map[string]*ecs.TaskDefinition)
 	for _, t := range tasks {
 		k := *t.TaskDefinitionArn
@@ -706,12 +708,29 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 			}
 			taskDefinitions[k] = resp.TaskDefinition
 		}
+
+		k = *t.ContainerInstanceArn
+
+		if _, ok := containerInstances[k]; !ok {
+			resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+				Cluster:            t.ClusterArn,
+				ContainerInstances: []*string{t.ContainerInstanceArn},
+			})
+			if err != nil {
+				return nil, err
+			}
+			if len(resp.Failures) > 0 {
+				return nil, fmt.Errorf("error describing container instance Arn=%s err=%s", k, aws.StringValue(resp.Failures[0].Reason))
+			}
+			containerInstances[k] = resp.ContainerInstances[0]
+		}
 	}
 
 	for _, t := range tasks {
 		taskDefinition := taskDefinitions[*t.TaskDefinitionArn]
 
 		id, err := arn.ResourceID(*t.TaskArn)
+		containerInstanceID, err := arn.ResourceID(*t.ContainerInstanceArn)
 		if err != nil {
 			return instances, err
 		}
@@ -720,6 +739,8 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		if err != nil {
 			return instances, err
 		}
+
+		ec2InstanceID := aws.StringValue(containerInstances[*t.ContainerInstanceArn].Ec2InstanceId)
 
 		state := aws.StringValue(t.LastStatus)
 		var updatedAt time.Time
@@ -733,10 +754,12 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		}
 
 		instances = append(instances, &scheduler.Instance{
-			Process:   p,
-			State:     state,
-			ID:        id,
-			UpdatedAt: updatedAt,
+			Process:             p,
+			State:               state,
+			ID:                  id,
+			ContainerInstanceID: containerInstanceID,
+			EC2InstanceID:       ec2InstanceID,
+			UpdatedAt:           updatedAt,
 		})
 	}
 

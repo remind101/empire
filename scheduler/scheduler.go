@@ -113,6 +113,12 @@ type Instance struct {
 	// The instance ID.
 	ID string
 
+	// The container instance id
+	ContainerInstanceID string
+
+	// The EC2 instance id
+	EC2InstanceID string
+
 	// The State that this Instance is in.
 	State string
 
