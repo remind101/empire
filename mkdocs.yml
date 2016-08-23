@@ -7,16 +7,16 @@ pages:
   - Getting Started:
     - "Quickstart: Installing": "quickstart_installing.md"
     - "Quickstart: Using": "quickstart_using.md"
+    - "Configuration": "configuration.md"
     - "Production Best Practices": "production_best_practices.md"
   - Users Guide:
     - "Deploying an Application": "deploying_an_application.md"
     - "Exposing an app publicly": "exposing_an_app_publicly.md"
     - "SSL Certs": "ssl_certs.md"
-    - "Activate log streaming": "log_streaming.md"
+    - "CloudFormation Resources": "cloudformation_resources.md"
   - Hacking on Empire:
     - "Contribution Guidelines & Bug Reporting": "contributing.md"
   - Reference:
-    - "Configuration": "configuration.md"
     - "Troubleshooting": "troubleshooting.md"
 
 

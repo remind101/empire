@@ -44,13 +44,7 @@ Since you will be passing authentication information to the Empire API, you shou
 
 ### Github Authentication
 
-1. Create new OAuth application in Github
-   https://github.com/organizations/:orgname/settings/applications/new
-   https://github.com/settings/applications/new
-
-2. Get Client ID & Client Secret
-
-3. Use them in EMPIRE\_GITHUB\_CLIENT\_ID and EMPIRE\_GITHUB\_CLIENT\_SECRET
+Refer to the docs on [configuring the GitHub authentication backend](./configuration).
 
 ### Limiting API Access by IP
 
