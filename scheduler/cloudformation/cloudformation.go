@@ -200,7 +200,7 @@ func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App, ss schedule
 		return err
 	}
 	output := make(chan stackOperationOutput, 1)
-	return s.updateStack(ctx, &updateStackInput{
+	if err := s.updateStack(ctx, &updateStackInput{
 		StackName: aws.String(stackName),
 		Parameters: []*cloudformation.Parameter{
 			{
@@ -208,7 +208,19 @@ func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App, ss schedule
 				ParameterValue: aws.String(newTimestamp()),
 			},
 		},
-	}, output, ss)
+	}, output, ss); err != nil {
+		return err
+	}
+
+	if ss != nil {
+		o := <-output
+		if o.err != nil || o.stack == nil {
+			return o.err
+		}
+		// TODO: Wait for services to stabilize?
+	}
+
+	return nil
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
