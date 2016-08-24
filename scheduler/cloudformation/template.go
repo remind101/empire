@@ -235,6 +235,13 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 	cd := t.ContainerDefinition(app, p)
 	containerDefinition := cloudformationContainerDefinition(cd)
 
+	// If provided in the app environment, this role will be used when
+	// running tasks.
+	var taskRole interface{}
+	if arn, ok := app.Env["TASK_ROLE_ARN"]; ok {
+		taskRole = arn
+	}
+
 	var taskDefinitionProperties interface{}
 	taskDefinitionType := taskDefinitionResourceType(app)
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
@@ -260,6 +267,7 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 			ContainerDefinitions: []*ContainerDefinitionProperties{
 				containerDefinition,
 			},
+			TaskRoleArn: taskRole,
 		}
 	} else {
 		containerDefinition.Environment = cd.Environment
@@ -268,6 +276,7 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 			ContainerDefinitions: []*ContainerDefinitionProperties{
 				containerDefinition,
 			},
+			TaskRoleArn: taskRole,
 		}
 	}
 
