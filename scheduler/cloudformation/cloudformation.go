@@ -72,8 +72,9 @@ const (
 
 // ECS limits
 const (
-	MaxDescribeTasks    = 100
-	MaxDescribeServices = 10
+	MaxDescribeTasks              = 100
+	MaxDescribeServices           = 10
+	MaxDescribeContainerInstances = 100
 )
 
 // DefaultStackNameTemplate is the default text/template for generating a
@@ -709,31 +710,33 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		}
 	}
 
-	// Map from clusterARN to containerInstanceARNs to batch tasks from the same cluster
-	clusterMap := make(map[string][]string)
+	// Map from clusterARN to containerInstanceARN pointers to batch tasks from the same cluster
+	clusterMap := make(map[string][]*string)
 
 	for _, t := range tasks {
 		k := *t.ClusterArn
-		clusterMap[k] = append(clusterMap[k], aws.StringValue(t.ContainerInstanceArn))
+		clusterMap[k] = append(clusterMap[k], t.ContainerInstanceArn)
 	}
 
 	// Map from containerInstanceARN to ec2-instance-id
 	hostMap := make(map[string]string)
 
-	for clusterArn, containerArns := range clusterMap {
-		resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
-			Cluster:            aws.String(clusterArn),
-			ContainerInstances: aws.StringSlice(containerArns),
-		})
-		if err != nil {
-			return nil, err
-		}
-		for _, f := range resp.Failures {
-			return nil, fmt.Errorf("error describing container instance Arn=%s err=%s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
-		}
+	for clusterArn, containerArnPtrs := range clusterMap {
+		for _, chunk := range chunkStrings(containerArnPtrs, MaxDescribeContainerInstances) {
+			resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+				Cluster:            aws.String(clusterArn),
+				ContainerInstances: chunk,
+			})
+			if err != nil {
+				return nil, err
+			}
+			for _, f := range resp.Failures {
+				return nil, fmt.Errorf("error describing container instance Arn=%s err=%s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
+			}
 
-		for _, ci := range resp.ContainerInstances {
-			hostMap[aws.StringValue(ci.ContainerInstanceArn)] = aws.StringValue(ci.Ec2InstanceId)
+			for _, ci := range resp.ContainerInstances {
+				hostMap[aws.StringValue(ci.ContainerInstanceArn)] = aws.StringValue(ci.Ec2InstanceId)
+			}
 		}
 	}
 
