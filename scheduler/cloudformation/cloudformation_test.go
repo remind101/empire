@@ -1088,7 +1088,8 @@ func TestScheduler_Instances(t *testing.T) {
 	}).Return(&ecs.DescribeContainerInstancesOutput{
 		ContainerInstances: []*ecs.ContainerInstance{
 			{
-				Ec2InstanceId: aws.String("ec2-instance-id-1"),
+				Ec2InstanceId:        aws.String("ec2-instance-id-1"),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/container-instance-id-1"),
 			},
 		},
 	}, nil)
@@ -1099,7 +1100,8 @@ func TestScheduler_Instances(t *testing.T) {
 	}).Return(&ecs.DescribeContainerInstancesOutput{
 		ContainerInstances: []*ecs.ContainerInstance{
 			{
-				Ec2InstanceId: aws.String("ec2-instance-id-2"),
+				Ec2InstanceId:        aws.String("ec2-instance-id-2"),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/container-instance-id-2"),
 			},
 		},
 	}, nil)
@@ -1107,11 +1109,10 @@ func TestScheduler_Instances(t *testing.T) {
 	instances, err := s.Instances(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
 	assert.NoError(t, err)
 	assert.Equal(t, &scheduler.Instance{
-		ID:                  "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
-		ContainerInstanceID: "container-instance-id-1",
-		EC2InstanceID:       "ec2-instance-id-1",
-		UpdatedAt:           dt,
-		State:               "RUNNING",
+		ID:        "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
+		Host:      scheduler.Host{ID: "ec2-instance-id-1"},
+		UpdatedAt: dt,
+		State:     "RUNNING",
 		Process: &scheduler.Process{
 			Type:        "web",
 			MemoryLimit: 256 * bytesize.MB,
@@ -1120,11 +1121,10 @@ func TestScheduler_Instances(t *testing.T) {
 		},
 	}, instances[0])
 	assert.Equal(t, &scheduler.Instance{
-		ID:                  "c09f0188-7f87-4b0f-bfc3-16296622b6fe",
-		ContainerInstanceID: "container-instance-id-2",
-		EC2InstanceID:       "ec2-instance-id-2",
-		UpdatedAt:           dt,
-		State:               "PENDING",
+		ID:        "c09f0188-7f87-4b0f-bfc3-16296622b6fe",
+		Host:      scheduler.Host{ID: "ec2-instance-id-2"},
+		UpdatedAt: dt,
+		State:     "PENDING",
 		Process: &scheduler.Process{
 			Type:        "run",
 			MemoryLimit: 256 * bytesize.MB,

@@ -21,7 +21,7 @@ var cmdDynos = &Command{
 	Category: "dyno",
 	Short:    "list processes",
 	Long: `
-Lists processes. Shows the name, size, id, container id, ec2 instance id, state, age, and command.
+Lists processes. Shows the name, size, host, state, age, and command.
 
 Examples:
 
@@ -58,9 +58,7 @@ func listDynos(w io.Writer) {
 func listDyno(w io.Writer, d *heroku.Dyno) {
 	listRec(w,
 		d.Name,
-		d.Id,
-		d.ContainerInstanceID,
-		d.EC2InstanceID,
+		d.Host.Id,
 		d.Size,
 		d.State,
 		prettyDuration{dynoAge(d)},

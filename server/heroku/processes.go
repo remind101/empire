@@ -18,15 +18,13 @@ type Dyno heroku.Dyno
 
 func newDyno(task *empire.Task) *Dyno {
 	return &Dyno{
-		Command:             task.Command.String(),
-		Type:                task.Type,
-		Name:                task.Name,
-		Id:                  task.ID,
-		ContainerInstanceID: task.ContainerID,
-		EC2InstanceID:       task.EC2InstanceID,
-		State:               task.State,
-		Size:                task.Constraints.String(),
-		UpdatedAt:           task.UpdatedAt,
+		Command:   task.Command.String(),
+		Type:      task.Type,
+		Name:      task.Name,
+		Host:      heroku.Host{Id: task.Host.ID},
+		State:     task.State,
+		Size:      task.Constraints.String(),
+		UpdatedAt: task.UpdatedAt,
 	}
 }
 

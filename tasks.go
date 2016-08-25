@@ -9,6 +9,12 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Host represents the host of the task
+type Host struct {
+	// the host id
+	ID string
+}
+
 // Task represents a running process.
 type Task struct {
 	// The name of the task.
@@ -20,11 +26,8 @@ type Task struct {
 	// The task id
 	ID string
 
-	// The container id
-	ContainerID string
-
-	// The ec2 instance id
-	EC2InstanceID string
+	// The host of the task
+	Host Host
 
 	// The command that this task is running.
 	Command Command
@@ -68,12 +71,10 @@ func taskFromInstance(i *scheduler.Instance) *Task {
 	}
 
 	return &Task{
-		Name:          fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
-		Type:          string(i.Process.Type),
-		ID:            i.ID,
-		ContainerID:   i.ContainerInstanceID,
-		EC2InstanceID: i.EC2InstanceID,
-		Command:       Command(i.Process.Command),
+		Name:    fmt.Sprintf("%s.%s.%s", version, i.Process.Type, i.ID),
+		Type:    string(i.Process.Type),
+		Host:    Host{ID: i.Host.ID},
+		Command: Command(i.Process.Command),
 		Constraints: Constraints{
 			CPUShare: constraints.CPUShare(i.Process.CPUShares),
 			Memory:   constraints.Memory(i.Process.MemoryLimit),

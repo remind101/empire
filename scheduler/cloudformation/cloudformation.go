@@ -694,7 +694,6 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		return nil, err
 	}
 
-	containerInstances := make(map[string]*ecs.ContainerInstance)
 	taskDefinitions := make(map[string]*ecs.TaskDefinition)
 	for _, t := range tasks {
 		k := *t.TaskDefinitionArn
@@ -708,21 +707,33 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 			}
 			taskDefinitions[k] = resp.TaskDefinition
 		}
+	}
 
-		k = *t.ContainerInstanceArn
+	// Map from clusterARN to containerInstanceARNs to batch tasks from the same cluster
+	clusterMap := make(map[string][]string)
 
-		if _, ok := containerInstances[k]; !ok {
-			resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
-				Cluster:            t.ClusterArn,
-				ContainerInstances: []*string{t.ContainerInstanceArn},
-			})
-			if err != nil {
-				return nil, err
-			}
-			if len(resp.Failures) > 0 {
-				return nil, fmt.Errorf("error describing container instance Arn=%s err=%s", k, aws.StringValue(resp.Failures[0].Reason))
-			}
-			containerInstances[k] = resp.ContainerInstances[0]
+	for _, t := range tasks {
+		k := *t.ClusterArn
+		clusterMap[k] = append(clusterMap[k], aws.StringValue(t.ContainerInstanceArn))
+	}
+
+	// Map from containerInstanceARN to ec2-instance-id
+	hostMap := make(map[string]string)
+
+	for clusterArn, containerArns := range clusterMap {
+		resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+			Cluster:            aws.String(clusterArn),
+			ContainerInstances: aws.StringSlice(containerArns),
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range resp.Failures {
+			return nil, fmt.Errorf("error describing container instance Arn=%s err=%s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
+		}
+
+		for _, ci := range resp.ContainerInstances {
+			hostMap[aws.StringValue(ci.ContainerInstanceArn)] = aws.StringValue(ci.Ec2InstanceId)
 		}
 	}
 
@@ -730,17 +741,16 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		taskDefinition := taskDefinitions[*t.TaskDefinitionArn]
 
 		id, err := arn.ResourceID(*t.TaskArn)
-		containerInstanceID, err := arn.ResourceID(*t.ContainerInstanceArn)
 		if err != nil {
 			return instances, err
 		}
+
+		hostId := hostMap[*t.ContainerInstanceArn]
 
 		p, err := taskDefinitionToProcess(taskDefinition)
 		if err != nil {
 			return instances, err
 		}
-
-		ec2InstanceID := aws.StringValue(containerInstances[*t.ContainerInstanceArn].Ec2InstanceId)
 
 		state := aws.StringValue(t.LastStatus)
 		var updatedAt time.Time
@@ -754,12 +764,11 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		}
 
 		instances = append(instances, &scheduler.Instance{
-			Process:             p,
-			State:               state,
-			ID:                  id,
-			ContainerInstanceID: containerInstanceID,
-			EC2InstanceID:       ec2InstanceID,
-			UpdatedAt:           updatedAt,
+			Process:   p,
+			State:     state,
+			ID:        id,
+			Host:      scheduler.Host{ID: hostId},
+			UpdatedAt: updatedAt,
 		})
 	}
 
