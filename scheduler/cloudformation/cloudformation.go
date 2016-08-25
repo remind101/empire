@@ -721,7 +721,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 			return instances, err
 		}
 
-		state := safeString(t.LastStatus)
+		state := aws.StringValue(t.LastStatus)
 		var updatedAt time.Time
 		switch state {
 		case "PENDING":
@@ -988,26 +988,18 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 	env := make(map[string]string)
 	for _, kvp := range container.Environment {
 		if kvp != nil {
-			env[safeString(kvp.Name)] = safeString(kvp.Value)
+			env[aws.StringValue(kvp.Name)] = aws.StringValue(kvp.Value)
 		}
 	}
 
 	return &scheduler.Process{
-		Type:        safeString(container.Name),
+		Type:        aws.StringValue(container.Name),
 		Command:     command,
 		Env:         env,
 		CPUShares:   uint(*container.Cpu),
 		MemoryLimit: uint(*container.Memory) * bytesize.MB,
 		Nproc:       uint(softLimit(container.Ulimits, "nproc")),
 	}, nil
-}
-
-func safeString(s *string) string {
-	if s == nil {
-		return ""
-	}
-
-	return *s
 }
 
 func softLimit(ulimits []*ecs.Ulimit, name string) int64 {
