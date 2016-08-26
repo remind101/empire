@@ -731,7 +731,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 				return nil, err
 			}
 			for _, f := range resp.Failures {
-				return nil, fmt.Errorf("error describing container instance Arn=%s err=%s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
+				return nil, fmt.Errorf("error describing container instance %s: %s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
 			}
 
 			for _, ci := range resp.ContainerInstances {
