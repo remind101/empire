@@ -277,7 +277,7 @@ func (m *Scheduler) Instances(ctx context.Context, appID string) ([]*scheduler.I
 			return instances, err
 		}
 
-		state := safeString(t.LastStatus)
+		state := aws.StringValue(t.LastStatus)
 		var updatedAt time.Time
 		switch state {
 		case "PENDING":
@@ -667,14 +667,6 @@ func (m *Scheduler) scale(ctx context.Context, app string, process string, insta
 	return err
 }
 
-func safeString(s *string) string {
-	if s == nil {
-		return ""
-	}
-
-	return *s
-}
-
 func noService(err error) bool {
 	if err, ok := err.(awserr.Error); ok {
 		if err.Message() == "Service was not ACTIVE." {
@@ -716,12 +708,12 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 	env := make(map[string]string)
 	for _, kvp := range container.Environment {
 		if kvp != nil {
-			env[safeString(kvp.Name)] = safeString(kvp.Value)
+			env[aws.StringValue(kvp.Name)] = aws.StringValue(kvp.Value)
 		}
 	}
 
 	return &scheduler.Process{
-		Type:        safeString(container.Name),
+		Type:        aws.StringValue(container.Name),
 		Command:     command,
 		Env:         env,
 		CPUShares:   uint(*container.Cpu),
