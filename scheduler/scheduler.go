@@ -106,12 +106,21 @@ type HTTPSExposure struct {
 
 func (e *HTTPSExposure) Protocol() string { return "https" }
 
+// Host represents the host of an instance
+type Host struct {
+	// The host ID.
+	ID string
+}
+
 // Instance represents an Instance of a Process.
 type Instance struct {
 	Process *Process
 
 	// The instance ID.
 	ID string
+
+	// The instance host
+	Host Host
 
 	// The State that this Instance is in.
 	State string

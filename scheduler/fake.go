@@ -61,6 +61,7 @@ func (m *FakeScheduler) Instances(ctx context.Context, appID string) ([]*Instanc
 			for i := uint(1); i <= p.Instances; i++ {
 				instances = append(instances, &Instance{
 					ID:        fmt.Sprintf("%d", i),
+					Host:      Host{ID: "i-aa111aa1"},
 					State:     "running",
 					Process:   &pp,
 					UpdatedAt: timex.Now(),

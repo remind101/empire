@@ -21,6 +21,7 @@ func newDyno(task *empire.Task) *Dyno {
 		Command:   task.Command.String(),
 		Type:      task.Type,
 		Name:      task.Name,
+		Host:      heroku.Host{Id: task.Host.ID},
 		State:     task.State,
 		Size:      task.Constraints.String(),
 		UpdatedAt: task.UpdatedAt,

@@ -72,8 +72,9 @@ const (
 
 // ECS limits
 const (
-	MaxDescribeTasks    = 100
-	MaxDescribeServices = 10
+	MaxDescribeTasks              = 100
+	MaxDescribeServices           = 10
+	MaxDescribeContainerInstances = 100
 )
 
 // DefaultStackNameTemplate is the default text/template for generating a
@@ -108,6 +109,7 @@ type ecsClient interface {
 	StopTask(*ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
+	DescribeContainerInstances(*ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
 // s3Client duck types the s3.S3 interface that we use.
@@ -708,6 +710,36 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		}
 	}
 
+	// Map from clusterARN to containerInstanceARN pointers to batch tasks from the same cluster
+	clusterMap := make(map[string][]*string)
+
+	for _, t := range tasks {
+		k := *t.ClusterArn
+		clusterMap[k] = append(clusterMap[k], t.ContainerInstanceArn)
+	}
+
+	// Map from containerInstanceARN to ec2-instance-id
+	hostMap := make(map[string]string)
+
+	for clusterArn, containerArnPtrs := range clusterMap {
+		for _, chunk := range chunkStrings(containerArnPtrs, MaxDescribeContainerInstances) {
+			resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+				Cluster:            aws.String(clusterArn),
+				ContainerInstances: chunk,
+			})
+			if err != nil {
+				return nil, err
+			}
+			for _, f := range resp.Failures {
+				return nil, fmt.Errorf("error describing container instance %s: %s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
+			}
+
+			for _, ci := range resp.ContainerInstances {
+				hostMap[aws.StringValue(ci.ContainerInstanceArn)] = aws.StringValue(ci.Ec2InstanceId)
+			}
+		}
+	}
+
 	for _, t := range tasks {
 		taskDefinition := taskDefinitions[*t.TaskDefinitionArn]
 
@@ -715,6 +747,8 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		if err != nil {
 			return instances, err
 		}
+
+		hostId := hostMap[*t.ContainerInstanceArn]
 
 		p, err := taskDefinitionToProcess(taskDefinition)
 		if err != nil {
@@ -736,6 +770,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 			Process:   p,
 			State:     state,
 			ID:        id,
+			Host:      scheduler.Host{ID: hostId},
 			UpdatedAt: updatedAt,
 		})
 	}

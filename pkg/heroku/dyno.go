@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+// Host describes the host a dyno is running on
+type Host struct {
+	// unique identifier of this host
+	Id string `json:"id"`
+}
+
 // Dynos encapsulate running processes of an app on Heroku.
 type Dyno struct {
 	// a URL to stream output from for attached processes or null for non-attached processes
@@ -21,6 +27,8 @@ type Dyno struct {
 
 	// unique identifier of this dyno
 	Id string `json:"id"`
+
+	Host Host `json:"host"`
 
 	// the name of this process on this dyno
 	Name string `json:"name"`

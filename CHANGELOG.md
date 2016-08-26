@@ -1,5 +1,11 @@
 # Changelog
 
+## HEAD
+
+**Improvements**
+
+* `emp ps` now displays the task's host. [#983](https://github.com/remind101/empire/pull/983)
+
 ## 0.11.0 (2016-08-22)
 
 **Features**

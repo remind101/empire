@@ -21,8 +21,8 @@ func TestScale(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`v1.web.1  1X  running   5d  "./bin/web"
-v1.web.2  1X  running   5d  "./bin/web"`,
+			`v1.web.1  i-aa111aa1  1X  running   5d  "./bin/web"
+v1.web.2  i-aa111aa1  1X  running   5d  "./bin/web"`,
 		},
 
 		{
@@ -31,7 +31,7 @@ v1.web.2  1X  running   5d  "./bin/web"`,
 		},
 		{
 			"dynos -a acme-inc",
-			"v1.web.1  1X  running   5d  \"./bin/web\"",
+			"v1.web.1  i-aa111aa1  1X  running   5d  \"./bin/web\"",
 		},
 	})
 }
