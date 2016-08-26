@@ -61,9 +61,9 @@ func tlsDialWithDialer(dialer *net.Dialer, network, addr string, config *tls.Con
 	// from the hostname we're connecting to.
 	if config.ServerName == "" {
 		// Make a copy to avoid polluting argument or default.
-		c := *config
+		c := cloneTLSConfig(config)
 		c.ServerName = hostname
-		config = &c
+		config = c
 	}
 
 	conn := tls.Client(rawConn, config)
@@ -90,4 +90,32 @@ func tlsDialWithDialer(dialer *net.Dialer, network, addr string, config *tls.Con
 
 func tlsDial(network, addr string, config *tls.Config) (net.Conn, error) {
 	return tlsDialWithDialer(new(net.Dialer), network, addr, config)
+}
+
+// Copied from https://golang.org/src/crypto/tls/common.go?s=9735:14940#L263,
+// since the stdlib doesn't expose the `clone()` method.
+func cloneTLSConfig(c *tls.Config) *tls.Config {
+	return &tls.Config{
+		Rand:                        c.Rand,
+		Time:                        c.Time,
+		Certificates:                c.Certificates,
+		NameToCertificate:           c.NameToCertificate,
+		GetCertificate:              c.GetCertificate,
+		RootCAs:                     c.RootCAs,
+		NextProtos:                  c.NextProtos,
+		ServerName:                  c.ServerName,
+		ClientAuth:                  c.ClientAuth,
+		ClientCAs:                   c.ClientCAs,
+		InsecureSkipVerify:          c.InsecureSkipVerify,
+		CipherSuites:                c.CipherSuites,
+		PreferServerCipherSuites:    c.PreferServerCipherSuites,
+		SessionTicketsDisabled:      c.SessionTicketsDisabled,
+		SessionTicketKey:            c.SessionTicketKey,
+		ClientSessionCache:          c.ClientSessionCache,
+		MinVersion:                  c.MinVersion,
+		MaxVersion:                  c.MaxVersion,
+		CurvePreferences:            c.CurvePreferences,
+		DynamicRecordSizingDisabled: c.DynamicRecordSizingDisabled,
+		Renegotiation:               c.Renegotiation,
+	}
 }

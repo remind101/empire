@@ -21,7 +21,6 @@ $ brew install emp
 If you have a working Go 1.5+ environment, you can do the following:
 
 ```console
-$ export GO15VENDOREXPERIMENT=1 # Required for Go 1.5.x
 $ go get -u github.com/remind101/empire/cmd/emp
 ```
 

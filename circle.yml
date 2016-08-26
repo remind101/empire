@@ -1,8 +1,15 @@
 machine:
   environment:
-    GO15VENDOREXPERIMENT: 1
+    GODIST: "go1.7.linux-amd64.tar.gz"
   services:
     - docker
+  post:
+    - mkdir -p download
+    - test -e download/$GODIST || curl -o download/$GODIST https://storage.googleapis.com/golang/$GODIST
+    - sudo rm -rf /usr/local/go
+    - sudo tar -C /usr/local -xzf download/$GODIST
+    - sudo ln -s /usr/local/go/bin/go /usr/bin/go
+    - sudo go install -a -race std
 
 checkout:
   post:
@@ -11,10 +18,11 @@ checkout:
     - cp -R ~/empire ~/.go_workspace/src/github.com/remind101/empire
 
 dependencies:
+  cache_directories:
+    - ~/download
   pre:
     - go get github.com/aktau/github-release
     - sudo pip install awscli
-    - go install -a -race std
     - go version
     - cd ~/.go_workspace/src/github.com/remind101/empire && make bootstrap
   override:
