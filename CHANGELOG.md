@@ -1,5 +1,11 @@
 # Changelog
 
+## HEAD
+
+**Improvements**
+
+* `emp ps` now displays the task's host. [#983](https://github.com/remind101/empire/pull/983)
+
 ## 0.11.0 (2016-08-22)
 
 **Features**
@@ -24,7 +30,6 @@
 * The Scheduler now has a `Restart` method which will trigger a restart of all the processes within an app. Previously, a "Restart" just re-released the app. Now schedulers like the cloudformation backend can optimize how the restart is handled. [#697](https://github.com/remind101/empire/issues/697)
 * `emp run` now publishes an event when it is ran. [#954](https://github.com/remind101/empire/pull/954)
 * `emp rollback` requires confirmation if rolling back more than 9 versions. [#975](https://github.com/remind101/empire/pull/975)
-* `emp ps` now displays the task's host. [#983](https://github.com/remind101/empire/pull/983)
 
 **Bugs**
 
