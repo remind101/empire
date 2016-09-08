@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPolicy_Match(t *testing.T) {
+func TestStatement_Match(t *testing.T) {
 	tests := []struct {
-		policy  Policy
-		context Context
-		match   bool
+		statement Statement
+		context   Context
+		match     bool
 	}{
 		{
-			Policy{
+			Statement{
 				Action:   []string{"empire:ListFoo"},
 				Resource: []string{"*"},
 			},
@@ -22,7 +22,7 @@ func TestPolicy_Match(t *testing.T) {
 			true,
 		},
 		{
-			Policy{
+			Statement{
 				Action:   []string{"empire:ListBar"},
 				Resource: []string{"*"},
 			},
@@ -30,7 +30,7 @@ func TestPolicy_Match(t *testing.T) {
 			false,
 		},
 		{
-			Policy{
+			Statement{
 				Action:   []string{"empire:*"},
 				Resource: []string{"*"},
 			},
@@ -38,7 +38,7 @@ func TestPolicy_Match(t *testing.T) {
 			true,
 		},
 		{
-			Policy{
+			Statement{
 				Action:   []string{"something:*"},
 				Resource: []string{"*"},
 			},
@@ -46,7 +46,7 @@ func TestPolicy_Match(t *testing.T) {
 			false,
 		},
 		{
-			Policy{
+			Statement{
 				Action:   []string{"empire:ListFoo"},
 				Resource: []string{"name"},
 			},
@@ -54,7 +54,7 @@ func TestPolicy_Match(t *testing.T) {
 			true,
 		},
 		{
-			Policy{
+			Statement{
 				Action:   []string{"empire:ListFoo"},
 				Resource: []string{"foo"},
 			},
@@ -65,8 +65,69 @@ func TestPolicy_Match(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			match := tt.policy.Match(tt.context.Action, tt.context.Resource)
+			match := tt.statement.Match(tt.context.Action, tt.context.Resource)
 			assert.Equal(t, tt.match, match)
+		})
+	}
+}
+
+func TestStatement_Allowed(t *testing.T) {
+	tests := []struct {
+		statement Statement
+		context   Context
+		allowed   bool
+	}{
+		{
+			Statement{
+				Effect:   Allow,
+				Action:   []string{"empire:ListFoo"},
+				Resource: []string{"*"},
+			},
+			Context{Action: "empire:ListFoo", Resource: "foo"},
+			true,
+		},
+		{
+			Statement{
+				Effect:   Deny,
+				Action:   []string{"empire:ListFoo"},
+				Resource: []string{"*"},
+			},
+			Context{Action: "empire:ListFoo", Resource: "foo"},
+			false,
+		},
+		{
+			Statement{
+				Effect:   Allow,
+				Action:   []string{"empire:ListFoo"},
+				Resource: []string{"foo"},
+			},
+			Context{Action: "empire:ListFoo", Resource: "foo"},
+			true,
+		},
+		{
+			Statement{
+				Effect:   Allow,
+				Action:   []string{"empire:ListFoo"},
+				Resource: []string{"bar"},
+			},
+			Context{Action: "empire:ListFoo", Resource: "foo"},
+			false,
+		},
+		{
+			Statement{
+				Effect:   Allow,
+				Action:   []string{"empire:ListFoo"},
+				Resource: []string{"bar"},
+			},
+			Context{Action: "empire:ListBar", Resource: "bar"},
+			false,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			allowed := tt.statement.Allowed(tt.context)
+			assert.Equal(t, tt.allowed, allowed)
 		})
 	}
 }
@@ -79,47 +140,45 @@ func TestPolicy_Allowed(t *testing.T) {
 	}{
 		{
 			Policy{
-				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
-				Resource: []string{"*"},
+				{
+					Effect:   Allow,
+					Action:   []string{"empire:ListFoo"},
+					Resource: []string{"*"},
+				},
 			},
 			Context{Action: "empire:ListFoo", Resource: "foo"},
 			true,
 		},
 		{
 			Policy{
-				Effect:   Deny,
-				Action:   []string{"empire:ListFoo"},
-				Resource: []string{"*"},
+				{
+					Effect:   Allow,
+					Action:   []string{"empire:ListFoo"},
+					Resource: []string{"*"},
+				},
+				{
+					Effect:   Deny,
+					Action:   []string{"empire:ListFoo"},
+					Resource: []string{"*"},
+				},
 			},
 			Context{Action: "empire:ListFoo", Resource: "foo"},
 			false,
 		},
 		{
 			Policy{
-				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
-				Resource: []string{"foo"},
+				{
+					Effect:   Deny,
+					Action:   []string{"empire:ListFoo"},
+					Resource: []string{"*"},
+				},
+				{
+					Effect:   Allow,
+					Action:   []string{"empire:ListFoo"},
+					Resource: []string{"*"},
+				},
 			},
 			Context{Action: "empire:ListFoo", Resource: "foo"},
-			true,
-		},
-		{
-			Policy{
-				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
-				Resource: []string{"bar"},
-			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
-			false,
-		},
-		{
-			Policy{
-				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
-				Resource: []string{"bar"},
-			},
-			Context{Action: "empire:ListBar", Resource: "bar"},
 			false,
 		},
 	}
@@ -127,65 +186,6 @@ func TestPolicy_Allowed(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			allowed := tt.policy.Allowed(tt.context)
-			assert.Equal(t, tt.allowed, allowed)
-		})
-	}
-}
-
-func TestPolicies_Allowed(t *testing.T) {
-	tests := []struct {
-		policies Policies
-		context  Context
-		allowed  bool
-	}{
-		{
-			Policies{
-				{
-					Effect:   Allow,
-					Action:   []string{"empire:ListFoo"},
-					Resource: []string{"*"},
-				},
-			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
-			true,
-		},
-		{
-			Policies{
-				{
-					Effect:   Allow,
-					Action:   []string{"empire:ListFoo"},
-					Resource: []string{"*"},
-				},
-				{
-					Effect:   Deny,
-					Action:   []string{"empire:ListFoo"},
-					Resource: []string{"*"},
-				},
-			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
-			false,
-		},
-		{
-			Policies{
-				{
-					Effect:   Deny,
-					Action:   []string{"empire:ListFoo"},
-					Resource: []string{"*"},
-				},
-				{
-					Effect:   Allow,
-					Action:   []string{"empire:ListFoo"},
-					Resource: []string{"*"},
-				},
-			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
-			false,
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			allowed := tt.policies.Allowed(tt.context)
 			assert.Equal(t, tt.allowed, allowed)
 		})
 	}

@@ -19,32 +19,32 @@ var (
 	ErrTwoFactor = errors.New("auth: two factor code required or invalid")
 )
 
-// Policies is something that returns a set of acl policies to use for the given
+// Policy is something that returns a set of acl policy to use for the given
 // user.
-type Policies interface {
-	Policies(*empire.User) (acl.Policies, error)
+type Policy interface {
+	Policy(*empire.User) (acl.Policy, error)
 }
 
-type policiesFunc func(*empire.User) (acl.Policies, error)
+type policyFunc func(*empire.User) (acl.Policy, error)
 
-func (f policiesFunc) Policies(user *empire.User) (acl.Policies, error) {
+func (f policyFunc) Policy(user *empire.User) (acl.Policy, error) {
 	return f(user)
 }
 
-// Returns a Policies implementation that will always return the given policy.
-func StaticPolicies(policies acl.Policies) Policies {
-	return policiesFunc(func(user *empire.User) (acl.Policies, error) {
-		return policies, nil
+// Returns a Policy implementation that will always return the given policy.
+func StaticPolicy(policy acl.Policy) Policy {
+	return policyFunc(func(user *empire.User) (acl.Policy, error) {
+		return policy, nil
 	})
 }
 
 // Auth provides a simple wrapper around, authenticating the user,
-// pre-authorizing the request, then embedding a set of ACL policies to
+// pre-authorizing the request, then embedding a set of ACL policy to
 // authorize the action.
 type Auth struct {
 	Authenticator Authenticator
 	Authorizer    Authorizer
-	Policies      Policies
+	Policy        Policy
 }
 
 // Authenticate authenticates the request, and returns a new context.Context
@@ -63,13 +63,13 @@ func (a *Auth) Authenticate(ctx context.Context, username, password, otp string)
 		}
 	}
 
-	if a.Policies != nil {
-		policies, err := a.Policies.Policies(user)
+	if a.Policy != nil {
+		policy, err := a.Policy.Policy(user)
 		if err != nil {
 			return ctx, err
 		}
 
-		ctx = acl.WithPolicies(ctx, policies)
+		ctx = acl.WithPolicy(ctx, policy)
 	}
 
 	return ctx, nil

@@ -23,7 +23,7 @@ import (
 
 var fakeNow = time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
 
-var ctx = acl.WithPolicies(context.Background(), empiretest.TestPolicies)
+var ctx = acl.WithPolicy(context.Background(), empiretest.TestPolicy)
 
 // Stubs out time.Now in empire.
 func init() {

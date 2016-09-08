@@ -63,16 +63,16 @@ type Server struct {
 	*httptest.Server
 }
 
-var TestPolicies = acl.Policies{
+var TestPolicy = acl.Policy{
 	// By default, allow all actions.
-	acl.Policy{
+	acl.Statement{
 		Effect:   acl.Allow,
 		Action:   []string{"empire:*"},
 		Resource: []string{"*"},
 	},
 
 	// Don't let anyone create a new app with the name denied-app-name.
-	acl.Policy{
+	acl.Statement{
 		Effect:   acl.Deny,
 		Action:   []string{"empire:Create"},
 		Resource: []string{"denied-app-name"},
@@ -86,7 +86,7 @@ func NewServer(t testing.TB, e *empire.Empire) *Server {
 	opts.GitHub.Webhooks.Secret = "abcd"
 	opts.Auth = &auth.Auth{
 		Authenticator: auth.NewAccessTokenAuthenticator(e),
-		Policies:      auth.StaticPolicies(TestPolicies),
+		Policy:        auth.StaticPolicy(TestPolicy),
 	}
 	opts.GitHub.Deployments.Environments = []string{"test"}
 	opts.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))

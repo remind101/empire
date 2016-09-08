@@ -21,12 +21,12 @@ const (
 // ACL is a composition of a Context, and the set of policy documents that
 // should be used to determine if the request should be allowed.
 type ACL struct {
-	Context  Context
-	Policies Policies
+	Context Context
+	Policy  Policy
 }
 
 func (l *ACL) Allowed() bool {
-	return l.Policies.Allowed(l.Context)
+	return l.Policy.Allowed(l.Context)
 }
 
 // Context represents a compiled request context, which is provided to policies
@@ -39,8 +39,8 @@ type Context struct {
 	Resource string
 }
 
-// Policy is used to define whether an action is allowed or denied.
-type Policy struct {
+// Statement is used to define whether an action is allowed or denied.
+type Statement struct {
 	// Either Allow or Deny. The zero value is Deny.
 	Effect Effect
 
@@ -54,7 +54,7 @@ type Policy struct {
 }
 
 // Checks whether the policy is valid.
-func (p *Policy) Valid() error {
+func (p *Statement) Valid() error {
 	if p.Resource == nil || len(p.Resource) == 0 {
 		return errors.New("policy: No resources defined")
 	}
@@ -67,7 +67,7 @@ func (p *Policy) Valid() error {
 }
 
 // Whether this directly applies to the given action.
-func (p *Policy) Match(action, resource string) bool {
+func (p *Statement) Match(action, resource string) bool {
 	for _, a := range p.Action {
 		if matchAction(action, a) {
 			for _, r := range p.Resource {
@@ -84,7 +84,7 @@ func (p *Policy) Match(action, resource string) bool {
 // Allowed returns true if this policy allows the action on the given resource.
 // Match should be called before this to check if this policy defines an effect
 // for the given action.
-func (p *Policy) Allowed(context Context) bool {
+func (p *Statement) Allowed(context Context) bool {
 	if p.Match(context.Action, context.Resource) {
 		return p.Effect == Allow
 	}
@@ -92,15 +92,15 @@ func (p *Policy) Allowed(context Context) bool {
 	return false
 }
 
-// Policies wraps multiple Policy objects as one, providing a single `Allowed`
+// Policy wraps multiple Statement objects as one, providing a single `Allowed`
 // method to check if the action is allowed.
-type Policies []Policy
+type Policy []Statement
 
 // Allowed returns true if the action is allowed on the resource. Like IAM,
-// explicit Denies take precedent. The ordering of the Policies does not matter.
+// explicit Denies take precedent. The ordering of the Policy does not matter.
 //
 // See http://goo.gl/oNQy9m
-func (p Policies) Allowed(context Context) bool {
+func (p Policy) Allowed(context Context) bool {
 	// By default, everything is denied.
 	allowed := false
 
@@ -145,19 +145,19 @@ func stringMatch(actual string, matcher string) bool {
 type key int
 
 const (
-	policiesKey key = iota
+	policyKey key = iota
 )
 
-// WithPolicies embeds the given acl policies in the context.
-func WithPolicies(ctx context.Context, policies Policies) context.Context {
-	return context.WithValue(ctx, policiesKey, policies)
+// WithPolicy embeds the given acl policies in the context.
+func WithPolicy(ctx context.Context, policy Policy) context.Context {
+	return context.WithValue(ctx, policyKey, policy)
 }
 
-// PoliciesFromContext returns the embeded acl policies.
-func PoliciesFromContext(ctx context.Context) Policies {
-	p, ok := ctx.Value(policiesKey).(Policies)
+// PolicyFromContext returns the embeded acl policy.
+func PolicyFromContext(ctx context.Context) Policy {
+	p, ok := ctx.Value(policyKey).(Policy)
 	if ok {
 		return p
 	}
-	return Policies{}
+	return Policy{}
 }

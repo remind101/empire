@@ -790,14 +790,14 @@ func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
 }
 
 // Checks if the action is allowed on the resource, using the embeded acl
-// Policies. If the action is not allowed, a NotAuthorizedError is returned.
+// Policy. If the action is not allowed, a NotAuthorizedError is returned.
 func authorize(ctx context.Context, action string, resource string) error {
-	// Policies for this request should have been previously embedded in the
-	// context using acl.WithPolicies. If there are not policies embedded,
+	// Policy for this request should have been previously embedded in the
+	// context using acl.WithPolicy. If there are not policies embedded,
 	// the default will be to return access denied.
-	policies := acl.PoliciesFromContext(ctx)
+	policy := acl.PolicyFromContext(ctx)
 
-	allowed := policies.Allowed(acl.Context{
+	allowed := policy.Allowed(acl.Context{
 		Action:   action,
 		Resource: resource,
 	})
