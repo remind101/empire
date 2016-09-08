@@ -16,8 +16,8 @@ import (
 func TestAuthentication_UsernamePassword(t *testing.T) {
 	a := new(mockAuthenticator)
 	m := &Authentication{
-		authenticator: a,
-		handler:       ensureUserInContext(t),
+		auth:    &auth.Auth{Authenticator: a},
+		handler: ensureUserInContext(t),
 	}
 
 	ctx := context.Background()
@@ -34,8 +34,8 @@ func TestAuthentication_UsernamePassword(t *testing.T) {
 func TestAuthentication_UsernamePasswordWithOTP(t *testing.T) {
 	a := new(mockAuthenticator)
 	m := &Authentication{
-		authenticator: a,
-		handler:       ensureUserInContext(t),
+		auth:    &auth.Auth{Authenticator: a},
+		handler: ensureUserInContext(t),
 	}
 
 	ctx := context.Background()
@@ -53,7 +53,7 @@ func TestAuthentication_UsernamePasswordWithOTP(t *testing.T) {
 func TestAuthentication_ErrTwoFactor(t *testing.T) {
 	a := new(mockAuthenticator)
 	m := &Authentication{
-		authenticator: a,
+		auth: &auth.Auth{Authenticator: a},
 	}
 
 	ctx := context.Background()
@@ -70,7 +70,7 @@ func TestAuthentication_ErrTwoFactor(t *testing.T) {
 func TestAuthentication_ErrForbidden(t *testing.T) {
 	a := new(mockAuthenticator)
 	m := &Authentication{
-		authenticator: a,
+		auth: &auth.Auth{Authenticator: a},
 	}
 
 	ctx := context.Background()
@@ -87,7 +87,7 @@ func TestAuthentication_ErrForbidden(t *testing.T) {
 func TestAuthentication_UnauthorizedError(t *testing.T) {
 	a := new(mockAuthenticator)
 	m := &Authentication{
-		authenticator: a,
+		auth: &auth.Auth{Authenticator: a},
 	}
 
 	ctx := context.Background()
@@ -125,7 +125,7 @@ func (m *mockAuthenticator) Authenticate(username, password, otp string) (*empir
 // user isn't set in the context.
 func ensureUserInContext(t testing.TB) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		UserFromContext(ctx) // Panics if user is not set.
+		auth.UserFromContext(ctx) // Panics if user is not set.
 		return nil
 	})
 }

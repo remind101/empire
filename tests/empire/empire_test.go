@@ -15,12 +15,15 @@ import (
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/server/acl"
 	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 var fakeNow = time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
+
+var ctx = acl.WithPolicies(context.Background(), empiretest.TestPolicies)
 
 // Stubs out time.Now in empire.
 func init() {
@@ -67,14 +70,14 @@ func TestEmpire_CertsAttach(t *testing.T) {
 
 	user := &empire.User{Name: "ejholmes"}
 
-	app, err := e.Create(context.Background(), empire.CreateOpts{
+	app, err := e.Create(ctx, empire.CreateOpts{
 		User: user,
 		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
 	cert := "serverCertificate"
-	err = e.CertsAttach(context.Background(), app, cert)
+	err = e.CertsAttach(ctx, app, cert)
 	assert.NoError(t, err)
 
 	app, err = e.AppsFind(empire.AppsQuery{ID: &app.ID})
@@ -91,7 +94,7 @@ func TestEmpire_Deploy(t *testing.T) {
 
 	user := &empire.User{Name: "ejholmes"}
 
-	app, err := e.Create(context.Background(), empire.CreateOpts{
+	app, err := e.Create(ctx, empire.CreateOpts{
 		User: user,
 		Name: "acme-inc",
 	})
@@ -171,7 +174,7 @@ func TestEmpire_Deploy(t *testing.T) {
 		},
 	}).Return(nil)
 
-	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+	_, err = e.Deploy(ctx, empire.DeployOpts{
 		App:    app,
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
@@ -192,7 +195,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 
 	// Deploying an image to an app that doesn't exist will create a new
 	// app.
-	_, err := e.Deploy(context.Background(), empire.DeployOpts{
+	_, err := e.Deploy(ctx, empire.DeployOpts{
 		User:   &empire.User{Name: "ejholmes"},
 		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc"},
@@ -221,7 +224,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	user := &empire.User{Name: "ejholmes"}
 
 	// Create the first release for this app.
-	r, err := e.Deploy(context.Background(), empire.DeployOpts{
+	r, err := e.Deploy(ctx, empire.DeployOpts{
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc"},
@@ -249,7 +252,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 
 	v2Done := make(chan struct{})
 	go func() {
-		r, err := e.Deploy(context.Background(), empire.DeployOpts{
+		r, err := e.Deploy(ctx, empire.DeployOpts{
 			User:   user,
 			Output: empire.NewDeploymentStream(ioutil.Discard),
 			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
@@ -261,7 +264,7 @@ func TestEmpire_Deploy_Concurrent(t *testing.T) {
 
 	<-v2Started
 
-	r, err = e.Deploy(context.Background(), empire.DeployOpts{
+	r, err = e.Deploy(ctx, empire.DeployOpts{
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
 		Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v3"},
@@ -279,14 +282,14 @@ func TestEmpire_Run(t *testing.T) {
 
 	user := &empire.User{Name: "ejholmes"}
 
-	app, err := e.Create(context.Background(), empire.CreateOpts{
+	app, err := e.Create(ctx, empire.CreateOpts{
 		User: user,
 		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+	_, err = e.Deploy(ctx, empire.DeployOpts{
 		App:    app,
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
@@ -332,7 +335,7 @@ func TestEmpire_Run(t *testing.T) {
 			},
 		}, nil, nil).Return(nil)
 
-	err = e.Run(context.Background(), empire.RunOpts{
+	err = e.Run(ctx, empire.RunOpts{
 		User:    user,
 		App:     app,
 		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
@@ -355,14 +358,14 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 
 	user := &empire.User{Name: "ejholmes"}
 
-	app, err := e.Create(context.Background(), empire.CreateOpts{
+	app, err := e.Create(ctx, empire.CreateOpts{
 		User: user,
 		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+	_, err = e.Deploy(ctx, empire.DeployOpts{
 		App:    app,
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
@@ -409,7 +412,7 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 		}, nil, nil).Return(nil)
 
 	constraints := empire.NamedConstraints["2X"]
-	err = e.Run(context.Background(), empire.RunOpts{
+	err = e.Run(ctx, empire.RunOpts{
 		User:    user,
 		App:     app,
 		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
@@ -435,14 +438,14 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 
 	user := &empire.User{Name: "ejholmes"}
 
-	app, err := e.Create(context.Background(), empire.CreateOpts{
+	app, err := e.Create(ctx, empire.CreateOpts{
 		User: user,
 		Name: "acme-inc",
 	})
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+	_, err = e.Deploy(ctx, empire.DeployOpts{
 		App:    app,
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
@@ -453,7 +456,7 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 	s := new(mockScheduler)
 	e.Scheduler = s
 
-	err = e.Run(context.Background(), empire.RunOpts{
+	err = e.Run(ctx, empire.RunOpts{
 		User:    user,
 		App:     app,
 		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
@@ -503,7 +506,7 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 			},
 		}, nil, nil).Return(nil)
 
-	err = e.Run(context.Background(), empire.RunOpts{
+	err = e.Run(ctx, empire.RunOpts{
 		User:    user,
 		App:     app,
 		Command: empire.MustParseCommand("rake db:migrate"),
@@ -534,7 +537,7 @@ func TestEmpire_Set(t *testing.T) {
 	user := &empire.User{Name: "ejholmes"}
 
 	// Create an app
-	app, err := e.Create(context.Background(), empire.CreateOpts{
+	app, err := e.Create(ctx, empire.CreateOpts{
 		User: user,
 		Name: "acme-inc",
 	})
@@ -542,7 +545,7 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Add some environment variables to it.
 	prod := "production"
-	_, err = e.Set(context.Background(), empire.SetOpts{
+	_, err = e.Set(ctx, empire.SetOpts{
 		User: user,
 		App:  app,
 		Vars: empire.Vars{
@@ -592,7 +595,7 @@ func TestEmpire_Set(t *testing.T) {
 		},
 	}).Once().Return(nil)
 
-	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+	_, err = e.Deploy(ctx, empire.DeployOpts{
 		App:    app,
 		User:   user,
 		Output: empire.NewDeploymentStream(ioutil.Discard),
@@ -639,7 +642,7 @@ func TestEmpire_Set(t *testing.T) {
 		},
 	}).Once().Return(nil)
 
-	_, err = e.Set(context.Background(), empire.SetOpts{
+	_, err = e.Set(ctx, empire.SetOpts{
 		User: user,
 		App:  app,
 		Vars: empire.Vars{

@@ -20,7 +20,7 @@ var (
 )
 
 type Options struct {
-	Authenticator auth.Authenticator
+	Auth *auth.Auth
 
 	GitHub struct {
 		// Deployments
@@ -50,7 +50,7 @@ func New(e *empire.Empire, options Options) httpx.Handler {
 
 	// Mount the heroku api
 	hk := heroku.New(e)
-	hk.Authenticator = options.Authenticator
+	hk.Auth = options.Auth
 	r.Headers("Accept", heroku.AcceptHeader).Handler(hk)
 
 	// Mount health endpoint

@@ -12,7 +12,9 @@ import (
 
 func TestLogin(t *testing.T) {
 	s := empiretest.NewTestServer(t, nil, server.Options{
-		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
+		Auth: &auth.Auth{
+			Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
+		},
 	})
 
 	cli := newCLIWithServer(t, s)
@@ -35,7 +37,9 @@ func TestLogin(t *testing.T) {
 
 func TestLoginUnauthorized(t *testing.T) {
 	s := empiretest.NewTestServer(t, nil, server.Options{
-		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
+		Auth: &auth.Auth{
+			Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
+		},
 	})
 
 	cli := newCLIWithServer(t, s)
@@ -58,7 +62,9 @@ func TestLoginUnauthorized(t *testing.T) {
 
 func TestLoginTwoFactor(t *testing.T) {
 	s := empiretest.NewTestServer(t, nil, server.Options{
-		Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
+		Auth: &auth.Auth{
+			Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
+		},
 	})
 
 	cli := newCLIWithServer(t, s)

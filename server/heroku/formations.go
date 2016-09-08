@@ -5,6 +5,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/server/auth"
 	"golang.org/x/net/context"
 )
 
@@ -44,7 +45,7 @@ func (h *Server) PatchFormation(ctx context.Context, w http.ResponseWriter, r *h
 		})
 	}
 	ps, err := h.Scale(ctx, empire.ScaleOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		App:     app,
 		Updates: updates,
 		Message: m,

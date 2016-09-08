@@ -18,6 +18,19 @@ func TestCreate(t *testing.T) {
 	})
 }
 
+func TestCreate_NotAuthorized(t *testing.T) {
+	run(t, []Command{
+		{
+			"apps",
+			"",
+		},
+		{
+			"create denied-app-name",
+			"error: not authorized to perform empire:Create",
+		},
+	})
+}
+
 func TestApps(t *testing.T) {
 	run(t, []Command{
 		{

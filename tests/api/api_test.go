@@ -27,7 +27,10 @@ func TestMain(m *testing.M) {
 func NewTestClient(t testing.TB) (*heroku.Client, *empiretest.Server) {
 	e := empiretest.NewEmpire(t)
 	s := empiretest.NewTestServer(t, e, server.Options{
-		Authenticator: auth.Anyone(&empire.User{Name: "fake"}),
+		Auth: &auth.Auth{
+			Authenticator: auth.Anyone(&empire.User{Name: "fake"}),
+			Policies:      auth.StaticPolicies(empiretest.TestPolicies),
+		},
 	})
 
 	c := &heroku.Client{

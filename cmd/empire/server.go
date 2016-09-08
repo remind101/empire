@@ -71,7 +71,7 @@ func runServer(c *cli.Context) {
 
 func newServer(c *Context, e *empire.Empire) http.Handler {
 	var opts server.Options
-	opts.Authenticator = newAuthenticator(c, e)
+	opts.Auth = newAuth(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
 	opts.GitHub.Deployments.Environments = strings.Split(c.String(FlagGithubDeploymentsEnvironments), ",")
 	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
@@ -104,7 +104,7 @@ func newImageBuilder(c *Context) github.ImageBuilder {
 	}
 }
 
-func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
+func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 	// an authenticator authenticating requests with a users empire acccess
 	// token.
 	authenticators := []auth.Authenticator{
@@ -154,12 +154,12 @@ func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
 		log.Println("Adding GitHub Organization authorizer with the following configuration:")
 		log.Println(fmt.Sprintf("  Organization: %v ", org))
 
-		return auth.WithAuthorization(
-			authenticator,
+		return &auth.Auth{
+			Authenticator: authenticator,
 			// Cache the organization check for 30 minutes since
 			// it's pretty slow.
-			auth.CacheAuthorization(authorizer, 30*time.Minute),
-		)
+			Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
+		}
 	}
 
 	// After the user is authenticated, check their GitHub Team membership.
@@ -170,12 +170,14 @@ func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
 		log.Println("Adding GitHub Team authorizer with the following configuration:")
 		log.Println(fmt.Sprintf("  Team ID: %v ", teamID))
 
-		return auth.WithAuthorization(
-			authenticator,
+		return &auth.Auth{
+			Authenticator: authenticator,
 			// Cache the team check for 30 minutes
-			auth.CacheAuthorization(authorizer, 30*time.Minute),
-		)
+			Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
+		}
 	}
 
-	return authenticator
+	return &auth.Auth{
+		Authenticator: authenticator,
+	}
 }

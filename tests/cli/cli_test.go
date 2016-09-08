@@ -87,11 +87,8 @@ func run(t testing.TB, commands []Command) {
 	for _, cmd := range commands {
 		args := strings.Split(cmd.Command, " ")
 
-		b, err := cli.Command(args...).CombinedOutput()
+		b, _ := cli.Command(args...).CombinedOutput()
 		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, string(b)))
-		if err != nil {
-			t.Fatal(err)
-		}
 
 		got := string(b)
 

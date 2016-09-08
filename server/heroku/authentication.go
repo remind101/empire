@@ -12,7 +12,7 @@ import (
 
 // Middleware for handling authentication.
 type Authentication struct {
-	authenticator auth.Authenticator
+	auth *auth.Auth
 
 	// handler is the wrapped httpx.Handler. This handler is called when the
 	// user is authenticated.
@@ -21,10 +21,10 @@ type Authentication struct {
 
 // Authenticat wraps an httpx.Handler in the Authentication middleware to authenticate
 // the request.
-func Authenticate(h httpx.Handler, auth auth.Authenticator) httpx.Handler {
+func Authenticate(h httpx.Handler, auth *auth.Auth) httpx.Handler {
 	return &Authentication{
-		authenticator: auth,
-		handler:       h,
+		auth:    auth,
+		handler: h,
 	}
 }
 
@@ -36,7 +36,7 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 		return ErrUnauthorized
 	}
 
-	user, err := h.authenticator.Authenticate(username, password, r.Header.Get(HeaderTwoFactor))
+	ctx, err := h.auth.Authenticate(ctx, username, password, r.Header.Get(HeaderTwoFactor))
 	if err != nil {
 		switch err {
 		case auth.ErrTwoFactor:
@@ -57,7 +57,7 @@ func (h *Authentication) ServeHTTPContext(ctx context.Context, w http.ResponseWr
 	}
 
 	// Embed the associated user into the context.
-	ctx = WithUser(ctx, user)
+	user := auth.UserFromContext(ctx)
 
 	logger.Info(ctx,
 		"authenticated",

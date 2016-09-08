@@ -11,6 +11,7 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/server/acl"
 	"golang.org/x/net/context"
 )
 
@@ -31,6 +32,16 @@ var (
 		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
 	}
 )
+
+// NotAuthorizedError is an error implementation that gets returned when the
+// action is not authorized.
+type NotAuthorizedError struct {
+	Action string
+}
+
+func (e *NotAuthorizedError) Error() string {
+	return fmt.Sprintf("not authorized to perform %s", e.Action)
+}
 
 // AllowedCommands specifies what commands are allowed to be Run with Empire.
 type AllowedCommands int
@@ -183,6 +194,10 @@ func (opts CreateOpts) Validate(e *Empire) error {
 
 // Create creates a new app.
 func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+	if err := authorize(ctx, "empire:Create", opts.Name); err != nil {
+		return nil, err
+	}
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -294,6 +309,10 @@ func (opts SetOpts) Validate(e *Empire) error {
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	if err := authorize(ctx, "empire:Set", opts.App.Name); err != nil {
+		return nil, err
+	}
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -768,4 +787,24 @@ func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
 
 		return e.Extract(ctx, img, w)
 	})
+}
+
+// Checks if the action is allowed on the resource, using the embeded acl
+// Policies. If the action is not allowed, a NotAuthorizedError is returned.
+func authorize(ctx context.Context, action string, resource string) error {
+	// Policies for this request should have been previously embedded in the
+	// context using acl.WithPolicies. If there are not policies embedded,
+	// the default will be to return access denied.
+	policies := acl.PoliciesFromContext(ctx)
+
+	allowed := policies.Allowed(acl.Context{
+		Action:   action,
+		Resource: resource,
+	})
+
+	if !allowed {
+		return &NotAuthorizedError{Action: action}
+	}
+
+	return nil
 }
