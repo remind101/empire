@@ -14,7 +14,7 @@ const (
 	testIntegrationSecret = "Zh5eGmUq9zpfQnyUIu5OL9iWoMMv5ZNmk3zLJ4Ep"
 )
 
-func TestSignRequest(t *testing.T) {
+func TestSignature(t *testing.T) {
 	tests := []struct {
 		req       *http.Request
 		signature string
@@ -46,8 +46,30 @@ func TestSignRequest(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			signature := SignRequest([]byte(testIntegrationSecret), tt.req)
+			signature := Signature(testIntegrationSecret, tt.req)
 			assert.Equal(t, tt.signature, signature)
+		})
+	}
+}
+
+func TestSetBasicAuth(t *testing.T) {
+	tests := []struct {
+		req           *http.Request
+		authorization string
+	}{
+		{
+			newRequest("POST", "https://api-XXXXXXXX.duosecurity.com/accounts/v1/account/list", func(r *http.Request) {
+				r.URL.RawQuery = "realname=First%20Last&username=root"
+				r.Header.Set("Date", "Tue, 21 Aug 2012 17:29:18 -0000")
+			}),
+			"Basic RElXSjhYNkFFWU9SNU9NQzZUUTE6MmQ5N2Q2MTY2MzE5NzgxYjVhM2EwN2FmMzlkMzY2ZjQ5MTIzNGVkYw==",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			SetBasicAuth(testIntegrationKey, testIntegrationSecret, tt.req)
+			assert.Equal(t, tt.authorization, tt.req.Header.Get("Authorization"))
 		})
 	}
 }

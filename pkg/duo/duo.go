@@ -35,15 +35,21 @@ const rfc2822 = "Mon Jan 02 15:04:05 -0700 2006"
 //		must still include a blank line in the string that is signed. Do
 //		not encode unreserved characters. Use upper-case hexadecimal
 //		digits A through F in escape sequences.
-func SignRequest(secret []byte, r *http.Request) string {
+func Signature(secret string, r *http.Request) string {
 	if r.Header.Get("Date") == "" {
 		r.Header.Set("Date", time.Now().Format(rfc2822))
 	}
 
 	body := signatureBody(r)
-	mac := hmac.New(sha1.New, secret)
+	mac := hmac.New(sha1.New, []byte(secret))
 	mac.Write(body)
 	return fmt.Sprintf("%x", mac.Sum(nil))
+}
+
+// SetBasicAuth signs the request, then sets the Authorization header.
+func SetBasicAuth(key, secret string, r *http.Request) {
+	signature := Signature(secret, r)
+	r.SetBasicAuth(key, signature)
 }
 
 func signatureBody(r *http.Request) []byte {
