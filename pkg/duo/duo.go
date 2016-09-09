@@ -3,13 +3,106 @@ package duo
 import (
 	"crypto/hmac"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
 
 const rfc2822 = "Mon Jan 02 15:04:05 -0700 2006"
+
+// Error format used by Duo.
+type Error struct {
+	Stat          string `json:"stat"`
+	Code          int    `json:"code"`
+	Message       string `json:"message"`
+	MessageDetail string `json:"message_detail"`
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("duo api error: %d: %s: %s", e.Code, e.Message, e.MessageDetail)
+}
+
+// Client is an http client for the Duo API.
+type Client struct {
+	Key, Secret, Host string
+
+	client *http.Client
+}
+
+// New returns a new Client instance. If no http.Client is provided, a new
+// http.Client will be initialized.
+func New(c *http.Client) *Client {
+	if c == nil {
+		c = http.DefaultClient
+	}
+
+	return &Client{
+		client: c,
+	}
+}
+
+type AuthResponse struct {
+	Stat     string `json:"stat"`
+	Response struct {
+		Result        string `json:"result"`
+		Status        string `json:"status"`
+		StatusMessage string `json:"status_msg"`
+	}
+}
+
+// Auth performs an /auth/v2/auth action.
+func (c *Client) Auth(params url.Values) (*AuthResponse, error) {
+	var response AuthResponse
+	_, err := c.Post("/auth/v2/auth", params, &response)
+	return &response, err
+}
+
+func (c *Client) Post(path string, params url.Values, v interface{}) (*http.Response, error) {
+	return c.request("POST", path, params, v)
+}
+
+func (c *Client) request(method, path string, params url.Values, v interface{}) (*http.Response, error) {
+	req, err := c.NewRequest(method, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.URL.RawQuery = params.Encode()
+	return c.Do(req, v)
+}
+
+func (c *Client) NewRequest(method, path string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, fmt.Sprintf("https://%s%s", c.Host, path), body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req, err
+}
+
+func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
+	SetBasicAuth(c.Key, c.Secret, req)
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return resp, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		var duoErr Error
+		if err := json.NewDecoder(resp.Body).Decode(&duoErr); err != nil {
+			return resp, err
+		}
+		return resp, &duoErr
+	}
+	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+		return resp, err
+	}
+	return resp, err
+}
 
 // SignRequest HMAC signs the http.Request, based on the alrgorithm in https://duo.com/docs/authapi
 //
