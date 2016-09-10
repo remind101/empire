@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	FlagPort           = "port"
-	FlagAutoMigrate    = "automigrate"
-	FlagScheduler      = "scheduler"
-	FlagEventsBackend  = "events.backend"
-	FlagRunLogsBackend = "runlogs.backend"
-	FlagLogLevel       = "log.level"
+	FlagPort                       = "port"
+	FlagAutoMigrate                = "automigrate"
+	FlagScheduler                  = "scheduler"
+	FlagEventsBackend              = "events.backend"
+	FlagRunLogsBackend             = "runlogs.backend"
+	FlagActionConfirmationsBackend = "action-confirmations.backend"
+	FlagLogLevel                   = "log.level"
 
 	FlagMessagesRequired = "messages.required"
 	FlagAllowedCommands  = "commands.allowed"
@@ -331,6 +332,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "stdout",
 		Usage:  "The backend implementation to use to record the logs from interactive runs. Current supports `cloudwatch` and `stdout`",
 		EnvVar: "EMPIRE_RUN_LOGS_BACKEND",
+	},
+	cli.StringFlag{
+		Name:   FlagActionConfirmationsBackend,
+		Value:  "",
+		Usage:  "Backend to use when confirm actions. (e.g. duo://api-xxxxx.duosecurity.com?key=<key>&secret=<secret>",
+		EnvVar: "EMPIRE_ACTION_CONFIRMATIONS_BACKEND",
 	},
 	cli.StringFlag{
 		Name:   FlagSNSTopic,

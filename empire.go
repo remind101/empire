@@ -99,6 +99,10 @@ type Empire struct {
 	// RunRecorder is used to record the logs from interactive runs.
 	RunRecorder RunRecorder
 
+	// ActionConfirmer used to confirm whether and action is authorized or
+	// not.
+	ActionConfirmer ActionConfirmer
+
 	// MessagesRequired is a boolean used to determine if messages should be required for events.
 	MessagesRequired bool
 
@@ -453,8 +457,54 @@ func (opts RunOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
 }
 
+func (e *Empire) confirm(ctx context.Context, user *User, action string, resource string, params map[string]string) error {
+	if e.ActionConfirmer == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		var (
+			ok  bool
+			err error
+		)
+
+		ok, err = e.ActionConfirmer.Confirm(ctx, user, action, resource, params)
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		if !ok {
+			err = errors.New("not authorized")
+		}
+
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		return errors.New("timed out waiting to confirm action")
+	}
+}
+
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
+	if err := e.confirm(ctx, opts.User, "Run", opts.App.Name, nil); err != nil {
+		// Gross: Fix this.
+		if opts.Output != nil {
+			io.WriteString(opts.Output, fmt.Sprintf("error: %v\n", err))
+			return nil
+		} else {
+			return err
+		}
+	}
+
 	event := opts.Event()
 
 	if err := opts.Validate(e); err != nil {
