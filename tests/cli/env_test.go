@@ -1,11 +1,11 @@
 package cli_test
 
 import (
-	"testing"
-	"time"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"fmt"
+	"testing"
+	"time"
 )
 
 func TestConfig(t *testing.T) {
@@ -118,19 +118,20 @@ func TestConfigConsistency(t *testing.T) {
 }
 
 func TestEnvConfig(t *testing.T) {
-	file, err := ioutil.TempFile(os.TempDir(), "acme-inc.env")
+	f, err := ioutil.TempFile(os.TempDir(), "acme-inc.env")
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.Remove(f.Name())
+
 	content := []byte("FOO=bar\\nmoarbar\n")
-	file.Write(content)
+	f.Write(content)
 
 	run(t, []Command{
 		DeployCommand("latest", "v1"),
 		{
-			fmt.Sprintf("env-load %s -a acme-inc", file.Name()),
-			fmt.Sprintf("Updated env vars from %s and restarted acme-inc.", file.Name()),
+			fmt.Sprintf("env-load %s -a acme-inc", f.Name()),
+			fmt.Sprintf("Updated env vars from %s and restarted acme-inc.", f.Name()),
 		},
 	})
-	defer os.Remove(file.Name())
 }
