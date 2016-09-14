@@ -194,7 +194,7 @@ func (opts CreateOpts) Validate(e *Empire) error {
 
 // Create creates a new app.
 func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
-	if err := authorize(ctx, "empire:Create", opts.Name); err != nil {
+	if err := authorize(ctx, "Create", opts.Name); err != nil {
 		return nil, err
 	}
 
@@ -309,7 +309,7 @@ func (opts SetOpts) Validate(e *Empire) error {
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
-	if err := authorize(ctx, "empire:Set", opts.App.Name); err != nil {
+	if err := authorize(ctx, "Set", opts.App.Name); err != nil {
 		return nil, err
 	}
 

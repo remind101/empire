@@ -15,26 +15,26 @@ func TestStatement_Match(t *testing.T) {
 	}{
 		{
 			Statement{
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"*"},
 			},
-			Context{Action: "empire:ListFoo"},
+			Context{Action: "ListFoo"},
 			true,
 		},
 		{
 			Statement{
-				Action:   []string{"empire:ListBar"},
+				Action:   []string{"ListBar"},
 				Resource: []string{"*"},
 			},
-			Context{Action: "empire:ListFoo"},
+			Context{Action: "ListFoo"},
 			false,
 		},
 		{
 			Statement{
-				Action:   []string{"empire:*"},
+				Action:   []string{"*"},
 				Resource: []string{"*"},
 			},
-			Context{Action: "empire:ListFoo"},
+			Context{Action: "ListFoo"},
 			true,
 		},
 		{
@@ -42,23 +42,23 @@ func TestStatement_Match(t *testing.T) {
 				Action:   []string{"something:*"},
 				Resource: []string{"*"},
 			},
-			Context{Action: "empire:ListFoo"},
+			Context{Action: "ListFoo"},
 			false,
 		},
 		{
 			Statement{
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"name"},
 			},
-			Context{Action: "empire:ListFoo", Resource: "name"},
+			Context{Action: "ListFoo", Resource: "name"},
 			true,
 		},
 		{
 			Statement{
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"foo"},
 			},
-			Context{Action: "empire:ListFoo", Resource: "bar"},
+			Context{Action: "ListFoo", Resource: "bar"},
 			false,
 		},
 	}
@@ -80,46 +80,46 @@ func TestStatement_Allowed(t *testing.T) {
 		{
 			Statement{
 				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"*"},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			true,
 		},
 		{
 			Statement{
 				Effect:   Deny,
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"*"},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			false,
 		},
 		{
 			Statement{
 				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"foo"},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			true,
 		},
 		{
 			Statement{
 				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"bar"},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			false,
 		},
 		{
 			Statement{
 				Effect:   Allow,
-				Action:   []string{"empire:ListFoo"},
+				Action:   []string{"ListFoo"},
 				Resource: []string{"bar"},
 			},
-			Context{Action: "empire:ListBar", Resource: "bar"},
+			Context{Action: "ListBar", Resource: "bar"},
 			false,
 		},
 	}
@@ -142,43 +142,43 @@ func TestPolicy_Allowed(t *testing.T) {
 			Policy{
 				{
 					Effect:   Allow,
-					Action:   []string{"empire:ListFoo"},
+					Action:   []string{"ListFoo"},
 					Resource: []string{"*"},
 				},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			true,
 		},
 		{
 			Policy{
 				{
 					Effect:   Allow,
-					Action:   []string{"empire:ListFoo"},
+					Action:   []string{"ListFoo"},
 					Resource: []string{"*"},
 				},
 				{
 					Effect:   Deny,
-					Action:   []string{"empire:ListFoo"},
+					Action:   []string{"ListFoo"},
 					Resource: []string{"*"},
 				},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			false,
 		},
 		{
 			Policy{
 				{
 					Effect:   Deny,
-					Action:   []string{"empire:ListFoo"},
+					Action:   []string{"ListFoo"},
 					Resource: []string{"*"},
 				},
 				{
 					Effect:   Allow,
-					Action:   []string{"empire:ListFoo"},
+					Action:   []string{"ListFoo"},
 					Resource: []string{"*"},
 				},
 			},
-			Context{Action: "empire:ListFoo", Resource: "foo"},
+			Context{Action: "ListFoo", Resource: "foo"},
 			false,
 		},
 	}

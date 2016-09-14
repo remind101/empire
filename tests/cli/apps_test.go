@@ -26,7 +26,7 @@ func TestCreate_NotAuthorized(t *testing.T) {
 		},
 		{
 			"create denied-app-name",
-			"error: not authorized to perform empire:Create",
+			"error: not authorized to perform Create",
 		},
 	})
 }

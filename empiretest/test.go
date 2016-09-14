@@ -67,14 +67,14 @@ var TestPolicy = acl.Policy{
 	// By default, allow all actions.
 	acl.Statement{
 		Effect:   acl.Allow,
-		Action:   []string{"empire:*"},
+		Action:   []string{"*"},
 		Resource: []string{"*"},
 	},
 
 	// Don't let anyone create a new app with the name denied-app-name.
 	acl.Statement{
 		Effect:   acl.Deny,
-		Action:   []string{"empire:Create"},
+		Action:   []string{"Create"},
 		Resource: []string{"denied-app-name"},
 	},
 }

@@ -8,7 +8,6 @@ package acl
 import (
 	"context"
 	"errors"
-	"strings"
 )
 
 type Effect int
@@ -119,14 +118,7 @@ func (p Policy) Allowed(context Context) bool {
 }
 
 func matchAction(action string, matcher string) bool {
-	actionParts := strings.SplitN(action, ":", 2)
-	matcherParts := strings.SplitN(matcher, ":", 2)
-
-	if actionParts[0] != matcherParts[0] {
-		return false
-	}
-
-	return stringMatch(actionParts[1], matcherParts[1])
+	return stringMatch(action, matcher)
 }
 
 func matchResource(resource string, matcher string) bool {
