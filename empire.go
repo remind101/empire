@@ -236,7 +236,7 @@ func (opts DestroyOpts) Validate(e *Empire) error {
 
 // Destroy destroys an app.
 func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
-	if err := authorize(ctx, "Destroy", opts.App.Name); err != nil {
+	if err := authorizeApp(ctx, "Destroy", opts.App); err != nil {
 		return err
 	}
 
@@ -260,7 +260,7 @@ func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
 
 // Config returns the current Config for a given app.
 func (e *Empire) Config(ctx context.Context, app *App) (*Config, error) {
-	if err := authorize(ctx, "Config", app.Name); err != nil {
+	if err := authorizeApp(ctx, "Config", app); err != nil {
 		return nil, err
 	}
 
@@ -317,7 +317,7 @@ func (opts SetOpts) Validate(e *Empire) error {
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
-	if err := authorize(ctx, "Set", opts.App.Name); err != nil {
+	if err := authorizeApp(ctx, "Set", opts.App); err != nil {
 		return nil, err
 	}
 
@@ -421,7 +421,7 @@ func (opts RestartOpts) Validate(e *Empire) error {
 // Restart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
-	if err := authorize(ctx, "Restart", opts.App.Name); err != nil {
+	if err := authorizeApp(ctx, "Restart", opts.App); err != nil {
 		return err
 	}
 
@@ -487,7 +487,7 @@ func (opts RunOpts) Validate(e *Empire) error {
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 	// TODO: Test what happens when an error is returned.
-	if err := authorize(ctx, "Run", opts.App.Name); err != nil {
+	if err := authorizeApp(ctx, "Run", opts.App); err != nil {
 		return err
 	}
 
@@ -573,7 +573,7 @@ func (opts RollbackOpts) Validate(e *Empire) error {
 // Rollback rolls an app back to a specific release version. Returns a
 // new release.
 func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
-	if err := authorize(ctx, "Rollback", opts.App.Name); err != nil {
+	if err := authorizeApp(ctx, "Rollback", opts.App); err != nil {
 		return nil, err
 	}
 
@@ -642,14 +642,8 @@ func (opts DeployOpts) Validate(e *Empire) error {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
-	var resource string
-	if opts.App != nil {
-		resource = opts.App.Name
-	}
-
-	if err := authorize(ctx, "Deploy", resource); err != nil {
-		opts.Output.Error(err)
-		return nil, nil
+	if err := authorizeApp(ctx, "Deploy", opts.App); err != nil {
+		return nil, opts.Output.Error(err)
 	}
 
 	if err := opts.Validate(e); err != nil {
@@ -727,7 +721,7 @@ func (opts ScaleOpts) Validate(e *Empire) error {
 
 // Scale scales an apps processes.
 func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) {
-	if err := authorize(ctx, "Scale", opts.App.Name); err != nil {
+	if err := authorizeApp(ctx, "Scale", opts.App); err != nil {
 		return nil, err
 	}
 
@@ -753,7 +747,7 @@ func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
 
 // Streamlogs streams logs from an app.
 func (e *Empire) StreamLogs(ctx context.Context, app *App, w io.Writer, duration time.Duration) error {
-	if err := authorize(ctx, "StreamLogs", app.Name); err != nil {
+	if err := authorizeApp(ctx, "StreamLogs", app); err != nil {
 		return err
 	}
 
@@ -766,7 +760,7 @@ func (e *Empire) StreamLogs(ctx context.Context, app *App, w io.Writer, duration
 
 // CertsAttach attaches an SSL certificate to the app.
 func (e *Empire) CertsAttach(ctx context.Context, app *App, cert string) error {
-	if err := authorize(ctx, "CertsAttach", app.Name); err != nil {
+	if err := authorizeApp(ctx, "CertsAttach", app); err != nil {
 		return err
 	}
 
@@ -850,4 +844,15 @@ func authorize(ctx context.Context, action string, resource string) error {
 	}
 
 	return nil
+}
+
+// authorizeApp is a convenience method for checking authorization, with the app
+// name as the resource.
+func authorizeApp(ctx context.Context, action string, app *App) error {
+	var resource string
+	if app != nil {
+		resource = app.Name
+	}
+
+	return authorize(ctx, action, resource)
 }
