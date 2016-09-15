@@ -12,9 +12,13 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/acl"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
+
+// The GitHub integration only needs access to deploy.
+var Policy = empire.AccessDeployOnly
 
 var (
 	// DefaultTemplate is a text/template string that will be used to map a
@@ -54,6 +58,8 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx = acl.WithPolicy(ctx, Policy)
+
 	var p events.Deployment
 
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {

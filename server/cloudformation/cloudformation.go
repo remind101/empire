@@ -12,11 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/acl"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 )
+
+// CloudFormation gets unrestricted access to be able to create resources.
+var Policy = empire.AccessAdmin
 
 var (
 	// Allow custom resource provisioners this amount of time do their
@@ -96,6 +100,8 @@ func (c *CustomResourceProvisioner) Start() {
 
 // Handle handles a single sqs.Message to perform the provisioning.
 func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Message) error {
+	ctx = acl.WithPolicy(ctx, Policy)
+
 	var m Message
 	err := json.Unmarshal([]byte(*message.Body), &m)
 	if err != nil {

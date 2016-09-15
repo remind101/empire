@@ -14,7 +14,7 @@ func (h *Server) GetConfigs(ctx context.Context, w http.ResponseWriter, r *http.
 		return err
 	}
 
-	c, err := h.Config(a)
+	c, err := h.Config(ctx, a)
 	if err != nil {
 		return err
 	}

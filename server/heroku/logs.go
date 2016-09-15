@@ -31,7 +31,7 @@ func (h *Server) PostLogs(ctx context.Context, w http.ResponseWriter, r *http.Re
 	// Prevent the ELB idle connection timeout to close the connection.
 	defer close(streamhttp.Heartbeat(rw, 10*time.Second))
 
-	err = h.StreamLogs(a, rw, time.Duration(form.Duration))
+	err = h.StreamLogs(ctx, a, rw, time.Duration(form.Duration))
 	if err != nil {
 		return err
 	}

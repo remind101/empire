@@ -8,10 +8,13 @@ import (
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"
+	"github.com/remind101/empire/acl"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/scheduler"
 	"github.com/stretchr/testify/assert"
 )
+
+var ctx = acl.WithPolicy(context.Background(), empiretest.TestPolicy)
 
 func TestPing(t *testing.T) {
 	c := newClient(t)

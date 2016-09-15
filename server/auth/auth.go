@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/server/acl"
+	"github.com/remind101/empire/acl"
 )
 
 var (

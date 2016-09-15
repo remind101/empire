@@ -12,12 +12,12 @@ import (
 
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/acl"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/server"
-	"github.com/remind101/empire/server/acl"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/middleware"

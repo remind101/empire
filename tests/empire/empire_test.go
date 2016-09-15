@@ -11,11 +11,11 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/acl"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
-	"github.com/remind101/empire/server/acl"
 	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

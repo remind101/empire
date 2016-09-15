@@ -2,7 +2,7 @@ package github
 
 import (
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/server/acl"
+	"github.com/remind101/empire/acl"
 )
 
 type TeamACL struct {
