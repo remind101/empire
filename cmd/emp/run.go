@@ -97,10 +97,6 @@ func runRun(cmd *Command, args []string) {
 		opts.Env = &env
 	}
 	if dynoSize != "" {
-		if !strings.HasSuffix(dynoSize, "X") {
-			cmd.PrintUsage()
-			os.Exit(2)
-		}
 		opts.Size = &dynoSize
 	}
 
