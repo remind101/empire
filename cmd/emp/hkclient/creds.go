@@ -65,6 +65,11 @@ func (nrc *NetRc) SaveCreds(address, user, pass string) error {
 	if err != nil {
 		return err
 	}
+
+	// make sure we have a newline after the credentials
+	// before inserting into netRc
+	body = append(body, '\n')
+
 	return ioutil.WriteFile(netRcPath(), body, 0600)
 }
 
