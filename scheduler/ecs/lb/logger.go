@@ -1,8 +1,9 @@
 package lb
 
 import (
+	"context"
+
 	"github.com/remind101/pkg/logger"
-	"golang.org/x/net/context"
 )
 
 var _ Manager = &LoggedManager{}

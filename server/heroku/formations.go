@@ -5,7 +5,6 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
-	"golang.org/x/net/context"
 )
 
 type Formation heroku.Formation
@@ -18,14 +17,16 @@ type PatchFormationForm struct {
 	} `json:"updates"`
 }
 
-func (h *Server) PatchFormation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PatchFormation(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	var form PatchFormationForm
 
 	if err := Decode(r, &form); err != nil {
 		return err
 	}
 
-	app, err := findApp(ctx, h)
+	app, err := findApp(r, h)
 	if err != nil {
 		return err
 	}
@@ -68,8 +69,10 @@ func (h *Server) PatchFormation(ctx context.Context, w http.ResponseWriter, r *h
 }
 
 // ServeHTTPContext handles the http response
-func (h *Server) GetFormation(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	app, err := findApp(ctx, h)
+func (h *Server) GetFormation(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	app, err := findApp(r, h)
 	if err != nil {
 		return err
 	}

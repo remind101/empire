@@ -3,6 +3,7 @@
 package ecs
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -18,7 +19,6 @@ import (
 	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/ecs/lb"
-	"golang.org/x/net/context"
 )
 
 // For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to

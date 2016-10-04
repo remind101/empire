@@ -1,12 +1,12 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sync"
 
 	"github.com/remind101/pkg/timex"
-	"golang.org/x/net/context"
 )
 
 type FakeScheduler struct {

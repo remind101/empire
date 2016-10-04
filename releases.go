@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
-	"golang.org/x/net/context"
 )
 
 // Release is a combination of a Config and a Slug, which form a deployable

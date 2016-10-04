@@ -3,12 +3,11 @@ package empire
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"path"
-
-	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"

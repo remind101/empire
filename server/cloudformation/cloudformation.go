@@ -3,11 +3,10 @@
 package cloudformation
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"

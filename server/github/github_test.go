@@ -1,11 +1,10 @@
 package github
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 	"text/template"
-
-	"golang.org/x/net/context"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire/pkg/image"

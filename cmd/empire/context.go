@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
 type netCtx context.Context

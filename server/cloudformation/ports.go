@@ -1,12 +1,11 @@
 package cloudformation
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
-
-	"golang.org/x/net/context"
 )
 
 type portAllocator interface {

@@ -1,10 +1,9 @@
 package github_test
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"

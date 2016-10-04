@@ -1,6 +1,7 @@
 package cloudformation
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -114,8 +114,6 @@ func (q *SQSDispatcher) start(handle func(context.Context, *sqs.Message) error) 
 }
 
 func (q *SQSDispatcher) handle(ctx context.Context, handle func(context.Context, *sqs.Message) error, message *sqs.Message) (err error) {
-	ctx, cancel := context.WithCancel(ctx)
-
 	defer func() {
 		if err == nil {
 			_, err = q.sqs.DeleteMessage(&sqs.DeleteMessageInput{
@@ -124,6 +122,8 @@ func (q *SQSDispatcher) handle(ctx context.Context, handle func(context.Context,
 			})
 		}
 	}()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	var t <-chan time.Time
 	t, err = q.extendMessageVisibilityTimeout(message.ReceiptHandle)

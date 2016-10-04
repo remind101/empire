@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -11,7 +12,7 @@ import (
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
-	"golang.org/x/net/context"
+	netcontext "golang.org/x/net/context"
 )
 
 // Deployer represents something that can deploy a github deployment.
@@ -101,7 +102,7 @@ func (d *TugboatDeployer) Deploy(ctx context.Context, event events.Deployment, o
 	// Perform the deployment, wrapped in Deploy. This will automatically
 	// write hte logs to tugboat and update the deployment status when this
 	// function returns.
-	_, err := d.client.Deploy(ctx, opts, provider(func(ctx context.Context, _ *tugboat.Deployment, w io.Writer) error {
+	_, err := d.client.Deploy(ctx, opts, provider(func(ctx netcontext.Context, _ *tugboat.Deployment, w io.Writer) error {
 		defer close(streamhttp.Heartbeat(w, 10*time.Second))
 
 		// Write logs to both tugboat as well as the writer we were
@@ -115,13 +116,13 @@ func (d *TugboatDeployer) Deploy(ctx context.Context, event events.Deployment, o
 }
 
 // provider implements the tugboat.Provider interface.
-type provider func(context.Context, *tugboat.Deployment, io.Writer) error
+type provider func(netcontext.Context, *tugboat.Deployment, io.Writer) error
 
 func (fn provider) Name() string {
 	return "empire"
 }
 
-func (fn provider) Deploy(ctx context.Context, d *tugboat.Deployment, w io.Writer) error {
+func (fn provider) Deploy(ctx netcontext.Context, d *tugboat.Deployment, w io.Writer) error {
 	return fn(ctx, d, w)
 }
 

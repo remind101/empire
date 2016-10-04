@@ -1,14 +1,14 @@
 package dockerauth
 
 import (
-	"fmt"
-	"strings"
-	"regexp"
 	"encoding/base64"
+	"fmt"
+	"regexp"
+	"strings"
 
-	"github.com/fsouza/go-dockerclient"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/fsouza/go-dockerclient"
 )
 
 var ecrRegistryExp = regexp.MustCompile("^([0-9]{12})\\.dkr\\.ecr\\.(.+?)\\.amazonaws\\.com$")
@@ -72,8 +72,8 @@ func newAuthConfiguration(encodedToken string, endpoint string) (*docker.AuthCon
 
 	usernamePassword := strings.SplitN(string(decodedToken), ":", 2)
 	return &docker.AuthConfiguration{
-		Username: usernamePassword[0],
-		Password: usernamePassword[1],
+		Username:      usernamePassword[0],
+		Password:      usernamePassword[1],
 		ServerAddress: endpoint,
 	}, nil
 }

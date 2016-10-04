@@ -3,6 +3,7 @@
 package heroku
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,14 +13,12 @@ import (
 	"runtime"
 	"time"
 
-	"golang.org/x/net/context"
-
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/stats"
-	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -27,7 +26,7 @@ import (
 // https://devcenter.heroku.com/articles/platform-api-reference#clients
 const AcceptHeader = "application/vnd.heroku+json; version=3"
 
-// Server provides an httpx.Handler for serving the Heroku compatible API.
+// Server provides an http.Handler for serving the Heroku compatible API.
 type Server struct {
 	*empire.Empire
 
@@ -35,14 +34,19 @@ type Server struct {
 	// authenticate requests.
 	Authenticator auth.Authenticator
 
-	mux *httpx.Router
+	mux *mux.Router
 }
+
+// handler represents an http.Handler within this package, which augments the
+// standard http.HandlerFunc signature to allow for an error to be returned, for
+// generic error handling.
+type handler func(w http.ResponseWriter, r *http.Request) error
 
 // New returns a new Server instance to serve the Heroku compatible API.
 func New(e *empire.Empire) *Server {
 	r := &Server{
 		Empire: e,
-		mux:    httpx.NewRouter(),
+		mux:    mux.NewRouter(),
 	}
 
 	// Apps
@@ -87,10 +91,10 @@ func New(e *empire.Empire) *Server {
 
 	// SSL
 	sslRemoved := errHandler(ErrSSLRemoved)
-	r.mux.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("GET")           // hk ssl
-	r.mux.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("POST")          // hk ssl-cert-add
-	r.mux.Handle("/apps/{app}/ssl-endpoints/{cert}", sslRemoved).Methods("PATCH")  // hk ssl-cert-add, hk ssl-cert-rollback
-	r.mux.Handle("/apps/{app}/ssl-endpoints/{cert}", sslRemoved).Methods("DELETE") // hk ssl-destroy
+	r.handle("GET", "/apps/{app}/ssl-endpoints", sslRemoved)           // hk ssl
+	r.handle("POST", "/apps/{app}/ssl-endpoints", sslRemoved)          // hk ssl-cert-add
+	r.handle("PATCH", "/apps/{app}/ssl-endpoints/{cert}", sslRemoved)  // hk ssl-cert-add, hk ssl-cert-rollback
+	r.handle("DELETE", "/apps/{app}/ssl-endpoints/{cert}", sslRemoved) // hk ssl-destroy
 
 	// Logs
 	r.handle("POST", "/apps/{app}/log-sessions", r.PostLogs) // hk log
@@ -98,34 +102,46 @@ func New(e *empire.Empire) *Server {
 	return r
 }
 
-// ServeHTTPContext implements the httpx.Handler interface.
-func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	h := Authenticate(s.mux, s.Authenticator)
-
-	err := h.ServeHTTPContext(ctx, w, r)
-	if err != nil {
-		Error(w, err, http.StatusInternalServerError)
-		reporter.Report(ctx, err)
-	}
-
-	return nil
+// ServeHTTPContext implements the http.Handler interface.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
+	return
 }
 
 // handle adds a new handler to the router, which also increments a counter.
-func (s *Server) handle(method, path string, h httpx.HandlerFunc) {
+func (s *Server) handle(method, path string, h handler) {
 	name := handlerName(h)
 
-	fn := httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	// Wrap handler to perform authentication, and track metrics.
+	m := handler(func(w http.ResponseWriter, r *http.Request) error {
+		r, err := s.Authenticate(r)
+		if err != nil {
+			return err
+		}
+
+		ctx := r.Context()
+
 		tags := []string{
 			fmt.Sprintf("handler:%s", name),
 			fmt.Sprintf("user:%s", UserFromContext(ctx).Name),
 		}
 		start := time.Now()
-		err := h(ctx, w, r)
+		err = h(w, r)
 		d := time.Since(start)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", name), d, 1.0, tags)
 		return err
+	})
+
+	// Encode and report errors.
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		err := m(w, r)
+		if err != nil {
+			Error(w, err, http.StatusInternalServerError)
+			reporter.Report(ctx, err)
+		}
+		return
 	})
 
 	s.mux.HandleFunc(path, fn).Methods(method)
@@ -240,7 +256,11 @@ var nameRegexp = regexp.MustCompile(`^.*\.(.*)-fm$`)
 
 // handlerName returns the name of the handler, which can be used as a metrics
 // postfix.
-func handlerName(h httpx.HandlerFunc) string {
+func handlerName(h handler) string {
 	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
-	return nameRegexp.FindStringSubmatch(name)[1]
+	matches := nameRegexp.FindStringSubmatch(name)
+	if len(matches) < 2 {
+		return "Unknown"
+	}
+	return matches[1]
 }

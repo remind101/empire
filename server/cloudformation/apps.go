@@ -1,9 +1,8 @@
 package cloudformation
 
 import (
+	"context"
 	"fmt"
-
-	"golang.org/x/net/context"
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"

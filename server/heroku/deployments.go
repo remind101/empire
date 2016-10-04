@@ -1,13 +1,13 @@
 package heroku
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/remind101/empire/pkg/image"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 
 	"github.com/remind101/empire"
-	"golang.org/x/net/context"
 )
 
 // PostDeployForm is the form object that represents the POST body.
@@ -17,8 +17,10 @@ type PostDeployForm struct {
 }
 
 // ServeHTTPContext implements the Handler interface.
-func (h *Server) PostDeploys(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
-	opts, err := newDeployOpts(ctx, w, req)
+func (h *Server) PostDeploys(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	opts, err := newDeployOpts(ctx, w, r)
 	if err != nil {
 		return err
 	}

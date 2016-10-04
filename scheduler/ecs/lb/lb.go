@@ -1,7 +1,7 @@
 // package lb provides an abstraction around creating load balancers.
 package lb
 
-import "golang.org/x/net/context"
+import "context"
 
 const AppTag = "App"
 

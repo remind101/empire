@@ -4,10 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
-	"github.com/remind101/pkg/httpx"
-	"golang.org/x/net/context"
 )
 
 type Release heroku.Release
@@ -36,13 +35,13 @@ func newReleases(rs []*empire.Release) []*Release {
 	return releases
 }
 
-func (h *Server) GetRelease(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) GetRelease(w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
 	}
 
-	vars := httpx.Vars(ctx)
+	vars := mux.Vars(r)
 	vers, err := strconv.Atoi(vars["version"])
 	if err != nil {
 		return err
@@ -57,8 +56,8 @@ func (h *Server) GetRelease(ctx context.Context, w http.ResponseWriter, r *http.
 	return Encode(w, newRelease(rel))
 }
 
-func (h *Server) GetReleases(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) GetReleases(w http.ResponseWriter, r *http.Request) error {
+	a, err := findApp(r, h)
 	if err != nil {
 		return err
 	}
@@ -90,7 +89,9 @@ func (p *PostReleasesForm) ReleaseVersion() (int, error) {
 	return vers, nil
 }
 
-func (h *Server) PostReleases(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostReleases(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	var form PostReleasesForm
 
 	if err := Decode(r, &form); err != nil {
@@ -102,7 +103,7 @@ func (h *Server) PostReleases(ctx context.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	app, err := findApp(ctx, h)
+	app, err := findApp(r, h)
 	if err != nil {
 		return err
 	}

@@ -1,14 +1,13 @@
 package empiretest
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"text/template"
-
-	"golang.org/x/net/context"
 
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
@@ -19,7 +18,6 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
-	"github.com/remind101/empire/server/middleware"
 )
 
 var (
@@ -82,7 +80,7 @@ func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server 
 	s := server.New(e, opts)
 	return &Server{
 		Empire: e,
-		Server: httptest.NewServer(middleware.Handler(context.Background(), s)),
+		Server: httptest.NewServer(s),
 	}
 }
 
