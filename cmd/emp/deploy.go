@@ -76,8 +76,14 @@ func runDeploy(cmd *Command, args []string) {
 
 	rh := heroku.RequestHeaders{CommitMessage: message}
 	go func() {
+		retry := func() {
+			runDeploy(cmd, args)
+		}
+		cleanup := func() {
+			must(w.Close())
+		}
+		defer retryMessageRequired(retry, cleanup)
 		must(client.PostWithHeaders(w, endpoint, form, rh.Headers()))
-		must(w.Close())
 	}()
 
 	outFd, isTerminalOut := term.GetFdInfo(os.Stdout)

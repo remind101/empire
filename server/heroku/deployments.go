@@ -23,9 +23,15 @@ func (h *Server) PostDeploys(ctx context.Context, w http.ResponseWriter, req *ht
 		return err
 	}
 
-	// We ignore errors here since this is a streaming endpoint,
-	// and the error is handled in the response message
-	_, _ = h.Deploy(ctx, *opts)
+	_, err = h.Deploy(ctx, *opts)
+
+	// We only return the MessageRequiredError since all other errors are
+	// written to the stream.
+	switch err := err.(type) {
+	case *empire.MessageRequiredError:
+		return err
+	}
+
 	return nil
 }
 
