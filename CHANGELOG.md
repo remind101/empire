@@ -8,6 +8,10 @@
 * The `empire` and `emp` binaries are now built with Go 1.7 [#971](https://github.com/remind101/empire/pull/971)
 * `emp env-load` now handles multi-line environment variables. [#990](https://github.com/remind101/empire/pull/990)
 
+**Bugs**
+
+* `emp deploy` will now prompt for a commit message if one is required but not provided. [#994](https://github.com/remind101/empire/issues/994)
+
 ## 0.11.0 (2016-08-22)
 
 **Features**
