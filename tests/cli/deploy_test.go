@@ -75,3 +75,34 @@ Status: Finished processing events for release v1 of acme-inc`,
 		},
 	})
 }
+
+func TestDeploy_CommitMessageRequired(t *testing.T) {
+	pre := func(cli *CLI) {
+		cli.Empire.MessagesRequired = true
+	}
+
+	runWithPre(t, []Command{
+		{
+			"deploy remind101/acme-inc",
+			"error: A message is required for this action, please run again with '-m'.",
+		},
+	}, pre, true)
+
+	runWithPre(t, []Command{
+		{
+			"deploy remind101/acme-inc -m commit",
+			`Pulling repository remind101/acme-inc
+345c7524bc96: Pulling image (latest) from remind101/acme-inc
+345c7524bc96: Pulling image (latest) from remind101/acme-inc, endpoint: https://registry-1.docker.io/v1/
+345c7524bc96: Pulling dependent layers
+a1dd7097a8e8: Download complete
+Status: Image is up to date for remind101/acme-inc:latest
+Status: Created new release v1 for acme-inc
+Status: Finished processing events for release v1 of acme-inc`,
+		},
+		{
+			"releases -a acme-inc",
+			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake: 'commit')",
+		},
+	}, pre, false)
+}

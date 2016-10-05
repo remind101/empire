@@ -72,7 +72,10 @@ type Command struct {
 func run(t testing.TB, commands []Command) {
 	cli := newCLI(t)
 	defer cli.Close()
+	runWithCLI(t, commands, cli, false)
+}
 
+func runWithCLI(t testing.TB, commands []Command, cli *CLI, shouldError bool) {
 	token, err := cli.Empire.AccessTokensCreate(&empire.AccessToken{
 		User: fakeUser,
 	})
@@ -89,7 +92,7 @@ func run(t testing.TB, commands []Command) {
 
 		b, err := cli.Command(args...).CombinedOutput()
 		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, string(b)))
-		if err != nil {
+		if !shouldError && err != nil {
 			t.Fatal(err)
 		}
 
@@ -109,6 +112,13 @@ func run(t testing.TB, commands []Command) {
 			}
 		}
 	}
+}
+
+func runWithPre(t testing.TB, commands []Command, pre func(*CLI), shouldError bool) {
+	cli := newCLI(t)
+	defer cli.Close()
+	pre(cli)
+	runWithCLI(t, commands, cli, shouldError)
 }
 
 // CLI wraps an empire instance, a server and a CLI as one unit, which can be
