@@ -26,7 +26,6 @@ import (
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
-	"github.com/remind101/empire/scheduler/ecs"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
@@ -97,10 +96,6 @@ func newScheduler(db *empire.DB, c *Context) (scheduler.Scheduler, error) {
 	)
 
 	switch c.String(FlagScheduler) {
-	case "ecs":
-		s, err = newECSScheduler(db, c)
-	case "cloudformation-migration":
-		s, err = newMigrationScheduler(db, c)
 	case "cloudformation":
 		s, err = newCloudFormationScheduler(db, c)
 	default:
@@ -119,22 +114,6 @@ func newScheduler(db *empire.DB, c *Context) (scheduler.Scheduler, error) {
 	a := docker.RunAttachedWithDocker(s, d)
 	a.ShowAttached = c.Bool(FlagXShowAttached)
 	return a, nil
-}
-
-func newMigrationScheduler(db *empire.DB, c *Context) (*cloudformation.MigrationScheduler, error) {
-	log.Println("Using the CloudFormation Migration backend")
-
-	es, err := newECSScheduler(db, c)
-	if err != nil {
-		return nil, fmt.Errorf("error creating ecs scheduler: %v", err)
-	}
-
-	cs, err := newCloudFormationScheduler(db, c)
-	if err != nil {
-		return nil, fmt.Errorf("error creating cloudformation scheduler: %v", err)
-	}
-
-	return cloudformation.NewMigrationScheduler(db.DB.DB(), cs, es), nil
 }
 
 func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Scheduler, error) {
@@ -197,41 +176,6 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 func prefixedStackName(prefix string) *template.Template {
 	t := `{{ if "` + prefix + `" }}{{"` + prefix + `"}}-{{ end }}{{.Name}}`
 	return template.Must(template.New("stack_name").Parse(t))
-}
-
-func newECSScheduler(db *empire.DB, c *Context) (*ecs.Scheduler, error) {
-	logDriver := c.String(FlagECSLogDriver)
-	logOpts := c.StringSlice(FlagECSLogOpts)
-	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
-
-	config := ecs.Config{
-		AWS:                     c,
-		Cluster:                 c.String(FlagECSCluster),
-		ServiceRole:             c.String(FlagECSServiceRole),
-		InternalSecurityGroupID: c.String(FlagELBSGPrivate),
-		ExternalSecurityGroupID: c.String(FlagELBSGPublic),
-		InternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPrivate),
-		ExternalSubnetIDs:       c.StringSlice(FlagEC2SubnetsPublic),
-		ZoneID:                  c.String(FlagRoute53InternalZoneID),
-		LogConfiguration:        logConfiguration,
-	}
-
-	s, err := ecs.NewLoadBalancedScheduler(db.DB.DB(), config)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Println("Using ECS backend with the following configuration:")
-	log.Println(fmt.Sprintf("  Cluster: %v", config.Cluster))
-	log.Println(fmt.Sprintf("  ServiceRole: %v", config.ServiceRole))
-	log.Println(fmt.Sprintf("  InternalSecurityGroupID: %v", config.InternalSecurityGroupID))
-	log.Println(fmt.Sprintf("  ExternalSecurityGroupID: %v", config.ExternalSecurityGroupID))
-	log.Println(fmt.Sprintf("  InternalSubnetIDs: %v", config.InternalSubnetIDs))
-	log.Println(fmt.Sprintf("  ExternalSubnetIDs: %v", config.ExternalSubnetIDs))
-	log.Println(fmt.Sprintf("  ZoneID: %v", config.ZoneID))
-	log.Println(fmt.Sprintf("  LogConfiguration: %v", logConfiguration))
-
-	return s, nil
 }
 
 // DockerClient ========================
