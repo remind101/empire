@@ -1,6 +1,9 @@
 package cli_test
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestDeploy(t *testing.T) {
 	run(t, []Command{
@@ -81,14 +84,14 @@ func TestDeploy_CommitMessageRequired(t *testing.T) {
 		cli.Empire.MessagesRequired = true
 	}
 
-	runWithPre(t, []Command{
+	runWithPre(t, pre, []Command{
 		{
 			"deploy remind101/acme-inc",
-			"error: A message is required for this action, please run again with '-m'.",
+			errors.New("error: A message is required for this action, please run again with '-m'."),
 		},
-	}, pre, true)
+	})
 
-	runWithPre(t, []Command{
+	runWithPre(t, pre, []Command{
 		{
 			"deploy remind101/acme-inc -m commit",
 			`Pulling repository remind101/acme-inc
@@ -104,5 +107,5 @@ Status: Finished processing events for release v1 of acme-inc`,
 			"releases -a acme-inc",
 			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake: 'commit')",
 		},
-	}, pre, false)
+	})
 }

@@ -70,12 +70,10 @@ type Command struct {
 }
 
 func run(t testing.TB, commands []Command) {
-	cli := newCLI(t)
-	defer cli.Close()
-	runWithCLI(t, commands, cli, false)
+	runWithPre(t, nil, commands)
 }
 
-func runWithCLI(t testing.TB, commands []Command, cli *CLI, shouldError bool) {
+func runWithCLI(t testing.TB, commands []Command, cli *CLI) {
 	token, err := cli.Empire.AccessTokensCreate(&empire.AccessToken{
 		User: fakeUser,
 	})
@@ -91,12 +89,16 @@ func runWithCLI(t testing.TB, commands []Command, cli *CLI, shouldError bool) {
 		args := strings.Split(cmd.Command, " ")
 
 		b, err := cli.Command(args...).CombinedOutput()
-		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, string(b)))
-		if !shouldError && err != nil {
+		got := string(b)
+		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, got))
+		if expectedErr, ok := cmd.Output.(error); ok {
+			expectedErrString := fmt.Sprintf("%v\n", expectedErr)
+			if got != expectedErrString {
+				t.Fatalf("Expected %s, got %v", expectedErr, got)
+			}
+		} else if err != nil {
 			t.Fatal(err)
 		}
-
-		got := string(b)
 
 		if want, ok := cmd.Output.(string); ok {
 			if want != "" {
@@ -114,11 +116,13 @@ func runWithCLI(t testing.TB, commands []Command, cli *CLI, shouldError bool) {
 	}
 }
 
-func runWithPre(t testing.TB, commands []Command, pre func(*CLI), shouldError bool) {
+func runWithPre(t testing.TB, pre func(*CLI), commands []Command) {
 	cli := newCLI(t)
 	defer cli.Close()
-	pre(cli)
-	runWithCLI(t, commands, cli, shouldError)
+	if pre != nil {
+		pre(cli)
+	}
+	runWithCLI(t, commands, cli)
 }
 
 // CLI wraps an empire instance, a server and a CLI as one unit, which can be
