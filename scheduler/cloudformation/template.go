@@ -29,10 +29,55 @@ var (
 )
 
 // Load balancer types
-var (
+const (
 	classicLoadBalancer     = "elb"
 	applicationLoadBalancer = "alb"
 )
+
+// Returns the type of load balancer that should be used (ELB/ALB).
+func loadBalancerType(app *scheduler.App) string {
+	check := []string{
+		"EMPIRE_X_LOAD_BALANCER_TYPE",
+		"LOAD_BALANCER_TYPE", // For backwards compatibility.
+	}
+
+	for _, n := range check {
+		if v, ok := app.Env[n]; ok {
+			return v
+		}
+	}
+
+	// Default when not set.
+	return classicLoadBalancer
+}
+
+// Returns the name of the CloudFormation resource that should be used to create
+// custom task definitions.
+func taskDefinitionResourceType(app *scheduler.App) string {
+	check := []string{
+		"EMPIRE_X_TASK_DEFINITION_TYPE",
+		"ECS_TASK_DEFINITION", // For backwards compatibility.
+	}
+
+	for _, n := range check {
+		if v, ok := app.Env[n]; ok {
+			if v == "custom" {
+				return "Custom::ECSTaskDefinition"
+			}
+		}
+	}
+
+	// Default when not set.
+	return "AWS::ECS::TaskDefinition"
+}
+
+func taskRoleArn(app *scheduler.App) interface{} {
+	if v, ok := app.Env["EMPIRE_X_TASK_ROLE_ARN"]; ok {
+		return v
+	}
+
+	return nil
+}
 
 const (
 	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
@@ -235,6 +280,13 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 	cd := t.ContainerDefinition(app, p)
 	containerDefinition := cloudformationContainerDefinition(cd)
 
+	// If provided in the app environment, this role will be used when
+	// running tasks.
+	var taskRole interface{}
+	if arn, ok := app.Env["TASK_ROLE_ARN"]; ok {
+		taskRole = arn
+	}
+
 	var taskDefinitionProperties interface{}
 	taskDefinitionType := taskDefinitionResourceType(app)
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
@@ -260,6 +312,7 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 			ContainerDefinitions: []*ContainerDefinitionProperties{
 				containerDefinition,
 			},
+			TaskRoleArn: taskRole,
 		}
 	} else {
 		containerDefinition.Environment = cd.Environment
@@ -268,6 +321,7 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 			ContainerDefinitions: []*ContainerDefinitionProperties{
 				containerDefinition,
 			},
+			TaskRoleArn: taskRole,
 		}
 	}
 
@@ -349,10 +403,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 
 		p.Env["PORT"] = fmt.Sprintf("%d", ContainerPort)
 
-		loadBalancerType := classicLoadBalancer
-		if v, ok := app.Env["LOAD_BALANCER_TYPE"]; ok {
-			loadBalancerType = v
-		}
+		loadBalancerType := loadBalancerType(app)
 
 		var loadBalancer string
 		switch loadBalancerType {
@@ -700,15 +751,6 @@ func scheduleExpression(s scheduler.Schedule) string {
 	default:
 		panic("unknown scheduler expression")
 	}
-}
-
-// Returns the name of the CloudFormation resource that should be used to create
-// custom task definitions.
-func taskDefinitionResourceType(app *scheduler.App) string {
-	if app.Env["ECS_TASK_DEFINITION"] == "custom" {
-		return "Custom::ECSTaskDefinition"
-	}
-	return "AWS::ECS::TaskDefinition"
 }
 
 // runTaskResource returns a troposphere resource that will create a lambda

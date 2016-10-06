@@ -397,11 +397,55 @@
       }
     },
 
+    "DockerPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "docker-cloudwatch-logs",
+        "Roles": [ { "Ref": "InstanceRole" } ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "ApplicationLogGroup" }, ":log-stream:*"]] },
+                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "DaemonLogGroup" }, ":log-stream:*"]] },
+                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "PostgresLogGroup" }, ":log-stream:*"]] }
+              ]
+            }
+          ]
+        }
+      }
+    },
+
+    "EmpireRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ecs-tasks.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        }
+      }
+    },
+
     "EmpirePolicy": {
       "Type": "AWS::IAM::Policy",
       "Properties": {
         "PolicyName": "empire",
-        "Roles": [ { "Ref": "InstanceRole" } ],
+        "Roles": [ { "Ref": "EmpireRole" } ],
         "Groups": [ { "Ref": "Group" } ],
         "PolicyDocument": {
           "Version": "2012-10-17",
@@ -411,7 +455,7 @@
               "Action": [
                 "iam:PassRole"
               ],
-              "Resource": { "Fn::GetAtt": ["ServiceRole", "Arn"] }
+              "Resource": "*"
             },
             {
               "Effect": "Allow",
@@ -546,18 +590,6 @@
                 "route53:GetChange*"
               ],
               "Resource": "arn:aws:route53:::change/*"
-            },
-            {
-              "Effect": "Allow",
-              "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-              ],
-              "Resource": [
-                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "ApplicationLogGroup" }, ":log-stream:*"]] },
-                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "DaemonLogGroup" }, ":log-stream:*"]] },
-                { "Fn::Join": ["", ["arn:aws:logs:*:*:log-group:", { "Ref": "PostgresLogGroup" }, ":log-stream:*"]] }
-              ]
             }
           ]
         }
@@ -763,6 +795,7 @@
       "Type": "AWS::ECS::TaskDefinition",
       "Condition": "DemoMode",
       "Properties": {
+        "TaskRoleArn": { "Fn::GetAtt": ["EmpireRole", "Arn"] },
         "ContainerDefinitions": [
           {
             "Name": "empire",
