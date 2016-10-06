@@ -80,12 +80,6 @@ func taskRoleArn(app *scheduler.App) interface{} {
 }
 
 const (
-	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
-	// the container port. This is the port that processes within the container
-	// should bind to. This value is also exposed to the container through the PORT
-	// environment variable.
-	ContainerPort = 8080
-
 	schemeInternal = "internal"
 	schemeExternal = "internet-facing"
 
@@ -253,7 +247,10 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 				scheduledProcesses[p.Type] = taskDefinition.Name
 			}
 		default:
-			service := t.addService(tmpl, app, p)
+			service, err := t.addService(tmpl, app, p)
+			if err != nil {
+				return tmpl, err
+			}
 			serviceMappings = append(serviceMappings, Join("=", p.Type, Ref(service)))
 			deploymentMappings = append(deploymentMappings, Join("=", p.Type, GetAtt(service, "DeploymentId")))
 		}
@@ -372,7 +369,7 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 	return taskDefinition
 }
 
-func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string) {
+func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string, err error) {
 	key := processResourceName(p.Type)
 
 	// The standard AWS::ECS::Service resource's default behavior is to wait
@@ -448,6 +445,21 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 				}
 			}
 
+			// Unlike ELB, ALB can only route to a single container
+			// port, when dynamic ports are used. Thus, we have to
+			// ensure that all of the defined ports map to the same
+			// container port.
+			//
+			// ELB can route to multiple container ports, because a
+			// listener can directly point to a container port,
+			// through an instance port:
+			//
+			//	Listener Port => Instance Port => Container Port
+			if len(containerPorts) > 1 {
+				err = fmt.Errorf("AWS Application Load Balancers can only map listeners to a single container port. %d unique container ports were defined: [%s]", len(p.Exposure.Ports), fmtPorts(p.Exposure.Ports))
+				return
+			}
+
 			// Add a listener for each port.
 			for _, port := range p.Exposure.Ports {
 				listener := troposphere.NamedResource{
@@ -455,9 +467,6 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 				}
 
 				switch e := port.Protocol.(type) {
-				case *scheduler.TCP, *scheduler.SSL:
-					// TODO: Don't panic
-					panic("not supported")
 				case *scheduler.HTTP:
 					listener.Resource = troposphere.Resource{
 						Type: "AWS::ElasticLoadBalancingV2::Listener",
@@ -500,6 +509,9 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 							},
 						},
 					}
+				default:
+					err = fmt.Errorf("%s listeners are not supported with AWS Application Load Balancing", e.Protocol())
+					return
 				}
 				tmpl.AddResource(listener)
 				serviceDependencies = append(serviceDependencies, listener.Name)
@@ -507,7 +519,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 
 			loadBalancers = append(loadBalancers, map[string]interface{}{
 				"ContainerName":  p.Type,
-				"ContainerPort":  ContainerPort,
+				"ContainerPort":  p.Exposure.Ports[0].Container,
 				"TargetGroupArn": Ref(targetGroup),
 			})
 		default:
@@ -615,7 +627,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 
 			loadBalancers = append(loadBalancers, map[string]interface{}{
 				"ContainerName":    p.Type,
-				"ContainerPort":    ContainerPort,
+				"ContainerPort":    p.Exposure.Ports[0].Container,
 				"LoadBalancerName": Ref(loadBalancer),
 			})
 		}
@@ -662,7 +674,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 		service.Resource.DependsOn = serviceDependencies
 	}
 	tmpl.AddResource(service)
-	return service.Name
+	return service.Name, nil
 }
 
 // If the ServiceRole option is not an ARN, it will return a CloudFormation
@@ -827,6 +839,18 @@ func runTaskResource(role interface{}) troposphere.Resource {
 			},
 		},
 	}
+}
+
+// fmtPorts implements the fmt.Stringer interface to show a map of container
+// port to host port.
+type fmtPorts []scheduler.Port
+
+func (p fmtPorts) String() string {
+	var mappings []string
+	for _, port := range p {
+		mappings = append(mappings, fmt.Sprintf("%d => %d", port.Host, port.Container))
+	}
+	return strings.Join(mappings, ", ")
 }
 
 // A simple lambda function that can be used to trigger an ecs.RunTask.
