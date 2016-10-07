@@ -499,7 +499,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 									"CertificateArn": cert,
 								},
 							},
-							"LoadBalancerArn": GetAtt(loadBalancer, "Arn"),
+							"LoadBalancerArn": Ref(loadBalancer),
 							"Port":            port.Host,
 							"Protocol":        "HTTPS",
 							"DefaultActions": []interface{}{

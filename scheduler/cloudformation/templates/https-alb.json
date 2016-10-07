@@ -169,10 +169,7 @@
           }
         ],
         "LoadBalancerArn": {
-          "Fn::GetAtt": [
-            "apiApplicationLoadBalancer",
-            "Arn"
-          ]
+          "Ref": "apiApplicationLoadBalancer"
         },
         "Port": 443,
         "Protocol": "HTTPS"
@@ -308,10 +305,7 @@
           }
         ],
         "LoadBalancerArn": {
-          "Fn::GetAtt": [
-            "webApplicationLoadBalancer",
-            "Arn"
-          ]
+          "Ref": "webApplicationLoadBalancer"
         },
         "Port": 443,
         "Protocol": "HTTPS"
