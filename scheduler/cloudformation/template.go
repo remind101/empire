@@ -35,14 +35,15 @@ const (
 )
 
 // Returns the type of load balancer that should be used (ELB/ALB).
-func loadBalancerType(app *scheduler.App) string {
+func loadBalancerType(app *scheduler.App, process *scheduler.Process) string {
 	check := []string{
 		"EMPIRE_X_LOAD_BALANCER_TYPE",
 		"LOAD_BALANCER_TYPE", // For backwards compatibility.
 	}
+	env := scheduler.Env(app, process)
 
 	for _, n := range check {
-		if v, ok := app.Env[n]; ok {
+		if v, ok := env[n]; ok {
 			return v
 		}
 	}
@@ -80,12 +81,6 @@ func taskRoleArn(app *scheduler.App) interface{} {
 }
 
 const (
-	// For HTTP/HTTPS/TCP services, we allocate an ELB and map it's instance port to
-	// the container port. This is the port that processes within the container
-	// should bind to. This value is also exposed to the container through the PORT
-	// environment variable.
-	ContainerPort = 8080
-
 	schemeInternal = "internal"
 	schemeExternal = "internet-facing"
 
@@ -253,7 +248,10 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 				scheduledProcesses[p.Type] = taskDefinition.Name
 			}
 		default:
-			service := t.addService(tmpl, app, p)
+			service, err := t.addService(tmpl, app, p)
+			if err != nil {
+				return tmpl, err
+			}
 			serviceMappings = append(serviceMappings, Join("=", p.Type, Ref(service)))
 			deploymentMappings = append(deploymentMappings, Join("=", p.Type, GetAtt(service, "DeploymentId")))
 		}
@@ -372,7 +370,7 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 	return taskDefinition
 }
 
-func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string) {
+func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string, err error) {
 	key := processResourceName(p.Type)
 
 	// The standard AWS::ECS::Service resource's default behavior is to wait
@@ -401,28 +399,30 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			subnets = t.ExternalSubnetIDs
 		}
 
-		p.Env["PORT"] = fmt.Sprintf("%d", ContainerPort)
+		loadBalancerType := loadBalancerType(app, p)
 
-		loadBalancerType := loadBalancerType(app)
-
-		var loadBalancer string
+		var loadBalancer troposphere.NamedResource
 		switch loadBalancerType {
 		case applicationLoadBalancer:
-			loadBalancer = fmt.Sprintf("%sApplicationLoadBalancer", key)
-			tmpl.Resources[loadBalancer] = troposphere.Resource{
-				Type: "AWS::ElasticLoadBalancingV2::LoadBalancer",
-				Properties: map[string]interface{}{
-					"Scheme":         scheme,
-					"SecurityGroups": []string{sg},
-					"Subnets":        subnets,
-					"Tags": []map[string]string{
-						map[string]string{
-							"Key":   "empire.app.process",
-							"Value": p.Type,
+			loadBalancer = troposphere.NamedResource{
+				Name: fmt.Sprintf("%sApplicationLoadBalancer", key),
+				Resource: troposphere.Resource{
+					Type: "AWS::ElasticLoadBalancingV2::LoadBalancer",
+					Properties: map[string]interface{}{
+						"Scheme":         scheme,
+						"SecurityGroups": []string{sg},
+						"Subnets":        subnets,
+						"Tags": []map[string]string{
+							map[string]string{
+								"Key":   "empire.app.process",
+								"Value": p.Type,
+							},
 						},
 					},
 				},
 			}
+
+			tmpl.AddResource(loadBalancer)
 
 			targetGroup := fmt.Sprintf("%sTargetGroup", key)
 			tmpl.Resources[targetGroup] = troposphere.Resource{
@@ -434,102 +434,177 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 				},
 			}
 
-			httpListener := fmt.Sprintf("%sPort%dListener", loadBalancer, 80)
-			tmpl.Resources[httpListener] = troposphere.Resource{
-				Type: "AWS::ElasticLoadBalancingV2::Listener",
-				Properties: map[string]interface{}{
-					"LoadBalancerArn": Ref(loadBalancer),
-					"Port":            80,
-					"Protocol":        "HTTP",
-					"DefaultActions": []interface{}{
-						map[string]interface{}{
-							"TargetGroupArn": Ref(targetGroup),
-							"Type":           "forward",
-						},
-					},
-				},
+			// Add a port mapping for each unique container port.
+			containerPorts := make(map[int]bool)
+			for _, port := range p.Exposure.Ports {
+				if ok := containerPorts[port.Container]; !ok {
+					containerPorts[port.Container] = true
+					portMappings = append(portMappings, &PortMappingProperties{
+						ContainerPort: port.Container,
+						HostPort:      0,
+					})
+				}
 			}
-			serviceDependencies = append(serviceDependencies, httpListener)
 
-			if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
-				var cert interface{}
-				if _, err := arn.Parse(e.Cert); err == nil {
-					cert = e.Cert
-				} else {
-					cert = Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/", e.Cert)
+			// Unlike ELB, ALB can only route to a single container
+			// port, when dynamic ports are used. Thus, we have to
+			// ensure that all of the defined ports map to the same
+			// container port.
+			//
+			// ELB can route to multiple container ports, because a
+			// listener can directly point to a container port,
+			// through an instance port:
+			//
+			//	Listener Port => Instance Port => Container Port
+			if len(containerPorts) > 1 {
+				err = fmt.Errorf("AWS Application Load Balancers can only map listeners to a single container port. %d unique container ports were defined: [%s]", len(p.Exposure.Ports), fmtPorts(p.Exposure.Ports))
+				return
+			}
+
+			// Add a listener for each port.
+			for _, port := range p.Exposure.Ports {
+				listener := troposphere.NamedResource{
+					Name: fmt.Sprintf("%sPort%dListener", loadBalancer.Name, port.Host),
 				}
 
-				httpsListener := fmt.Sprintf("%sPort%dListener", loadBalancer, 443)
-				tmpl.Resources[httpsListener] = troposphere.Resource{
-					Type: "AWS::ElasticLoadBalancingV2::Listener",
-					Properties: map[string]interface{}{
-						"Certificates": []interface{}{
-							map[string]interface{}{
-								"CertificateArn": cert,
+				switch e := port.Protocol.(type) {
+				case *scheduler.HTTP:
+					listener.Resource = troposphere.Resource{
+						Type: "AWS::ElasticLoadBalancingV2::Listener",
+						Properties: map[string]interface{}{
+							"LoadBalancerArn": Ref(loadBalancer),
+							"Port":            port.Host,
+							"Protocol":        "HTTP",
+							"DefaultActions": []interface{}{
+								map[string]interface{}{
+									"TargetGroupArn": Ref(targetGroup),
+									"Type":           "forward",
+								},
 							},
 						},
-						"LoadBalancerArn": GetAtt(loadBalancer, "Arn"),
-						"Port":            443,
-						"Protocol":        "HTTPS",
-						"DefaultActions": []interface{}{
-							map[string]interface{}{
-								"TargetGroupArn": Ref(targetGroup),
-								"Type":           "forward",
+					}
+				case *scheduler.HTTPS:
+					var cert interface{}
+					if _, err := arn.Parse(e.Cert); err == nil {
+						cert = e.Cert
+					} else {
+						cert = Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/", e.Cert)
+					}
+
+					listener.Resource = troposphere.Resource{
+						Type: "AWS::ElasticLoadBalancingV2::Listener",
+						Properties: map[string]interface{}{
+							"Certificates": []interface{}{
+								map[string]interface{}{
+									"CertificateArn": cert,
+								},
+							},
+							"LoadBalancerArn": Ref(loadBalancer),
+							"Port":            port.Host,
+							"Protocol":        "HTTPS",
+							"DefaultActions": []interface{}{
+								map[string]interface{}{
+									"TargetGroupArn": Ref(targetGroup),
+									"Type":           "forward",
+								},
 							},
 						},
-					},
+					}
+				default:
+					err = fmt.Errorf("%s listeners are not supported with AWS Application Load Balancing", e.Protocol())
+					return
 				}
-				serviceDependencies = append(serviceDependencies, httpsListener)
+				tmpl.AddResource(listener)
+				serviceDependencies = append(serviceDependencies, listener.Name)
 			}
 
 			loadBalancers = append(loadBalancers, map[string]interface{}{
 				"ContainerName":  p.Type,
-				"ContainerPort":  ContainerPort,
+				"ContainerPort":  p.Exposure.Ports[0].Container,
 				"TargetGroupArn": Ref(targetGroup),
 			})
-			portMappings = append(portMappings, &PortMappingProperties{
-				ContainerPort: ContainerPort,
-				HostPort:      0,
-			})
 		default:
-			loadBalancer = fmt.Sprintf("%sLoadBalancer", key)
-
-			instancePort := fmt.Sprintf("%s%dInstancePort", key, ContainerPort)
-			tmpl.Resources[instancePort] = troposphere.Resource{
-				Type:    "Custom::InstancePort",
-				Version: "1.0",
-				Properties: map[string]interface{}{
-					"ServiceToken": t.CustomResourcesTopic,
-				},
+			loadBalancer = troposphere.NamedResource{
+				Name: fmt.Sprintf("%sLoadBalancer", key),
 			}
 
-			listeners := []map[string]interface{}{
-				map[string]interface{}{
-					"LoadBalancerPort": 80,
-					"Protocol":         "http",
-					"InstancePort":     GetAtt(instancePort, "InstancePort"),
-					"InstanceProtocol": "http",
-				},
-			}
+			listeners := []map[string]interface{}{}
 
-			if e, ok := p.Exposure.Type.(*scheduler.HTTPSExposure); ok {
-				var cert interface{}
-				if _, err := arn.Parse(e.Cert); err == nil {
-					cert = e.Cert
-				} else {
-					cert = Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/", e.Cert)
+			// Add a port mapping for each unique container port.
+			instancePorts := make(map[int]troposphere.NamedResource)
+			for _, port := range p.Exposure.Ports {
+				if _, ok := instancePorts[port.Container]; !ok {
+					instancePort := troposphere.NamedResource{
+						Name: fmt.Sprintf("%s%dInstancePort", key, port.Container),
+						Resource: troposphere.Resource{
+							Type:    "Custom::InstancePort",
+							Version: "1.0",
+							Properties: map[string]interface{}{
+								"ServiceToken": t.CustomResourcesTopic,
+							},
+						},
+					}
+					portMappings = append(portMappings, &PortMappingProperties{
+						ContainerPort: port.Container,
+						HostPort:      GetAtt(instancePort, "InstancePort"),
+					})
+					tmpl.AddResource(instancePort)
+					instancePorts[port.Container] = instancePort
 				}
-
-				listeners = append(listeners, map[string]interface{}{
-					"LoadBalancerPort": 443,
-					"Protocol":         "https",
-					"InstancePort":     GetAtt(instancePort, "InstancePort"),
-					"SSLCertificateId": cert,
-					"InstanceProtocol": "http",
-				})
 			}
 
-			tmpl.Resources[loadBalancer] = troposphere.Resource{
+			for _, port := range p.Exposure.Ports {
+				instancePort := instancePorts[port.Container]
+
+				switch e := port.Protocol.(type) {
+				case *scheduler.TCP:
+					listeners = append(listeners, map[string]interface{}{
+						"LoadBalancerPort": port.Host,
+						"Protocol":         "tcp",
+						"InstancePort":     GetAtt(instancePort, "InstancePort"),
+						"InstanceProtocol": "tcp",
+					})
+				case *scheduler.SSL:
+					var cert interface{}
+					if _, err := arn.Parse(e.Cert); err == nil {
+						cert = e.Cert
+					} else {
+						cert = Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/", e.Cert)
+					}
+
+					listeners = append(listeners, map[string]interface{}{
+						"LoadBalancerPort": port.Host,
+						"Protocol":         "ssl",
+						"InstancePort":     GetAtt(instancePort, "InstancePort"),
+						"SSLCertificateId": cert,
+						"InstanceProtocol": "tcp",
+					})
+				case *scheduler.HTTP:
+					listeners = append(listeners, map[string]interface{}{
+						"LoadBalancerPort": port.Host,
+						"Protocol":         "http",
+						"InstancePort":     GetAtt(instancePort, "InstancePort"),
+						"InstanceProtocol": "http",
+					})
+				case *scheduler.HTTPS:
+					var cert interface{}
+					if _, err := arn.Parse(e.Cert); err == nil {
+						cert = e.Cert
+					} else {
+						cert = Join("", "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/", e.Cert)
+					}
+
+					listeners = append(listeners, map[string]interface{}{
+						"LoadBalancerPort": port.Host,
+						"Protocol":         "https",
+						"InstancePort":     GetAtt(instancePort, "InstancePort"),
+						"SSLCertificateId": cert,
+						"InstanceProtocol": "http",
+					})
+				}
+			}
+
+			loadBalancer.Resource = troposphere.Resource{
 				Type: "AWS::ElasticLoadBalancing::LoadBalancer",
 				Properties: map[string]interface{}{
 					"Scheme":         scheme,
@@ -549,15 +624,12 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					},
 				},
 			}
+			tmpl.AddResource(loadBalancer)
 
 			loadBalancers = append(loadBalancers, map[string]interface{}{
 				"ContainerName":    p.Type,
-				"ContainerPort":    ContainerPort,
+				"ContainerPort":    p.Exposure.Ports[0].Container,
 				"LoadBalancerName": Ref(loadBalancer),
-			})
-			portMappings = append(portMappings, &PortMappingProperties{
-				ContainerPort: ContainerPort,
-				HostPort:      GetAtt(instancePort, "InstancePort"),
 			})
 		}
 
@@ -603,7 +675,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 		service.Resource.DependsOn = serviceDependencies
 	}
 	tmpl.AddResource(service)
-	return service.Name
+	return service.Name, nil
 }
 
 // If the ServiceRole option is not an ARN, it will return a CloudFormation
@@ -768,6 +840,18 @@ func runTaskResource(role interface{}) troposphere.Resource {
 			},
 		},
 	}
+}
+
+// fmtPorts implements the fmt.Stringer interface to show a map of container
+// port to host port.
+type fmtPorts []scheduler.Port
+
+func (p fmtPorts) String() string {
+	var mappings []string
+	for _, port := range p {
+		mappings = append(mappings, fmt.Sprintf("%d => %d", port.Host, port.Container))
+	}
+	return strings.Join(mappings, ", ")
 }
 
 // A simple lambda function that can be used to trigger an ecs.RunTask.

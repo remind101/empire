@@ -83,28 +83,55 @@ type Exposure struct {
 	// will be "internet-facing".
 	External bool
 
-	// The exposure type (e.g. HTTPExposure, HTTPSExposure, TCPExposure).
-	Type ExposureType
+	// The ports to expose and map to the container.
+	Ports []Port
 }
 
-// Exposure represents a service that a process exposes, like HTTP/HTTPS/TCP or
+// Port maps a host port to a container port.
+type Port struct {
+	// The port that external applications will connect to. It's
+	// implementation specific as to what this is used for. For example,
+	// with ECS, this is used as the LoadBalancerPort.
+	Host int
+
+	// The port within the container that the process should bind to.
+	Container int
+
+	// The exposure type (e.g. HTTPExposure, HTTPSExposure, TCPExposure).
+	Protocol Protocol
+}
+
+// Protocol represents a service that a process exposes, like HTTP/HTTPS/TCP or
 // SSL.
-type ExposureType interface {
+type Protocol interface {
 	Protocol() string
 }
 
-// HTTPExposure represents an HTTP exposure.
-type HTTPExposure struct{}
+// HTTP represents an HTTP exposure.
+type HTTP struct{}
 
-func (e *HTTPExposure) Protocol() string { return "http" }
+func (e *HTTP) Protocol() string { return "http" }
 
-// HTTPSExposure represents an HTTPS exposure
-type HTTPSExposure struct {
+// TCP represents a tcp exposure.
+type TCP struct{}
+
+func (e *TCP) Protocol() string { return "tcp" }
+
+// HTTPS represents an HTTPS exposure
+type HTTPS struct {
 	// The certificate to attach to the process.
 	Cert string
 }
 
-func (e *HTTPSExposure) Protocol() string { return "https" }
+func (e *HTTPS) Protocol() string { return "https" }
+
+// SSL represents a secure TCP exposure
+type SSL struct {
+	// The certificate to attach to the process.
+	Cert string
+}
+
+func (e *SSL) Protocol() string { return "ssl" }
 
 // Host represents the host of an instance
 type Host struct {
