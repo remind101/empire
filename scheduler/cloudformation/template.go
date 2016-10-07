@@ -177,7 +177,7 @@ func (t *EmpireTemplate) Validate() error {
 
 // Execute builds the template, and writes it to w.
 func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
-	v, err := t.Build(data.(*scheduler.App))
+	v, err := t.Build(data.(*TemplateData))
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,9 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 }
 
 // Build builds a Go representation of a CloudFormation template for the app.
-func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error) {
+func (t *EmpireTemplate) Build(data *TemplateData) (*troposphere.Template, error) {
+	app := data.App
+
 	tmpl := troposphere.NewTemplate()
 
 	tmpl.Parameters["DNS"] = troposphere.Parameter{
@@ -249,7 +251,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 				scheduledProcesses[p.Type] = taskDefinition.Name
 			}
 		default:
-			service, err := t.addService(tmpl, app, p)
+			service, err := t.addService(tmpl, app, p, data.StackTags)
 			if err != nil {
 				return tmpl, err
 			}
@@ -371,7 +373,7 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 	return taskDefinition
 }
 
-func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string, err error) {
+func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process, stackTags []*cloudformation.Tag) (serviceName string, err error) {
 	key := processResourceName(p.Type)
 
 	// Process specific tags to apply to resources.
@@ -416,7 +418,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 						"Scheme":         scheme,
 						"SecurityGroups": []string{sg},
 						"Subnets":        subnets,
-						"Tags":           tags,
+						"Tags":           append(stackTags, tags...),
 					},
 				},
 			}
@@ -430,7 +432,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					"Port":     65535, // Not used. ECS sets a port override when registering targets.
 					"Protocol": "HTTP",
 					"VpcId":    t.VpcId,
-					"Tags":     tags,
+					"Tags":     append(stackTags, tags...),
 				},
 			}
 
@@ -849,12 +851,22 @@ func (p fmtPorts) String() string {
 	return strings.Join(mappings, ", ")
 }
 
-// tagsFromLabels generates a list of CloudFormation tags from the labels.
+// cloudformationTags implements the sort.Interface interface to sort the labels
+// variables by key in alphabetical order.
+type cloudformationTags []*cloudformation.Tag
+
+func (e cloudformationTags) Len() int           { return len(e) }
+func (e cloudformationTags) Less(i, j int) bool { return *e[i].Key < *e[j].Key }
+func (e cloudformationTags) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
+// tagsFromLabels generates a list of CloudFormation tags from the labels, it
+// also sorts the tags by key.
 func tagsFromLabels(labels map[string]string) []*cloudformation.Tag {
-	tags := []*cloudformation.Tag{}
+	tags := cloudformationTags{}
 	for k, v := range labels {
 		tags = append(tags, &cloudformation.Tag{Key: aws.String(k), Value: aws.String(v)})
 	}
+	sort.Sort(tags)
 	return tags
 }
 

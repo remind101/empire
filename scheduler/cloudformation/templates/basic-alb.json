@@ -134,6 +134,10 @@
         ],
         "Tags": [
           {
+            "Key": "environment",
+            "Value": "test"
+          },
+          {
             "Key": "empire.app.process",
             "Value": "web"
           }
@@ -191,6 +195,10 @@
         "Port": 65535,
         "Protocol": "HTTP",
         "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
           {
             "Key": "empire.app.process",
             "Value": "web"
