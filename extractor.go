@@ -241,12 +241,43 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 			return nil, errors.New("unknown command format")
 		}
 
+		var ports []Port
+
+		for _, port := range process.Ports {
+			protocol := port.Protocol
+			if protocol == "" {
+				protocol = protocolFromPort(port.Host)
+			}
+
+			ports = append(ports, Port{
+				Host:      port.Host,
+				Container: port.Container,
+				Protocol:  protocol,
+			})
+		}
+
 		f[name] = Process{
-			Command:   cmd,
-			Cron:      process.Cron,
-			NoService: process.NoService,
+			Command:     cmd,
+			Cron:        process.Cron,
+			NoService:   process.NoService,
+			Ports:       ports,
+			Environment: process.Environment,
 		}
 	}
 
 	return f, nil
+}
+
+// protocolFromPort attempts to automatically determine what protocol a port
+// should use. For example, port 80 is well known to be http, so we can assume
+// that http should be used. Defaults to "tcp" if unknown.
+func protocolFromPort(port int) string {
+	switch port {
+	case 80, 8080:
+		return "http"
+	case 443:
+		return "https"
+	default:
+		return "tcp"
+	}
 }

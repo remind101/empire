@@ -21,9 +21,14 @@ type Slug struct {
 	Procfile []byte
 }
 
+// ParsedProcfile returns the parsed Procfile.
+func (s *Slug) ParsedProcfile() (procfile.Procfile, error) {
+	return procfile.ParseProcfile(s.Procfile)
+}
+
 // Formation returns a new Formation built from the extracted Procfile.
 func (s *Slug) Formation() (Formation, error) {
-	p, err := procfile.ParseProcfile(s.Procfile)
+	p, err := s.ParsedProcfile()
 	if err != nil {
 		return nil, err
 	}

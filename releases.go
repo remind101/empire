@@ -6,6 +6,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
+	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -49,6 +50,11 @@ type Release struct {
 
 	// The time that this release was created.
 	CreatedAt *time.Time
+}
+
+// Procfile returns the Procfile that generated this Release.
+func (r *Release) Procfile() (procfile.Procfile, error) {
+	return r.Slug.ParsedProcfile()
 }
 
 // BeforeCreate sets created_at before inserting.
@@ -305,14 +311,28 @@ func newSchedulerApp(release *Release) *scheduler.App {
 }
 
 func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Process {
-	env := map[string]string{
-		"EMPIRE_PROCESS":       name,
-		"EMPIRE_PROCESS_SCALE": fmt.Sprintf("%d", p.Quantity),
-		"SOURCE":               fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version),
+	env := make(map[string]string)
+	for k, v := range p.Environment {
+		env[k] = v
 	}
+
+	env["EMPIRE_PROCESS"] = name
+	env["EMPIRE_PROCESS_SCALE"] = fmt.Sprintf("%d", p.Quantity)
+	env["SOURCE"] = fmt.Sprintf("%s.%s.v%d", release.App.Name, name, release.Version)
 
 	labels := map[string]string{
 		"empire.app.process": name,
+	}
+
+	var exposure *scheduler.Exposure
+	// For `web` processes defined in the standard procfile, we'll
+	// generate a default exposure setting and also set the PORT
+	// environment variable for backwards compatability.
+	if name == webProcessType && len(p.Ports) == 0 {
+		exposure = standardWebExposure(release.App)
+		env["PORT"] = "8080"
+	} else {
+		exposure = processExposure(release.App, p)
 	}
 
 	return &scheduler.Process{
@@ -325,7 +345,7 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 		MemoryLimit: uint(p.Memory),
 		CPUShares:   uint(p.CPUShare),
 		Nproc:       uint(p.Nproc),
-		Exposure:    processExposure(release.App, name),
+		Exposure:    exposure,
 		Schedule:    processSchedule(name, p),
 	}
 }
@@ -341,26 +361,66 @@ func environment(vars Vars) map[string]string {
 	return env
 }
 
-func processExposure(app *App, process string) *scheduler.Exposure {
-	// For now, only the `web` process can be exposed.
-	if process != webProcessType {
+// standardWebExposure generates a scheduler.Exposure for a web process in the
+// standard Procfile format.
+func standardWebExposure(app *App) *scheduler.Exposure {
+	ports := []scheduler.Port{
+		{
+			Container: 8080,
+			Host:      80,
+			Protocol:  &scheduler.HTTP{},
+		},
+	}
+
+	if cert := app.Cert; cert != "" {
+		ports = append(ports, scheduler.Port{
+			Container: 8080,
+			Host:      443,
+			Protocol: &scheduler.HTTPS{
+				Cert: cert,
+			},
+		})
+	}
+
+	return &scheduler.Exposure{
+		External: app.Exposure == exposePublic,
+		Ports:    ports,
+	}
+}
+
+func processExposure(app *App, process Process) *scheduler.Exposure {
+	// No ports == not exposed
+	if len(process.Ports) == 0 {
 		return nil
 	}
 
-	exposure := &scheduler.Exposure{
-		External: app.Exposure == exposePublic,
-	}
-
-	switch app.Cert {
-	case "":
-		exposure.Type = &scheduler.HTTPExposure{}
-	default:
-		exposure.Type = &scheduler.HTTPSExposure{
-			Cert: app.Cert,
+	var ports []scheduler.Port
+	for _, p := range process.Ports {
+		var protocol scheduler.Protocol
+		switch p.Protocol {
+		case "http":
+			protocol = &scheduler.HTTP{}
+		case "https":
+			protocol = &scheduler.HTTPS{
+				Cert: app.Cert,
+			}
+		case "tcp":
+			protocol = &scheduler.TCP{}
+		case "ssl":
+			protocol = &scheduler.SSL{
+				Cert: app.Cert,
+			}
 		}
+		ports = append(ports, scheduler.Port{
+			Host:      p.Host,
+			Container: p.Container,
+			Protocol:  protocol,
+		})
 	}
-
-	return exposure
+	return &scheduler.Exposure{
+		External: app.Exposure == exposePublic,
+		Ports:    ports,
+	}
 }
 
 func processSchedule(name string, p Process) scheduler.Schedule {

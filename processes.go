@@ -90,6 +90,18 @@ type Process struct {
 	// A cron expression. If provided, the process will be run as a
 	// scheduled task.
 	Cron *string `json:"cron,omitempty"`
+
+	// Port mappings from container to load balancer.
+	Ports []Port `json:"Ports,omitempty"`
+
+	// An process specific environment variables.
+	Environment map[string]string `json:"Environment,omitempty"`
+}
+
+type Port struct {
+	Host      int    `json:"Host"`
+	Container int    `json:"Container"`
+	Protocol  string `json:"Protocol"`
 }
 
 // IsValid returns nil if the Process is valid.
