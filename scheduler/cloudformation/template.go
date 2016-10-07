@@ -35,14 +35,15 @@ const (
 )
 
 // Returns the type of load balancer that should be used (ELB/ALB).
-func loadBalancerType(app *scheduler.App) string {
+func loadBalancerType(app *scheduler.App, process *scheduler.Process) string {
 	check := []string{
 		"EMPIRE_X_LOAD_BALANCER_TYPE",
 		"LOAD_BALANCER_TYPE", // For backwards compatibility.
 	}
+	env := scheduler.Env(app, process)
 
 	for _, n := range check {
-		if v, ok := app.Env[n]; ok {
+		if v, ok := env[n]; ok {
 			return v
 		}
 	}
@@ -398,7 +399,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			subnets = t.ExternalSubnetIDs
 		}
 
-		loadBalancerType := loadBalancerType(app)
+		loadBalancerType := loadBalancerType(app, p)
 
 		var loadBalancer troposphere.NamedResource
 		switch loadBalancerType {

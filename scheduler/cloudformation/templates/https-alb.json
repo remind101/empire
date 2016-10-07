@@ -248,7 +248,7 @@
             },
             "Environment": [
               {
-                "Name": "LOAD_BALANCER_TYPE",
+                "Name": "EMPIRE_X_LOAD_BALANCER_TYPE",
                 "Value": "alb"
               },
               {

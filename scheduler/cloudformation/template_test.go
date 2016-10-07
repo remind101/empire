@@ -193,15 +193,13 @@ func TestEmpireTemplate(t *testing.T) {
 				ID:      "1234",
 				Release: "v1",
 				Name:    "acme-inc",
-				Env: map[string]string{
-					"LOAD_BALANCER_TYPE": "alb",
-				},
 				Processes: []*scheduler.Process{
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
 						Env: map[string]string{
-							"PORT": "8080",
+							"PORT":               "8080",
+							"LOAD_BALANCER_TYPE": "alb",
 						},
 						Exposure: &scheduler.Exposure{
 							Ports: []scheduler.Port{
@@ -225,6 +223,7 @@ func TestEmpireTemplate(t *testing.T) {
 						Command: []string{"./bin/api"},
 						Env: map[string]string{
 							"PORT": "8080",
+							"EMPIRE_X_LOAD_BALANCER_TYPE": "alb",
 						},
 						Exposure: &scheduler.Exposure{
 							Ports: []scheduler.Port{
