@@ -1,6 +1,7 @@
 package procfile
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -98,13 +99,39 @@ web:
 			},
 		},
 	},
+
+	// Environment variables.
+	{
+		strings.NewReader(`---
+web:
+  command:
+    - nginx
+    - -g
+    - daemon off;
+  environment:
+    ENABLE_FOO: "true"`),
+		ExtendedProcfile{
+			"web": Process{
+				Command: []interface{}{
+					"nginx",
+					"-g",
+					"daemon off;",
+				},
+				Environment: map[string]string{
+					"ENABLE_FOO": "true",
+				},
+			},
+		},
+	},
 }
 
 func TestParse(t *testing.T) {
-	for _, tt := range parseTests {
-		t.Log(tt.in)
-		p, err := Parse(tt.in)
-		assert.NoError(t, err)
-		assert.Equal(t, tt.out, p)
+	for i, tt := range parseTests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Log(tt.in)
+			p, err := Parse(tt.in)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, p)
+		})
 	}
 }

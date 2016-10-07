@@ -25,10 +25,11 @@ func (e ExtendedProcfile) version() string {
 }
 
 type Process struct {
-	Command   interface{} `yaml:"command"`
-	Cron      *string     `yaml:"cron,omitempty"`
-	NoService bool        `yaml:"noservice,omitempty"`
-	Ports     []Port      `yaml:"ports,omitempty"`
+	Command     interface{}       `yaml:"command"`
+	Cron        *string           `yaml:"cron,omitempty"`
+	NoService   bool              `yaml:"noservice,omitempty"`
+	Ports       []Port            `yaml:"ports,omitempty"`
+	Environment map[string]string `yaml:"environment,omitempty"`
 }
 
 // Port represents a port mapping.

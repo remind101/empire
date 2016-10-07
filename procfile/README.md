@@ -69,3 +69,12 @@ ports:
   - "5678":
       protocol: "tcp"
 ```
+
+**Environment**
+
+This allows you to set process specific environment variables. If these are set with `emp set`, the value within the Procfile will take precendence.
+
+```yaml
+environment:
+  EMPIRE_X_LOAD_BALANCER_TYPE: "alb"
+```

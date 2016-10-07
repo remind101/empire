@@ -93,6 +93,9 @@ type Process struct {
 
 	// Port mappings from container to load balancer.
 	Ports []Port `json:"Ports,omitempty"`
+
+	// An process specific environment variables.
+	Environment map[string]string `json:"Environment,omitempty"`
 }
 
 type Port struct {
