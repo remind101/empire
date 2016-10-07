@@ -401,7 +401,11 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 
 		loadBalancerType := loadBalancerType(app, p)
 
-		var loadBalancer troposphere.NamedResource
+		var (
+			loadBalancer          troposphere.NamedResource
+			canonicalHostedZoneId interface{}
+		)
+
 		switch loadBalancerType {
 		case applicationLoadBalancer:
 			loadBalancer = troposphere.NamedResource{
@@ -421,6 +425,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					},
 				},
 			}
+			canonicalHostedZoneId = GetAtt(loadBalancer, "CanonicalHostedZoneID")
 
 			tmpl.AddResource(loadBalancer)
 
@@ -527,6 +532,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			loadBalancer = troposphere.NamedResource{
 				Name: fmt.Sprintf("%sLoadBalancer", key),
 			}
+			canonicalHostedZoneId = GetAtt(loadBalancer, "CanonicalHostedZoneNameID")
 
 			listeners := []map[string]interface{}{}
 
@@ -633,6 +639,27 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			})
 		}
 
+		alias := troposphere.NamedResource{
+			Name: fmt.Sprintf("%sAlias", key),
+			Resource: troposphere.Resource{
+				Type:      "AWS::Route53::RecordSet",
+				Condition: "DNSCondition",
+				Properties: map[string]interface{}{
+					"HostedZoneId": *t.HostedZone.Id,
+					"Name":         fmt.Sprintf("%s.%s.%s", p.Type, app.Name, *t.HostedZone.Name),
+					"Type":         "A",
+					"AliasTarget": map[string]interface{}{
+						"DNSName":              GetAtt(loadBalancer, "DNSName"),
+						"EvaluateTargetHealth": "true",
+						"HostedZoneId":         canonicalHostedZoneId,
+					},
+				},
+			},
+		}
+		tmpl.AddResource(alias)
+
+		// DEPRECATED: This was used in the world where only the "web"
+		// process could be exposed.
 		if p.Type == "web" {
 			tmpl.Resources["CNAME"] = troposphere.Resource{
 				Type:      "AWS::Route53::RecordSet",
