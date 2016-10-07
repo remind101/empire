@@ -246,15 +246,9 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 		for _, port := range process.Ports {
 			protocol := port.Protocol
 			if protocol == "" {
-				switch port.Host {
-				case 80, 8080:
-					protocol = "http"
-				case 443:
-					protocol = "https"
-				default:
-					protocol = "tcp"
-				}
+				protocol = protocolFromPort(port.Host)
 			}
+
 			ports = append(ports, Port{
 				Host:      port.Host,
 				Container: port.Container,
@@ -271,4 +265,18 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 	}
 
 	return f, nil
+}
+
+// protocolFromPort attempts to automatically determine what protocol a port
+// should use. For example, port 80 is well known to be http, so we can assume
+// that http should be used. Defaults to "tcp" if unknown.
+func protocolFromPort(port int) string {
+	switch port {
+	case 80, 8080:
+		return "http"
+	case 443:
+		return "https"
+	default:
+		return "tcp"
+	}
 }
