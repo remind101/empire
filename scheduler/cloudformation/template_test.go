@@ -197,6 +197,9 @@ func TestEmpireTemplate(t *testing.T) {
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
 						Env: map[string]string{
 							"PORT":               "8080",
 							"LOAD_BALANCER_TYPE": "alb",
@@ -221,6 +224,9 @@ func TestEmpireTemplate(t *testing.T) {
 					{
 						Type:    "api",
 						Command: []string{"./bin/api"},
+						Labels: map[string]string{
+							"empire.app.process": "api",
+						},
 						Env: map[string]string{
 							"PORT": "8080",
 							"EMPIRE_X_LOAD_BALANCER_TYPE": "alb",

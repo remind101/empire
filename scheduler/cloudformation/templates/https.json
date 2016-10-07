@@ -181,12 +181,7 @@
           "subnet-bb01c4cd",
           "subnet-c85f4091"
         ],
-        "Tags": [
-          {
-            "Key": "empire.app.process",
-            "Value": "api"
-          }
-        ]
+        "Tags": []
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
@@ -302,12 +297,7 @@
           "subnet-bb01c4cd",
           "subnet-c85f4091"
         ],
-        "Tags": [
-          {
-            "Key": "empire.app.process",
-            "Value": "web"
-          }
-        ]
+        "Tags": []
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },

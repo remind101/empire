@@ -256,10 +256,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 
 	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
 
-	tags := append(s.Tags,
-		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
-		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
-	)
+	stackTags := append(s.Tags, tagsFromLabels(app.Labels)...)
 
 	var parameters []*cloudformation.Parameter
 	if opts.NoDNS != nil {
@@ -284,7 +281,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		if err := s.createStack(ctx, &createStackInput{
 			StackName:  aws.String(stackName),
 			Template:   t,
-			Tags:       tags,
+			Tags:       stackTags,
 			Parameters: parameters,
 		}, output, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
@@ -294,8 +291,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			StackName:  aws.String(stackName),
 			Template:   t,
 			Parameters: parameters,
-			// TODO: Update Go client
-			// Tags:         tags,
+			Tags:       stackTags,
 		}, output, ss); err != nil {
 			return err
 		}
@@ -478,6 +474,7 @@ type updateStackInput struct {
 	StackName  *string
 	Parameters []*cloudformation.Parameter
 	Template   *cloudformationTemplate
+	Tags       []*cloudformation.Tag
 }
 
 // updateStack updates an existing CloudFormation stack with the given input.
@@ -605,6 +602,7 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 	i := &cloudformation.UpdateStackInput{
 		StackName:  input.StackName,
 		Parameters: updateParameters(input.Parameters, stack, input.Template),
+		Tags:       input.Tags,
 	}
 	if input.Template != nil {
 		i.TemplateURL = input.Template.URL

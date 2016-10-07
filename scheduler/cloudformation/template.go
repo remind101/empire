@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/remind101/empire/pkg/arn"
@@ -373,6 +374,9 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string, err error) {
 	key := processResourceName(p.Type)
 
+	// Process specific tags to apply to resources.
+	tags := tagsFromLabels(p.Labels)
+
 	// The standard AWS::ECS::Service resource's default behavior is to wait
 	// for services to stabilize when you update them. While this is a
 	// sensible default for CloudFormation, the overall behavior when
@@ -412,12 +416,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 						"Scheme":         scheme,
 						"SecurityGroups": []string{sg},
 						"Subnets":        subnets,
-						"Tags": []map[string]string{
-							map[string]string{
-								"Key":   "empire.app.process",
-								"Value": p.Type,
-							},
-						},
+						"Tags":           tags,
 					},
 				},
 			}
@@ -431,6 +430,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					"Port":     65535, // Not used. ECS sets a port override when registering targets.
 					"Protocol": "HTTP",
 					"VpcId":    t.VpcId,
+					"Tags":     tags,
 				},
 			}
 
@@ -612,12 +612,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					"Subnets":        subnets,
 					"Listeners":      listeners,
 					"CrossZone":      true,
-					"Tags": []map[string]string{
-						map[string]string{
-							"Key":   "empire.app.process",
-							"Value": p.Type,
-						},
-					},
+					"Tags":           tags,
 					"ConnectionDrainingPolicy": map[string]interface{}{
 						"Enabled": true,
 						"Timeout": defaultConnectionDrainingTimeout,
@@ -852,6 +847,15 @@ func (p fmtPorts) String() string {
 		mappings = append(mappings, fmt.Sprintf("%d => %d", port.Host, port.Container))
 	}
 	return strings.Join(mappings, ", ")
+}
+
+// tagsFromLabels generates a list of CloudFormation tags from the labels.
+func tagsFromLabels(labels map[string]string) []*cloudformation.Tag {
+	tags := []*cloudformation.Tag{}
+	for k, v := range labels {
+		tags = append(tags, &cloudformation.Tag{Key: aws.String(k), Value: aws.String(v)})
+	}
+	return tags
 }
 
 // A simple lambda function that can be used to trigger an ecs.RunTask.

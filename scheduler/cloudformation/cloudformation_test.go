@@ -114,6 +114,10 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	err := s.Submit(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
+		Labels: map[string]string{
+			"empire.app.id":   "c9366591-ab68-4d49-a333-95ce5a23df68",
+			"empire.app.name": "acme-inc",
+		},
 		Processes: []*scheduler.Process{
 			{
 				Type:      "web",

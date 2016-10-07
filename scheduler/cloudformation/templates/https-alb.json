@@ -226,6 +226,12 @@
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "api"
+          }
+        ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
@@ -241,7 +247,8 @@
             "DockerLabels": {
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
-              }
+              },
+              "empire.app.process": "api"
             },
             "Environment": [
               {
@@ -362,6 +369,12 @@
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
@@ -377,7 +390,8 @@
             "DockerLabels": {
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
-              }
+              },
+              "empire.app.process": "web"
             },
             "Environment": [
               {
