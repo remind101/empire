@@ -13,6 +13,7 @@
 * The `empire` and `emp` binaries are now built with Go 1.7 [#971](https://github.com/remind101/empire/pull/971)
 * `emp env-load` now handles multi-line environment variables. [#990](https://github.com/remind101/empire/pull/990)
 * In preparation for the 0.12 release, the legacy ECS scheduler has been removed. [#1001](https://github.com/remind101/empire/pull/1001)
+* All application labels are set on the CloudFormation stack, rather than just `empire.app.id` and `empire.app.name`. In addition, ALB's will get stack tags applied to them. [#1004](https://github.com/remind101/empire/pull/1004)
 
 ## 0.11.0 (2016-08-22)
 

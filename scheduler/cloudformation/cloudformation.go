@@ -117,6 +117,12 @@ type s3Client interface {
 	PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error)
 }
 
+// Data handed to template generators.
+type TemplateData struct {
+	*scheduler.App
+	StackTags []*cloudformation.Tag
+}
+
 // Template represents something that can generate a stack body. Conveniently
 // the same interface as text/template.Template.
 type Template interface {
@@ -245,7 +251,9 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		return err
 	}
 
-	t, err := s.createTemplate(ctx, app)
+	stackTags := append(s.Tags, tagsFromLabels(app.Labels)...)
+
+	t, err := s.createTemplate(ctx, app, stackTags)
 	if err != nil {
 		return err
 	}
@@ -255,11 +263,6 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	})
 
 	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
-
-	tags := append(s.Tags,
-		&cloudformation.Tag{Key: aws.String("empire.app.id"), Value: aws.String(app.ID)},
-		&cloudformation.Tag{Key: aws.String("empire.app.name"), Value: aws.String(app.Name)},
-	)
 
 	var parameters []*cloudformation.Parameter
 	if opts.NoDNS != nil {
@@ -284,7 +287,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		if err := s.createStack(ctx, &createStackInput{
 			StackName:  aws.String(stackName),
 			Template:   t,
-			Tags:       tags,
+			Tags:       stackTags,
 			Parameters: parameters,
 		}, output, ss); err != nil {
 			return fmt.Errorf("error creating stack: %v", err)
@@ -294,8 +297,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			StackName:  aws.String(stackName),
 			Template:   t,
 			Parameters: parameters,
-			// TODO: Update Go client
-			// Tags:         tags,
+			Tags:       stackTags,
 		}, output, ss); err != nil {
 			return err
 		}
@@ -398,9 +400,14 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
 // template.
-func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App) (*cloudformationTemplate, error) {
+func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App, stackTags []*cloudformation.Tag) (*cloudformationTemplate, error) {
+	data := &TemplateData{
+		App:       app,
+		StackTags: stackTags,
+	}
+
 	buf := new(bytes.Buffer)
-	if err := s.Template.Execute(buf, app); err != nil {
+	if err := s.Template.Execute(buf, data); err != nil {
 		return nil, err
 	}
 
@@ -478,6 +485,7 @@ type updateStackInput struct {
 	StackName  *string
 	Parameters []*cloudformation.Parameter
 	Template   *cloudformationTemplate
+	Tags       []*cloudformation.Tag
 }
 
 // updateStack updates an existing CloudFormation stack with the given input.
@@ -605,6 +613,7 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 	i := &cloudformation.UpdateStackInput{
 		StackName:  input.StackName,
 		Parameters: updateParameters(input.Parameters, stack, input.Template),
+		Tags:       input.Tags,
 	}
 	if input.Template != nil {
 		i.TemplateURL = input.Template.URL

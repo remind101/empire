@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/image"
@@ -197,6 +198,9 @@ func TestEmpireTemplate(t *testing.T) {
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
 						Env: map[string]string{
 							"PORT":               "8080",
 							"LOAD_BALANCER_TYPE": "alb",
@@ -221,6 +225,9 @@ func TestEmpireTemplate(t *testing.T) {
 					{
 						Type:    "api",
 						Command: []string{"./bin/api"},
+						Labels: map[string]string{
+							"empire.app.process": "api",
+						},
 						Env: map[string]string{
 							"PORT": "8080",
 							"EMPIRE_X_LOAD_BALANCER_TYPE": "alb",
@@ -338,6 +345,10 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 	}
 
+	stackTags := []*cloudformation.Tag{
+		{Key: aws.String("environment"), Value: aws.String("test")},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
 			tmpl := newTemplate()
@@ -345,7 +356,8 @@ func TestEmpireTemplate(t *testing.T) {
 			buf := new(bytes.Buffer)
 
 			filename := fmt.Sprintf("templates/%s", tt.file)
-			err := tmpl.Execute(buf, tt.app)
+			data := &TemplateData{tt.app, stackTags}
+			err := tmpl.Execute(buf, data)
 			if assert.NoError(t, err) {
 				expected, err := ioutil.ReadFile(filename)
 				assert.NoError(t, err)
@@ -454,7 +466,8 @@ func TestEmpireTemplate_Errors(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			tmpl := newTemplate()
 			buf := new(bytes.Buffer)
-			err := tmpl.Execute(buf, tt.app)
+			data := &TemplateData{tt.app, nil}
+			err := tmpl.Execute(buf, data)
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -484,7 +497,8 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	tmpl := newTemplate()
 	buf := new(bytes.Buffer)
 
-	err := tmpl.Execute(buf, app)
+	data := &TemplateData{app, nil}
+	err := tmpl.Execute(buf, data)
 	t.Logf("Template size: %d bytes", buf.Len())
 	assert.NoError(t, err)
 	assert.Condition(t, func() bool {

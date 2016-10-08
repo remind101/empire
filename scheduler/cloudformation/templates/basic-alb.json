@@ -158,6 +158,10 @@
         ],
         "Tags": [
           {
+            "Key": "environment",
+            "Value": "test"
+          },
+          {
             "Key": "empire.app.process",
             "Value": "web"
           }
@@ -214,6 +218,16 @@
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
