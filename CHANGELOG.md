@@ -5,6 +5,7 @@
 **Features**
 
 * The extended Procfile format now allows you to attach a load balancer to any process in the Procfile. [#800](https://github.com/remind101/empire/pull/800)
+* An ALIAS record is now created for `<process>.<app>.<zone>` [#1005](https://github.com/remind101/empire/pull/1005)
 
 **Improvements**
 
