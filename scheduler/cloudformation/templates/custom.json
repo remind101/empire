@@ -256,6 +256,30 @@
       "Type": "Custom::InstancePort",
       "Version": "1.0"
     },
+    "webAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "CanonicalHostedZoneNameID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "web.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
     "webEnvironment": {
       "Properties": {
         "Environment": [

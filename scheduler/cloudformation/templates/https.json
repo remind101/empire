@@ -129,6 +129,30 @@
       "Type": "Custom::InstancePort",
       "Version": "1.0"
     },
+    "apiAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "apiLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "apiLoadBalancer",
+              "CanonicalHostedZoneNameID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "api.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
     "apiLoadBalancer": {
       "Properties": {
         "ConnectionDrainingPolicy": {
@@ -181,12 +205,7 @@
           "subnet-bb01c4cd",
           "subnet-c85f4091"
         ],
-        "Tags": [
-          {
-            "Key": "empire.app.process",
-            "Value": "api"
-          }
-        ]
+        "Tags": []
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },
@@ -262,6 +281,30 @@
       "Type": "Custom::InstancePort",
       "Version": "1.0"
     },
+    "webAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "CanonicalHostedZoneNameID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "web.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
     "webLoadBalancer": {
       "Properties": {
         "ConnectionDrainingPolicy": {
@@ -302,12 +345,7 @@
           "subnet-bb01c4cd",
           "subnet-c85f4091"
         ],
-        "Tags": [
-          {
-            "Key": "empire.app.process",
-            "Value": "web"
-          }
-        ]
+        "Tags": []
       },
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
     },

@@ -122,6 +122,30 @@
       },
       "Type": "AWS::Route53::RecordSet"
     },
+    "webAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "webApplicationLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "webApplicationLoadBalancer",
+              "CanonicalHostedZoneID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "web.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
     "webApplicationLoadBalancer": {
       "Properties": {
         "Scheme": "internal",
@@ -133,6 +157,10 @@
           "subnet-c85f4091"
         ],
         "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
           {
             "Key": "empire.app.process",
             "Value": "web"
@@ -190,6 +218,16 @@
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"

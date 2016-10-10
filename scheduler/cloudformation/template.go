@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/remind101/empire/pkg/arn"
@@ -176,7 +177,7 @@ func (t *EmpireTemplate) Validate() error {
 
 // Execute builds the template, and writes it to w.
 func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
-	v, err := t.Build(data.(*scheduler.App))
+	v, err := t.Build(data.(*TemplateData))
 	if err != nil {
 		return err
 	}
@@ -195,7 +196,9 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 }
 
 // Build builds a Go representation of a CloudFormation template for the app.
-func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error) {
+func (t *EmpireTemplate) Build(data *TemplateData) (*troposphere.Template, error) {
+	app := data.App
+
 	tmpl := troposphere.NewTemplate()
 
 	tmpl.Parameters["DNS"] = troposphere.Parameter{
@@ -248,7 +251,7 @@ func (t *EmpireTemplate) Build(app *scheduler.App) (*troposphere.Template, error
 				scheduledProcesses[p.Type] = taskDefinition.Name
 			}
 		default:
-			service, err := t.addService(tmpl, app, p)
+			service, err := t.addService(tmpl, app, p, data.StackTags)
 			if err != nil {
 				return tmpl, err
 			}
@@ -370,8 +373,11 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 	return taskDefinition
 }
 
-func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (serviceName string, err error) {
+func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process, stackTags []*cloudformation.Tag) (serviceName string, err error) {
 	key := processResourceName(p.Type)
+
+	// Process specific tags to apply to resources.
+	tags := tagsFromLabels(p.Labels)
 
 	// The standard AWS::ECS::Service resource's default behavior is to wait
 	// for services to stabilize when you update them. While this is a
@@ -401,7 +407,11 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 
 		loadBalancerType := loadBalancerType(app, p)
 
-		var loadBalancer troposphere.NamedResource
+		var (
+			loadBalancer          troposphere.NamedResource
+			canonicalHostedZoneId interface{}
+		)
+
 		switch loadBalancerType {
 		case applicationLoadBalancer:
 			loadBalancer = troposphere.NamedResource{
@@ -412,15 +422,11 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 						"Scheme":         scheme,
 						"SecurityGroups": []string{sg},
 						"Subnets":        subnets,
-						"Tags": []map[string]string{
-							map[string]string{
-								"Key":   "empire.app.process",
-								"Value": p.Type,
-							},
-						},
+						"Tags":           append(stackTags, tags...),
 					},
 				},
 			}
+			canonicalHostedZoneId = GetAtt(loadBalancer, "CanonicalHostedZoneID")
 
 			tmpl.AddResource(loadBalancer)
 
@@ -431,6 +437,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					"Port":     65535, // Not used. ECS sets a port override when registering targets.
 					"Protocol": "HTTP",
 					"VpcId":    t.VpcId,
+					"Tags":     append(stackTags, tags...),
 				},
 			}
 
@@ -527,6 +534,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			loadBalancer = troposphere.NamedResource{
 				Name: fmt.Sprintf("%sLoadBalancer", key),
 			}
+			canonicalHostedZoneId = GetAtt(loadBalancer, "CanonicalHostedZoneNameID")
 
 			listeners := []map[string]interface{}{}
 
@@ -612,12 +620,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 					"Subnets":        subnets,
 					"Listeners":      listeners,
 					"CrossZone":      true,
-					"Tags": []map[string]string{
-						map[string]string{
-							"Key":   "empire.app.process",
-							"Value": p.Type,
-						},
-					},
+					"Tags":           tags,
 					"ConnectionDrainingPolicy": map[string]interface{}{
 						"Enabled": true,
 						"Timeout": defaultConnectionDrainingTimeout,
@@ -633,6 +636,27 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 			})
 		}
 
+		alias := troposphere.NamedResource{
+			Name: fmt.Sprintf("%sAlias", key),
+			Resource: troposphere.Resource{
+				Type:      "AWS::Route53::RecordSet",
+				Condition: "DNSCondition",
+				Properties: map[string]interface{}{
+					"HostedZoneId": *t.HostedZone.Id,
+					"Name":         fmt.Sprintf("%s.%s.%s", p.Type, app.Name, *t.HostedZone.Name),
+					"Type":         "A",
+					"AliasTarget": map[string]interface{}{
+						"DNSName":              GetAtt(loadBalancer, "DNSName"),
+						"EvaluateTargetHealth": "true",
+						"HostedZoneId":         canonicalHostedZoneId,
+					},
+				},
+			},
+		}
+		tmpl.AddResource(alias)
+
+		// DEPRECATED: This was used in the world where only the "web"
+		// process could be exposed.
 		if p.Type == "web" {
 			tmpl.Resources["CNAME"] = troposphere.Resource{
 				Type:      "AWS::Route53::RecordSet",
@@ -852,6 +876,25 @@ func (p fmtPorts) String() string {
 		mappings = append(mappings, fmt.Sprintf("%d => %d", port.Host, port.Container))
 	}
 	return strings.Join(mappings, ", ")
+}
+
+// cloudformationTags implements the sort.Interface interface to sort the labels
+// variables by key in alphabetical order.
+type cloudformationTags []*cloudformation.Tag
+
+func (e cloudformationTags) Len() int           { return len(e) }
+func (e cloudformationTags) Less(i, j int) bool { return *e[i].Key < *e[j].Key }
+func (e cloudformationTags) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+
+// tagsFromLabels generates a list of CloudFormation tags from the labels, it
+// also sorts the tags by key.
+func tagsFromLabels(labels map[string]string) []*cloudformation.Tag {
+	tags := cloudformationTags{}
+	for k, v := range labels {
+		tags = append(tags, &cloudformation.Tag{Key: aws.String(k), Value: aws.String(v)})
+	}
+	sort.Sort(tags)
+	return tags
 }
 
 // A simple lambda function that can be used to trigger an ecs.RunTask.

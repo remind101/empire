@@ -122,6 +122,30 @@
       },
       "Type": "AWS::Route53::RecordSet"
     },
+    "apiAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "apiApplicationLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "apiApplicationLoadBalancer",
+              "CanonicalHostedZoneID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "api.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
     "apiApplicationLoadBalancer": {
       "Properties": {
         "Scheme": "internal",
@@ -133,6 +157,10 @@
           "subnet-c85f4091"
         ],
         "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
           {
             "Key": "empire.app.process",
             "Value": "api"
@@ -226,6 +254,16 @@
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
+          {
+            "Key": "empire.app.process",
+            "Value": "api"
+          }
+        ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
@@ -241,7 +279,8 @@
             "DockerLabels": {
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
-              }
+              },
+              "empire.app.process": "api"
             },
             "Environment": [
               {
@@ -270,6 +309,30 @@
       },
       "Type": "AWS::ECS::TaskDefinition"
     },
+    "webAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "webApplicationLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "webApplicationLoadBalancer",
+              "CanonicalHostedZoneID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "web.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
     "webApplicationLoadBalancer": {
       "Properties": {
         "Scheme": "internal",
@@ -281,6 +344,10 @@
           "subnet-c85f4091"
         ],
         "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
           {
             "Key": "empire.app.process",
             "Value": "web"
@@ -362,6 +429,16 @@
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
+        "Tags": [
+          {
+            "Key": "environment",
+            "Value": "test"
+          },
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
@@ -377,7 +454,8 @@
             "DockerLabels": {
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
-              }
+              },
+              "empire.app.process": "web"
             },
             "Environment": [
               {
