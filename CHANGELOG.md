@@ -15,6 +15,10 @@
 * In preparation for the 0.12 release, the legacy ECS scheduler has been removed. [#1001](https://github.com/remind101/empire/pull/1001)
 * All application labels are set on the CloudFormation stack, rather than just `empire.app.id` and `empire.app.name`. In addition, ALB's will get stack tags applied to them. [#1004](https://github.com/remind101/empire/pull/1004)
 
+**Bugs**
+
+* `emp deploy` will now prompt for a commit message if one is required but not provided. [#994](https://github.com/remind101/empire/issues/994)
+
 ## 0.11.0 (2016-08-22)
 
 **Features**

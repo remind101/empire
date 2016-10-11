@@ -279,22 +279,29 @@ func stringsIndex(s []string, item string) int {
 	return -1
 }
 
+func retryMessageRequired(retry func(), cleanup func()) {
+	if r := recover(); r != nil {
+		e := r.(heroku.Error)
+		if e.Id == "message_required" {
+			message, err := askForMessage()
+			if message == "" || err != nil {
+				printFatal("A message is required for this action, please run again with '-m'.")
+			}
+			flagMessage = message
+			retry()
+		}
+	}
+	if cleanup != nil {
+		cleanup()
+	}
+}
+
 func maybeMessage(action func(cmd *Command, args []string)) func(cmd *Command, args []string) {
 	return func(cmd *Command, args []string) {
-		defer func() {
-			if r := recover(); r != nil {
-				e := r.(heroku.Error)
-				if e.Id == "message_required" {
-					message, err := askForMessage()
-					if message == "" || err != nil {
-						printFatal("A message is required for this action, please run again with '-m'.")
-					}
-					flagMessage = message
-					action(cmd, args)
-				}
-			}
-		}()
-
+		retry := func() {
+			action(cmd, args)
+		}
+		defer retryMessageRequired(retry, nil)
 		action(cmd, args)
 	}
 }
