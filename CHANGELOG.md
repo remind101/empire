@@ -6,6 +6,7 @@
 
 * The extended Procfile format now allows you to attach a load balancer to any process in the Procfile. [#800](https://github.com/remind101/empire/pull/800)
 * An ALIAS record is now created for `<process>.<app>.<zone>` [#1005](https://github.com/remind101/empire/pull/1005)
+* Empire now has experimental support for requring third party confirmation for various actions. Currently, the only supported backend is Duo push notifications, and only the `Run` and `Deploy` actions are supported [#989](https://github.com/remind101/empire/pull/989)
 
 **Improvements**
 
