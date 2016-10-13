@@ -14,6 +14,9 @@ import (
 	"golang.org/x/net/context"
 )
 
+// The amount of time to wait for an action to be confirmed before timing out.
+const DefaultActionConfirmationTimeout = time.Second * 30
+
 // Various actions that Empire is capable of.
 type Action int
 
@@ -67,10 +70,14 @@ var (
 type ConfirmationError struct {
 	// The Action that failed confirmation.
 	Action Action
+	// The name of the ActionConfirmer that was used.
+	ActionConfirmer string
+	// A reason for why the action was not confirmed.
+	Reason error
 }
 
 func (e *ConfirmationError) Error() string {
-	return fmt.Sprintf("request to %s was denied", e.Action)
+	return fmt.Sprintf("unable to confirm %s via %s: %v", e.Action, e.ActionConfirmer, e.Reason)
 }
 
 // AllowedCommands specifies what commands are allowed to be Run with Empire.
@@ -482,46 +489,11 @@ func (opts RunOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
 }
 
-func (e *Empire) confirm(ctx context.Context, user *User, action Action, params map[string]string) error {
-	confirmer := e.ConfirmActions[action]
-	if confirmer == nil {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
-	defer cancel()
-
-	errCh := make(chan error, 1)
-	go func() {
-		var (
-			ok  bool
-			err error
-		)
-
-		ok, err = confirmer.Confirm(ctx, user, action, params)
-		if err != nil {
-			errCh <- err
-			return
-		}
-
-		if !ok {
-			err = &ConfirmationError{Action: action}
-		}
-
-		errCh <- err
-	}()
-
-	select {
-	case err := <-errCh:
-		return err
-	case <-ctx.Done():
-		return errors.New("timed out waiting to confirm action")
-	}
-}
-
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
-	if err := e.confirm(ctx, opts.User, ActionRun, nil); err != nil {
+	if err := e.confirm(ctx, opts.User, ActionRun, map[string]string{
+		"command": fmt.Sprintf("%v", opts.Command),
+	}); err != nil {
 		// Gross: Fix this.
 		if opts.Output != nil {
 			io.WriteString(opts.Output, fmt.Sprintf("%v\r\n", err))
@@ -681,8 +653,10 @@ func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 		return nil, err
 	}
 
-	if err := e.confirm(ctx, opts.User, ActionDeploy, nil); err != nil {
-		return nil, err
+	if err := e.confirm(ctx, opts.User, ActionDeploy, map[string]string{
+		"image": opts.Image.String(),
+	}); err != nil {
+		return nil, opts.Output.Error(err)
 	}
 
 	r, err := e.deployer.Deploy(ctx, opts)
@@ -795,6 +769,51 @@ func (e *Empire) CertsAttach(ctx context.Context, app *App, cert string) error {
 	}
 
 	return tx.Commit().Error
+}
+
+func (e *Empire) confirm(ctx context.Context, user *User, action Action, params map[string]string) error {
+	confirmer := e.ConfirmActions[action]
+	if confirmer == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, DefaultActionConfirmationTimeout)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		var (
+			ok  bool
+			err error
+		)
+
+		ok, err = confirmer.Confirm(ctx, user, action, params)
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		if !ok {
+			err = &ConfirmationError{
+				Action:          action,
+				ActionConfirmer: confirmer.String(),
+				Reason:          errors.New("request denied"),
+			}
+		}
+
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		return &ConfirmationError{
+			Action:          action,
+			ActionConfirmer: confirmer.String(),
+			Reason:          ctx.Err(),
+		}
+	}
 }
 
 // Reset resets empire.

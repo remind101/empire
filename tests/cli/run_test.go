@@ -41,7 +41,7 @@ func TestRunAttached_WithConfirmation_Failed(t *testing.T) {
 		DeployCommand("latest", "v1"),
 		{
 			"run bash -a acme-inc",
-			"request to Run was denied\r",
+			"unable to confirm Run via ActionConfirmerFunc: request denied\r",
 		},
 	})
 }

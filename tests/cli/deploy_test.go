@@ -3,6 +3,9 @@ package cli_test
 import (
 	"errors"
 	"testing"
+
+	"github.com/remind101/empire"
+	"golang.org/x/net/context"
 )
 
 func TestDeploy(t *testing.T) {
@@ -106,6 +109,23 @@ Status: Finished processing events for release v1 of acme-inc`,
 		{
 			"releases -a acme-inc",
 			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake: 'commit')",
+		},
+	})
+}
+
+func TestDeploy_WithConfirmation_Failed(t *testing.T) {
+	pre := func(cli *CLI) {
+		cli.Empire.ConfirmActions = map[empire.Action]empire.ActionConfirmer{
+			empire.ActionDeploy: empire.ActionConfirmerFunc(func(ctx context.Context, user *empire.User, action empire.Action, params map[string]string) (bool, error) {
+				return false, nil
+			}),
+		}
+	}
+
+	runWithPre(t, pre, []Command{
+		{
+			"deploy remind101/acme-inc",
+			errors.New("error: unable to confirm Deploy via ActionConfirmerFunc: request denied"),
 		},
 	})
 }

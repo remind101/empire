@@ -418,7 +418,7 @@ func TestEmpire_Run_WithConfirmation_NotConfirmed_Attached(t *testing.T) {
 			"TERM": "xterm",
 		},
 	})
-	assert.Equal(t, "request to Run was denied\r\n", stdout.String())
+	assert.Equal(t, "unable to confirm Run via ActionConfirmerFunc: request denied\r\n", stdout.String())
 	assert.Equal(t, nil, err)
 }
 
@@ -461,7 +461,11 @@ func TestEmpire_Run_WithConfirmation_NotConfirmed_Detached(t *testing.T) {
 			"TERM": "xterm",
 		},
 	})
-	assert.Equal(t, &empire.ConfirmationError{Action: empire.ActionRun}, err)
+	assert.Equal(t, &empire.ConfirmationError{
+		Action:          empire.ActionRun,
+		ActionConfirmer: "ActionConfirmerFunc",
+		Reason:          errors.New("request denied"),
+	}, err)
 }
 
 func TestEmpire_Run_WithConstraints(t *testing.T) {

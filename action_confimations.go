@@ -13,6 +13,8 @@ import (
 // ActionConfirmer is an interface that can be implemented to confirm that an
 // action is allowed.
 type ActionConfirmer interface {
+	fmt.Stringer
+
 	// Confirm should notify the third party of the action being performed,
 	// then block until the action has been confirmed.
 	Confirm(ctx context.Context, user *User, action Action, params map[string]string) (bool, error)
@@ -22,6 +24,10 @@ type ActionConfirmerFunc func(context.Context, *User, Action, map[string]string)
 
 func (f ActionConfirmerFunc) Confirm(ctx context.Context, user *User, action Action, params map[string]string) (bool, error) {
 	return f(ctx, user, action, params)
+}
+
+func (f ActionConfirmerFunc) String() string {
+	return "ActionConfirmerFunc"
 }
 
 // DuoActionConfirmer is an ActionConfirmer that will send the user a Duo push
@@ -49,12 +55,17 @@ func (c *DuoActionConfirmer) Confirm(ctx context.Context, user *User, action Act
 		return false, err
 	}
 
+	pushinfo := url.Values{}
+	for k, v := range params {
+		pushinfo.Set(k, v)
+	}
+
 	q := url.Values{}
 	q.Add("username", username)
 	q.Add("factor", "push")
 	q.Add("device", "auto")
 	q.Add("type", action.String())
-	//q.Add("pushinfo", )
+	q.Add("pushinfo", pushinfo.Encode())
 
 	resp, err := c.duo.Auth(q)
 	if err != nil {
@@ -64,12 +75,16 @@ func (c *DuoActionConfirmer) Confirm(ctx context.Context, user *User, action Act
 	return resp.Response.Result == "allow", nil
 }
 
-var defaultUsernameTemplate = template.Must(template.New("username").Parse(`{{.Name}}`))
+func (c *DuoActionConfirmer) String() string {
+	return "Duo"
+}
+
+var defaultDuoUsernameTemplate = template.Must(template.New("username").Parse(`{{.Name}}`))
 
 func (c *DuoActionConfirmer) username(user *User) (string, error) {
 	t := c.UsernameTemplate
 	if t == nil {
-		t = defaultUsernameTemplate
+		t = defaultDuoUsernameTemplate
 	}
 
 	b := new(bytes.Buffer)
