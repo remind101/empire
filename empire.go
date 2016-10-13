@@ -14,6 +14,37 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Various actions that Empire is capable of.
+type Action int
+
+const (
+	ActionDeploy Action = iota
+	ActionRun
+)
+
+func ActionFromString(name string) (action Action, err error) {
+	switch name {
+	case "Deploy":
+		action = ActionDeploy
+	case "Run":
+		action = ActionRun
+	default:
+		err = fmt.Errorf("%s is not a valid Empire action", name)
+	}
+	return
+}
+
+func (action Action) String() string {
+	switch action {
+	case ActionDeploy:
+		return "Deploy"
+	case ActionRun:
+		return "Run"
+	default:
+		return "Unknown Action"
+	}
+}
+
 const (
 	// webProcessType is the process type we assume are web server processes.
 	webProcessType = "web"
@@ -31,6 +62,16 @@ var (
 		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
 	}
 )
+
+// ConfirmationError is returned when the request to confirm an action fails.
+type ConfirmationError struct {
+	// The Action that failed confirmation.
+	Action Action
+}
+
+func (e *ConfirmationError) Error() string {
+	return fmt.Sprintf("request to %s was denied", e.Action)
+}
 
 // AllowedCommands specifies what commands are allowed to be Run with Empire.
 type AllowedCommands int
@@ -99,9 +140,8 @@ type Empire struct {
 	// RunRecorder is used to record the logs from interactive runs.
 	RunRecorder RunRecorder
 
-	// ActionConfirmer used to confirm whether and action is authorized or
-	// not.
-	ActionConfirmer ActionConfirmer
+	// A list of actions that require confirmation.
+	ConfirmActions map[Action]ActionConfirmer
 
 	// MessagesRequired is a boolean used to determine if messages should be required for events.
 	MessagesRequired bool
@@ -457,8 +497,9 @@ func (opts RunOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
 }
 
-func (e *Empire) confirm(ctx context.Context, user *User, action string, resource string, params map[string]string) error {
-	if e.ActionConfirmer == nil {
+func (e *Empire) confirm(ctx context.Context, user *User, action Action, params map[string]string) error {
+	confirmer := e.ConfirmActions[action]
+	if confirmer == nil {
 		return nil
 	}
 
@@ -472,14 +513,14 @@ func (e *Empire) confirm(ctx context.Context, user *User, action string, resourc
 			err error
 		)
 
-		ok, err = e.ActionConfirmer.Confirm(ctx, user, action, resource, params)
+		ok, err = confirmer.Confirm(ctx, user, action, params)
 		if err != nil {
 			errCh <- err
 			return
 		}
 
 		if !ok {
-			err = errors.New("not authorized")
+			err = &ConfirmationError{Action: action}
 		}
 
 		errCh <- err
@@ -495,14 +536,13 @@ func (e *Empire) confirm(ctx context.Context, user *User, action string, resourc
 
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
-	if err := e.confirm(ctx, opts.User, "Run", opts.App.Name, nil); err != nil {
+	if err := e.confirm(ctx, opts.User, ActionRun, nil); err != nil {
 		// Gross: Fix this.
 		if opts.Output != nil {
-			io.WriteString(opts.Output, fmt.Sprintf("error: %v\n", err))
+			io.WriteString(opts.Output, fmt.Sprintf("%v\r\n", err))
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	event := opts.Event()
@@ -653,6 +693,10 @@ func (opts DeployOpts) Validate(e *Empire) error {
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
+		return nil, err
+	}
+
+	if err := e.confirm(ctx, opts.User, ActionDeploy, nil); err != nil {
 		return nil, err
 	}
 

@@ -1,6 +1,7 @@
 package empire_test
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -355,6 +356,95 @@ func TestEmpire_Run(t *testing.T) {
 	assert.NoError(t, err)
 
 	s.AssertExpectations(t)
+}
+
+func TestEmpire_Run_WithConfirmation(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+
+	confirmations := make(chan empire.Action, 1)
+	e.ConfirmActions = map[empire.Action]empire.ActionConfirmer{
+		empire.ActionRun: empire.ActionConfirmerFunc(func(ctx context.Context, user *empire.User, action empire.Action, params map[string]string) (bool, error) {
+			confirmations <- action
+			return true, nil
+		}),
+	}
+
+	user := &empire.User{Name: "ejholmes"}
+
+	app, err := e.Create(context.Background(), empire.CreateOpts{
+		User: user,
+		Name: "acme-inc",
+	})
+	assert.NoError(t, err)
+
+	img := image.Image{Repository: "remind101/acme-inc"}
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+		App:    app,
+		User:   user,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
+		Image:  img,
+	})
+	assert.NoError(t, err)
+
+	err = e.Run(context.Background(), empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
+
+		// Detached Process
+		Output: nil,
+		Input:  nil,
+
+		Env: map[string]string{
+			"TERM": "xterm",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, empire.ActionRun, <-confirmations)
+}
+
+func TestEmpire_Run_WithConfirmation_NotConfirmed(t *testing.T) {
+	e := empiretest.NewEmpire(t)
+
+	e.ConfirmActions = map[empire.Action]empire.ActionConfirmer{
+		empire.ActionRun: empire.ActionConfirmerFunc(func(ctx context.Context, user *empire.User, action empire.Action, params map[string]string) (bool, error) {
+			return false, nil
+		}),
+	}
+
+	user := &empire.User{Name: "ejholmes"}
+
+	app, err := e.Create(context.Background(), empire.CreateOpts{
+		User: user,
+		Name: "acme-inc",
+	})
+	assert.NoError(t, err)
+
+	img := image.Image{Repository: "remind101/acme-inc"}
+	_, err = e.Deploy(context.Background(), empire.DeployOpts{
+		App:    app,
+		User:   user,
+		Output: empire.NewDeploymentStream(ioutil.Discard),
+		Image:  img,
+	})
+	assert.NoError(t, err)
+
+	stdout := new(bytes.Buffer)
+	err = e.Run(context.Background(), empire.RunOpts{
+		User:    user,
+		App:     app,
+		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
+
+		// Detached Process
+		Output: stdout,
+		Input:  nil,
+
+		Env: map[string]string{
+			"TERM": "xterm",
+		},
+	})
+	assert.Equal(t, "request to Run was denied\r\n", stdout.String())
+	assert.Equal(t, &empire.ConfirmationError{Action: empire.ActionRun}, err)
 }
 
 func TestEmpire_Run_WithConstraints(t *testing.T) {
