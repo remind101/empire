@@ -76,7 +76,7 @@ func runRun(cmd *Command, args []string) {
 	if err != nil {
 		// If syscall.TIOCGWINSZ is not supported by the device, we're
 		// probably trying to run tests. Set w to some sensible default.
-		if err.Error() == "operation not supported by device" {
+		if err.Error() == "operation not supported by device" || err.Error() == "inappropriate ioctl for device" {
 			w = &term.Winsize{
 				Height: 20,
 				Width:  80,

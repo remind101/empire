@@ -1,8 +1,14 @@
 package cli_test
 
-import "testing"
+import (
+	"errors"
+	"testing"
 
-func testRunDetached(t *testing.T) {
+	"github.com/remind101/empire"
+	"golang.org/x/net/context"
+)
+
+func TestRunDetached(t *testing.T) {
 	run(t, []Command{
 		DeployCommand("latest", "v1"),
 		{
@@ -12,12 +18,48 @@ func testRunDetached(t *testing.T) {
 	})
 }
 
-func testRunAttached(t *testing.T) {
+func TestRunAttached(t *testing.T) {
 	run(t, []Command{
 		DeployCommand("latest", "v1"),
 		{
 			"run migration -a acme-inc",
-			"Fake output for `migration` on acme-inc",
+			"Fake output for `[migration]` on acme-inc",
+		},
+	})
+}
+
+func TestRunAttached_WithConfirmation_Failed(t *testing.T) {
+	pre := func(cli *CLI) {
+		cli.Empire.ConfirmActions = map[empire.Action]empire.ActionConfirmer{
+			empire.ActionRun: empire.ActionConfirmerFunc(func(ctx context.Context, user *empire.User, action empire.Action, params map[string]string) (bool, error) {
+				return false, nil
+			}),
+		}
+	}
+
+	runWithPre(t, pre, []Command{
+		DeployCommand("latest", "v1"),
+		{
+			"run bash -a acme-inc",
+			"request to Run was denied\r",
+		},
+	})
+}
+
+func TestRunAttached_WithConfirmation_Error(t *testing.T) {
+	pre := func(cli *CLI) {
+		cli.Empire.ConfirmActions = map[empire.Action]empire.ActionConfirmer{
+			empire.ActionRun: empire.ActionConfirmerFunc(func(ctx context.Context, user *empire.User, action empire.Action, params map[string]string) (bool, error) {
+				return false, errors.New("duo api error")
+			}),
+		}
+	}
+
+	runWithPre(t, pre, []Command{
+		DeployCommand("latest", "v1"),
+		{
+			"run bash -a acme-inc",
+			"duo api error\r",
 		},
 	})
 }

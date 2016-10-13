@@ -2,12 +2,12 @@ package empire
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net/url"
 	"text/template"
 
 	"github.com/remind101/empire/pkg/duo"
+	"golang.org/x/net/context"
 )
 
 // ActionConfirmer is an interface that can be implemented to confirm that an
@@ -15,7 +15,13 @@ import (
 type ActionConfirmer interface {
 	// Confirm should notify the third party of the action being performed,
 	// then block until the action has been confirmed.
-	Confirm(ctx context.Context, user *User, action string, resource string, params map[string]string) (bool, error)
+	Confirm(ctx context.Context, user *User, action Action, params map[string]string) (bool, error)
+}
+
+type ActionConfirmerFunc func(context.Context, *User, Action, map[string]string) (bool, error)
+
+func (f ActionConfirmerFunc) Confirm(ctx context.Context, user *User, action Action, params map[string]string) (bool, error) {
+	return f(ctx, user, action, params)
 }
 
 // DuoActionConfirmer is an ActionConfirmer that will send the user a Duo push
@@ -37,7 +43,7 @@ func NewDuoActionConfirmer(key, secret, apiHost string) *DuoActionConfirmer {
 	return &DuoActionConfirmer{duo: c}
 }
 
-func (c *DuoActionConfirmer) Confirm(ctx context.Context, user *User, action string, resource string, params map[string]string) (bool, error) {
+func (c *DuoActionConfirmer) Confirm(ctx context.Context, user *User, action Action, params map[string]string) (bool, error) {
 	username, err := c.username(user)
 	if err != nil {
 		return false, err
@@ -47,8 +53,8 @@ func (c *DuoActionConfirmer) Confirm(ctx context.Context, user *User, action str
 	q.Add("username", username)
 	q.Add("factor", "push")
 	q.Add("device", "auto")
-	q.Add("type", action)
-	q.Add("pushinfo", fmt.Sprintf("resource=%s", resource))
+	q.Add("type", action.String())
+	//q.Add("pushinfo", )
 
 	resp, err := c.duo.Auth(q)
 	if err != nil {

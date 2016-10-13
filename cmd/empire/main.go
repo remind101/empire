@@ -16,6 +16,7 @@ const (
 	FlagEventsBackend              = "events.backend"
 	FlagRunLogsBackend             = "runlogs.backend"
 	FlagActionConfirmationsBackend = "action-confirmations.backend"
+	FlagConfirmActions             = "confirm-actions"
 	FlagLogLevel                   = "log.level"
 
 	FlagMessagesRequired = "messages.required"
@@ -338,6 +339,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "Backend to use when confirm actions. (e.g. duo://api-xxxxx.duosecurity.com?key=<key>&secret=<secret>",
 		EnvVar: "EMPIRE_ACTION_CONFIRMATIONS_BACKEND",
+	},
+	cli.StringSliceFlag{
+		Name:   FlagConfirmActions,
+		Value:  &cli.StringSlice{},
+		Usage:  "The Empire actions to require confirmation on.",
+		EnvVar: "EMPIRE_CONFIRM_ACTIONS",
 	},
 	cli.StringFlag{
 		Name:   FlagSNSTopic,

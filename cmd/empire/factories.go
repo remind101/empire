@@ -65,7 +65,7 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	confirmations, err := newActionConfirmer(c)
+	confirmActions, err := newConfirmActions(c)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
-	e.ActionConfirmer = confirmations
+	e.ConfirmActions = confirmActions
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
 
 	switch c.String(FlagAllowedCommands) {
@@ -378,24 +378,40 @@ func newDogstatsdStats(addr string) (stats.Stats, error) {
 
 // ActionConfirmer =====================
 
-func newActionConfirmer(c *Context) (empire.ActionConfirmer, error) {
+func newConfirmActions(c *Context) (map[empire.Action]empire.ActionConfirmer, error) {
 	u := c.String(FlagActionConfirmationsBackend)
 	if u == "" {
 		return nil, nil
 	}
+
+	actions := c.StringSlice(FlagConfirmActions)
 
 	uri, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
 
+	var confirmer empire.ActionConfirmer
 	switch uri.Scheme {
 	case "duo":
 		q := uri.Query()
-		return newDuoActionConfirmer(uri.Host, q.Get("key"), q.Get("secret"))
+		confirmer, err = newDuoActionConfirmer(uri.Host, q.Get("key"), q.Get("secret"))
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unknown action confirmer: %s", uri.Scheme)
 	}
+
+	confirmActions := make(map[empire.Action]empire.ActionConfirmer)
+	for _, name := range actions {
+		action, err := empire.ActionFromString(name)
+		if err != nil {
+			return nil, err
+		}
+		confirmActions[action] = confirmer
+	}
+	return confirmActions, nil
 }
 
 func newDuoActionConfirmer(apiHost, key, secret string) (empire.ActionConfirmer, error) {
