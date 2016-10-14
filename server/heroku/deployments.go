@@ -5,6 +5,7 @@ import (
 
 	"github.com/remind101/empire/pkg/image"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
+	"github.com/remind101/empire/server/auth"
 
 	"github.com/remind101/empire"
 	"golang.org/x/net/context"
@@ -54,7 +55,7 @@ func newDeployOpts(ctx context.Context, w http.ResponseWriter, req *http.Request
 	}
 
 	opts := empire.DeployOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		Image:   form.Image,
 		Output:  empire.NewDeploymentStream(streamhttp.StreamingResponseWriter(w)),
 		Message: m,

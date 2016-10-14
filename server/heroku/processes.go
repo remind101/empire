@@ -9,6 +9,7 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
@@ -84,7 +85,7 @@ func (h *Server) PostProcess(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	opts := empire.RunOpts{
-		User:        UserFromContext(ctx),
+		User:        auth.UserFromContext(ctx),
 		App:         a,
 		Command:     command,
 		Env:         form.Env,
@@ -150,7 +151,7 @@ func (h *Server) DeleteProcesses(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	if err := h.Restart(ctx, empire.RestartOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		App:     a,
 		PID:     pid,
 		Message: m,

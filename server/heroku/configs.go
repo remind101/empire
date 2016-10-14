@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/auth"
 	"golang.org/x/net/context"
 )
 
@@ -41,7 +42,7 @@ func (h *Server) PatchConfigs(ctx context.Context, w http.ResponseWriter, r *htt
 
 	// Update the config
 	c, err := h.Set(ctx, empire.SetOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		App:     a,
 		Vars:    configVars,
 		Message: m,

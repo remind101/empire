@@ -68,7 +68,7 @@ func newClient(t testing.TB) *client {
 	s := empiretest.NewServer(t, e)
 
 	c := hooker.NewClient(nil)
-	c.URL = s.URL
+	c.URL = s.URL()
 	c.Secret = "abcd"
 
 	return &client{

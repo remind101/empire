@@ -3,8 +3,8 @@ package heroku
 import (
 	"net/http"
 
-	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/server/auth"
 	"golang.org/x/net/context"
 )
 
@@ -14,7 +14,7 @@ const (
 
 type Authorization heroku.OAuthAuthorization
 
-func newAuthorization(token *empire.AccessToken) *Authorization {
+func newAuthorization(token *AccessToken) *Authorization {
 	return &Authorization{
 		AccessToken: &struct {
 			ExpiresIn *int   `json:"expires_in"`
@@ -27,8 +27,8 @@ func newAuthorization(token *empire.AccessToken) *Authorization {
 }
 
 func (h *Server) PostAuthorizations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	at, err := h.Empire.AccessTokensCreate(&empire.AccessToken{
-		User: UserFromContext(ctx),
+	at, err := h.AccessTokensCreate(&AccessToken{
+		User: auth.UserFromContext(ctx),
 	})
 	if err != nil {
 		return err

@@ -5,6 +5,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -63,7 +64,7 @@ func (h *Server) DeleteApp(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 
 	if err := h.Destroy(ctx, empire.DestroyOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		App:     a,
 		Message: m,
 	}); err != nil {
@@ -105,7 +106,7 @@ func (h *Server) PostApps(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	a, err := h.Create(ctx, empire.CreateOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		Name:    form.Name,
 		Message: m,
 	})

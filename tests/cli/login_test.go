@@ -6,14 +6,14 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
-	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 )
 
 func TestLogin(t *testing.T) {
-	s := empiretest.NewTestServer(t, nil, server.Options{
+	s := empiretest.NewServer(t, nil)
+	s.Heroku.Auth = &auth.Auth{
 		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
-	})
+	}
 
 	cli := newCLIWithServer(t, s)
 	defer cli.Close()
@@ -34,9 +34,10 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginUnauthorized(t *testing.T) {
-	s := empiretest.NewTestServer(t, nil, server.Options{
+	s := empiretest.NewServer(t, nil)
+	s.Heroku.Auth = &auth.Auth{
 		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
-	})
+	}
 
 	cli := newCLIWithServer(t, s)
 	defer cli.Close()
@@ -57,9 +58,10 @@ func TestLoginUnauthorized(t *testing.T) {
 }
 
 func TestLoginTwoFactor(t *testing.T) {
-	s := empiretest.NewTestServer(t, nil, server.Options{
+	s := empiretest.NewServer(t, nil)
+	s.Heroku.Auth = &auth.Auth{
 		Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
-	})
+	}
 
 	cli := newCLIWithServer(t, s)
 	defer cli.Close()

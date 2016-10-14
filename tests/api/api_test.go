@@ -6,7 +6,6 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/heroku"
-	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 )
 
@@ -26,15 +25,16 @@ func TestMain(m *testing.M) {
 // with a instance of the empire HTTP server.
 func NewTestClient(t testing.TB) (*heroku.Client, *empiretest.Server) {
 	e := empiretest.NewEmpire(t)
-	s := empiretest.NewTestServer(t, e, server.Options{
+	s := empiretest.NewServer(t, e)
+	s.Heroku.Auth = &auth.Auth{
 		Authenticator: auth.Anyone(&empire.User{Name: "fake"}),
-	})
+	}
 
 	c := &heroku.Client{
 		Username: "",
 		Password: "",
 	}
-	c.URL = s.URL
+	c.URL = s.URL()
 
 	return c, s
 }

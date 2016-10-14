@@ -71,13 +71,16 @@ func runServer(c *cli.Context) {
 
 func newServer(c *Context, e *empire.Empire) http.Handler {
 	var opts server.Options
-	opts.Authenticator = newAuthenticator(c, e)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
 	opts.GitHub.Deployments.Environments = strings.Split(c.String(FlagGithubDeploymentsEnvironments), ",")
 	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
-	h := middleware.Common(server.New(e, opts))
+	s := server.New(e, opts)
+	s.Heroku.Auth = newAuth(c, e)
+	s.Heroku.Secret = []byte(c.String(FlagSecret))
+
+	h := middleware.Common(s)
 	return middleware.Handler(c, h)
 }
 
@@ -104,14 +107,12 @@ func newImageBuilder(c *Context) github.ImageBuilder {
 	}
 }
 
-func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
-	// an authenticator authenticating requests with a users empire acccess
-	// token.
-	authenticators := []auth.Authenticator{
-		auth.NewAccessTokenAuthenticator(e),
-	}
+func newAuth(c *Context, e *empire.Empire) *auth.Auth {
+	var (
+		client         *githubauth.Client
+		authenticators []auth.Authenticator
+	)
 
-	var client *githubauth.Client
 	// If a GitHub client id is provided, we'll use GitHub as an
 	// authentication backend. Otherwise, we'll just use a static username
 	// and password backend.
@@ -143,7 +144,7 @@ func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
 		authenticators = append(authenticators, githubauth.NewAuthenticator(client))
 	}
 
-	// try access token before falling back to github.
+	// build the authentication chain.
 	authenticator := auth.MultiAuthenticator(authenticators...)
 
 	// After the user is authenticated, check their GitHub Organization membership.
@@ -154,12 +155,12 @@ func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
 		log.Println("Adding GitHub Organization authorizer with the following configuration:")
 		log.Println(fmt.Sprintf("  Organization: %v ", org))
 
-		return auth.WithAuthorization(
-			authenticator,
+		return &auth.Auth{
+			Authenticator: authenticator,
 			// Cache the organization check for 30 minutes since
 			// it's pretty slow.
-			auth.CacheAuthorization(authorizer, 30*time.Minute),
-		)
+			Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
+		}
 	}
 
 	// After the user is authenticated, check their GitHub Team membership.
@@ -170,12 +171,14 @@ func newAuthenticator(c *Context, e *empire.Empire) auth.Authenticator {
 		log.Println("Adding GitHub Team authorizer with the following configuration:")
 		log.Println(fmt.Sprintf("  Team ID: %v ", teamID))
 
-		return auth.WithAuthorization(
-			authenticator,
+		return &auth.Auth{
+			Authenticator: authenticator,
 			// Cache the team check for 30 minutes
-			auth.CacheAuthorization(authorizer, 30*time.Minute),
-		)
+			Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
+		}
 	}
 
-	return authenticator
+	return &auth.Auth{
+		Authenticator: authenticator,
+	}
 }

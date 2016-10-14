@@ -57,9 +57,16 @@ func NewEmpire(t testing.TB) *empire.Empire {
 	return e
 }
 
+// Server wraps an Empire instance being served by the canonical server.Server
+// http.Handler, for testing.
 type Server struct {
 	*empire.Empire
-	*httptest.Server
+	*server.Server
+	svr *httptest.Server
+}
+
+func (s *Server) URL() string {
+	return s.svr.URL
 }
 
 // NewServer builds a new empire.Empire instance and returns an httptest.Server
@@ -67,14 +74,15 @@ type Server struct {
 func NewServer(t testing.TB, e *empire.Empire) *Server {
 	var opts server.Options
 	opts.GitHub.Webhooks.Secret = "abcd"
-	opts.Authenticator = auth.NewAccessTokenAuthenticator(e)
 	opts.GitHub.Deployments.Environments = []string{"test"}
 	opts.GitHub.Deployments.ImageBuilder = github.ImageFromTemplate(template.Must(template.New("image").Parse(github.DefaultTemplate)))
-	return NewTestServer(t, e, opts)
+	s := newTestServer(t, e, opts)
+	s.Heroku.Auth = &auth.Auth{}
+	return s
 }
 
-// NewTestServer returns a new httptest.Server for testing empire's http server.
-func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server {
+// newTestServer returns a new httptest.Server for testing empire's http server.
+func newTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server {
 	if e == nil {
 		e = NewEmpire(t)
 	}
@@ -82,12 +90,13 @@ func NewTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server 
 	s := server.New(e, opts)
 	return &Server{
 		Empire: e,
-		Server: httptest.NewServer(middleware.Handler(context.Background(), s)),
+		Server: s,
+		svr:    httptest.NewServer(middleware.Handler(context.Background(), s)),
 	}
 }
 
 func (s *Server) Close() {
-	s.Server.Close()
+	s.svr.Close()
 }
 
 var dblock = "/tmp/empire.lock"
