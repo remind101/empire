@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/pkg/httpx"
@@ -20,8 +19,6 @@ var (
 )
 
 type Options struct {
-	Authenticator auth.Authenticator
-
 	GitHub struct {
 		// Deployments
 		Webhooks struct {
@@ -35,7 +32,16 @@ type Options struct {
 	}
 }
 
-func New(e *empire.Empire, options Options) httpx.Handler {
+// Server composes the Heroku API compatibility layer, the GitHub Webhooks
+// handlers and a health check as a single http.Handler.
+type Server struct {
+	// The underlying Heroku http.Handler.
+	Heroku *heroku.Server
+
+	mux *httpx.Router
+}
+
+func New(e *empire.Empire, options Options) *Server {
 	r := httpx.NewRouter()
 
 	if options.GitHub.Webhooks.Secret != "" {
@@ -50,13 +56,19 @@ func New(e *empire.Empire, options Options) httpx.Handler {
 
 	// Mount the heroku api
 	hk := heroku.New(e)
-	hk.Authenticator = options.Authenticator
 	r.Headers("Accept", heroku.AcceptHeader).Handler(hk)
 
 	// Mount health endpoint
 	r.Handle("/health", NewHealthHandler(e))
 
-	return r
+	return &Server{
+		Heroku: hk,
+		mux:    r,
+	}
+}
+
+func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	return s.mux.ServeHTTPContext(ctx, w, r)
 }
 
 // githubWebhook is a MatcherFunc that matches requests that have an

@@ -12,6 +12,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/empiretest/cli"
+	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/pkg/timex"
 )
 
@@ -74,7 +75,7 @@ func run(t testing.TB, commands []Command) {
 }
 
 func runWithCLI(t testing.TB, commands []Command, cli *CLI) {
-	token, err := cli.Empire.AccessTokensCreate(&empire.AccessToken{
+	token, err := cli.Server.Heroku.AccessTokensCreate(&heroku.AccessToken{
 		User: fakeUser,
 	})
 	if err != nil {
@@ -145,7 +146,7 @@ func newCLIWithServer(t testing.TB, s *empiretest.Server) *CLI {
 		t.Fatal(err)
 	}
 
-	u, err := url.Parse(s.URL)
+	u, err := url.Parse(s.URL())
 	if err != nil {
 		t.Fatal(err)
 	}

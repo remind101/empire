@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 
 	"github.com/remind101/empire"
@@ -26,6 +27,54 @@ type UnauthorizedError struct {
 
 func (e *UnauthorizedError) Error() string {
 	return e.Reason
+}
+
+// Auth provides a simple wrapper around, authenticating the user,
+// pre-authorizing the request, then embedding a set of ACL policy to
+// authorize the action.
+type Auth struct {
+	Authenticator Authenticator
+	Authorizer    Authorizer
+}
+
+func (a *Auth) copy() *Auth {
+	return &Auth{
+		Authenticator: a.Authenticator,
+		Authorizer:    a.Authorizer,
+	}
+}
+
+// AddAuthenticator returns a shallow copy of the Auth object will the given
+// authentication method added.
+func (a *Auth) AddAuthenticator(authenticator Authenticator) *Auth {
+	c := a.copy()
+
+	if a.Authenticator == nil {
+		c.Authenticator = authenticator
+		return c
+	}
+
+	c.Authenticator = MultiAuthenticator(authenticator, a.Authenticator)
+	return c
+}
+
+// Authenticate authenticates the request, and returns a new context.Context
+// with the user embedded. The user can be retrieved with UserFromContext.
+func (a *Auth) Authenticate(ctx context.Context, username, password, otp string) (context.Context, error) {
+	user, err := a.Authenticator.Authenticate(username, password, otp)
+	if err != nil {
+		return ctx, err
+	}
+
+	ctx = WithUser(ctx, user)
+
+	if a.Authorizer != nil {
+		if err := a.Authorizer.Authorize(user); err != nil {
+			return ctx, err
+		}
+	}
+
+	return ctx, nil
 }
 
 // Authenticator represents something that, given a username, password and OTP
@@ -114,19 +163,23 @@ func MultiAuthenticator(authenticators ...Authenticator) Authenticator {
 	})
 }
 
-// WithAuthorization wraps an Authenticator to also perform an Authorization after
-// to user is successfully authenticated.
-func WithAuthorization(authenticator Authenticator, authorizer Authorizer) Authenticator {
-	return AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
-		user, err := authenticator.Authenticate(username, password, otp)
-		if err != nil {
-			return user, err
-		}
+// key used to store context values from within this package.
+type key int
 
-		if err := authorizer.Authorize(user); err != nil {
-			return user, err
-		}
+const (
+	userKey key = iota
+)
 
-		return user, nil
-	})
+// WithUser adds a user to the context.Context.
+func WithUser(ctx context.Context, u *empire.User) context.Context {
+	return context.WithValue(ctx, userKey, u)
+}
+
+// UserFromContext returns a user from a context.Context if one is present.
+func UserFromContext(ctx context.Context) *empire.User {
+	u, ok := ctx.Value(userKey).(*empire.User)
+	if !ok {
+		panic("expected user to be authenticated")
+	}
+	return u
 }

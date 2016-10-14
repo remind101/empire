@@ -6,6 +6,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -113,7 +114,7 @@ func (h *Server) PostReleases(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	release, err := h.Rollback(ctx, empire.RollbackOpts{
-		User:    UserFromContext(ctx),
+		User:    auth.UserFromContext(ctx),
 		App:     app,
 		Version: version,
 		Message: m,

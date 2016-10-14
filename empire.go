@@ -66,19 +66,15 @@ type Empire struct {
 	DB *DB
 	db *gorm.DB
 
-	accessTokens *accessTokensService
-	apps         *appsService
-	configs      *configsService
-	domains      *domainsService
-	tasks        *tasksService
-	releases     *releasesService
-	deployer     *deployerService
-	runner       *runnerService
-	slugs        *slugsService
-	certs        *certsService
-
-	// Secret is used to sign JWT access tokens.
-	Secret []byte
+	apps     *appsService
+	configs  *configsService
+	domains  *domainsService
+	tasks    *tasksService
+	releases *releasesService
+	deployer *deployerService
+	runner   *runnerService
+	slugs    *slugsService
+	certs    *certsService
 
 	// Scheduler is the backend scheduler used to run applications.
 	Scheduler scheduler.Scheduler
@@ -117,7 +113,6 @@ func New(db *DB) *Empire {
 		db: db.DB,
 	}
 
-	e.accessTokens = &accessTokensService{Empire: e}
 	e.apps = &appsService{Empire: e}
 	e.configs = &configsService{Empire: e}
 	e.deployer = &deployerService{Empire: e}
@@ -128,16 +123,6 @@ func New(db *DB) *Empire {
 	e.releases = &releasesService{Empire: e}
 	e.certs = &certsService{Empire: e}
 	return e
-}
-
-// AccessTokensFind finds an access token.
-func (e *Empire) AccessTokensFind(token string) (*AccessToken, error) {
-	return e.accessTokens.AccessTokensFind(token)
-}
-
-// AccessTokensCreate creates a new AccessToken.
-func (e *Empire) AccessTokensCreate(accessToken *AccessToken) (*AccessToken, error) {
-	return e.accessTokens.AccessTokensCreate(accessToken)
 }
 
 // AppsFind finds the first app matching the query.

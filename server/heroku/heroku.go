@@ -31,9 +31,12 @@ const AcceptHeader = "application/vnd.heroku+json; version=3"
 type Server struct {
 	*empire.Empire
 
-	// Authenticator is the auth.Authenticator that will be used to
-	// authenticate requests.
-	Authenticator auth.Authenticator
+	// Secret used to sign JWT access tokens.
+	Secret []byte
+
+	// Auth is the auth.Auth that will be used to authenticate and authorize
+	// requests.
+	Auth *auth.Auth
 
 	mux *httpx.Router
 }
@@ -100,15 +103,21 @@ func New(e *empire.Empire) *Server {
 
 // ServeHTTPContext implements the httpx.Handler interface.
 func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	h := Authenticate(s.mux, s.Authenticator)
-
-	err := h.ServeHTTPContext(ctx, w, r)
-	if err != nil {
+	if err := s.serve(ctx, w, r); err != nil {
 		Error(w, err, http.StatusInternalServerError)
 		reporter.Report(ctx, err)
 	}
 
 	return nil
+}
+
+func (s *Server) serve(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	ctx, err := s.Authenticate(ctx, r)
+	if err != nil {
+		return err
+	}
+
+	return s.mux.ServeHTTPContext(ctx, w, r)
 }
 
 // handle adds a new handler to the router, which also increments a counter.
@@ -118,7 +127,7 @@ func (s *Server) handle(method, path string, h httpx.HandlerFunc) {
 	fn := httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		tags := []string{
 			fmt.Sprintf("handler:%s", name),
-			fmt.Sprintf("user:%s", UserFromContext(ctx).Name),
+			fmt.Sprintf("user:%s", auth.UserFromContext(ctx).Name),
 		}
 		start := time.Now()
 		err := h(ctx, w, r)
@@ -208,27 +217,6 @@ func RangeHeader(r *http.Request) (headerutil.Range, error) {
 		return headerutil.Range{}, err
 	}
 	return *rangeHeader, nil
-}
-
-// key used to store context values from within this package.
-type key int
-
-const (
-	userKey key = 0
-)
-
-// WithUser adds a user to the context.Context.
-func WithUser(ctx context.Context, u *empire.User) context.Context {
-	return context.WithValue(ctx, userKey, u)
-}
-
-// UserFromContext returns a user from a context.Context if one is present.
-func UserFromContext(ctx context.Context) *empire.User {
-	u, ok := ctx.Value(userKey).(*empire.User)
-	if !ok {
-		panic("expected user to be authenticated")
-	}
-	return u
 }
 
 func findMessage(r *http.Request) (string, error) {

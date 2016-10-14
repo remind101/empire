@@ -67,7 +67,6 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 
 	e := empire.New(db)
 	e.Scheduler = scheduler
-	e.Secret = []byte(c.String(FlagSecret))
 	e.EventStream = empire.AsyncEvents(streams)
 	e.ProcfileExtractor = empire.PullAndExtract(docker)
 	e.Environment = c.String(FlagEnvironment)
