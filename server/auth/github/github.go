@@ -4,15 +4,43 @@ package github
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
 )
 
+// DefaultIDFunc is an IDFunc that just returns the users GH username as the
+// user id.
+var DefaultIDFunc = func(ghUser *User) (string, error) {
+	return ghUser.Login, nil
+}
+
+var emailRegex = regexp.MustCompile(`.+@(.+)`)
+
+// EmailDomainID returns an IDFunc that returns the first email for the given
+// domain.
+func EmailDomainID(domain string) func(*User) (string, error) {
+	return func(ghUser *User) (string, error) {
+		for _, email := range ghUser.Emails {
+			matches := emailRegex.FindAllStringSubmatch(email, -1)
+			if matches[0][1] == domain {
+				return email, nil
+			}
+		}
+
+		return "", fmt.Errorf("GitHub user %s has no @%s email", ghUser.Login, domain)
+	}
+}
+
 // Authorizer is an implementation of the auth.Authenticator interface backed by
 // GitHub's Non-Web Application Flow, which can be found at
 // http://goo.gl/onpQKM.
 type Authenticator struct {
+	// IDFunc should return something that can be used as a canonical user
+	// id within Empire (for example, their company email).
+	IDFunc func(*User) (string, error)
+
 	// OAuth2 configuration (client id, secret, scopes, etc).
 	client interface {
 		CreateAuthorization(CreateAuthorizationOptions) (*Authorization, error)
@@ -48,7 +76,17 @@ func (a *Authenticator) Authenticate(username, password, otp string) (*empire.Us
 		return nil, err
 	}
 
+	idFunc := a.IDFunc
+	if idFunc == nil {
+		idFunc = DefaultIDFunc
+	}
+	id, err := idFunc(u)
+	if err != nil {
+		return nil, fmt.Errorf("could not determine user id: %v", err)
+	}
+
 	return &empire.User{
+		ID:          id,
 		Name:        u.Login,
 		GitHubToken: authorization.Token,
 	}, nil

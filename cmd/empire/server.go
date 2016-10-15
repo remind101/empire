@@ -127,7 +127,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		config := &oauth2.Config{
 			ClientID:     c.String(FlagGithubClient),
 			ClientSecret: c.String(FlagGithubClientSecret),
-			Scopes:       []string{"repo_deployment", "read:org"},
+			Scopes:       []string{"repo_deployment", "read:org", "user:email"},
 		}
 
 		client = githubauth.NewClient(config)
@@ -141,7 +141,11 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 
 		// an authenticator for authenticating requests with a users github
 		// credentials.
-		authenticators = append(authenticators, githubauth.NewAuthenticator(client))
+		authenticator := githubauth.NewAuthenticator(client)
+		if domain := c.String(FlagGithubIDDomain); domain != "" {
+			authenticator.IDFunc = githubauth.EmailDomainID(domain)
+		}
+		authenticators = append(authenticators, authenticator)
 	}
 
 	// build the authentication chain.

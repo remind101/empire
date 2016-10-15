@@ -27,6 +27,7 @@ const (
 	FlagGithubOrg          = "github.organization"
 	FlagGithubApiURL       = "github.api.url"
 	FlagGithubTeam         = "github.team.id"
+	FlagGithubIDDomain     = "github.id.domain"
 
 	FlagGithubWebhooksSecret           = "github.webhooks.secret"
 	FlagGithubDeploymentsEnvironments  = "github.deployments.environment"
@@ -120,6 +121,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The ID of the github team to allow access to",
 				EnvVar: "EMPIRE_GITHUB_TEAM_ID",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubIDDomain,
+				Value:  "",
+				Usage:  "If provided, the GitHub authentication backend will look for an email on GitHub user that matches this domain, then use that email as the id.",
+				EnvVar: "EMPIRE_GITHUB_ID_DOMAIN",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubApiURL,

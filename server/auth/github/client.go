@@ -76,11 +76,17 @@ type Authorization struct {
 }
 
 type User struct {
-	Login string `json:"login"`
+	Login  string `json:"login"`
+	Emails []string
 }
 
 type TeamMembership struct {
 	State string `json:"state"`
+}
+
+type Email struct {
+	Email    string `json:"email"`
+	Verified bool   `json:"verified"`
 }
 
 // CreateAuthorization creates a new GitHub authorization (or returns the
@@ -139,6 +145,18 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 
 // GetUser makes an authenticated request to /user and returns the GitHub User.
 func (c *Client) GetUser(token string) (*User, error) {
+	user, err := c.getUser(token)
+	if err != nil {
+		return nil, err
+	}
+	user.Emails, err = c.getVerifiedEmails(token)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (c *Client) getUser(token string) (*User, error) {
 	req, err := c.NewRequest("GET", "/user", nil)
 	if err != nil {
 		return nil, err
@@ -153,6 +171,30 @@ func (c *Client) GetUser(token string) (*User, error) {
 	}
 
 	return &u, nil
+}
+
+func (c *Client) getVerifiedEmails(token string) ([]string, error) {
+	req, err := c.NewRequest("GET", "/user/emails", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenAuth(req, token)
+
+	var emails []Email
+
+	if _, err := c.Do(req, &emails); err != nil {
+		return nil, err
+	}
+
+	var verified []string
+	for _, email := range emails {
+		if email.Verified {
+			verified = append(verified, email.Email)
+		}
+	}
+
+	return verified, nil
 }
 
 // IsOrganizationMember returns true of the authenticated user is a member of the
@@ -179,7 +221,7 @@ func (c *Client) IsOrganizationMember(organization, token string) (bool, error) 
 
 // IsTeamMember returns true if the given user is a member of the team.
 func (c *Client) IsTeamMember(teamID, token string) (bool, error) {
-	u, err := c.GetUser(token)
+	u, err := c.getUser(token)
 	if err != nil {
 		return false, err
 	}
