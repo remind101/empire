@@ -88,6 +88,9 @@ func New(e *empire.Empire) *Server {
 	// OAuth
 	r.handle("POST", "/oauth/authorizations", r.PostAuthorizations)
 
+	// Certs
+	r.handle("POST", "/apps/{app}/certs", r.PostCerts)
+
 	// SSL
 	sslRemoved := errHandler(ErrSSLRemoved)
 	r.mux.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("GET")           // hk ssl

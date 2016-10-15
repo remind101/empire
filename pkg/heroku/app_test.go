@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 
@@ -79,7 +80,7 @@ func TestAppInfoSuccess(t *testing.T) {
 		t.Fatal("no app object returned")
 	}
 	var emptyapp App
-	if *app == emptyapp {
+	if reflect.DeepEqual(*app, emptyapp) {
 		t.Errorf("returned app is empty")
 	}
 }
@@ -112,7 +113,7 @@ func TestAppListSuccess(t *testing.T) {
 		t.Fatalf("expected 1 app, got %d", len(apps))
 	}
 	var emptyapp App
-	if apps[0] == emptyapp {
+	if reflect.DeepEqual(apps[0], emptyapp) {
 		t.Errorf("returned app is empty")
 	}
 }
@@ -171,7 +172,7 @@ func TestAppCreateSuccess(t *testing.T) {
 		t.Fatal("no app object returned")
 	}
 	var emptyapp App
-	if *app == emptyapp {
+	if reflect.DeepEqual(*app, emptyapp) {
 		t.Errorf("returned app is empty")
 	}
 
@@ -204,7 +205,7 @@ func TestAppCreateSuccessWithOpts(t *testing.T) {
 		t.Fatal("no app object returned")
 	}
 	var emptyapp App
-	if *app == emptyapp {
+	if reflect.DeepEqual(*app, emptyapp) {
 		t.Errorf("returned app is empty")
 	}
 
@@ -287,7 +288,7 @@ func TestAppUpdateSuccess(t *testing.T) {
 		t.Fatal("no app object returned")
 	}
 	var emptyapp App
-	if *app == emptyapp {
+	if reflect.DeepEqual(*app, emptyapp) {
 		t.Errorf("returned app is empty")
 	}
 

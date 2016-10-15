@@ -67,6 +67,9 @@ type App struct {
 
 	// certificate for the app
 	Cert string `json:"cert,omitempty"`
+
+	// maps a process name to a certificate to use for it.
+	Certs map[string]string `json:"certs,omitempty"`
 }
 
 // Create a new app.
@@ -136,6 +139,6 @@ type AppUpdateOpts struct {
 	Maintenance *bool `json:"maintenance,omitempty"`
 	// unique name of app
 	Name *string `json:"name,omitempty"`
-	// certificate for the app
+	// DEPRECATED:
 	Cert *string `json:"cert,omitempty"`
 }

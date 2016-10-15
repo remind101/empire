@@ -60,6 +60,16 @@ func (c *CommandNotAllowedError) Error() string {
 	return fmt.Sprintf("command not allowed: %v\n", c.Command)
 }
 
+// NoCertError is returned when the Procfile specifies an https/ssl listener but
+// there is no attached certificate.
+type NoCertError struct {
+	Process string
+}
+
+func (e *NoCertError) Error() string {
+	return fmt.Sprintf("the %s process does not have a certificate attached", e.Process)
+}
+
 // Empire provides the core public API for Empire. Refer to the package
 // documentation for details.
 type Empire struct {
@@ -691,11 +701,22 @@ func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error
 	return nil
 }
 
+type CertsAttachOpts struct {
+	// The certificate to attach.
+	Cert string
+	// The app to attach the cert to.
+	App *App
+
+	// An optional process to attach the cert to. If not provided, "web"
+	// will be used.
+	Process string
+}
+
 // CertsAttach attaches an SSL certificate to the app.
-func (e *Empire) CertsAttach(ctx context.Context, app *App, cert string) error {
+func (e *Empire) CertsAttach(ctx context.Context, opts CertsAttachOpts) error {
 	tx := e.db.Begin()
 
-	if err := e.certs.CertsAttach(ctx, tx, app, cert); err != nil {
+	if err := e.certs.CertsAttach(ctx, tx, opts); err != nil {
 		tx.Rollback()
 		return err
 	}

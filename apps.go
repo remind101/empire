@@ -1,6 +1,9 @@
 package empire
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -27,6 +30,39 @@ func appNameFromRepo(repo string) string {
 	return p[len(p)-1]
 }
 
+// Certs maps a process name to a certificate to use for any SSL listeners.
+type Certs map[string]string
+
+// Scan implements the sql.Scanner interface.
+func (c *Certs) Scan(src interface{}) error {
+	bytes, ok := src.([]byte)
+	if !ok {
+		return error(errors.New("Scan source was not []bytes"))
+	}
+
+	certs := make(Certs)
+	if err := json.Unmarshal(bytes, &certs); err != nil {
+		return err
+	}
+	*c = certs
+
+	return nil
+}
+
+// Value implements the driver.Value interface.
+func (c Certs) Value() (driver.Value, error) {
+	if c == nil {
+		return nil, nil
+	}
+
+	raw, err := json.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return driver.Value(raw), nil
+}
+
 // App represents an Empire application.
 type App struct {
 	// A unique uuid that identifies the application.
@@ -43,8 +79,9 @@ type App struct {
 	// Valid values are exposePrivate and exposePublic.
 	Exposure string
 
-	// The name of an SSL cert for the web process of this app.
-	Cert string
+	// Maps a process name to an SSL certificate to use for the SSL listener
+	// of the load balancer.
+	Certs Certs
 
 	// The time that this application was created.
 	CreatedAt *time.Time

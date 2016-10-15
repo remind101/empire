@@ -161,7 +161,10 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 
 // Release submits a release to the scheduler.
 func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream) error {
-	a := newSchedulerApp(release)
+	a, err := newSchedulerApp(release)
+	if err != nil {
+		return err
+	}
 	return s.Scheduler.Submit(ctx, a, ss)
 }
 
@@ -181,7 +184,10 @@ func (s *releasesService) Restart(ctx context.Context, db *gorm.DB, app *App) er
 		return nil
 	}
 
-	a := newSchedulerApp(release)
+	a, err := newSchedulerApp(release)
+	if err != nil {
+		return err
+	}
 	return s.Scheduler.Restart(ctx, a, nil)
 }
 
@@ -280,12 +286,16 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func newSchedulerApp(release *Release) *scheduler.App {
+func newSchedulerApp(release *Release) (*scheduler.App, error) {
 	var processes []*scheduler.Process
 
 	for name, p := range release.Formation {
 		if !p.NoService {
-			processes = append(processes, newSchedulerProcess(release, name, p))
+			process, err := newSchedulerProcess(release, name, p)
+			if err != nil {
+				return nil, err
+			}
+			processes = append(processes, process)
 		}
 	}
 
@@ -307,10 +317,10 @@ func newSchedulerApp(release *Release) *scheduler.App {
 		Processes: processes,
 		Env:       env,
 		Labels:    labels,
-	}
+	}, nil
 }
 
-func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Process {
+func newSchedulerProcess(release *Release, name string, p Process) (*scheduler.Process, error) {
 	env := make(map[string]string)
 	for k, v := range p.Environment {
 		env[k] = v
@@ -324,7 +334,10 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 		"empire.app.process": name,
 	}
 
-	var exposure *scheduler.Exposure
+	var (
+		exposure *scheduler.Exposure
+		err      error
+	)
 	// For `web` processes defined in the standard procfile, we'll
 	// generate a default exposure setting and also set the PORT
 	// environment variable for backwards compatability.
@@ -332,7 +345,10 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 		exposure = standardWebExposure(release.App)
 		env["PORT"] = "8080"
 	} else {
-		exposure = processExposure(release.App, p)
+		exposure, err = processExposure(release.App, name, p)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &scheduler.Process{
@@ -347,7 +363,7 @@ func newSchedulerProcess(release *Release, name string, p Process) *scheduler.Pr
 		Nproc:       uint(p.Nproc),
 		Exposure:    exposure,
 		Schedule:    processSchedule(name, p),
-	}
+	}, nil
 }
 
 // environment coerces a Vars into a map[string]string.
@@ -372,7 +388,8 @@ func standardWebExposure(app *App) *scheduler.Exposure {
 		},
 	}
 
-	if cert := app.Cert; cert != "" {
+	// If a certificate is attached to the "web" process, add an SSL port.
+	if cert, ok := app.Certs[webProcessType]; ok {
 		ports = append(ports, scheduler.Port{
 			Container: 8080,
 			Host:      443,
@@ -388,10 +405,10 @@ func standardWebExposure(app *App) *scheduler.Exposure {
 	}
 }
 
-func processExposure(app *App, process Process) *scheduler.Exposure {
+func processExposure(app *App, name string, process Process) (*scheduler.Exposure, error) {
 	// No ports == not exposed
 	if len(process.Ports) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var ports []scheduler.Port
@@ -401,14 +418,22 @@ func processExposure(app *App, process Process) *scheduler.Exposure {
 		case "http":
 			protocol = &scheduler.HTTP{}
 		case "https":
+			cert, ok := app.Certs[name]
+			if !ok {
+				return nil, &NoCertError{Process: name}
+			}
 			protocol = &scheduler.HTTPS{
-				Cert: app.Cert,
+				Cert: cert,
 			}
 		case "tcp":
 			protocol = &scheduler.TCP{}
 		case "ssl":
+			cert, ok := app.Certs[name]
+			if !ok {
+				return nil, &NoCertError{Process: name}
+			}
 			protocol = &scheduler.SSL{
-				Cert: app.Cert,
+				Cert: cert,
 			}
 		}
 		ports = append(ports, scheduler.Port{
@@ -420,7 +445,7 @@ func processExposure(app *App, process Process) *scheduler.Exposure {
 	return &scheduler.Exposure{
 		External: app.Exposure == exposePublic,
 		Ports:    ports,
-	}
+	}, nil
 }
 
 func processSchedule(name string, p Process) scheduler.Schedule {
