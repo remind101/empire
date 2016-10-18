@@ -1,4 +1,4 @@
 build
 .env*
 *.swp
-release
+*.dump
