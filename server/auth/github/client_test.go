@@ -167,6 +167,16 @@ func TestClient_GetUser(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
 	}, nil)
 
+	req, _ = http.NewRequest("GET", "https://api.github.com/user/emails", nil)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.SetBasicAuth("access_token", "x-oauth-basic")
+
+	h.On("Do", req).Return(&http.Response{
+		Request:    req,
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(bytes.NewBufferString(`[{"email":"octocat@github.com","verified":true,"primary":true}]`)),
+	}, nil)
+
 	user, err := c.GetUser("access_token")
 	assert.NoError(t, err)
 	assert.Equal(t, "ejholmes", user.Login)

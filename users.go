@@ -2,6 +2,9 @@ package empire
 
 // User represents a user of Empire.
 type User struct {
+	// Unique identifier for this User.
+	ID string `json:"id"`
+
 	// Name is the users username.
 	Name string `json:"name"`
 

@@ -28,6 +28,7 @@ func TestAuthenticator(t *testing.T) {
 	user, err := a.Authenticate("username", "password", "otp")
 	assert.NoError(t, err)
 	assert.Equal(t, "ejholmes", user.Name)
+	assert.Equal(t, "ejholmes", user.ID)
 	assert.Equal(t, "access_token", user.GitHubToken)
 }
 
@@ -120,6 +121,23 @@ func TestTeamAuthorizer_Unauthorized(t *testing.T) {
 	})
 	assert.IsType(t, &auth.UnauthorizedError{}, err)
 	assert.EqualError(t, err, `ejholmes is not a member of team 123.`)
+}
+
+func TestEmailDomainID(t *testing.T) {
+	id, err := EmailDomainID("remind101.com")(&User{
+		Emails: []string{
+			"eric@remind101.com",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "eric@remind101.com", id)
+
+	id, err = EmailDomainID("remind101.com")(&User{
+		Emails: []string{
+			"eric@example.org",
+		},
+	})
+	assert.Error(t, err)
 }
 
 type mockClient struct {

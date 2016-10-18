@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -112,11 +113,15 @@ func (s *Server) AccessTokensCreate(token *AccessToken) (*AccessToken, error) {
 func (s *Server) AccessTokensFind(token string) (*AccessToken, error) {
 	at, err := parseToken(s.Secret, token)
 	if err != nil {
+		if err == errTokenIncompatible {
+			return nil, nil
+		}
+
 		switch err.(type) {
 		case *jwt.ValidationError:
 			return nil, nil
 		default:
-			return at, err
+			return at, fmt.Errorf("error parsing token: %v", err)
 		}
 	}
 
@@ -149,12 +154,20 @@ func parseToken(secret []byte, token string) (*AccessToken, error) {
 	return jwtToAccessToken(t)
 }
 
+// When changes to the token format are not backwards compatible, this should
+// incremented. The user will be asked to re-authenticate.
+var tokenCompatibilityVersion = "v1"
+var errTokenIncompatible = errors.New("token incompatible")
+
 func accessTokenToJwt(token *AccessToken) *jwt.Token {
 	t := jwt.New(jwt.SigningMethodHS256)
+	t.Claims["Version"] = tokenCompatibilityVersion
 	t.Claims["User"] = struct {
+		ID          string
 		Name        string
 		GitHubToken string
 	}{
+		ID:          token.User.ID,
 		Name:        token.User.Name,
 		GitHubToken: token.User.GitHubToken,
 	}
@@ -166,8 +179,19 @@ func accessTokenToJwt(token *AccessToken) *jwt.Token {
 func jwtToAccessToken(t *jwt.Token) (*AccessToken, error) {
 	var token AccessToken
 
+	v, ok := t.Claims["Version"]
+	if !ok || v != tokenCompatibilityVersion {
+		return nil, errTokenIncompatible
+	}
+
 	if u, ok := t.Claims["User"].(map[string]interface{}); ok {
 		var user empire.User
+
+		if id, ok := u["ID"].(string); ok {
+			user.ID = id
+		} else {
+			return &token, errors.New("missing id")
+		}
 
 		if n, ok := u["Name"].(string); ok {
 			user.Name = n
