@@ -29,7 +29,7 @@ func TestMigrations(t *testing.T) {
 }
 
 func TestLatestSchema(t *testing.T) {
-	assert.Equal(t, 18, latestSchema())
+	assert.Equal(t, 19, latestSchema())
 }
 
 func TestNoDuplicateMigrations(t *testing.T) {

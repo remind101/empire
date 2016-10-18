@@ -49,12 +49,27 @@ func TestEmpire_CertsAttach(t *testing.T) {
 	assert.NoError(t, err)
 
 	cert := "serverCertificate"
-	err = e.CertsAttach(context.Background(), app, cert)
+	err = e.CertsAttach(context.Background(), empire.CertsAttachOpts{
+		App:  app,
+		Cert: cert,
+	})
 	assert.NoError(t, err)
 
 	app, err = e.AppsFind(empire.AppsQuery{ID: &app.ID})
 	assert.NoError(t, err)
-	assert.Equal(t, cert, app.Cert)
+	assert.Equal(t, empire.Certs{"web": "serverCertificate"}, app.Certs)
+
+	cert = "otherCertificate"
+	err = e.CertsAttach(context.Background(), empire.CertsAttachOpts{
+		App:     app,
+		Cert:    cert,
+		Process: "http",
+	})
+	assert.NoError(t, err)
+
+	app, err = e.AppsFind(empire.AppsQuery{ID: &app.ID})
+	assert.NoError(t, err)
+	assert.Equal(t, empire.Certs{"web": "serverCertificate", "http": "otherCertificate"}, app.Certs)
 
 	s.AssertExpectations(t)
 }

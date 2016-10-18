@@ -86,8 +86,14 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 	}
 	proc.SetConstraints(constraints)
 
-	a := newSchedulerApp(release)
-	p := newSchedulerProcess(release, procName, proc)
+	a, err := newSchedulerApp(release)
+	if err != nil {
+		return err
+	}
+	p, err := newSchedulerProcess(release, procName, proc)
+	if err != nil {
+		return err
+	}
 	p.Labels["empire.user"] = opts.User.Name
 
 	// Add additional environment variables to the process.

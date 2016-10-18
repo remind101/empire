@@ -3,6 +3,7 @@ package empire
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/pkg/constraints"
@@ -558,6 +559,57 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 		}),
 		Down: migrate.Queries([]string{
 			`DROP TABLE ecs_environment`,
+		}),
+	},
+
+	// This migration migrates the cert storage from a single string column
+	// to a mapping of process name to cert name.
+	{
+		ID: 19,
+		Up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`ALTER TABLE apps ADD COLUMN certs json`)
+			if err != nil {
+				return fmt.Errorf("error adding certs column: %v", err)
+			}
+
+			rows, err := tx.Query(`SELECT id, cert FROM apps WHERE cert is not null and cert != ''`)
+			if err != nil {
+				return fmt.Errorf("error querying app certs: %v", err)
+			}
+			defer rows.Close()
+
+			// maps an app id to it's cert.
+			certs := make(map[string]string)
+			for rows.Next() {
+				var appID, cert string
+				if err := rows.Scan(&appID, &cert); err != nil {
+					return fmt.Errorf("error scanning row: %v", err)
+				}
+				certs[appID] = cert
+			}
+
+			for appID, cert := range certs {
+				raw, err := json.Marshal(map[string]string{"web": cert})
+				if err != nil {
+					return fmt.Errorf("error generating cert map for app %s: %v", appID, err)
+				}
+
+				_, err = tx.Exec(`UPDATE apps SET certs = $1 WHERE id = $2`, raw, appID)
+				if err != nil {
+					return fmt.Errorf("error updating certs column on app %s: %v", appID, err)
+				}
+			}
+
+			_, err = tx.Exec(`ALTER TABLE apps DROP COLUMN cert`)
+			if err != nil {
+				return fmt.Errorf("error dropping old cert column: %v", err)
+			}
+
+			return nil
+		},
+		Down: migrate.Queries([]string{
+			`ALTER TABLE apps DROP COLUMN certs`,
+			`ALTER TABLE apps ADD COLUMN cert text`,
 		}),
 	},
 }
