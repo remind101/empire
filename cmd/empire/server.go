@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"text/template"
 	"time"
@@ -11,6 +14,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/pkg/saml"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	githubauth "github.com/remind101/empire/server/auth/github"
@@ -77,11 +81,75 @@ func newServer(c *Context, e *empire.Empire) http.Handler {
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	s := server.New(e, opts)
+	s.URL = c.URL(FlagURL)
 	s.Heroku.Auth = newAuth(c, e)
 	s.Heroku.Secret = []byte(c.String(FlagSecret))
 
+	sp, err := newSAMLServiceProvider(c)
+	if err != nil {
+		panic(err)
+	}
+
+	s.ServiceProvider = sp
+
 	h := middleware.Common(s)
 	return middleware.Handler(c, h)
+}
+
+func newSAMLServiceProvider(c *Context) (*saml.ServiceProvider, error) {
+	metadataLocation := c.String(FlagSAMLMetadata)
+	if metadataLocation == "" {
+		// No SAML
+		return nil, nil
+	}
+
+	var metadataContent []byte
+	if metadataURI, err := url.Parse(metadataLocation); err != nil {
+		// Assume that we've been passed the XML document.
+		metadataContent = []byte(metadataLocation)
+	} else {
+		metadataContent, err = fetchSAMLMetadata(metadataURI)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching metadata from %s: %v", metadataLocation, err)
+		}
+	}
+
+	baseURL := c.URL(FlagURL)
+
+	var metadata saml.Metadata
+	if err := xml.Unmarshal(metadataContent, &metadata); err != nil {
+		return nil, fmt.Errorf("error parsing SAML metadata: %v", err)
+	}
+
+	return &saml.ServiceProvider{
+		IDPMetadata: &metadata,
+		MetadataURL: fmt.Sprintf("%s/saml/metadata", baseURL),
+		AcsURL:      fmt.Sprintf("%s/saml/acs", baseURL),
+	}, nil
+}
+
+func fetchSAMLMetadata(uri *url.URL) ([]byte, error) {
+	// TODO: Support file://
+	scheme := uri.Scheme
+	switch scheme {
+	case "https", "http":
+		req, err := http.NewRequest("GET", uri.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", fmt.Sprintf("Empire (%s)", empire.Version))
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode/100 != 2 {
+			return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+		return ioutil.ReadAll(resp.Body)
+	default:
+		return nil, fmt.Errorf("not able to fetch metadata via %s", scheme)
+	}
 }
 
 func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *Context) *cloudformation.CustomResourceProvisioner {

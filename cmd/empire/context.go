@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/url"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/codegangsta/cli"
@@ -62,6 +64,15 @@ func newContext(c *cli.Context) (ctx *Context, err error) {
 	}
 
 	return
+}
+
+func (c *Context) URL(name string) *url.URL {
+	v := c.String(name)
+	u, err := url.Parse(v)
+	if err != nil {
+		panic(err)
+	}
+	return u
 }
 
 func (c *Context) Reporter() reporter.Reporter { return c.reporter }
