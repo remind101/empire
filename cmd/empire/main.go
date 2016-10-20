@@ -25,9 +25,15 @@ const (
 
 	FlagServerAuth = "server.auth"
 
-	FlagSAMLMetadata       = "saml.metadata"
-	FlagSAMLKey            = "saml.key"
-	FlagSAMLCert           = "saml.cert"
+	FlagSAMLMetadata = "saml.metadata"
+	FlagSAMLKey      = "saml.key"
+	FlagSAMLCert     = "saml.cert"
+
+	FlagOneloginClientID     = "onelogin.client.id"
+	FlagOneloginClientSecret = "onelogin.client.secret"
+	FlagOneloginAppID        = "onelogin.app.id"
+	FlagOneloginSubdomain    = "onelogin.subdomain"
+
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
 	FlagGithubOrg          = "github.organization"
@@ -132,6 +138,30 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The location of the public key for this service provider. (e.g. file:///etc/empire/saml.cert)",
 				EnvVar: "EMPIRE_SAML_CERT",
+			},
+			cli.StringFlag{
+				Name:   FlagOneloginClientID,
+				Value:  "",
+				Usage:  "The client id for Onelogin to generate API access tokens",
+				EnvVar: "EMPIRE_ONELOGIN_CLIENT_ID",
+			},
+			cli.StringFlag{
+				Name:   FlagOneloginClientSecret,
+				Value:  "",
+				Usage:  "The client secret for Onelogin to generate API access tokens",
+				EnvVar: "EMPIRE_ONELOGIN_CLIENT_SECRET",
+			},
+			cli.StringFlag{
+				Name:   FlagOneloginAppID,
+				Value:  "",
+				Usage:  "The Onelogin SAML app id",
+				EnvVar: "EMPIRE_ONELOGIN_APP_ID",
+			},
+			cli.StringFlag{
+				Name:   FlagOneloginSubdomain,
+				Value:  "",
+				Usage:  "The subdomain of the onelogin app",
+				EnvVar: "EMPIRE_ONELOGIN_SUBDOMAIN",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,

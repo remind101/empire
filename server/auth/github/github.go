@@ -26,7 +26,7 @@ func NewAuthenticator(c *Client) *Authenticator {
 	return &Authenticator{client: c}
 }
 
-func (a *Authenticator) Authenticate(username, password, otp string) (*empire.User, error) {
+func (a *Authenticator) Authenticate(username, password, otp string) (*auth.Session, error) {
 	authorization, err := a.client.CreateAuthorization(CreateAuthorizationOptions{
 		Username: username,
 		Password: password,
@@ -48,10 +48,12 @@ func (a *Authenticator) Authenticate(username, password, otp string) (*empire.Us
 		return nil, err
 	}
 
-	return &empire.User{
+	user := &empire.User{
 		Name:        u.Login,
 		GitHubToken: authorization.Token,
-	}, nil
+	}
+
+	return auth.NewSession(user), nil
 }
 
 // OrganizationAuthorizer is an implementation of the auth.Authorizer interface

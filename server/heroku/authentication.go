@@ -102,7 +102,7 @@ type accessTokenAuthenticator struct {
 
 // Authenticate authenticates the access token, which should be provided as the
 // password parameter. Username and otp are ignored.
-func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string) (*empire.User, error) {
+func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string) (*auth.Session, error) {
 	at, err := a.findAccessToken(token)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,12 @@ func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string
 		return nil, auth.ErrForbidden
 	}
 
-	return at.User, nil
+	session := &auth.Session{
+		User:      at.User,
+		ExpiresAt: at.ExpiresAt,
+	}
+
+	return session, nil
 }
 
 // AccessTokensCreate "creates" the token by jwt signing it and setting the
