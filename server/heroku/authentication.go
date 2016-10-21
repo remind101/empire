@@ -3,6 +3,7 @@ package heroku
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/remind101/empire"
@@ -16,6 +17,9 @@ import (
 type AccessToken struct {
 	// The encoded token.
 	Token string
+
+	// The time that the token expires.
+	ExpiresAt *time.Time
 
 	// The user that this AccessToken belongs to.
 	User *empire.User
@@ -32,18 +36,19 @@ func (t *AccessToken) IsValid() error {
 
 // ServeHTTPContext implements the httpx.Handler interface. It will ensure that
 // there is a Bearer token present and that it is valid.
-func (s *Server) Authenticate(ctx context.Context, r *http.Request) (context.Context, error) {
+func (s *Server) Authenticate(ctx context.Context, r *http.Request, strategies ...string) (context.Context, error) {
+	// Add an auth strategy for authenticating with an access token.
+	auther := s.Auth.PrependAuthenticator(auth.StrategyAccessToken, &accessTokenAuthenticator{
+		findAccessToken: s.AccessTokensFind,
+	})
+
 	username, password, ok := r.BasicAuth()
 	if !ok {
 		return nil, ErrUnauthorized
 	}
 
-	// Add an auth strategy for authenticating with an access token.
-	auther := s.Auth.AddAuthenticator(&accessTokenAuthenticator{
-		findAccessToken: s.AccessTokensFind,
-	})
-
-	ctx, err := auther.Authenticate(ctx, username, password, r.Header.Get(HeaderTwoFactor))
+	otp := r.Header.Get(HeaderTwoFactor)
+	ctx, err := auther.Authenticate(ctx, username, password, otp, strategies...)
 	if err != nil {
 		switch err {
 		case auth.ErrTwoFactor:
@@ -151,6 +156,9 @@ func parseToken(secret []byte, token string) (*AccessToken, error) {
 
 func accessTokenToJwt(token *AccessToken) *jwt.Token {
 	t := jwt.New(jwt.SigningMethodHS256)
+	if token.ExpiresAt != nil {
+		t.Claims["exp"] = token.ExpiresAt.Unix()
+	}
 	t.Claims["User"] = struct {
 		Name        string
 		GitHubToken string

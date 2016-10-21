@@ -103,6 +103,7 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 	// Create an Access Token for the API.
 	login := assertion.Subject.NameID.Value
 	at, err := s.Heroku.AccessTokensCreate(&heroku.AccessToken{
+		ExpiresAt: &assertion.AuthnStatement.SessionNotOnOrAfter,
 		User: &empire.User{
 			Name: login,
 		},

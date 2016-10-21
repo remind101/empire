@@ -12,6 +12,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/empiretest/cli"
+	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/pkg/timex"
 )
@@ -168,4 +169,15 @@ func (c *CLI) Close() {
 	}
 
 	c.Server.Close()
+}
+
+func newAuth(authenticator auth.Authenticator) *auth.Auth {
+	return &auth.Auth{
+		Strategies: auth.Strategies{
+			{
+				Name:          auth.StrategyUsernamePassword,
+				Authenticator: authenticator,
+			},
+		},
+	}
 }

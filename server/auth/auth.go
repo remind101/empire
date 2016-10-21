@@ -4,8 +4,15 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/remind101/empire"
+)
+
+// Some common names for strategies.
+const (
+	StrategyUsernamePassword = "UsernamePassword"
+	StrategyAccessToken      = "AccessToken"
 )
 
 var (
@@ -33,35 +40,89 @@ func (e *UnauthorizedError) Error() string {
 // pre-authorizing the request, then embedding a set of ACL policy to
 // authorize the action.
 type Auth struct {
-	Authenticator Authenticator
-	Authorizer    Authorizer
+	Strategies Strategies
+	Authorizer Authorizer
+}
+
+// Strategy wraps an authenticator with a name.
+type Strategy struct {
+	Authenticator
+
+	// The name of this strategy.
+	Name string
+
+	// When true, disables using this strategy by default, unless the
+	// strategy is explicitly requested.
+	Disabled bool
+}
+
+// Strategies wraps a slice of *Strategy with helpers for authenticating with a
+// specific strategy.
+type Strategies []*Strategy
+
+// AuthenticatorFor builds an Authenticator using the given strategies (by
+// name). If no strategies are provided, all strategies will be used. If a
+// strategy is not found, a fake strategy will be returned that will return an
+// error when used.
+func (s Strategies) AuthenticatorFor(strategies ...string) Authenticator {
+	var authenticators []Authenticator
+	if len(strategies) > 0 {
+		for _, name := range strategies {
+			strategy := s.strategy(name)
+			if strategy == nil {
+				panic(fmt.Errorf("unknown strategy: %s", name))
+			}
+			authenticators = append(authenticators, strategy)
+		}
+	} else {
+		for _, strategy := range s {
+			if !strategy.Disabled {
+				authenticators = append(authenticators, strategy)
+			}
+		}
+	}
+	return MultiAuthenticator(authenticators...)
+}
+
+func (s Strategies) strategy(name string) *Strategy {
+	for _, strategy := range s {
+		if strategy.Name == name {
+			return strategy
+		}
+	}
+	return nil
 }
 
 func (a *Auth) copy() *Auth {
 	return &Auth{
-		Authenticator: a.Authenticator,
-		Authorizer:    a.Authorizer,
+		Strategies: a.Strategies[:],
+		Authorizer: a.Authorizer,
 	}
 }
 
-// AddAuthenticator returns a shallow copy of the Auth object will the given
+// AddAuthenticator returns a shallow copy of the Auth object with the given
 // authentication method added.
-func (a *Auth) AddAuthenticator(authenticator Authenticator) *Auth {
+func (a *Auth) PrependAuthenticator(name string, authenticator Authenticator) *Auth {
 	c := a.copy()
-
-	if a.Authenticator == nil {
-		c.Authenticator = authenticator
-		return c
+	strategy := &Strategy{
+		Name:          name,
+		Authenticator: authenticator,
 	}
-
-	c.Authenticator = MultiAuthenticator(authenticator, a.Authenticator)
+	c.Strategies = append([]*Strategy{strategy}, c.Strategies...)
 	return c
 }
 
-// Authenticate authenticates the request, and returns a new context.Context
-// with the user embedded. The user can be retrieved with UserFromContext.
-func (a *Auth) Authenticate(ctx context.Context, username, password, otp string) (context.Context, error) {
-	user, err := a.Authenticator.Authenticate(username, password, otp)
+// Authenticate authenticates the request using the named strategy, and returns
+// a new context.Context with the user embedded. The user can be retrieved with
+// UserFromContext.
+func (a *Auth) Authenticate(ctx context.Context, username, password, otp string, strategies ...string) (context.Context, error) {
+	// Default to using all strategies to authenticate.
+	authenticator := a.Strategies.AuthenticatorFor(strategies...)
+	return a.authenticate(ctx, authenticator, username, password, otp)
+}
+
+func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, username, password, otp string) (context.Context, error) {
+	user, err := authenticator.Authenticate(username, password, otp)
 	if err != nil {
 		return ctx, err
 	}

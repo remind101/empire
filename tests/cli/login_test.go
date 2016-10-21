@@ -11,9 +11,7 @@ import (
 
 func TestLogin(t *testing.T) {
 	s := empiretest.NewServer(t, nil)
-	s.Heroku.Auth = &auth.Auth{
-		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
-	}
+	s.Heroku.Auth = newAuth(auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}))
 
 	cli := newCLIWithServer(t, s)
 	defer cli.Close()
@@ -35,9 +33,7 @@ func TestLogin(t *testing.T) {
 
 func TestLoginUnauthorized(t *testing.T) {
 	s := empiretest.NewServer(t, nil)
-	s.Heroku.Auth = &auth.Auth{
-		Authenticator: auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}),
-	}
+	s.Heroku.Auth = newAuth(auth.StaticAuthenticator("fake", "bar", "", &empire.User{Name: "fake"}))
 
 	cli := newCLIWithServer(t, s)
 	defer cli.Close()
@@ -59,9 +55,7 @@ func TestLoginUnauthorized(t *testing.T) {
 
 func TestLoginTwoFactor(t *testing.T) {
 	s := empiretest.NewServer(t, nil)
-	s.Heroku.Auth = &auth.Auth{
-		Authenticator: auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}),
-	}
+	s.Heroku.Auth = newAuth(auth.StaticAuthenticator("twofactor", "bar", "code", &empire.User{Name: "fake"}))
 
 	cli := newCLIWithServer(t, s)
 	defer cli.Close()

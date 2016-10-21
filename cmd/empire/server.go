@@ -197,9 +197,12 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		// Fake authentication password where the user is "fake" and
 		// password is blank.
 		return &auth.Auth{
-			Authenticator: auth.StaticAuthenticator("fake", "", "", &empire.User{
-				Name: "fake",
-			}),
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: auth.StaticAuthenticator("fake", "", "", &empire.User{Name: "fake"}),
+				},
+			},
 		}
 	case "github":
 		config := &oauth2.Config{
@@ -220,6 +223,14 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		// an authenticator for authenticating requests with a users github
 		// credentials.
 		authenticator := githubauth.NewAuthenticator(client)
+		a := &auth.Auth{
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: authenticator,
+				},
+			},
+		}
 
 		// After the user is authenticated, check their GitHub Organization membership.
 		if org := c.String(FlagGithubOrg); org != "" {
@@ -229,12 +240,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 			log.Println("Adding GitHub Organization authorizer with the following configuration:")
 			log.Println(fmt.Sprintf("  Organization: %v ", org))
 
-			return &auth.Auth{
-				Authenticator: authenticator,
-				// Cache the organization check for 30 minutes since
-				// it's pretty slow.
-				Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
-			}
+			a.Authorizer = auth.CacheAuthorization(authorizer, 30*time.Minute)
 		}
 
 		// After the user is authenticated, check their GitHub Team membership.
@@ -245,20 +251,31 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 			log.Println("Adding GitHub Team authorizer with the following configuration:")
 			log.Println(fmt.Sprintf("  Team ID: %v ", teamID))
 
-			return &auth.Auth{
-				Authenticator: authenticator,
-				// Cache the team check for 30 minutes
-				Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
-			}
+			// Cache the team check for 30 minutes
+			a.Authorizer = auth.CacheAuthorization(authorizer, 30*time.Minute)
 		}
 
-		return &auth.Auth{
-			Authenticator: authenticator,
-		}
+		return a
 	case "saml":
 		// When using the SAML authentication backend, access tokens are
-		// created through the browser, so no need for an authenticator.
-		return &auth.Auth{}
+		// created through the browser, so username/password
+		// authentication should be disabled.
+		usernamePasswordDisabled := auth.AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
+			// TODO: Include a link to login?
+			return nil, fmt.Errorf("Authentication via username/password is disabled. Please login via SSO")
+		})
+
+		return &auth.Auth{
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: usernamePasswordDisabled,
+					// Ensure that this strategy isn't used
+					// by default.
+					Disabled: true,
+				},
+			},
+		}
 	default:
 		panic("unreachable")
 	}
