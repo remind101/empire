@@ -249,10 +249,11 @@ type Audience struct {
 //
 // See http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
 type AuthnStatement struct {
-	AuthnInstant    time.Time `xml:",attr"`
-	SessionIndex    string    `xml:",attr"`
-	SubjectLocality SubjectLocality
-	AuthnContext    AuthnContext
+	AuthnInstant        time.Time `xml:",attr"`
+	SessionNotOnOrAfter time.Time `xml:",attr"`
+	SessionIndex        string    `xml:",attr"`
+	SubjectLocality     SubjectLocality
+	AuthnContext        AuthnContext
 }
 
 func (a *AuthnStatement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
