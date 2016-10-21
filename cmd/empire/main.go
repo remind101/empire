@@ -23,6 +23,8 @@ const (
 
 	FlagStats = "stats"
 
+	FlagServerAuth = "server.auth"
+
 	FlagSAMLMetadata       = "saml.metadata"
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
@@ -106,9 +108,15 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_SCHEDULER",
 			},
 			cli.StringFlag{
+				Name:   FlagServerAuth,
+				Value:  "",
+				Usage:  "The authentication backend to use to authenticate requests to the API. Can be `fake`, `github`, or `saml`.",
+				EnvVar: "EMPIRE_SERVER_AUTH",
+			},
+			cli.StringFlag{
 				Name:   FlagSAMLMetadata,
 				Value:  "",
-				Usage:  "The location of the SAML metadata XML (e.g. https://app.onelogin.com/saml/metadata/1234)",
+				Usage:  "The location of the SAML metadata XML. This can be a url, path to a file, or the raw xml content. (e.g. https://app.onelogin.com/saml/metadata/1234, file:///etc/empire/saml_metadata.xml)",
 				EnvVar: "EMPIRE_SAML_METADATA",
 			},
 			cli.StringFlag{
