@@ -4,12 +4,9 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"text/template"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/saml"
@@ -70,7 +67,8 @@ func New(e *empire.Empire, options Options) *Server {
 	s.Heroku = heroku.New(e)
 	r.Headers("Accept", heroku.AcceptHeader).Handler(s.Heroku)
 
-	// Mount SAML handler.
+	// Mount SAML handlers.
+	r.HandleFunc("/saml/login", s.SAMLLogin)
 	r.HandleFunc("/saml/acs", s.SAMLACS)
 
 	// Mount health endpoint
@@ -81,46 +79,6 @@ func New(e *empire.Empire, options Options) *Server {
 
 func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	return s.mux.ServeHTTPContext(ctx, w, r)
-}
-
-func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if s.ServiceProvider == nil {
-		http.NotFound(w, r)
-		return nil
-	}
-
-	samlResponse := r.FormValue("SAMLResponse")
-	assertion, err := s.ServiceProvider.ParseSAMLResponse(samlResponse, []string{""})
-	if err != nil {
-		if err, ok := err.(*saml.InvalidResponseError); ok {
-			fmt.Fprintf(os.Stderr, "%v\n", err.PrivateErr)
-		}
-		//http.Error(w, "Unable to validate SAML Response", 403)
-		http.Error(w, err.Error(), 403)
-		return nil
-	}
-
-	// Create an Access Token for the API.
-	login := assertion.Subject.NameID.Value
-	at, err := s.Heroku.AccessTokensCreate(&heroku.AccessToken{
-		ExpiresAt: &assertion.AuthnStatement.SessionNotOnOrAfter,
-		User: &empire.User{
-			Name: login,
-		},
-	})
-	if err != nil {
-		http.Error(w, err.Error(), 403)
-		return nil
-	}
-
-	w.Header().Set("Content-Type", "text/html")
-	instructionsTemplate.Execute(w, &instructionsData{
-		URL:   s.URL,
-		Login: login,
-		Token: at.Token,
-	})
-
-	return nil
 }
 
 // githubWebhook is a MatcherFunc that matches requests that have an
@@ -180,36 +138,3 @@ func newDeployer(e *empire.Empire, options Options) github.Deployer {
 
 	return d
 }
-
-type instructionsData struct {
-	URL   *url.URL
-	Login string
-	Token string
-}
-
-var instructionsTemplate = template.Must(template.New("instructions").Parse(`
-<html>
-<head>
-<style>
-pre.terminal {
-  background-color: #444;
-  color: #eee;
-  padding: 20px;
-  margin: 100px;
-  overflow-x: scroll;
-  border-radius: 4px;
-}
-</style>
-</head>
-<body>
-<pre class="terminal">
-<code>$ export EMPIRE_API_URL="{{.URL}}"
-$ cat &lt;&lt;EOF &gt;&gt; ~/.netrc
-machine {{.URL.Host}}
-  login {{.Login}}
-  password {{.Token}}
-EOF</code>
-</pre>
-</body>
-</html>
-`))

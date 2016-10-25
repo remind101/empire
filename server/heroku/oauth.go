@@ -2,7 +2,6 @@ package heroku
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
@@ -18,7 +17,7 @@ type Authorization heroku.OAuthAuthorization
 func newAuthorization(token *AccessToken) *Authorization {
 	var expIn *int
 	if t := token.ExpiresAt; t != nil {
-		exp := int(t.Sub(time.Now()).Seconds())
+		exp := int(token.ExpiresIn().Seconds())
 		expIn = &exp
 	}
 	return &Authorization{

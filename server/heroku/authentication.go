@@ -25,6 +25,15 @@ type AccessToken struct {
 	User *empire.User
 }
 
+// Returns the amount of time before the token expires.
+func (t *AccessToken) ExpiresIn() time.Duration {
+	if t.ExpiresAt == nil {
+		return 0
+	}
+
+	return t.ExpiresAt.Sub(time.Now())
+}
+
 // IsValid returns nil if the AccessToken is valid.
 func (t *AccessToken) IsValid() error {
 	if err := t.User.IsValid(); err != nil {
@@ -42,9 +51,14 @@ func (s *Server) Authenticate(ctx context.Context, r *http.Request, strategies .
 		findAccessToken: s.AccessTokensFind,
 	})
 
+	unauthorized := s.Unauthorized
+	if unauthorized == nil {
+		unauthorized = Unauthorized
+	}
+
 	username, password, ok := r.BasicAuth()
 	if !ok {
-		return nil, ErrUnauthorized
+		return nil, unauthorized(nil)
 	}
 
 	otp := r.Header.Get(HeaderTwoFactor)
@@ -54,11 +68,11 @@ func (s *Server) Authenticate(ctx context.Context, r *http.Request, strategies .
 		case auth.ErrTwoFactor:
 			return nil, ErrTwoFactor
 		case auth.ErrForbidden:
-			return nil, ErrUnauthorized
+			return nil, unauthorized(nil)
 		}
 
 		if err, ok := err.(*auth.UnauthorizedError); ok {
-			return nil, errUnauthorized(err)
+			return nil, unauthorized(err)
 		}
 
 		return nil, &ErrorResource{

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/crewjam/go-xmlsec"
+	"github.com/remind101/empire/pkg/jwt"
 )
 
 // ServiceProvider implements SAML Service provider.
@@ -436,4 +437,99 @@ func (sp *ServiceProvider) validateAssertion(assertion *Assertion, possibleReque
 		return fmt.Errorf("Conditions AudienceRestriction is not %q", sp.MetadataURL)
 	}
 	return nil
+}
+
+// Login performs the necessary actions to start an SP initiated login.
+func (sp *ServiceProvider) InitiateLogin(w http.ResponseWriter) error {
+	acsURL, _ := url.Parse(sp.AcsURL)
+
+	binding := HTTPRedirectBinding
+	bindingLocation := sp.GetSSOBindingLocation(binding)
+	if bindingLocation == "" {
+		binding = HTTPPostBinding
+		bindingLocation = sp.GetSSOBindingLocation(binding)
+	}
+
+	req, err := sp.MakeAuthenticationRequest(bindingLocation)
+	if err != nil {
+		return err
+	}
+
+	relayState := base64.URLEncoding.EncodeToString(randomBytes(42))
+	state := jwt.New(jwt.GetSigningMethod("HS256"))
+	claims := state.Claims.(jwt.MapClaims)
+	claims["id"] = req.ID
+	signedState, err := state.SignedString(sp.cookieSecret())
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     fmt.Sprintf("saml_%s", relayState),
+		Value:    signedState,
+		MaxAge:   int(MaxIssueDelay.Seconds()),
+		HttpOnly: false,
+		Path:     acsURL.Path,
+	})
+
+	if binding == HTTPRedirectBinding {
+		redirectURL := req.Redirect(relayState)
+		w.Header().Add("Location", redirectURL.String())
+		w.WriteHeader(http.StatusFound)
+		return nil
+	}
+	if binding == HTTPPostBinding {
+		w.Header().Set("Content-Security-Policy", ""+
+			"default-src; "+
+			"script-src 'sha256-D8xB+y+rJ90RmLdP72xBqEEc0NUatn7yuCND0orkrgk='; "+
+			"reflected-xss block; "+
+			"referrer no-referrer;")
+		w.Header().Add("Content-type", "text/html")
+		w.Write([]byte(`<!DOCTYPE html><html><body>`))
+		w.Write(req.Post(relayState))
+		w.Write([]byte(`</body></html>`))
+		return nil
+	}
+	panic("not reached")
+}
+
+// Parse parses the SAMLResponse
+func (sp *ServiceProvider) Parse(w http.ResponseWriter, r *http.Request) (*Assertion, error) {
+	allowIdPInitiated := ""
+	possibleRequestIDs := []string{allowIdPInitiated}
+
+	// Find the request id that relates to this RelayState.
+	if relayState := r.PostFormValue("RelayState"); relayState != "" {
+		cookieName := fmt.Sprintf("saml_%s", relayState)
+		cookie, err := r.Cookie(cookieName)
+		if err != nil {
+			return nil, fmt.Errorf("cannot find %s cookie", cookieName)
+		}
+
+		// Verify the integrity of the cookie.
+		state, err := jwt.Parse(cookie.Value, func(t *jwt.Token) (interface{}, error) {
+			return sp.cookieSecret(), nil
+		})
+		if err != nil || !state.Valid {
+			return nil, fmt.Errorf("could not decode state JWT: %v", err)
+		}
+
+		claims := state.Claims.(jwt.MapClaims)
+		id := claims["id"].(string)
+
+		possibleRequestIDs = append(possibleRequestIDs, id)
+
+		// delete the cookie
+		cookie.Value = ""
+		cookie.Expires = time.Time{}
+		http.SetCookie(w, cookie)
+	}
+
+	samlResponse := r.PostFormValue("SAMLResponse")
+	return sp.ParseSAMLResponse(samlResponse, possibleRequestIDs)
+}
+
+func (sp *ServiceProvider) cookieSecret() []byte {
+	secretBlock, _ := pem.Decode([]byte(sp.Key))
+	return secretBlock.Bytes
 }

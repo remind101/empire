@@ -26,6 +26,8 @@ const (
 	FlagServerAuth = "server.auth"
 
 	FlagSAMLMetadata       = "saml.metadata"
+	FlagSAMLKey            = "saml.key"
+	FlagSAMLCert           = "saml.cert"
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
 	FlagGithubOrg          = "github.organization"
@@ -118,6 +120,18 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The location of the SAML metadata XML. This can be a url, path to a file, or the raw xml content. (e.g. https://app.onelogin.com/saml/metadata/1234, file:///etc/empire/saml_metadata.xml)",
 				EnvVar: "EMPIRE_SAML_METADATA",
+			},
+			cli.StringFlag{
+				Name:   FlagSAMLKey,
+				Value:  "",
+				Usage:  "The location of the RSA key used to sign requests. (e.g. file:///etc/empire/saml.key)",
+				EnvVar: "EMPIRE_SAML_KEY",
+			},
+			cli.StringFlag{
+				Name:   FlagSAMLCert,
+				Value:  "",
+				Usage:  "The location of the public key for this service provider. (e.g. file:///etc/empire/saml.cert)",
+				EnvVar: "EMPIRE_SAML_CERT",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,

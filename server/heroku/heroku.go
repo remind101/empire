@@ -38,6 +38,12 @@ type Server struct {
 	// requests.
 	Auth *auth.Auth
 
+	// Unauthorized is called when a request is not authorized If not
+	// provided, heroku.UnauthorizedError will be used.  This can be
+	// overriden to provide better instructions for how to authenticate
+	// (e.g. when SAML is enabled).
+	Unauthorized func(reason error) *ErrorResource
+
 	mux *httpx.Router
 }
 
