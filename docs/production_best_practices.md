@@ -42,9 +42,11 @@ It's very important that you keep the Empire API secure. There are a few best pr
 
 Since you will be passing authentication information to the Empire API, you should ensure that the load balancer that it uses is setup to only accept connections via HTTPS
 
-### Github Authentication
+### Github Authentication or SAML Authentication
 
-Refer to the docs on [configuring the GitHub authentication backend](./configuration).
+For GitHub, refer to the docs on [configuring the GitHub authentication backend](./configuration).
+
+For SAML, refer to the docs on [configuring the SAML authentication backend](./saml).
 
 ### Limiting API Access by IP
 

@@ -35,7 +35,7 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 	assertion, err := s.ServiceProvider.Parse(w, r)
 	if err != nil {
 		if err, ok := err.(*saml.InvalidResponseError); ok {
-			reporter.Report(ctx, err)
+			reporter.Report(ctx, err.PrivateErr)
 		}
 		http.Error(w, err.Error(), 403)
 		return nil

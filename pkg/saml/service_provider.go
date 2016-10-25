@@ -499,7 +499,8 @@ func (sp *ServiceProvider) Parse(w http.ResponseWriter, r *http.Request) (*Asser
 	possibleRequestIDs := []string{allowIdPInitiated}
 
 	// Find the request id that relates to this RelayState.
-	if relayState := r.PostFormValue("RelayState"); relayState != "" {
+	relayState := r.PostFormValue("RelayState")
+	if sp.cookieSecret() != nil && relayState != "" {
 		cookieName := fmt.Sprintf("saml_%s", relayState)
 		cookie, err := r.Cookie(cookieName)
 		if err != nil {
@@ -530,6 +531,10 @@ func (sp *ServiceProvider) Parse(w http.ResponseWriter, r *http.Request) (*Asser
 }
 
 func (sp *ServiceProvider) cookieSecret() []byte {
+	if sp.Key == "" {
+		return nil
+	}
+
 	secretBlock, _ := pem.Decode([]byte(sp.Key))
 	return secretBlock.Bytes
 }
