@@ -34,6 +34,7 @@ func NewTestClient(t testing.TB) (*heroku.Client, *empiretest.Server) {
 			},
 		},
 	}
+	s.Start()
 
 	c := &heroku.Client{
 		Username: "",

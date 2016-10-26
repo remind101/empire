@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 	"text/template"
@@ -56,13 +57,18 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return nil
 	}
 
-	w.Header().Set("Content-Type", "text/html")
-	instructionsTemplate.Execute(w, &instructionsData{
-		URL:   s.URL,
-		User:  user,
-		Token: at,
-	})
-
+	switch r.Header.Get("Accept") {
+	case "text/plain":
+		w.Header().Set("Content-Type", "text/plain")
+		io.WriteString(w, at.Token)
+	default:
+		w.Header().Set("Content-Type", "text/html")
+		instructionsTemplate.Execute(w, &instructionsData{
+			URL:   s.URL,
+			User:  user,
+			Token: at,
+		})
+	}
 	return nil
 }
 

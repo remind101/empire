@@ -207,7 +207,6 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		// created through the browser, so username/password
 		// authentication should be disabled.
 		usernamePasswordDisabled := auth.AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
-			// TODO: Include a link to login?
 			return nil, fmt.Errorf("Authentication via username/password is disabled. Login at %s", loginURL)
 		})
 

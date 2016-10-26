@@ -71,60 +71,12 @@ type Command struct {
 	Output interface{}
 }
 
+// run is a simple helper that builds a new CLI instance, and runs the given
+// commands against it.
 func run(t testing.TB, commands []Command) {
-	runWithPre(t, nil, commands)
-}
-
-func runWithCLI(t testing.TB, commands []Command, cli *CLI) {
-	token, err := cli.Server.Heroku.AccessTokensCreate(&heroku.AccessToken{
-		User: fakeUser,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := cli.Authorize(fakeUser.Name, token.Token); err != nil {
-		t.Fatal(err)
-	}
-
-	for _, cmd := range commands {
-		args := strings.Split(cmd.Command, " ")
-
-		b, err := cli.Command(args...).CombinedOutput()
-		got := string(b)
-		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, got))
-		if expectedErr, ok := cmd.Output.(error); ok {
-			expectedErrString := fmt.Sprintf("%v\n", expectedErr)
-			if got != expectedErrString {
-				t.Fatalf("Expected %s, got %v", expectedErr, got)
-			}
-		} else if err != nil {
-			t.Fatal(err)
-		}
-
-		if want, ok := cmd.Output.(string); ok {
-			if want != "" {
-				want = want + "\n"
-			}
-
-			if got != want {
-				t.Fatalf("%q != %q", got, want)
-			}
-		} else if regex, ok := cmd.Output.(*regexp.Regexp); ok {
-			if !regex.MatchString(got) {
-				t.Fatalf("%q != %q", got, regex.String())
-			}
-		}
-	}
-}
-
-func runWithPre(t testing.TB, pre func(*CLI), commands []Command) {
 	cli := newCLI(t)
 	defer cli.Close()
-	if pre != nil {
-		pre(cli)
-	}
-	runWithCLI(t, commands, cli)
+	cli.Run(t, commands)
 }
 
 // CLI wraps an empire instance, a server and a CLI as one unit, which can be
@@ -132,6 +84,7 @@ func runWithPre(t testing.TB, pre func(*CLI), commands []Command) {
 type CLI struct {
 	*empiretest.Server
 	*cli.CLI
+	started bool // holds whether server has been started or not.
 }
 
 // newCLI returns a new CLI instance.
@@ -163,12 +116,77 @@ func newCLIWithServer(t testing.TB, s *empiretest.Server) *CLI {
 	}
 }
 
+// Close closes the CLI, and the test server.
 func (c *CLI) Close() {
 	if err := c.CLI.Close(); err != nil {
 		panic(err)
 	}
 
 	c.Server.Close()
+}
+
+// Run authenticates the CLI and runs the commands.
+func (c *CLI) Run(t testing.TB, commands []Command) {
+	c.Auth(t)
+	c.RunCommands(t, commands)
+}
+
+// Auth creates a new access token, and authorizes the CLI using it.
+func (c *CLI) Auth(t testing.TB) {
+	token, err := c.Server.Heroku.AccessTokensCreate(&heroku.AccessToken{
+		User: fakeUser,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := c.Authorize(fakeUser.Name, token.Token); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Start starts the underlying Empire HTTP server if it hasn't already been
+// started.
+func (c *CLI) Start() {
+	if !c.started {
+		c.Server.Start()
+		c.started = true
+	}
+}
+
+// RunCommands runs all of the given commands and verifies their output.
+func (c *CLI) RunCommands(t testing.TB, commands []Command) {
+	c.Start() // Ensure server is started.
+
+	for _, cmd := range commands {
+		args := strings.Split(cmd.Command, " ")
+
+		b, err := c.Command(args...).CombinedOutput()
+		got := string(b)
+		t.Log(fmt.Sprintf("\n$ %s\n%s", cmd.Command, got))
+		if expectedErr, ok := cmd.Output.(error); ok {
+			expectedErrString := fmt.Sprintf("%v\n", expectedErr)
+			if got != expectedErrString {
+				t.Fatalf("Expected %q, got %q", expectedErr, got)
+			}
+		} else if err != nil {
+			t.Fatal(err)
+		}
+
+		if want, ok := cmd.Output.(string); ok {
+			if want != "" {
+				want = want + "\n"
+			}
+
+			if got != want {
+				t.Fatalf("%q != %q", got, want)
+			}
+		} else if regex, ok := cmd.Output.(*regexp.Regexp); ok {
+			if !regex.MatchString(got) {
+				t.Fatalf("%q != %q", got, regex.String())
+			}
+		}
+	}
 }
 
 func newAuth(authenticator auth.Authenticator) *auth.Auth {
