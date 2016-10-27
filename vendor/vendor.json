@@ -18,6 +18,12 @@
 			"revision": "afe77d958c701557ec5dc56f6936fcc194d15520"
 		},
 		{
+			"checksumSHA1": "HyoKkpkPoyJwnhE6HVYoxRBwoo4=",
+			"path": "github.com/BurntSushi/toml",
+			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
+			"revisionTime": "2016-07-17T15:07:09Z"
+		},
+		{
 			"checksumSHA1": "4M1EgCcu+6tGntb/psF0/Z8Tf9w=",
 			"path": "github.com/DataDog/datadog-go/statsd",
 			"revision": "cc2f4770f4d61871e19bfee967bc767fe730b0d9",

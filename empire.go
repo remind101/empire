@@ -116,9 +116,6 @@ type Empire struct {
 // New returns a new Empire instance.
 func New(db *DB) *Empire {
 	e := &Empire{
-		LogsStreamer: logsDisabled,
-		EventStream:  NullEventStream,
-
 		DB: db,
 		db: db.DB,
 	}
@@ -174,6 +171,14 @@ func (opts CreateOpts) Event() CreateEvent {
 
 func (opts CreateOpts) Validate(e *Empire) error {
 	return e.requireMessages(opts.Message)
+}
+
+func (e *Empire) PublishEvent(event Event) error {
+	stream := e.EventStream
+	if stream == nil {
+		stream = NullEventStream
+	}
+	return stream.PublishEvent(event)
 }
 
 // Create creates a new app.
@@ -694,7 +699,12 @@ func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
 
 // Streamlogs streams logs from an app.
 func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error {
-	if err := e.LogsStreamer.StreamLogs(app, w, duration); err != nil {
+	streamer := e.LogsStreamer
+	if streamer == nil {
+		streamer = logsDisabled
+	}
+
+	if err := streamer.StreamLogs(app, w, duration); err != nil {
 		return fmt.Errorf("error streaming logs: %v", err)
 	}
 

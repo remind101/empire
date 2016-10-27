@@ -17,7 +17,7 @@ build/emp:
 
 bootstrap: cmds
 	createdb empire || true
-	./build/empire migrate
+	./build/empire migrate -config=tests/empire.toml -config.novalidate
 
 build: Dockerfile
 	docker build -t ${REPO} .

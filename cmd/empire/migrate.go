@@ -1,26 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"log"
-
-	"github.com/codegangsta/cli"
+	"github.com/remind101/empire/boot"
+	"github.com/remind101/pkg/logger"
 )
 
-func runMigrate(c *cli.Context) {
-	ctx, err := newContext(c)
-	if err != nil {
-		log.Fatal(err)
-	}
+func runMigrate(c *Context) {
+	ctx, err := bootContext(c)
+	c.must(err)
 
-	db, err := newDB(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := db.MigrateUp(); err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Up to date")
+	c.must(boot.MigrateUp(ctx))
+	logger.Info(c, "Up to date")
 }
