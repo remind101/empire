@@ -150,7 +150,7 @@ func (c *Context) SAMLServiceProvider() (*saml.ServiceProvider, error) {
 // and returns it.
 func uriContentOrValue(maybeURI string) ([]byte, error) {
 	uri, err := url.Parse(maybeURI)
-	if err != nil {
+	if err != nil || uri.Scheme == "" {
 		return []byte(maybeURI), nil
 	}
 
@@ -181,6 +181,6 @@ func uriContent(uri *url.URL) ([]byte, error) {
 	case "file":
 		return ioutil.ReadFile(uri.Path)
 	default:
-		return nil, fmt.Errorf("not able to fetch metadata via %s", scheme)
+		return nil, fmt.Errorf("not able to fetch content from %s via %s", uri, scheme)
 	}
 }
