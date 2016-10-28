@@ -348,6 +348,18 @@
 			"revision": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
 		},
 		{
+			"checksumSHA1": "1/QSJFe2AnSuG9vJJ96SB/ICppc=",
+			"path": "github.com/crewjam/errset",
+			"revision": "f78d65de925cf59a953184a376cbfe07cfe65e3d",
+			"revisionTime": "2016-02-19T15:37:00Z"
+		},
+		{
+			"checksumSHA1": "w2M4VUdu3PJkHqtsSnvEsjVBQIQ=",
+			"path": "github.com/crewjam/go-xmlsec",
+			"revision": "31c57ffee32d8df8bbfc815ee2163de6401d97c9",
+			"revisionTime": "2016-09-03T23:38:58Z"
+		},
+		{
 			"comment": "v2.0.0-3-gc0da491",
 			"path": "github.com/dgrijalva/jwt-go",
 			"revision": "c0da49162251c81124e34f3e7885527a091dacd5"
@@ -856,6 +868,12 @@
 		{
 			"path": "golang.org/x/oauth2/jwt",
 			"revision": "8914e5017ca260f2a3a1575b1e6868874050d95e"
+		},
+		{
+			"checksumSHA1": "YzHkxW3fGe5Oc5AVatDNn1g5Ung=",
+			"path": "gopkg.in/check.v1",
+			"revision": "4f90aeace3a26ad7021961c297b22c42160c7b25",
+			"revisionTime": "2016-01-05T16:49:36Z"
 		},
 		{
 			"comment": "v1.7.1",

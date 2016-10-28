@@ -2,3 +2,5 @@ build
 .env*
 *.swp
 *.dump
+*.key
+*.cert

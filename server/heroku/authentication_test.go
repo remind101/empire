@@ -43,7 +43,7 @@ func TestServer_AccessTokens(t *testing.T) {
 
 func TestServer_Authenticate_UsernamePassword(t *testing.T) {
 	a := new(mockAuthenticator)
-	m := &Server{Auth: &auth.Auth{Authenticator: a}}
+	m := &Server{Auth: newAuth(a)}
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
@@ -54,9 +54,41 @@ func TestServer_Authenticate_UsernamePassword(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestServer_Authenticate_WithUnknownStrategy(t *testing.T) {
+	a := new(mockAuthenticator)
+	m := &Server{Auth: newAuth(a)}
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.SetBasicAuth("username", "password")
+
+	a.On("Authenticate", "username", "password", "").Return(&empire.User{}, nil)
+
+	assert.Panics(t, func() {
+		m.Authenticate(ctx, req, "mock")
+	}, "Calling Authenticate with an unknown strategy should panic")
+}
+
+func TestServer_Authenticate_WithStrategy(t *testing.T) {
+	a := new(mockAuthenticator)
+	m := &Server{Auth: newAuth(a)}
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.SetBasicAuth("username", "password")
+
+	a.On("Authenticate", "username", "password", "").Return(&empire.User{}, nil)
+
+	_, err := m.Authenticate(ctx, req)
+	assert.NoError(t, err)
+
+	// The provided credentials aren't an access token, so this should
+	// return ErrUnauthorized.
+	_, err = m.Authenticate(ctx, req, auth.StrategyAccessToken)
+	assert.Equal(t, ErrUnauthorized, err)
+}
+
 func TestServer_Authenticate_UsernamePasswordWithOTP(t *testing.T) {
 	a := new(mockAuthenticator)
-	m := &Server{Auth: &auth.Auth{Authenticator: a}}
+	m := &Server{Auth: newAuth(a)}
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
@@ -70,7 +102,7 @@ func TestServer_Authenticate_UsernamePasswordWithOTP(t *testing.T) {
 
 func TestServer_Authenticate_ErrTwoFactor(t *testing.T) {
 	a := new(mockAuthenticator)
-	m := &Server{Auth: &auth.Auth{Authenticator: a}}
+	m := &Server{Auth: newAuth(a)}
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
@@ -83,7 +115,7 @@ func TestServer_Authenticate_ErrTwoFactor(t *testing.T) {
 
 func TestServer_Authenticate_ErrForbidden(t *testing.T) {
 	a := new(mockAuthenticator)
-	m := &Server{Auth: &auth.Auth{Authenticator: a}}
+	m := &Server{Auth: newAuth(a)}
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
@@ -96,7 +128,7 @@ func TestServer_Authenticate_ErrForbidden(t *testing.T) {
 
 func TestServer_Authenticate_UnauthorizedError(t *testing.T) {
 	a := new(mockAuthenticator)
-	m := &Server{Auth: &auth.Auth{Authenticator: a}}
+	m := &Server{Auth: newAuth(a)}
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
@@ -168,6 +200,17 @@ func (m *mockAuthenticator) Authenticate(username, password, otp string) (*empir
 	}
 	return nil, args.Error(1)
 
+}
+
+func newAuth(a *mockAuthenticator) *auth.Auth {
+	return &auth.Auth{
+		Strategies: auth.Strategies{
+			{
+				Name:          auth.StrategyUsernamePassword,
+				Authenticator: a,
+			},
+		},
+	}
 }
 
 // ensureUserInContext returns and httpx.Handler that raises an error if the

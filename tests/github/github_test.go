@@ -71,6 +71,8 @@ func newClient(t testing.TB) *client {
 	c.URL = s.URL()
 	c.Secret = "abcd"
 
+	s.Start()
+
 	return &client{
 		Server: s,
 		Client: c,

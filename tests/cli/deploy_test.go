@@ -80,18 +80,18 @@ Status: Finished processing events for release v1 of acme-inc`,
 }
 
 func TestDeploy_CommitMessageRequired(t *testing.T) {
-	pre := func(cli *CLI) {
-		cli.Empire.MessagesRequired = true
-	}
+	cli := newCLI(t)
+	defer cli.Close()
+	cli.Empire.MessagesRequired = true
 
-	runWithPre(t, pre, []Command{
+	cli.Run(t, []Command{
 		{
 			"deploy remind101/acme-inc",
 			errors.New("error: A message is required for this action, please run again with '-m'."),
 		},
 	})
 
-	runWithPre(t, pre, []Command{
+	cli.Run(t, []Command{
 		{
 			"deploy remind101/acme-inc -m commit",
 			`Pulling repository remind101/acme-inc

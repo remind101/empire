@@ -38,6 +38,12 @@ type Server struct {
 	// requests.
 	Auth *auth.Auth
 
+	// Unauthorized is called when a request is not authorized If not
+	// provided, heroku.UnauthorizedError will be used.  This can be
+	// overriden to provide better instructions for how to authenticate
+	// (e.g. when SAML is enabled).
+	Unauthorized func(reason error) *ErrorResource
+
 	mux *httpx.Router
 }
 
@@ -86,7 +92,10 @@ func New(e *empire.Empire) *Server {
 	r.handle("PATCH", "/apps/{app}/formation", r.PatchFormation) // hk scale
 
 	// OAuth
-	r.handle("POST", "/oauth/authorizations", r.PostAuthorizations)
+	r.handle("POST", "/oauth/authorizations", r.PostAuthorizations).
+		// Authentication for this endpoint is handled directly in the
+		// handler.
+		AuthWith(auth.StrategyUsernamePassword)
 
 	// Certs
 	r.handle("POST", "/apps/{app}/certs", r.PostCerts)
@@ -104,9 +113,42 @@ func New(e *empire.Empire) *Server {
 	return r
 }
 
+// route wraps an http.HandlerFunc with a name and convenience methods to
+// configure the route.
+type route struct {
+	httpx.HandlerFunc
+
+	// The name of this handler.
+	Name string
+
+	// When true, disables the authentication check.
+	authStrategies []string
+
+	s *Server
+}
+
+// AuthWith sets the explicit strategies used to authenticate this route.
+func (r *route) AuthWith(strategies ...string) *route {
+	r.authStrategies = strategies
+	return r
+}
+
+func (r *route) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
+	// Authenticate the request.
+	ctx, err := r.s.Authenticate(ctx, req, r.authStrategies...)
+	if err != nil {
+		return err
+	}
+
+	// Track metrics for this endpoint.
+	m := withMetrics(r.Name, r.HandlerFunc)
+
+	return m.ServeHTTPContext(ctx, w, req)
+}
+
 // ServeHTTPContext implements the httpx.Handler interface.
 func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if err := s.serve(ctx, w, r); err != nil {
+	if err := s.mux.ServeHTTPContext(ctx, w, r); err != nil {
 		Error(w, err, http.StatusInternalServerError)
 		reporter.Report(ctx, err)
 	}
@@ -114,33 +156,17 @@ func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r 
 	return nil
 }
 
-func (s *Server) serve(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	ctx, err := s.Authenticate(ctx, r)
-	if err != nil {
-		return err
-	}
-
-	return s.mux.ServeHTTPContext(ctx, w, r)
+// handle adds a new handler to the router, which also increments a counter.
+func (s *Server) handle(method, path string, h httpx.HandlerFunc, authStrategy ...string) *route {
+	r := s.route(h)
+	s.mux.Handle(path, r).Methods(method)
+	return r
 }
 
-// handle adds a new handler to the router, which also increments a counter.
-func (s *Server) handle(method, path string, h httpx.HandlerFunc) {
+// route creates a new route object for the given handler.
+func (s *Server) route(h httpx.HandlerFunc) *route {
 	name := handlerName(h)
-
-	fn := httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		tags := []string{
-			fmt.Sprintf("handler:%s", name),
-			fmt.Sprintf("user:%s", auth.UserFromContext(ctx).Name),
-		}
-		start := time.Now()
-		err := h(ctx, w, r)
-		d := time.Since(start)
-		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
-		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", name), d, 1.0, tags)
-		return err
-	})
-
-	s.mux.HandleFunc(path, fn).Methods(method)
+	return &route{HandlerFunc: h, Name: name, s: s}
 }
 
 // Encode json encodes v into w.
@@ -234,4 +260,19 @@ var nameRegexp = regexp.MustCompile(`^.*\.(.*)-fm$`)
 func handlerName(h httpx.HandlerFunc) string {
 	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
 	return nameRegexp.FindStringSubmatch(name)[1]
+}
+
+func withMetrics(handlerName string, h httpx.HandlerFunc) httpx.Handler {
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		tags := []string{
+			fmt.Sprintf("handler:%s", handlerName),
+			fmt.Sprintf("user:%s", auth.UserFromContext(ctx).Name),
+		}
+		start := time.Now()
+		err := h(ctx, w, r)
+		d := time.Since(start)
+		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
+		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", handlerName), d, 1.0, tags)
+		return err
+	})
 }

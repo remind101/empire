@@ -9,8 +9,13 @@ The following documents the various configuration parameters that you can use to
    https://github.com/settings/applications/new
 2. Get Client ID & Client Secret
 3. Use them in `EMPIRE_GITHUB_CLIENT_ID` and `EMPIRE_GITHUB_CLIENT_SECRET`
+4. Set `EMPIRE_SERVER_AUTH=github`.
 
 It's recommended that you also set either `EMPIRE_GITHUB_ORGANIZATION`, or `EMPIRE_GITHUB_TEAM_ID` to ensure that only members of your GitHub organization/team are able to access your Empire environment.
+
+### SAML Authentication
+
+Refer to the [docs](./saml) on configuring the SAML authentication backend.
 
 ### GitHub Deployments
 

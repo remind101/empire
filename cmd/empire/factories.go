@@ -304,7 +304,7 @@ func newLogger(c *Context) (log15.Logger, error) {
 func newReporter(c *Context) (reporter.Reporter, error) {
 	u := c.String(FlagReporter)
 	if u == "" {
-		return nil, nil
+		return reporter.NewLogReporter(), nil
 	}
 
 	uri, err := url.Parse(u)

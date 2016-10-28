@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	FlagURL            = "url"
 	FlagPort           = "port"
 	FlagAutoMigrate    = "automigrate"
 	FlagScheduler      = "scheduler"
@@ -22,6 +23,11 @@ const (
 
 	FlagStats = "stats"
 
+	FlagServerAuth = "server.auth"
+
+	FlagSAMLMetadata       = "saml.metadata"
+	FlagSAMLKey            = "saml.key"
+	FlagSAMLCert           = "saml.cert"
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
 	FlagGithubOrg          = "github.organization"
@@ -82,6 +88,12 @@ var Commands = []cli.Command{
 		Usage:     "Run the empire HTTP api",
 		Flags: append([]cli.Flag{
 			cli.StringFlag{
+				Name:   FlagURL,
+				Value:  "",
+				Usage:  "That base URL where this Empire instance runs",
+				EnvVar: "EMPIRE_URL",
+			},
+			cli.StringFlag{
 				Name:   FlagPort,
 				Value:  "8080",
 				Usage:  "The port to run the server on",
@@ -96,6 +108,30 @@ var Commands = []cli.Command{
 				Value:  "cloudformation",
 				Usage:  "The scheduling backend to use. Current options are `cloudformation`.",
 				EnvVar: "EMPIRE_SCHEDULER",
+			},
+			cli.StringFlag{
+				Name:   FlagServerAuth,
+				Value:  "",
+				Usage:  "The authentication backend to use to authenticate requests to the API. Can be `fake`, `github`, or `saml`.",
+				EnvVar: "EMPIRE_SERVER_AUTH",
+			},
+			cli.StringFlag{
+				Name:   FlagSAMLMetadata,
+				Value:  "",
+				Usage:  "The location of the SAML metadata XML. This can be a url, path to a file, or the raw xml content. (e.g. https://app.onelogin.com/saml/metadata/1234, file:///etc/empire/saml_metadata.xml)",
+				EnvVar: "EMPIRE_SAML_METADATA",
+			},
+			cli.StringFlag{
+				Name:   FlagSAMLKey,
+				Value:  "",
+				Usage:  "The location of the RSA key used to sign requests. (e.g. file:///etc/empire/saml.key)",
+				EnvVar: "EMPIRE_SAML_KEY",
+			},
+			cli.StringFlag{
+				Name:   FlagSAMLCert,
+				Value:  "",
+				Usage:  "The location of the public key for this service provider. (e.g. file:///etc/empire/saml.cert)",
+				EnvVar: "EMPIRE_SAML_CERT",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,

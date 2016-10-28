@@ -7,6 +7,7 @@
 * The extended Procfile format now allows you to attach a load balancer to any process in the Procfile. [#800](https://github.com/remind101/empire/pull/800)
 * An ALIAS record is now created for `<process>.<app>.<zone>` [#1005](https://github.com/remind101/empire/pull/1005)
 * You can now provide a `-p` flag to the `emp cert-attach` command to attach a certificate to a specific process (instead of just `web`). [#1014](https://github.com/remind101/empire/pull/1014)
+* Empire now supports a SAML authentication backend. [#1017](https://github.com/remind101/empire/pull/1017)
 
 **Improvements**
 

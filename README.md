@@ -93,6 +93,12 @@ To run the tests:
 $ make test
 ```
 
+**NOTE**: You may need to install libxmlsec1 for the tests to run. You can do this with:
+
+```console
+$ brew install libxmlsec1 libxml2 pkg-config
+```
+
 ## Development
 
 If you want to contribute to Empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:

@@ -1,9 +1,11 @@
 package empiretest
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"text/template"
@@ -20,6 +22,7 @@ import (
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/middleware"
+	"github.com/remind101/pkg/reporter"
 )
 
 var (
@@ -65,12 +68,11 @@ type Server struct {
 	svr *httptest.Server
 }
 
-func (s *Server) URL() string {
-	return s.svr.URL
-}
-
 // NewServer builds a new empire.Empire instance and returns an httptest.Server
-// running the empire API.
+// running the Empire API.
+//
+// The Server is unstarted so that you can perform additional configuration.
+// Consumers should call Start() before makeing any requests.
 func NewServer(t testing.TB, e *empire.Empire) *Server {
 	var opts server.Options
 	opts.GitHub.Webhooks.Secret = "abcd"
@@ -87,14 +89,37 @@ func newTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server 
 		e = NewEmpire(t)
 	}
 
+	// Log reporter errors to stderr
+	ctx := reporter.WithReporter(context.Background(), reporter.ReporterFunc(func(ctx context.Context, err error) error {
+		fmt.Fprintf(os.Stderr, "reported error: %v\n", err)
+		return nil
+	}))
+
 	s := server.New(e, opts)
+	svr := httptest.NewUnstartedServer(middleware.Handler(ctx, s))
+	u, _ := url.Parse(svr.URL)
+	s.URL = u
 	return &Server{
 		Empire: e,
 		Server: s,
-		svr:    httptest.NewServer(middleware.Handler(context.Background(), s)),
+		svr:    svr,
 	}
 }
 
+// URL returns that URL that this Empire server is (or will be) located.
+func (s *Server) URL() string {
+	if s.svr.URL == "" {
+		return "http://" + s.svr.Listener.Addr().String()
+	}
+	return s.svr.URL
+}
+
+// Start starts the underlying httptest.Server.
+func (s *Server) Start() {
+	s.svr.Start()
+}
+
+// Close closes the underlying httptest.Server.
 func (s *Server) Close() {
 	s.svr.Close()
 }

@@ -3,6 +3,7 @@ package heroku
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/remind101/empire"
@@ -17,8 +18,20 @@ type AccessToken struct {
 	// The encoded token.
 	Token string
 
+	// The time that the token expires.
+	ExpiresAt *time.Time
+
 	// The user that this AccessToken belongs to.
 	User *empire.User
+}
+
+// Returns the amount of time before the token expires.
+func (t *AccessToken) ExpiresIn() time.Duration {
+	if t.ExpiresAt == nil {
+		return 0
+	}
+
+	return t.ExpiresAt.Sub(time.Now())
 }
 
 // IsValid returns nil if the AccessToken is valid.
@@ -32,28 +45,34 @@ func (t *AccessToken) IsValid() error {
 
 // ServeHTTPContext implements the httpx.Handler interface. It will ensure that
 // there is a Bearer token present and that it is valid.
-func (s *Server) Authenticate(ctx context.Context, r *http.Request) (context.Context, error) {
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		return nil, ErrUnauthorized
-	}
-
+func (s *Server) Authenticate(ctx context.Context, r *http.Request, strategies ...string) (context.Context, error) {
 	// Add an auth strategy for authenticating with an access token.
-	auther := s.Auth.AddAuthenticator(&accessTokenAuthenticator{
+	auther := s.Auth.PrependAuthenticator(auth.StrategyAccessToken, &accessTokenAuthenticator{
 		findAccessToken: s.AccessTokensFind,
 	})
 
-	ctx, err := auther.Authenticate(ctx, username, password, r.Header.Get(HeaderTwoFactor))
+	unauthorized := s.Unauthorized
+	if unauthorized == nil {
+		unauthorized = Unauthorized
+	}
+
+	username, password, ok := r.BasicAuth()
+	if !ok {
+		return nil, unauthorized(nil)
+	}
+
+	otp := r.Header.Get(HeaderTwoFactor)
+	ctx, err := auther.Authenticate(ctx, username, password, otp, strategies...)
 	if err != nil {
 		switch err {
 		case auth.ErrTwoFactor:
 			return nil, ErrTwoFactor
 		case auth.ErrForbidden:
-			return nil, ErrUnauthorized
+			return nil, unauthorized(nil)
 		}
 
 		if err, ok := err.(*auth.UnauthorizedError); ok {
-			return nil, errUnauthorized(err)
+			return nil, unauthorized(err)
 		}
 
 		return nil, &ErrorResource{
@@ -151,6 +170,9 @@ func parseToken(secret []byte, token string) (*AccessToken, error) {
 
 func accessTokenToJwt(token *AccessToken) *jwt.Token {
 	t := jwt.New(jwt.SigningMethodHS256)
+	if token.ExpiresAt != nil {
+		t.Claims["exp"] = token.ExpiresAt.Unix()
+	}
 	t.Claims["User"] = struct {
 		Name        string
 		GitHubToken string

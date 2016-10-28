@@ -16,6 +16,7 @@ import (
 	githubauth "github.com/remind101/empire/server/auth/github"
 	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
+	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/empire/stats"
 	"golang.org/x/oauth2"
@@ -77,8 +78,19 @@ func newServer(c *Context, e *empire.Empire) http.Handler {
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
 
 	s := server.New(e, opts)
+	s.URL = c.URL(FlagURL)
 	s.Heroku.Auth = newAuth(c, e)
 	s.Heroku.Secret = []byte(c.String(FlagSecret))
+
+	sp, err := c.SAMLServiceProvider()
+	if err != nil {
+		panic(err)
+	}
+
+	if sp != nil {
+		s.ServiceProvider = sp
+		s.Heroku.Unauthorized = heroku.SAMLUnauthorized(c.String(FlagURL) + "/saml/login")
+	}
 
 	h := middleware.Common(s)
 	return middleware.Handler(c, h)
@@ -108,29 +120,42 @@ func newImageBuilder(c *Context) github.ImageBuilder {
 }
 
 func newAuth(c *Context, e *empire.Empire) *auth.Auth {
-	var (
-		client         *githubauth.Client
-		authenticators []auth.Authenticator
-	)
+	authBackend := c.String(FlagServerAuth)
+
+	// For backwards compatibility. If the auth backend is unspecified, but
+	// a github client id is provided, assume the GitHub auth backend.
+	if authBackend == "" {
+		if c.String(FlagGithubClient) != "" {
+			authBackend = "github"
+		} else {
+			authBackend = "fake"
+		}
+	}
 
 	// If a GitHub client id is provided, we'll use GitHub as an
 	// authentication backend. Otherwise, we'll just use a static username
 	// and password backend.
-	if c.String(FlagGithubClient) == "" {
+	switch authBackend {
+	case "fake":
 		log.Println("Using static authentication backend")
 		// Fake authentication password where the user is "fake" and
 		// password is blank.
-		authenticators = append(authenticators, auth.StaticAuthenticator("fake", "", "", &empire.User{
-			Name: "fake",
-		}))
-	} else {
+		return &auth.Auth{
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: auth.StaticAuthenticator("fake", "", "", &empire.User{Name: "fake"}),
+				},
+			},
+		}
+	case "github":
 		config := &oauth2.Config{
 			ClientID:     c.String(FlagGithubClient),
 			ClientSecret: c.String(FlagGithubClientSecret),
 			Scopes:       []string{"repo_deployment", "read:org"},
 		}
 
-		client = githubauth.NewClient(config)
+		client := githubauth.NewClient(config)
 		client.URL = c.String(FlagGithubApiURL)
 
 		log.Println("Using GitHub authentication backend with the following configuration:")
@@ -141,44 +166,62 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 
 		// an authenticator for authenticating requests with a users github
 		// credentials.
-		authenticators = append(authenticators, githubauth.NewAuthenticator(client))
-	}
-
-	// build the authentication chain.
-	authenticator := auth.MultiAuthenticator(authenticators...)
-
-	// After the user is authenticated, check their GitHub Organization membership.
-	if org := c.String(FlagGithubOrg); org != "" {
-		authorizer := githubauth.NewOrganizationAuthorizer(client)
-		authorizer.Organization = org
-
-		log.Println("Adding GitHub Organization authorizer with the following configuration:")
-		log.Println(fmt.Sprintf("  Organization: %v ", org))
-
-		return &auth.Auth{
-			Authenticator: authenticator,
-			// Cache the organization check for 30 minutes since
-			// it's pretty slow.
-			Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
+		authenticator := githubauth.NewAuthenticator(client)
+		a := &auth.Auth{
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: authenticator,
+				},
+			},
 		}
-	}
 
-	// After the user is authenticated, check their GitHub Team membership.
-	if teamID := c.String(FlagGithubTeam); teamID != "" {
-		authorizer := githubauth.NewTeamAuthorizer(client)
-		authorizer.TeamID = teamID
+		// After the user is authenticated, check their GitHub Organization membership.
+		if org := c.String(FlagGithubOrg); org != "" {
+			authorizer := githubauth.NewOrganizationAuthorizer(client)
+			authorizer.Organization = org
 
-		log.Println("Adding GitHub Team authorizer with the following configuration:")
-		log.Println(fmt.Sprintf("  Team ID: %v ", teamID))
+			log.Println("Adding GitHub Organization authorizer with the following configuration:")
+			log.Println(fmt.Sprintf("  Organization: %v ", org))
 
-		return &auth.Auth{
-			Authenticator: authenticator,
+			a.Authorizer = auth.CacheAuthorization(authorizer, 30*time.Minute)
+		}
+
+		// After the user is authenticated, check their GitHub Team membership.
+		if teamID := c.String(FlagGithubTeam); teamID != "" {
+			authorizer := githubauth.NewTeamAuthorizer(client)
+			authorizer.TeamID = teamID
+
+			log.Println("Adding GitHub Team authorizer with the following configuration:")
+			log.Println(fmt.Sprintf("  Team ID: %v ", teamID))
+
 			// Cache the team check for 30 minutes
-			Authorizer: auth.CacheAuthorization(authorizer, 30*time.Minute),
+			a.Authorizer = auth.CacheAuthorization(authorizer, 30*time.Minute)
 		}
-	}
 
-	return &auth.Auth{
-		Authenticator: authenticator,
+		return a
+	case "saml":
+		loginURL := c.String(FlagURL) + "/saml/login"
+
+		// When using the SAML authentication backend, access tokens are
+		// created through the browser, so username/password
+		// authentication should be disabled.
+		usernamePasswordDisabled := auth.AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
+			return nil, fmt.Errorf("Authentication via username/password is disabled. Login at %s", loginURL)
+		})
+
+		return &auth.Auth{
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: usernamePasswordDisabled,
+					// Ensure that this strategy isn't used
+					// by default.
+					Disabled: true,
+				},
+			},
+		}
+	default:
+		panic("unreachable")
 	}
 }
