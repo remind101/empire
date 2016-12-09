@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/remind101/empire"
 )
@@ -122,15 +123,15 @@ func (a *Auth) Authenticate(ctx context.Context, username, password, otp string,
 }
 
 func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, username, password, otp string) (context.Context, error) {
-	user, err := authenticator.Authenticate(username, password, otp)
+	session, err := authenticator.Authenticate(username, password, otp)
 	if err != nil {
 		return ctx, err
 	}
 
-	ctx = WithUser(ctx, user)
+	ctx = WithSession(ctx, session)
 
 	if a.Authorizer != nil {
-		if err := a.Authorizer.Authorize(user); err != nil {
+		if err := a.Authorizer.Authorize(session.User); err != nil {
 			return ctx, err
 		}
 	}
@@ -138,19 +139,33 @@ func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, us
 	return ctx, nil
 }
 
+// Session represents an authenticated Session.
+type Session struct {
+	// The authenticated User.
+	User *empire.User
+
+	// When this Session will expire. The zero value means no expiration.
+	ExpiresAt *time.Time
+}
+
+// NewSession returns a new Session for the user.
+func NewSession(user *empire.User) *Session {
+	return &Session{User: user}
+}
+
 // Authenticator represents something that, given a username, password and OTP
 // can authenticate an Empire user.
 type Authenticator interface {
-	// Authenticate should check the credentials and return the Empire user.
-	Authenticate(username, password, twofactor string) (*empire.User, error)
+	// Authenticate should check the credentials and return a login Session.
+	Authenticate(username, password, twofactor string) (*Session, error)
 }
 
 // AuthenticatorFunc is a function signature that implements the Authenticator
 // interface.
-type AuthenticatorFunc func(string, string, string) (*empire.User, error)
+type AuthenticatorFunc func(string, string, string) (*Session, error)
 
 // Authenticate calls the AuthenticatorFunc.
-func (fn AuthenticatorFunc) Authenticate(username, password, otp string) (*empire.User, error) {
+func (fn AuthenticatorFunc) Authenticate(username, password, otp string) (*Session, error) {
 	return fn(username, password, otp)
 }
 
@@ -170,7 +185,7 @@ func (fn AuthorizerFunc) Authorize(user *empire.User) error {
 // StaticAuthenticator returns an Authenticator that returns the provided user
 // when the given credentials are provided.
 func StaticAuthenticator(username, password, otp string, user *empire.User) Authenticator {
-	return AuthenticatorFunc(func(givenUsername, givenPassword, givenOtp string) (*empire.User, error) {
+	return AuthenticatorFunc(func(givenUsername, givenPassword, givenOtp string) (*Session, error) {
 		if givenUsername != username {
 			return nil, ErrForbidden
 		}
@@ -183,15 +198,15 @@ func StaticAuthenticator(username, password, otp string, user *empire.User) Auth
 			return nil, ErrTwoFactor
 		}
 
-		return user, nil
+		return NewSession(user), nil
 	})
 }
 
 // Anyone returns an Authenticator that let's anyone in and sets them as the
 // given user.
 func Anyone(user *empire.User) Authenticator {
-	return AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
-		return user, nil
+	return AuthenticatorFunc(func(username, password, otp string) (*Session, error) {
+		return NewSession(user), nil
 	})
 }
 
@@ -201,13 +216,13 @@ func Anyone(user *empire.User) Authenticator {
 // It will proceed to the next authenticator when the error returned is
 // ErrForbidden. Any other errors are bubbled up (e.g. ErrTwoFactor).
 func MultiAuthenticator(authenticators ...Authenticator) Authenticator {
-	return AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
+	return AuthenticatorFunc(func(username, password, otp string) (*Session, error) {
 		for _, authenticator := range authenticators {
-			user, err := authenticator.Authenticate(username, password, otp)
+			session, err := authenticator.Authenticate(username, password, otp)
 
 			// No error so we're authenticated.
 			if err == nil {
-				return user, nil
+				return session, nil
 			}
 
 			// Try the next authenticator.
@@ -224,23 +239,53 @@ func MultiAuthenticator(authenticators ...Authenticator) Authenticator {
 	})
 }
 
+// WithMaxSessionDuration wraps an Authenticator to ensure that sessions always
+// have a maximum lifetime. If the Session already has an expiration that will
+// expire before d, the existing expiration is left in tact.
+func WithMaxSessionDuration(auth Authenticator, exp func() time.Time) Authenticator {
+	return AuthenticatorFunc(func(username, password, otp string) (*Session, error) {
+		session, err := auth.Authenticate(username, password, otp)
+		if err != nil {
+			return session, err
+		}
+
+		t := exp()
+		if exp := session.ExpiresAt; exp != nil {
+			if exp.Before(t) {
+				// Re-setting ExpiresAt to t would increase the
+				// expiration of this session, instead we want
+				// to keep it in tact.
+				return session, err
+			}
+		}
+		session.ExpiresAt = &t
+		return session, err
+	})
+}
+
 // key used to store context values from within this package.
 type key int
 
 const (
-	userKey key = iota
+	sessionKey key = iota
 )
 
-// WithUser adds a user to the context.Context.
-func WithUser(ctx context.Context, u *empire.User) context.Context {
-	return context.WithValue(ctx, userKey, u)
+// WithSession embeds the authentication Session in the context.Context.
+func WithSession(ctx context.Context, session *Session) context.Context {
+	return context.WithValue(ctx, sessionKey, session)
 }
 
 // UserFromContext returns a user from a context.Context if one is present.
 func UserFromContext(ctx context.Context) *empire.User {
-	u, ok := ctx.Value(userKey).(*empire.User)
+	session := SessionFromContext(ctx)
+	return session.User
+}
+
+// SessionFromContext returns the embedded Session in the context.Context.
+func SessionFromContext(ctx context.Context) *Session {
+	session, ok := ctx.Value(sessionKey).(*Session)
 	if !ok {
 		panic("expected user to be authenticated")
 	}
-	return u
+	return session
 }

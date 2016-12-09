@@ -33,8 +33,11 @@ func newAuthorization(token *AccessToken) *Authorization {
 }
 
 func (h *Server) PostAuthorizations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	session := auth.SessionFromContext(ctx)
+
 	at, err := h.AccessTokensCreate(&AccessToken{
-		User: auth.UserFromContext(ctx),
+		User:      session.User,
+		ExpiresAt: session.ExpiresAt,
 	})
 	if err != nil {
 		return err

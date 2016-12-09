@@ -25,10 +25,10 @@ func TestAuthenticator(t *testing.T) {
 		Login: "ejholmes",
 	}, nil)
 
-	user, err := a.Authenticate("username", "password", "otp")
+	session, err := a.Authenticate("username", "password", "otp")
 	assert.NoError(t, err)
-	assert.Equal(t, "ejholmes", user.Name)
-	assert.Equal(t, "access_token", user.GitHubToken)
+	assert.Equal(t, "ejholmes", session.User.Name)
+	assert.Equal(t, "access_token", session.User.GitHubToken)
 }
 
 func TestAuthenticator_ErrTwoFactor(t *testing.T) {
@@ -40,9 +40,9 @@ func TestAuthenticator_ErrTwoFactor(t *testing.T) {
 		Password: "password",
 	}).Return(nil, errTwoFactor)
 
-	user, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate("username", "password", "")
 	assert.Equal(t, auth.ErrTwoFactor, err)
-	assert.Nil(t, user)
+	assert.Nil(t, session)
 }
 
 func TestAuthenticator_ErrForbidden(t *testing.T) {
@@ -54,9 +54,9 @@ func TestAuthenticator_ErrForbidden(t *testing.T) {
 		Password: "badpassword",
 	}).Return(nil, errUnauthorized)
 
-	user, err := a.Authenticate("username", "badpassword", "")
+	session, err := a.Authenticate("username", "badpassword", "")
 	assert.Equal(t, auth.ErrForbidden, err)
-	assert.Nil(t, user)
+	assert.Nil(t, session)
 }
 
 func TestOrganizationAuthorizer(t *testing.T) {

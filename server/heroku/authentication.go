@@ -82,14 +82,15 @@ func (s *Server) Authenticate(ctx context.Context, r *http.Request, strategies .
 		}
 	}
 
-	user := auth.UserFromContext(ctx)
+	session := auth.SessionFromContext(ctx)
 
 	logger.Info(ctx,
 		"authenticated",
-		"user", user.Name,
+		"user", session.User.Name,
+		"expires", session.ExpiresAt,
 	)
 
-	reporter.AddContext(ctx, "user", user.Name)
+	reporter.AddContext(ctx, "user", session.User.Name)
 
 	return ctx, nil
 }
@@ -102,7 +103,7 @@ type accessTokenAuthenticator struct {
 
 // Authenticate authenticates the access token, which should be provided as the
 // password parameter. Username and otp are ignored.
-func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string) (*empire.User, error) {
+func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string) (*auth.Session, error) {
 	at, err := a.findAccessToken(token)
 	if err != nil {
 		return nil, err
@@ -112,7 +113,12 @@ func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string
 		return nil, auth.ErrForbidden
 	}
 
-	return at.User, nil
+	session := &auth.Session{
+		User:      at.User,
+		ExpiresAt: at.ExpiresAt,
+	}
+
+	return session, nil
 }
 
 // AccessTokensCreate "creates" the token by jwt signing it and setting the
@@ -187,6 +193,11 @@ func accessTokenToJwt(token *AccessToken) *jwt.Token {
 // jwtToAccessTokens maps a jwt.Token to an AccessToken.
 func jwtToAccessToken(t *jwt.Token) (*AccessToken, error) {
 	var token AccessToken
+
+	if t.Claims["exp"] != nil {
+		exp := time.Unix(int64(t.Claims["exp"].(float64)), 0).UTC()
+		token.ExpiresAt = &exp
+	}
 
 	if u, ok := t.Claims["User"].(map[string]interface{}); ok {
 		var user empire.User
