@@ -755,6 +755,7 @@
 
     "DBSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
+      "Condition": "DemoMode",
       "Properties": {
         "GroupDescription": "Security group for RDS DB Instance.",
         "VpcId": { "Ref" : "Vpc" },
@@ -769,6 +770,7 @@
 
     "DBSubnetGroup": {
       "Type" : "AWS::RDS::DBSubnetGroup",
+      "Condition": "DemoMode",
       "Properties" : {
         "DBSubnetGroupDescription": "Subnet group for Empire db",
         "SubnetIds" : [{ "Ref": "PubSubnetAz1" }, { "Ref": "PubSubnetAz2" }]
@@ -777,6 +779,7 @@
 
     "DB": {
       "Type": "AWS::RDS::DBInstance",
+      "Condition": "DemoMode",
       "Properties": {
         "DBName": "empire",
         "Engine": "postgres",
