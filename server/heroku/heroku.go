@@ -19,16 +19,9 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/stats"
-	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
 )
-
-var Tracer *tracer.Tracer
-
-func init() {
-	Tracer = tracer.NewTracerTransport(tracer.NewHTTPTransport("http://dockerhost:7777/v0.3/traces"))
-}
 
 // The Accept header that controls the api version. See
 // https://devcenter.heroku.com/articles/platform-api-reference#clients
@@ -271,7 +264,7 @@ func handlerName(h httpx.HandlerFunc) string {
 
 func withTrace(handlerName string, h httpx.Handler) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		span := Tracer.NewRootSpan("http.request", "empire", fmt.Sprintf("heroku.%s", handlerName))
+		span := empire.NewRootSpan("http.request", fmt.Sprintf("heroku.%s", handlerName))
 		span.Type = "http"
 		span.SetMeta("user", auth.UserFromContext(ctx).Name)
 		span.SetMeta("http.method", r.Method)

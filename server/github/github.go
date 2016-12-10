@@ -56,6 +56,14 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var p events.Deployment
 
+	span := empire.NewRootSpan("http.request", "github.Deployment")
+	span.Type = "http"
+	span.SetMeta("http.method", r.Method)
+	span.SetMeta("http.url", r.URL.String())
+	defer span.Finish()
+
+	ctx = span.Context(ctx)
+
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -67,6 +75,7 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 		return nil
 	}
 	if err := h.Deploy(ctx, p, os.Stdout); err != nil {
+		span.SetError(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	}

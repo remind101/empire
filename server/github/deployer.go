@@ -9,7 +9,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
-	"github.com/remind101/pkg/trace"
+	"github.com/remind101/empire/tracer"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
 )
@@ -136,14 +136,13 @@ func DeployAsync(d Deployer) Deployer {
 // TraceDeploy wraps a Deployer to perform tracing with package trace.
 func TraceDeploy(d Deployer) Deployer {
 	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) (err error) {
-		ctx, done := trace.Trace(ctx)
-		err = d.Deploy(ctx, event, w)
-		done(err, "Deploy",
-			"repository", event.Repository.FullName,
-			"creator", event.Deployment.Creator.Login,
-			"ref", event.Deployment.Ref,
-			"sha", event.Deployment.Sha,
-		)
+		span := tracer.NewChildSpanFromContext("github.Deploy", ctx)
+		span.SetMeta("event.Repository.FullName", event.Repository.FullName)
+		span.SetMeta("event.Deployment.Creator.Login", event.Deployment.Creator.Login)
+		span.SetMeta("event.Deployment.Ref", event.Deployment.Ref)
+		span.SetMeta("event.Deployment.Sha", event.Deployment.Sha)
+		err = d.Deploy(span.Context(ctx), event, w)
+		span.FinishWithErr(err)
 		return err
 	})
 }

@@ -356,7 +356,7 @@ func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
 func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 	span := tracer.NewChildSpanFromContext("empire.Tasks", ctx)
 	span.SetMeta("app.Name", app.Name)
-	tasks, err := e.tasks.Tasks(ctx, app)
+	tasks, err := e.tasks.Tasks(span.Context(ctx), app)
 	span.FinishWithErr(err)
 	return tasks, err
 }
@@ -602,6 +602,10 @@ func (opts DeployOpts) Validate(e *Empire) error {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
+	span := tracer.NewChildSpanFromContext("empire.Deploy", ctx)
+	defer span.Finish()
+	ctx = span.Context(ctx)
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
