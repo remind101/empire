@@ -11,6 +11,7 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/tracer"
 	"golang.org/x/net/context"
 )
 
@@ -353,7 +354,11 @@ func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
 
 // Tasks returns the Tasks for the given app.
 func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
-	return e.tasks.Tasks(ctx, app)
+	span := tracer.NewChildSpanFromContext("empire.Tasks", ctx)
+	span.SetMeta("app.Name", app.Name)
+	tasks, err := e.tasks.Tasks(ctx, app)
+	span.FinishWithErr(err)
+	return tasks, err
 }
 
 // RestartOpts are options provided when restarting an app.

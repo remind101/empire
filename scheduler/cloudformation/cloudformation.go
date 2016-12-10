@@ -1001,25 +1001,31 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler
 }
 
 func (s *Scheduler) ecsDescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
-	span := tracer.NewChildSpanFromContext("ecs.DescribeTaskDefinition", ctx)
+	span := tracer.NewChildSpanFromContext("aws.ecs.DescribeTaskDefinition", ctx)
 	resp, err := s.ecs.DescribeTaskDefinition(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) ecsDescribeContainerInstances(ctx context.Context, input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
-	span := tracer.NewChildSpanFromContext("ecs.DescribeContainerInstances", ctx)
+	span := tracer.NewChildSpanFromContext("aws.ecs.DescribeContainerInstances", ctx)
 	resp, err := s.ecs.DescribeContainerInstances(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error {
-	span := tracer.NewChildSpanFromContext("ecs.ListTasksPages", ctx)
+	span := tracer.NewChildSpanFromContext("aws.ecs.ListTasksPages", ctx)
+	if v := input.ServiceName; v != nil {
+		span.SetMeta("input.ServiceName", *v)
+	}
+	if v := input.StartedBy; v != nil {
+		span.SetMeta("input.StartedBy", *v)
+	}
 	err := s.ecs.ListTasksPages(input, fn)
 	span.FinishWithErr(err)
 	return err
 }
 func (s *Scheduler) ecsDescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
-	span := tracer.NewChildSpanFromContext("ecs.DescribeTasks", ctx)
+	span := tracer.NewChildSpanFromContext("aws.ecs.DescribeTasks", ctx)
 	resp, err := s.ecs.DescribeTasks(input)
 	span.FinishWithErr(err)
 	return resp, err
