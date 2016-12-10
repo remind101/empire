@@ -26,6 +26,7 @@ import (
 	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
@@ -348,7 +349,7 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 			arns = append(arns, aws.String(arn))
 		}
 
-		services, err := s.services(arns)
+		services, err := s.services(ctx, arns)
 		if err != nil {
 			return false, err
 		}
@@ -699,7 +700,7 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
 	var instances []*scheduler.Instance
 
-	tasks, err := s.tasks(app)
+	tasks, err := s.tasks(ctx, app)
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +710,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		k := *t.TaskDefinitionArn
 
 		if _, ok := taskDefinitions[k]; !ok {
-			resp, err := s.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+			resp, err := s.ecsDescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
 				TaskDefinition: t.TaskDefinitionArn,
 			})
 			if err != nil {
@@ -732,7 +733,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 
 	for clusterArn, containerArnPtrs := range clusterMap {
 		for _, chunk := range chunkStrings(containerArnPtrs, MaxDescribeContainerInstances) {
-			resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+			resp, err := s.ecsDescribeContainerInstances(ctx, &ecs.DescribeContainerInstancesInput{
 				Cluster:            aws.String(clusterArn),
 				ContainerInstances: chunk,
 			})
@@ -787,7 +788,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 	return instances, nil
 }
 
-func (s *Scheduler) services(arns []*string) ([]*ecs.Service, error) {
+func (s *Scheduler) services(ctx context.Context, arns []*string) ([]*ecs.Service, error) {
 	var services []*ecs.Service
 	for _, chunk := range chunkStrings(arns, MaxDescribeServices) {
 		resp, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
@@ -803,8 +804,8 @@ func (s *Scheduler) services(arns []*string) ([]*ecs.Service, error) {
 }
 
 // tasks returns all of the ECS tasks for this app.
-func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
-	services, err := s.Services(app)
+func (s *Scheduler) tasks(ctx context.Context, app string) ([]*ecs.Task, error) {
+	services, err := s.Services(ctx, app)
 	if err != nil {
 		return nil, err
 	}
@@ -819,7 +820,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		}
 
 		var taskArns []*string
-		if err := s.ecs.ListTasksPages(&ecs.ListTasksInput{
+		if err := s.ecsListTasksPages(ctx, &ecs.ListTasksInput{
 			Cluster:     aws.String(s.Cluster),
 			ServiceName: aws.String(id),
 		}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
@@ -837,7 +838,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	}
 
 	// Find all of the tasks started by Run.
-	if err := s.ecs.ListTasksPages(&ecs.ListTasksInput{
+	if err := s.ecsListTasksPages(ctx, &ecs.ListTasksInput{
 		Cluster:   aws.String(s.Cluster),
 		StartedBy: aws.String(app),
 	}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
@@ -849,7 +850,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 
 	var tasks []*ecs.Task
 	for _, chunk := range chunkStrings(arns, MaxDescribeTasks) {
-		resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+		resp, err := s.ecsDescribeTasks(ctx, &ecs.DescribeTasksInput{
 			Cluster: aws.String(s.Cluster),
 			Tasks:   chunk,
 		})
@@ -865,7 +866,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 
 // Services returns a map that maps the name of the process (e.g. web) to the
 // ARN of the associated ECS service.
-func (s *Scheduler) Services(appID string) (map[string]string, error) {
+func (s *Scheduler) Services(ctx context.Context, appID string) (map[string]string, error) {
 	stackName, err := s.stackName(appID)
 	if err != nil {
 		return nil, err
@@ -997,6 +998,31 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler
 		}
 		return err
 	}
+}
+
+func (s *Scheduler) ecsDescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
+	span := tracer.NewChildSpanFromContext("ecs.DescribeTaskDefinition", ctx)
+	resp, err := s.ecs.DescribeTaskDefinition(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) ecsDescribeContainerInstances(ctx context.Context, input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
+	span := tracer.NewChildSpanFromContext("ecs.DescribeContainerInstances", ctx)
+	resp, err := s.ecs.DescribeContainerInstances(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error {
+	span := tracer.NewChildSpanFromContext("ecs.ListTasksPages", ctx)
+	err := s.ecs.ListTasksPages(input, fn)
+	span.FinishWithErr(err)
+	return err
+}
+func (s *Scheduler) ecsDescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
+	span := tracer.NewChildSpanFromContext("ecs.DescribeTasks", ctx)
+	resp, err := s.ecs.DescribeTasks(input)
+	span.FinishWithErr(err)
+	return resp, err
 }
 
 // extractProcessData extracts a map that maps the process name to some
