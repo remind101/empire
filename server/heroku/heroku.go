@@ -14,6 +14,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/DataDog/dd-trace-go/tracer"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/heroku"
@@ -141,7 +142,7 @@ func (r *route) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req
 	}
 
 	// Track metrics for this endpoint.
-	m := withMetrics(r.Name, r.HandlerFunc)
+	m := withTrace(r.Name, withMetrics(r.Name, r.HandlerFunc))
 
 	return m.ServeHTTPContext(ctx, w, req)
 }
@@ -262,14 +263,24 @@ func handlerName(h httpx.HandlerFunc) string {
 	return nameRegexp.FindStringSubmatch(name)[1]
 }
 
-func withMetrics(handlerName string, h httpx.HandlerFunc) httpx.Handler {
+func withTrace(handlerName string, h httpx.Handler) httpx.Handler {
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		span := tracer.NewRootSpan("heroku", "empire", handlerName)
+		span.SetMeta("user", auth.UserFromContext(ctx).Name)
+		err := h.ServeHTTPContext(span.Context(ctx), w, r)
+		span.FinishWithErr(err)
+		return err
+	})
+}
+
+func withMetrics(handlerName string, h httpx.Handler) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		tags := []string{
 			fmt.Sprintf("handler:%s", handlerName),
 			fmt.Sprintf("user:%s", auth.UserFromContext(ctx).Name),
 		}
 		start := time.Now()
-		err := h(ctx, w, r)
+		err := h.ServeHTTPContext(ctx, w, r)
 		d := time.Since(start)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", handlerName), d, 1.0, tags)
