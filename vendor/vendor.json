@@ -24,12 +24,6 @@
 			"revisionTime": "2016-03-29T13:52:53Z"
 		},
 		{
-			"checksumSHA1": "zPq1+bFnF4NRPR4SDn7wLTfY3hI=",
-			"path": "github.com/DataDog/dd-trace-go/tracer",
-			"revision": "bd99bf2922cb0a2fdca1dcd23998b8099d3fdef1",
-			"revisionTime": "2016-12-09T12:30:55Z"
-		},
-		{
 			"checksumSHA1": "+/Gdsex02bu/UiE7a81GbVD0nAQ=",
 			"path": "github.com/aws/aws-sdk-go/aws",
 			"revision": "f80e7d0182a463dff0c0da6bbed57f21369d4346",

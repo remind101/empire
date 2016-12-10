@@ -24,7 +24,7 @@ type Transport interface {
 
 // newDefaultTransport return a default transport for this tracing client
 func newDefaultTransport() Transport {
-	return newHTTPTransport(defaultDeliveryURL)
+	return NewHTTPTransport(defaultDeliveryURL)
 }
 
 type httpTransport struct {
@@ -36,7 +36,7 @@ type httpTransport struct {
 }
 
 // newHTTPTransport returns an httpTransport for the given endpoint
-func newHTTPTransport(url string) *httpTransport {
+func NewHTTPTransport(url string) *httpTransport {
 	// initialize the default EncoderPool with Encoder headers
 	pool, contentType := newEncoderPool(defaultEncoder, encoderPoolSize)
 	defaultHeaders := make(map[string]string)

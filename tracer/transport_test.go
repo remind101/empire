@@ -38,54 +38,9 @@ func getTestTrace(traceN, size int) [][]*Span {
 	return traces
 }
 
-func TestTracesAgentIntegration(t *testing.T) {
-	assert := assert.New(t)
-
-	testCases := []struct {
-		payload [][]*Span
-	}{
-		{getTestTrace(1, 1)},
-		{getTestTrace(10, 1)},
-		{getTestTrace(1, 10)},
-		{getTestTrace(10, 10)},
-	}
-
-	for _, tc := range testCases {
-		transport := newHTTPTransport(defaultDeliveryURL)
-		response, err := transport.Send(tc.payload)
-		assert.Nil(err)
-		assert.NotNil(response)
-		assert.Equal(200, response.StatusCode)
-	}
-}
-
-func TestAPIDowngrade(t *testing.T) {
-	assert := assert.New(t)
-	transport := newHTTPTransport("http://localhost:7777/v0.0/traces")
-
-	// if we get a 404 we should downgrade the API
-	traces := getTestTrace(2, 2)
-	response, err := transport.Send(traces)
-	assert.Nil(err)
-	assert.NotNil(response)
-	assert.Equal(200, response.StatusCode)
-}
-
-func TestEncoderDowngrade(t *testing.T) {
-	assert := assert.New(t)
-	transport := newHTTPTransport("http://localhost:7777/v0.2/traces")
-
-	// if we get a 415 because of a wrong encoder, we should downgrade the encoder
-	traces := getTestTrace(2, 2)
-	response, err := transport.Send(traces)
-	assert.Nil(err)
-	assert.NotNil(response)
-	assert.Equal(200, response.StatusCode)
-}
-
 func TestTransportHeaders(t *testing.T) {
 	assert := assert.New(t)
-	transport := newHTTPTransport(defaultDeliveryURL)
+	transport := NewHTTPTransport(defaultDeliveryURL)
 
 	// msgpack is the default Header
 	contentType := transport.headers["Content-Type"]
@@ -94,7 +49,7 @@ func TestTransportHeaders(t *testing.T) {
 
 func TestTransportEncoderPool(t *testing.T) {
 	assert := assert.New(t)
-	transport := newHTTPTransport(defaultDeliveryURL)
+	transport := NewHTTPTransport(defaultDeliveryURL)
 
 	// MsgpackEncoder is the default encoder of the pool
 	encoder := transport.pool.Borrow()
@@ -103,7 +58,7 @@ func TestTransportEncoderPool(t *testing.T) {
 
 func TestTransportSwitchEncoder(t *testing.T) {
 	assert := assert.New(t)
-	transport := newHTTPTransport(defaultDeliveryURL)
+	transport := NewHTTPTransport(defaultDeliveryURL)
 	transport.changeEncoder(JSON_ENCODER)
 
 	// MsgpackEncoder is the default encoder of the pool
