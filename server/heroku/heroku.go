@@ -264,7 +264,7 @@ func handlerName(h httpx.HandlerFunc) string {
 
 func withTrace(handlerName string, h httpx.Handler) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		span := empire.NewRootSpan("http.request", fmt.Sprintf("heroku.%s", handlerName))
+		span := empire.NewRootSpan("http.request", fmt.Sprintf("Heroku %s", handlerName))
 		span.Type = "http"
 		span.SetMeta("user", auth.UserFromContext(ctx).Name)
 		span.SetMeta("http.method", r.Method)

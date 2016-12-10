@@ -9,7 +9,6 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
-	"github.com/remind101/empire/tracer"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
 )
@@ -123,26 +122,4 @@ func (fn provider) Name() string {
 
 func (fn provider) Deploy(ctx context.Context, d *tugboat.Deployment, w io.Writer) error {
 	return fn(ctx, d, w)
-}
-
-// DeployAsync wraps a Deployer to perform the Deploy within a goroutine.
-func DeployAsync(d Deployer) Deployer {
-	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) error {
-		go d.Deploy(ctx, event, w)
-		return nil
-	})
-}
-
-// TraceDeploy wraps a Deployer to perform tracing with package trace.
-func TraceDeploy(d Deployer) Deployer {
-	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) (err error) {
-		span := tracer.NewChildSpanFromContext("github.Deploy", ctx)
-		span.SetMeta("event.Repository.FullName", event.Repository.FullName)
-		span.SetMeta("event.Deployment.Creator.Login", event.Deployment.Creator.Login)
-		span.SetMeta("event.Deployment.Ref", event.Deployment.Ref)
-		span.SetMeta("event.Deployment.Sha", event.Deployment.Sha)
-		err = d.Deploy(span.Context(ctx), event, w)
-		span.FinishWithErr(err)
-		return err
-	})
 }

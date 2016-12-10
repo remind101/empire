@@ -56,10 +56,16 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var p events.Deployment
 
-	span := empire.NewRootSpan("http.request", "github.Deployment")
+	span := empire.NewRootSpan("http.request", "GitHub Deployment")
 	span.Type = "http"
 	span.SetMeta("http.method", r.Method)
 	span.SetMeta("http.url", r.URL.String())
+
+	span.SetMeta("event.Repository.FullName", p.Repository.FullName)
+	span.SetMeta("event.Deployment.Creator.Login", p.Deployment.Creator.Login)
+	span.SetMeta("event.Deployment.Ref", p.Deployment.Ref)
+	span.SetMeta("event.Deployment.Sha", p.Deployment.Sha)
+
 	defer span.Finish()
 
 	ctx = span.Context(ctx)
@@ -74,11 +80,11 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 		fmt.Fprintf(w, "Ignore deployment to environment: %s", p.Deployment.Environment)
 		return nil
 	}
-	if err := h.Deploy(ctx, p, os.Stdout); err != nil {
-		span.SetError(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
-	}
+
+	go func() {
+		err := h.Deploy(ctx, p, os.Stdout)
+		span.FinishWithErr(err)
+	}()
 
 	w.WriteHeader(http.StatusAccepted)
 	io.WriteString(w, "Ok\n")
