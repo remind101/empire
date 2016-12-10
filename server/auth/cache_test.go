@@ -7,6 +7,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/net/context"
 )
 
 func TestCachedAuthorizer_Cached(t *testing.T) {
@@ -18,7 +19,7 @@ func TestCachedAuthorizer_Cached(t *testing.T) {
 
 	c.On("Get", "ejholmes").Return(nil, true)
 
-	err := a.Authorize(u)
+	err := a.Authorize(ctx, u)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -37,7 +38,7 @@ func TestCachedAuthorizer_Positive(t *testing.T) {
 	c.On("Get", "ejholmes").Return(nil, false)
 	c.On("Set", "ejholmes", true, time.Duration(0))
 
-	err := a.Authorize(u)
+	err := a.Authorize(ctx, u)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -57,7 +58,7 @@ func TestCachedAuthorizer_Negative(t *testing.T) {
 	m.On("Authorize", u).Return(errUnauthed)
 	c.On("Get", "ejholmes").Return(nil, false)
 
-	err := a.Authorize(u)
+	err := a.Authorize(ctx, u)
 	assert.Equal(t, errUnauthed, err)
 
 	c.AssertExpectations(t)
@@ -81,7 +82,7 @@ type mockAuthorizer struct {
 	mock.Mock
 }
 
-func (m *mockAuthorizer) Authorize(user *empire.User) error {
+func (m *mockAuthorizer) Authorize(_ context.Context, user *empire.User) error {
 	args := m.Called(user)
 	return args.Error(0)
 }

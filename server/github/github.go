@@ -12,6 +12,7 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -56,6 +57,16 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var p events.Deployment
 
+	span := middleware.RootSpan(ctx)
+	span.Resource = "GitHub Deployment"
+
+	span.SetMeta("event.Repository.FullName", p.Repository.FullName)
+	span.SetMeta("event.Deployment.Creator.Login", p.Deployment.Creator.Login)
+	span.SetMeta("event.Deployment.Ref", p.Deployment.Ref)
+	span.SetMeta("event.Deployment.Sha", p.Deployment.Sha)
+
+	ctx = span.Context(ctx)
+
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -66,10 +77,11 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 		fmt.Fprintf(w, "Ignore deployment to environment: %s", p.Deployment.Environment)
 		return nil
 	}
-	if err := h.Deploy(ctx, p, os.Stdout); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
-	}
+
+	go func() {
+		err := h.Deploy(ctx, p, os.Stdout)
+		span.FinishWithErr(err)
+	}()
 
 	w.WriteHeader(http.StatusAccepted)
 	io.WriteString(w, "Ok\n")

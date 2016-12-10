@@ -18,6 +18,7 @@ import (
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
+	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
@@ -134,16 +135,24 @@ func (r *route) AuthWith(strategies ...string) *route {
 }
 
 func (r *route) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
+	span := middleware.RootSpan(ctx)
+	span.Resource = fmt.Sprintf("Heroku %s", r.Name)
+
 	// Authenticate the request.
 	ctx, err := r.s.Authenticate(ctx, req, r.authStrategies...)
 	if err != nil {
+		span.FinishWithErr(err)
 		return err
 	}
+
+	span.SetMeta("user", auth.UserFromContext(ctx).Name)
 
 	// Track metrics for this endpoint.
 	m := withMetrics(r.Name, r.HandlerFunc)
 
-	return m.ServeHTTPContext(ctx, w, req)
+	err = m.ServeHTTPContext(ctx, w, req)
+	span.FinishWithErr(err)
+	return err
 }
 
 // ServeHTTPContext implements the httpx.Handler interface.
@@ -262,14 +271,14 @@ func handlerName(h httpx.HandlerFunc) string {
 	return nameRegexp.FindStringSubmatch(name)[1]
 }
 
-func withMetrics(handlerName string, h httpx.HandlerFunc) httpx.Handler {
+func withMetrics(handlerName string, h httpx.Handler) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		tags := []string{
 			fmt.Sprintf("handler:%s", handlerName),
 			fmt.Sprintf("user:%s", auth.UserFromContext(ctx).Name),
 		}
 		start := time.Now()
-		err := h(ctx, w, r)
+		err := h.ServeHTTPContext(ctx, w, r)
 		d := time.Since(start)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", handlerName), d, 1.0, tags)

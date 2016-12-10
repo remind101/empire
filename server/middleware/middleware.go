@@ -1,11 +1,14 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
 
 	"github.com/inconshreveable/log15"
+	"github.com/remind101/empire"
+	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
 )
@@ -34,7 +37,10 @@ func Common(h httpx.Handler) httpx.Handler {
 	h = WithRecovery(h)
 
 	// Add information about the request to reported errors.
-	return WithRequest(h)
+	h = WithRequest(h)
+
+	// Add a root span to the request.
+	return WithTracing(h)
 }
 
 // LogRequests logs the requests to the embedded logger.
@@ -65,3 +71,34 @@ func PrefixRequestID(h httpx.Handler) httpx.Handler {
 		return h.ServeHTTPContext(ctx, w, r)
 	})
 }
+
+// WithTracing adds a root trace to the request.
+func WithTracing(h httpx.Handler) httpx.Handler {
+	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		span := empire.NewRootSpan("http.request", fmt.Sprintf("%s Unknown", r.Method))
+		span.Type = "http"
+		span.SetMeta("http.method", r.Method)
+		span.SetMeta("http.url", r.URL.String())
+		err := h.ServeHTTPContext(context.WithValue(span.Context(ctx), rootSpanKey, span), w, r)
+		span.FinishWithErr(err)
+		return err
+	})
+}
+
+// Returns the root span embeded from the top level request.
+func RootSpan(ctx context.Context) *tracer.Span {
+	if ctx == nil {
+		return &tracer.Span{}
+	}
+	span, ok := ctx.Value(rootSpanKey).(*tracer.Span)
+	if !ok {
+		return &tracer.Span{}
+	}
+	return span
+}
+
+type key int
+
+const (
+	rootSpanKey key = iota
+)

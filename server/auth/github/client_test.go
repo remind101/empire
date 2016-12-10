@@ -38,7 +38,7 @@ func TestClient_CreateAuthorization(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
 	}, nil).Once()
 
-	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
+	auth, err := c.CreateAuthorization(ctx, CreateAuthorizationOptions{
 		Username: "username",
 		Password: "password",
 	})
@@ -68,7 +68,7 @@ func TestClient_CreateAuthorization_RequiresOTP(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
 	}, nil).Once()
 
-	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
+	auth, err := c.CreateAuthorization(ctx, CreateAuthorizationOptions{
 		Username: "username",
 		Password: "password",
 	})
@@ -96,7 +96,7 @@ func TestClient_CreateAuthorization_WithOTP(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
 	}, nil).Once()
 
-	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
+	auth, err := c.CreateAuthorization(ctx, CreateAuthorizationOptions{
 		Username: "username",
 		Password: "password",
 		OTP:      "otp",
@@ -124,7 +124,7 @@ func TestClient_CreateAuthorization_Unauthorized(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{}`)),
 	}, nil).Once()
 
-	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
+	auth, err := c.CreateAuthorization(ctx, CreateAuthorizationOptions{
 		Username: "username",
 		Password: "password",
 	})
@@ -151,7 +151,7 @@ func TestClient_CreateAuthorization_Error(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"message":"our SMS provider doesn't deliver to your area"}`)),
 	}, nil).Once()
 
-	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
+	auth, err := c.CreateAuthorization(ctx, CreateAuthorizationOptions{
 		Username: "username",
 		Password: "password",
 	})
@@ -179,7 +179,7 @@ func TestClient_GetUser(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
 	}, nil).Once()
 
-	user, err := c.GetUser("access_token")
+	user, err := c.GetUser(ctx, "access_token")
 	assert.NoError(t, err)
 	assert.Equal(t, "ejholmes", user.Login)
 
@@ -204,7 +204,7 @@ func TestClient_GetUser_Error(t *testing.T) {
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"message":"not found"}`)),
 	}, nil).Times(3)
 
-	_, err := c.GetUser("access_token")
+	_, err := c.GetUser(ctx, "access_token")
 	assert.Error(t, err)
 
 	h.AssertExpectations(t)
@@ -238,7 +238,7 @@ func TestClient_IsOrganizationMember(t *testing.T) {
 			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
 		}, nil).Once()
 
-		ok, err := c.IsOrganizationMember("remind101", "access_token")
+		ok, err := c.IsOrganizationMember(ctx, "remind101", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
 
@@ -285,7 +285,7 @@ func TestClient_IsTeamMember(t *testing.T) {
 			Body:       ioutil.NopCloser(bytes.NewBufferString(fmt.Sprintf("{\"state\": \"%s\"}", tt.state))),
 		}, nil)
 
-		ok, err := c.IsTeamMember("123", "access_token")
+		ok, err := c.IsTeamMember(ctx, "123", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
 

@@ -103,7 +103,7 @@ type accessTokenAuthenticator struct {
 
 // Authenticate authenticates the access token, which should be provided as the
 // password parameter. Username and otp are ignored.
-func (a *accessTokenAuthenticator) Authenticate(_ string, token string, _ string) (*auth.Session, error) {
+func (a *accessTokenAuthenticator) Authenticate(ctx context.Context, _ string, token string, _ string) (*auth.Session, error) {
 	at, err := a.findAccessToken(token)
 	if err != nil {
 		return nil, err

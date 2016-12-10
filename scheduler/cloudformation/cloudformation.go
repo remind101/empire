@@ -26,6 +26,7 @@ import (
 	pglock "github.com/remind101/empire/pkg/pg/lock"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
@@ -177,7 +178,10 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 
 // Submit creates (or updates) the CloudFormation stack for the app.
 func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
-	return s.SubmitWithOptions(ctx, app, ss, SubmitOptions{})
+	span := newSpan(ctx, "Submit")
+	err := s.SubmitWithOptions(span.Context(ctx), app, ss, SubmitOptions{})
+	span.FinishWithErr(err)
+	return err
 }
 
 // SubmitOptions are options provided to SubmitWithOptions.
@@ -318,10 +322,16 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 }
 
 func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream) error {
+	span := newSpan(ctx, "waitUntilStable")
+	ctx = span.Context(ctx)
+
 	deployments, err := deploymentsToWatch(stack)
 	if err != nil {
+		span.FinishWithErr(err)
 		return err
 	}
+	defer span.Finish()
+
 	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
 	for status := range deploymentStatuses {
 		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
@@ -348,7 +358,7 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 			arns = append(arns, aws.String(arn))
 		}
 
-		services, err := s.services(arns)
+		services, err := s.services(ctx, arns)
 		if err != nil {
 			return false, err
 		}
@@ -462,8 +472,8 @@ func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, ou
 	waiter := s.waitFor(ctx, createStack, ss)
 
 	submitted := make(chan error)
-	fn := func() error {
-		_, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+	fn := func(ctx context.Context) error {
+		_, err := s.cloudformationCreateStack(ctx, &cloudformation.CreateStackInput{
 			StackName:   input.StackName,
 			TemplateURL: input.Template.URL,
 			Tags:        input.Tags,
@@ -497,9 +507,9 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 
 	locked := make(chan struct{})
 	submitted := make(chan error, 1)
-	fn := func() error {
+	fn := func(ctx context.Context) error {
 		close(locked)
-		err := s.executeStackUpdate(input)
+		err := s.executeStackUpdate(ctx, input)
 		if err == nil {
 			scheduler.Publish(ctx, ss, "Stack update submitted")
 		}
@@ -543,7 +553,10 @@ type stackOperationOutput struct {
 //   until the other stack operation has completed.
 // * If there is another pending stack operation, it will be replaced by the new
 //   update.
-func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter waitFunc, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
+func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func(context.Context) error, waiter waitFunc, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
+	span := newSpan(ctx, "performStackOperation")
+	ctx = span.Context(ctx)
+
 	l, err := newAdvisoryLock(s.db, stackName)
 	if err != nil {
 		return nil, err
@@ -564,12 +577,14 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 			scheduler.Publish(ctx, ss, "Operation superseded by newer release")
 			return nil, nil
 		}
+		span.FinishWithErr(err)
 		return nil, fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
 	}
 	defer l.Unlock()
 
 	// Once the lock has been obtained, let's perform the stack operation.
-	if err := fn(); err != nil {
+	if err := fn(ctx); err != nil {
+		span.FinishWithErr(err)
 		return nil, err
 	}
 
@@ -582,10 +597,13 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 	// Wait until this stack operation has completed. The lock will be
 	// unlocked when this function returns.
 	if err := s.waitUntilStackOperationComplete(l, wait); err != nil {
+		span.FinishWithErr(err)
 		return nil, err
 	}
 
-	return s.stack(&stackName)
+	defer span.Finish()
+
+	return s.stack(ctx, &stackName)
 }
 
 // waitUntilStackOperationComplete waits until wait returns, or it times out.
@@ -604,8 +622,8 @@ func (s *Scheduler) waitUntilStackOperationComplete(lock *pglock.AdvisoryLock, w
 }
 
 // executeStackUpdate performs a stack update.
-func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
-	stack, err := s.stack(input.StackName)
+func (s *Scheduler) executeStackUpdate(ctx context.Context, input *updateStackInput) error {
+	stack, err := s.stack(ctx, input.StackName)
 	if err != nil {
 		return err
 	}
@@ -621,7 +639,7 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 		i.UsePreviousTemplate = aws.Bool(true)
 	}
 
-	_, err = s.cloudformation.UpdateStack(i)
+	_, err = s.cloudformationUpdateStack(ctx, i)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
@@ -636,8 +654,8 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 }
 
 // stack returns the cloudformation.Stack for the given stack name.
-func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
-	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+func (s *Scheduler) stack(ctx context.Context, stackName *string) (*cloudformation.Stack, error) {
+	resp, err := s.cloudformationDescribeStacks(ctx, &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	})
 	if err != nil {
@@ -699,7 +717,7 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
 	var instances []*scheduler.Instance
 
-	tasks, err := s.tasks(app)
+	tasks, err := s.tasks(ctx, app)
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +727,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 		k := *t.TaskDefinitionArn
 
 		if _, ok := taskDefinitions[k]; !ok {
-			resp, err := s.ecs.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+			resp, err := s.ecsDescribeTaskDefinition(ctx, &ecs.DescribeTaskDefinitionInput{
 				TaskDefinition: t.TaskDefinitionArn,
 			})
 			if err != nil {
@@ -732,7 +750,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 
 	for clusterArn, containerArnPtrs := range clusterMap {
 		for _, chunk := range chunkStrings(containerArnPtrs, MaxDescribeContainerInstances) {
-			resp, err := s.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+			resp, err := s.ecsDescribeContainerInstances(ctx, &ecs.DescribeContainerInstancesInput{
 				Cluster:            aws.String(clusterArn),
 				ContainerInstances: chunk,
 			})
@@ -787,7 +805,7 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 	return instances, nil
 }
 
-func (s *Scheduler) services(arns []*string) ([]*ecs.Service, error) {
+func (s *Scheduler) services(ctx context.Context, arns []*string) ([]*ecs.Service, error) {
 	var services []*ecs.Service
 	for _, chunk := range chunkStrings(arns, MaxDescribeServices) {
 		resp, err := s.ecs.DescribeServices(&ecs.DescribeServicesInput{
@@ -803,8 +821,8 @@ func (s *Scheduler) services(arns []*string) ([]*ecs.Service, error) {
 }
 
 // tasks returns all of the ECS tasks for this app.
-func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
-	services, err := s.Services(app)
+func (s *Scheduler) tasks(ctx context.Context, app string) ([]*ecs.Task, error) {
+	services, err := s.Services(ctx, app)
 	if err != nil {
 		return nil, err
 	}
@@ -819,7 +837,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 		}
 
 		var taskArns []*string
-		if err := s.ecs.ListTasksPages(&ecs.ListTasksInput{
+		if err := s.ecsListTasksPages(ctx, &ecs.ListTasksInput{
 			Cluster:     aws.String(s.Cluster),
 			ServiceName: aws.String(id),
 		}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
@@ -837,7 +855,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 	}
 
 	// Find all of the tasks started by Run.
-	if err := s.ecs.ListTasksPages(&ecs.ListTasksInput{
+	if err := s.ecsListTasksPages(ctx, &ecs.ListTasksInput{
 		Cluster:   aws.String(s.Cluster),
 		StartedBy: aws.String(app),
 	}, func(resp *ecs.ListTasksOutput, lastPage bool) bool {
@@ -849,7 +867,7 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 
 	var tasks []*ecs.Task
 	for _, chunk := range chunkStrings(arns, MaxDescribeTasks) {
-		resp, err := s.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+		resp, err := s.ecsDescribeTasks(ctx, &ecs.DescribeTasksInput{
 			Cluster: aws.String(s.Cluster),
 			Tasks:   chunk,
 		})
@@ -865,13 +883,13 @@ func (s *Scheduler) tasks(app string) ([]*ecs.Task, error) {
 
 // Services returns a map that maps the name of the process (e.g. web) to the
 // ARN of the associated ECS service.
-func (s *Scheduler) Services(appID string) (map[string]string, error) {
+func (s *Scheduler) Services(ctx context.Context, appID string) (map[string]string, error) {
 	stackName, err := s.stackName(appID)
 	if err != nil {
 		return nil, err
 	}
 
-	stack, err := s.stack(aws.String(stackName))
+	stack, err := s.stack(ctx, aws.String(stackName))
 	if err != nil {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
@@ -997,6 +1015,62 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler
 		}
 		return err
 	}
+}
+
+func (s *Scheduler) ecsDescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
+	span := tracer.NewChildSpanFromContext("DescribeTaskDefinition", ctx)
+	span.Service = "ecs"
+	resp, err := s.ecs.DescribeTaskDefinition(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) ecsDescribeContainerInstances(ctx context.Context, input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
+	span := tracer.NewChildSpanFromContext("DescribeContainerInstances", ctx)
+	span.Service = "ecs"
+	resp, err := s.ecs.DescribeContainerInstances(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error {
+	span := tracer.NewChildSpanFromContext("ListTasksPages", ctx)
+	span.Service = "ecs"
+	if v := input.ServiceName; v != nil {
+		span.SetMeta("input.ServiceName", *v)
+	}
+	if v := input.StartedBy; v != nil {
+		span.SetMeta("input.StartedBy", *v)
+	}
+	err := s.ecs.ListTasksPages(input, fn)
+	span.FinishWithErr(err)
+	return err
+}
+func (s *Scheduler) ecsDescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
+	span := tracer.NewChildSpanFromContext("DescribeTasks", ctx)
+	span.Service = "ecs"
+	resp, err := s.ecs.DescribeTasks(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) cloudformationDescribeStacks(ctx context.Context, input *cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error) {
+	span := tracer.NewChildSpanFromContext("DescribeStacks", ctx)
+	span.Service = "cloudformation"
+	resp, err := s.cloudformation.DescribeStacks(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) cloudformationUpdateStack(ctx context.Context, input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
+	span := tracer.NewChildSpanFromContext("UpdateStack", ctx)
+	span.Service = "cloudformation"
+	resp, err := s.cloudformation.UpdateStack(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) cloudformationCreateStack(ctx context.Context, input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
+	span := tracer.NewChildSpanFromContext("CreateStack", ctx)
+	span.Service = "cloudformation"
+	resp, err := s.cloudformation.CreateStack(input)
+	span.FinishWithErr(err)
+	return resp, err
 }
 
 // extractProcessData extracts a map that maps the process name to some
@@ -1209,4 +1283,8 @@ func deploymentsToWatch(stack *cloudformation.Stack) (map[string]*ecsDeployment,
 		}
 	}
 	return ecsDeployments, nil
+}
+
+func newSpan(ctx context.Context, resource string) *tracer.Span {
+	return tracer.NewChildSpanFromContext(fmt.Sprintf("scheduler.cloudformation.%s", resource), ctx)
 }

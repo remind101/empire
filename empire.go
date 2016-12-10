@@ -11,6 +11,7 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/tracer"
 	"golang.org/x/net/context"
 )
 
@@ -133,6 +134,12 @@ func New(db *DB) *Empire {
 	e.releases = &releasesService{Empire: e}
 	e.certs = &certsService{Empire: e}
 	return e
+}
+
+func (e *Empire) newSpan(ctx context.Context, method string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext(method, ctx)
+	span.Resource = method
+	return span
 }
 
 // AppsFind finds the first app matching the query.
@@ -353,7 +360,11 @@ func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
 
 // Tasks returns the Tasks for the given app.
 func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
-	return e.tasks.Tasks(ctx, app)
+	span := e.newSpan(ctx, "Tasks")
+	span.SetMeta("app.Name", app.Name)
+	tasks, err := e.tasks.Tasks(span.Context(ctx), app)
+	span.FinishWithErr(err)
+	return tasks, err
 }
 
 // RestartOpts are options provided when restarting an app.
@@ -597,6 +608,10 @@ func (opts DeployOpts) Validate(e *Empire) error {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
+	span := e.newSpan(ctx, "Deploy")
+	defer span.Finish()
+	ctx = span.Context(ctx)
+
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
