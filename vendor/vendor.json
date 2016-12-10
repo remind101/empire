@@ -852,6 +852,12 @@
 			"revisionTime": "2016-05-04T13:01:55Z"
 		},
 		{
+			"checksumSHA1": "gowLbyV296PjZ5jq4oaiM8T55iY=",
+			"path": "github.com/ugorji/go/codec",
+			"revision": "9c7f9b7a2bc3a520f7c7b30b34b7f85f47fe27b6",
+			"revisionTime": "2016-11-30T06:17:42Z"
+		},
+		{
 			"path": "golang.org/x/net/context",
 			"revision": "1dfe7915deaf3f80b962c163b918868d8a6d8974"
 		},

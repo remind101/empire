@@ -265,8 +265,11 @@ func handlerName(h httpx.HandlerFunc) string {
 
 func withTrace(handlerName string, h httpx.Handler) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		span := tracer.NewRootSpan("heroku", "empire", handlerName)
+		span := tracer.NewRootSpan("heroku.request", "empire", handlerName)
+		span.Type = "http"
 		span.SetMeta("user", auth.UserFromContext(ctx).Name)
+		span.SetMeta("http.method", r.Method)
+		span.SetMeta("http.url", r.URL.String())
 		err := h.ServeHTTPContext(span.Context(ctx), w, r)
 		span.FinishWithErr(err)
 		return err
