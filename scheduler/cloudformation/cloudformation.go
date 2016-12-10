@@ -500,7 +500,7 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 	submitted := make(chan error, 1)
 	fn := func() error {
 		close(locked)
-		err := s.executeStackUpdate(input)
+		err := s.executeStackUpdate(ctx, input)
 		if err == nil {
 			scheduler.Publish(ctx, ss, "Stack update submitted")
 		}
@@ -586,7 +586,7 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 		return nil, err
 	}
 
-	return s.stack(&stackName)
+	return s.stack(ctx, &stackName)
 }
 
 // waitUntilStackOperationComplete waits until wait returns, or it times out.
@@ -605,8 +605,8 @@ func (s *Scheduler) waitUntilStackOperationComplete(lock *pglock.AdvisoryLock, w
 }
 
 // executeStackUpdate performs a stack update.
-func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
-	stack, err := s.stack(input.StackName)
+func (s *Scheduler) executeStackUpdate(ctx context.Context, input *updateStackInput) error {
+	stack, err := s.stack(ctx, input.StackName)
 	if err != nil {
 		return err
 	}
@@ -637,8 +637,8 @@ func (s *Scheduler) executeStackUpdate(input *updateStackInput) error {
 }
 
 // stack returns the cloudformation.Stack for the given stack name.
-func (s *Scheduler) stack(stackName *string) (*cloudformation.Stack, error) {
-	resp, err := s.cloudformation.DescribeStacks(&cloudformation.DescribeStacksInput{
+func (s *Scheduler) stack(ctx context.Context, stackName *string) (*cloudformation.Stack, error) {
+	resp, err := s.cloudformationDescribeStacks(ctx, &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	})
 	if err != nil {
@@ -872,7 +872,7 @@ func (s *Scheduler) Services(ctx context.Context, appID string) (map[string]stri
 		return nil, err
 	}
 
-	stack, err := s.stack(aws.String(stackName))
+	stack, err := s.stack(ctx, aws.String(stackName))
 	if err != nil {
 		return nil, fmt.Errorf("error describing stack: %v", err)
 	}
@@ -1001,19 +1001,22 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler
 }
 
 func (s *Scheduler) ecsDescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
-	span := tracer.NewChildSpanFromContext("aws.ecs.DescribeTaskDefinition", ctx)
+	span := tracer.NewChildSpanFromContext("DescribeTaskDefinition", ctx)
+	span.Service = "ecs"
 	resp, err := s.ecs.DescribeTaskDefinition(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) ecsDescribeContainerInstances(ctx context.Context, input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
-	span := tracer.NewChildSpanFromContext("aws.ecs.DescribeContainerInstances", ctx)
+	span := tracer.NewChildSpanFromContext("DescribeContainerInstances", ctx)
+	span.Service = "ecs"
 	resp, err := s.ecs.DescribeContainerInstances(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error {
-	span := tracer.NewChildSpanFromContext("aws.ecs.ListTasksPages", ctx)
+	span := tracer.NewChildSpanFromContext("ListTasksPages", ctx)
+	span.Service = "ecs"
 	if v := input.ServiceName; v != nil {
 		span.SetMeta("input.ServiceName", *v)
 	}
@@ -1025,8 +1028,16 @@ func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksI
 	return err
 }
 func (s *Scheduler) ecsDescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
-	span := tracer.NewChildSpanFromContext("aws.ecs.DescribeTasks", ctx)
+	span := tracer.NewChildSpanFromContext("DescribeTasks", ctx)
+	span.Service = "ecs"
 	resp, err := s.ecs.DescribeTasks(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) cloudformationDescribeStacks(ctx context.Context, input *cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error) {
+	span := tracer.NewChildSpanFromContext("DescribeStacks", ctx)
+	span.Service = "cloudformation"
+	resp, err := s.cloudformation.DescribeStacks(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
