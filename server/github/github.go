@@ -66,8 +66,6 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 	span.SetMeta("event.Deployment.Ref", p.Deployment.Ref)
 	span.SetMeta("event.Deployment.Sha", p.Deployment.Sha)
 
-	defer span.Finish()
-
 	ctx = span.Context(ctx)
 
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {

@@ -85,10 +85,10 @@ func newClient(authProvider dockerauth.AuthProvider, c *docker.Client) (*Client,
 	}, nil
 }
 
-func (c *Client) newSpan(ctx context.Context, resource string) *tracer.Span {
-	span := tracer.NewChildSpanFromContext("request", ctx)
+func (c *Client) newSpan(ctx context.Context, method string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext(method, ctx)
 	span.Service = "docker"
-	span.Resource = resource
+	span.Resource = method
 	return span
 }
 

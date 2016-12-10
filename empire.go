@@ -136,9 +136,9 @@ func New(db *DB) *Empire {
 	return e
 }
 
-func (e *Empire) newSpan(ctx context.Context, resource string) *tracer.Span {
-	span := tracer.NewChildSpanFromContext("core", ctx)
-	span.Resource = resource
+func (e *Empire) newSpan(ctx context.Context, method string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext(method, ctx)
+	span.Resource = method
 	return span
 }
 

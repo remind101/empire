@@ -1001,25 +1001,22 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler
 }
 
 func (s *Scheduler) ecsDescribeTaskDefinition(ctx context.Context, input *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
-	span := tracer.NewChildSpanFromContext("ecs", ctx)
+	span := tracer.NewChildSpanFromContext("ecs.DescribeTaskDefinition", ctx)
 	span.Service = "aws"
-	span.Resource = "DescribeTaskDefinition"
 	resp, err := s.ecs.DescribeTaskDefinition(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) ecsDescribeContainerInstances(ctx context.Context, input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
-	span := tracer.NewChildSpanFromContext("ecs", ctx)
+	span := tracer.NewChildSpanFromContext("ecs.DescribeContainerInstances", ctx)
 	span.Service = "aws"
-	span.Resource = "DescribeContainerInstances"
 	resp, err := s.ecs.DescribeContainerInstances(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksInput, fn func(p *ecs.ListTasksOutput, lastPage bool) (shouldContinue bool)) error {
-	span := tracer.NewChildSpanFromContext("ecs", ctx)
+	span := tracer.NewChildSpanFromContext("ecs.ListTasksPages", ctx)
 	span.Service = "aws"
-	span.Resource = "ListTasksPages"
 	if v := input.ServiceName; v != nil {
 		span.SetMeta("input.ServiceName", *v)
 	}
@@ -1031,33 +1028,29 @@ func (s *Scheduler) ecsListTasksPages(ctx context.Context, input *ecs.ListTasksI
 	return err
 }
 func (s *Scheduler) ecsDescribeTasks(ctx context.Context, input *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
-	span := tracer.NewChildSpanFromContext("ecs", ctx)
+	span := tracer.NewChildSpanFromContext("ecs.DescribeTasks", ctx)
 	span.Service = "aws"
-	span.Resource = "DescribeTasks"
 	resp, err := s.ecs.DescribeTasks(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) cloudformationDescribeStacks(ctx context.Context, input *cloudformation.DescribeStacksInput) (*cloudformation.DescribeStacksOutput, error) {
-	span := tracer.NewChildSpanFromContext("cloudformation", ctx)
+	span := tracer.NewChildSpanFromContext("cloudformation.DescribeStacks", ctx)
 	span.Service = "aws"
-	span.Resource = "DescribeStacks"
 	resp, err := s.cloudformation.DescribeStacks(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) cloudformationUpdateStack(ctx context.Context, input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
-	span := tracer.NewChildSpanFromContext("cloudformation", ctx)
+	span := tracer.NewChildSpanFromContext("cloudformation.UpdateStack", ctx)
 	span.Service = "aws"
-	span.Resource = "UpdateStack"
 	resp, err := s.cloudformation.UpdateStack(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
 func (s *Scheduler) cloudformationCreateStack(ctx context.Context, input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
-	span := tracer.NewChildSpanFromContext("cloudformation", ctx)
+	span := tracer.NewChildSpanFromContext("cloudformation.CreateStack", ctx)
 	span.Service = "aws"
-	span.Resource = "CreateStack"
 	resp, err := s.cloudformation.CreateStack(input)
 	span.FinishWithErr(err)
 	return resp, err
