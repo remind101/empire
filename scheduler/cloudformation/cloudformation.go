@@ -464,7 +464,7 @@ func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, ou
 
 	submitted := make(chan error)
 	fn := func() error {
-		_, err := s.cloudformation.CreateStack(&cloudformation.CreateStackInput{
+		_, err := s.cloudformationCreateStack(ctx, &cloudformation.CreateStackInput{
 			StackName:   input.StackName,
 			TemplateURL: input.Template.URL,
 			Tags:        input.Tags,
@@ -622,7 +622,7 @@ func (s *Scheduler) executeStackUpdate(ctx context.Context, input *updateStackIn
 		i.UsePreviousTemplate = aws.Bool(true)
 	}
 
-	_, err = s.cloudformation.UpdateStack(i)
+	_, err = s.cloudformationUpdateStack(ctx, i)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			if err.Code() == "ValidationError" && err.Message() == "No updates are to be performed." {
@@ -1043,6 +1043,22 @@ func (s *Scheduler) cloudformationDescribeStacks(ctx context.Context, input *clo
 	span.Service = "aws"
 	span.Resource = "DescribeStacks"
 	resp, err := s.cloudformation.DescribeStacks(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) cloudformationUpdateStack(ctx context.Context, input *cloudformation.UpdateStackInput) (*cloudformation.UpdateStackOutput, error) {
+	span := tracer.NewChildSpanFromContext("cloudformation", ctx)
+	span.Service = "aws"
+	span.Resource = "UpdateStack"
+	resp, err := s.cloudformation.UpdateStack(input)
+	span.FinishWithErr(err)
+	return resp, err
+}
+func (s *Scheduler) cloudformationCreateStack(ctx context.Context, input *cloudformation.CreateStackInput) (*cloudformation.CreateStackOutput, error) {
+	span := tracer.NewChildSpanFromContext("cloudformation", ctx)
+	span.Service = "aws"
+	span.Resource = "CreateStack"
+	resp, err := s.cloudformation.CreateStack(input)
 	span.FinishWithErr(err)
 	return resp, err
 }
