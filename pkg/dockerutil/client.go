@@ -8,6 +8,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerauth"
+	"github.com/remind101/empire/tracer"
 )
 
 // The /containers/{name:.*}/copy endpoint was removed in this version of the
@@ -84,8 +85,22 @@ func newClient(authProvider dockerauth.AuthProvider, c *docker.Client) (*Client,
 	}, nil
 }
 
+func (c *Client) newSpan(ctx context.Context, resource string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext("request", ctx)
+	span.Service = "docker"
+	span.Resource = resource
+	return span
+}
+
 // PullImage wraps the docker clients PullImage to handle authentication.
 func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) error {
+	span := c.newSpan(ctx, "PullImage")
+	err := c.pullImage(opts)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (c *Client) pullImage(opts docker.PullImageOptions) error {
 	// This is to workaround an issue in the Docker API, where it doesn't
 	// respect the registry param. We have to put the registry in the
 	// repository field.
@@ -102,26 +117,48 @@ func (c *Client) PullImage(ctx context.Context, opts docker.PullImageOptions) er
 }
 
 func (c *Client) CreateContainer(ctx context.Context, opts docker.CreateContainerOptions) (*docker.Container, error) {
-	return c.Client.CreateContainer(opts)
+	span := c.newSpan(ctx, "CreateContainer")
+	container, err := c.Client.CreateContainer(opts)
+	span.FinishWithErr(err)
+	return container, err
 }
 
 func (c *Client) StartContainer(ctx context.Context, id string, config *docker.HostConfig) error {
-	return c.Client.StartContainer(id, config)
+	span := c.newSpan(ctx, "StartContainer")
+	err := c.Client.StartContainer(id, config)
+	span.FinishWithErr(err)
+	return err
 }
 
 func (c *Client) AttachToContainer(ctx context.Context, opts docker.AttachToContainerOptions) error {
-	return c.Client.AttachToContainer(opts)
+	span := c.newSpan(ctx, "AttachToContainer")
+	err := c.Client.AttachToContainer(opts)
+	span.FinishWithErr(err)
+	return err
 }
 
 func (c *Client) StopContainer(ctx context.Context, id string, timeout uint) error {
-	return c.Client.StopContainer(id, timeout)
+	span := c.newSpan(ctx, "StopContainer")
+	err := c.Client.StopContainer(id, timeout)
+	span.FinishWithErr(err)
+	return err
 }
 
 func (c *Client) RemoveContainer(ctx context.Context, opts docker.RemoveContainerOptions) error {
-	return c.Client.RemoveContainer(opts)
+	span := c.newSpan(ctx, "RemoveContainer")
+	err := c.Client.RemoveContainer(opts)
+	span.FinishWithErr(err)
+	return err
 }
 
 func (c *Client) CopyFromContainer(ctx context.Context, options docker.CopyFromContainerOptions) error {
+	span := c.newSpan(ctx, "CopyFromContainer")
+	err := c.copyFromContainer(options)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (c *Client) copyFromContainer(options docker.CopyFromContainerOptions) error {
 	if c.apiVersion.GreaterThanOrEqualTo(dockerAPI124) {
 		return c.Client.DownloadFromContainer(options.Container, docker.DownloadFromContainerOptions{
 			OutputStream: options.OutputStream,
