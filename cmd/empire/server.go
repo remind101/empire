@@ -132,6 +132,17 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		}
 	}
 
+	withSessionExpiration := func(a auth.Authenticator) auth.Authenticator {
+		exp := c.Duration(FlagServerSessionExpiration)
+
+		// No expiration
+		if exp == 0 {
+			return a
+		}
+
+		return auth.WithMaxSessionDuration(a, func() time.Time { return time.Now().Add(exp) })
+	}
+
 	// If a GitHub client id is provided, we'll use GitHub as an
 	// authentication backend. Otherwise, we'll just use a static username
 	// and password backend.
@@ -144,7 +155,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 			Strategies: auth.Strategies{
 				{
 					Name:          auth.StrategyUsernamePassword,
-					Authenticator: auth.StaticAuthenticator("fake", "", "", &empire.User{Name: "fake"}),
+					Authenticator: withSessionExpiration(auth.StaticAuthenticator("fake", "", "", &empire.User{Name: "fake"})),
 				},
 			},
 		}
@@ -171,7 +182,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 			Strategies: auth.Strategies{
 				{
 					Name:          auth.StrategyUsernamePassword,
-					Authenticator: authenticator,
+					Authenticator: withSessionExpiration(authenticator),
 				},
 			},
 		}
@@ -206,7 +217,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		// When using the SAML authentication backend, access tokens are
 		// created through the browser, so username/password
 		// authentication should be disabled.
-		usernamePasswordDisabled := auth.AuthenticatorFunc(func(username, password, otp string) (*empire.User, error) {
+		usernamePasswordDisabled := auth.AuthenticatorFunc(func(username, password, otp string) (*auth.Session, error) {
 			return nil, fmt.Errorf("Authentication via username/password is disabled. Login at %s", loginURL)
 		})
 
@@ -214,7 +225,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 			Strategies: auth.Strategies{
 				{
 					Name:          auth.StrategyUsernamePassword,
-					Authenticator: usernamePasswordDisabled,
+					Authenticator: withSessionExpiration(usernamePasswordDisabled),
 					// Ensure that this strategy isn't used
 					// by default.
 					Disabled: true,

@@ -23,7 +23,8 @@ const (
 
 	FlagStats = "stats"
 
-	FlagServerAuth = "server.auth"
+	FlagServerAuth              = "server.auth"
+	FlagServerSessionExpiration = "server.session.expiration"
 
 	FlagSAMLMetadata       = "saml.metadata"
 	FlagSAMLKey            = "saml.key"
@@ -114,6 +115,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The authentication backend to use to authenticate requests to the API. Can be `fake`, `github`, or `saml`.",
 				EnvVar: "EMPIRE_SERVER_AUTH",
+			},
+			cli.DurationFlag{
+				Name:   FlagServerSessionExpiration,
+				Value:  0,
+				Usage:  "The maximum amount of time that sessions and access tokens exist for. For security, it's a good idea to set this to a low value, like `24h`. Refer to the ParseDuration docs for details on acceptable values (https://golang.org/pkg/time/#ParseDuration). By default, sessions do not expire.",
+				EnvVar: "EMPIRE_SERVER_SESSION_EXPIRATION",
 			},
 			cli.StringFlag{
 				Name:   FlagSAMLMetadata,

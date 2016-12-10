@@ -8,6 +8,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/saml"
+	samlauth "github.com/remind101/empire/server/auth/saml"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -42,15 +43,12 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return nil
 	}
 
-	// Create an Access Token for the API.
-	login := assertion.Subject.NameID.Value
-	user := &empire.User{
-		Name: login,
-	}
+	session := samlauth.SessionFromAssertion(assertion)
 
+	// Create an Access Token for the API.
 	at, err := s.Heroku.AccessTokensCreate(&heroku.AccessToken{
-		ExpiresAt: &assertion.AuthnStatement.SessionNotOnOrAfter,
-		User:      user,
+		ExpiresAt: session.ExpiresAt,
+		User:      session.User,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), 403)
@@ -65,7 +63,7 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 		w.Header().Set("Content-Type", "text/html")
 		instructionsTemplate.Execute(w, &instructionsData{
 			URL:   s.URL,
-			User:  user,
+			User:  session.User,
 			Token: at,
 		})
 	}

@@ -21,6 +21,10 @@
 
 * `emp deploy` will now prompt for a commit message if one is required but not provided. [#994](https://github.com/remind101/empire/issues/994)
 
+**Security**
+
+* It's now possible to set a maximum session duration, to ensure that users have to periodically re-authenticate with credentials and MFA [#1024](https://github.com/remind101/empire/pull/1024)
+
 ## 0.11.0 (2016-08-22)
 
 **Features**

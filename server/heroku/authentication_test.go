@@ -1,9 +1,10 @@
 package heroku
 
 import (
+	"fmt"
 	"net/http"
-	"reflect"
 	"testing"
+	"time"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
@@ -48,7 +49,7 @@ func TestServer_Authenticate_UsernamePassword(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
 
-	a.On("Authenticate", "username", "password", "").Return(&empire.User{}, nil)
+	a.On("Authenticate", "username", "password", "").Return(auth.NewSession(&empire.User{}), nil)
 
 	_, err := m.Authenticate(ctx, req)
 	assert.NoError(t, err)
@@ -75,7 +76,7 @@ func TestServer_Authenticate_WithStrategy(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.SetBasicAuth("username", "password")
 
-	a.On("Authenticate", "username", "password", "").Return(&empire.User{}, nil)
+	a.On("Authenticate", "username", "password", "").Return(auth.NewSession(&empire.User{}), nil)
 
 	_, err := m.Authenticate(ctx, req)
 	assert.NoError(t, err)
@@ -94,7 +95,7 @@ func TestServer_Authenticate_UsernamePasswordWithOTP(t *testing.T) {
 	req.SetBasicAuth("username", "password")
 	req.Header.Set("Heroku-Two-Factor-Code", "otp")
 
-	a.On("Authenticate", "username", "password", "otp").Return(&empire.User{}, nil)
+	a.On("Authenticate", "username", "password", "otp").Return(auth.NewSession(&empire.User{}), nil)
 
 	_, err := m.Authenticate(ctx, req)
 	assert.NoError(t, err)
@@ -156,9 +157,10 @@ func TestAccessTokenAuthenticator(t *testing.T) {
 		},
 	}
 
-	user, err := a.Authenticate("", "token", "")
+	s := auth.NewSession(u)
+	session, err := a.Authenticate("", "token", "")
 	assert.NoError(t, err)
-	assert.Equal(t, u, user)
+	assert.Equal(t, s, session)
 }
 
 func TestAccessTokenAuthenticator_TokenNotFound(t *testing.T) {
@@ -169,22 +171,78 @@ func TestAccessTokenAuthenticator_TokenNotFound(t *testing.T) {
 		},
 	}
 
-	user, err := a.Authenticate("", "token", "")
+	session, err := a.Authenticate("", "token", "")
 	assert.Equal(t, auth.ErrForbidden, err)
-	assert.Nil(t, user)
+	assert.Nil(t, session)
+}
+
+func TestAccessTokenAuthenticator_WithExpiresAt(t *testing.T) {
+	exp := time.Now().Add(24 * time.Hour)
+
+	u := &empire.User{}
+	a := &accessTokenAuthenticator{
+		findAccessToken: func(token string) (*AccessToken, error) {
+			assert.Equal(t, "token", token)
+			return &AccessToken{
+				User:      u,
+				ExpiresAt: &exp,
+			}, nil
+		},
+	}
+
+	s := auth.NewSession(u)
+	s.ExpiresAt = &exp
+	session, err := a.Authenticate("", "token", "")
+	assert.NoError(t, err)
+	assert.Equal(t, s, session)
 }
 
 func TestAccessTokensFind(t *testing.T) {
 	s := &Server{Secret: testSecret}
 
 	at, err := s.AccessTokensFind("")
-	if err != nil {
-		t.Logf("err: %v", reflect.TypeOf(err))
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+	assert.Nil(t, at)
+}
 
-	if at != nil {
-		t.Fatal("Expected access token to be nil")
+var tokenTests = []struct {
+	token *AccessToken
+	jwt   string
+}{
+	{
+		&AccessToken{
+			User: &empire.User{
+				Name: "ejholmes",
+			},
+		},
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7Ik5hbWUiOiJlamhvbG1lcyIsIkdpdEh1YlRva2VuIjoiIn19.vG51_ah6HX2c9lsOcbC8hdl-xtqDIy_eJQ7ga6CQIEQ",
+	},
+
+	{
+		&AccessToken{
+			User: &empire.User{
+				Name: "ejholmes",
+			},
+			ExpiresAt: func() *time.Time {
+				t := time.Date(2059, time.November, 10, 23, 0, 0, 0, time.UTC)
+				return &t
+			}(),
+		},
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7Ik5hbWUiOiJlamhvbG1lcyIsIkdpdEh1YlRva2VuIjoiIn0sImV4cCI6MjgzNTczMDgwMH0.k0Z1_5wVdI5AMInj5-fl_Xm_K5WVmRuPDblu-bqJ1p8",
+	},
+}
+
+func TestJWTTokens(t *testing.T) {
+	for i, tt := range tokenTests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			jwt, err := signToken(testSecret, tt.token)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.jwt, jwt)
+
+			token, err := parseToken(testSecret, jwt)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.token, token)
+		})
 	}
 }
 
@@ -192,11 +250,11 @@ type mockAuthenticator struct {
 	mock.Mock
 }
 
-func (m *mockAuthenticator) Authenticate(username, password, otp string) (*empire.User, error) {
+func (m *mockAuthenticator) Authenticate(username, password, otp string) (*auth.Session, error) {
 	args := m.Called(username, password, otp)
-	user := args.Get(0)
-	if user != nil {
-		return user.(*empire.User), args.Error(1)
+	session := args.Get(0)
+	if session != nil {
+		return session.(*auth.Session), args.Error(1)
 	}
 	return nil, args.Error(1)
 
