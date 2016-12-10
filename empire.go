@@ -136,6 +136,12 @@ func New(db *DB) *Empire {
 	return e
 }
 
+func (e *Empire) newSpan(ctx context.Context, resource string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext("core", ctx)
+	span.Resource = resource
+	return span
+}
+
 // AppsFind finds the first app matching the query.
 func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
 	return appsFind(e.db, q)
@@ -354,7 +360,7 @@ func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
 
 // Tasks returns the Tasks for the given app.
 func (e *Empire) Tasks(ctx context.Context, app *App) ([]*Task, error) {
-	span := tracer.NewChildSpanFromContext("Tasks", ctx)
+	span := e.newSpan(ctx, "Tasks")
 	span.SetMeta("app.Name", app.Name)
 	tasks, err := e.tasks.Tasks(span.Context(ctx), app)
 	span.FinishWithErr(err)
@@ -602,7 +608,7 @@ func (opts DeployOpts) Validate(e *Empire) error {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
-	span := tracer.NewChildSpanFromContext("Deploy", ctx)
+	span := e.newSpan(ctx, "Deploy")
 	defer span.Finish()
 	ctx = span.Context(ctx)
 
