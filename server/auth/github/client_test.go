@@ -172,6 +172,27 @@ func TestClient_GetUser(t *testing.T) {
 	assert.Equal(t, "ejholmes", user.Login)
 }
 
+func TestClient_GetUser_Error(t *testing.T) {
+	h := new(mockHTTPClient)
+	c := &Client{
+		Config: oauthConfig,
+		client: h,
+	}
+
+	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.SetBasicAuth("access_token", "x-oauth-basic")
+
+	h.On("Do", req).Return(&http.Response{
+		Request:    req,
+		StatusCode: http.StatusNotFound,
+		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"message":"not found"}`)),
+	}, nil)
+
+	_, err := c.GetUser("access_token")
+	assert.Error(t, err)
+}
+
 func TestClient_IsOrganizationMember(t *testing.T) {
 	tests := []struct {
 		status int

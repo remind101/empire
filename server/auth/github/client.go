@@ -148,7 +148,12 @@ func (c *Client) GetUser(token string) (*User, error) {
 
 	var u User
 
-	if _, err := c.Do(req, &u); err != nil {
+	resp, err := c.Do(req, &u)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkResponse(resp); err != nil {
 		return nil, err
 	}
 
