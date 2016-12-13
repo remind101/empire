@@ -5,6 +5,7 @@ import (
 
 	"github.com/pmylund/go-cache"
 	"github.com/remind101/empire"
+	"golang.org/x/net/context"
 )
 
 // CacheAuthorization wraps an Authorizer in an in memory cache that expires
@@ -29,7 +30,7 @@ type cachedAuthorizer struct {
 	}
 }
 
-func (a *cachedAuthorizer) Authorize(user *empire.User) error {
+func (a *cachedAuthorizer) Authorize(ctx context.Context, user *empire.User) error {
 	_, ok := a.cache.Get(user.Name)
 
 	// Authorized!
@@ -38,7 +39,7 @@ func (a *cachedAuthorizer) Authorize(user *empire.User) error {
 	}
 
 	// Not in cache, call down to the wrapped Authorizer.
-	err := a.Authorizer.Authorize(user)
+	err := a.Authorizer.Authorize(ctx, user)
 
 	// Only cache positive authorizations.
 	if err == nil {

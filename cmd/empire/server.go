@@ -19,6 +19,7 @@ import (
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/empire/stats"
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 
@@ -217,7 +218,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		// When using the SAML authentication backend, access tokens are
 		// created through the browser, so username/password
 		// authentication should be disabled.
-		usernamePasswordDisabled := auth.AuthenticatorFunc(func(username, password, otp string) (*auth.Session, error) {
+		usernamePasswordDisabled := auth.AuthenticatorFunc(func(_ context.Context, username, password, otp string) (*auth.Session, error) {
 			return nil, fmt.Errorf("Authentication via username/password is disabled. Login at %s", loginURL)
 		})
 

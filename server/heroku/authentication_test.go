@@ -14,8 +14,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-var testSecret = []byte("secret")
-var ctx = context.Background()
+var (
+	testSecret = []byte("secret")
+	ctx        = context.Background()
+)
 
 func TestServer_AccessTokens(t *testing.T) {
 	s := &Server{Secret: testSecret}
@@ -158,7 +160,7 @@ func TestAccessTokenAuthenticator(t *testing.T) {
 	}
 
 	s := auth.NewSession(u)
-	session, err := a.Authenticate("", "token", "")
+	session, err := a.Authenticate(ctx, "", "token", "")
 	assert.NoError(t, err)
 	assert.Equal(t, s, session)
 }
@@ -171,7 +173,7 @@ func TestAccessTokenAuthenticator_TokenNotFound(t *testing.T) {
 		},
 	}
 
-	session, err := a.Authenticate("", "token", "")
+	session, err := a.Authenticate(ctx, "", "token", "")
 	assert.Equal(t, auth.ErrForbidden, err)
 	assert.Nil(t, session)
 }
@@ -192,7 +194,7 @@ func TestAccessTokenAuthenticator_WithExpiresAt(t *testing.T) {
 
 	s := auth.NewSession(u)
 	s.ExpiresAt = &exp
-	session, err := a.Authenticate("", "token", "")
+	session, err := a.Authenticate(ctx, "", "token", "")
 	assert.NoError(t, err)
 	assert.Equal(t, s, session)
 }
@@ -250,7 +252,7 @@ type mockAuthenticator struct {
 	mock.Mock
 }
 
-func (m *mockAuthenticator) Authenticate(username, password, otp string) (*auth.Session, error) {
+func (m *mockAuthenticator) Authenticate(_ context.Context, username, password, otp string) (*auth.Session, error) {
 	args := m.Called(username, password, otp)
 	session := args.Get(0)
 	if session != nil {

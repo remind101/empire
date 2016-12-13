@@ -7,6 +7,7 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
+	"golang.org/x/net/context"
 )
 
 // Authorizer is an implementation of the auth.Authenticator interface backed by
@@ -26,7 +27,7 @@ func NewAuthenticator(c *Client) *Authenticator {
 	return &Authenticator{client: c}
 }
 
-func (a *Authenticator) Authenticate(username, password, otp string) (*auth.Session, error) {
+func (a *Authenticator) Authenticate(ctx context.Context, username, password, otp string) (*auth.Session, error) {
 	authorization, err := a.client.CreateAuthorization(CreateAuthorizationOptions{
 		Username: username,
 		Password: password,
@@ -71,7 +72,7 @@ func NewOrganizationAuthorizer(c *Client) *OrganizationAuthorizer {
 	return &OrganizationAuthorizer{client: c}
 }
 
-func (a *OrganizationAuthorizer) Authorize(user *empire.User) error {
+func (a *OrganizationAuthorizer) Authorize(ctx context.Context, user *empire.User) error {
 	if a.Organization == "" {
 		// Probably a configuration error
 		panic("no organization set")
@@ -105,7 +106,7 @@ func NewTeamAuthorizer(c *Client) *TeamAuthorizer {
 	return &TeamAuthorizer{client: c}
 }
 
-func (a *TeamAuthorizer) Authorize(user *empire.User) error {
+func (a *TeamAuthorizer) Authorize(ctx context.Context, user *empire.User) error {
 	if a.TeamID == "" {
 		panic("no team id set")
 	}

@@ -7,7 +7,10 @@ import (
 	"github.com/remind101/empire/server/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/net/context"
 )
+
+var ctx = context.Background()
 
 func TestAuthenticator(t *testing.T) {
 	c := new(mockClient)
@@ -25,7 +28,7 @@ func TestAuthenticator(t *testing.T) {
 		Login: "ejholmes",
 	}, nil)
 
-	session, err := a.Authenticate("username", "password", "otp")
+	session, err := a.Authenticate(ctx, "username", "password", "otp")
 	assert.NoError(t, err)
 	assert.Equal(t, "ejholmes", session.User.Name)
 	assert.Equal(t, "access_token", session.User.GitHubToken)
@@ -40,7 +43,7 @@ func TestAuthenticator_ErrTwoFactor(t *testing.T) {
 		Password: "password",
 	}).Return(nil, errTwoFactor)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.Equal(t, auth.ErrTwoFactor, err)
 	assert.Nil(t, session)
 }
@@ -54,7 +57,7 @@ func TestAuthenticator_ErrForbidden(t *testing.T) {
 		Password: "badpassword",
 	}).Return(nil, errUnauthorized)
 
-	session, err := a.Authenticate("username", "badpassword", "")
+	session, err := a.Authenticate(ctx, "username", "badpassword", "")
 	assert.Equal(t, auth.ErrForbidden, err)
 	assert.Nil(t, session)
 }
@@ -68,7 +71,7 @@ func TestOrganizationAuthorizer(t *testing.T) {
 
 	c.On("IsOrganizationMember", "remind101", "access_token").Return(true, nil)
 
-	err := a.Authorize(&empire.User{GitHubToken: "access_token"})
+	err := a.Authorize(ctx, &empire.User{GitHubToken: "access_token"})
 	assert.NoError(t, err)
 }
 
@@ -81,7 +84,7 @@ func TestOrganizationAuthorizer_Unauthorized(t *testing.T) {
 
 	c.On("IsOrganizationMember", "remind101", "access_token").Return(false, nil)
 
-	err := a.Authorize(&empire.User{
+	err := a.Authorize(ctx, &empire.User{
 		Name:        "ejholmes",
 		GitHubToken: "access_token"},
 	)
@@ -98,7 +101,7 @@ func TestTeamAuthorizer(t *testing.T) {
 
 	c.On("IsTeamMember", "123", "access_token").Return(true, nil)
 
-	err := a.Authorize(&empire.User{
+	err := a.Authorize(ctx, &empire.User{
 		Name:        "ejholmes",
 		GitHubToken: "access_token",
 	})
@@ -114,7 +117,7 @@ func TestTeamAuthorizer_Unauthorized(t *testing.T) {
 
 	c.On("IsTeamMember", "123", "access_token").Return(false, nil)
 
-	err := a.Authorize(&empire.User{
+	err := a.Authorize(ctx, &empire.User{
 		Name:        "ejholmes",
 		GitHubToken: "access_token",
 	})

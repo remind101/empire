@@ -7,25 +7,28 @@ import (
 	"github.com/remind101/empire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/net/context"
 )
+
+var ctx = context.Background()
 
 func TestStaticAuthenticator(t *testing.T) {
 	u := &empire.User{}
 	a := StaticAuthenticator("username", "password", "otp", u)
 
-	session, err := a.Authenticate("badusername", "password", "otp")
+	session, err := a.Authenticate(ctx, "badusername", "password", "otp")
 	assert.Equal(t, ErrForbidden, err)
 	assert.Nil(t, session)
 
-	session, err = a.Authenticate("username", "badpassword", "otp")
+	session, err = a.Authenticate(ctx, "username", "badpassword", "otp")
 	assert.Equal(t, ErrForbidden, err)
 	assert.Nil(t, session)
 
-	session, err = a.Authenticate("username", "password", "badotp")
+	session, err = a.Authenticate(ctx, "username", "password", "badotp")
 	assert.Equal(t, ErrTwoFactor, err)
 	assert.Nil(t, session)
 
-	session, err = a.Authenticate("username", "password", "otp")
+	session, err = a.Authenticate(ctx, "username", "password", "otp")
 	assert.NoError(t, err)
 	assert.Equal(t, NewSession(u), session)
 }
@@ -35,11 +38,11 @@ func TestMultiAuthenticator_First(t *testing.T) {
 	s := NewSession(u)
 	a1 := new(mockAuthenticator)
 	a2 := new(mockAuthenticator)
-	a := MultiAuthenticator(a1, a2)
+	a := MultiAuthenticator(Strategies{&Strategy{Authenticator: a1}, &Strategy{Authenticator: a2}})
 
 	a1.On("Authenticate", "username", "password", "").Return(s, nil)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.NoError(t, err)
 	assert.Equal(t, s, session)
 
@@ -52,12 +55,12 @@ func TestMultiAuthenticator_Second(t *testing.T) {
 	s := NewSession(u)
 	a1 := new(mockAuthenticator)
 	a2 := new(mockAuthenticator)
-	a := MultiAuthenticator(a1, a2)
+	a := MultiAuthenticator(Strategies{&Strategy{Authenticator: a1}, &Strategy{Authenticator: a2}})
 
 	a1.On("Authenticate", "username", "password", "").Return(nil, ErrForbidden)
 	a2.On("Authenticate", "username", "password", "").Return(s, nil)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.NoError(t, err)
 	assert.Equal(t, s, session)
 
@@ -68,12 +71,12 @@ func TestMultiAuthenticator_Second(t *testing.T) {
 func TestMultiAuthenticator_None(t *testing.T) {
 	a1 := new(mockAuthenticator)
 	a2 := new(mockAuthenticator)
-	a := MultiAuthenticator(a1, a2)
+	a := MultiAuthenticator(Strategies{&Strategy{Authenticator: a1}, &Strategy{Authenticator: a2}})
 
 	a1.On("Authenticate", "username", "password", "").Return(nil, ErrForbidden)
 	a2.On("Authenticate", "username", "password", "").Return(nil, ErrForbidden)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.Equal(t, ErrForbidden, err)
 	assert.Nil(t, session)
 
@@ -84,11 +87,11 @@ func TestMultiAuthenticator_None(t *testing.T) {
 func TestMultiAuthenticator_ErrTwoFactor(t *testing.T) {
 	a1 := new(mockAuthenticator)
 	a2 := new(mockAuthenticator)
-	a := MultiAuthenticator(a1, a2)
+	a := MultiAuthenticator(Strategies{&Strategy{Authenticator: a1}, &Strategy{Authenticator: a2}})
 
 	a1.On("Authenticate", "username", "password", "").Return(nil, ErrTwoFactor)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.Equal(t, ErrTwoFactor, err)
 	assert.Nil(t, session)
 
@@ -103,7 +106,7 @@ func TestWithMaxSessionDuration(t *testing.T) {
 
 	m.On("Authenticate", "username", "password", "").Return(&Session{}, nil)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.NoError(t, err)
 	assert.Equal(t, t1, *session.ExpiresAt)
 
@@ -120,7 +123,7 @@ func TestWithMaxSessionDuration_WithShorterExpiresAt(t *testing.T) {
 		ExpiresAt: &exp,
 	}, nil)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.NoError(t, err)
 	assert.Equal(t, exp, *session.ExpiresAt)
 
@@ -137,7 +140,7 @@ func TestWithMaxSessionDuration_WithLongerExpiresAt(t *testing.T) {
 		ExpiresAt: &exp,
 	}, nil)
 
-	session, err := a.Authenticate("username", "password", "")
+	session, err := a.Authenticate(ctx, "username", "password", "")
 	assert.NoError(t, err)
 	assert.Equal(t, s1.Add(12*time.Hour), *session.ExpiresAt)
 
@@ -148,7 +151,7 @@ type mockAuthenticator struct {
 	mock.Mock
 }
 
-func (m *mockAuthenticator) Authenticate(username, password, otp string) (*Session, error) {
+func (m *mockAuthenticator) Authenticate(_ context.Context, username, password, otp string) (*Session, error) {
 	args := m.Called(username, password, otp)
 	session := args.Get(0)
 	if session != nil {

@@ -2,12 +2,13 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/tracer"
+	"golang.org/x/net/context"
 )
 
 // Some common names for strategies.
@@ -66,7 +67,7 @@ type Strategies []*Strategy
 // strategy is not found, a fake strategy will be returned that will return an
 // error when used.
 func (s Strategies) AuthenticatorFor(strategies ...string) Authenticator {
-	var authenticators []Authenticator
+	var authenticators Strategies
 	if len(strategies) > 0 {
 		for _, name := range strategies {
 			strategy := s.strategy(name)
@@ -82,7 +83,7 @@ func (s Strategies) AuthenticatorFor(strategies ...string) Authenticator {
 			}
 		}
 	}
-	return MultiAuthenticator(authenticators...)
+	return MultiAuthenticator(authenticators)
 }
 
 func (s Strategies) strategy(name string) *Strategy {
@@ -117,13 +118,17 @@ func (a *Auth) PrependAuthenticator(name string, authenticator Authenticator) *A
 // a new context.Context with the user embedded. The user can be retrieved with
 // UserFromContext.
 func (a *Auth) Authenticate(ctx context.Context, username, password, otp string, strategies ...string) (context.Context, error) {
+	span := newSpan(ctx, "Authenticate")
+	span.SetMeta("username", username)
 	// Default to using all strategies to authenticate.
 	authenticator := a.Strategies.AuthenticatorFor(strategies...)
-	return a.authenticate(ctx, authenticator, username, password, otp)
+	ctx, err := a.authenticate(span.Context(ctx), authenticator, username, password, otp)
+	span.FinishWithErr(err)
+	return ctx, err
 }
 
 func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, username, password, otp string) (context.Context, error) {
-	session, err := authenticator.Authenticate(username, password, otp)
+	session, err := authenticator.Authenticate(ctx, username, password, otp)
 	if err != nil {
 		return ctx, err
 	}
@@ -131,7 +136,7 @@ func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, us
 	ctx = WithSession(ctx, session)
 
 	if a.Authorizer != nil {
-		if err := a.Authorizer.Authorize(session.User); err != nil {
+		if err := a.Authorizer.Authorize(ctx, session.User); err != nil {
 			return ctx, err
 		}
 	}
@@ -157,35 +162,35 @@ func NewSession(user *empire.User) *Session {
 // can authenticate an Empire user.
 type Authenticator interface {
 	// Authenticate should check the credentials and return a login Session.
-	Authenticate(username, password, twofactor string) (*Session, error)
+	Authenticate(ctx context.Context, username, password, twofactor string) (*Session, error)
 }
 
 // AuthenticatorFunc is a function signature that implements the Authenticator
 // interface.
-type AuthenticatorFunc func(string, string, string) (*Session, error)
+type AuthenticatorFunc func(context.Context, string, string, string) (*Session, error)
 
 // Authenticate calls the AuthenticatorFunc.
-func (fn AuthenticatorFunc) Authenticate(username, password, otp string) (*Session, error) {
-	return fn(username, password, otp)
+func (fn AuthenticatorFunc) Authenticate(ctx context.Context, username, password, otp string) (*Session, error) {
+	return fn(ctx, username, password, otp)
 }
 
 // Authorizer represents something that can perform an authorization check.
 type Authorizer interface {
 	// Authorize should check that the user has access to perform the
 	// action. If not, ErrUnauthorized should be returned.
-	Authorize(*empire.User) error
+	Authorize(context.Context, *empire.User) error
 }
 
-type AuthorizerFunc func(*empire.User) error
+type AuthorizerFunc func(context.Context, *empire.User) error
 
-func (fn AuthorizerFunc) Authorize(user *empire.User) error {
-	return fn(user)
+func (fn AuthorizerFunc) Authorize(ctx context.Context, user *empire.User) error {
+	return fn(ctx, user)
 }
 
 // StaticAuthenticator returns an Authenticator that returns the provided user
 // when the given credentials are provided.
 func StaticAuthenticator(username, password, otp string, user *empire.User) Authenticator {
-	return AuthenticatorFunc(func(givenUsername, givenPassword, givenOtp string) (*Session, error) {
+	return AuthenticatorFunc(func(_ context.Context, givenUsername, givenPassword, givenOtp string) (*Session, error) {
 		if givenUsername != username {
 			return nil, ErrForbidden
 		}
@@ -205,7 +210,7 @@ func StaticAuthenticator(username, password, otp string, user *empire.User) Auth
 // Anyone returns an Authenticator that let's anyone in and sets them as the
 // given user.
 func Anyone(user *empire.User) Authenticator {
-	return AuthenticatorFunc(func(username, password, otp string) (*Session, error) {
+	return AuthenticatorFunc(func(_ context.Context, username, password, otp string) (*Session, error) {
 		return NewSession(user), nil
 	})
 }
@@ -215,21 +220,28 @@ func Anyone(user *empire.User) Authenticator {
 //
 // It will proceed to the next authenticator when the error returned is
 // ErrForbidden. Any other errors are bubbled up (e.g. ErrTwoFactor).
-func MultiAuthenticator(authenticators ...Authenticator) Authenticator {
-	return AuthenticatorFunc(func(username, password, otp string) (*Session, error) {
-		for _, authenticator := range authenticators {
-			session, err := authenticator.Authenticate(username, password, otp)
+func MultiAuthenticator(strategies Strategies) Authenticator {
+	return AuthenticatorFunc(func(ctx context.Context, username, password, otp string) (*Session, error) {
+		for _, strategy := range strategies {
+			span := newSpan(ctx, "Strategy")
+			span.Resource = strategy.Name
+
+			session, err := strategy.Authenticate(span.Context(ctx), username, password, otp)
 
 			// No error so we're authenticated.
 			if err == nil {
+				span.SetMeta("success", "true")
+				span.Finish()
 				return session, nil
 			}
 
 			// Try the next authenticator.
 			if err == ErrForbidden {
+				span.SetMeta("success", "false")
 				continue
 			}
 
+			span.FinishWithErr(err)
 			// Bubble up the error.
 			return nil, err
 		}
@@ -243,8 +255,8 @@ func MultiAuthenticator(authenticators ...Authenticator) Authenticator {
 // have a maximum lifetime. If the Session already has an expiration that will
 // expire before d, the existing expiration is left in tact.
 func WithMaxSessionDuration(auth Authenticator, exp func() time.Time) Authenticator {
-	return AuthenticatorFunc(func(username, password, otp string) (*Session, error) {
-		session, err := auth.Authenticate(username, password, otp)
+	return AuthenticatorFunc(func(ctx context.Context, username, password, otp string) (*Session, error) {
+		session, err := auth.Authenticate(ctx, username, password, otp)
 		if err != nil {
 			return session, err
 		}
@@ -288,4 +300,10 @@ func SessionFromContext(ctx context.Context) *Session {
 		panic("expected user to be authenticated")
 	}
 	return session
+}
+
+func newSpan(ctx context.Context, name string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext(name, ctx)
+	span.Service = "auth"
+	return span
 }
