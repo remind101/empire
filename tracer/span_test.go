@@ -59,8 +59,23 @@ func TestSpanError(t *testing.T) {
 	err := errors.New("Something wrong")
 	span.SetError(err)
 	assert.Equal(span.Error, int32(1))
-	assert.Equal(len(span.Meta), 1)
+	assert.Equal(len(span.Meta), 3)
 	assert.Equal(span.Meta["error.msg"], "Something wrong")
+	assert.Equal(span.Meta["error.type"], "*errors.errorString")
+}
+
+func TestSpanError_Typed(t *testing.T) {
+	assert := assert.New(t)
+	tracer := NewTracer()
+	span := tracer.NewRootSpan("pylons.request", "pylons", "/")
+
+	// check the error is set in the default meta
+	err := &boomError{}
+	span.SetError(err)
+	assert.Equal(span.Error, int32(1))
+	assert.Equal(len(span.Meta), 3)
+	assert.Equal(span.Meta["error.msg"], "boom")
+	assert.Equal(span.Meta["error.type"], "*tracer.boomError")
 }
 
 func TestEmptySpan(t *testing.T) {
@@ -134,3 +149,7 @@ func TestSpanContext(t *testing.T) {
 	assert.Equal(t, s2.SpanID, span.SpanID)
 
 }
+
+type boomError struct{}
+
+func (e *boomError) Error() string { return "boom" }

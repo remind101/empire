@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"reflect"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 )
 
 const (
-	errorMsgKey = "error.msg"
+	errorMsgKey   = "error.msg"
+	errorTypeKey  = "error.type"
+	errorStackKey = "error.stack"
 )
 
 // Span represents a computation. Callers must call Finish when a span is
@@ -134,6 +138,9 @@ func (s *Span) SetError(err error) {
 
 	s.Error = 1
 	s.SetMeta(errorMsgKey, err.Error())
+	s.SetMeta(errorTypeKey, reflect.TypeOf(err).String())
+	stack := debug.Stack()
+	s.SetMeta(errorStackKey, string(stack))
 }
 
 // Finish closes this Span (but not its children) providing the duration
