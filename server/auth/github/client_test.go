@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -43,6 +44,8 @@ func TestClient_CreateAuthorization(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "access_token", auth.Token)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_CreateAuthorization_RequiresOTP(t *testing.T) {
@@ -71,6 +74,8 @@ func TestClient_CreateAuthorization_RequiresOTP(t *testing.T) {
 	})
 	assert.Equal(t, errTwoFactor, err)
 	assert.Nil(t, auth)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_CreateAuthorization_WithOTP(t *testing.T) {
@@ -98,6 +103,8 @@ func TestClient_CreateAuthorization_WithOTP(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "access_token", auth.Token)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_CreateAuthorization_Unauthorized(t *testing.T) {
@@ -123,6 +130,8 @@ func TestClient_CreateAuthorization_Unauthorized(t *testing.T) {
 	})
 	assert.Equal(t, errUnauthorized, err)
 	assert.Nil(t, auth)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_CreateAuthorization_Error(t *testing.T) {
@@ -148,6 +157,8 @@ func TestClient_CreateAuthorization_Error(t *testing.T) {
 	})
 	assert.EqualError(t, err, "github: our SMS provider doesn't deliver to your area")
 	assert.Nil(t, auth)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_GetUser(t *testing.T) {
@@ -170,6 +181,8 @@ func TestClient_GetUser(t *testing.T) {
 	user, err := c.GetUser("access_token")
 	assert.NoError(t, err)
 	assert.Equal(t, "ejholmes", user.Login)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_GetUser_Error(t *testing.T) {
@@ -177,6 +190,9 @@ func TestClient_GetUser_Error(t *testing.T) {
 	c := &Client{
 		Config: oauthConfig,
 		client: h,
+		backoff: func(try int) time.Duration {
+			return 0
+		},
 	}
 
 	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
@@ -187,10 +203,12 @@ func TestClient_GetUser_Error(t *testing.T) {
 		Request:    req,
 		StatusCode: http.StatusNotFound,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"message":"not found"}`)),
-	}, nil)
+	}, nil).Times(3)
 
 	_, err := c.GetUser("access_token")
 	assert.Error(t, err)
+
+	h.AssertExpectations(t)
 }
 
 func TestClient_IsOrganizationMember(t *testing.T) {
@@ -223,6 +241,8 @@ func TestClient_IsOrganizationMember(t *testing.T) {
 		ok, err := c.IsOrganizationMember("remind101", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
+
+		h.AssertExpectations(t)
 	}
 }
 
@@ -267,6 +287,8 @@ func TestClient_IsTeamMember(t *testing.T) {
 		ok, err := c.IsTeamMember("123", "access_token")
 		assert.NoError(t, err)
 		assert.Equal(t, tt.member, ok)
+
+		h.AssertExpectations(t)
 	}
 }
 

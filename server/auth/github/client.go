@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 )
@@ -14,6 +15,10 @@ import (
 var (
 	// DefaultURL is the default location for the GitHub API.
 	DefaultURL = "https://api.github.com"
+
+	// The number of times that the api.github.com/user request will be
+	// retried, in the event of an error.
+	DefaultGetUserRetries = 2
 )
 
 var (
@@ -62,11 +67,21 @@ type Client struct {
 	client interface {
 		Do(*http.Request) (*http.Response, error)
 	}
+
+	// should return the amount of time to wait until the next try.
+	backoff func(try int) time.Duration
+}
+
+func backoff(try int) time.Duration {
+	return time.Duration(try+1) * (time.Second * 1)
 }
 
 // NewClient returns a new Client instance that uses the given oauth2 config.
 func NewClient(config *oauth2.Config) *Client {
-	return &Client{Config: config}
+	return &Client{
+		Config:  config,
+		backoff: backoff,
+	}
 }
 
 // Authorization represents a GitHub Authorization. See http://goo.gl/bs9I3o for
@@ -139,6 +154,18 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 
 // GetUser makes an authenticated request to /user and returns the GitHub User.
 func (c *Client) GetUser(token string) (*User, error) {
+	return c.getUser(token, 0)
+}
+
+// getUser makes an authenticated request to /user and returns the GitHub User.
+
+// It assumes that token is a newly created GitHub token created from an
+// authorization. Newly created tokens sometimes don't work for a period of
+// time, presumably because GitHub uses a read replica. This method will perform
+// up to 3 requets, with backoff to account for this issue.
+//
+// See https://github.com/remind101/empire/issues/1026
+func (c *Client) getUser(token string, try int) (*User, error) {
 	req, err := c.NewRequest("GET", "/user", nil)
 	if err != nil {
 		return nil, err
@@ -154,6 +181,10 @@ func (c *Client) GetUser(token string) (*User, error) {
 	}
 
 	if err := checkResponse(resp); err != nil {
+		if try < DefaultGetUserRetries {
+			time.Sleep(c.backoff(try))
+			return c.getUser(token, try+1)
+		}
 		return nil, err
 	}
 
