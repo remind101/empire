@@ -4,6 +4,7 @@ package github
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
@@ -43,6 +44,8 @@ func (a *Authenticator) Authenticate(ctx context.Context, username, password, ot
 			return nil, fmt.Errorf("unable to create github authorization: %v", err)
 		}
 	}
+
+	time.Sleep(10 * time.Second)
 
 	u, err := a.client.GetUser(ctx, authorization.Token)
 	if err != nil {
