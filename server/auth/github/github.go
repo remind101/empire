@@ -39,13 +39,13 @@ func (a *Authenticator) Authenticate(username, password, otp string) (*auth.Sess
 		case errUnauthorized:
 			return nil, auth.ErrForbidden
 		default:
-			return nil, err
+			return nil, fmt.Errorf("unable to create github authorization: %v", err)
 		}
 	}
 
 	u, err := a.client.GetUser(authorization.Token)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to fetch GitHub user information: %v", err)
 	}
 
 	user := &empire.User{
@@ -79,7 +79,7 @@ func (a *OrganizationAuthorizer) Authorize(user *empire.User) error {
 
 	ok, err := a.client.IsOrganizationMember(a.Organization, user.GitHubToken)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking organization membership: %v", err)
 	}
 
 	if !ok {
@@ -112,7 +112,7 @@ func (a *TeamAuthorizer) Authorize(user *empire.User) error {
 
 	ok, err := a.client.IsTeamMember(a.TeamID, user.GitHubToken)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking team membership: %v", err)
 	}
 
 	if !ok {
