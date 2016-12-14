@@ -118,27 +118,30 @@ func (a *Auth) PrependAuthenticator(name string, authenticator Authenticator) *A
 // a new context.Context with the user embedded. The user can be retrieved with
 // UserFromContext.
 func (a *Auth) Authenticate(ctx context.Context, username, password, otp string, strategies ...string) (context.Context, error) {
-	span := newSpan(ctx, "Authenticate")
-	span.SetMeta("username", username)
-	// Default to using all strategies to authenticate.
 	authenticator := a.Strategies.AuthenticatorFor(strategies...)
-	ctx, err := a.authenticate(span.Context(ctx), authenticator, username, password, otp)
-	span.FinishWithErr(err)
-	return ctx, err
+	return a.authenticate(ctx, authenticator, username, password, otp)
 }
 
 func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, username, password, otp string) (context.Context, error) {
-	session, err := authenticator.Authenticate(ctx, username, password, otp)
+	span := newSpan(ctx, "Authenticate")
+	span.SetMeta("username", username)
+	session, err := authenticator.Authenticate(span.Context(ctx), username, password, otp)
 	if err != nil {
+		span.FinishWithErr(err)
 		return ctx, err
 	}
+	span.Finish()
 
 	ctx = WithSession(ctx, session)
 
+	fmt.Println(a.Authorizer)
 	if a.Authorizer != nil {
-		if err := a.Authorizer.Authorize(ctx, session.User); err != nil {
+		span := newSpan(ctx, "Authorize")
+		if err := a.Authorizer.Authorize(span.Context(ctx), session.User); err != nil {
+			span.FinishWithErr(err)
 			return ctx, err
 		}
+		span.Finish()
 	}
 
 	return ctx, nil
@@ -238,7 +241,7 @@ func MultiAuthenticator(strategies Strategies) Authenticator {
 			// Try the next authenticator.
 			if err == ErrForbidden {
 				span.SetMeta("success", "false")
-				span.Finish()
+				span.FinishWithErr(err)
 				continue
 			}
 

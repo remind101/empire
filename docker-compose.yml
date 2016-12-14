@@ -3,6 +3,7 @@ server:
   command: server -automigrate=true
   links:
     - db:db
+    - tracer:dockerhost
   ports:
     - "8080:8080"
   volumes:
@@ -16,3 +17,8 @@ server:
     EMPIRE_X_SHOW_ATTACHED: 'true'
 db:
   image: postgres
+tracer:
+  build: ./tracer
+  env_file: .env
+  environment:
+    DD_BIND_HOST: "0.0.0.0"
