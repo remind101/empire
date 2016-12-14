@@ -15,6 +15,7 @@ import (
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/logger"
 )
 
@@ -96,6 +97,14 @@ func (c *CustomResourceProvisioner) Start() {
 
 // Handle handles a single sqs.Message to perform the provisioning.
 func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Message) error {
+	span := empire.NewRootSpan("cloudformation.provision", "Unknown")
+	span.Service = "provisioner"
+	err := c.handle(span.Context(ctx), message, span)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (c *CustomResourceProvisioner) handle(ctx context.Context, message *sqs.Message, span *tracer.Span) error {
 	var m Message
 	err := json.Unmarshal([]byte(*message.Body), &m)
 	if err != nil {
@@ -107,6 +116,14 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	if err != nil {
 		return fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
 	}
+
+	span.Resource = fmt.Sprintf("%s %s", req.RequestType, req.ResourceType)
+	span.SetMeta("req.request_id", req.RequestId)
+	span.SetMeta("req.stack_id", req.StackId)
+	span.SetMeta("req.request_type", req.RequestType)
+	span.SetMeta("req.resource_type", req.ResourceType)
+	span.SetMeta("req.logical_resource_id", req.LogicalResourceId)
+	span.SetMeta("req.physical_resource_id", req.PhysicalResourceId)
 
 	logger.Info(ctx, "cloudformation.provision.request",
 		"request_id", req.RequestId,
@@ -168,9 +185,12 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 }
 
 func (c *CustomResourceProvisioner) provision(ctx context.Context, m Message, req customresources.Request) (string, interface{}, error) {
+	span := tracer.NewChildSpanFromContext("Provision", ctx)
 	p, ok := c.Provisioners[req.ResourceType]
 	if !ok {
-		return "", nil, fmt.Errorf("no provisioner for %v", req.ResourceType)
+		err := fmt.Errorf("no provisioner for %v", req.ResourceType)
+		span.FinishWithErr(err)
+		return "", nil, err
 	}
 
 	// If the provisioner defines a type for the properties, let's unmarhsal
@@ -179,10 +199,14 @@ func (c *CustomResourceProvisioner) provision(ctx context.Context, m Message, re
 	req.OldResourceProperties = p.Properties()
 	err := json.Unmarshal([]byte(m.Message), &req)
 	if err != nil {
-		return "", nil, fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
+		err := fmt.Errorf("error unmarshalling to cloudformation request: %v", err)
+		span.FinishWithErr(err)
+		return "", nil, err
 	}
 
-	return p.Provision(ctx, req)
+	id, data, err := p.Provision(ctx, req)
+	span.FinishWithErr(err)
+	return id, data, err
 }
 
 type properties interface {
