@@ -56,7 +56,7 @@ var (
 
 	// Controls the maximum amount of time we'll wait for a stack operation to
 	// complete before releasing the lock.
-	stackOperationTimeout = 10 * time.Minute
+	stackOperationTimeout = 1 * time.Hour
 
 	// Controls how long we'll wait between requests to describe services when
 	// waiting for a deployment to stabilize
