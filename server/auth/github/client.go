@@ -16,9 +16,9 @@ var (
 	// DefaultURL is the default location for the GitHub API.
 	DefaultURL = "https://api.github.com"
 
-	// The number of times that the api.github.com/user request will be
-	// retried, in the event of an error.
-	DefaultGetUserRetries = 2
+	// The number of times that GET requests will be retried in the event of
+	// an error.
+	DefaultGetRetries = 2
 )
 
 var (
@@ -128,6 +128,10 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 	var a Authorization
 	resp, err := c.Do(req, &a)
 	if err != nil {
+		if resp.StatusCode == 401 {
+			return nil, errUnauthorized
+		}
+
 		return nil, err
 	}
 
@@ -135,14 +139,6 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 	// a two factor auth code needs to be provided.
 	if resp.Header.Get(HeaderTwoFactor) != "" {
 		return nil, errTwoFactor
-	}
-
-	if resp.StatusCode == 401 {
-		return nil, errUnauthorized
-	}
-
-	if err := checkResponse(resp); err != nil {
-		return nil, err
 	}
 
 	if a.Token == "" {
@@ -154,18 +150,6 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 
 // GetUser makes an authenticated request to /user and returns the GitHub User.
 func (c *Client) GetUser(token string) (*User, error) {
-	return c.getUser(token, 0)
-}
-
-// getUser makes an authenticated request to /user and returns the GitHub User.
-
-// It assumes that token is a newly created GitHub token created from an
-// authorization. Newly created tokens sometimes don't work for a period of
-// time, presumably because GitHub uses a read replica. This method will perform
-// up to 3 requets, with backoff to account for this issue.
-//
-// See https://github.com/remind101/empire/issues/1026
-func (c *Client) getUser(token string, try int) (*User, error) {
 	req, err := c.NewRequest("GET", "/user", nil)
 	if err != nil {
 		return nil, err
@@ -175,16 +159,8 @@ func (c *Client) getUser(token string, try int) (*User, error) {
 
 	var u User
 
-	resp, err := c.Do(req, &u)
+	_, err = c.Do(req, &u)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := checkResponse(resp); err != nil {
-		if try < DefaultGetUserRetries {
-			time.Sleep(c.backoff(try))
-			return c.getUser(token, try+1)
-		}
 		return nil, err
 	}
 
@@ -203,11 +179,10 @@ func (c *Client) IsOrganizationMember(organization, token string) (bool, error) 
 
 	resp, err := c.Do(req, nil)
 	if err != nil {
+		if resp.StatusCode == 404 {
+			return false, nil
+		}
 		return false, err
-	}
-
-	if err := checkResponse(resp); err != nil {
-		return false, nil
 	}
 
 	return true, nil
@@ -231,11 +206,10 @@ func (c *Client) IsTeamMember(teamID, token string) (bool, error) {
 
 	resp, err := c.Do(req, &t)
 	if err != nil {
+		if resp.StatusCode == 404 {
+			return false, nil
+		}
 		return false, err
-	}
-
-	if err := checkResponse(resp); err != nil {
-		return false, nil
 	}
 
 	return t.State == "active", nil
@@ -269,6 +243,10 @@ func (c *Client) NewRequest(method, path string, v interface{}) (*http.Request, 
 }
 
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
+	return c.do(req, v, 0)
+}
+
+func (c *Client) do(req *http.Request, v interface{}, try int) (*http.Response, error) {
 	client := c.client
 	if client == nil {
 		client = http.DefaultClient
@@ -276,6 +254,14 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		return resp, err
+	}
+
+	if err := checkResponse(resp); err != nil {
+		if requestRetryable(req, resp) && try < DefaultGetRetries {
+			time.Sleep(c.backoff(try))
+			return c.do(req, v, try+1)
+		}
 		return resp, err
 	}
 
@@ -306,6 +292,7 @@ func (e *errorResponse) Error() string {
 
 func checkResponse(resp *http.Response) error {
 	if resp.StatusCode/100 != 2 {
+		defer resp.Body.Close()
 		var errResp errorResponse
 
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
@@ -316,4 +303,17 @@ func checkResponse(resp *http.Response) error {
 	}
 
 	return nil
+}
+
+// Returns true if the request is retryable. Only idempotent requests that
+// return a 401 are retried.
+//
+// This is done to address an issue in the GitHub API, where newly create auth
+// tokens aren't immediately available, presumably because GitHub uses a read
+// replica.
+//
+// See https://github.com/remind101/empire/issues/1026
+func requestRetryable(req *http.Request, resp *http.Response) bool {
+	idempotent := req.Method == "GET" || req.Method == "HEAD"
+	return idempotent && resp.StatusCode == 401
 }

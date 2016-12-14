@@ -36,7 +36,7 @@ func TestClient_CreateAuthorization(t *testing.T) {
 		Request:    req,
 		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
-	}, nil)
+	}, nil).Once()
 
 	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
 		Username: "username",
@@ -66,7 +66,7 @@ func TestClient_CreateAuthorization_RequiresOTP(t *testing.T) {
 		Header:     headers,
 		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
-	}, nil)
+	}, nil).Once()
 
 	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
 		Username: "username",
@@ -94,7 +94,7 @@ func TestClient_CreateAuthorization_WithOTP(t *testing.T) {
 		Request:    req,
 		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
-	}, nil)
+	}, nil).Once()
 
 	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
 		Username: "username",
@@ -122,7 +122,7 @@ func TestClient_CreateAuthorization_Unauthorized(t *testing.T) {
 		Request:    req,
 		StatusCode: http.StatusUnauthorized,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{}`)),
-	}, nil)
+	}, nil).Once()
 
 	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
 		Username: "username",
@@ -149,7 +149,7 @@ func TestClient_CreateAuthorization_Error(t *testing.T) {
 		Request:    req,
 		StatusCode: http.StatusBadRequest,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"message":"our SMS provider doesn't deliver to your area"}`)),
-	}, nil)
+	}, nil).Once()
 
 	auth, err := c.CreateAuthorization(CreateAuthorizationOptions{
 		Username: "username",
@@ -164,8 +164,9 @@ func TestClient_CreateAuthorization_Error(t *testing.T) {
 func TestClient_GetUser(t *testing.T) {
 	h := new(mockHTTPClient)
 	c := &Client{
-		Config: oauthConfig,
-		client: h,
+		Config:  oauthConfig,
+		client:  h,
+		backoff: noBackoff,
 	}
 
 	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
@@ -176,7 +177,7 @@ func TestClient_GetUser(t *testing.T) {
 		Request:    req,
 		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
-	}, nil)
+	}, nil).Once()
 
 	user, err := c.GetUser("access_token")
 	assert.NoError(t, err)
@@ -188,11 +189,9 @@ func TestClient_GetUser(t *testing.T) {
 func TestClient_GetUser_Error(t *testing.T) {
 	h := new(mockHTTPClient)
 	c := &Client{
-		Config: oauthConfig,
-		client: h,
-		backoff: func(try int) time.Duration {
-			return 0
-		},
+		Config:  oauthConfig,
+		client:  h,
+		backoff: noBackoff,
 	}
 
 	req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
@@ -201,7 +200,7 @@ func TestClient_GetUser_Error(t *testing.T) {
 
 	h.On("Do", req).Return(&http.Response{
 		Request:    req,
-		StatusCode: http.StatusNotFound,
+		StatusCode: http.StatusUnauthorized,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"message":"not found"}`)),
 	}, nil).Times(3)
 
@@ -224,8 +223,9 @@ func TestClient_IsOrganizationMember(t *testing.T) {
 	for _, tt := range tests {
 		h := new(mockHTTPClient)
 		c := &Client{
-			Config: oauthConfig,
-			client: h,
+			Config:  oauthConfig,
+			client:  h,
+			backoff: noBackoff,
 		}
 
 		req, _ := http.NewRequest("HEAD", "https://api.github.com/user/memberships/orgs/remind101", nil)
@@ -236,7 +236,7 @@ func TestClient_IsOrganizationMember(t *testing.T) {
 			Request:    req,
 			StatusCode: tt.status,
 			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
-		}, nil)
+		}, nil).Once()
 
 		ok, err := c.IsOrganizationMember("remind101", "access_token")
 		assert.NoError(t, err)
@@ -260,8 +260,9 @@ func TestClient_IsTeamMember(t *testing.T) {
 	for _, tt := range tests {
 		h := new(mockHTTPClient)
 		c := &Client{
-			Config: oauthConfig,
-			client: h,
+			Config:  oauthConfig,
+			client:  h,
+			backoff: noBackoff,
 		}
 
 		req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
@@ -272,7 +273,7 @@ func TestClient_IsTeamMember(t *testing.T) {
 			Request:    req,
 			StatusCode: http.StatusOK,
 			Body:       ioutil.NopCloser(bytes.NewBufferString(`{"login":"ejholmes"}`)),
-		}, nil)
+		}, nil).Once()
 
 		req, _ = http.NewRequest("GET", "https://api.github.com/teams/123/memberships/ejholmes", nil)
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
@@ -299,4 +300,8 @@ type mockHTTPClient struct {
 func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	args := m.Called(req)
 	return args.Get(0).(*http.Response), args.Error(1)
+}
+
+func noBackoff(try int) time.Duration {
+	return 0
 }
