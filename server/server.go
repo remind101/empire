@@ -12,6 +12,7 @@ import (
 	"github.com/remind101/empire/pkg/saml"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
+	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -68,13 +69,22 @@ func New(e *empire.Empire, options Options) *Server {
 	r.Headers("Accept", heroku.AcceptHeader).Handler(s.Heroku)
 
 	// Mount SAML handlers.
-	r.HandleFunc("/saml/login", s.SAMLLogin)
-	r.HandleFunc("/saml/acs", s.SAMLACS)
+	s.handle("/saml/login", httpx.HandlerFunc(s.SAMLLogin))
+	s.handle("/saml/acs", httpx.HandlerFunc(s.SAMLACS))
 
 	// Mount health endpoint
-	r.Handle("/health", NewHealthHandler(e))
+	s.handle("/health", NewHealthHandler(e))
 
 	return s
+}
+
+func (s *Server) handle(path string, h httpx.Handler) {
+	f := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		span := middleware.RootSpan(ctx)
+		span.Resource = path
+		return h.ServeHTTPContext(ctx, w, r)
+	}
+	s.mux.Handle(path, httpx.HandlerFunc(f))
 }
 
 func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
