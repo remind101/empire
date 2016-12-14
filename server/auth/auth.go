@@ -238,6 +238,7 @@ func MultiAuthenticator(strategies Strategies) Authenticator {
 			// Try the next authenticator.
 			if err == ErrForbidden {
 				span.SetMeta("success", "false")
+				span.Finish()
 				continue
 			}
 

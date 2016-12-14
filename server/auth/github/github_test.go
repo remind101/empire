@@ -129,7 +129,7 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (m *mockClient) CreateAuthorization(opts CreateAuthorizationOptions) (*Authorization, error) {
+func (m *mockClient) CreateAuthorization(_ context.Context, opts CreateAuthorizationOptions) (*Authorization, error) {
 	args := m.Called(opts)
 	auth := args.Get(0)
 	if auth != nil {
@@ -138,7 +138,7 @@ func (m *mockClient) CreateAuthorization(opts CreateAuthorizationOptions) (*Auth
 	return nil, args.Error(1)
 }
 
-func (m *mockClient) GetUser(token string) (*User, error) {
+func (m *mockClient) GetUser(_ context.Context, token string) (*User, error) {
 	args := m.Called(token)
 	user := args.Get(0)
 	if user != nil {
@@ -147,12 +147,12 @@ func (m *mockClient) GetUser(token string) (*User, error) {
 	return nil, args.Error(1)
 }
 
-func (m *mockClient) IsOrganizationMember(organization, token string) (bool, error) {
+func (m *mockClient) IsOrganizationMember(_ context.Context, organization, token string) (bool, error) {
 	args := m.Called(organization, token)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *mockClient) IsTeamMember(teamID, token string) (bool, error) {
+func (m *mockClient) IsTeamMember(_ context.Context, teamID, token string) (bool, error) {
 	args := m.Called(teamID, token)
 	return args.Bool(0), args.Error(1)
 }

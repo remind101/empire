@@ -18,6 +18,7 @@ import (
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
+	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
@@ -134,16 +135,24 @@ func (r *route) AuthWith(strategies ...string) *route {
 }
 
 func (r *route) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
+	span := middleware.RootSpan(ctx)
+	span.Resource = fmt.Sprintf("Heroku %s", r.Name)
+
 	// Authenticate the request.
 	ctx, err := r.s.Authenticate(ctx, req, r.authStrategies...)
 	if err != nil {
+		span.FinishWithErr(err)
 		return err
 	}
 
-	// Track metrics for this endpoint.
-	m := withTrace(r.Name, withMetrics(r.Name, r.HandlerFunc))
+	span.SetMeta("user", auth.UserFromContext(ctx).Name)
 
-	return m.ServeHTTPContext(ctx, w, req)
+	// Track metrics for this endpoint.
+	m := withMetrics(r.Name, r.HandlerFunc)
+
+	err = m.ServeHTTPContext(ctx, w, req)
+	span.FinishWithErr(err)
+	return err
 }
 
 // ServeHTTPContext implements the httpx.Handler interface.
@@ -260,19 +269,6 @@ var nameRegexp = regexp.MustCompile(`^.*\.(.*)-fm$`)
 func handlerName(h httpx.HandlerFunc) string {
 	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
 	return nameRegexp.FindStringSubmatch(name)[1]
-}
-
-func withTrace(handlerName string, h httpx.Handler) httpx.Handler {
-	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		span := empire.NewRootSpan("http.request", fmt.Sprintf("Heroku %s", handlerName))
-		span.Type = "http"
-		span.SetMeta("user", auth.UserFromContext(ctx).Name)
-		span.SetMeta("http.method", r.Method)
-		span.SetMeta("http.url", r.URL.String())
-		err := h.ServeHTTPContext(span.Context(ctx), w, r)
-		span.FinishWithErr(err)
-		return err
-	})
 }
 
 func withMetrics(handlerName string, h httpx.Handler) httpx.Handler {

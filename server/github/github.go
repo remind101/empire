@@ -12,6 +12,7 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
@@ -56,10 +57,8 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var p events.Deployment
 
-	span := empire.NewRootSpan("http.request", "GitHub Deployment")
-	span.Type = "http"
-	span.SetMeta("http.method", r.Method)
-	span.SetMeta("http.url", r.URL.String())
+	span := middleware.RootSpan(ctx)
+	span.Resource = "GitHub Deployment"
 
 	span.SetMeta("event.Repository.FullName", p.Repository.FullName)
 	span.SetMeta("event.Deployment.Creator.Login", p.Deployment.Creator.Login)

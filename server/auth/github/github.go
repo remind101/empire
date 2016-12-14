@@ -16,8 +16,8 @@ import (
 type Authenticator struct {
 	// OAuth2 configuration (client id, secret, scopes, etc).
 	client interface {
-		CreateAuthorization(CreateAuthorizationOptions) (*Authorization, error)
-		GetUser(token string) (*User, error)
+		CreateAuthorization(context.Context, CreateAuthorizationOptions) (*Authorization, error)
+		GetUser(ctx context.Context, token string) (*User, error)
 	}
 }
 
@@ -28,7 +28,7 @@ func NewAuthenticator(c *Client) *Authenticator {
 }
 
 func (a *Authenticator) Authenticate(ctx context.Context, username, password, otp string) (*auth.Session, error) {
-	authorization, err := a.client.CreateAuthorization(CreateAuthorizationOptions{
+	authorization, err := a.client.CreateAuthorization(ctx, CreateAuthorizationOptions{
 		Username: username,
 		Password: password,
 		OTP:      otp,
@@ -40,13 +40,13 @@ func (a *Authenticator) Authenticate(ctx context.Context, username, password, ot
 		case errUnauthorized:
 			return nil, auth.ErrForbidden
 		default:
-			return nil, err
+			return nil, fmt.Errorf("unable to create github authorization: %v", err)
 		}
 	}
 
-	u, err := a.client.GetUser(authorization.Token)
+	u, err := a.client.GetUser(ctx, authorization.Token)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get user information: %v", err)
 	}
 
 	user := &empire.User{
@@ -63,7 +63,7 @@ type OrganizationAuthorizer struct {
 	Organization string
 
 	client interface {
-		IsOrganizationMember(organization, token string) (bool, error)
+		IsOrganizationMember(ctx context.Context, organization, token string) (bool, error)
 	}
 }
 
@@ -78,9 +78,9 @@ func (a *OrganizationAuthorizer) Authorize(ctx context.Context, user *empire.Use
 		panic("no organization set")
 	}
 
-	ok, err := a.client.IsOrganizationMember(a.Organization, user.GitHubToken)
+	ok, err := a.client.IsOrganizationMember(ctx, a.Organization, user.GitHubToken)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking organization membership: %v", err)
 	}
 
 	if !ok {
@@ -98,7 +98,7 @@ type TeamAuthorizer struct {
 	TeamID string
 
 	client interface {
-		IsTeamMember(teamID, token string) (bool, error)
+		IsTeamMember(ctx context.Context, teamID, token string) (bool, error)
 	}
 }
 
@@ -111,7 +111,7 @@ func (a *TeamAuthorizer) Authorize(ctx context.Context, user *empire.User) error
 		panic("no team id set")
 	}
 
-	ok, err := a.client.IsTeamMember(a.TeamID, user.GitHubToken)
+	ok, err := a.client.IsTeamMember(ctx, a.TeamID, user.GitHubToken)
 	if err != nil {
 		return err
 	}

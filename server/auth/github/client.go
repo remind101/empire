@@ -7,7 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
+	"github.com/remind101/empire/tracer"
+
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 
@@ -86,7 +90,17 @@ type TeamMembership struct {
 // CreateAuthorization creates a new GitHub authorization (or returns the
 // existing authorization if present) for the GitHub OAuth application. See
 // http://goo.gl/bs9I3o.
-func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authorization, error) {
+func (c *Client) CreateAuthorization(ctx context.Context, opts CreateAuthorizationOptions) (*Authorization, error) {
+	span := newSpan(ctx, "CreateAuthorization")
+	span.SetMeta("username", opts.Username)
+	span.SetMeta("client_id", c.ClientID)
+	span.SetMeta("scopes", strings.Join(c.Scopes, ","))
+	authorization, err := c.createAuthorization(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return authorization, err
+}
+
+func (c *Client) createAuthorization(ctx context.Context, opts CreateAuthorizationOptions) (*Authorization, error) {
 	f := struct {
 		Scopes       []string `json:"scopes"`
 		ClientID     string   `json:"client_id"`
@@ -138,7 +152,17 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 }
 
 // GetUser makes an authenticated request to /user and returns the GitHub User.
-func (c *Client) GetUser(token string) (*User, error) {
+func (c *Client) GetUser(ctx context.Context, token string) (*User, error) {
+	span := newSpan(ctx, "GetUser")
+	if token != "" {
+		span.SetMeta("token", "XXXX")
+	}
+	user, err := c.getUser(span.Context(ctx), token)
+	span.FinishWithErr(err)
+	return user, err
+}
+
+func (c *Client) getUser(ctx context.Context, token string) (*User, error) {
 	req, err := c.NewRequest("GET", "/user", nil)
 	if err != nil {
 		return nil, err
@@ -162,7 +186,18 @@ func (c *Client) GetUser(token string) (*User, error) {
 
 // IsOrganizationMember returns true of the authenticated user is a member of the
 // organization.
-func (c *Client) IsOrganizationMember(organization, token string) (bool, error) {
+func (c *Client) IsOrganizationMember(ctx context.Context, organization, token string) (bool, error) {
+	span := newSpan(ctx, "IsOrganizationMember")
+	span.SetMeta("organization", organization)
+	if token != "" {
+		span.SetMeta("token", "XXXX")
+	}
+	ok, err := c.isOrganizationMember(span.Context(ctx), organization, token)
+	span.FinishWithErr(err)
+	return ok, err
+}
+
+func (c *Client) isOrganizationMember(ctx context.Context, organization, token string) (bool, error) {
 	req, err := c.NewRequest("HEAD", fmt.Sprintf("/user/memberships/orgs/%s", organization), nil)
 	if err != nil {
 		return false, err
@@ -183,8 +218,19 @@ func (c *Client) IsOrganizationMember(organization, token string) (bool, error) 
 }
 
 // IsTeamMember returns true if the given user is a member of the team.
-func (c *Client) IsTeamMember(teamID, token string) (bool, error) {
-	u, err := c.GetUser(token)
+func (c *Client) IsTeamMember(ctx context.Context, teamID, token string) (bool, error) {
+	span := newSpan(ctx, "IsTeamMember")
+	span.SetMeta("team_id", teamID)
+	if token != "" {
+		span.SetMeta("token", "XXXX")
+	}
+	ok, err := c.isTeamMember(span.Context(ctx), teamID, token)
+	span.FinishWithErr(err)
+	return ok, err
+}
+
+func (c *Client) isTeamMember(ctx context.Context, teamID, token string) (bool, error) {
+	u, err := c.GetUser(ctx, token)
 	if err != nil {
 		return false, err
 	}
@@ -285,4 +331,10 @@ func checkResponse(resp *http.Response) error {
 	}
 
 	return nil
+}
+
+func newSpan(ctx context.Context, name string) *tracer.Span {
+	span := tracer.NewChildSpanFromContext(name, ctx)
+	span.Service = "github"
+	return span
 }
