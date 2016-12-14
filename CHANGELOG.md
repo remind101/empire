@@ -20,6 +20,7 @@
 **Bugs**
 
 * `emp deploy` will now prompt for a commit message if one is required but not provided. [#994](https://github.com/remind101/empire/issues/994)
+* Fixed a bug where the GitHub authentication backend would sometimes return unauthenticated errors randomly. [#1029](https://github.com/remind101/empire/pull/1029)
 
 **Security**
 
