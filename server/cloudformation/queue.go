@@ -30,8 +30,8 @@ type sqsClient interface {
 // SQSDispatcher pulls messages from SQS, and dispatches them to a handler.
 type SQSDispatcher struct {
 	// Root context.Context to use. If a reporter.Reporter is embedded,
-	// errors generated will be reporter there. If a logger.Logger is
-	// embedded, logging will be logged there.
+	// errors generated will be reporter there. If a tracer.Tracer is
+	// embedded, traces will be generated.
 	Context context.Context
 
 	// The SQS queue url to listen for CloudFormation Custom Resource

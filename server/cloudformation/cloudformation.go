@@ -16,7 +16,6 @@ import (
 	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/empire/tracer"
-	"github.com/remind101/pkg/logger"
 )
 
 var (
@@ -124,15 +123,6 @@ func (c *CustomResourceProvisioner) handle(ctx context.Context, message *sqs.Mes
 	span.SetMeta("req.logical_resource_id", req.LogicalResourceId)
 	span.SetMeta("req.physical_resource_id", req.PhysicalResourceId)
 
-	logger.Info(ctx, "cloudformation.provision.request",
-		"request_id", req.RequestId,
-		"stack_id", req.StackId,
-		"request_type", req.RequestType,
-		"resource_type", req.ResourceType,
-		"logical_resource_id", req.LogicalResourceId,
-		"physical_resource_id", req.PhysicalResourceId,
-	)
-
 	resp := customresources.NewResponseFromRequest(req)
 
 	// CloudFormation is weird. PhysicalResourceId is required when creating
@@ -156,11 +146,6 @@ func (c *CustomResourceProvisioner) handle(ctx context.Context, message *sqs.Mes
 	switch err {
 	case nil:
 		resp.Status = customresources.StatusSuccess
-		logger.Info(ctx, "cloudformation.provision.success",
-			"request_id", req.RequestId,
-			"stack_id", req.StackId,
-			"physical_resource_id", resp.PhysicalResourceId,
-		)
 	default:
 		// A physical resource id is required, so if a Create request
 		// fails, and there's no physical resource id, CloudFormation
@@ -173,11 +158,6 @@ func (c *CustomResourceProvisioner) handle(ctx context.Context, message *sqs.Mes
 
 		resp.Status = customresources.StatusFailed
 		resp.Reason = err.Error()
-		logger.Error(ctx, "cloudformation.provision.error",
-			"request_id", req.RequestId,
-			"stack_id", req.StackId,
-			"err", err.Error(),
-		)
 	}
 
 	return c.sendResponse(req, resp)
