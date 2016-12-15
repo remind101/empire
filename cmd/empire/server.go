@@ -14,6 +14,7 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	githubauth "github.com/remind101/empire/server/auth/github"
+	oneloginauth "github.com/remind101/empire/server/auth/onelogin"
 	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
@@ -89,6 +90,11 @@ func newServer(c *Context, e *empire.Empire) http.Handler {
 
 	if sp != nil {
 		s.ServiceProvider = sp
+	}
+
+	// When the SAML auth backend us used, we want to disable the `You can
+	// login with emp login` message.
+	if c.String(FlagServerAuth) == "saml" {
 		s.Heroku.Unauthorized = heroku.SAMLUnauthorized(c.String(FlagURL) + "/saml/login")
 	}
 
@@ -229,6 +235,24 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 					// Ensure that this strategy isn't used
 					// by default.
 					Disabled: true,
+				},
+			},
+		}
+	case "onelogin":
+		sp, err := c.SAMLServiceProvider()
+		if err != nil {
+			panic(err)
+		}
+
+		authenticator := oneloginauth.NewAuthenticator(sp, c.String(FlagOneloginClientID), c.String(FlagOneloginClientSecret))
+		authenticator.AppID = c.String(FlagOneloginAppID)
+		authenticator.Subdomain = c.String(FlagOneloginSubdomain)
+
+		return &auth.Auth{
+			Strategies: auth.Strategies{
+				{
+					Name:          auth.StrategyUsernamePassword,
+					Authenticator: authenticator,
 				},
 			},
 		}
