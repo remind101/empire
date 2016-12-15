@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/app"
@@ -21,7 +23,6 @@ import (
 	"github.com/remind101/empire/events/stdout"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/pkg/ecsutil"
 	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
@@ -118,7 +119,7 @@ func newScheduler(db *empire.DB, c *Context) (scheduler.Scheduler, error) {
 func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
-	logConfiguration := ecsutil.NewLogConfiguration(logDriver, logOpts)
+	logConfiguration := newLogConfiguration(logDriver, logOpts)
 
 	zoneID := c.String(FlagRoute53InternalZoneID)
 	zone, err := cloudformation.HostedZone(c, zoneID)
@@ -168,6 +169,27 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 	log.Println(fmt.Sprintf("  LogConfiguration: %v", t.LogConfiguration))
 
 	return s, nil
+}
+
+func newLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfiguration {
+	if logDriver == "" {
+		// Default to the docker daemon default logging driver.
+		return nil
+	}
+
+	logOptions := make(map[string]*string)
+
+	for _, opt := range logOpts {
+		logOpt := strings.SplitN(opt, "=", 2)
+		if len(logOpt) == 2 {
+			logOptions[logOpt[0]] = &logOpt[1]
+		}
+	}
+
+	return &ecs.LogConfiguration{
+		LogDriver: aws.String(logDriver),
+		Options:   logOptions,
+	}
 }
 
 // prefixedStackName returns a text/template that prefixes the stack name with
