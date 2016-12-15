@@ -128,17 +128,17 @@ func (c *Client) CreateAuthorization(opts CreateAuthorizationOptions) (*Authoriz
 	var a Authorization
 	resp, err := c.Do(req, &a)
 	if err != nil {
-		if resp.StatusCode == 401 {
+		if resp != nil && resp.StatusCode == 401 {
+			// When the `X-GitHub-OTP` header is present in the response, it means
+			// a two factor auth code needs to be provided.
+			if resp.Header.Get(HeaderTwoFactor) != "" {
+				return nil, errTwoFactor
+			}
+
 			return nil, errUnauthorized
 		}
 
 		return nil, err
-	}
-
-	// When the `X-GitHub-OTP` header is present in the response, it means
-	// a two factor auth code needs to be provided.
-	if resp.Header.Get(HeaderTwoFactor) != "" {
-		return nil, errTwoFactor
 	}
 
 	if a.Token == "" {
@@ -179,7 +179,7 @@ func (c *Client) IsOrganizationMember(organization, token string) (bool, error) 
 
 	resp, err := c.Do(req, nil)
 	if err != nil {
-		if resp.StatusCode == 404 {
+		if resp != nil && resp.StatusCode == 404 {
 			return false, nil
 		}
 		return false, err
@@ -206,7 +206,7 @@ func (c *Client) IsTeamMember(teamID, token string) (bool, error) {
 
 	resp, err := c.Do(req, &t)
 	if err != nil {
-		if resp.StatusCode == 404 {
+		if resp != nil && resp.StatusCode == 404 {
 			return false, nil
 		}
 		return false, err

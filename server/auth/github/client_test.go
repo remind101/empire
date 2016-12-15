@@ -64,7 +64,7 @@ func TestClient_CreateAuthorization_RequiresOTP(t *testing.T) {
 	h.On("Do", req).Return(&http.Response{
 		Request:    req,
 		Header:     headers,
-		StatusCode: http.StatusOK,
+		StatusCode: http.StatusUnauthorized,
 		Body:       ioutil.NopCloser(bytes.NewBufferString(`{"token":"access_token"}`)),
 	}, nil).Once()
 
