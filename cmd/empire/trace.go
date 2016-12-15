@@ -33,22 +33,20 @@ func newTracer(hostname, port string, l logger.Logger) *tracer.Tracer {
 }
 
 func (t *tracerTransport) Send(traces [][]*tracer.Span) (*http.Response, error) {
-	if t.Logger == nil {
-		return nil, nil
-	}
-
-	for _, group := range traces {
-		for _, trace := range group {
-			t.Logger.Debug(
-				"trace",
-				"trace_id", trace.TraceID,
-				"span_id", trace.SpanID,
-				"parent_id", trace.ParentID,
-				"service", trace.Service,
-				"name", trace.Name,
-				"resource", trace.Resource,
-				"duration", time.Duration(trace.Duration),
-			)
+	if t.Logger != nil {
+		for _, group := range traces {
+			for _, trace := range group {
+				t.Logger.Debug(
+					"trace",
+					"trace_id", trace.TraceID,
+					"span_id", trace.SpanID,
+					"parent_id", trace.ParentID,
+					"service", trace.Service,
+					"name", trace.Name,
+					"resource", trace.Resource,
+					"duration", time.Duration(trace.Duration),
+				)
+			}
 		}
 	}
 
