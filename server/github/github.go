@@ -60,17 +60,15 @@ func (h *DeploymentHandler) ServeHTTPContext(ctx context.Context, w http.Respons
 	span := middleware.RootSpan(ctx)
 	span.Resource = "GitHub Deployment"
 
-	span.SetMeta("event.Repository.FullName", p.Repository.FullName)
-	span.SetMeta("event.Deployment.Creator.Login", p.Deployment.Creator.Login)
-	span.SetMeta("event.Deployment.Ref", p.Deployment.Ref)
-	span.SetMeta("event.Deployment.Sha", p.Deployment.Sha)
-
-	ctx = span.Context(ctx)
-
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
 	}
+
+	span.SetMeta("event.Repository.FullName", p.Repository.FullName)
+	span.SetMeta("event.Deployment.Creator.Login", p.Deployment.Creator.Login)
+	span.SetMeta("event.Deployment.Ref", p.Deployment.Ref)
+	span.SetMeta("event.Deployment.Sha", p.Deployment.Sha)
 
 	if !currentEnvironment(p.Deployment.Environment, h.environments) {
 		w.WriteHeader(http.StatusNoContent)
