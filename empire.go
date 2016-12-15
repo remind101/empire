@@ -179,6 +179,13 @@ func (opts CreateOpts) Validate(e *Empire) error {
 
 // Create creates a new app.
 func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+	span := newSpan(ctx, "Create")
+	app, err := e.create(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return app, err
+}
+
+func (e *Empire) create(ctx context.Context, opts CreateOpts) (*App, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -217,6 +224,13 @@ func (opts DestroyOpts) Validate(e *Empire) error {
 
 // Destroy destroys an app.
 func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
+	span := newSpan(ctx, "Destroy")
+	err := e.destroy(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (e *Empire) destroy(ctx context.Context, opts DestroyOpts) error {
 	if err := opts.Validate(e); err != nil {
 		return err
 	}
@@ -290,6 +304,13 @@ func (opts SetOpts) Validate(e *Empire) error {
 // Config. If the app has a running release, a new release will be created and
 // run.
 func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+	span := newSpan(ctx, "Set")
+	config, err := e.set(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return config, err
+}
+
+func (e *Empire) set(ctx context.Context, opts SetOpts) (*Config, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -321,6 +342,13 @@ func (e *Empire) Domains(q DomainsQuery) ([]*Domain, error) {
 
 // DomainsCreate adds a new Domain for an App.
 func (e *Empire) DomainsCreate(ctx context.Context, domain *Domain) (*Domain, error) {
+	span := newSpan(ctx, "DomainsCreate")
+	domain, err := e.domainsCreate(span.Context(ctx), domain)
+	span.FinishWithErr(err)
+	return domain, err
+}
+
+func (e *Empire) domainsCreate(ctx context.Context, domain *Domain) (*Domain, error) {
 	tx := e.db.Begin()
 
 	d, err := e.domains.DomainsCreate(ctx, tx, domain)
@@ -338,6 +366,13 @@ func (e *Empire) DomainsCreate(ctx context.Context, domain *Domain) (*Domain, er
 
 // DomainsDestroy removes a Domain for an App.
 func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
+	span := newSpan(ctx, "DomainsDestroy")
+	err := e.domainsDestroy(span.Context(ctx), domain)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (e *Empire) domainsDestroy(ctx context.Context, domain *Domain) error {
 	tx := e.db.Begin()
 
 	if err := e.domains.DomainsDestroy(ctx, tx, domain); err != nil {
@@ -394,6 +429,13 @@ func (opts RestartOpts) Validate(e *Empire) error {
 // Restart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
+	span := newSpan(ctx, "Restart")
+	err := e.restart(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (e *Empire) restart(ctx context.Context, opts RestartOpts) error {
 	if err := opts.Validate(e); err != nil {
 		return err
 	}
@@ -455,6 +497,13 @@ func (opts RunOpts) Validate(e *Empire) error {
 
 // Run runs a one-off process for a given App and command.
 func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
+	span := newSpan(ctx, "Run")
+	err := e.run(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (e *Empire) run(ctx context.Context, opts RunOpts) error {
 	event := opts.Event()
 
 	if err := opts.Validate(e); err != nil {
@@ -537,6 +586,13 @@ func (opts RollbackOpts) Validate(e *Empire) error {
 // Rollback rolls an app back to a specific release version. Returns a
 // new release.
 func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
+	span := newSpan(ctx, "Rollback")
+	release, err := e.rollback(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return release, err
+}
+
+func (e *Empire) rollback(ctx context.Context, opts RollbackOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -603,9 +659,12 @@ func (opts DeployOpts) Validate(e *Empire) error {
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	span := newSpan(ctx, "Deploy")
-	defer span.Finish()
-	ctx = span.Context(ctx)
+	release, err := e.deploy(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return release, err
+}
 
+func (e *Empire) deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -681,6 +740,13 @@ func (opts ScaleOpts) Validate(e *Empire) error {
 
 // Scale scales an apps processes.
 func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) {
+	span := newSpan(ctx, "Scale")
+	processes, err := e.scale(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return processes, err
+}
+
+func (e *Empire) scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
@@ -698,11 +764,25 @@ func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) 
 
 // ListScale lists the current scale settings for a given App
 func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
+	span := newSpan(ctx, "ListScale")
+	formation, err := e.listScale(span.Context(ctx), app)
+	span.FinishWithErr(err)
+	return formation, err
+}
+
+func (e *Empire) listScale(ctx context.Context, app *App) (Formation, error) {
 	return currentFormation(e.db, app)
 }
 
 // Streamlogs streams logs from an app.
-func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error {
+func (e *Empire) StreamLogs(ctx context.Context, app *App, w io.Writer, duration time.Duration) error {
+	span := newSpan(ctx, "StreamLogs")
+	err := e.streamLogs(span.Context(ctx), app, w, duration)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (e *Empire) streamLogs(ctx context.Context, app *App, w io.Writer, duration time.Duration) error {
 	if err := e.LogsStreamer.StreamLogs(app, w, duration); err != nil {
 		return fmt.Errorf("error streaming logs: %v", err)
 	}
@@ -723,6 +803,13 @@ type CertsAttachOpts struct {
 
 // CertsAttach attaches an SSL certificate to the app.
 func (e *Empire) CertsAttach(ctx context.Context, opts CertsAttachOpts) error {
+	span := newSpan(ctx, "CertsAttach")
+	err := e.certsAttach(span.Context(ctx), opts)
+	span.FinishWithErr(err)
+	return err
+}
+
+func (e *Empire) certsAttach(ctx context.Context, opts CertsAttachOpts) error {
 	tx := e.db.Begin()
 
 	if err := e.certs.CertsAttach(ctx, tx, opts); err != nil {
