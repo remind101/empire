@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"hash/fnv"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -35,11 +36,11 @@ func Common(h httpx.Handler) httpx.Handler {
 	// Recover from panics by reporting them to the reporter.
 	h = WithRecovery(h)
 
-	// Add information about the request to reported errors.
-	h = WithRequest(h)
-
 	// Add a root span to the request.
-	return WithTracing(h)
+	h = WithTracing(h)
+
+	// Add information about the request to reported errors.
+	return WithRequest(h)
 }
 
 // LogRequests logs the requests to the embedded logger.
@@ -78,10 +79,29 @@ func WithTracing(h httpx.Handler) httpx.Handler {
 		span.Type = "http"
 		span.SetMeta("http.method", r.Method)
 		span.SetMeta("http.url", r.URL.String())
+
+		if id := httpx.RequestID(ctx); id != "" {
+			span.SetMeta("http.request_id", id)
+			span.TraceID = traceID(id)
+			span.SpanID = span.TraceID
+		}
+
 		err := h.ServeHTTPContext(context.WithValue(span.Context(ctx), rootSpanKey, span), w, r)
 		span.FinishWithErr(err)
 		return err
 	})
+}
+
+// traceID returns a new traceID as a 64 bit hash of the request ID, so that you
+// can deterministically find a trace, given a request id.
+func traceID(requestID string) uint64 {
+	if requestID == "" {
+		// Programmer error
+		panic("no request id")
+	}
+	h := fnv.New64()
+	h.Write([]byte(requestID))
+	return h.Sum64()
 }
 
 // Returns the root span embeded from the top level request.

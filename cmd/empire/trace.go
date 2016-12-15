@@ -36,8 +36,7 @@ func (t *tracerTransport) Send(traces [][]*tracer.Span) (*http.Response, error) 
 	if t.Logger != nil {
 		for _, group := range traces {
 			for _, trace := range group {
-				t.Logger.Debug(
-					"trace",
+				pairs := []interface{}{
 					"trace_id", trace.TraceID,
 					"span_id", trace.SpanID,
 					"parent_id", trace.ParentID,
@@ -45,7 +44,11 @@ func (t *tracerTransport) Send(traces [][]*tracer.Span) (*http.Response, error) 
 					"name", trace.Name,
 					"resource", trace.Resource,
 					"duration", time.Duration(trace.Duration),
-				)
+				}
+				for k, v := range trace.Meta {
+					pairs = append(pairs, interface{}(fmt.Sprintf("tag:%s", k)), interface{}(v))
+				}
+				t.Logger.Debug("trace", pairs...)
 			}
 		}
 	}

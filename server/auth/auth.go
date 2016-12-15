@@ -134,7 +134,6 @@ func (a *Auth) authenticate(ctx context.Context, authenticator Authenticator, us
 
 	ctx = WithSession(ctx, session)
 
-	fmt.Println(a.Authorizer)
 	if a.Authorizer != nil {
 		span := newSpan(ctx, "Authorize")
 		if err := a.Authorizer.Authorize(span.Context(ctx), session.User); err != nil {
