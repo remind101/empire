@@ -13,6 +13,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/saml"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -32,6 +33,7 @@ type Context struct {
 	reporter reporter.Reporter
 	logger   logger.Logger
 	stats    stats.Stats
+	tracer   *tracer.Tracer
 
 	// AWS stuff
 	awsConfigProvider client.ConfigProvider
@@ -61,6 +63,8 @@ func newContext(c *cli.Context) (ctx *Context, err error) {
 		return
 	}
 
+	ctx.tracer = newTracer("dockerhost", "", ctx.logger)
+
 	if ctx.reporter != nil {
 		ctx.netCtx = reporter.WithReporter(ctx.netCtx, ctx.reporter)
 	}
@@ -69,6 +73,9 @@ func newContext(c *cli.Context) (ctx *Context, err error) {
 	}
 	if ctx.stats != nil {
 		ctx.netCtx = stats.WithStats(ctx.netCtx, ctx.stats)
+	}
+	if ctx.tracer != nil {
+		ctx.netCtx = tracer.WithTracer(ctx.netCtx, ctx.tracer)
 	}
 
 	return

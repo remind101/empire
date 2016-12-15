@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/inconshreveable/log15"
-	"github.com/remind101/empire"
 	"github.com/remind101/empire/tracer"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
@@ -75,7 +74,7 @@ func PrefixRequestID(h httpx.Handler) httpx.Handler {
 // WithTracing adds a root trace to the request.
 func WithTracing(h httpx.Handler) httpx.Handler {
 	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		span := empire.NewRootSpan("http.request", fmt.Sprintf("%s Unknown", r.Method))
+		span := tracer.NewRootSpanFromContext(ctx, "http.request", "server", fmt.Sprintf("%s Unknown", r.Method))
 		span.Type = "http"
 		span.SetMeta("http.method", r.Method)
 		span.SetMeta("http.url", r.URL.String())

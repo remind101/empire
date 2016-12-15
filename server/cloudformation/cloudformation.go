@@ -97,8 +97,7 @@ func (c *CustomResourceProvisioner) Start() {
 
 // Handle handles a single sqs.Message to perform the provisioning.
 func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Message) error {
-	span := empire.NewRootSpan("cloudformation.provision", "Unknown")
-	span.Service = "provisioner"
+	span := tracer.NewRootSpanFromContext(ctx, "cloudformation.provision", "provisioner", "Unknown")
 	err := c.handle(span.Context(ctx), message, span)
 	span.FinishWithErr(err)
 	return err
