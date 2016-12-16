@@ -31,6 +31,16 @@ func TestAuthenticator(t *testing.T) {
 	assert.Equal(t, "access_token", session.User.GitHubToken)
 }
 
+func TestAuthenticator_FailFast(t *testing.T) {
+	a := &Authenticator{}
+
+	_, err := a.Authenticate("username", "", "")
+	assert.Equal(t, err, auth.ErrForbidden)
+
+	_, err = a.Authenticate("", "password", "")
+	assert.Equal(t, err, auth.ErrForbidden)
+}
+
 func TestAuthenticator_ErrTwoFactor(t *testing.T) {
 	c := new(mockClient)
 	a := &Authenticator{client: c}
