@@ -27,6 +27,12 @@ func NewAuthenticator(c *Client) *Authenticator {
 }
 
 func (a *Authenticator) Authenticate(username, password, otp string) (*auth.Session, error) {
+	// GitHub authentication is guaranteed to fail if one of these are not
+	// present, so fail fast and avoid making an HTTP request.
+	if username == "" || password == "" {
+		return nil, auth.ErrForbidden
+	}
+
 	authorization, err := a.client.CreateAuthorization(CreateAuthorizationOptions{
 		Username: username,
 		Password: password,
