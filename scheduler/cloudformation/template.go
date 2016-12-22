@@ -74,8 +74,15 @@ func taskDefinitionResourceType(app *scheduler.App) string {
 }
 
 func taskRoleArn(app *scheduler.App) interface{} {
-	if v, ok := app.Env["EMPIRE_X_TASK_ROLE_ARN"]; ok {
-		return v
+	check := []string{
+		"EMPIRE_X_TASK_ROLE_ARN",
+		"TASK_ROLE_ARN", // For backwards compatibility.
+	}
+
+	for _, n := range check {
+		if v, ok := app.Env[n]; ok {
+			return v
+		}
 	}
 
 	return nil
@@ -283,10 +290,7 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 
 	// If provided in the app environment, this role will be used when
 	// running tasks.
-	var taskRole interface{}
-	if arn, ok := app.Env["TASK_ROLE_ARN"]; ok {
-		taskRole = arn
-	}
+	taskRole := taskRoleArn(app)
 
 	var taskDefinitionProperties interface{}
 	taskDefinitionType := taskDefinitionResourceType(app)

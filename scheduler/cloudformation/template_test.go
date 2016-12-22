@@ -308,6 +308,61 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			"task-role.json",
+			&scheduler.App{
+				ID:      "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Env: map[string]string{
+					"ECS_TASK_DEFINITION":    "custom",
+					"EMPIRE_X_TASK_ROLE_ARN": "arn:aws:iam::897883143566:role/stage/app/r101-pg-loadtest",
+				},
+				Processes: []*scheduler.Process{
+					{
+						Type:    "web",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"B":    "foo",
+							"A":    "foo",
+							"FOO":  "bar",
+							"PORT": "8080",
+						},
+						Exposure: &scheduler.Exposure{
+							Ports: []scheduler.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &scheduler.HTTP{},
+								},
+							},
+						},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Instances:   1,
+						Nproc:       256,
+					},
+					{
+						Type:      "vacuum",
+						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:   []string{"./bin/vacuum"},
+						Schedule:  scheduler.CRONSchedule("* * * * *"),
+						Instances: 1,
+						Labels: map[string]string{
+							"empire.app.process": "vacuum",
+						},
+						MemoryLimit: 128 * bytesize.MB,
+						CPUShares:   256,
+						Nproc:       256,
+					},
+				},
+			},
+		},
+
+		{
 			"cron.json",
 			&scheduler.App{
 				ID:      "1234",
