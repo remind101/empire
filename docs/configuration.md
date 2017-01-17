@@ -105,6 +105,12 @@ exports.handler = function(event, context) {
 };
 ```
 
+### ECR Repositories
+
+Empire can deploy images from repositories hosted on the EC2 Container Registry (ECR). To authenticate against (and pull from) ECR repositories, the ECS container instances must be running version 1.7.0 or higher of the ECS Container Agent. Furthermore, the container instance role must include the `ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`, `ecr:GetDownloadUrlForLayer`, and `ecr:BatchGetImage` privileges. If you are running Empire outside of your ECS cluster, you should also ensure that these privileges are set for the user or role associated with Empire. If you will not be using other private Docker registries, you might want to disable the Docker authentication provider by setting the `-docker.auth` flag (or the corresponding `DOCKER_AUTH_PATH` environment variable) to an empty string.
+
+With the above configuration in place, deploying from ECR is no different than deploying from other private Docker registries. However: due to [GH-857](https://github.com/remind101/empire/issues/857), ECR image references that do not contain at least two forward slashes are currently unsupported. That is, `awsaccountid.dkr.ecr.us-west-2.amazonaws.com/prod/myimage:tag` will work; `awsaccountid.dkr.ecr.us-west-2.amazonaws.com/myimage:tag` will not.
+
 ### Log Streaming
 
 By default, log streaming is deactivated in Empire. If you try to run
