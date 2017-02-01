@@ -115,7 +115,7 @@ $ emp log -a acme-inc
 Logs are disabled
 ```
 
-To activate log streaming on Empire, you need to set the `EMPIRE_LOG_STREAMER`
+To activate log streaming on Empire, you need to set the `EMPIRE_LOGS_STREAMER`
 environment variable on your Empire instance(s). Right now the only value supported
 is `kinesis`, but we hope to support more in the future.
 
