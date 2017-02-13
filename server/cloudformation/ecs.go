@@ -123,7 +123,8 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.
 			}
 		} else {
 			logger.Info(ctx, "cloudformation.service.update.error",
-				"error", err.Message(),
+				"error_type", reflect.TypeOf(err),
+				"error_msg", err.Error(),
 			)
 			if strings.Contains(err.Message(), "TaskDefinition is inactive") {
 				err = nil
