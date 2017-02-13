@@ -122,8 +122,6 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.
 			}
 		} else {
 			if err, ok := err.(awserr.Error); ok && strings.Contains(err.Message(), "TaskDefinition is inactive") {
-				d := primaryDeployment(resp.Service)
-				data["DeploymentId"] = *d.Id
 				err = nil
 			}
 		}
