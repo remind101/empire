@@ -190,6 +190,13 @@ v3.web.e7eff5a8-f5d0-49fd-8af9-569f5f7dbddf     1X  RUNNING   3m  "acme-inc serv
 v3.web.f6337ad7-2a24-4c36-a8fb-9253581a816d     1X  RUNNING   3m  "acme-inc server"
 ```
 
+You'll notice that the scale of these processes is *1X*, which is shorthand for a CPU share of 256, and memory limited to 512mb.  There are other presets (*2X*, *PX*), but you don't have to use those - you can instead specify exactly how much memory and cpu each process should get:
+
+```console
+$ emp scale -a acme-inc web=3:512:1024mb
+Scaled acme-inc to web=3:512:1024mb.00.
+```
+
 Finally, since we're done with acme-inc, we can destroy it - removing all tasks associated with it, as well as any load balancers and internal service discovery hostnames:
 
 ```console

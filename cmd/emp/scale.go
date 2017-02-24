@@ -25,6 +25,28 @@ Scale changes the quantity of dynos (horizontal scale) and/or the
 dyno size (vertical scale) for each process type. Note that
 changing dyno size will restart all dynos of that type.
 
+size has two different formats, the first is the raw format,
+which gives you more control over the settings:
+
+	<cpu_share>:<memory>
+
+Examples:
+
+	# Scales the web process to one process that has 512 cpu
+	# shares and 1 gb of memory.
+	$ emp scale -a acme-inc web=1:512:1024mb
+
+	# Scales the web process to three processes that have
+	# 256 cpu shares and 2 gb of memory.
+	$ emp scale -a acme-inc web=3:256:2gb
+
+The other format is a set of preset values:
+
+	1X: 256 cpu share, 512mb of memory
+	2X: 512 cpu share, 1024mb of memory
+	PX: 1024 cpu share, 6gb of memory
+
+
 Options:
 
     -l display the current scale
