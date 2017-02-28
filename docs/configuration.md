@@ -145,3 +145,12 @@ In this configuration, you would create a dedicated Docker host, exposing the Do
 #### Use Docker Swarm
 
 Theoretically, you could point Empire at multiple Docker daemons that are connected via Docker swarm.
+
+#### Use ECS
+
+By default, Empire will run attached processes entirely through the Docker daemon that you point Empire at. You can specify the `--ecs.attached.enabled` (`EMPIRE_ECS_ATTACHED_ENABLED`) to run attached processes via ECS. This method is not yet suitable for production, and there's some important caveats and tradeoff's to be aware of:
+
+1. It currently requires a [patch](https://github.com/remind101/empire/tree/master/contrib/amazon-ecs-agent/tty) to the Amazon ECS agent, to allow Empire to pass additional flags down to Docker when creating the container.
+2. Empire needs to be able to connect to the Docker daemon of container instances in the ECS cluster. If you do this, it's _highly_ encouraged that you only expose the Docker socket over TLS (https://docs.docker.com/engine/security/https/) and restrict your security groups to only allow Empire access to port 2376 on container instances.
+
+The primary benefit of this approach is that, by using ECS, attached runs can be easily scaled out to a group of hosts, and it also allows attached processes to benefit from AWS Roles for ECS tasks.

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -17,8 +18,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/s3"
+	docker "github.com/fsouza/go-dockerclient"
 	_ "github.com/lib/pq"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/scheduler"
@@ -1486,6 +1489,204 @@ func TestScheduler_Restart(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
+func TestScheduler_Run_Detached(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	e := new(mockECSClient)
+	s := &Scheduler{
+		Template: &fakeTemplate{
+			containerDefinition: &ecs.ContainerDefinition{},
+		},
+		ecs:   e,
+		db:    db,
+		after: fakeAfter,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68--run"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			&ecs.ContainerDefinition{},
+		},
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
+		},
+	}, nil)
+
+	e.On("RunTask", &ecs.RunTaskInput{
+		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
+		Cluster:        aws.String(""),
+		Count:          aws.Int64(1),
+		StartedBy:      aws.String("c9366591-ab68-4d49-a333-95ce5a23df68"),
+	}).Return(&ecs.RunTaskOutput{
+		Tasks: []*ecs.Task{
+			&ecs.Task{
+				ClusterArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
+				DesiredStatus:        aws.String("RUNNING"),
+				LastStatus:           aws.String("PENDING"),
+				TaskArn:              aws.String("arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb"),
+				TaskDefinitionArn:    aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/4c543eed-f83f-47da-b1d8-3d23f1da4c64"),
+			},
+		},
+	}, nil)
+
+	err = s.Run(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, &scheduler.Process{
+		Type:    "run",
+		Command: []string{"bundle exec rake db:migrate"},
+	}, nil, nil)
+	assert.NoError(t, err)
+
+	e.AssertExpectations(t)
+}
+
+func TestScheduler_Run_Attached(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	e := new(mockECSClient)
+	c := new(mockEC2Client)
+	d := new(mockDockerClient)
+	s := &Scheduler{
+		Template: &fakeTemplate{
+			containerDefinition: &ecs.ContainerDefinition{
+				Command: []*string{aws.String("bundle"), aws.String("exec"), aws.String("rake"), aws.String("db:migrate")},
+			},
+		},
+		NewDockerClient: func(ec2Instance *ec2.Instance) (DockerClient, error) {
+			return d, nil
+		},
+		ecs:   e,
+		ec2:   c,
+		db:    db,
+		after: fakeAfter,
+	}
+
+	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
+	assert.NoError(t, err)
+
+	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
+		Family: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68--run"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			&ecs.ContainerDefinition{
+				Command: []*string{aws.String("bundle"), aws.String("exec"), aws.String("rake"), aws.String("db:migrate")},
+				DockerLabels: map[string]*string{
+					"docker.config.Tty":       aws.String("true"),
+					"docker.config.OpenStdin": aws.String("true"),
+				},
+			},
+		},
+	}).Return(&ecs.RegisterTaskDefinitionOutput{
+		TaskDefinition: &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
+		},
+	}, nil)
+
+	e.On("RunTask", &ecs.RunTaskInput{
+		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
+		Cluster:        aws.String(""),
+		Count:          aws.Int64(1),
+		StartedBy:      aws.String("c9366591-ab68-4d49-a333-95ce5a23df68"),
+	}).Return(&ecs.RunTaskOutput{
+		Tasks: []*ecs.Task{
+			&ecs.Task{
+				ClusterArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
+				DesiredStatus:        aws.String("RUNNING"),
+				LastStatus:           aws.String("PENDING"),
+				TaskArn:              aws.String("arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb"),
+				TaskDefinitionArn:    aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/4c543eed-f83f-47da-b1d8-3d23f1da4c64"),
+			},
+		},
+	}, nil)
+
+	e.On("StopTask", &ecs.StopTaskInput{
+		Cluster: aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
+		Task:    aws.String("arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb"),
+	}).Return(&ecs.StopTaskOutput{}, nil)
+
+	e.On("DescribeContainerInstances", &ecs.DescribeContainerInstancesInput{
+		Cluster:            aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
+		ContainerInstances: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/4c543eed-f83f-47da-b1d8-3d23f1da4c64")},
+	}).Return(&ecs.DescribeContainerInstancesOutput{
+		ContainerInstances: []*ecs.ContainerInstance{
+			&ecs.ContainerInstance{
+				AgentConnected:       aws.Bool(true),
+				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/4c543eed-f83f-47da-b1d8-3d23f1da4c64"),
+				Ec2InstanceId:        aws.String("i-042f39dc"),
+			},
+		},
+	}, nil)
+
+	c.On("DescribeInstances", &ec2.DescribeInstancesInput{
+		InstanceIds: []*string{aws.String("i-042f39dc")},
+	}).Return(&ec2.DescribeInstancesOutput{
+		Reservations: []*ec2.Reservation{
+			&ec2.Reservation{
+				Instances: []*ec2.Instance{
+					&ec2.Instance{
+						InstanceId:       aws.String("i-042f39dc"),
+						PrivateIpAddress: aws.String("192.168.1.88"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("WaitUntilTasksNotPending", &ecs.DescribeTasksInput{
+		Cluster: aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
+		Tasks:   []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb")},
+	}).Return(nil)
+
+	d.On("ListContainers", docker.ListContainersOptions{
+		All: true,
+		Filters: map[string][]string{
+			"label": []string{"com.amazonaws.ecs.task-arn=arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb"},
+		},
+	}).Return([]docker.APIContainers{
+		docker.APIContainers{
+			ID: "4c01db0b339c",
+		},
+	}, nil)
+
+	stdin := strings.NewReader("ls\n")
+	stdout := new(bytes.Buffer)
+	d.On("AttachToContainer", docker.AttachToContainerOptions{
+		Container:    "4c01db0b339c",
+		InputStream:  stdin,
+		OutputStream: stdout,
+		ErrorStream:  stdout,
+		Logs:         true,
+		Stream:       true,
+		Stdin:        true,
+		Stdout:       true,
+		Stderr:       true,
+		RawTerminal:  true,
+	}).Return(nil)
+
+	err = s.Run(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+	}, &scheduler.Process{
+		Type:    "run",
+		Command: []string{"bundle", "exec", "rake", "db:migrate"},
+	}, stdin, stdout)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "Attaching to task/fdf2c302-468c-4e55-b884-5331d816e7fb...\r\n", stdout.String())
+
+	e.AssertExpectations(t)
+	c.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
 func newDB(t testing.TB) *sql.DB {
 	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
 	if err != nil {
@@ -1498,6 +1699,24 @@ func newDB(t testing.TB) *sql.DB {
 		t.Fatal(err)
 	}
 	return db
+}
+
+type fakeTemplate struct {
+	template            string
+	containerDefinition *ecs.ContainerDefinition
+}
+
+func (t *fakeTemplate) Execute(wr io.Writer, data interface{}) error {
+	tmpl := t.template
+	if tmpl == "" {
+		tmpl = "{}"
+	}
+	_, err := io.WriteString(wr, tmpl)
+	return err
+}
+
+func (t *fakeTemplate) ContainerDefinition(*scheduler.App, *scheduler.Process) *ecs.ContainerDefinition {
+	return t.containerDefinition
 }
 
 type storedStatusStream struct {
@@ -1607,6 +1826,49 @@ func (m *mockECSClient) DescribeServices(input *ecs.DescribeServicesInput) (*ecs
 func (m *mockECSClient) DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*ecs.DescribeContainerInstancesOutput), args.Error(1)
+}
+
+func (m *mockECSClient) RegisterTaskDefinition(input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.RegisterTaskDefinitionOutput), args.Error(1)
+}
+
+func (m *mockECSClient) RunTask(input *ecs.RunTaskInput) (*ecs.RunTaskOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.RunTaskOutput), args.Error(1)
+}
+
+func (m *mockECSClient) StopTask(input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ecs.StopTaskOutput), args.Error(1)
+}
+
+func (m *mockECSClient) WaitUntilTasksNotPending(input *ecs.DescribeTasksInput) error {
+	args := m.Called(input)
+	return args.Error(0)
+}
+
+type mockEC2Client struct {
+	mock.Mock
+}
+
+func (m *mockEC2Client) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
+	args := m.Called(input)
+	return args.Get(0).(*ec2.DescribeInstancesOutput), args.Error(1)
+}
+
+type mockDockerClient struct {
+	mock.Mock
+}
+
+func (m *mockDockerClient) ListContainers(options docker.ListContainersOptions) ([]docker.APIContainers, error) {
+	args := m.Called(options)
+	return args.Get(0).([]docker.APIContainers), args.Error(1)
+}
+
+func (m *mockDockerClient) AttachToContainer(options docker.AttachToContainerOptions) error {
+	args := m.Called(options)
+	return args.Error(0)
 }
 
 // fakeAfter is a helper function that will resolve immediately

@@ -1,0 +1,74 @@
+diff --git a/agent/engine/docker_task_engine.go b/agent/engine/docker_task_engine.go
+index 9a9f3a3..cd5171d 100644
+--- a/agent/engine/docker_task_engine.go
++++ b/agent/engine/docker_task_engine.go
+@@ -17,6 +17,7 @@ package engine
+ import (
+ 	"errors"
+ 	"fmt"
++	"strconv"
+ 	"sync"
+ 	"time"
+ 
+@@ -548,6 +549,16 @@ func (engine *DockerTaskEngine) createContainer(task *api.Task, container *api.C
+ 		return DockerContainerMetadata{Error: api.NamedError(err)}
+ 	}
+ 
++	if v, ok := config.Labels["docker.config.Tty"]; ok {
++		config.Tty, _ = strconv.ParseBool(v)
++		delete(config.Labels, "docker.config.Tty")
++	}
++
++	if v, ok := config.Labels["docker.config.OpenStdin"]; ok {
++		config.OpenStdin, _ = strconv.ParseBool(v)
++		delete(config.Labels, "docker.config.OpenStdin")
++	}
++
+ 	// Augment labels with some metadata from the agent. Explicitly do this last
+ 	// such that it will always override duplicates in the provided raw config
+ 	// data.
+diff --git a/agent/engine/docker_task_engine_test.go b/agent/engine/docker_task_engine_test.go
+index cc6523c..3818f25 100644
+--- a/agent/engine/docker_task_engine_test.go
++++ b/agent/engine/docker_task_engine_test.go
+@@ -675,6 +675,40 @@ func TestCreateContainerMergesLabels(t *testing.T) {
+ 	taskEngine.(*DockerTaskEngine).createContainer(testTask, testTask.Containers[0])
+ }
+ 
++func TestCreateContainerAllowsExtraDockerConfigInLabels(t *testing.T) {
++	ctrl, client, _, taskEngine, _, _ := mocks(t, &defaultConfig)
++	defer ctrl.Finish()
++
++	testTask := &api.Task{
++		Arn:     "arn:aws:ecs:us-east-1:012345678910:task/c09f0188-7f87-4b0f-bfc3-16296622b6fe",
++		Family:  "myFamily",
++		Version: "1",
++		Containers: []*api.Container{
++			&api.Container{
++				Name: "c1",
++				DockerConfig: api.DockerConfig{
++					Config: aws.String(`{"Labels":{"docker.config.Tty":"true","docker.config.OpenStdin":"true"}}`),
++				},
++			},
++		},
++	}
++	expectedConfig, err := testTask.DockerConfig(testTask.Containers[0])
++	if err != nil {
++		t.Fatal(err)
++	}
++	expectedConfig.Tty = true
++	expectedConfig.OpenStdin = true
++	expectedConfig.Labels = map[string]string{
++		"com.amazonaws.ecs.task-arn":                "arn:aws:ecs:us-east-1:012345678910:task/c09f0188-7f87-4b0f-bfc3-16296622b6fe",
++		"com.amazonaws.ecs.container-name":          "c1",
++		"com.amazonaws.ecs.task-definition-family":  "myFamily",
++		"com.amazonaws.ecs.task-definition-version": "1",
++		"com.amazonaws.ecs.cluster":                 "",
++	}
++	client.EXPECT().CreateContainer(expectedConfig, gomock.Any(), gomock.Any(), gomock.Any())
++	taskEngine.(*DockerTaskEngine).createContainer(testTask, testTask.Containers[0])
++}
++
+ // TestTaskTransitionWhenStopContainerTimesout tests that task transitions to stopped
+ // only when terminal events are recieved from docker event stream when
+ // StopContainer times out

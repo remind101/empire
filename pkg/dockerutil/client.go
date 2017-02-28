@@ -2,7 +2,6 @@ package dockerutil
 
 import (
 	"fmt"
-	"os"
 
 	"golang.org/x/net/context"
 
@@ -14,22 +13,16 @@ import (
 // Docker API.
 var dockerAPI124, _ = docker.NewAPIVersion("1.24")
 
-// NewDockerClient returns a new docker.Client using the given socket and certificate path.
-func NewDockerClient(socket, certPath string) (*docker.Client, error) {
+// NewDockerClient returns a new docker.Client using the given host and certificate path.
+func NewDockerClient(host, certPath string) (*docker.Client, error) {
 	if certPath != "" {
 		cert := certPath + "/cert.pem"
 		key := certPath + "/key.pem"
 		ca := certPath + "/ca.pem"
-		return docker.NewTLSClient(socket, cert, key, ca)
+		return docker.NewTLSClient(host, cert, key, ca)
 	}
 
-	return docker.NewClient(socket)
-}
-
-// NewDockerClientFromEnv returns a new docker client configured by the DOCKER_*
-// environment variables.
-func NewDockerClientFromEnv() (*docker.Client, error) {
-	return NewDockerClient(os.Getenv("DOCKER_HOST"), os.Getenv("DOCKER_CERT_PATH"))
+	return docker.NewClient(host)
 }
 
 // Client wraps a docker.Client to authenticate pulls.
@@ -44,18 +37,8 @@ type Client struct {
 }
 
 // NewClient returns a new Client instance.
-func NewClient(authProvider dockerauth.AuthProvider, socket, certPath string) (*Client, error) {
-	c, err := NewDockerClient(socket, certPath)
-	if err != nil {
-		return nil, err
-	}
-	return newClient(authProvider, c)
-}
-
-// NewClientFromEnv returns a new Client instance configured by the DOCKER_*
-// environment variables.
-func NewClientFromEnv(authProvider dockerauth.AuthProvider) (*Client, error) {
-	c, err := NewDockerClientFromEnv()
+func NewClient(authProvider dockerauth.AuthProvider, host, certPath string) (*Client, error) {
+	c, err := NewDockerClient(host, certPath)
 	if err != nil {
 		return nil, err
 	}

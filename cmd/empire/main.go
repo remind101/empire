@@ -45,9 +45,9 @@ const (
 
 	FlagDB = "db"
 
-	FlagDockerSocket = "docker.socket"
-	FlagDockerCert   = "docker.cert"
-	FlagDockerAuth   = "docker.auth"
+	FlagDockerHost = "docker.socket"
+	FlagDockerCert = "docker.cert"
+	FlagDockerAuth = "docker.auth"
 
 	FlagAWSDebug             = "aws.debug"
 	FlagS3TemplateBucket     = "s3.templatebucket"
@@ -57,6 +57,8 @@ const (
 	FlagECSServiceRole       = "ecs.service.role"
 	FlagECSLogDriver         = "ecs.logdriver"
 	FlagECSLogOpts           = "ecs.logopt"
+	FlagECSAttachedEnabled   = "ecs.attached.enabled"
+	FlagECSDockerCert        = "ecs.docker.cert"
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
@@ -249,7 +251,7 @@ var DBFlags = []cli.Flag{
 
 var EmpireFlags = []cli.Flag{
 	cli.StringFlag{
-		Name:   FlagDockerSocket,
+		Name:   FlagDockerHost,
 		Value:  "unix:///var/run/docker.sock",
 		Usage:  "The location of the docker api",
 		EnvVar: "DOCKER_HOST",
@@ -309,6 +311,17 @@ var EmpireFlags = []cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  "Log driver to options. Maps to the --log-opt docker cli arg",
 		EnvVar: "EMPIRE_ECS_LOG_OPT",
+	},
+	cli.BoolFlag{
+		Name:   FlagECSAttachedEnabled,
+		Usage:  "When enabled, indicates that ECS tasks can be attached to, using `docker attach`. When provided, this will also use ECS to run attached processes. At the moment, this flag should only be set if you're running a patched ECS agent. See http://empire.readthedocs.io/en/latest/configuration/ for more information.",
+		EnvVar: "EMPIRE_ECS_ATTACHED_ENABLED",
+	},
+	cli.StringFlag{
+		Name:   FlagECSDockerCert,
+		Value:  "",
+		Usage:  "A path to the certificates to use when connecting to Docker daemon's on container instances.",
+		EnvVar: "EMPIRE_ECS_DOCKER_CERT_PATH",
 	},
 	cli.StringFlag{
 		Name:   FlagELBSGPrivate,

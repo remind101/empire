@@ -587,6 +587,13 @@
             {
               "Effect": "Allow",
               "Action": [
+                "ec2:DescribeInstances"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
                 "route53:GetChange*"
               ],
               "Resource": "arn:aws:route53:::change/*"
