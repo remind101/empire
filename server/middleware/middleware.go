@@ -30,9 +30,6 @@ func Common(h httpx.Handler) httpx.Handler {
 	// Prefix log messages with the request id.
 	h = PrefixRequestID(h)
 
-	// Recover from panics by reporting them to the reporter.
-	h = WithRecovery(h)
-
 	// Add information about the request to reported errors.
 	return WithRequest(h)
 }

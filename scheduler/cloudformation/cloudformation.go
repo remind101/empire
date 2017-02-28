@@ -19,8 +19,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/s3"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	pglock "github.com/remind101/empire/pkg/pg/lock"
@@ -43,6 +45,12 @@ const deploymentsOutput = "Deployments"
 
 // Parameter used to trigger a restart of the application.
 const restartParameter = "RestartKey"
+
+// This is meant to be a POSIX compatible command to wait around forever, while
+// handling SIGTERM/SIGINT properly. This command is used when starting attached
+// processes, to allow a new Docker Exec instance to be started in the
+// container.
+var waitCommand = []*string{aws.String("tail"), aws.String("-f"), aws.String("/dev/null")}
 
 // Variables to control stack update locking.
 var (
@@ -110,11 +118,25 @@ type ecsClient interface {
 	UpdateService(*ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error)
 	DescribeServices(*ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error)
 	DescribeContainerInstances(*ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
+	WaitUntilTasksRunning(*ecs.DescribeTasksInput) error
 }
 
 // s3Client duck types the s3.S3 interface that we use.
 type s3Client interface {
 	PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error)
+}
+
+// ec2Client duck types the ec2.EC2 interface that we use.
+type ec2Client interface {
+	DescribeInstances(*ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
+}
+
+// DockerClient defines the interface we use when using Docker to connect to a
+// running ECS task.
+type DockerClient interface {
+	ListContainers(docker.ListContainersOptions) ([]docker.APIContainers, error)
+	CreateExec(docker.CreateExecOptions) (*docker.Exec, error)
+	StartExec(string, docker.StartExecOptions) error
 }
 
 // Data handed to template generators.
@@ -150,6 +172,10 @@ type Scheduler struct {
 	// Any additional tags to add to stacks.
 	Tags []*cloudformation.Tag
 
+	// NewDockerClient is used to open a new Docker connection to an ec2
+	// instance.
+	NewDockerClient func(*ec2.Instance) (DockerClient, error)
+
 	// CloudFormation client for creating stacks.
 	cloudformation cloudformationClient
 
@@ -158,6 +184,9 @@ type Scheduler struct {
 
 	// S3 client to upload templates to s3.
 	s3 s3Client
+
+	// EC2 client to interact with EC2.
+	ec2 ec2Client
 
 	db *sql.DB
 
@@ -170,6 +199,7 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 		cloudformation: cloudformation.New(config),
 		ecs:            ecsWithCaching(ecs.New(config)),
 		s3:             s3.New(config),
+		ec2:            ec2.New(config),
 		db:             db,
 		after:          time.After,
 	}
@@ -900,8 +930,9 @@ func (s *Scheduler) Stop(ctx context.Context, taskID string) error {
 
 // Run registers a TaskDefinition for the process, and calls RunTask.
 func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+	var attached bool
 	if out != nil {
-		return errors.New("running an attached process is not implemented by the ECS manager.")
+		attached = true
 	}
 
 	t, ok := m.Template.(interface {
@@ -911,17 +942,24 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 		return errors.New("provided template can't generate a container definition for this process")
 	}
 
+	containerDefinition := t.ContainerDefinition(app, process)
+	if attached {
+		// Change the command to one that will NOOP forever. We do this
+		// so that we can `docker exec` into the container.
+		containerDefinition.Command = waitCommand
+	}
+
 	resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		Family: aws.String(fmt.Sprintf("%s--%s", app.ID, process.Type)),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
-			t.ContainerDefinition(app, process),
+			containerDefinition,
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("error registering TaskDefinition: %v", err)
 	}
 
-	_, err = m.ecs.RunTask(&ecs.RunTaskInput{
+	runResp, err := m.ecs.RunTask(&ecs.RunTaskInput{
 		TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
 		Cluster:        aws.String(m.Cluster),
 		Count:          aws.Int64(1),
@@ -929,6 +967,98 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 	})
 	if err != nil {
 		return fmt.Errorf("error calling RunTask: %v", err)
+	}
+
+	task := runResp.Tasks[0]
+
+	if attached {
+		defer m.ecs.StopTask(&ecs.StopTaskInput{
+			Cluster: task.ClusterArn,
+			Task:    task.TaskArn,
+		})
+
+		if err := m.exec(ctx, task, process.Command, in, out); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Exec executes a process in a running task.
+func (m *Scheduler) exec(ctx context.Context, task *ecs.Task, cmd []string, in io.Reader, out io.Writer) error {
+	defer tryClose(out)
+
+	descContainerInstanceResp, err := m.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
+		Cluster:            task.ClusterArn,
+		ContainerInstances: []*string{task.ContainerInstanceArn},
+	})
+	if err != nil {
+		return fmt.Errorf("error describing container instance (%s): %v", aws.StringValue(task.ContainerInstanceArn), err)
+	}
+
+	containerInstance := descContainerInstanceResp.ContainerInstances[0]
+	descInstanceResp, err := m.ec2.DescribeInstances(&ec2.DescribeInstancesInput{
+		InstanceIds: []*string{containerInstance.Ec2InstanceId},
+	})
+	if err != nil {
+		return fmt.Errorf("error describing ec2 instance (%s): %v", aws.StringValue(containerInstance.Ec2InstanceId), err)
+	}
+
+	ec2Instance := descInstanceResp.Reservations[0].Instances[0]
+
+	// Wait for the task to start running. It will stay in the
+	// PENDING state while the container is being pulled.
+	if err := m.ecs.WaitUntilTasksRunning(&ecs.DescribeTasksInput{
+		Cluster: task.ClusterArn,
+		Tasks:   []*string{task.TaskArn},
+	}); err != nil {
+		return fmt.Errorf("error waiting for %s to enter RUNNING state: %v", aws.StringValue(task.TaskArn), err)
+	}
+
+	// Open a new connection to the Docker daemon on the EC2
+	// instance where the task is running.
+	d, err := m.NewDockerClient(ec2Instance)
+	if err != nil {
+		return fmt.Errorf("error establishing docker client connection to %s", aws.StringValue(ec2Instance.InstanceId))
+	}
+
+	// Find the container id for the ECS task.
+	containers, err := d.ListContainers(docker.ListContainersOptions{
+		Filters: map[string][]string{
+			"label": []string{
+				fmt.Sprintf("com.amazonaws.ecs.task-arn", aws.StringValue(task.TaskArn)),
+				//fmt.Sprintf("com.amazonaws.ecs.container-name", p)
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error listing containers from attached runs: %v", err)
+	}
+
+	containerID := containers[0].ID
+
+	exec, err := d.CreateExec(docker.CreateExecOptions{
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty:          true,
+		Cmd:          cmd,
+		Container:    containerID,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating exec instance: %v", err)
+	}
+
+	if err := d.StartExec(exec.ID, docker.StartExecOptions{
+		Detach:       false,
+		Tty:          true,
+		InputStream:  in,
+		OutputStream: out,
+		ErrorStream:  out,
+		RawTerminal:  true,
+	}); err != nil {
+		return fmt.Errorf("error starting exec instance (%s): %v", exec.ID, err)
 	}
 
 	return nil
@@ -1209,4 +1339,12 @@ func deploymentsToWatch(stack *cloudformation.Stack) (map[string]*ecsDeployment,
 		}
 	}
 	return ecsDeployments, nil
+}
+
+func tryClose(w io.Writer) error {
+	if w, ok := w.(io.Closer); ok {
+		return w.Close()
+	}
+
+	return nil
 }

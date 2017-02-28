@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/inconshreveable/log15"
@@ -26,7 +27,6 @@ import (
 	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/scheduler/cloudformation"
-	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
@@ -106,14 +106,7 @@ func newScheduler(db *empire.DB, c *Context) (scheduler.Scheduler, error) {
 		return nil, fmt.Errorf("failed to initialize %s scheduler: %v", c.String(FlagScheduler), err)
 	}
 
-	d, err := newDockerClient(c)
-	if err != nil {
-		return nil, err
-	}
-
-	a := docker.RunAttachedWithDocker(s, d)
-	a.ShowAttached = c.Bool(FlagXShowAttached)
-	return a, nil
+	return s, nil
 }
 
 func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Scheduler, error) {
@@ -158,6 +151,14 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 	s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
 	s.Bucket = c.String(FlagS3TemplateBucket)
 	s.Tags = tags
+	s.NewDockerClient = func(ec2Instance *ec2.Instance) (cloudformation.DockerClient, error) {
+		certPath := c.String(FlagDockerCert)
+		host := ec2Instance.PrivateIpAddress
+		if host == nil {
+			return nil, fmt.Errorf("instance %s does not have a private ip address", aws.StringValue(ec2Instance.InstanceId))
+		}
+		return dockerutil.NewDockerClient(*host, certPath)
+	}
 
 	log.Println("Using CloudFormation backend with the following configuration:")
 	log.Println(fmt.Sprintf("  Cluster: %v", s.Cluster))
