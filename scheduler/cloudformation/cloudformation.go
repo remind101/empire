@@ -268,7 +268,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	if opts.NoDNS != nil {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String("DNS"),
-			ParameterValue: aws.String(fmt.Sprintf("%t", *opts.NoDNS)),
+			ParameterValue: aws.String(fmt.Sprintf("%t", !*opts.NoDNS)),
 		})
 	}
 

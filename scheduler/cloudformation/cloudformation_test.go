@@ -131,6 +131,110 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
+func TestScheduler_Submit_NoDNS(t *testing.T) {
+	db := newDB(t)
+	defer db.Close()
+
+	x := new(mockS3Client)
+	c := new(mockCloudFormationClient)
+	e := new(mockECSClient)
+	s := &Scheduler{
+		Template:       template.Must(template.New("t").Parse("{}")),
+		Bucket:         "bucket",
+		Cluster:        "cluster",
+		cloudformation: c,
+		ecs:            e,
+		s3:             x,
+		db:             db,
+		after:          fakeAfter,
+	}
+
+	x.On("PutObject", &s3.PutObjectInput{
+		Bucket:      aws.String("bucket"),
+		Body:        bytes.NewReader([]byte("{}")),
+		Key:         aws.String("/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		ContentType: aws.String("application/json"),
+	}).Return(&s3.PutObjectOutput{}, nil)
+
+	c.On("ValidateTemplate", &cloudformation.ValidateTemplateInput{
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+	}).Return(&cloudformation.ValidateTemplateOutput{}, nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{}, awserr.New("400", "Stack with id acme-inc does not exist", errors.New(""))).Once()
+
+	c.On("CreateStack", &cloudformation.CreateStackInput{
+		StackName:   aws.String("acme-inc"),
+		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
+		Parameters: []*cloudformation.Parameter{
+			{ParameterKey: aws.String("DNS"), ParameterValue: aws.String("false")},
+			{ParameterKey: aws.String("webScale"), ParameterValue: aws.String("1")},
+		},
+		Tags: []*cloudformation.Tag{
+			{Key: aws.String("empire.app.id"), Value: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68")},
+			{Key: aws.String("empire.app.name"), Value: aws.String("acme-inc")},
+		},
+	}).Return(&cloudformation.CreateStackOutput{}, nil)
+
+	c.On("WaitUntilStackCreateComplete", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(nil)
+
+	c.On("DescribeStacks", &cloudformation.DescribeStacksInput{
+		StackName: aws.String("acme-inc"),
+	}).Return(&cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackStatus: aws.String("CREATE_COMPLETE"),
+				Outputs: []*cloudformation.Output{
+					{
+						OutputKey:   aws.String("Services"),
+						OutputValue: aws.String("web=arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+					},
+					{
+						OutputKey:   aws.String("Deployments"),
+						OutputValue: aws.String("web=1"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	e.On("DescribeServices", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("cluster"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web")},
+	}).Return(&ecs.DescribeServicesOutput{
+		Services: []*ecs.Service{
+			{
+				ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678910:service/acme-inc-web"),
+				Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("1"), Status: aws.String("PRIMARY")}},
+			},
+		},
+	}, nil)
+
+	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
+		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name: "acme-inc",
+		Labels: map[string]string{
+			"empire.app.id":   "c9366591-ab68-4d49-a333-95ce5a23df68",
+			"empire.app.name": "acme-inc",
+		},
+		Processes: []*scheduler.Process{
+			{
+				Type:      "web",
+				Instances: 1,
+			},
+		},
+	}, scheduler.NullStatusStream, SubmitOptions{
+		NoDNS: aws.Bool(true),
+	})
+	assert.NoError(t, err)
+
+	c.AssertExpectations(t)
+	x.AssertExpectations(t)
+}
+
 func TestScheduler_Submit_ExistingStack(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
