@@ -1,5 +1,11 @@
 # Changelog
 
+## HEAD (stable-0.11)
+
+**Bugs**
+
+* Fixed a regression from 0.10.1 where migrating apps from the legacy backend to CloudFormation would fail [#1046](https://github.com/remind101/empire/pull/1046)
+
 ## 0.11.0 (2016-08-22)
 
 **Features**
