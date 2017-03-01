@@ -184,6 +184,9 @@ type Scheduler interface {
 
 	// Restart restarts the processes within the App.
 	Restart(context.Context, *App, StatusStream) error
+
+	// Exec starts a new process in an existing Instance.
+	Exec(ctx context.Context, instanceID string, process *Process, in io.Reader, out io.Writer)
 }
 
 // Env merges the App environment with any environment variables provided

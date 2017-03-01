@@ -101,5 +101,11 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 		p.Env[k] = v
 	}
 
-	return r.Scheduler.Run(ctx, a, p, opts.Input, opts.Output)
+	taskID := opts.Task
+	switch taskID {
+	case nil:
+		return r.Scheduler.Run(ctx, a, p, opts.Input, opts.Output)
+	default:
+		return r.Scheduler.Exec(ctx, *taskID, p, opts.Input, opts.Output)
+	}
 }

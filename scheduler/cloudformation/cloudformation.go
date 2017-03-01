@@ -986,6 +986,20 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 }
 
 // Exec executes a process in a running task.
+func (m *Scheduler) Exec(ctx context.Context, taskID string, process *scheduler.Process, in io.Reader, out io.Writer) error {
+	resp, err := m.ecs.DescribeTasks(&ecs.DescribeTasksInput{
+		Cluster: aws.String(m.Cluster),
+		Tasks:   []*string{aws.String(taskID)},
+	})
+	if err != nil {
+		return err
+	}
+
+	task := resp.Tasks[0]
+
+	return m.exec(ctx, task, process.Command, in, out)
+}
+
 func (m *Scheduler) exec(ctx context.Context, task *ecs.Task, cmd []string, in io.Reader, out io.Writer) error {
 	defer tryClose(out)
 

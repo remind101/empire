@@ -1385,65 +1385,7 @@ func TestScheduler_Restart(t *testing.T) {
 	x.AssertExpectations(t)
 }
 
-func TestScheduler_Run_Detached(t *testing.T) {
-	db := newDB(t)
-	defer db.Close()
-
-	e := new(mockECSClient)
-	s := &Scheduler{
-		Template: &fakeTemplate{
-			containerDefinition: &ecs.ContainerDefinition{},
-		},
-		ecs:   e,
-		db:    db,
-		after: fakeAfter,
-	}
-
-	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
-	assert.NoError(t, err)
-
-	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
-		Family: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68--run"),
-		ContainerDefinitions: []*ecs.ContainerDefinition{
-			&ecs.ContainerDefinition{},
-		},
-	}).Return(&ecs.RegisterTaskDefinitionOutput{
-		TaskDefinition: &ecs.TaskDefinition{
-			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
-		},
-	}, nil)
-
-	e.On("RunTask", &ecs.RunTaskInput{
-		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
-		Cluster:        aws.String(""),
-		Count:          aws.Int64(1),
-		StartedBy:      aws.String("c9366591-ab68-4d49-a333-95ce5a23df68"),
-	}).Return(&ecs.RunTaskOutput{
-		Tasks: []*ecs.Task{
-			&ecs.Task{
-				ClusterArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
-				DesiredStatus:        aws.String("RUNNING"),
-				LastStatus:           aws.String("PENDING"),
-				TaskArn:              aws.String("arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb"),
-				TaskDefinitionArn:    aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
-				ContainerInstanceArn: aws.String("arn:aws:ecs:us-east-1:012345678910:container-instance/4c543eed-f83f-47da-b1d8-3d23f1da4c64"),
-			},
-		},
-	}, nil)
-
-	err = s.Run(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, &scheduler.Process{
-		Type:    "run",
-		Command: []string{"bundle exec rake db:migrate"},
-	}, nil, nil)
-	assert.NoError(t, err)
-
-	e.AssertExpectations(t)
-}
-
-func TestScheduler_Run_Attached(t *testing.T) {
+func TestScheduler_Exec(t *testing.T) {
 	db := newDB(t)
 	defer db.Close()
 
@@ -1459,34 +1401,20 @@ func TestScheduler_Run_Attached(t *testing.T) {
 		NewDockerClient: func(ec2Instance *ec2.Instance) (DockerClient, error) {
 			return d, nil
 		},
-		ecs:   e,
-		ec2:   c,
-		db:    db,
-		after: fakeAfter,
+		Cluster: "cluster",
+		ecs:     e,
+		ec2:     c,
+		db:      db,
+		after:   fakeAfter,
 	}
 
 	_, err := db.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, "c9366591-ab68-4d49-a333-95ce5a23df68", "acme-inc")
 	assert.NoError(t, err)
 
-	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
-		Family: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68--run"),
-		ContainerDefinitions: []*ecs.ContainerDefinition{
-			&ecs.ContainerDefinition{
-				Command: []*string{aws.String("tail"), aws.String("-f"), aws.String("/dev/null")},
-			},
-		},
-	}).Return(&ecs.RegisterTaskDefinitionOutput{
-		TaskDefinition: &ecs.TaskDefinition{
-			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
-		},
-	}, nil)
-
-	e.On("RunTask", &ecs.RunTaskInput{
-		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/c9366591-ab68-4d49-a333-95ce5a23df68--run:0"),
-		Cluster:        aws.String(""),
-		Count:          aws.Int64(1),
-		StartedBy:      aws.String("c9366591-ab68-4d49-a333-95ce5a23df68"),
-	}).Return(&ecs.RunTaskOutput{
+	e.On("DescribeTasks", &ecs.DescribeTasksInput{
+		Cluster: aws.String("cluster"),
+		Tasks:   []*string{aws.String("fdf2c302-468c-4e55-b884-5331d816e7fb")},
+	}).Return(&ecs.DescribeTasksOutput{
 		Tasks: []*ecs.Task{
 			&ecs.Task{
 				ClusterArn:           aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
@@ -1544,11 +1472,6 @@ func TestScheduler_Run_Attached(t *testing.T) {
 		},
 	}, nil)
 
-	e.On("StopTask", &ecs.StopTaskInput{
-		Cluster: aws.String("arn:aws:ecs:us-east-1:012345678910:cluster/cluster"),
-		Task:    aws.String("arn:aws:ecs:us-east-1:012345678910:task/fdf2c302-468c-4e55-b884-5331d816e7fb"),
-	}).Return(&ecs.StopTaskOutput{}, nil)
-
 	stdin := strings.NewReader("ls\n")
 	stdout := new(bytes.Buffer)
 	d.On("CreateExec", docker.CreateExecOptions{
@@ -1571,10 +1494,7 @@ func TestScheduler_Run_Attached(t *testing.T) {
 		RawTerminal:  true,
 	}).Return(nil)
 
-	err = s.Run(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, &scheduler.Process{
+	err = s.Exec(context.Background(), "fdf2c302-468c-4e55-b884-5331d816e7fb", &scheduler.Process{
 		Type:    "run",
 		Command: []string{"bundle", "exec", "rake", "db:migrate"},
 	}, stdin, stdout)

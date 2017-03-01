@@ -409,6 +409,11 @@ type RunOpts struct {
 	// Related app.
 	App *App
 
+	// If provided, the process will be started within the existing task.
+	// This can be useful for starting something like GDB to debug another
+	// process.
+	Task *string
+
 	// The command to run.
 	Command Command
 
