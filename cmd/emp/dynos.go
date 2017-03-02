@@ -19,7 +19,7 @@ var cmdDynos = &Command{
 	Alias:    "dynos",
 	NeedsApp: true,
 	Category: "dyno",
-	NumArgs:  1,
+	NumArgs:  0,
 	Short:    "list processes",
 	Long: `
 Lists processes. Shows the name, size, host, state, age, and command.
