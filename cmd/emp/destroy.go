@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 )
 
@@ -13,6 +12,7 @@ var cmdDestroy = &Command{
 	OptionalMessage: true,
 	Category:        "app",
 	Short:           "destroy an app",
+	NumArgs:         1,
 	Long: `
 Destroy destroys a heroku app. There is no going back, so be
 sure you mean it. The command will prompt for confirmation, or
@@ -30,10 +30,7 @@ Example:
 }
 
 func runDestroy(cmd *Command, args []string) {
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 	appname := args[0]
 	message := getMessage()
 

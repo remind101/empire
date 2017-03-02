@@ -1,10 +1,6 @@
 package main
 
-import (
-	"os"
-
-	"github.com/remind101/empire/pkg/heroku"
-)
+import "github.com/remind101/empire/pkg/heroku"
 
 var (
 	process string
@@ -15,6 +11,7 @@ var cmdCertAttach = &Command{
 	Usage:    "cert-attach <aws_cert_arn>",
 	NeedsApp: true,
 	Category: "certs",
+	NumArgs:  0,
 	Short:    "attach a certificate to an app",
 	Long: `
 Attaches an SSL certificate to an applications web process. When using the ECS backend, this will attach an IAM server certificate to the applications ELB.
@@ -37,10 +34,7 @@ func init() {
 }
 
 func runCertAttach(cmd *Command, args []string) {
-	if len(args) == 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 
 	cert := args[0]
 

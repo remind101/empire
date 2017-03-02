@@ -38,6 +38,7 @@ type Command struct {
 	Long     string // `emp help cmd` output
 	Alias    string // Optional alias for the command.
 	Hidden   bool   // Set to true to hide a command from usage information.
+	NumArgs  int    // Expected number of arguments, optional
 }
 
 func (c *Command) PrintUsage() {
@@ -101,6 +102,13 @@ func (c *Command) ListAsExtra() bool {
 
 func (c *Command) ShortExtra() string {
 	return c.Short[:len(c.Short)-len(extra)]
+}
+
+func (c *Command) CheckNumArgs(args []string) {
+	if len(args) != c.NumArgs {
+		c.PrintUsage()
+		os.Exit(2)
+	}
 }
 
 // Running `emp help` will list commands in this order.

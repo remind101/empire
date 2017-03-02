@@ -11,6 +11,7 @@ var cmdAPI = &Command{
 	Usage:    "api <method> <path>",
 	Category: "emp",
 	Short:    "make a single API request" + extra,
+	NumArgs:  2,
 	Long: `
 The api command is a convenient but low-level way to send requests
 to the Heroku API. It sends an HTTP request to the Heroku API
@@ -45,10 +46,7 @@ Examples:
 }
 
 func runAPI(cmd *Command, args []string) {
-	if len(args) != 2 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 	method := strings.ToUpper(args[0])
 	var body io.Reader
 	if method == "PATCH" || method == "PUT" || method == "POST" {

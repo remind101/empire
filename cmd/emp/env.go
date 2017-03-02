@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+
 	"github.com/joho/godotenv"
 )
 
@@ -14,15 +15,13 @@ var cmdEnv = &Command{
 	Usage:    "env",
 	NeedsApp: true,
 	Category: "config",
+	NumArgs:  0,
 	Short:    "list env vars",
 	Long:     `Show all env vars.`,
 }
 
 func runEnv(cmd *Command, args []string) {
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 	config, err := client.ConfigVarInfo(mustApp())
 	must(err)
 	var configKeys []string
@@ -40,6 +39,7 @@ var cmdGet = &Command{
 	Usage:    "get <name>",
 	NeedsApp: true,
 	Category: "config",
+	NumArgs:  1,
 	Short:    "get env var" + extra,
 	Long: `
 Get the value of an env var.
@@ -52,10 +52,7 @@ Example:
 }
 
 func runGet(cmd *Command, args []string) {
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 	config, err := client.ConfigVarInfo(mustApp())
 	must(err)
 	value, found := config[args[0]]
@@ -142,6 +139,7 @@ var cmdEnvLoad = &Command{
 	NeedsApp:        true,
 	OptionalMessage: true,
 	Category:        "config",
+	NumArgs:         1,
 	Short:           "load env file",
 	Long: `
 Loads environment variables from a file.
@@ -156,10 +154,7 @@ Example:
 func runEnvLoad(cmd *Command, args []string) {
 	appname := mustApp()
 	message := getMessage()
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 
 	parsedVars, err := godotenv.Read(args[0])
 	must(err)

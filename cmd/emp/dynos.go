@@ -19,6 +19,7 @@ var cmdDynos = &Command{
 	Alias:    "dynos",
 	NeedsApp: true,
 	Category: "dyno",
+	NumArgs:  1,
 	Short:    "list processes",
 	Long: `
 Lists processes. Shows the name, size, host, state, age, and command.
@@ -35,10 +36,7 @@ Examples:
 func runDynos(cmd *Command, args []string) {
 	w := tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
 	defer w.Flush()
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.CheckNumArgs(args)
 
 	listDynos(w)
 }
