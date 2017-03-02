@@ -305,3 +305,14 @@ func maybeMessage(action func(cmd *Command, args []string)) func(cmd *Command, a
 		action(cmd, args)
 	}
 }
+
+func mustConfirmAndMessageRequired(action func(cmd *Command, args []string), warning func(args []string) (warning, desired string)) func(cmd *Command, args []string) {
+	return func(cmd *Command, args []string) {
+		retry := func() {
+			action(cmd, args)
+		}
+		defer retryMessageRequired(retry, nil)
+		mustConfirm(warning(args))
+		action(cmd, args)
+	}
+}

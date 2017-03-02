@@ -7,7 +7,7 @@ import (
 )
 
 var cmdDestroy = &Command{
-	Run:             maybeMessage(runDestroy),
+	Run:             mustConfirmAndMessageRequired(runDestroy, warningMessage),
 	Usage:           "destroy <name>",
 	OptionalMessage: true,
 	Category:        "app",
@@ -34,9 +34,7 @@ func runDestroy(cmd *Command, args []string) {
 	appname := args[0]
 	message := getMessage()
 
-	warning := fmt.Sprintf("This will destroy %s and its add-ons. Please type %q to continue:", appname, appname)
-	mustConfirm(warning, appname)
-
+	appname := args[0]
 	must(client.AppDelete(appname, message))
 	log.Printf("Destroyed %s.", appname)
 	remotes, _ := gitRemotes()
@@ -45,4 +43,11 @@ func runDestroy(cmd *Command, args []string) {
 			exec.Command("git", "remote", "rm", remote).Run()
 		}
 	}
+}
+
+func warningMessage(args []string) (warning, desired string) {
+	appname := args[0]
+	warning = fmt.Sprintf("This will destroy %s and its add-ons. Please type %q to continue:", appname, appname)
+	desired = appname
+	return
 }
