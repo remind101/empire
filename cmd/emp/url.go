@@ -13,7 +13,7 @@ var cmdURL = &Command{
 }
 
 func runURL(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	app, err := client.AppInfo(mustApp())
 	must(err)

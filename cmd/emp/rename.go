@@ -22,7 +22,7 @@ Example:
 }
 
 func runRename(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	oldname, newname := args[0], args[1]
 	app, err := client.AppUpdate(oldname, &heroku.AppUpdateOpts{Name: &newname})

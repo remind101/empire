@@ -36,7 +36,7 @@ Examples:
 func runDynos(cmd *Command, args []string) {
 	w := tabwriter.NewWriter(os.Stdout, 1, 2, 2, ' ', 0)
 	defer w.Flush()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	listDynos(w)
 }

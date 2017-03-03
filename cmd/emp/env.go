@@ -21,7 +21,7 @@ var cmdEnv = &Command{
 }
 
 func runEnv(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	config, err := client.ConfigVarInfo(mustApp())
 	must(err)
 	var configKeys []string
@@ -52,7 +52,7 @@ Example:
 }
 
 func runGet(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	config, err := client.ConfigVarInfo(mustApp())
 	must(err)
 	value, found := config[args[0]]
@@ -154,7 +154,7 @@ Example:
 func runEnvLoad(cmd *Command, args []string) {
 	appname := mustApp()
 	message := getMessage()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	parsedVars, err := godotenv.Read(args[0])
 	must(err)

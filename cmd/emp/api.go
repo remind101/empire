@@ -46,7 +46,7 @@ Examples:
 }
 
 func runAPI(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	method := strings.ToUpper(args[0])
 	var body io.Reader
 	if method == "PATCH" || method == "PUT" || method == "POST" {

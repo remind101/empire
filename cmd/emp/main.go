@@ -104,7 +104,7 @@ func (c *Command) ShortExtra() string {
 	return c.Short[:len(c.Short)-len(extra)]
 }
 
-func (c *Command) CheckNumArgs(args []string) {
+func (c *Command) AssertNumArgsCorrect(args []string) {
 	if len(args) != c.NumArgs {
 		c.PrintUsage()
 		os.Exit(2)

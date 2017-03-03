@@ -32,7 +32,7 @@ func runDomains(cmd *Command, args []string) {
 	defer w.Flush()
 
 	appname := mustApp()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	domains, err := client.DomainList(appname, &heroku.ListRange{
 		Field: "hostname",
 		Max:   1000,
@@ -55,7 +55,7 @@ var cmdDomainAdd = &Command{
 
 func runDomainAdd(cmd *Command, args []string) {
 	appname := mustApp()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	domain := args[0]
 	_, err := client.DomainCreate(appname, domain)
 	must(err)
@@ -73,7 +73,7 @@ var cmdDomainRemove = &Command{
 
 func runDomainRemove(cmd *Command, args []string) {
 	appname := mustApp()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	domain := args[0]
 	must(client.DomainDelete(appname, domain))
 	log.Printf("Removed %s from %s.", domain, appname)

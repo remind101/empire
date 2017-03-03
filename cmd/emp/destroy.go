@@ -30,7 +30,7 @@ Example:
 }
 
 func runDestroy(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 	appname := args[0]
 	message := getMessage()
 

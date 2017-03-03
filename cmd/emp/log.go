@@ -40,7 +40,7 @@ type PostLogForm struct {
 }
 
 func runLog(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	var d int64
 	if duration != "" {

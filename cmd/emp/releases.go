@@ -183,7 +183,7 @@ Examples:
 
 func runReleaseInfo(cmd *Command, args []string) {
 	appname := mustApp()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	ver := strings.TrimPrefix(args[0], "v")
 	rel, err := client.ReleaseInfo(appname, ver)
@@ -222,7 +222,7 @@ Examples:
 func runRollback(cmd *Command, args []string) {
 	appname := mustApp()
 	message := getMessage()
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	ver := strings.TrimPrefix(args[0], "v")
 	rollbackSafetyCheck(ver, appname)

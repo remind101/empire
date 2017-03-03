@@ -32,7 +32,7 @@ Example:
 }
 
 func runAuthorize(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	if os.Getenv("HEROKU_AGENT_SOCK") == "" {
 		printFatal("Authorize must be used with heroku-agent; please set " +
@@ -106,7 +106,7 @@ Example:
 }
 
 func runLogin(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	oldEmail := client.Username
 	var email string
@@ -218,7 +218,7 @@ Example:
 }
 
 func runLogout(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	u, err := url.Parse(client.URL)
 	if err != nil {

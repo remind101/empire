@@ -34,7 +34,7 @@ func init() {
 }
 
 func runCertAttach(cmd *Command, args []string) {
-	cmd.CheckNumArgs(args)
+	cmd.AssertNumArgsCorrect(args)
 
 	cert := args[0]
 
