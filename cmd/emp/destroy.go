@@ -31,10 +31,7 @@ Example:
 
 func confirmDestroy(action func(cmd *Command, args []string)) func(cmd *Command, args []string) {
 	return func(cmd *Command, args []string) {
-		if len(args) != 1 {
-			cmd.PrintUsage()
-			os.Exit(2)
-		}
+		cmd.AssertNumArgsCorrect(args)
 
 		appname := args[0]
 		warning := fmt.Sprintf("This will destroy %s and its add-ons. Please type %q to continue:", appname, appname)
