@@ -13,6 +13,7 @@ var cmdLog = &Command{
 	Usage:    "log [-d]",
 	NeedsApp: true,
 	Category: "app",
+	NumArgs:  0,
 	Short:    "stream app log lines",
 	Long: `
 Log prints the streaming application log.
@@ -39,10 +40,7 @@ type PostLogForm struct {
 }
 
 func runLog(cmd *Command, args []string) {
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
 
 	var d int64
 	if duration != "" {

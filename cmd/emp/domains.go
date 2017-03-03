@@ -14,6 +14,7 @@ var cmdDomains = &Command{
 	Usage:    "domains",
 	NeedsApp: true,
 	Category: "domain",
+	NumArgs:  0,
 	Short:    "list domains",
 	Long: `
 Lists domains.
@@ -31,10 +32,7 @@ func runDomains(cmd *Command, args []string) {
 	defer w.Flush()
 
 	appname := mustApp()
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
 	domains, err := client.DomainList(appname, &heroku.ListRange{
 		Field: "hostname",
 		Max:   1000,
@@ -51,15 +49,13 @@ var cmdDomainAdd = &Command{
 	Usage:    "domain-add <domain>",
 	NeedsApp: true,
 	Category: "domain",
+	NumArgs:  1,
 	Short:    "add a domain",
 }
 
 func runDomainAdd(cmd *Command, args []string) {
 	appname := mustApp()
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
 	domain := args[0]
 	_, err := client.DomainCreate(appname, domain)
 	must(err)
@@ -71,15 +67,13 @@ var cmdDomainRemove = &Command{
 	Usage:    "domain-remove <domain>",
 	NeedsApp: true,
 	Category: "domain",
+	NumArgs:  1,
 	Short:    "remove a domain",
 }
 
 func runDomainRemove(cmd *Command, args []string) {
 	appname := mustApp()
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
 	domain := args[0]
 	must(client.DomainDelete(appname, domain))
 	log.Printf("Removed %s from %s.", domain, appname)

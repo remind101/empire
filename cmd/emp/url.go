@@ -1,24 +1,20 @@
 package main
 
-import (
-	"fmt"
-	"os"
-)
+import "fmt"
 
 var cmdURL = &Command{
 	Run:      runURL,
 	Usage:    "url",
 	NeedsApp: true,
 	Category: "app",
+	NumArgs:  0,
 	Short:    "show app url" + extra,
 	Long:     `Prints the web URL for the app.`,
 }
 
 func runURL(cmd *Command, args []string) {
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
+
 	app, err := client.AppInfo(mustApp())
 	must(err)
 	fmt.Println(app.WebURL)

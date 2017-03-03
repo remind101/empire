@@ -164,6 +164,7 @@ var cmdReleaseInfo = &Command{
 	Usage:    "release-info <version>",
 	NeedsApp: true,
 	Category: "release",
+	NumArgs:  1,
 	Short:    "show release info",
 	Long: `
 release-info shows detailed information about a release.
@@ -182,10 +183,8 @@ Examples:
 
 func runReleaseInfo(cmd *Command, args []string) {
 	appname := mustApp()
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
+
 	ver := strings.TrimPrefix(args[0], "v")
 	rel, err := client.ReleaseInfo(appname, ver)
 	must(err)
@@ -206,6 +205,7 @@ var cmdRollback = &Command{
 	NeedsApp:        true,
 	OptionalMessage: true,
 	Category:        "release",
+	NumArgs:         1,
 	Short:           "roll back to a previous release",
 	Long: `
 Rollback re-releases an app at an older version. This action
@@ -222,10 +222,8 @@ Examples:
 func runRollback(cmd *Command, args []string) {
 	appname := mustApp()
 	message := getMessage()
-	if len(args) != 1 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
+
 	ver := strings.TrimPrefix(args[0], "v")
 	rollbackSafetyCheck(ver, appname)
 

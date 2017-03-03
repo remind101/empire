@@ -16,6 +16,7 @@ var cmdAuthorize = &Command{
 	Run:      runAuthorize,
 	Usage:    "authorize",
 	Category: "emp",
+	NumArgs:  0,
 	Short:    "procure a temporary privileged token" + extra,
 	Long: `
 Have heroku-agent procure and store a temporary privileged token
@@ -31,10 +32,7 @@ Example:
 }
 
 func runAuthorize(cmd *Command, args []string) {
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
 
 	if os.Getenv("HEROKU_AGENT_SOCK") == "" {
 		printFatal("Authorize must be used with heroku-agent; please set " +
@@ -91,6 +89,7 @@ var cmdLogin = &Command{
 	Run:      runLogin,
 	Usage:    "login",
 	Category: "emp",
+	NumArgs:  0,
 	Short:    "log in to your Heroku account" + extra,
 	Long: `
 Log in with your Heroku credentials. Input is accepted by typing
@@ -107,10 +106,7 @@ Example:
 }
 
 func runLogin(cmd *Command, args []string) {
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
 
 	oldEmail := client.Username
 	var email string
@@ -208,6 +204,7 @@ var cmdLogout = &Command{
 	Run:      runLogout,
 	Usage:    "logout",
 	Category: "emp",
+	NumArgs:  0,
 	Short:    "log out of your Heroku account" + extra,
 	Long: `
 Log out of your Heroku account and remove credentials from
@@ -221,10 +218,8 @@ Example:
 }
 
 func runLogout(cmd *Command, args []string) {
-	if len(args) != 0 {
-		cmd.PrintUsage()
-		os.Exit(2)
-	}
+	cmd.AssertNumArgsCorrect(args)
+
 	u, err := url.Parse(client.URL)
 	if err != nil {
 		printFatal("couldn't parse client URL: " + err.Error())
