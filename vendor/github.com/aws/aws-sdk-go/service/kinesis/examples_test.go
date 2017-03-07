@@ -16,11 +16,7 @@ var _ time.Duration
 var _ bytes.Buffer
 
 func ExampleKinesis_AddTagsToStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -45,11 +41,7 @@ func ExampleKinesis_AddTagsToStream() {
 }
 
 func ExampleKinesis_CreateStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -71,11 +63,7 @@ func ExampleKinesis_CreateStream() {
 }
 
 func ExampleKinesis_DecreaseStreamRetentionPeriod() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -97,11 +85,7 @@ func ExampleKinesis_DecreaseStreamRetentionPeriod() {
 }
 
 func ExampleKinesis_DeleteStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -121,12 +105,27 @@ func ExampleKinesis_DeleteStream() {
 	fmt.Println(resp)
 }
 
-func ExampleKinesis_DescribeStream() {
-	sess, err := session.NewSession()
+func ExampleKinesis_DescribeLimits() {
+	sess := session.Must(session.NewSession())
+
+	svc := kinesis.New(sess)
+
+	var params *kinesis.DescribeLimitsInput
+	resp, err := svc.DescribeLimits(params)
+
 	if err != nil {
-		fmt.Println("failed to create session,", err)
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
 		return
 	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleKinesis_DescribeStream() {
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -149,11 +148,7 @@ func ExampleKinesis_DescribeStream() {
 }
 
 func ExampleKinesis_DisableEnhancedMonitoring() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -178,11 +173,7 @@ func ExampleKinesis_DisableEnhancedMonitoring() {
 }
 
 func ExampleKinesis_EnableEnhancedMonitoring() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -207,11 +198,7 @@ func ExampleKinesis_EnableEnhancedMonitoring() {
 }
 
 func ExampleKinesis_GetRecords() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -233,11 +220,7 @@ func ExampleKinesis_GetRecords() {
 }
 
 func ExampleKinesis_GetShardIterator() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -262,11 +245,7 @@ func ExampleKinesis_GetShardIterator() {
 }
 
 func ExampleKinesis_IncreaseStreamRetentionPeriod() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -288,11 +267,7 @@ func ExampleKinesis_IncreaseStreamRetentionPeriod() {
 }
 
 func ExampleKinesis_ListStreams() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -314,11 +289,7 @@ func ExampleKinesis_ListStreams() {
 }
 
 func ExampleKinesis_ListTagsForStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -341,11 +312,7 @@ func ExampleKinesis_ListTagsForStream() {
 }
 
 func ExampleKinesis_MergeShards() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -368,11 +335,7 @@ func ExampleKinesis_MergeShards() {
 }
 
 func ExampleKinesis_PutRecord() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -397,11 +360,7 @@ func ExampleKinesis_PutRecord() {
 }
 
 func ExampleKinesis_PutRecords() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -430,11 +389,7 @@ func ExampleKinesis_PutRecords() {
 }
 
 func ExampleKinesis_RemoveTagsFromStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -459,11 +414,7 @@ func ExampleKinesis_RemoveTagsFromStream() {
 }
 
 func ExampleKinesis_SplitShard() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := kinesis.New(sess)
 
@@ -473,6 +424,29 @@ func ExampleKinesis_SplitShard() {
 		StreamName:         aws.String("StreamName"), // Required
 	}
 	resp, err := svc.SplitShard(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleKinesis_UpdateShardCount() {
+	sess := session.Must(session.NewSession())
+
+	svc := kinesis.New(sess)
+
+	params := &kinesis.UpdateShardCountInput{
+		ScalingType:      aws.String("ScalingType"), // Required
+		StreamName:       aws.String("StreamName"),  // Required
+		TargetShardCount: aws.Int64(1),              // Required
+	}
+	resp, err := svc.UpdateShardCount(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and

@@ -16,11 +16,7 @@ var _ time.Duration
 var _ bytes.Buffer
 
 func ExampleECR_BatchCheckLayerAvailability() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -46,11 +42,7 @@ func ExampleECR_BatchCheckLayerAvailability() {
 }
 
 func ExampleECR_BatchDeleteImage() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -79,11 +71,7 @@ func ExampleECR_BatchDeleteImage() {
 }
 
 func ExampleECR_BatchGetImage() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -96,7 +84,11 @@ func ExampleECR_BatchGetImage() {
 			// More values...
 		},
 		RepositoryName: aws.String("RepositoryName"), // Required
-		RegistryId:     aws.String("RegistryId"),
+		AcceptedMediaTypes: []*string{
+			aws.String("MediaType"), // Required
+			// More values...
+		},
+		RegistryId: aws.String("RegistryId"),
 	}
 	resp, err := svc.BatchGetImage(params)
 
@@ -112,11 +104,7 @@ func ExampleECR_BatchGetImage() {
 }
 
 func ExampleECR_CompleteLayerUpload() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -143,11 +131,7 @@ func ExampleECR_CompleteLayerUpload() {
 }
 
 func ExampleECR_CreateRepository() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -168,11 +152,7 @@ func ExampleECR_CreateRepository() {
 }
 
 func ExampleECR_DeleteRepository() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -195,11 +175,7 @@ func ExampleECR_DeleteRepository() {
 }
 
 func ExampleECR_DeleteRepositoryPolicy() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -220,12 +196,42 @@ func ExampleECR_DeleteRepositoryPolicy() {
 	fmt.Println(resp)
 }
 
-func ExampleECR_DescribeRepositories() {
-	sess, err := session.NewSession()
+func ExampleECR_DescribeImages() {
+	sess := session.Must(session.NewSession())
+
+	svc := ecr.New(sess)
+
+	params := &ecr.DescribeImagesInput{
+		RepositoryName: aws.String("RepositoryName"), // Required
+		Filter: &ecr.DescribeImagesFilter{
+			TagStatus: aws.String("TagStatus"),
+		},
+		ImageIds: []*ecr.ImageIdentifier{
+			{ // Required
+				ImageDigest: aws.String("ImageDigest"),
+				ImageTag:    aws.String("ImageTag"),
+			},
+			// More values...
+		},
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("NextToken"),
+		RegistryId: aws.String("RegistryId"),
+	}
+	resp, err := svc.DescribeImages(params)
+
 	if err != nil {
-		fmt.Println("failed to create session,", err)
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
 		return
 	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleECR_DescribeRepositories() {
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -252,11 +258,7 @@ func ExampleECR_DescribeRepositories() {
 }
 
 func ExampleECR_GetAuthorizationToken() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -280,11 +282,7 @@ func ExampleECR_GetAuthorizationToken() {
 }
 
 func ExampleECR_GetDownloadUrlForLayer() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -307,11 +305,7 @@ func ExampleECR_GetDownloadUrlForLayer() {
 }
 
 func ExampleECR_GetRepositoryPolicy() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -333,11 +327,7 @@ func ExampleECR_GetRepositoryPolicy() {
 }
 
 func ExampleECR_InitiateLayerUpload() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -359,11 +349,7 @@ func ExampleECR_InitiateLayerUpload() {
 }
 
 func ExampleECR_ListImages() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -390,17 +376,14 @@ func ExampleECR_ListImages() {
 }
 
 func ExampleECR_PutImage() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
 	params := &ecr.PutImageInput{
 		ImageManifest:  aws.String("ImageManifest"),  // Required
 		RepositoryName: aws.String("RepositoryName"), // Required
+		ImageTag:       aws.String("ImageTag"),
 		RegistryId:     aws.String("RegistryId"),
 	}
 	resp, err := svc.PutImage(params)
@@ -417,11 +400,7 @@ func ExampleECR_PutImage() {
 }
 
 func ExampleECR_SetRepositoryPolicy() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 
@@ -445,11 +424,7 @@ func ExampleECR_SetRepositoryPolicy() {
 }
 
 func ExampleECR_UploadLayerPart() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := ecr.New(sess)
 

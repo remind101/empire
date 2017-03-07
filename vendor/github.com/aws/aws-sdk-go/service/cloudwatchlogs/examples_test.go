@@ -16,11 +16,7 @@ var _ time.Duration
 var _ bytes.Buffer
 
 func ExampleCloudWatchLogs_CancelExportTask() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -41,11 +37,7 @@ func ExampleCloudWatchLogs_CancelExportTask() {
 }
 
 func ExampleCloudWatchLogs_CreateExportTask() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -72,16 +64,16 @@ func ExampleCloudWatchLogs_CreateExportTask() {
 }
 
 func ExampleCloudWatchLogs_CreateLogGroup() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
 	params := &cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: aws.String("LogGroupName"), // Required
+		Tags: map[string]*string{
+			"Key": aws.String("TagValue"), // Required
+			// More values...
+		},
 	}
 	resp, err := svc.CreateLogGroup(params)
 
@@ -97,11 +89,7 @@ func ExampleCloudWatchLogs_CreateLogGroup() {
 }
 
 func ExampleCloudWatchLogs_CreateLogStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -123,11 +111,7 @@ func ExampleCloudWatchLogs_CreateLogStream() {
 }
 
 func ExampleCloudWatchLogs_DeleteDestination() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -148,11 +132,7 @@ func ExampleCloudWatchLogs_DeleteDestination() {
 }
 
 func ExampleCloudWatchLogs_DeleteLogGroup() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -173,11 +153,7 @@ func ExampleCloudWatchLogs_DeleteLogGroup() {
 }
 
 func ExampleCloudWatchLogs_DeleteLogStream() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -199,11 +175,7 @@ func ExampleCloudWatchLogs_DeleteLogStream() {
 }
 
 func ExampleCloudWatchLogs_DeleteMetricFilter() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -225,11 +197,7 @@ func ExampleCloudWatchLogs_DeleteMetricFilter() {
 }
 
 func ExampleCloudWatchLogs_DeleteRetentionPolicy() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -250,11 +218,7 @@ func ExampleCloudWatchLogs_DeleteRetentionPolicy() {
 }
 
 func ExampleCloudWatchLogs_DeleteSubscriptionFilter() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -276,11 +240,7 @@ func ExampleCloudWatchLogs_DeleteSubscriptionFilter() {
 }
 
 func ExampleCloudWatchLogs_DescribeDestinations() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -303,11 +263,7 @@ func ExampleCloudWatchLogs_DescribeDestinations() {
 }
 
 func ExampleCloudWatchLogs_DescribeExportTasks() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -331,11 +287,7 @@ func ExampleCloudWatchLogs_DescribeExportTasks() {
 }
 
 func ExampleCloudWatchLogs_DescribeLogGroups() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -358,11 +310,7 @@ func ExampleCloudWatchLogs_DescribeLogGroups() {
 }
 
 func ExampleCloudWatchLogs_DescribeLogStreams() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -388,18 +336,16 @@ func ExampleCloudWatchLogs_DescribeLogStreams() {
 }
 
 func ExampleCloudWatchLogs_DescribeMetricFilters() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
 	params := &cloudwatchlogs.DescribeMetricFiltersInput{
-		LogGroupName:     aws.String("LogGroupName"), // Required
 		FilterNamePrefix: aws.String("FilterName"),
 		Limit:            aws.Int64(1),
+		LogGroupName:     aws.String("LogGroupName"),
+		MetricName:       aws.String("MetricName"),
+		MetricNamespace:  aws.String("MetricNamespace"),
 		NextToken:        aws.String("NextToken"),
 	}
 	resp, err := svc.DescribeMetricFilters(params)
@@ -416,11 +362,7 @@ func ExampleCloudWatchLogs_DescribeMetricFilters() {
 }
 
 func ExampleCloudWatchLogs_DescribeSubscriptionFilters() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -444,11 +386,7 @@ func ExampleCloudWatchLogs_DescribeSubscriptionFilters() {
 }
 
 func ExampleCloudWatchLogs_FilterLogEvents() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -479,11 +417,7 @@ func ExampleCloudWatchLogs_FilterLogEvents() {
 }
 
 func ExampleCloudWatchLogs_GetLogEvents() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -509,12 +443,29 @@ func ExampleCloudWatchLogs_GetLogEvents() {
 	fmt.Println(resp)
 }
 
-func ExampleCloudWatchLogs_PutDestination() {
-	sess, err := session.NewSession()
+func ExampleCloudWatchLogs_ListTagsLogGroup() {
+	sess := session.Must(session.NewSession())
+
+	svc := cloudwatchlogs.New(sess)
+
+	params := &cloudwatchlogs.ListTagsLogGroupInput{
+		LogGroupName: aws.String("LogGroupName"), // Required
+	}
+	resp, err := svc.ListTagsLogGroup(params)
+
 	if err != nil {
-		fmt.Println("failed to create session,", err)
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
 		return
 	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudWatchLogs_PutDestination() {
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -537,11 +488,7 @@ func ExampleCloudWatchLogs_PutDestination() {
 }
 
 func ExampleCloudWatchLogs_PutDestinationPolicy() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -563,11 +510,7 @@ func ExampleCloudWatchLogs_PutDestinationPolicy() {
 }
 
 func ExampleCloudWatchLogs_PutLogEvents() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -597,11 +540,7 @@ func ExampleCloudWatchLogs_PutLogEvents() {
 }
 
 func ExampleCloudWatchLogs_PutMetricFilter() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -633,11 +572,7 @@ func ExampleCloudWatchLogs_PutMetricFilter() {
 }
 
 func ExampleCloudWatchLogs_PutRetentionPolicy() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -659,11 +594,7 @@ func ExampleCloudWatchLogs_PutRetentionPolicy() {
 }
 
 func ExampleCloudWatchLogs_PutSubscriptionFilter() {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println("failed to create session,", err)
-		return
-	}
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -672,6 +603,7 @@ func ExampleCloudWatchLogs_PutSubscriptionFilter() {
 		FilterName:     aws.String("FilterName"),     // Required
 		FilterPattern:  aws.String("FilterPattern"),  // Required
 		LogGroupName:   aws.String("LogGroupName"),   // Required
+		Distribution:   aws.String("Distribution"),
 		RoleArn:        aws.String("RoleArn"),
 	}
 	resp, err := svc.PutSubscriptionFilter(params)
@@ -687,12 +619,33 @@ func ExampleCloudWatchLogs_PutSubscriptionFilter() {
 	fmt.Println(resp)
 }
 
-func ExampleCloudWatchLogs_TestMetricFilter() {
-	sess, err := session.NewSession()
+func ExampleCloudWatchLogs_TagLogGroup() {
+	sess := session.Must(session.NewSession())
+
+	svc := cloudwatchlogs.New(sess)
+
+	params := &cloudwatchlogs.TagLogGroupInput{
+		LogGroupName: aws.String("LogGroupName"), // Required
+		Tags: map[string]*string{ // Required
+			"Key": aws.String("TagValue"), // Required
+			// More values...
+		},
+	}
+	resp, err := svc.TagLogGroup(params)
+
 	if err != nil {
-		fmt.Println("failed to create session,", err)
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
 		return
 	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudWatchLogs_TestMetricFilter() {
+	sess := session.Must(session.NewSession())
 
 	svc := cloudwatchlogs.New(sess)
 
@@ -704,6 +657,31 @@ func ExampleCloudWatchLogs_TestMetricFilter() {
 		},
 	}
 	resp, err := svc.TestMetricFilter(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudWatchLogs_UntagLogGroup() {
+	sess := session.Must(session.NewSession())
+
+	svc := cloudwatchlogs.New(sess)
+
+	params := &cloudwatchlogs.UntagLogGroupInput{
+		LogGroupName: aws.String("LogGroupName"), // Required
+		Tags: []*string{ // Required
+			aws.String("TagKey"), // Required
+			// More values...
+		},
+	}
+	resp, err := svc.UntagLogGroup(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
