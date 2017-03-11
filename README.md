@@ -72,97 +72,9 @@ set -e
 exec acme-inc server -port=$PORT
 ```
 
-## Tests
+## Contributing
 
-Unit tests live alongside each go file as `_test.go`.
-
-There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [emp][emp] command.
-
-To get started, run:
-
-```console
-$ make bootstrap
-```
-
-The bootstrap command assumes you have a running postgres server. It will create a database called `empire`
-using the postgres client connection defaults.
-
-To run the tests:
-
-```console
-$ make test
-```
-
-**NOTE**: You may need to install libxmlsec1 for the tests to run. You can do this with:
-
-```console
-$ brew install libxmlsec1 libxml2 pkg-config
-```
-
-## Development
-
-If you want to contribute to Empire, you may end up wanting to run a local instance against an ECS cluster. Doing this is relatively easy:
-
-1. Ensure that you have the AWS CLI installed and configured.
-2. Ensure that you accepted the terms and conditions for the official ECS AMI:
-
-   https://aws.amazon.com/marketplace/ordering?productId=4ce33fd9-63ff-4f35-8d3a-939b641f1931&ref_=dtl_psb_continue&region=us-east-1
-
-   Also check that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./docs/cloudformation.json): https://github.com/remind101/empire/blob/master/docs/cloudformation.json#L20
-
-3. Run docker-machine and export the environment variables so Empire can connect:
-
-   ```console
-   $ docker-machine start default
-   $ eval "$(docker-machine env default)"
-   ```
-4. Run the bootstrap script, which will create a cloudformation stack, ecs cluster and populate a .env file:
-
-   ```console
-   $ ./bin/bootstrap
-   ```
-5. Run Empire with [docker-compose](https://docs.docker.com/compose/):
-
-   ```console
-   $ docker-compose up db # Only need to do this the first time, so that the db can initialize.
-   $ docker-compose up
-   ```
-
-   **NOTE**: You might need to run this twice the first time you start it up, to give the postgres container time to initialize.
-6. [Install the emp CLI](./cmd/emp#installation).
-
-Empire will be available at `http://$(docker-machine ip default):8080` and you can point the CLI there.
-
-```console
-$ export EMPIRE_API_URL=http://$(docker-machine ip default):8080
-$ emp deploy remind101/acme-inc
-```
-
-### Vendoring
-
-Empire follows Go's convention of vendoring third party dependencies. We use the Go 1.5+ [vendor expirement](https://blog.gopheracademy.com/advent-2015/vendor-folder/), and manage the `./vendor/` directory via [govendor](https://github.com/kardianos/govendor).
-
-When you add a new dependency, be sure to vendor it with govendor:
-
-```console
-$ govendor add <package>
-```
-
-### Releasing
-
-Perform the following steps when releasing a new version:
-
-1. Create a new branch `release-VERSION`.
-2. Bump the version number with `make bump` (this will add a commit to the branch).
-3. Change `HEAD` -> `VERSION` in [CHANGELOG.md](./CHANGELOG.md).
-4. Open a PR to review.
-5. Once merged into master, wait for the Conveyor build to complete.
-6. Finally, tag the commit with the version as `v<VERSION>`. This will trigger CircleCI to:
-   * Tag the image in Docker Hub with the version.
-   * Build Linux and OS X versions of the CLI and Daemon.
-   * Create a new GitHub Release and upload the artifacts.
-7. Update the new GitHub Release to be human readable.
-8. Open a PR against Homebrew to update the emp CLI: https://github.com/Homebrew/homebrew-core/blob/master/Formula/emp.rb
+Pull requests are more than welcome! For help with setting up a development environment, see [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Community
 
