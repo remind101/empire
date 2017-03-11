@@ -1,6 +1,6 @@
 # Changelog
 
-## HEAD (stable-0.11)
+## 0.11.1 (2017-03-10)
 
 **Bugs**
 
