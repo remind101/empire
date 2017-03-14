@@ -2,6 +2,10 @@
 
 ## HEAD
 
+**Features**
+
+* Empire now supports a new (experimental) feature to enable attached processes to be ran with ECS. [#1043](https://github.com/remind101/empire/pull/1043)
+
 ## 0.12.0 (2017-03-10)
 
 **Features**

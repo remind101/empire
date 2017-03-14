@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/inconshreveable/log15"
@@ -106,6 +107,12 @@ func newScheduler(db *empire.DB, c *Context) (scheduler.Scheduler, error) {
 		return nil, fmt.Errorf("failed to initialize %s scheduler: %v", c.String(FlagScheduler), err)
 	}
 
+	// If ECS tasks support being attached to with a TTY + stdin, let the
+	// CloudFormation backend run attached processes.
+	if c.Bool(FlagECSAttachedEnabled) {
+		return s, nil
+	}
+
 	d, err := newDockerClient(c)
 	if err != nil {
 		return nil, err
@@ -158,6 +165,23 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 	s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
 	s.Bucket = c.String(FlagS3TemplateBucket)
 	s.Tags = tags
+	s.NewDockerClient = func(ec2Instance *ec2.Instance) (cloudformation.DockerClient, error) {
+		certPath := c.String(FlagECSDockerCert)
+		host := ec2Instance.PrivateIpAddress
+		if host == nil {
+			return nil, fmt.Errorf("instance %s does not have a private ip address", aws.StringValue(ec2Instance.InstanceId))
+		}
+		port := "2376"
+		if certPath == "" {
+			port = "2375"
+		}
+		c, err := dockerutil.NewDockerClient(fmt.Sprintf("tcp://%s:%s", *host, port), certPath)
+		if err != nil {
+			return c, err
+		}
+		// Ping the host, just to make sure we can connect.
+		return c, c.Ping()
+	}
 
 	log.Println("Using CloudFormation backend with the following configuration:")
 	log.Println(fmt.Sprintf("  Cluster: %v", s.Cluster))
@@ -202,14 +226,14 @@ func prefixedStackName(prefix string) *template.Template {
 // DockerClient ========================
 
 func newDockerClient(c *Context) (*dockerutil.Client, error) {
-	socket := c.String(FlagDockerSocket)
+	host := c.String(FlagDockerHost)
 	certPath := c.String(FlagDockerCert)
 	authProvider, err := newAuthProvider(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return dockerutil.NewClient(authProvider, socket, certPath)
+	return dockerutil.NewClient(authProvider, host, certPath)
 }
 
 // LogStreamer =========================
