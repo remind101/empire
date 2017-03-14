@@ -1,5 +1,7 @@
 # Changelog
 
+## HEAD
+
 ## 0.12.0 (2017-03-10)
 
 **Features**
@@ -26,6 +28,12 @@
 **Security**
 
 * It's now possible to set a maximum session duration, to ensure that users have to periodically re-authenticate with credentials and MFA [#1024](https://github.com/remind101/empire/pull/1024)
+
+## 0.11.1 (2017-03-10)
+
+**Bugs**
+
+* Fixed a regression from 0.10.1 where migrating apps from the legacy backend to CloudFormation would fail [#1046](https://github.com/remind101/empire/pull/1046)
 
 ## 0.11.0 (2016-08-22)
 
