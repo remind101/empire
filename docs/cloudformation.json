@@ -74,9 +74,9 @@
     },
     "EventsBackend": {
       "Type": "String",
-      "AllowedValues": ["sns", "none"],
+      "AllowedValues": ["sns", "cloudwatch", "none"],
       "Description": "The backend to use to publish Empire events to. Set this to SNS to create an SNS topic and publish events there.",
-      "Default": "sns"
+      "Default": "cloudwatch"
     },
     "RunLogsBackend": {
       "Type": "String",
@@ -148,6 +148,7 @@
     "DemoMode": {"Fn::Equals": [{"Ref": "LaunchEmpire"}, "true"]},
     "DevMode": {"Fn::Not": [{"Condition": "DemoMode"}]},
     "SNSEvents": {"Fn::Equals": [{"Ref": "EventsBackend"}, "sns"]},
+    "CloudWatchEvents": {"Fn::Equals": [{"Ref": "EventsBackend"}, "cloudwatch"]},
     "CloudWatchLogs": {"Fn::Equals": [{"Ref": "RunLogsBackend"}, "cloudwatch"]}
   },
 
@@ -499,11 +500,24 @@
               "Resource": { "Ref": "CustomResourcesTopic" }
             },
             {
+              "Fn::If": [
+                "SNSEvents",
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sns:Publish"
+                  ],
+                  "Resource": { "Ref": "EventsTopic" }
+                },
+                { "Ref": "AWS::NoValue" }
+              ]
+            },
+            {
               "Effect": "Allow",
               "Action": [
-                "sns:Publish"
+                "events:PutEvents"
               ],
-              "Resource": { "Ref": "EventsTopic" }
+              "Resource": ["*"]
             },
             {
               "Effect": "Allow",
@@ -875,7 +889,7 @@
               },
               {
                 "Name": "EMPIRE_EVENTS_BACKEND",
-                "Value": "sns"
+                "Value": { "Ref": "EventsBackend" }
               },
               {
                 "Name": "EMPIRE_SNS_TOPIC",

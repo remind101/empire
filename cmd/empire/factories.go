@@ -20,6 +20,7 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/events/app"
+	"github.com/remind101/empire/events/cloudwatch"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/events/stdout"
 	"github.com/remind101/empire/extractor"
@@ -285,6 +286,12 @@ func newEventStreams(c *Context) (empire.MultiEventStream, error) {
 			return streams, err
 		}
 		streams = append(streams, e)
+	case "cloudwatch":
+		e, err := newCloudWatchEventStream(c)
+		if err != nil {
+			return streams, err
+		}
+		streams = append(streams, e)
 	case "stdout":
 		e, err := newStdoutEventStream(c)
 		if err != nil {
@@ -318,6 +325,15 @@ func newSNSEventStream(c *Context) (empire.EventStream, error) {
 
 	log.Println("Using SNS events backend with the following configuration:")
 	log.Println(fmt.Sprintf("  TopicARN: %s", e.TopicARN))
+
+	return e, nil
+}
+
+func newCloudWatchEventStream(c *Context) (empire.EventStream, error) {
+	e := cloudwatch.NewEventStream(c)
+	e.Environment = c.String(FlagEnvironment)
+
+	log.Println("Using CloudWatch events backend")
 
 	return e, nil
 }
