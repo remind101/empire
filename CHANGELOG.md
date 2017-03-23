@@ -6,6 +6,10 @@
 
 * Empire now supports a new (experimental) feature to enable attached processes to be ran with ECS. [#1043](https://github.com/remind101/empire/pull/1043)
 
+**Bugs**
+
+* Fixed a regression in env-load, which caused it to set keys to random values. [#1062](https://github.com/remind101/empire/pull/1062)
+
 ## 0.12.0 (2017-03-10)
 
 **Features**

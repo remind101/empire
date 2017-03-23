@@ -124,7 +124,7 @@ func TestEnvConfig(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	content := []byte("FOO=bar\\nmoarbar\n")
+	content := []byte("FOO=bar\\nmoarbar\nBAR=foo")
 	f.Write(content)
 
 	run(t, []Command{
@@ -132,6 +132,10 @@ func TestEnvConfig(t *testing.T) {
 		{
 			fmt.Sprintf("env-load %s -a acme-inc", f.Name()),
 			fmt.Sprintf("Updated env vars from %s and restarted acme-inc.", f.Name()),
+		},
+		{
+			"env -a acme-inc",
+			"BAR=foo\nFOO=bar\\nmoarbar",
 		},
 	})
 }
