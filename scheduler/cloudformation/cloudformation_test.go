@@ -1507,7 +1507,8 @@ func TestScheduler_Run_Detached(t *testing.T) {
 	assert.NoError(t, err)
 
 	e.On("RegisterTaskDefinition", &ecs.RegisterTaskDefinitionInput{
-		Family: aws.String("c9366591-ab68-4d49-a333-95ce5a23df68--run"),
+		Family:      aws.String("c9366591-ab68-4d49-a333-95ce5a23df68--run"),
+		TaskRoleArn: aws.String("arn:aws:iam::897883143566:role/app"),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			&ecs.ContainerDefinition{},
 		},
@@ -1538,6 +1539,9 @@ func TestScheduler_Run_Detached(t *testing.T) {
 	err = s.Run(context.Background(), &scheduler.App{
 		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name: "acme-inc",
+		Env: map[string]string{
+			"EMPIRE_X_TASK_ROLE_ARN": "arn:aws:iam::897883143566:role/app",
+		},
 	}, &scheduler.Process{
 		Type:    "run",
 		Command: []string{"bundle exec rake db:migrate"},

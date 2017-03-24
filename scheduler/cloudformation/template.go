@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -73,7 +74,7 @@ func taskDefinitionResourceType(app *scheduler.App) string {
 	return "AWS::ECS::TaskDefinition"
 }
 
-func taskRoleArn(app *scheduler.App) interface{} {
+func taskRoleArn(app *scheduler.App) *string {
 	check := []string{
 		"EMPIRE_X_TASK_ROLE_ARN",
 		"TASK_ROLE_ARN", // For backwards compatibility.
@@ -81,7 +82,7 @@ func taskRoleArn(app *scheduler.App) interface{} {
 
 	for _, n := range check {
 		if v, ok := app.Env[n]; ok {
-			return v
+			return &v
 		}
 	}
 
@@ -290,7 +291,7 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 
 	// If provided in the app environment, this role will be used when
 	// running tasks.
-	taskRole := taskRoleArn(app)
+	taskRole := toInterface(taskRoleArn(app))
 
 	var taskDefinitionProperties interface{}
 	taskDefinitionType := taskDefinitionResourceType(app)
@@ -899,6 +900,20 @@ func tagsFromLabels(labels map[string]string) []*cloudformation.Tag {
 	}
 	sort.Sort(tags)
 	return tags
+}
+
+// This is a helpful function to check if any type is nil. We cannot simply
+// check `v == nil` because it will return true, even if the underlying type is
+// nil. Instead, we have to use reflection to check if the underlying value is
+// nil.
+//
+// See https://play.golang.org/p/aq3DmMZ_P8
+func toInterface(v interface{}) interface{} {
+	if reflect.ValueOf(v).IsNil() {
+		return nil
+	}
+
+	return v
 }
 
 // A simple lambda function that can be used to trigger an ecs.RunTask.
