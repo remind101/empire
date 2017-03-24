@@ -252,12 +252,8 @@ func (t *EmpireTemplate) Build(data *TemplateData) (*troposphere.Template, error
 
 		switch {
 		case p.Schedule != nil:
-			// To save space in the template, avoid adding the
-			// resources if the process is scaled down.
-			if p.Instances > 0 {
-				taskDefinition := t.addScheduledTask(tmpl, app, p)
-				scheduledProcesses[p.Type] = taskDefinition.Name
-			}
+			taskDefinition := t.addScheduledTask(tmpl, app, p)
+			scheduledProcesses[p.Type] = taskDefinition.Name
 		default:
 			service, err := t.addService(tmpl, app, p, data.StackTags)
 			if err != nil {
@@ -345,6 +341,10 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 
 	taskDefinition, _ := t.addTaskDefinition(tmpl, app, p)
 
+	state := "DISABLED"
+	if p.Instances > 0 {
+		state = "ENABLED"
+	}
 	schedule := fmt.Sprintf("%sTrigger", key)
 	tmpl.Resources[schedule] = troposphere.Resource{
 		Type: "AWS::Events::Rule",
@@ -352,7 +352,7 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 			"Description":        fmt.Sprintf("Rule to periodically trigger the `%s` scheduled task", p.Type),
 			"ScheduleExpression": scheduleExpression(p.Schedule),
 			"RoleArn":            t.serviceRoleArn(),
-			"State":              "ENABLED",
+			"State":              state,
 			"Targets": []interface{}{
 				map[string]interface{}{
 					"Arn":   GetAtt(runTaskFunction, "Arn"),

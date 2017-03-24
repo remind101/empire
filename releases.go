@@ -290,13 +290,23 @@ func newSchedulerApp(release *Release) (*scheduler.App, error) {
 	var processes []*scheduler.Process
 
 	for name, p := range release.Formation {
-		if !p.NoService {
-			process, err := newSchedulerProcess(release, name, p)
-			if err != nil {
-				return nil, err
-			}
-			processes = append(processes, process)
+		if p.NoService {
+			// If the entry is marked as "NoService", don't send it
+			// to the backend.
+			continue
 		}
+
+		if p.Quantity < 0 {
+			// If the process is scaled to a negative value, don't
+			// send it to the backend.
+			continue
+		}
+
+		process, err := newSchedulerProcess(release, name, p)
+		if err != nil {
+			return nil, err
+		}
+		processes = append(processes, process)
 	}
 
 	env := environment(release.Config.Vars)
@@ -357,7 +367,7 @@ func newSchedulerProcess(release *Release, name string, p Process) (*scheduler.P
 		Labels:      labels,
 		Command:     []string(p.Command),
 		Image:       release.Slug.Image,
-		Instances:   uint(p.Quantity),
+		Instances:   p.Quantity,
 		MemoryLimit: uint(p.Memory),
 		CPUShares:   uint(p.CPUShare),
 		Nproc:       uint(p.Nproc),

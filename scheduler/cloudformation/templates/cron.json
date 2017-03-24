@@ -175,6 +175,106 @@
         }
       },
       "Type": "AWS::Lambda::Permission"
+    },
+    "vacuumTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "./bin/vacuum"
+            ],
+            "Cpu": 256,
+            "DockerLabels": {
+              "empire.app.process": "vacuum"
+            },
+            "Environment": [],
+            "Essential": true,
+            "Image": "remind101/acme-inc:latest",
+            "Memory": 128,
+            "Name": "vacuum",
+            "Ulimits": [
+              {
+                "HardLimit": 256,
+                "Name": "nproc",
+                "SoftLimit": 256
+              }
+            ]
+          }
+        ],
+        "Volumes": []
+      },
+      "Type": "AWS::ECS::TaskDefinition"
+    },
+    "vacuumTrigger": {
+      "Properties": {
+        "Description": "Rule to periodically trigger the `vacuum` scheduled task",
+        "RoleArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:iam::",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":role/",
+              "ecsServiceRole"
+            ]
+          ]
+        },
+        "ScheduleExpression": "cron(* * * * *)",
+        "State": "DISABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "RunTaskFunction",
+                "Arn"
+              ]
+            },
+            "Id": "f",
+            "Input": {
+              "Fn::Join": [
+                "",
+                [
+                  "{\"taskDefinition\":\"",
+                  {
+                    "Ref": "vacuumTaskDefinition"
+                  },
+                  "\",\"count\":",
+                  {
+                    "Ref": "vacuumScale"
+                  },
+                  ",\"cluster\":\"",
+                  "cluster",
+                  "\",\"startedBy\": \"",
+                  "1234",
+                  "\"}"
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "Type": "AWS::Events::Rule"
+    },
+    "vacuumTriggerPermission": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "RunTaskFunction",
+            "Arn"
+          ]
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "vacuumTrigger",
+            "Arn"
+          ]
+        }
+      },
+      "Type": "AWS::Lambda::Permission"
     }
   }
 }
