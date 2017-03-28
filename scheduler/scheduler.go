@@ -60,7 +60,7 @@ type Process struct {
 	Nproc uint
 
 	// Instances is the desired instances of this service to run.
-	Instances uint
+	Instances int
 
 	// Exposure is the level of exposure for this process.
 	Exposure *Exposure

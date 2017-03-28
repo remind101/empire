@@ -1,31 +1,37 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 )
+
+func qty(v int) *int {
+	return &v
+}
 
 var parseScaleTests = []struct {
 	in     string
 	pstype string
-	qty    int
+	qty    *int
 	size   string
 	err    error
 }{
-	{"web=5", "web", 5, "", nil},
-	{"bg_worker=50:1X", "bg_worker", 50, "1X", nil},
-	{"bg_worker=50:PX", "bg_worker", 50, "PX", nil},
-	{"web=:2X", "web", -1, "2X", nil},
-	{"web=:PX", "web", -1, "PX", nil},
-	{"web=1X", "web", -1, "1X", nil},
-	{"web=1x", "web", -1, "1X", nil},
-	{"web=PX", "web", -1, "PX", nil},
-	{"web=px", "web", -1, "PX", nil},
-	{"web=1X:5", "web", -1, "", errInvalidScaleArg},
-	{"web=PX:5", "web", -1, "", errInvalidScaleArg},
-	{"web", "", -1, "", errInvalidScaleArg},
-	{"web=", "web", -1, "", errInvalidScaleArg},
-	{"web =", "", -1, "", errInvalidScaleArg},
-	{"web=1X: 5", "", -1, "", errInvalidScaleArg},
+	{"web=5", "web", qty(5), "", nil},
+	{"bg_worker=50:1X", "bg_worker", qty(50), "1X", nil},
+	{"bg_worker=50:PX", "bg_worker", qty(50), "PX", nil},
+	{"web=:2X", "web", nil, "2X", nil},
+	{"web=:PX", "web", nil, "PX", nil},
+	{"web=1X", "web", nil, "1X", nil},
+	{"web=1x", "web", nil, "1X", nil},
+	{"web=PX", "web", nil, "PX", nil},
+	{"web=px", "web", nil, "PX", nil},
+	{"worker=-1", "worker", qty(-1), "", nil},
+	{"web=1X:5", "web", nil, "", errInvalidScaleArg},
+	{"web=PX:5", "web", nil, "", errInvalidScaleArg},
+	{"web", "", nil, "", errInvalidScaleArg},
+	{"web=", "web", nil, "", errInvalidScaleArg},
+	{"web =", "", nil, "", errInvalidScaleArg},
+	{"web=1X: 5", "", nil, "", errInvalidScaleArg},
 }
 
 func TestParseScaleArg(t *testing.T) {
@@ -34,7 +40,7 @@ func TestParseScaleArg(t *testing.T) {
 		if pstype != pt.pstype {
 			t.Errorf("%d. parseScaleArg(%q).pstype => %q, want %q", i, pt.in, pstype, pt.pstype)
 		}
-		if qty != pt.qty {
+		if !reflect.DeepEqual(qty, pt.qty) {
 			t.Errorf("%d. parseScaleArg(%q).qty => %d, want %d", i, pt.in, qty, pt.qty)
 		}
 		if size != pt.size {

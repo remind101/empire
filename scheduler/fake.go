@@ -31,22 +31,6 @@ func (m *FakeScheduler) Restart(ctx context.Context, app *App, ss StatusStream) 
 	return m.Submit(ctx, app, ss)
 }
 
-func (m *FakeScheduler) Scale(ctx context.Context, app string, ptype string, instances uint) error {
-	if a, ok := m.apps[app]; ok {
-		var process *Process
-		for _, p := range a.Processes {
-			if p.Type == ptype {
-				process = p
-			}
-		}
-
-		if process != nil {
-			process.Instances = instances
-		}
-	}
-	return nil
-}
-
 func (m *FakeScheduler) Remove(ctx context.Context, appID string) error {
 	delete(m.apps, appID)
 	return nil
@@ -58,7 +42,7 @@ func (m *FakeScheduler) Instances(ctx context.Context, appID string) ([]*Instanc
 		for _, p := range a.Processes {
 			pp := *p
 			pp.Env = Env(a, p)
-			for i := uint(1); i <= p.Instances; i++ {
+			for i := 1; i <= p.Instances; i++ {
 				instances = append(instances, &Instance{
 					ID:        fmt.Sprintf("%d", i),
 					Host:      Host{ID: "i-aa111aa1"},

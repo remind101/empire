@@ -97,8 +97,8 @@ func runScale(cmd *Command, args []string) {
 		types[pstype] = true
 
 		opt := heroku.FormationBatchUpdateOpts{Process: pstype}
-		if qty != -1 {
-			opt.Quantity = &qty
+		if qty != nil {
+			opt.Quantity = qty
 		}
 		if size != "" {
 			opt.Size = &size
@@ -137,8 +137,7 @@ func formatResults(formations []heroku.Formation) []string {
 
 var errInvalidScaleArg = errors.New("invalid argument")
 
-func parseScaleArg(arg string) (pstype string, qty int, size string, err error) {
-	qty = -1
+func parseScaleArg(arg string) (pstype string, qty *int, size string, err error) {
 	iEquals := strings.IndexRune(arg, '=')
 	if fields := strings.Fields(arg); len(fields) > 1 || iEquals == -1 {
 		err = errInvalidScaleArg
@@ -154,25 +153,27 @@ func parseScaleArg(arg string) (pstype string, qty int, size string, err error) 
 
 	if iColon := strings.IndexRune(rem, ':'); iColon == -1 {
 		if iX := strings.IndexRune(rem, 'X'); iX == -1 {
-			qty, err = strconv.Atoi(rem)
+			v, err := strconv.Atoi(rem)
 			if err != nil {
-				return pstype, -1, "", errInvalidScaleArg
+				return pstype, nil, "", errInvalidScaleArg
 			}
+			qty = &v
 		} else {
 			size = rem
 		}
 	} else {
 		if iColon > 0 {
-			qty, err = strconv.Atoi(rem[:iColon])
+			v, err := strconv.Atoi(rem[:iColon])
 			if err != nil {
-				return pstype, -1, "", errInvalidScaleArg
+				return pstype, nil, "", errInvalidScaleArg
 			}
+			qty = &v
 		}
 		if len(rem) > iColon+1 {
 			size = rem[iColon+1:]
 		}
 	}
-	if err != nil || qty == -1 && size == "" {
+	if err != nil || qty == nil && size == "" {
 		err = errInvalidScaleArg
 	}
 	return
