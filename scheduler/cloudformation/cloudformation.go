@@ -949,7 +949,8 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 	}
 
 	resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
-		Family: aws.String(fmt.Sprintf("%s--%s", app.ID, process.Type)),
+		Family:      aws.String(fmt.Sprintf("%s--%s", app.ID, process.Type)),
+		TaskRoleArn: taskRoleArn(app),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			containerDefinition,
 		},

@@ -9,6 +9,7 @@
 **Bugs**
 
 * Fixed a regression in env-load, which caused it to set keys to random values. [#1062](https://github.com/remind101/empire/pull/1062)
+* Fixed an issue where the ECS task role was not set on tasks started from `emp run`. [#1063](https://github.com/remind101/empire/pull/1063)
 
 ## 0.12.0 (2017-03-10)
 
