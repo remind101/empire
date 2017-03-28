@@ -202,9 +202,9 @@ func (e RollbackEvent) GetApp() *App {
 // SetEvent is triggered when environment variables are changed on an
 // application.
 type SetEvent struct {
+	*VarsDiff
 	User    string
 	App     string
-	Changed []string
 	Message string
 
 	app *App
@@ -215,7 +215,16 @@ func (e SetEvent) Event() string {
 }
 
 func (e SetEvent) String() string {
-	msg := fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
+	msg := fmt.Sprintf("%s changed environment variables on %s", e.User, e.App)
+	if len(e.Added) > 0 {
+		msg += fmt.Sprintf(" (added %s)", strings.Join(e.Added, ", "))
+	}
+	if len(e.Changed) > 0 {
+		msg += fmt.Sprintf(" (changed %s)", strings.Join(e.Changed, ", "))
+	}
+	if len(e.Removed) > 0 {
+		msg += fmt.Sprintf(" (removed %s)", strings.Join(e.Removed, ", "))
+	}
 	return appendCommitMessage(msg, e.Message)
 }
 

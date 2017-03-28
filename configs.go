@@ -124,17 +124,17 @@ type configsService struct {
 	*Empire
 }
 
-func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*Config, error) {
+func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*Config, *Config, error) {
 	app, vars := opts.App, opts.Vars
 
 	old, err := s.Config(db, app)
 	if err != nil {
-		return nil, err
+		return nil, old, err
 	}
 
 	c, err := configsCreate(db, newConfig(old, vars))
 	if err != nil {
-		return c, err
+		return c, old, err
 	}
 
 	release, err := releasesFind(db, ReleasesQuery{App: app})
@@ -143,7 +143,7 @@ func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*C
 			err = nil
 		}
 
-		return c, err
+		return c, old, err
 	}
 
 	// Create new release based on new config and old slug
@@ -151,9 +151,9 @@ func (s *configsService) Set(ctx context.Context, db *gorm.DB, opts SetOpts) (*C
 		App:         release.App,
 		Config:      c,
 		Slug:        release.Slug,
-		Description: configsApplyReleaseDesc(opts),
+		Description: configsApplyReleaseDesc(DiffVars(c.Vars, old.Vars), opts),
 	}, nil)
-	return c, err
+	return c, old, err
 }
 
 // Returns configs for latest release or the latest configs if there are no releases.
@@ -204,24 +204,79 @@ func mergeVars(old, new Vars) Vars {
 	return vars
 }
 
-// configsApplyReleaseDesc formats a release description based on the config variables
-// being applied.
-func configsApplyReleaseDesc(opts SetOpts) string {
-	vars := opts.Vars
-	verb := "Set"
+// VarsDiff can be used to compare what's different between two configs.
+type VarsDiff struct {
+	// Environment variables that were previously set, but changed to a new value
+	Changed []string
+
+	// Environment variables that were previously set, but removed.
+	Removed []string
+
+	// Environment variables that were previously unset, but were added.
+	Added []string
+}
+
+func (d *VarsDiff) String() string {
+	totalChanges := len(d.Changed) + len(d.Added) + len(d.Removed)
+	if totalChanges == 0 {
+		return "Made no changes to config vars"
+	}
+
 	plural := ""
-	if len(vars) > 1 {
+	if totalChanges > 1 {
 		plural = "s"
 	}
 
-	keys := make(sort.StringSlice, 0, len(vars))
-	for k, v := range vars {
-		keys = append(keys, string(k))
-		if v == nil {
-			verb = "Unset"
+	var parts []string
+
+	if v := d.Added; len(v) > 0 {
+		parts = append(parts, fmt.Sprintf("Added (%s)", strings.Join(v, ", ")))
+	}
+	if v := d.Changed; len(v) > 0 {
+		parts = append(parts, fmt.Sprintf("Changed (%s)", strings.Join(v, ", ")))
+	}
+	if v := d.Removed; len(v) > 0 {
+		parts = append(parts, fmt.Sprintf("Removed (%s)", strings.Join(v, ", ")))
+	}
+
+	return fmt.Sprintf("%s config var%s", strings.Join(parts, " "), plural)
+}
+
+// DiffVars generates a diff between two Vars objects, treating `a` as the newer
+// version. It can tell you what was added, changed or removed between the two
+// objects.
+func DiffVars(a, b Vars) *VarsDiff {
+	var added, changed, removed sort.StringSlice
+	for k, va := range a {
+		// Key didn't exist in the old config, but does in the new one.
+		if vb, ok := b[k]; !ok {
+			added = append(added, string(k))
+		} else {
+			// Key exists in both configs, let's check if the value
+			// has changed.
+			if *va != *vb {
+				changed = append(changed, string(k))
+			}
 		}
 	}
-	keys.Sort()
-	desc := fmt.Sprintf("%s %s config var%s", verb, strings.Join(keys, ", "), plural)
-	return appendMessageToDescription(desc, opts.User, opts.Message)
+	for k := range b {
+		// Key doesn't exist in the new config, but does in the old one.
+		if _, ok := a[k]; !ok {
+			removed = append(removed, string(k))
+		}
+	}
+	added.Sort()
+	changed.Sort()
+	removed.Sort()
+	return &VarsDiff{
+		Added:   added,
+		Changed: changed,
+		Removed: removed,
+	}
+}
+
+// configsApplyReleaseDesc formats a release description based on the config variables
+// being applied.
+func configsApplyReleaseDesc(diff *VarsDiff, opts SetOpts) string {
+	return appendMessageToDescription(diff.String(), opts.User, opts.Message)
 }

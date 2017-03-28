@@ -265,18 +265,13 @@ type SetOpts struct {
 	Message string
 }
 
-func (opts SetOpts) Event() SetEvent {
-	var changed []string
-	for k := range opts.Vars {
-		changed = append(changed, string(k))
-	}
-
+func (opts SetOpts) Event(diff *VarsDiff) SetEvent {
 	return SetEvent{
-		User:    opts.User.Name,
-		App:     opts.App.Name,
-		Changed: changed,
-		Message: opts.Message,
-		app:     opts.App,
+		User:     opts.User.Name,
+		App:      opts.App.Name,
+		VarsDiff: diff,
+		Message:  opts.Message,
+		app:      opts.App,
 	}
 }
 
@@ -294,17 +289,17 @@ func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
 
 	tx := e.db.Begin()
 
-	c, err := e.configs.Set(ctx, tx, opts)
+	config, oldConfig, err := e.configs.Set(ctx, tx, opts)
 	if err != nil {
 		tx.Rollback()
-		return c, err
+		return config, err
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return c, err
+		return config, err
 	}
 
-	return c, e.PublishEvent(opts.Event())
+	return config, e.PublishEvent(opts.Event(DiffVars(config.Vars, oldConfig.Vars)))
 }
 
 // DomainsFind returns the first domain matching the query.

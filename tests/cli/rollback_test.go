@@ -18,7 +18,7 @@ func TestRollback(t *testing.T) {
 			"releases -a acme-inc",
 			`v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)
 v2    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)
-v3    Dec 31  2014  Set FOO config var (fake)
+v3    Dec 31  2014  Added (FOO) config var (fake)
 v4    Dec 31  2014  Rollback to v1 (fake)`,
 		},
 		{

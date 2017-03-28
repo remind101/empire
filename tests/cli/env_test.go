@@ -117,6 +117,31 @@ func TestConfigConsistency(t *testing.T) {
 	})
 }
 
+func TestConfigNoop(t *testing.T) {
+	run(t, []Command{
+		DeployCommand("latest", "v1"),
+		{
+			"set FOO=bar -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"releases -a acme-inc",
+			`v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)
+v2    Dec 31  2014  Added (FOO) config var (fake)`,
+		},
+		{
+			"set FOO=bar -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"releases -a acme-inc",
+			`v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)
+v2    Dec 31  2014  Added (FOO) config var (fake)
+v3    Dec 31  2014  Made no changes to config vars (fake)`,
+		},
+	})
+}
+
 func TestEnvConfig(t *testing.T) {
 	f, err := ioutil.TempFile(os.TempDir(), "acme-inc.env")
 	if err != nil {

@@ -99,8 +99,9 @@ func TestEvents_String(t *testing.T) {
 		{RollbackEvent{User: "ejholmes", App: "acme-inc", Version: 1, Message: "commit message"}, "ejholmes rolled back acme-inc to v1: 'commit message'"},
 
 		// SetEvent
-		{SetEvent{User: "ejholmes", App: "acme-inc", Changed: []string{"RAILS_ENV"}}, "ejholmes changed environment variables on acme-inc (RAILS_ENV)"},
-		{SetEvent{User: "ejholmes", App: "acme-inc", Changed: []string{"RAILS_ENV"}, Message: "commit message"}, "ejholmes changed environment variables on acme-inc (RAILS_ENV): 'commit message'"},
+		{SetEvent{User: "ejholmes", App: "acme-inc", VarsDiff: &VarsDiff{Added: []string{"RAILS_ENV"}}}, "ejholmes changed environment variables on acme-inc (added RAILS_ENV)"},
+		{SetEvent{User: "ejholmes", App: "acme-inc", VarsDiff: &VarsDiff{Changed: []string{"RAILS_ENV"}}, Message: "commit message"}, "ejholmes changed environment variables on acme-inc (changed RAILS_ENV): 'commit message'"},
+		{SetEvent{User: "ejholmes", App: "acme-inc", VarsDiff: &VarsDiff{Changed: []string{"RAILS_ENV"}, Removed: []string{"COOKIE_SECRET"}}, Message: "commit message"}, "ejholmes changed environment variables on acme-inc (changed RAILS_ENV) (removed COOKIE_SECRET): 'commit message'"},
 
 		// CreateEvent
 		{CreateEvent{User: "ejholmes", Name: "acme-inc"}, "ejholmes created acme-inc"},

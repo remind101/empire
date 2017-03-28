@@ -1,8 +1,12 @@
 package empire
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigsQuery(t *testing.T) {
@@ -78,47 +82,101 @@ func TestMergeVars(t *testing.T) {
 	}
 }
 
+func TestDiffVars(t *testing.T) {
+	tests := []struct {
+		a, b     Vars
+		expected *VarsDiff
+	}{
+		{Vars{"RAILS_ENV": aws.String("production")}, Vars{}, &VarsDiff{Added: []string{"RAILS_ENV"}}},
+		{Vars{}, Vars{"RAILS_ENV": aws.String("production")}, &VarsDiff{Removed: []string{"RAILS_ENV"}}},
+		{Vars{"RAILS_ENV": aws.String("staging")}, Vars{"RAILS_ENV": aws.String("production")}, &VarsDiff{Changed: []string{"RAILS_ENV"}}},
+		{Vars{"COOKIE_SECRET": aws.String("secret")}, Vars{"RAILS_ENV": aws.String("production")}, &VarsDiff{Removed: []string{"RAILS_ENV"}, Added: []string{"COOKIE_SECRET"}}},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			diff := DiffVars(tt.a, tt.b)
+			assert.Equal(t, tt.expected, diff)
+		})
+	}
+}
+
 func TestReleaseDesc(t *testing.T) {
 	configVal := "test"
 
 	tests := []struct {
-		in  SetOpts
-		out string
+		diff *VarsDiff
+		opts SetOpts
+		out  string
 	}{
 		{
+			&VarsDiff{
+				Added: []string{"FOO"},
+			},
 			SetOpts{
 				User: &User{Name: "fake"},
 				Vars: Vars{"FOO": &configVal},
 			},
-			"Set FOO config var (fake)",
+			"Added (FOO) config var (fake)",
 		},
 		{
+			&VarsDiff{
+				Changed: []string{"FOO"},
+				Added:   []string{"BAR"},
+			},
 			SetOpts{
 				User:    &User{Name: "fake"},
 				Vars:    Vars{"FOO": &configVal, "BAR": &configVal},
 				Message: "important things",
 			},
-			"Set BAR, FOO config vars (fake: 'important things')",
+			"Added (BAR) Changed (FOO) config vars (fake: 'important things')",
 		},
 		{
+			&VarsDiff{
+				Changed: []string{"FOO"},
+				Removed: []string{"BAR"},
+			},
+			SetOpts{
+				User:    &User{Name: "fake"},
+				Vars:    Vars{"FOO": &configVal, "BAR": nil},
+				Message: "important things",
+			},
+			"Changed (FOO) Removed (BAR) config vars (fake: 'important things')",
+		},
+		{
+			&VarsDiff{
+				Removed: []string{"FOO"},
+			},
 			SetOpts{
 				User: &User{Name: "fake"},
 				Vars: Vars{"FOO": nil},
 			},
-			"Unset FOO config var (fake)",
+			"Removed (FOO) config var (fake)",
 		},
 		{
+			&VarsDiff{
+				Removed: []string{"FOO", "BAR"},
+			},
 			SetOpts{
 				User:    &User{Name: "fake"},
 				Vars:    Vars{"FOO": nil, "BAR": nil},
 				Message: "important things",
 			},
-			"Unset BAR, FOO config vars (fake: 'important things')",
+			"Removed (FOO, BAR) config vars (fake: 'important things')",
+		},
+		{
+			&VarsDiff{},
+			SetOpts{
+				User:    &User{Name: "fake"},
+				Vars:    Vars{"FOO": &configVal},
+				Message: "important things",
+			},
+			"Made no changes to config vars (fake: 'important things')",
 		},
 	}
 
 	for _, tt := range tests {
-		d := configsApplyReleaseDesc(tt.in)
+		d := configsApplyReleaseDesc(tt.diff, tt.opts)
 
 		if got, want := d, tt.out; got != want {
 			t.Errorf("configsApplyReleaseDesc => want %v; got %v", want, got)
