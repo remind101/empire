@@ -14,7 +14,7 @@ import (
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -88,8 +88,8 @@ func TestEmpire_Deploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", &scheduler.App{
-		ID:      app.ID,
+	s.On("Submit", &twelvefactor.Manifest{
+		AppID:   app.ID,
 		Name:    "acme-inc",
 		Release: "v1",
 		Env: map[string]string{
@@ -102,16 +102,16 @@ func TestEmpire_Deploy(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []*twelvefactor.Process{
 			{
-				Type:        "scheduled",
-				Image:       img,
-				Command:     []string{"./bin/scheduled"},
-				Schedule:    scheduler.CRONSchedule("* * * * * *"),
-				Instances:   0,
-				MemoryLimit: 536870912,
-				CPUShares:   256,
-				Nproc:       256,
+				Type:      "scheduled",
+				Image:     img,
+				Command:   []string{"./bin/scheduled"},
+				Schedule:  twelvefactor.CRONSchedule("* * * * * *"),
+				Quantity:  0,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
 				Env: map[string]string{
 					"EMPIRE_PROCESS":       "scheduled",
 					"EMPIRE_PROCESS_SCALE": "0",
@@ -125,19 +125,19 @@ func TestEmpire_Deploy(t *testing.T) {
 				Type:    "web",
 				Image:   img,
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Ports: []scheduler.Port{
+				Exposure: &twelvefactor.Exposure{
+					Ports: []twelvefactor.Port{
 						{
 							Container: 8080,
 							Host:      80,
-							Protocol:  &scheduler.HTTP{},
+							Protocol:  &twelvefactor.HTTP{},
 						},
 					},
 				},
-				Instances:   1,
-				MemoryLimit: 536870912,
-				CPUShares:   256,
-				Nproc:       256,
+				Quantity:  1,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
 				Env: map[string]string{
 					"EMPIRE_PROCESS":       "web",
 					"EMPIRE_PROCESS_SCALE": "1",
@@ -149,13 +149,13 @@ func TestEmpire_Deploy(t *testing.T) {
 				},
 			},
 			{
-				Type:        "worker",
-				Image:       img,
-				Command:     []string{"./bin/worker"},
-				Instances:   0,
-				MemoryLimit: 536870912,
-				CPUShares:   256,
-				Nproc:       256,
+				Type:      "worker",
+				Image:     img,
+				Command:   []string{"./bin/worker"},
+				Quantity:  0,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
 				Env: map[string]string{
 					"EMPIRE_PROCESS":       "worker",
 					"EMPIRE_PROCESS_SCALE": "0",
@@ -208,7 +208,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
-	e.Scheduler = scheduler.NewFakeScheduler()
+	e.Scheduler = twelvefactor.NewFakeScheduler()
 	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},
@@ -294,8 +294,8 @@ func TestEmpire_Run(t *testing.T) {
 	s := new(mockScheduler)
 	e.Scheduler = s
 
-	s.On("Run", &scheduler.App{
-		ID:      app.ID,
+	s.On("Run", &twelvefactor.Manifest{
+		AppID:   app.ID,
 		Name:    "acme-inc",
 		Release: "v1",
 		Env: map[string]string{
@@ -309,14 +309,14 @@ func TestEmpire_Run(t *testing.T) {
 			"empire.app.release": "v1",
 		},
 	},
-		&scheduler.Process{
-			Type:        "run",
-			Image:       img,
-			Command:     []string{"bundle", "exec", "rake", "db:migrate"},
-			Instances:   1,
-			MemoryLimit: 536870912,
-			CPUShares:   256,
-			Nproc:       256,
+		&twelvefactor.Process{
+			Type:      "run",
+			Image:     img,
+			Command:   []string{"bundle", "exec", "rake", "db:migrate"},
+			Quantity:  1,
+			Memory:    536870912,
+			CPUShares: 256,
+			Nproc:     256,
 			Env: map[string]string{
 				"EMPIRE_PROCESS":       "run",
 				"EMPIRE_PROCESS_SCALE": "1",
@@ -370,8 +370,8 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 	s := new(mockScheduler)
 	e.Scheduler = s
 
-	s.On("Run", &scheduler.App{
-		ID:      app.ID,
+	s.On("Run", &twelvefactor.Manifest{
+		AppID:   app.ID,
 		Name:    "acme-inc",
 		Release: "v1",
 		Env: map[string]string{
@@ -385,14 +385,14 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 			"empire.app.release": "v1",
 		},
 	},
-		&scheduler.Process{
-			Type:        "run",
-			Image:       img,
-			Command:     []string{"bundle", "exec", "rake", "db:migrate"},
-			Instances:   1,
-			MemoryLimit: 1073741824,
-			CPUShares:   512,
-			Nproc:       512,
+		&twelvefactor.Process{
+			Type:      "run",
+			Image:     img,
+			Command:   []string{"bundle", "exec", "rake", "db:migrate"},
+			Quantity:  1,
+			Memory:    1073741824,
+			CPUShares: 512,
+			Nproc:     512,
 			Env: map[string]string{
 				"EMPIRE_PROCESS":       "run",
 				"EMPIRE_PROCESS_SCALE": "1",
@@ -465,8 +465,8 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 	})
 	assert.IsType(t, &empire.CommandNotAllowedError{}, err)
 
-	s.On("Run", &scheduler.App{
-		ID:      app.ID,
+	s.On("Run", &twelvefactor.Manifest{
+		AppID:   app.ID,
 		Name:    "acme-inc",
 		Release: "v1",
 		Env: map[string]string{
@@ -480,14 +480,14 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 			"empire.app.release": "v1",
 		},
 	},
-		&scheduler.Process{
-			Type:        "rake",
-			Image:       img,
-			Command:     []string{"bundle", "exec", "rake", "db:migrate"},
-			Instances:   1,
-			MemoryLimit: 536870912,
-			CPUShares:   256,
-			Nproc:       256,
+		&twelvefactor.Process{
+			Type:      "rake",
+			Image:     img,
+			Command:   []string{"bundle", "exec", "rake", "db:migrate"},
+			Quantity:  1,
+			Memory:    536870912,
+			CPUShares: 256,
+			Nproc:     256,
 			Env: map[string]string{
 				"EMPIRE_PROCESS":       "rake",
 				"EMPIRE_PROCESS_SCALE": "1",
@@ -550,8 +550,8 @@ func TestEmpire_Set(t *testing.T) {
 
 	// Deploy a new image to the app.
 	img := image.Image{Repository: "remind101/acme-inc"}
-	s.On("Submit", &scheduler.App{
-		ID:      app.ID,
+	s.On("Submit", &twelvefactor.Manifest{
+		AppID:   app.ID,
 		Name:    "acme-inc",
 		Release: "v1",
 		Env: map[string]string{
@@ -565,24 +565,24 @@ func TestEmpire_Set(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []*twelvefactor.Process{
 			{
 				Type:    "web",
 				Image:   img,
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Ports: []scheduler.Port{
+				Exposure: &twelvefactor.Exposure{
+					Ports: []twelvefactor.Port{
 						{
 							Container: 8080,
 							Host:      80,
-							Protocol:  &scheduler.HTTP{},
+							Protocol:  &twelvefactor.HTTP{},
 						},
 					},
 				},
-				Instances:   1,
-				MemoryLimit: 536870912,
-				CPUShares:   256,
-				Nproc:       256,
+				Quantity:  1,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
 				Env: map[string]string{
 					"EMPIRE_PROCESS":       "web",
 					"EMPIRE_PROCESS_SCALE": "1",
@@ -605,8 +605,8 @@ func TestEmpire_Set(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Remove the environment variable
-	s.On("Submit", &scheduler.App{
-		ID:      app.ID,
+	s.On("Submit", &twelvefactor.Manifest{
+		AppID:   app.ID,
 		Name:    "acme-inc",
 		Release: "v2",
 		Env: map[string]string{
@@ -619,24 +619,24 @@ func TestEmpire_Set(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v2",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []*twelvefactor.Process{
 			{
 				Type:    "web",
 				Image:   img,
 				Command: []string{"./bin/web"},
-				Exposure: &scheduler.Exposure{
-					Ports: []scheduler.Port{
+				Exposure: &twelvefactor.Exposure{
+					Ports: []twelvefactor.Port{
 						{
 							Container: 8080,
 							Host:      80,
-							Protocol:  &scheduler.HTTP{},
+							Protocol:  &twelvefactor.HTTP{},
 						},
 					},
 				},
-				Instances:   1,
-				MemoryLimit: 536870912,
-				CPUShares:   256,
-				Nproc:       256,
+				Quantity:  1,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
 				Env: map[string]string{
 					"EMPIRE_PROCESS":       "web",
 					"EMPIRE_PROCESS_SCALE": "1",
@@ -663,17 +663,17 @@ func TestEmpire_Set(t *testing.T) {
 }
 
 type mockScheduler struct {
-	scheduler.Scheduler
+	twelvefactor.Scheduler
 	mock.Mock
 }
 
-type processesByType []*scheduler.Process
+type processesByType []*twelvefactor.Process
 
 func (e processesByType) Len() int           { return len(e) }
 func (e processesByType) Less(i, j int) bool { return e[i].Type < e[j].Type }
 func (e processesByType) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 
-func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+func (m *mockScheduler) Submit(_ context.Context, app *twelvefactor.Manifest, ss twelvefactor.StatusStream) error {
 	// mock.Mock checks the order of slices, so sort by process name.
 	p := processesByType(app.Processes)
 	sort.Sort(p)
@@ -683,7 +683,7 @@ func (m *mockScheduler) Submit(_ context.Context, app *scheduler.App, ss schedul
 	return args.Error(0)
 }
 
-func (m *mockScheduler) Run(_ context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+func (m *mockScheduler) Run(_ context.Context, app *twelvefactor.Manifest, process *twelvefactor.Process, in io.Reader, out io.Writer) error {
 	app.Processes = nil // This is bogus and doesn't actually matter for Runs.
 	args := m.Called(app, process, in, out)
 	return args.Error(0)

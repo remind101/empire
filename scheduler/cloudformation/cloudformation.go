@@ -26,8 +26,8 @@ import (
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	pglock "github.com/remind101/empire/pkg/pg/lock"
-	"github.com/remind101/empire/scheduler"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/logger"
 	"golang.org/x/net/context"
 )
@@ -134,7 +134,7 @@ type DockerClient interface {
 
 // Data handed to template generators.
 type TemplateData struct {
-	*scheduler.App
+	*twelvefactor.Manifest
 	StackTags []*cloudformation.Tag
 }
 
@@ -199,7 +199,7 @@ func NewScheduler(db *sql.DB, config client.ConfigProvider) *Scheduler {
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) Submit(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
+func (s *Scheduler) Submit(ctx context.Context, app *twelvefactor.Manifest, ss twelvefactor.StatusStream) error {
 	return s.SubmitWithOptions(ctx, app, ss, SubmitOptions{})
 }
 
@@ -211,7 +211,7 @@ type SubmitOptions struct {
 }
 
 // SubmitWithOptions submits (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
+func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *twelvefactor.Manifest, ss twelvefactor.StatusStream, opts SubmitOptions) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -225,8 +225,8 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *scheduler.App, s
 	return tx.Commit()
 }
 
-func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App, ss scheduler.StatusStream) error {
-	stackName, err := s.stackName(app.ID)
+func (s *Scheduler) Restart(ctx context.Context, app *twelvefactor.Manifest, ss twelvefactor.StatusStream) error {
+	stackName, err := s.stackName(app.AppID)
 	if err != nil {
 		return err
 	}
@@ -255,8 +255,8 @@ func (s *Scheduler) Restart(ctx context.Context, app *scheduler.App, ss schedule
 }
 
 // Submit creates (or updates) the CloudFormation stack for the app.
-func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, ss scheduler.StatusStream, opts SubmitOptions) error {
-	stackName, err := s.stackName(app.ID)
+func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *twelvefactor.Manifest, ss twelvefactor.StatusStream, opts SubmitOptions) error {
+	stackName, err := s.stackName(app.AppID)
 	if err == errNoStack {
 		t := s.StackNameTemplate
 		if t == nil {
@@ -267,7 +267,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 			return fmt.Errorf("error generating stack name: %v", err)
 		}
 		stackName = buf.String()
-		if _, err := tx.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, app.ID, stackName); err != nil {
+		if _, err := tx.Exec(`INSERT INTO stacks (app_id, stack_name) VALUES ($1, $2)`, app.AppID, stackName); err != nil {
 			return err
 		}
 	} else if err != nil {
@@ -285,7 +285,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 		fmt.Sprintf("stack:%s", stackName),
 	})
 
-	scheduler.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
+	twelvefactor.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
 
 	var parameters []*cloudformation.Parameter
 	if opts.NoDNS != nil {
@@ -298,7 +298,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	for _, p := range app.Processes {
 		parameters = append(parameters, &cloudformation.Parameter{
 			ParameterKey:   aws.String(scaleParameter(p.Type)),
-			ParameterValue: aws.String(fmt.Sprintf("%d", p.Instances)),
+			ParameterValue: aws.String(fmt.Sprintf("%d", p.Quantity)),
 		})
 	}
 
@@ -340,14 +340,14 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *scheduler.App, 
 	return nil
 }
 
-func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.Stack, ss scheduler.StatusStream) error {
+func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.Stack, ss twelvefactor.StatusStream) error {
 	deployments, err := deploymentsToWatch(stack)
 	if err != nil {
 		return err
 	}
 	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
 	for status := range deploymentStatuses {
-		scheduler.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
+		twelvefactor.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
 	}
 	// TODO publish notification to empire
 	return nil
@@ -423,9 +423,9 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 
 // createTemplate takes a scheduler.App, and returns a validated cloudformation
 // template.
-func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App, stackTags []*cloudformation.Tag) (*cloudformationTemplate, error) {
+func (s *Scheduler) createTemplate(ctx context.Context, app *twelvefactor.Manifest, stackTags []*cloudformation.Tag) (*cloudformationTemplate, error) {
 	data := &TemplateData{
-		App:       app,
+		Manifest:  app,
 		StackTags: stackTags,
 	}
 
@@ -434,7 +434,7 @@ func (s *Scheduler) createTemplate(ctx context.Context, app *scheduler.App, stac
 		return nil, err
 	}
 
-	key := fmt.Sprintf("%s/%s/%x", app.Name, app.ID, sha1.Sum(buf.Bytes()))
+	key := fmt.Sprintf("%s/%s/%x", app.Name, app.AppID, sha1.Sum(buf.Bytes()))
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.Bucket, key)
 
 	if _, err := s.s3.PutObject(&s3.PutObjectInput{
@@ -481,7 +481,7 @@ type createStackInput struct {
 // createStack creates a new CloudFormation stack with the given input. This
 // function returns as soon as the stack creation has been submitted. It does
 // not wait for the stack creation to complete.
-func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
+func (s *Scheduler) createStack(ctx context.Context, input *createStackInput, output chan stackOperationOutput, ss twelvefactor.StatusStream) error {
 	waiter := s.waitFor(ctx, createStack, ss)
 
 	submitted := make(chan error)
@@ -515,7 +515,7 @@ type updateStackInput struct {
 // If there are no other active updates, this function returns as soon as the
 // stack update has been submitted. If there are other updates, the function
 // returns after `lockTimeout` and the update continues in the background.
-func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, output chan stackOperationOutput, ss scheduler.StatusStream) error {
+func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, output chan stackOperationOutput, ss twelvefactor.StatusStream) error {
 	waiter := s.waitFor(ctx, updateStack, ss)
 
 	locked := make(chan struct{})
@@ -524,7 +524,7 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 		close(locked)
 		err := s.executeStackUpdate(input)
 		if err == nil {
-			scheduler.Publish(ctx, ss, "Stack update submitted")
+			twelvefactor.Publish(ctx, ss, "Stack update submitted")
 		}
 		submitted <- err
 		return err
@@ -538,7 +538,7 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 	var err error
 	select {
 	case <-s.after(lockWait):
-		scheduler.Publish(ctx, ss, "Waiting for existing stack operation to complete")
+		twelvefactor.Publish(ctx, ss, "Waiting for existing stack operation to complete")
 		// FIXME: At this point, we don't want to affect UX by waiting
 		// around, so we return. But, if the stack update times out, or
 		// there's an error, that information is essentially silenced.
@@ -566,7 +566,7 @@ type stackOperationOutput struct {
 //   until the other stack operation has completed.
 // * If there is another pending stack operation, it will be replaced by the new
 //   update.
-func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter waitFunc, ss scheduler.StatusStream) (*cloudformation.Stack, error) {
+func (s *Scheduler) performStackOperation(ctx context.Context, stackName string, fn func() error, waiter waitFunc, ss twelvefactor.StatusStream) (*cloudformation.Stack, error) {
 	l, err := newAdvisoryLock(s.db, stackName)
 	if err != nil {
 		return nil, err
@@ -584,7 +584,7 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 		//
 		// TODO: Should we return an error here?
 		if err == pglock.Canceled {
-			scheduler.Publish(ctx, ss, "Operation superseded by newer release")
+			twelvefactor.Publish(ctx, ss, "Operation superseded by newer release")
 			return nil, nil
 		}
 		return nil, fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
@@ -718,9 +718,9 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	return nil
 }
 
-// Instances returns all of the running tasks for this application.
-func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
-	var instances []*scheduler.Instance
+// Tasks returns all of the running tasks for this application.
+func (s *Scheduler) Tasks(ctx context.Context, app string) ([]*twelvefactor.Task, error) {
+	var instances []*twelvefactor.Task
 
 	tasks, err := s.tasks(app)
 	if err != nil {
@@ -798,11 +798,11 @@ func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Ins
 			updatedAt = *t.StoppedAt
 		}
 
-		instances = append(instances, &scheduler.Instance{
+		instances = append(instances, &twelvefactor.Task{
 			Process:   p,
 			State:     state,
 			ID:        id,
-			Host:      scheduler.Host{ID: hostId},
+			Host:      twelvefactor.Host{ID: hostId},
 			UpdatedAt: updatedAt,
 		})
 	}
@@ -922,14 +922,14 @@ func (s *Scheduler) Stop(ctx context.Context, taskID string) error {
 }
 
 // Run registers a TaskDefinition for the process, and calls RunTask.
-func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, process *twelvefactor.Process, in io.Reader, out io.Writer) error {
 	var attached bool
 	if out != nil {
 		attached = true
 	}
 
 	t, ok := m.Template.(interface {
-		ContainerDefinition(*scheduler.App, *scheduler.Process) *ecs.ContainerDefinition
+		ContainerDefinition(*twelvefactor.Manifest, *twelvefactor.Process) *ecs.ContainerDefinition
 	})
 	if !ok {
 		return errors.New("provided template can't generate a container definition for this process")
@@ -949,7 +949,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 	}
 
 	resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
-		Family:      aws.String(fmt.Sprintf("%s--%s", app.ID, process.Type)),
+		Family:      aws.String(fmt.Sprintf("%s--%s", app.AppID, process.Type)),
 		TaskRoleArn: taskRoleArn(app),
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			containerDefinition,
@@ -963,7 +963,7 @@ func (m *Scheduler) Run(ctx context.Context, app *scheduler.App, process *schedu
 		TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
 		Cluster:        aws.String(m.Cluster),
 		Count:          aws.Int64(1),
-		StartedBy:      aws.String(app.ID),
+		StartedBy:      aws.String(app.AppID),
 	})
 	if err != nil {
 		return fmt.Errorf("error calling RunTask: %v", err)
@@ -1121,7 +1121,7 @@ var waiters = map[stackOperation]waiter{
 // waitFor returns a wait function that will wait for the given stack operation
 // to complete, and sends status messages to the status stream, and also records
 // metrics for how long the operation took.
-func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler.StatusStream) func(*cloudformation.DescribeStacksInput) error {
+func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss twelvefactor.StatusStream) func(*cloudformation.DescribeStacksInput) error {
 	waiter := waiters[op]
 	wait := waiter.wait(s.cloudformation)
 
@@ -1129,12 +1129,12 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss scheduler
 		tags := []string{
 			fmt.Sprintf("stack:%s", *input.StackName),
 		}
-		scheduler.Publish(ctx, ss, waiter.startMessage)
+		twelvefactor.Publish(ctx, ss, waiter.startMessage)
 		start := time.Now()
 		err := wait(input)
 		stats.Timing(ctx, fmt.Sprintf("scheduler.cloudformation.%s", op), time.Since(start), 1.0, tags)
 		if err == nil {
-			scheduler.Publish(ctx, ss, waiter.successMessage)
+			twelvefactor.Publish(ctx, ss, waiter.successMessage)
 		}
 		return err
 	}
@@ -1156,7 +1156,7 @@ func extractProcessData(value string) map[string]string {
 
 // taskDefinitionToProcess takes an ECS Task Definition and converts it to a
 // Process.
-func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error) {
+func taskDefinitionToProcess(td *ecs.TaskDefinition) (*twelvefactor.Process, error) {
 	// If this task definition has no container definitions, then something
 	// funky is up.
 	if len(td.ContainerDefinitions) == 0 {
@@ -1177,13 +1177,13 @@ func taskDefinitionToProcess(td *ecs.TaskDefinition) (*scheduler.Process, error)
 		}
 	}
 
-	return &scheduler.Process{
-		Type:        aws.StringValue(container.Name),
-		Command:     command,
-		Env:         env,
-		CPUShares:   uint(*container.Cpu),
-		MemoryLimit: uint(*container.Memory) * bytesize.MB,
-		Nproc:       uint(softLimit(container.Ulimits, "nproc")),
+	return &twelvefactor.Process{
+		Type:      aws.StringValue(container.Name),
+		Command:   command,
+		Env:       env,
+		CPUShares: uint(*container.Cpu),
+		Memory:    uint(*container.Memory) * bytesize.MB,
+		Nproc:     uint(softLimit(container.Ulimits, "nproc")),
 	}, nil
 }
 

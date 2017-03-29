@@ -20,7 +20,7 @@ import (
 	"github.com/remind101/empire/pkg/arn"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/troposphere"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 )
 
 var (
@@ -37,12 +37,12 @@ const (
 )
 
 // Returns the type of load balancer that should be used (ELB/ALB).
-func loadBalancerType(app *scheduler.App, process *scheduler.Process) string {
+func loadBalancerType(app *twelvefactor.Manifest, process *twelvefactor.Process) string {
 	check := []string{
 		"EMPIRE_X_LOAD_BALANCER_TYPE",
 		"LOAD_BALANCER_TYPE", // For backwards compatibility.
 	}
-	env := scheduler.Env(app, process)
+	env := twelvefactor.Env(app, process)
 
 	for _, n := range check {
 		if v, ok := env[n]; ok {
@@ -56,7 +56,7 @@ func loadBalancerType(app *scheduler.App, process *scheduler.Process) string {
 
 // Returns the name of the CloudFormation resource that should be used to create
 // custom task definitions.
-func taskDefinitionResourceType(app *scheduler.App) string {
+func taskDefinitionResourceType(app *twelvefactor.Manifest) string {
 	check := []string{
 		"EMPIRE_X_TASK_DEFINITION_TYPE",
 		"ECS_TASK_DEFINITION", // For backwards compatibility.
@@ -74,7 +74,7 @@ func taskDefinitionResourceType(app *scheduler.App) string {
 	return "AWS::ECS::TaskDefinition"
 }
 
-func taskRoleArn(app *scheduler.App) *string {
+func taskRoleArn(app *twelvefactor.Manifest) *string {
 	check := []string{
 		"EMPIRE_X_TASK_ROLE_ARN",
 		"TASK_ROLE_ARN", // For backwards compatibility.
@@ -205,7 +205,7 @@ func (t *EmpireTemplate) Execute(w io.Writer, data interface{}) error {
 
 // Build builds a Go representation of a CloudFormation template for the app.
 func (t *EmpireTemplate) Build(data *TemplateData) (*troposphere.Template, error) {
-	app := data.App
+	app := data.Manifest
 
 	tmpl := troposphere.NewTemplate()
 
@@ -275,7 +275,7 @@ func (t *EmpireTemplate) Build(data *TemplateData) (*troposphere.Template, error
 	return tmpl, nil
 }
 
-func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) (troposphere.NamedResource, *ContainerDefinitionProperties) {
+func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *twelvefactor.Manifest, p *twelvefactor.Process) (troposphere.NamedResource, *ContainerDefinitionProperties) {
 	key := processResourceName(p.Type)
 	// The task definition that will be used to run the ECS task.
 	taskDefinition := troposphere.NamedResource{
@@ -336,13 +336,13 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *sche
 	return taskDefinition, containerDefinition
 }
 
-func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process) troposphere.NamedResource {
+func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *twelvefactor.Manifest, p *twelvefactor.Process) troposphere.NamedResource {
 	key := processResourceName(p.Type)
 
 	taskDefinition, _ := t.addTaskDefinition(tmpl, app, p)
 
 	state := "DISABLED"
-	if p.Instances > 0 {
+	if p.Quantity > 0 {
 		state = "ENABLED"
 	}
 	schedule := fmt.Sprintf("%sTrigger", key)
@@ -357,7 +357,7 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 				map[string]interface{}{
 					"Arn":   GetAtt(runTaskFunction, "Arn"),
 					"Id":    "f",
-					"Input": Join("", `{"taskDefinition":"`, Ref(taskDefinition), `","count":`, Ref(scaleParameter(p.Type)), `,"cluster":"`, t.Cluster, `","startedBy": "`, app.ID, `"}`),
+					"Input": Join("", `{"taskDefinition":"`, Ref(taskDefinition), `","count":`, Ref(scaleParameter(p.Type)), `,"cluster":"`, t.Cluster, `","startedBy": "`, app.AppID, `"}`),
 				},
 			},
 		},
@@ -378,7 +378,7 @@ func (t *EmpireTemplate) addScheduledTask(tmpl *troposphere.Template, app *sched
 	return taskDefinition
 }
 
-func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.App, p *scheduler.Process, stackTags []*cloudformation.Tag) (serviceName string, err error) {
+func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefactor.Manifest, p *twelvefactor.Process, stackTags []*cloudformation.Tag) (serviceName string, err error) {
 	key := processResourceName(p.Type)
 
 	// Process specific tags to apply to resources.
@@ -480,7 +480,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 				}
 
 				switch e := port.Protocol.(type) {
-				case *scheduler.HTTP:
+				case *twelvefactor.HTTP:
 					listener.Resource = troposphere.Resource{
 						Type: "AWS::ElasticLoadBalancingV2::Listener",
 						Properties: map[string]interface{}{
@@ -495,7 +495,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 							},
 						},
 					}
-				case *scheduler.HTTPS:
+				case *twelvefactor.HTTPS:
 					var cert interface{}
 					if _, err := arn.Parse(e.Cert); err == nil {
 						cert = e.Cert
@@ -570,14 +570,14 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 				instancePort := instancePorts[port.Container]
 
 				switch e := port.Protocol.(type) {
-				case *scheduler.TCP:
+				case *twelvefactor.TCP:
 					listeners = append(listeners, map[string]interface{}{
 						"LoadBalancerPort": port.Host,
 						"Protocol":         "tcp",
 						"InstancePort":     GetAtt(instancePort, "InstancePort"),
 						"InstanceProtocol": "tcp",
 					})
-				case *scheduler.SSL:
+				case *twelvefactor.SSL:
 					var cert interface{}
 					if _, err := arn.Parse(e.Cert); err == nil {
 						cert = e.Cert
@@ -592,14 +592,14 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *scheduler.A
 						"SSLCertificateId": cert,
 						"InstanceProtocol": "tcp",
 					})
-				case *scheduler.HTTP:
+				case *twelvefactor.HTTP:
 					listeners = append(listeners, map[string]interface{}{
 						"LoadBalancerPort": port.Host,
 						"Protocol":         "http",
 						"InstancePort":     GetAtt(instancePort, "InstancePort"),
 						"InstanceProtocol": "http",
 					})
-				case *scheduler.HTTPS:
+				case *twelvefactor.HTTPS:
 					var cert interface{}
 					if _, err := arn.Parse(e.Cert); err == nil {
 						cert = e.Cert
@@ -725,7 +725,7 @@ func (e ecsEnv) Less(i, j int) bool { return *e[i].Name < *e[j].Name }
 func (e ecsEnv) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
 
 // ContainerDefinition generates an ECS ContainerDefinition for a process.
-func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Process) *ecs.ContainerDefinition {
+func (t *EmpireTemplate) ContainerDefinition(app *twelvefactor.Manifest, p *twelvefactor.Process) *ecs.ContainerDefinition {
 	command := []*string{}
 	for _, s := range p.Command {
 		ss := s
@@ -733,7 +733,7 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 	}
 
 	labels := make(map[string]*string)
-	for k, v := range scheduler.Labels(app, p) {
+	for k, v := range twelvefactor.Labels(app, p) {
 		labels[k] = aws.String(v)
 	}
 
@@ -754,8 +754,8 @@ func (t *EmpireTemplate) ContainerDefinition(app *scheduler.App, p *scheduler.Pr
 		Command:          command,
 		Image:            aws.String(p.Image.String()),
 		Essential:        aws.Bool(true),
-		Memory:           aws.Int64(int64(p.MemoryLimit / bytesize.MB)),
-		Environment:      sortedEnvironment(scheduler.Env(app, p)),
+		Memory:           aws.Int64(int64(p.Memory / bytesize.MB)),
+		Environment:      sortedEnvironment(twelvefactor.Env(app, p)),
 		LogConfiguration: t.LogConfiguration,
 		DockerLabels:     labels,
 		Ulimits:          ulimits,
@@ -838,9 +838,9 @@ func sortedEnvironment(environment map[string]string) []*ecs.KeyValuePair {
 	return e
 }
 
-func scheduleExpression(s scheduler.Schedule) string {
+func scheduleExpression(s twelvefactor.Schedule) string {
 	switch v := s.(type) {
-	case scheduler.CRONSchedule:
+	case twelvefactor.CRONSchedule:
 		return fmt.Sprintf("cron(%s)", v)
 	case time.Duration:
 		var units = "minute"
@@ -873,7 +873,7 @@ func runTaskResource(role interface{}) troposphere.Resource {
 
 // fmtPorts implements the fmt.Stringer interface to show a map of container
 // port to host port.
-type fmtPorts []scheduler.Port
+type fmtPorts []twelvefactor.Port
 
 func (p fmtPorts) String() string {
 	var mappings []string

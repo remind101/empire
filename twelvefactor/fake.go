@@ -1,4 +1,4 @@
-package scheduler
+package twelvefactor
 
 import (
 	"fmt"
@@ -11,23 +11,23 @@ import (
 
 type FakeScheduler struct {
 	sync.Mutex
-	apps map[string]*App
+	apps map[string]*Manifest
 }
 
 func NewFakeScheduler() *FakeScheduler {
 	return &FakeScheduler{
-		apps: make(map[string]*App),
+		apps: make(map[string]*Manifest),
 	}
 }
 
-func (m *FakeScheduler) Submit(ctx context.Context, app *App, ss StatusStream) error {
+func (m *FakeScheduler) Submit(ctx context.Context, app *Manifest, ss StatusStream) error {
 	m.Lock()
 	defer m.Unlock()
-	m.apps[app.ID] = app
+	m.apps[app.AppID] = app
 	return nil
 }
 
-func (m *FakeScheduler) Restart(ctx context.Context, app *App, ss StatusStream) error {
+func (m *FakeScheduler) Restart(ctx context.Context, app *Manifest, ss StatusStream) error {
 	return m.Submit(ctx, app, ss)
 }
 
@@ -36,14 +36,14 @@ func (m *FakeScheduler) Remove(ctx context.Context, appID string) error {
 	return nil
 }
 
-func (m *FakeScheduler) Instances(ctx context.Context, appID string) ([]*Instance, error) {
-	var instances []*Instance
+func (m *FakeScheduler) Tasks(ctx context.Context, appID string) ([]*Task, error) {
+	var instances []*Task
 	if a, ok := m.apps[appID]; ok {
 		for _, p := range a.Processes {
 			pp := *p
 			pp.Env = Env(a, p)
-			for i := 1; i <= p.Instances; i++ {
-				instances = append(instances, &Instance{
+			for i := 1; i <= p.Quantity; i++ {
+				instances = append(instances, &Task{
 					ID:        fmt.Sprintf("%d", i),
 					Host:      Host{ID: "i-aa111aa1"},
 					State:     "running",
@@ -60,7 +60,7 @@ func (m *FakeScheduler) Stop(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-func (m *FakeScheduler) Run(ctx context.Context, app *App, p *Process, in io.Reader, out io.Writer) error {
+func (m *FakeScheduler) Run(ctx context.Context, app *Manifest, p *Process, in io.Reader, out io.Writer) error {
 	if out != nil {
 		fmt.Fprintf(out, "Fake output for `%s` on %s\n", p.Command, app.Name)
 	}

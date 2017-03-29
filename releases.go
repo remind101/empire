@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/procfile"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
@@ -110,7 +110,7 @@ type releasesService struct {
 }
 
 // CreateAndRelease creates a new release then submits it to the scheduler.
-func (s *releasesService) CreateAndRelease(ctx context.Context, db *gorm.DB, r *Release, ss scheduler.StatusStream) (*Release, error) {
+func (s *releasesService) CreateAndRelease(ctx context.Context, db *gorm.DB, r *Release, ss twelvefactor.StatusStream) (*Release, error) {
 	r, err := s.Create(ctx, db, r)
 	if err != nil {
 		return r, err
@@ -160,7 +160,7 @@ func (s *releasesService) Rollback(ctx context.Context, db *gorm.DB, opts Rollba
 }
 
 // Release submits a release to the scheduler.
-func (s *releasesService) Release(ctx context.Context, release *Release, ss scheduler.StatusStream) error {
+func (s *releasesService) Release(ctx context.Context, release *Release, ss twelvefactor.StatusStream) error {
 	a, err := newSchedulerApp(release)
 	if err != nil {
 		return err
@@ -286,8 +286,8 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 	return release, nil
 }
 
-func newSchedulerApp(release *Release) (*scheduler.App, error) {
-	var processes []*scheduler.Process
+func newSchedulerApp(release *Release) (*twelvefactor.Manifest, error) {
+	var processes []*twelvefactor.Process
 
 	for name, p := range release.Formation {
 		if p.NoService {
@@ -320,8 +320,8 @@ func newSchedulerApp(release *Release) (*scheduler.App, error) {
 		"empire.app.release": fmt.Sprintf("v%d", release.Version),
 	}
 
-	return &scheduler.App{
-		ID:        release.App.ID,
+	return &twelvefactor.Manifest{
+		AppID:     release.App.ID,
 		Name:      release.App.Name,
 		Release:   fmt.Sprintf("v%d", release.Version),
 		Processes: processes,
@@ -330,7 +330,7 @@ func newSchedulerApp(release *Release) (*scheduler.App, error) {
 	}, nil
 }
 
-func newSchedulerProcess(release *Release, name string, p Process) (*scheduler.Process, error) {
+func newSchedulerProcess(release *Release, name string, p Process) (*twelvefactor.Process, error) {
 	env := make(map[string]string)
 	for k, v := range p.Environment {
 		env[k] = v
@@ -345,7 +345,7 @@ func newSchedulerProcess(release *Release, name string, p Process) (*scheduler.P
 	}
 
 	var (
-		exposure *scheduler.Exposure
+		exposure *twelvefactor.Exposure
 		err      error
 	)
 	// For `web` processes defined in the standard procfile, we'll
@@ -361,18 +361,18 @@ func newSchedulerProcess(release *Release, name string, p Process) (*scheduler.P
 		}
 	}
 
-	return &scheduler.Process{
-		Type:        name,
-		Env:         env,
-		Labels:      labels,
-		Command:     []string(p.Command),
-		Image:       release.Slug.Image,
-		Instances:   p.Quantity,
-		MemoryLimit: uint(p.Memory),
-		CPUShares:   uint(p.CPUShare),
-		Nproc:       uint(p.Nproc),
-		Exposure:    exposure,
-		Schedule:    processSchedule(name, p),
+	return &twelvefactor.Process{
+		Type:      name,
+		Env:       env,
+		Labels:    labels,
+		Command:   []string(p.Command),
+		Image:     release.Slug.Image,
+		Quantity:  p.Quantity,
+		Memory:    uint(p.Memory),
+		CPUShares: uint(p.CPUShare),
+		Nproc:     uint(p.Nproc),
+		Exposure:  exposure,
+		Schedule:  processSchedule(name, p),
 	}, nil
 }
 
@@ -389,78 +389,78 @@ func environment(vars Vars) map[string]string {
 
 // standardWebExposure generates a scheduler.Exposure for a web process in the
 // standard Procfile format.
-func standardWebExposure(app *App) *scheduler.Exposure {
-	ports := []scheduler.Port{
+func standardWebExposure(app *App) *twelvefactor.Exposure {
+	ports := []twelvefactor.Port{
 		{
 			Container: 8080,
 			Host:      80,
-			Protocol:  &scheduler.HTTP{},
+			Protocol:  &twelvefactor.HTTP{},
 		},
 	}
 
 	// If a certificate is attached to the "web" process, add an SSL port.
 	if cert, ok := app.Certs[webProcessType]; ok {
-		ports = append(ports, scheduler.Port{
+		ports = append(ports, twelvefactor.Port{
 			Container: 8080,
 			Host:      443,
-			Protocol: &scheduler.HTTPS{
+			Protocol: &twelvefactor.HTTPS{
 				Cert: cert,
 			},
 		})
 	}
 
-	return &scheduler.Exposure{
+	return &twelvefactor.Exposure{
 		External: app.Exposure == exposePublic,
 		Ports:    ports,
 	}
 }
 
-func processExposure(app *App, name string, process Process) (*scheduler.Exposure, error) {
+func processExposure(app *App, name string, process Process) (*twelvefactor.Exposure, error) {
 	// No ports == not exposed
 	if len(process.Ports) == 0 {
 		return nil, nil
 	}
 
-	var ports []scheduler.Port
+	var ports []twelvefactor.Port
 	for _, p := range process.Ports {
-		var protocol scheduler.Protocol
+		var protocol twelvefactor.Protocol
 		switch p.Protocol {
 		case "http":
-			protocol = &scheduler.HTTP{}
+			protocol = &twelvefactor.HTTP{}
 		case "https":
 			cert, ok := app.Certs[name]
 			if !ok {
 				return nil, &NoCertError{Process: name}
 			}
-			protocol = &scheduler.HTTPS{
+			protocol = &twelvefactor.HTTPS{
 				Cert: cert,
 			}
 		case "tcp":
-			protocol = &scheduler.TCP{}
+			protocol = &twelvefactor.TCP{}
 		case "ssl":
 			cert, ok := app.Certs[name]
 			if !ok {
 				return nil, &NoCertError{Process: name}
 			}
-			protocol = &scheduler.SSL{
+			protocol = &twelvefactor.SSL{
 				Cert: cert,
 			}
 		}
-		ports = append(ports, scheduler.Port{
+		ports = append(ports, twelvefactor.Port{
 			Host:      p.Host,
 			Container: p.Container,
 			Protocol:  protocol,
 		})
 	}
-	return &scheduler.Exposure{
+	return &twelvefactor.Exposure{
 		External: app.Exposure == exposePublic,
 		Ports:    ports,
 	}, nil
 }
 
-func processSchedule(name string, p Process) scheduler.Schedule {
+func processSchedule(name string, p Process) twelvefactor.Schedule {
 	if p.Cron != nil {
-		return scheduler.CRONSchedule(*p.Cron)
+		return twelvefactor.CRONSchedule(*p.Cron)
 	}
 
 	return nil

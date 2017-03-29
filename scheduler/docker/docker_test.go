@@ -8,7 +8,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/bytesize"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -56,15 +56,15 @@ func TestScheduler_InstancesFromAttachedRuns(t *testing.T) {
 	instances, err := s.InstancesFromAttachedRuns(ctx, "2cdc4941-e36d-4855-a0ec-51525db4a500")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(instances))
-	assert.Equal(t, &scheduler.Instance{
-		Process: &scheduler.Process{
+	assert.Equal(t, &twelvefactor.Task{
+		Process: &twelvefactor.Process{
 			Type:    "run",
 			Command: []string{"/bin/sh"},
 			Env: map[string]string{
 				"FOO": "bar",
 			},
-			MemoryLimit: 124 * bytesize.MB,
-			CPUShares:   512,
+			Memory:    124 * bytesize.MB,
+			CPUShares: 512,
 		},
 		ID:        "65311c2cc20d",
 		State:     "RUNNING",
@@ -182,7 +182,7 @@ func (m *mockDockerClient) StopContainer(ctx context.Context, id string, timeout
 }
 
 type mockScheduler struct {
-	scheduler.Scheduler
+	twelvefactor.Scheduler
 	mock.Mock
 }
 

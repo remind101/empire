@@ -14,19 +14,19 @@ import (
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/pkg/troposphere"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEmpireTemplate(t *testing.T) {
 	tests := []struct {
 		file string
-		app  *scheduler.App
+		app  *twelvefactor.Manifest
 	}{
 		{
 			"basic.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
@@ -36,7 +36,7 @@ func TestEmpireTemplate(t *testing.T) {
 					"A": "foobar",
 					"B": "bar",
 				},
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
@@ -44,22 +44,22 @@ func TestEmpireTemplate(t *testing.T) {
 						Env: map[string]string{
 							"PORT": "8080",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 							},
 						},
 						Labels: map[string]string{
 							"empire.app.process": "web",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
 					},
 					{
 						Type:    "worker",
@@ -78,8 +78,8 @@ func TestEmpireTemplate(t *testing.T) {
 
 		{
 			"basic-alb.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
@@ -91,17 +91,17 @@ func TestEmpireTemplate(t *testing.T) {
 
 					"LOAD_BALANCER_TYPE": "alb",
 				},
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 							},
 						},
@@ -111,10 +111,10 @@ func TestEmpireTemplate(t *testing.T) {
 						Env: map[string]string{
 							"PORT": "8080",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
 					},
 					{
 						Type:    "worker",
@@ -133,28 +133,28 @@ func TestEmpireTemplate(t *testing.T) {
 
 		{
 			"https.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
 						Env: map[string]string{
 							"PORT": "8080",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 								{
 									Host:      443,
 									Container: 8080,
-									Protocol: &scheduler.HTTPS{
+									Protocol: &twelvefactor.HTTPS{
 										Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
 									},
 								},
@@ -167,17 +167,17 @@ func TestEmpireTemplate(t *testing.T) {
 						Env: map[string]string{
 							"PORT": "8080",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 								{
 									Host:      443,
 									Container: 8080,
-									Protocol: &scheduler.HTTPS{
+									Protocol: &twelvefactor.HTTPS{
 										Cert: "AcmeIncDotCom", // Simple cert format.
 									},
 								},
@@ -190,11 +190,11 @@ func TestEmpireTemplate(t *testing.T) {
 
 		{
 			"https-alb.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Command: []string{"./bin/web"},
@@ -205,17 +205,17 @@ func TestEmpireTemplate(t *testing.T) {
 							"PORT":               "8080",
 							"LOAD_BALANCER_TYPE": "alb",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 								{
 									Host:      443,
 									Container: 8080,
-									Protocol: &scheduler.HTTPS{
+									Protocol: &twelvefactor.HTTPS{
 										Cert: "arn:aws:iam::012345678901:server-certificate/AcmeIncDotCom",
 									},
 								},
@@ -232,17 +232,17 @@ func TestEmpireTemplate(t *testing.T) {
 							"PORT": "8080",
 							"EMPIRE_X_LOAD_BALANCER_TYPE": "alb",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 								{
 									Host:      443,
 									Container: 8080,
-									Protocol: &scheduler.HTTPS{
+									Protocol: &twelvefactor.HTTPS{
 										Cert: "AcmeIncDotCom", // Simple cert format
 									},
 								},
@@ -255,14 +255,14 @@ func TestEmpireTemplate(t *testing.T) {
 
 		{
 			"custom.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
 					"ECS_TASK_DEFINITION": "custom",
 				},
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
@@ -273,35 +273,35 @@ func TestEmpireTemplate(t *testing.T) {
 							"FOO":  "bar",
 							"PORT": "8080",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 							},
 						},
 						Labels: map[string]string{
 							"empire.app.process": "web",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
 					},
 					{
-						Type:      "vacuum",
-						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command:   []string{"./bin/vacuum"},
-						Schedule:  scheduler.CRONSchedule("* * * * *"),
-						Instances: 1,
+						Type:     "vacuum",
+						Image:    image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:  []string{"./bin/vacuum"},
+						Schedule: twelvefactor.CRONSchedule("* * * * *"),
+						Quantity: 1,
 						Labels: map[string]string{
 							"empire.app.process": "vacuum",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Nproc:     256,
 					},
 				},
 			},
@@ -309,15 +309,15 @@ func TestEmpireTemplate(t *testing.T) {
 
 		{
 			"task-role.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
 					"ECS_TASK_DEFINITION":    "custom",
 					"EMPIRE_X_TASK_ROLE_ARN": "arn:aws:iam::897883143566:role/stage/app/r101-pg-loadtest",
 				},
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
@@ -328,35 +328,35 @@ func TestEmpireTemplate(t *testing.T) {
 							"FOO":  "bar",
 							"PORT": "8080",
 						},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 							},
 						},
 						Labels: map[string]string{
 							"empire.app.process": "web",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
 					},
 					{
-						Type:      "vacuum",
-						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command:   []string{"./bin/vacuum"},
-						Schedule:  scheduler.CRONSchedule("* * * * *"),
-						Instances: 1,
+						Type:     "vacuum",
+						Image:    image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:  []string{"./bin/vacuum"},
+						Schedule: twelvefactor.CRONSchedule("* * * * *"),
+						Quantity: 1,
 						Labels: map[string]string{
 							"empire.app.process": "vacuum",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Nproc:     256,
 					},
 				},
 			},
@@ -364,36 +364,36 @@ func TestEmpireTemplate(t *testing.T) {
 
 		{
 			"cron.json",
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
-						Type:      "send-emails",
-						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command:   []string{"./bin/send-emails"},
-						Schedule:  scheduler.CRONSchedule("* * * * *"),
-						Instances: 1,
+						Type:     "send-emails",
+						Image:    image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:  []string{"./bin/send-emails"},
+						Schedule: twelvefactor.CRONSchedule("* * * * *"),
+						Quantity: 1,
 						Labels: map[string]string{
 							"empire.app.process": "send-emails",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Nproc:     256,
 					},
 					{
-						Type:      "vacuum",
-						Image:     image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
-						Command:   []string{"./bin/vacuum"},
-						Schedule:  scheduler.CRONSchedule("* * * * *"),
-						Instances: 0,
+						Type:     "vacuum",
+						Image:    image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command:  []string{"./bin/vacuum"},
+						Schedule: twelvefactor.CRONSchedule("* * * * *"),
+						Quantity: 0,
 						Labels: map[string]string{
 							"empire.app.process": "vacuum",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Nproc:     256,
 					},
 				},
 			},
@@ -429,35 +429,35 @@ func TestEmpireTemplate(t *testing.T) {
 func TestEmpireTemplate_Errors(t *testing.T) {
 	tests := []struct {
 		err error
-		app *scheduler.App
+		app *twelvefactor.Manifest
 	}{
 		{
 			// When using an ALB, the container ports must all
 			// match.
 			errors.New("AWS Application Load Balancers can only map listeners to a single container port. 2 unique container ports were defined: [80 => 80, 8080 => 8080]"),
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
 					"LOAD_BALANCER_TYPE": "alb",
 				},
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 80,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 								{
 									Host:      8080,
 									Container: 8080,
-									Protocol:  &scheduler.HTTP{},
+									Protocol:  &twelvefactor.HTTP{},
 								},
 							},
 						},
@@ -467,10 +467,10 @@ func TestEmpireTemplate_Errors(t *testing.T) {
 						Env: map[string]string{
 							"PORT": "8080",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
 					},
 				},
 			},
@@ -480,24 +480,24 @@ func TestEmpireTemplate_Errors(t *testing.T) {
 			// When using an ALB, SSL and TCP listeners are not
 			// supported.
 			errors.New("tcp listeners are not supported with AWS Application Load Balancing"),
-			&scheduler.App{
-				ID:      "1234",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
 				Release: "v1",
 				Name:    "acme-inc",
 				Env: map[string]string{
 					"LOAD_BALANCER_TYPE": "alb",
 				},
-				Processes: []*scheduler.Process{
+				Processes: []*twelvefactor.Process{
 					{
 						Type:    "web",
 						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
 						Command: []string{"./bin/web"},
-						Exposure: &scheduler.Exposure{
-							Ports: []scheduler.Port{
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
 								{
 									Host:      80,
 									Container: 80,
-									Protocol:  &scheduler.TCP{},
+									Protocol:  &twelvefactor.TCP{},
 								},
 							},
 						},
@@ -507,10 +507,10 @@ func TestEmpireTemplate_Errors(t *testing.T) {
 						Env: map[string]string{
 							"PORT": "8080",
 						},
-						MemoryLimit: 128 * bytesize.MB,
-						CPUShares:   256,
-						Instances:   1,
-						Nproc:       256,
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
 					},
 				},
 			},
@@ -534,8 +534,8 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		env[fmt.Sprintf("ENV_VAR_%d", i)] = fmt.Sprintf("value%d", i)
 	}
-	app := &scheduler.App{
-		ID:      "",
+	app := &twelvefactor.Manifest{
+		AppID:   "",
 		Release: "v1",
 		Name:    "bigappwithlotsofprocesses",
 		Env:     env,
@@ -543,7 +543,7 @@ func TestEmpireTemplate_Large(t *testing.T) {
 	}
 
 	for i := 0; i < 60; i++ {
-		app.Processes = append(app.Processes, &scheduler.Process{
+		app.Processes = append(app.Processes, &twelvefactor.Process{
 			Type:    fmt.Sprintf("%d", i),
 			Command: []string{"./bin/web"},
 		})
@@ -563,10 +563,10 @@ func TestEmpireTemplate_Large(t *testing.T) {
 
 func TestScheduleExpression(t *testing.T) {
 	tests := []struct {
-		schedule   scheduler.Schedule
+		schedule   twelvefactor.Schedule
 		expression string
 	}{
-		{scheduler.CRONSchedule("0 12 * * ? *"), "cron(0 12 * * ? *)"},
+		{twelvefactor.CRONSchedule("0 12 * * ? *"), "cron(0 12 * * ? *)"},
 		{5 * time.Minute, "rate(5 minutes)"},
 		{1 * time.Minute, "rate(1 minute)"},
 		{24 * time.Hour, "rate(1440 minutes)"},

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/remind101/empire/pkg/constraints"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"golang.org/x/net/context"
 )
 
@@ -49,7 +49,7 @@ type tasksService struct {
 func (s *tasksService) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 	var tasks []*Task
 
-	instances, err := s.Scheduler.Instances(ctx, app.ID)
+	instances, err := s.Scheduler.Tasks(ctx, app.ID)
 	if err != nil {
 		return tasks, err
 	}
@@ -64,7 +64,7 @@ func (s *tasksService) Tasks(ctx context.Context, app *App) ([]*Task, error) {
 // taskFromInstance converts a scheduler.Instance into a Task.
 // It pulls some of its data from empire specific environment variables if they have been set.
 // Once ECS supports this data natively, we can stop doing this.
-func taskFromInstance(i *scheduler.Instance) *Task {
+func taskFromInstance(i *twelvefactor.Task) *Task {
 	version := i.Process.Env["EMPIRE_RELEASE"]
 	if version == "" {
 		version = "v0"
@@ -77,7 +77,7 @@ func taskFromInstance(i *scheduler.Instance) *Task {
 		Command: Command(i.Process.Command),
 		Constraints: Constraints{
 			CPUShare: constraints.CPUShare(i.Process.CPUShares),
-			Memory:   constraints.Memory(i.Process.MemoryLimit),
+			Memory:   constraints.Memory(i.Process.Memory),
 			Nproc:    constraints.Nproc(i.Process.Nproc),
 		},
 		State:     i.State,

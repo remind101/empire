@@ -24,7 +24,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	_ "github.com/lib/pq"
 	"github.com/remind101/empire/pkg/bytesize"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -114,20 +114,20 @@ func TestScheduler_Submit_NewStack(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
 		Labels: map[string]string{
 			"empire.app.id":   "c9366591-ab68-4d49-a333-95ce5a23df68",
 			"empire.app.name": "acme-inc",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []*twelvefactor.Process{
 			{
-				Type:      "web",
-				Instances: 1,
+				Type:     "web",
+				Quantity: 1,
 			},
 		},
-	}, scheduler.NullStatusStream)
+	}, twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -216,20 +216,20 @@ func TestScheduler_Submit_NoDNS(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.SubmitWithOptions(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
+	err := s.SubmitWithOptions(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
 		Labels: map[string]string{
 			"empire.app.id":   "c9366591-ab68-4d49-a333-95ce5a23df68",
 			"empire.app.name": "acme-inc",
 		},
-		Processes: []*scheduler.Process{
+		Processes: []*twelvefactor.Process{
 			{
-				Type:      "web",
-				Instances: 1,
+				Type:     "web",
+				Quantity: 1,
 			},
 		},
-	}, scheduler.NullStatusStream, SubmitOptions{
+	}, twelvefactor.NullStatusStream, SubmitOptions{
 		NoDNS: aws.Bool(true),
 	})
 	assert.NoError(t, err)
@@ -333,10 +333,10 @@ func TestScheduler_Submit_ExistingStack(t *testing.T) {
 		},
 	}, nil).Once()
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, scheduler.NullStatusStream)
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -425,9 +425,9 @@ func TestScheduler_Submit_Superseded(t *testing.T) {
 	}, nil)
 
 	stream := &storedStatusStream{}
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
 	}, stream)
 	assert.NoError(t, err)
 	contains := false
@@ -527,10 +527,10 @@ func TestScheduler_Submit_LockWaitTimeout(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, scheduler.NullStatusStream)
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -624,10 +624,10 @@ func TestScheduler_Submit_StackWaitTimeout(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, scheduler.NullStatusStream)
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, twelvefactor.NullStatusStream)
 	assert.EqualError(t, err, `timed out waiting for stack operation to complete`)
 
 	c.AssertExpectations(t)
@@ -708,10 +708,10 @@ func TestScheduler_Submit_UpdateError(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, scheduler.NullStatusStream)
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, twelvefactor.NullStatusStream)
 	assert.EqualError(t, err, `error updating stack: stack update failed`)
 
 	c.AssertExpectations(t)
@@ -809,13 +809,13 @@ func TestScheduler_Submit_ExistingStack_RemovedProcess(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-		Processes: []*scheduler.Process{
-			{Type: "web", Instances: 1},
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+		Processes: []*twelvefactor.Process{
+			{Type: "web", Quantity: 1},
 		},
-	}, scheduler.NullStatusStream)
+	}, twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -931,13 +931,13 @@ func TestScheduler_Submit_ExistingStack_ExistingParameterValue(t *testing.T) {
 		},
 	}, nil)
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-		Processes: []*scheduler.Process{
-			{Type: "web", Instances: 1},
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+		Processes: []*twelvefactor.Process{
+			{Type: "web", Quantity: 1},
 		},
-	}, scheduler.NullStatusStream)
+	}, twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -971,10 +971,10 @@ func TestScheduler_Submit_TemplateTooLarge(t *testing.T) {
 		TemplateURL: aws.String("https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f"),
 	}).Return(&cloudformation.ValidateTemplateOutput{}, awserr.New("ValidationError", "Template may not exceed 460800 bytes in size.", errors.New("")))
 
-	err := s.Submit(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, scheduler.NullStatusStream)
+	err := s.Submit(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, twelvefactor.NullStatusStream)
 	assert.EqualError(t, err, `TemplateValidationError:
   Template URL: https://bucket.s3.amazonaws.com/acme-inc/c9366591-ab68-4d49-a333-95ce5a23df68/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f
   Template Size: 2 bytes
@@ -1217,30 +1217,30 @@ func TestScheduler_Instances(t *testing.T) {
 		},
 	}, nil)
 
-	instances, err := s.Instances(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
+	instances, err := s.Tasks(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
 	assert.NoError(t, err)
-	assert.Equal(t, &scheduler.Instance{
+	assert.Equal(t, &twelvefactor.Task{
 		ID:        "0b69d5c0-d655-4695-98cd-5d2d526d9d5a",
-		Host:      scheduler.Host{ID: "ec2-instance-id-1"},
+		Host:      twelvefactor.Host{ID: "ec2-instance-id-1"},
 		UpdatedAt: dt,
 		State:     "RUNNING",
-		Process: &scheduler.Process{
-			Type:        "web",
-			MemoryLimit: 256 * bytesize.MB,
-			CPUShares:   256,
-			Env:         make(map[string]string),
+		Process: &twelvefactor.Process{
+			Type:      "web",
+			Memory:    256 * bytesize.MB,
+			CPUShares: 256,
+			Env:       make(map[string]string),
 		},
 	}, instances[0])
-	assert.Equal(t, &scheduler.Instance{
+	assert.Equal(t, &twelvefactor.Task{
 		ID:        "c09f0188-7f87-4b0f-bfc3-16296622b6fe",
-		Host:      scheduler.Host{ID: "ec2-instance-id-2"},
+		Host:      twelvefactor.Host{ID: "ec2-instance-id-2"},
 		UpdatedAt: dt,
 		State:     "PENDING",
-		Process: &scheduler.Process{
-			Type:        "run",
-			MemoryLimit: 256 * bytesize.MB,
-			CPUShares:   256,
-			Env:         make(map[string]string),
+		Process: &twelvefactor.Process{
+			Type:      "run",
+			Memory:    256 * bytesize.MB,
+			CPUShares: 256,
+			Env:       make(map[string]string),
 		},
 	}, instances[1])
 
@@ -1327,7 +1327,7 @@ func TestScheduler_Instances_ManyTasks(t *testing.T) {
 		},
 	}, nil)
 
-	_, err = s.Instances(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
+	_, err = s.Tasks(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68")
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -1479,10 +1479,10 @@ func TestScheduler_Restart(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err = s.Restart(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, scheduler.NullStatusStream)
+	err = s.Restart(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -1536,13 +1536,13 @@ func TestScheduler_Run_Detached(t *testing.T) {
 		},
 	}, nil)
 
-	err = s.Run(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
+	err = s.Run(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
 		Env: map[string]string{
 			"EMPIRE_X_TASK_ROLE_ARN": "arn:aws:iam::897883143566:role/app",
 		},
-	}, &scheduler.Process{
+	}, &twelvefactor.Process{
 		Type:    "run",
 		Command: []string{"bundle exec rake db:migrate"},
 	}, nil, nil)
@@ -1675,10 +1675,10 @@ func TestScheduler_Run_Attached(t *testing.T) {
 		RawTerminal:  true,
 	}).Return(nil)
 
-	err = s.Run(context.Background(), &scheduler.App{
-		ID:   "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name: "acme-inc",
-	}, &scheduler.Process{
+	err = s.Run(context.Background(), &twelvefactor.Manifest{
+		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
+		Name:  "acme-inc",
+	}, &twelvefactor.Process{
 		Type:    "run",
 		Command: []string{"bundle", "exec", "rake", "db:migrate"},
 	}, stdin, stdout)
@@ -1719,23 +1719,23 @@ func (t *fakeTemplate) Execute(wr io.Writer, data interface{}) error {
 	return err
 }
 
-func (t *fakeTemplate) ContainerDefinition(*scheduler.App, *scheduler.Process) *ecs.ContainerDefinition {
+func (t *fakeTemplate) ContainerDefinition(*twelvefactor.Manifest, *twelvefactor.Process) *ecs.ContainerDefinition {
 	return t.containerDefinition
 }
 
 type storedStatusStream struct {
 	sync.Mutex
-	statuses []scheduler.Status
+	statuses []twelvefactor.Status
 }
 
-func (s *storedStatusStream) Publish(status scheduler.Status) error {
+func (s *storedStatusStream) Publish(status twelvefactor.Status) error {
 	s.Lock()
 	defer s.Unlock()
 	s.statuses = append(s.statuses, status)
 	return nil
 }
 
-func (s *storedStatusStream) Statuses() []scheduler.Status {
+func (s *storedStatusStream) Statuses() []twelvefactor.Status {
 	s.Lock()
 	defer s.Unlock()
 	return s.statuses

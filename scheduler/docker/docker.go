@@ -12,7 +12,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerutil"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"golang.org/x/net/context"
 )
 
@@ -58,13 +58,13 @@ type AttachedScheduler struct {
 	// processes interact with a single Docker daemon.
 	ShowAttached bool
 
-	scheduler.Scheduler
+	twelvefactor.Scheduler
 	dockerScheduler *Scheduler
 }
 
 // RunAttachedWithDocker wraps a Scheduler to run attached Run's using a Docker
 // client.
-func RunAttachedWithDocker(s scheduler.Scheduler, client *dockerutil.Client) *AttachedScheduler {
+func RunAttachedWithDocker(s twelvefactor.Scheduler, client *dockerutil.Client) *AttachedScheduler {
 	return &AttachedScheduler{
 		Scheduler:       s,
 		dockerScheduler: NewScheduler(client),
@@ -73,7 +73,7 @@ func RunAttachedWithDocker(s scheduler.Scheduler, client *dockerutil.Client) *At
 
 // Run runs attached processes using the docker scheduler, and detached
 // processes using the wrapped scheduler.
-func (s *AttachedScheduler) Run(ctx context.Context, app *scheduler.App, process *scheduler.Process, in io.Reader, out io.Writer) error {
+func (s *AttachedScheduler) Run(ctx context.Context, app *twelvefactor.Manifest, process *twelvefactor.Process, in io.Reader, out io.Writer) error {
 	// Attached means stdout, stdin is attached.
 	attached := out != nil || in != nil
 
@@ -84,15 +84,15 @@ func (s *AttachedScheduler) Run(ctx context.Context, app *scheduler.App, process
 	}
 }
 
-// Instances returns a combination of instances from the wrapped scheduler, as
+// Tasks returns a combination of instances from the wrapped scheduler, as
 // well as instances from attached runs.
-func (s *AttachedScheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+func (s *AttachedScheduler) Tasks(ctx context.Context, app string) ([]*twelvefactor.Task, error) {
 	if !s.ShowAttached {
-		return s.Scheduler.Instances(ctx, app)
+		return s.Scheduler.Tasks(ctx, app)
 	}
 
 	type instancesResult struct {
-		instances []*scheduler.Instance
+		instances []*twelvefactor.Task
 		err       error
 	}
 
@@ -102,7 +102,7 @@ func (s *AttachedScheduler) Instances(ctx context.Context, app string) ([]*sched
 		ch <- instancesResult{attachedInstances, err}
 	}()
 
-	instances, err := s.Scheduler.Instances(ctx, app)
+	instances, err := s.Scheduler.Tasks(ctx, app)
 	if err != nil {
 		return instances, err
 	}
@@ -147,14 +147,14 @@ func NewScheduler(client *dockerutil.Client) *Scheduler {
 	}
 }
 
-func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, p *scheduler.Process, in io.Reader, out io.Writer) error {
+func (s *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, p *twelvefactor.Process, in io.Reader, out io.Writer) error {
 	attached := out != nil || in != nil
 
 	if !attached {
 		return errors.New("cannot run detached processes with Docker scheduler")
 	}
 
-	labels := scheduler.Labels(app, p)
+	labels := twelvefactor.Labels(app, p)
 	labels[runLabel] = Attached
 
 	if err := s.docker.PullImage(ctx, docker.PullImageOptions{
@@ -174,11 +174,11 @@ func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, p *scheduler.Pr
 			AttachStdout: true,
 			AttachStderr: true,
 			OpenStdin:    true,
-			Memory:       int64(p.MemoryLimit),
+			Memory:       int64(p.Memory),
 			CPUShares:    int64(p.CPUShares),
 			Image:        p.Image.String(),
 			Cmd:          p.Command,
-			Env:          envKeys(scheduler.Env(app, p)),
+			Env:          envKeys(twelvefactor.Env(app, p)),
 			Labels:       labels,
 		},
 		HostConfig: &docker.HostConfig{
@@ -219,13 +219,13 @@ func (s *Scheduler) Run(ctx context.Context, app *scheduler.App, p *scheduler.Pr
 	return nil
 }
 
-func (s *Scheduler) Instances(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+func (s *Scheduler) Instances(ctx context.Context, app string) ([]*twelvefactor.Task, error) {
 	return s.InstancesFromAttachedRuns(ctx, app)
 }
 
 // InstancesFromAttachedRuns returns Instances that were started from attached
 // runs.
-func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) ([]*scheduler.Instance, error) {
+func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) ([]*twelvefactor.Task, error) {
 	// Filter only docker containers that were started as an attached run.
 	attached := fmt.Sprintf("%s=%s", runLabel, Attached)
 	return s.instances(ctx, app, attached)
@@ -233,8 +233,8 @@ func (s *Scheduler) InstancesFromAttachedRuns(ctx context.Context, app string) (
 
 // instances returns docker container instances for this app, optionally
 // filtered with labels.
-func (s *Scheduler) instances(ctx context.Context, app string, labels ...string) ([]*scheduler.Instance, error) {
-	var instances []*scheduler.Instance
+func (s *Scheduler) instances(ctx context.Context, app string, labels ...string) ([]*twelvefactor.Task, error) {
+	var instances []*twelvefactor.Task
 
 	containers, err := s.docker.ListContainers(docker.ListContainersOptions{
 		Filters: map[string][]string{
@@ -255,16 +255,16 @@ func (s *Scheduler) instances(ctx context.Context, app string, labels ...string)
 
 		state := strings.ToUpper(container.State.StateString())
 
-		instances = append(instances, &scheduler.Instance{
+		instances = append(instances, &twelvefactor.Task{
 			ID:        container.ID[0:12],
 			State:     state,
 			UpdatedAt: container.State.StartedAt,
-			Process: &scheduler.Process{
-				Type:        container.Config.Labels[processLabel],
-				Command:     container.Config.Cmd,
-				Env:         parseEnv(container.Config.Env),
-				MemoryLimit: uint(container.HostConfig.Memory),
-				CPUShares:   uint(container.HostConfig.CPUShares),
+			Process: &twelvefactor.Process{
+				Type:      container.Config.Labels[processLabel],
+				Command:   container.Config.Cmd,
+				Env:       parseEnv(container.Config.Env),
+				Memory:    uint(container.HostConfig.Memory),
+				CPUShares: uint(container.HostConfig.CPUShares),
 			},
 		})
 	}

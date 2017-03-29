@@ -1,6 +1,6 @@
 // Package scheduler provides the core interface that Empire uses when
 // interacting with a cluster of machines to run tasks.
-package scheduler
+package twelvefactor
 
 import (
 	"fmt"
@@ -13,9 +13,9 @@ import (
 	"github.com/remind101/pkg/logger"
 )
 
-type App struct {
+type Manifest struct {
 	// The id of the app.
-	ID string
+	AppID string
 
 	// An identifier that represents the version of this release.
 	Release string
@@ -50,7 +50,7 @@ type Process struct {
 	Labels map[string]string
 
 	// The amount of RAM to allocate to this process in bytes.
-	MemoryLimit uint
+	Memory uint
 
 	// The amount of CPU to allocate to this process, out of 1024. Maps to
 	// the --cpu-shares flag for docker.
@@ -59,8 +59,8 @@ type Process struct {
 	// ulimit -u
 	Nproc uint
 
-	// Instances is the desired instances of this service to run.
-	Instances int
+	// Quantity is the desired instances of this service to run.
+	Quantity int
 
 	// Exposure is the level of exposure for this process.
 	Exposure *Exposure
@@ -139,8 +139,8 @@ type Host struct {
 	ID string
 }
 
-// Instance represents an Instance of a Process.
-type Instance struct {
+// Task represents an Task of a Process.
+type Task struct {
 	Process *Process
 
 	// The instance ID.
@@ -158,7 +158,7 @@ type Instance struct {
 
 type Runner interface {
 	// Run runs a process.
-	Run(ctx context.Context, app *App, process *Process, in io.Reader, out io.Writer) error
+	Run(ctx context.Context, app *Manifest, process *Process, in io.Reader, out io.Writer) error
 }
 
 // Scheduler is an interface for interfacing with Services.
@@ -170,30 +170,30 @@ type Scheduler interface {
 	// usually when the new version has been received, and validated. If
 	// StatusStream is not nil, it's recommended that the method not return until
 	// the deployment has fully completed.
-	Submit(context.Context, *App, StatusStream) error
+	Submit(context.Context, *Manifest, StatusStream) error
 
 	// Remove removes the App.
 	Remove(ctx context.Context, app string) error
 
 	// Instance lists the instances of a Process for an app.
-	Instances(ctx context.Context, app string) ([]*Instance, error)
+	Tasks(ctx context.Context, app string) ([]*Task, error)
 
 	// Stop stops an instance. The scheduler will automatically start a new
 	// instance.
 	Stop(ctx context.Context, instanceID string) error
 
 	// Restart restarts the processes within the App.
-	Restart(context.Context, *App, StatusStream) error
+	Restart(context.Context, *Manifest, StatusStream) error
 }
 
 // Env merges the App environment with any environment variables provided
 // in the process.
-func Env(app *App, process *Process) map[string]string {
+func Env(app *Manifest, process *Process) map[string]string {
 	return merge(app.Env, process.Env)
 }
 
 // Labels merges the App labels with any labels provided in the process.
-func Labels(app *App, process *Process) map[string]string {
+func Labels(app *Manifest, process *Process) map[string]string {
 	return merge(app.Labels, process.Labels)
 }
 

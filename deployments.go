@@ -7,7 +7,7 @@ import (
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/empire/scheduler"
+	"github.com/remind101/empire/twelvefactor"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +18,7 @@ type deployerService struct {
 }
 
 // createRelease creates a new release that can be deployed
-func (s *deployerService) createRelease(ctx context.Context, db *gorm.DB, ss scheduler.StatusStream, opts DeployOpts) (*Release, error) {
+func (s *deployerService) createRelease(ctx context.Context, db *gorm.DB, ss twelvefactor.StatusStream, opts DeployOpts) (*Release, error) {
 	app, img := opts.App, opts.Image
 
 	// If no app is specified, attempt to find the app that relates to this
@@ -63,7 +63,7 @@ func (s *deployerService) createRelease(ctx context.Context, db *gorm.DB, ss sch
 	return r, err
 }
 
-func (s *deployerService) createInTransaction(ctx context.Context, stream scheduler.StatusStream, opts DeployOpts) (*Release, error) {
+func (s *deployerService) createInTransaction(ctx context.Context, stream twelvefactor.StatusStream, opts DeployOpts) (*Release, error) {
 	tx := s.db.Begin()
 	r, err := s.createRelease(ctx, tx, stream, opts)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *deployerService) createInTransaction(ctx context.Context, stream schedu
 func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	w := opts.Output
 
-	var stream scheduler.StatusStream
+	var stream twelvefactor.StatusStream
 	if opts.Stream {
 		stream = w
 	}
@@ -122,7 +122,7 @@ func (w *DeploymentStream) Write(b []byte) (int, error) {
 }
 
 // Publish implements the scheduler.StatusStream interface.
-func (w *DeploymentStream) Publish(status scheduler.Status) error {
+func (w *DeploymentStream) Publish(status twelvefactor.Status) error {
 	return w.Status(status.Message)
 }
 
