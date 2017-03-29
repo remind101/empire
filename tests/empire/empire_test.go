@@ -208,7 +208,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 func TestEmpire_Deploy_Concurrent(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
-	e.Scheduler = twelvefactor.NewFakeScheduler()
+	e.Scheduler = empire.NewFakeScheduler()
 	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},
@@ -663,7 +663,7 @@ func TestEmpire_Set(t *testing.T) {
 }
 
 type mockScheduler struct {
-	twelvefactor.Scheduler
+	empire.Scheduler
 	mock.Mock
 }
 

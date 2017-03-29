@@ -21,7 +21,6 @@ import (
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/middleware"
-	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -49,7 +48,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 	}
 
 	e := empire.New(db)
-	e.Scheduler = twelvefactor.NewFakeScheduler()
+	e.Scheduler = empire.NewFakeScheduler()
 	e.ProcfileExtractor = ExtractProcfile(nil)
 	e.RunRecorder = empire.RecordTo(ioutil.Discard)
 

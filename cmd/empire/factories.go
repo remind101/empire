@@ -28,7 +28,6 @@ import (
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/stats"
-	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/hb"
 )
@@ -90,9 +89,9 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 
 // Scheduler ============================
 
-func newScheduler(db *empire.DB, c *Context) (twelvefactor.Scheduler, error) {
+func newScheduler(db *empire.DB, c *Context) (empire.Scheduler, error) {
 	var (
-		s   twelvefactor.Scheduler
+		s   empire.Scheduler
 		err error
 	)
 

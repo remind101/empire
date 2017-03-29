@@ -8,6 +8,7 @@ import (
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/ejholmes/hookshot/hooker"
+	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/twelvefactor"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +81,7 @@ func newClient(t testing.TB) *client {
 }
 
 type mockScheduler struct {
-	twelvefactor.Scheduler
+	empire.Scheduler
 	image chan string
 }
 
