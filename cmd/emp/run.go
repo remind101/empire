@@ -188,6 +188,7 @@ func runRun(cmd *Command, args []string) {
 	case err = <-errChanOut:
 		must(err)
 	}
+	fmt.Println("Press enter to continue")
 }
 
 func dialParams(u *url.URL) (proto, address string) {
