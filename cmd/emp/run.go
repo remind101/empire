@@ -33,6 +33,8 @@ Run a process on Heroku. Flags such as` + " `-a` " + `may be parsed out of
 the command unless the command is quoted or provided after a
 double-dash (--).
 
+You may need to press enter after this command to continue.
+
 Options:
 
     -s <size>  set the size for this dyno (e.g. 2X)
@@ -188,7 +190,6 @@ func runRun(cmd *Command, args []string) {
 	case err = <-errChanOut:
 		must(err)
 	}
-	fmt.Println("Press enter to continue")
 }
 
 func dialParams(u *url.URL) (proto, address string) {
