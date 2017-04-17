@@ -33,6 +33,10 @@ Run a process on Heroku. Flags such as` + " `-a` " + `may be parsed out of
 the command unless the command is quoted or provided after a
 double-dash (--).
 
+When running an attached process that reads from stdin (like bash) you may experience a "hang".
+Usually, pressing a key like "enter" will flush the output to your terminal.
+See https://github.com/remind101/empire/issues/609
+
 Options:
 
     -s <size>  set the size for this dyno (e.g. 2X)
