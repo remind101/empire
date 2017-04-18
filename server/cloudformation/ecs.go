@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/mitchellh/hashstructure"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
+	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -119,6 +120,14 @@ func (p *ECSServiceResource) Provision(ctx context.Context, req customresources.
 				data["DeploymentId"] = *d.Id
 			} else {
 				err = fmt.Errorf("no primary deployment found")
+			}
+		} else {
+			logger.Info(ctx, "cloudformation.service.update.error",
+				"error_type", reflect.TypeOf(err),
+				"error_msg", err.Error(),
+			)
+			if strings.Contains(err.Error(), "TaskDefinition is inactive") {
+				err = nil
 			}
 		}
 		return id, data, err
