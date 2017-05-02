@@ -9,7 +9,6 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
-	"github.com/remind101/pkg/trace"
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
 )
@@ -130,20 +129,5 @@ func DeployAsync(d Deployer) Deployer {
 	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) error {
 		go d.Deploy(ctx, event, w)
 		return nil
-	})
-}
-
-// TraceDeploy wraps a Deployer to perform tracing with package trace.
-func TraceDeploy(d Deployer) Deployer {
-	return DeployerFunc(func(ctx context.Context, event events.Deployment, w io.Writer) (err error) {
-		ctx, done := trace.Trace(ctx)
-		err = d.Deploy(ctx, event, w)
-		done(err, "Deploy",
-			"repository", event.Repository.FullName,
-			"creator", event.Deployment.Creator.Login,
-			"ref", event.Deployment.Ref,
-			"sha", event.Deployment.Sha,
-		)
-		return err
 	})
 }
