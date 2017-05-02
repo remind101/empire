@@ -11,7 +11,7 @@ import (
 )
 
 const hbExampleURL = "hb://api.honeybadger.io?key=<key>&environment=<environment>"
-const rollbarExampleURL = "rb://api.rollbar.com?key=<key>&environment=<environment>"
+const rollbarExampleURL = "rollbar://api.rollbar.com?key=<key>&environment=<environment>"
 
 const (
 	FlagURL            = "url"
