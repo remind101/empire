@@ -129,9 +129,6 @@ func newDeployer(e *empire.Empire, options Options) github.Deployer {
 		d = github.NotifyTugboat(d, url)
 	}
 
-	// Add tracing information so we know about errors.
-	d = github.TraceDeploy(d)
-
 	// Perform the deployment within a go routine so we don't timeout
 	// githubs webhook requests.
 	d = github.DeployAsync(d)

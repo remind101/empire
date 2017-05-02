@@ -664,6 +664,18 @@
 			"revisionTime": "2016-06-24T19:10:23Z"
 		},
 		{
+			"checksumSHA1": "5n2LT2xl7th2kjw4gbZr01KyWI0=",
+			"path": "github.com/pborman/uuid",
+			"revision": "1b00554d822231195d1babd97ff4a781231955c9",
+			"revisionTime": "2017-01-12T15:04:04Z"
+		},
+		{
+			"checksumSHA1": "9guv02oL7uLkwqQNjJv8AJxWXmQ=",
+			"path": "github.com/pkg/errors",
+			"revision": "ff09b135c25aae272398c51a07235b90a75aa4f0",
+			"revisionTime": "2017-03-16T20:15:38Z"
+		},
+		{
 			"path": "github.com/pmylund/go-cache",
 			"revision": "93d85800f2fa6bd0a739e7bd612bfa3bc008b72d"
 		},
@@ -746,23 +758,61 @@
 			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
+			"checksumSHA1": "RJkLQdWQedoaXAJSzuq/q9gkoJk=",
 			"path": "github.com/remind101/pkg/reporter",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
+		},
+		{
+			"checksumSHA1": "Jh/CE5ZLooQJNB6NlZZHtBuVXdM=",
+			"path": "github.com/remind101/pkg/reporter/config",
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"path": "github.com/remind101/pkg/reporter/hb",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+			"revision": "835283e5cf4be4a19295819879cc5259718ec075",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
+			"checksumSHA1": "H83EF4dErUot+DlF4czysYxqqCk=",
+			"path": "github.com/remind101/pkg/reporter/hb2",
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
+		},
+		{
+			"checksumSHA1": "CTOLdRBY3vpKMJzaVJ3z6TDD4+8=",
+			"path": "github.com/remind101/pkg/reporter/hb2/internal/honeybadger-go",
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
+		},
+		{
+			"checksumSHA1": "1vSLRKRsbk46kTdTWPc3oVbLqgo=",
+			"path": "github.com/remind101/pkg/reporter/rollbar",
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
+		},
+		{
+			"checksumSHA1": "bErBcrNm9575dBo6gwXt1+lPXLg=",
 			"path": "github.com/remind101/pkg/reporter/util",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
+			"revision": "82398077184fb833f2c49c372f1622501d985975",
+			"revisionTime": "2017-05-01T19:00:09Z",
+			"version": "master",
+			"versionExact": "master"
 		},
 		{
 			"path": "github.com/remind101/pkg/timex",
-			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
-		},
-		{
-			"path": "github.com/remind101/pkg/trace",
 			"revision": "835283e5cf4be4a19295819879cc5259718ec075"
 		},
 		{
@@ -820,6 +870,24 @@
 			"revisionTime": "2016-01-06T04:51:11+07:00"
 		},
 		{
+			"checksumSHA1": "L6resfEezuJvtU/pTSmAJYcg1jY=",
+			"path": "github.com/shirou/gopsutil/internal/common",
+			"revision": "119305b4ceb81cc9314ee187970584a0923b0679",
+			"revisionTime": "2017-05-01T13:59:42Z"
+		},
+		{
+			"checksumSHA1": "qnCLe/bXJAV+uRN8/BFKRWb1f04=",
+			"path": "github.com/shirou/gopsutil/load",
+			"revision": "119305b4ceb81cc9314ee187970584a0923b0679",
+			"revisionTime": "2017-05-01T13:59:42Z"
+		},
+		{
+			"checksumSHA1": "grhHsM59WKF2QGP2oAxXlmVW04I=",
+			"path": "github.com/shirou/gopsutil/mem",
+			"revision": "119305b4ceb81cc9314ee187970584a0923b0679",
+			"revisionTime": "2017-05-01T13:59:42Z"
+		},
+		{
 			"path": "github.com/stretchr/objx",
 			"revision": "cbeaeb16a013161a98496fad62933b1d21786672"
 		},
@@ -838,6 +906,12 @@
 			"path": "github.com/stretchr/testify/require",
 			"revision": "6cb3b85ef5a0efef77caef88363ec4d4b5c0976d",
 			"revisionTime": "2016-05-04T13:01:55Z"
+		},
+		{
+			"checksumSHA1": "C9HUZUDRIcA4IJtITUsFmtlnEIU=",
+			"path": "github.com/stvp/rollbar",
+			"revision": "9e4db202d253224ad9bc6dd9c791cf514ff1c821",
+			"revisionTime": "2017-03-17T17:51:11Z"
 		},
 		{
 			"path": "golang.org/x/net/context",

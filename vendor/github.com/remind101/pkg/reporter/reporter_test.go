@@ -2,9 +2,8 @@ package reporter
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
-	"path"
-	"runtime"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -20,7 +19,15 @@ func TestReport(t *testing.T) {
 			t.Fatal("request information not set")
 		}
 
-		checkFirstFunc(t, e, "reporter.TestReport")
+		stack := e.StackTrace()
+		var method string
+		if stack != nil && len(stack) > 0 {
+			method = fmt.Sprintf("%n", stack[0])
+		}
+
+		if got, want := method, "TestReport"; got != want {
+			t.Fatalf("expected the first stacktrace method to be %v, got %v", want, got)
+		}
 
 		return nil
 	})
@@ -35,28 +42,38 @@ func TestReport(t *testing.T) {
 	}
 }
 
-func TestReportWithSkip(t *testing.T) {
+func TestReportWithNoReporterInContext(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("Expected panic due to context without reporter, got no panic")
+		}
+	}()
+	ctx := context.Background() // no reporter
+	Report(ctx, errBoom)
+}
+
+func TestMonitor(t *testing.T) {
+	ensureRepanicked := func() {
+		if v := recover(); v == nil {
+			t.Errorf("Must have panicked after reporting!")
+		}
+	}
+	var reportedError error
 	r := ReporterFunc(func(ctx context.Context, err error) error {
-		e := err.(*Error)
-
-		checkFirstFunc(t, e, "reporter.TestReportWithSkip")
-
+		reportedError = err
 		return nil
 	})
 	ctx := WithReporter(context.Background(), r)
 
-	func() {
-		if err := ReportWithSkip(ctx, errBoom, 1); err != nil {
-			t.Fatal(err)
-		}
+	done := make(chan interface{})
+	go func() {
+		defer close(done)
+		defer ensureRepanicked()
+		defer Monitor(ctx)
+		panic("oh noes!")
 	}()
-}
-
-func checkFirstFunc(t testing.TB, err *Error, name string) {
-	line := err.Backtrace[0]
-	fn := runtime.FuncForPC(line.PC)
-
-	if got, want := path.Base(fn.Name()), name; got != want {
-		t.Fatalf("Function => %s; want %s", got, want)
+	<-done
+	if reportedError == nil || reportedError.Error() != "panic: oh noes!" {
+		t.Errorf("expected panic 'oh noes!' to be reported, got %#v", reportedError)
 	}
 }
