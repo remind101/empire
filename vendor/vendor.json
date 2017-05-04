@@ -908,10 +908,11 @@
 			"revisionTime": "2016-05-04T13:01:55Z"
 		},
 		{
-			"checksumSHA1": "C9HUZUDRIcA4IJtITUsFmtlnEIU=",
+			"checksumSHA1": "poXq4V+dAZfIutEdXpEE3Gl1Vgc=",
+			"origin": "github.com/remind101/rollbar",
 			"path": "github.com/stvp/rollbar",
-			"revision": "9e4db202d253224ad9bc6dd9c791cf514ff1c821",
-			"revisionTime": "2017-03-17T17:51:11Z"
+			"revision": "6661f0a4cb6a4b080a91634d1d5cf3dfd52ffe54",
+			"revisionTime": "2017-05-04T23:46:45Z"
 		},
 		{
 			"path": "golang.org/x/net/context",

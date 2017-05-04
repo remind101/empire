@@ -172,9 +172,8 @@ func buildError(level string, err error, stack Stack, fields ...*Field) map[stri
 
 	body := buildBody(level, title)
 	data := body["data"].(map[string]interface{})
-	errBody, fingerprint := errorBody(err, stack)
+	errBody := errorBody(err, stack)
 	data["body"] = errBody
-	data["fingerprint"] = fingerprint
 
 	for _, field := range fields {
 		data[field.Name] = field.Data
@@ -246,13 +245,12 @@ func buildBody(level, title string) map[string]interface{} {
 }
 
 // errorBody generates a Rollbar error body with a given stack trace.
-func errorBody(err error, stack Stack) (map[string]interface{}, string) {
+func errorBody(err error, stack Stack) map[string]interface{} {
 	message := nilErrTitle
 	if err != nil {
 		message = err.Error()
 	}
 
-	fingerprint := stack.Fingerprint()
 	errBody := map[string]interface{}{
 		"trace": map[string]interface{}{
 			"frames": stack,
@@ -262,7 +260,7 @@ func errorBody(err error, stack Stack) (map[string]interface{}, string) {
 			},
 		},
 	}
-	return errBody, fingerprint
+	return errBody
 }
 
 // errorRequest extracts details from a Request in a format that Rollbar
