@@ -66,7 +66,7 @@
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
       "Description": "The AMI id of the AMI to run the instances with. This defaults to the official ECS ami.",
-      "Default": "ami-55870742"
+      "Default": "ami-275ffe31"
     },
     "KeyName": {
       "Type": "String",

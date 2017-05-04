@@ -59,7 +59,7 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 1. Ensure that you have the AWS CLI installed and configured.
 2. Ensure that you accepted the terms and conditions for the official ECS AMI:
 
-   https://aws.amazon.com/marketplace/ordering?productId=4ce33fd9-63ff-4f35-8d3a-939b641f1931&ref_=dtl_psb_continue&region=us-east-1
+   https://aws.amazon.com/marketplace/fulfillment?productId=52d5fd7f-92c7-4d60-a830-41a596f4d8f3&region=us-east-1
 
    Also check that the offical ECS AMI ID for US East matches with the one in [cloudformation.json](./docs/cloudformation.json): https://github.com/remind101/empire/blob/master/docs/cloudformation.json#L20
 
