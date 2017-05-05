@@ -187,16 +187,16 @@ type Scheduler interface {
 // Env merges the App environment with any environment variables provided
 // in the process.
 func Env(app *Manifest, process *Process) map[string]string {
-	return merge(app.Env, process.Env)
+	return Merge(app.Env, process.Env)
 }
 
 // Labels merges the App labels with any labels provided in the process.
 func Labels(app *Manifest, process *Process) map[string]string {
-	return merge(app.Labels, process.Labels)
+	return Merge(app.Labels, process.Labels)
 }
 
 // merges the maps together, favoring keys from the right to the left.
-func merge(envs ...map[string]string) map[string]string {
+func Merge(envs ...map[string]string) map[string]string {
 	merged := make(map[string]string)
 	for _, env := range envs {
 		for k, v := range env {

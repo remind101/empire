@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 	"regexp"
 	"sort"
@@ -403,11 +404,13 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 		scheme := schemeInternal
 		sg := t.InternalSecurityGroupID
 		subnets := t.InternalSubnetIDs
+		targetGroupPrefix := "Internal"
 
 		if p.Exposure.External {
 			scheme = schemeExternal
 			sg = t.ExternalSecurityGroupID
 			subnets = t.ExternalSubnetIDs
+			targetGroupPrefix = "External"
 		}
 
 		loadBalancerType := loadBalancerType(app, p)
@@ -435,7 +438,8 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 
 			tmpl.AddResource(loadBalancer)
 
-			targetGroup := fmt.Sprintf("%sTargetGroup", key)
+			targetGroup := fmt.Sprintf("%s%sTargetGroup", key, targetGroupPrefix)
+			log.Printf("using TargetGroup name %s\n", targetGroup)
 			tmpl.Resources[targetGroup] = troposphere.Resource{
 				Type: "AWS::ElasticLoadBalancingV2::TargetGroup",
 				Properties: map[string]interface{}{
