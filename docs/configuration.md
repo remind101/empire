@@ -2,6 +2,8 @@
 
 The following documents the various configuration parameters that you can use to tailor your Empire environment to your needs.
 
+If you're configuring for production, make sure to read through [production best practices](./production_best_practices.md).
+
 ### GitHub Authentication
 
 1. Create new OAuth application in Github
@@ -15,7 +17,7 @@ It's recommended that you also set either `EMPIRE_GITHUB_ORGANIZATION`, or `EMPI
 
 ### SAML Authentication
 
-Refer to the [docs](./saml) on configuring the SAML authentication backend.
+Refer to the [docs](./saml.md) on configuring the SAML authentication backend.
 
 ### GitHub Deployments
 

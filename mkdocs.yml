@@ -9,6 +9,7 @@ pages:
     - "Quickstart: Using": "quickstart_using.md"
     - "Configuration": "configuration.md"
     - "Production Best Practices": "production_best_practices.md"
+    - "SAML Authentication": "saml.md"
   - Users Guide:
     - "Deploying an Application": "deploying_an_application.md"
     - "Exposing an app publicly": "exposing_an_app_publicly.md"
