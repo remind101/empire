@@ -39,6 +39,7 @@ func (r *rollbarReporter) Report(ctx context.Context, err error) error {
 		}
 
 		stackTrace = makeRollbarStack(e.StackTrace())
+		err = e.Cause() // Report the actual cause of the error.
 	}
 
 	reportToRollbar(request, err, stackTrace, extraFields)

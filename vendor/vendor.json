@@ -760,16 +760,16 @@
 		{
 			"checksumSHA1": "RJkLQdWQedoaXAJSzuq/q9gkoJk=",
 			"path": "github.com/remind101/pkg/reporter",
-			"revision": "82398077184fb833f2c49c372f1622501d985975",
-			"revisionTime": "2017-05-01T19:00:09Z",
+			"revision": "f9a58d9c02f92cf6c69ef2535a25e1b89e3b93b7",
+			"revisionTime": "2017-05-09T20:37:24Z",
 			"version": "master",
 			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "Jh/CE5ZLooQJNB6NlZZHtBuVXdM=",
 			"path": "github.com/remind101/pkg/reporter/config",
-			"revision": "82398077184fb833f2c49c372f1622501d985975",
-			"revisionTime": "2017-05-01T19:00:09Z",
+			"revision": "f9a58d9c02f92cf6c69ef2535a25e1b89e3b93b7",
+			"revisionTime": "2017-05-09T20:37:24Z",
 			"version": "master",
 			"versionExact": "master"
 		},
@@ -782,32 +782,32 @@
 		{
 			"checksumSHA1": "H83EF4dErUot+DlF4czysYxqqCk=",
 			"path": "github.com/remind101/pkg/reporter/hb2",
-			"revision": "82398077184fb833f2c49c372f1622501d985975",
-			"revisionTime": "2017-05-01T19:00:09Z",
+			"revision": "f9a58d9c02f92cf6c69ef2535a25e1b89e3b93b7",
+			"revisionTime": "2017-05-09T20:37:24Z",
 			"version": "master",
 			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "CTOLdRBY3vpKMJzaVJ3z6TDD4+8=",
 			"path": "github.com/remind101/pkg/reporter/hb2/internal/honeybadger-go",
-			"revision": "82398077184fb833f2c49c372f1622501d985975",
-			"revisionTime": "2017-05-01T19:00:09Z",
+			"revision": "f9a58d9c02f92cf6c69ef2535a25e1b89e3b93b7",
+			"revisionTime": "2017-05-09T20:37:24Z",
 			"version": "master",
 			"versionExact": "master"
 		},
 		{
-			"checksumSHA1": "1vSLRKRsbk46kTdTWPc3oVbLqgo=",
+			"checksumSHA1": "kWtSweduHkXSGjK+G9hizVhyrZc=",
 			"path": "github.com/remind101/pkg/reporter/rollbar",
-			"revision": "82398077184fb833f2c49c372f1622501d985975",
-			"revisionTime": "2017-05-01T19:00:09Z",
+			"revision": "f9a58d9c02f92cf6c69ef2535a25e1b89e3b93b7",
+			"revisionTime": "2017-05-09T20:37:24Z",
 			"version": "master",
 			"versionExact": "master"
 		},
 		{
 			"checksumSHA1": "bErBcrNm9575dBo6gwXt1+lPXLg=",
 			"path": "github.com/remind101/pkg/reporter/util",
-			"revision": "82398077184fb833f2c49c372f1622501d985975",
-			"revisionTime": "2017-05-01T19:00:09Z",
+			"revision": "f9a58d9c02f92cf6c69ef2535a25e1b89e3b93b7",
+			"revisionTime": "2017-05-09T20:37:24Z",
 			"version": "master",
 			"versionExact": "master"
 		},
