@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/remind101/empire/dbtest"
 	"github.com/remind101/migrate"
 	"github.com/stretchr/testify/assert"
 )
 
 // Tests migrating the database down, then back up again.
 func TestMigrations(t *testing.T) {
-	db, err := OpenDB("postgres://localhost/empire?sslmode=disable")
+	db, err := NewDB(dbtest.Open(t))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -31,6 +31,25 @@ Unit tests live alongside each go file as `_test.go`.
 
 There is also a `tests` directory that contains integration and functional tests that tests the system using the [heroku-go][heroku-go] client and the [emp][emp] command.
 
+The easiest way to run the tests is by using [docker-compose](https://docs.docker.com/compose/).
+
+### Docker Compose
+
+To get started, run:
+
+```console
+$ docker-compose -f docker-compose.test.yml build
+$ docker-compose -f docker-compose.test.yml up -d db
+```
+
+Then run the tests with:
+
+```console
+$ docker-compose -f docker-compose.test.yml run tests
+```
+
+### Mac
+
 To get started, run:
 
 ```console
