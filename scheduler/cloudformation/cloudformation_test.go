@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	docker "github.com/fsouza/go-dockerclient"
 	_ "github.com/lib/pq"
+	"github.com/remind101/empire/dbtest"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/twelvefactor"
 	"github.com/stretchr/testify/assert"
@@ -1692,10 +1693,7 @@ func TestScheduler_Run_Attached(t *testing.T) {
 }
 
 func newDB(t testing.TB) *sql.DB {
-	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := dbtest.Open(t)
 	if _, err := db.Exec(`TRUNCATE TABLE stacks`); err != nil {
 		t.Fatal(err)
 	}

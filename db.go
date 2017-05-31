@@ -10,6 +10,9 @@ import (
 	"github.com/remind101/migrate"
 )
 
+// Empire only supports postgres at the moment.
+const DBDriver = "postgres"
+
 // IncompatibleSchemaError is an error that gets returned from
 // CheckSchemaVersion.
 type IncompatibleSchemaError struct {
@@ -33,17 +36,22 @@ type DB struct {
 
 // OpenDB returns a new gorm.DB instance.
 func OpenDB(uri string) (*DB, error) {
-	u, err := url.Parse(uri)
+	_, err := url.Parse(uri)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := sql.Open(u.Scheme, uri)
+	conn, err := sql.Open(DBDriver, uri)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := gorm.Open(u.Scheme, conn)
+	return NewDB(conn)
+}
+
+// NewDB wraps a sql.DB instance as a DB.
+func NewDB(conn *sql.DB) (*DB, error) {
+	db, err := gorm.Open(DBDriver, conn)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +66,6 @@ func OpenDB(uri string) (*DB, error) {
 
 	return &DB{
 		DB:       &db,
-		uri:      uri,
 		migrator: m,
 	}, nil
 }

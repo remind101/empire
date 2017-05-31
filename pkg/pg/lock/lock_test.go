@@ -1,18 +1,18 @@
 package lock
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/remind101/empire/dbtest"
 	"github.com/stretchr/testify/assert"
 )
 
 const testKey = 1234
 
 func TestAdvisoryLock(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	defer db.Close()
 
 	l, err := NewAdvisoryLock(db, testKey)
@@ -26,7 +26,7 @@ func TestAdvisoryLock(t *testing.T) {
 }
 
 func TestAdvisoryLock_Locked(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	defer db.Close()
 
 	a, err := NewAdvisoryLock(db, testKey)
@@ -69,7 +69,7 @@ func TestAdvisoryLock_Locked(t *testing.T) {
 }
 
 func TestAdvisoryLock_CancelPending(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	defer db.Close()
 
 	a, err := NewAdvisoryLock(db, testKey)
@@ -123,7 +123,7 @@ func TestAdvisoryLock_CancelPending(t *testing.T) {
 }
 
 func TestAdvisoryLock_Timeout(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	defer db.Close()
 
 	a, err := NewAdvisoryLock(db, testKey)
@@ -143,7 +143,7 @@ func TestAdvisoryLock_Timeout(t *testing.T) {
 }
 
 func TestAdvisoryLock_Unlocked(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	defer db.Close()
 
 	l, err := NewAdvisoryLock(db, testKey)
@@ -169,7 +169,7 @@ func TestAdvisoryLock_Unlocked(t *testing.T) {
 }
 
 func TestAdvisoryLock_Used(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	defer db.Close()
 
 	l, err := NewAdvisoryLock(db, testKey)
@@ -187,12 +187,4 @@ func TestAdvisoryLock_Used(t *testing.T) {
 	}()
 	err = l.Lock()
 	assert.NoError(t, err)
-}
-
-func newDB(t testing.TB) *sql.DB {
-	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
 }

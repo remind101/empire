@@ -1,15 +1,15 @@
 package lb
 
 import (
-	"database/sql"
 	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/remind101/empire/dbtest"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDBPortAllocator_Get(t *testing.T) {
-	db := newDB(t)
+	db := dbtest.Open(t)
 	a := &DBPortAllocator{
 		db: db,
 	}
@@ -20,12 +20,4 @@ func TestDBPortAllocator_Get(t *testing.T) {
 
 	err = a.Put(port)
 	assert.NoError(t, err)
-}
-
-func newDB(t testing.TB) *sql.DB {
-	db, err := sql.Open("postgres", "postgres://localhost/empire?sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
 }
