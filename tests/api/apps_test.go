@@ -35,7 +35,7 @@ func TestAttachCert(t *testing.T) {
 	cert := "serverCertificate"
 	app, err := c.AppUpdate(appName, &heroku.AppUpdateOpts{
 		Cert: &cert,
-	})
+	}, "Attaching cert")
 	if err != nil {
 		t.Fatal(err)
 	}

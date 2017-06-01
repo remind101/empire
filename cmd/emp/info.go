@@ -18,6 +18,7 @@ func runInfo(cmd *Command, args []string) {
 	app, err := client.AppInfo(mustApp())
 	must(err)
 	fmt.Printf("Name: %s\n", app.Name)
-	fmt.Printf("ID:   %s\n", app.Id)
+	fmt.Printf("ID: %s\n", app.Id)
+	fmt.Printf("Maintenance: %s\n", fmtMaintenance(app.Maintenance))
 	fmt.Printf("Cert: %s\n", app.Cert)
 }

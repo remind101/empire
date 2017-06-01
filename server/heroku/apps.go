@@ -15,11 +15,12 @@ type App heroku.App
 
 func newApp(a *empire.App) *App {
 	return &App{
-		Id:        a.ID,
-		Name:      a.Name,
-		CreatedAt: *a.CreatedAt,
-		Cert:      a.Certs["web"], // For backwards compatibility.
-		Certs:     a.Certs,
+		Id:          a.ID,
+		Name:        a.Name,
+		Maintenance: a.Maintenance,
+		CreatedAt:   *a.CreatedAt,
+		Cert:        a.Certs["web"], // For backwards compatibility.
+		Certs:       a.Certs,
 	}
 }
 
@@ -131,11 +132,27 @@ func (h *Server) PatchApp(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
+	m, err := findMessage(r)
+	if err != nil {
+		return err
+	}
+
 	// DEPRECATED: For backwards compatibility with older emp clients.
 	if form.Cert != nil {
 		if err := h.CertsAttach(ctx, empire.CertsAttachOpts{
 			App:  a,
 			Cert: *form.Cert,
+		}); err != nil {
+			return err
+		}
+	}
+
+	if form.Maintenance != nil {
+		if err := h.SetMaintenanceMode(ctx, empire.SetMaintenanceModeOpts{
+			User:        auth.UserFromContext(ctx),
+			App:         a,
+			Maintenance: *form.Maintenance,
+			Message:     m,
 		}); err != nil {
 			return err
 		}
