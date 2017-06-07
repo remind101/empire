@@ -3,23 +3,24 @@
 package reporter
 
 import (
+	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
-// DefaultMax is the default maximum number of lines to show from the backtrace.
+// DefaultMax is the default maximum number of lines to show from the stack trace.
 var DefaultMax = 1024
 
 // Reporter represents an error handler.
 type Reporter interface {
 	// Report reports the error to an external system. The provided error
 	// could be an Error instance, which will contain additional information
-	// about the error, including a backtrace and any contextual
+	// about the error, including a stack trace and any contextual
 	// information. Implementers should type assert the error to an *Error
-	// if they want to report the backtrace.
+	// if they want to report the stack trace.
 	Report(context.Context, error) error
 }
 
@@ -57,71 +58,88 @@ func AddRequest(ctx context.Context, req *http.Request) {
 
 // newError returns a new Error instance. If err is already an Error instance,
 // it will be returned, otherwise err will be wrapped with NewErrorWithContext.
-func newError(ctx context.Context, err error, skip int) *Error {
+func newError(ctx context.Context, err error) *Error {
 	if e, ok := err.(*Error); ok {
 		return e
 	} else {
-		return NewErrorWithContext(ctx, err, skip+1)
+		return NewErrorWithContext(ctx, err, 2)
 	}
 }
 
-// Report reports the error with the backtrace starting at the calling function.
+// Report wraps the err as an Error and reports it the the Reporter embedded
+// within the context.Context.
 func Report(ctx context.Context, err error) error {
-	return ReportWithSkip(ctx, err, 1)
-}
-
-// ReportWithSkip wraps the err as an Error and reports it the the Reporter embedded
-// within the context.Context. If err is nil, Report will return early, so this
-// function is safe to call without performing a nill check on the error first.
-// A skip value of 0 refers to the calling function.
-func ReportWithSkip(ctx context.Context, err error, skip int) error {
-	if err == nil {
-		return nil
-	}
-
-	e := newError(ctx, err, skip+1)
+	e := newError(ctx, err)
 
 	if r, ok := FromContext(ctx); ok {
 		return r.Report(ctx, e)
+	} else {
+		panic("No reporter in provided context.")
 	}
 
 	return nil
 }
 
-// A line from the backtrace.
-type BacktraceLine struct {
-	PC   uintptr
-	File string
-	Line int
+// Monitors and reports panics. Useful in goroutines.
+// Example:
+//   ctx := reporter.WithReporter(context.Background(), hb2.NewReporter(hb2.Config{}))
+//   ...
+//   go func(ctx context.Context) {
+//     defer reporter.Monitor(ctx)
+//     ...
+//     panic("oh noes") // will report, then crash.
+//   }(ctx)
+func Monitor(ctx context.Context) {
+	if v := recover(); v != nil {
+		var err error
+		if e, ok := v.(error); ok {
+			err = e
+		} else {
+			err = fmt.Errorf("panic: %v", v)
+		}
+		Report(ctx, err)
+		panic(err)
+	}
 }
 
-// Error wraps an error with additional information, like a backtrace,
+// Error wraps an error with additional information, like a stack trace,
 // contextual information, and an http request if provided.
 type Error struct {
 	// The error that was generated.
 	Err error
-
-	// The backtrace.
-	Backtrace []*BacktraceLine
 
 	// Any freeform contextual information about that error.
 	Context map[string]interface{}
 
 	// If provided, an http request that generated the error.
 	Request *http.Request
+
+	// This is private so that it can be exposed via StackTrace(),
+	// which implements the stackTracker interface.
+	stackTrace errors.StackTrace
 }
 
-// Make error implement the error interface.
+// Make Error implement the error interface.
 func (e *Error) Error() string {
 	return e.Err.Error()
 }
 
-// NewError wraps err as an Error and generates a backtrace pointing at the
+// Make Error implement the causer interface.
+func (e *Error) Cause() error {
+	return errors.Cause(e.Err)
+}
+
+// Make Error implement the stackTracer interface.
+func (e *Error) StackTrace() errors.StackTrace {
+	return e.stackTrace
+}
+
+// NewError wraps err as an Error and generates a stack trace pointing at the
 // caller of this function.
 func NewError(err error, skip int) *Error {
 	return &Error{
-		Err:       err,
-		Backtrace: backtrace(skip+1, DefaultMax),
+		Err:        err,
+		stackTrace: stacktrace(err, skip+1),
 	}
 }
 
@@ -151,24 +169,74 @@ func (e *MultiError) Error() string {
 	return strings.Join(m, ", ")
 }
 
-// backtrace generates a backtrace and returns a slice of BacktraceLine.
-func backtrace(skip, max int) []*BacktraceLine {
-	var lines []*BacktraceLine
+type causer interface {
+	Cause() error
+}
 
-	for i := skip + 1; i < max; i++ {
-		pc, file, line, ok := runtime.Caller(i)
-		if !ok {
+type stackTracer interface {
+	StackTrace() errors.StackTrace
+}
+
+// It generates a brand new stack trace given an error and
+// the number of frames that should be skipped,
+// from innermost to outermost frames.
+func gen_stacktrace(err error, skip int) errors.StackTrace {
+	var stack errors.StackTrace
+	err_with_stack := errors.WithStack(err)
+	stack = err_with_stack.(stackTracer).StackTrace()
+	skip += 1
+
+	// if it is recovering from a panic() call,
+	// reset the stack trace at that point
+	for index, frame := range stack {
+		file := fmt.Sprintf("%s", frame)
+		if file == "panic.go" {
+			skip = index + 1
 			break
 		}
-
-		lines = append(lines, &BacktraceLine{
-			PC:   pc,
-			File: file,
-			Line: line,
-		})
 	}
 
-	return lines
+	return stack[skip:]
+}
+
+// There are two interfaces that drive this implementation:
+//
+//   * causer
+//     - it unwraps an error instance in a chain of errors created with errors.Wrap
+//     - therefore, the last one in the chain is the root cause (inner-most)
+//
+//   * stackTracer
+//     - not all errors in the aforementioned chain may have a stack trace,
+//
+// It returns the innermost stack trace in a chain of errors because it is
+// the closest to the root cause.
+//
+func get_stacktrace(err error) errors.StackTrace {
+	var stack errors.StackTrace
+	for err != nil {
+		err_with_stack, stack_ok := err.(stackTracer)
+		if stack_ok && err_with_stack.StackTrace() != nil {
+			stack = err_with_stack.StackTrace()
+		}
+		if err_with_cause, causer_ok := err.(causer); causer_ok {
+			err = err_with_cause.Cause()
+		} else {
+			// end of chain
+			break
+		}
+	}
+	return stack
+}
+
+func stacktrace(err error, skip int) errors.StackTrace {
+	stack := get_stacktrace(err)
+	if stack == nil {
+		stack = gen_stacktrace(err, skip+1)
+	}
+	if len(stack) > DefaultMax {
+		stack = stack[:DefaultMax]
+	}
+	return stack
 }
 
 // info is used internally to store contextual information. Any empty info

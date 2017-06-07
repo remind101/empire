@@ -15,6 +15,7 @@
 
 * Processes can now be scaled down to a negative value to prevent AWS resources from being created. [#1064](https://github.com/remind101/empire/pull/1064)
 * AWS resources for scheduled processes are now always created, unless scaled down to a negative value. [#1064](https://github.com/remind101/empire/pull/1064)
+* Empire now supports reporting its own errors to [Rollbar](https://rollbar.com) in addition to Honeybadger. [#1075](https://github.com/remind101/empire/pull/1075)
 
 ## 0.12.0 (2017-03-10)
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -8,6 +9,9 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
 )
+
+const hbExampleURL = "hb://api.honeybadger.io?key=<key>&environment=<environment>"
+const rollbarExampleURL = "rollbar://api.rollbar.com?key=<key>&environment=<environment>"
 
 const (
 	FlagURL            = "url"
@@ -232,10 +236,11 @@ var CommonFlags = []cli.Flag{
 		Usage:  "The stats backend to use. (e.g. statsd://localhost:8125)",
 		EnvVar: "EMPIRE_STATS",
 	},
-	cli.StringFlag{
-		Name:   FlagReporter,
-		Value:  "",
-		Usage:  "The error reporter to use. (e.g. hb://api.honeybadger.io?key=<apikey>&environment=production)",
+	cli.StringSliceFlag{
+		Name:  FlagReporter,
+		Value: &cli.StringSlice{},
+		Usage: fmt.Sprintf("The reporter to use to report errors. Available options are `%s` or `%s`",
+			hbExampleURL, rollbarExampleURL),
 		EnvVar: "EMPIRE_REPORTER",
 	},
 }

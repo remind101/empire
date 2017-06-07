@@ -29,7 +29,7 @@ import (
 	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/reporter"
-	"github.com/remind101/pkg/reporter/hb"
+	"github.com/remind101/pkg/reporter/config"
 )
 
 // DB ===================================
@@ -347,33 +347,11 @@ func newLogger(c *Context) (log15.Logger, error) {
 // Reporter ============================
 
 func newReporter(c *Context) (reporter.Reporter, error) {
-	u := c.String(FlagReporter)
-	if u == "" {
-		return reporter.NewLogReporter(), nil
-	}
-
-	uri, err := url.Parse(u)
+	rep, err := config.NewReporterFromUrls(c.StringSlice(FlagReporter))
 	if err != nil {
-		return nil, err
+		panic(fmt.Errorf("couldn't create reporter: %#v", err))
 	}
-
-	switch uri.Scheme {
-	case "hb":
-		log.Println("Using Honeybadger to report errors")
-		q := uri.Query()
-		return newHBReporter(q.Get("key"), q.Get("environment"))
-	default:
-		panic(fmt.Errorf("unknown reporter: %s", u))
-	}
-}
-
-func newHBReporter(key, env string) (reporter.Reporter, error) {
-	r := hb.NewReporter(key)
-	r.Environment = env
-
-	// Append here because `go vet` will complain about unkeyed fields,
-	// since it thinks MultiReporter is a struct literal.
-	return append(reporter.MultiReporter{}, reporter.NewLogReporter(), r), nil
+	return rep, nil
 }
 
 // Stats =======================
