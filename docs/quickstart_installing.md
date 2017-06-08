@@ -38,7 +38,7 @@ This is a very simple stack that will:
 * Create a VPC with 2 subnets.
 * Create an EC2 Instance Profile with the required permissions for the
   [ECS agent][ecsagent].
-* Create a a Launch Configuration and Auto Scaling Group that will use the
+* Create a Launch Configuration and Auto Scaling Group that will use the
   official ECS AMI.
 * Create an ECS Cluster and Service for Empire.
 * Configure the instances to be able to pull from a private registry. (If
