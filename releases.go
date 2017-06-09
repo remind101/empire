@@ -168,6 +168,23 @@ func (s *releasesService) Release(ctx context.Context, release *Release, ss twel
 	return s.Scheduler.Submit(ctx, a, ss)
 }
 
+func (s *releasesService) ReleaseApp(ctx context.Context, db *gorm.DB, app *App, ss twelvefactor.StatusStream) error {
+	release, err := releasesFind(db, ReleasesQuery{App: app})
+	if err != nil {
+		if err == gorm.RecordNotFound {
+			return ErrNoReleases
+		}
+
+		return err
+	}
+
+	if release == nil {
+		return nil
+	}
+
+	return s.Release(ctx, release, ss)
+}
+
 // Restart will find the last release for an app and submit it to the scheduler
 // to restart the app.
 func (s *releasesService) Restart(ctx context.Context, db *gorm.DB, app *App) error {
@@ -361,13 +378,18 @@ func newSchedulerProcess(release *Release, name string, p Process) (*twelvefacto
 		}
 	}
 
+	quantity := p.Quantity
+	if release.App.Maintenance {
+		quantity = 0
+	}
+
 	return &twelvefactor.Process{
 		Type:      name,
 		Env:       env,
 		Labels:    labels,
 		Command:   []string(p.Command),
 		Image:     release.Slug.Image,
-		Quantity:  p.Quantity,
+		Quantity:  quantity,
 		Memory:    uint(p.Memory),
 		CPUShares: uint(p.CPUShare),
 		Nproc:     uint(p.Nproc),

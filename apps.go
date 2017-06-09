@@ -85,6 +85,9 @@ type App struct {
 
 	// The time that this application was created.
 	CreatedAt *time.Time
+
+	// Maintenance defines whether the app is in maintenance mode or not.
+	Maintenance bool
 }
 
 // IsValid returns an error if the app isn't valid.

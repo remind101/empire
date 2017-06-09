@@ -128,9 +128,10 @@ func (c *Client) AppList(lr *ListRange) ([]App, error) {
 //
 // appIdentity is the unique identifier of the App. options is the struct of
 // optional parameters for this action.
-func (c *Client) AppUpdate(appIdentity string, options *AppUpdateOpts) (*App, error) {
+func (c *Client) AppUpdate(appIdentity string, options *AppUpdateOpts, message string) (*App, error) {
+	rh := RequestHeaders{CommitMessage: message}
 	var appRes App
-	return &appRes, c.Patch(&appRes, "/apps/"+appIdentity, options)
+	return &appRes, c.PatchWithHeaders(&appRes, "/apps/"+appIdentity, options, rh.Headers())
 }
 
 // AppUpdateOpts holds the optional parameters for AppUpdate

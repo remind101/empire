@@ -5,6 +5,7 @@
 **Features**
 
 * Empire now supports a new (experimental) feature to enable attached processes to be ran with ECS. [#1043](https://github.com/remind101/empire/pull/1043)
+* Empire now supports "maintenance mode" for applications. [#1086](https://github.com/remind101/empire/pull/1086)
 
 **Bugs**
 

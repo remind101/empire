@@ -86,6 +86,32 @@ func (e RestartEvent) GetApp() *App {
 	return e.app
 }
 
+type MaintenanceEvent struct {
+	User        string
+	App         string
+	Maintenance bool
+	Message     string
+
+	app *App
+}
+
+func (e MaintenanceEvent) Event() string {
+	return "maintenance"
+}
+
+func (e MaintenanceEvent) String() string {
+	state := "disabled"
+	if e.Maintenance {
+		state = "enabled"
+	}
+	msg := fmt.Sprintf("%s %s maintenance mode on %s", e.User, state, e.App)
+	return appendCommitMessage(msg, e.Message)
+}
+
+func (e MaintenanceEvent) GetApp() *App {
+	return e.app
+}
+
 type ScaleEventUpdate struct {
 	Process             string
 	Quantity            int

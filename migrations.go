@@ -612,6 +612,23 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`ALTER TABLE apps ADD COLUMN cert text`,
 		}),
 	},
+
+	// This migration migrates the cert storage from a single string column
+	// to a mapping of process name to cert name.
+	{
+		ID: 20,
+		Up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`ALTER TABLE apps ADD COLUMN maintenance bool NOT NULL DEFAULT false`)
+			if err != nil {
+				return fmt.Errorf("error adding maintenance column: %v", err)
+			}
+
+			return nil
+		},
+		Down: migrate.Queries([]string{
+			`ALTER TABLE apps DROP COLUMN maintenance`,
+		}),
+	},
 }
 
 // latestSchema returns the schema version that this version of Empire should be

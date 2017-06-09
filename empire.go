@@ -250,6 +250,69 @@ func (e *Empire) Config(app *App) (*Config, error) {
 	return c, nil
 }
 
+type SetMaintenanceModeOpts struct {
+	// User performing the action.
+	User *User
+
+	// The associated app.
+	App *App
+
+	// Wheather maintenance mode should be enabled or not.
+	Maintenance bool
+
+	// Commit message
+	Message string
+}
+
+func (opts SetMaintenanceModeOpts) Event() MaintenanceEvent {
+	return MaintenanceEvent{
+		User:        opts.User.Name,
+		App:         opts.App.Name,
+		Maintenance: opts.Maintenance,
+		Message:     opts.Message,
+	}
+}
+
+func (opts SetMaintenanceModeOpts) Validate(e *Empire) error {
+	return e.requireMessages(opts.Message)
+}
+
+// SetMaintenanceMode enables or disables "maintenance mode" on the app. When an
+// app is in maintenance mode, all processes will be scaled down to 0. When
+// taken out of maintenance mode, all processes will be scaled up back to their
+// existing values.
+func (e *Empire) SetMaintenanceMode(ctx context.Context, opts SetMaintenanceModeOpts) error {
+	if err := opts.Validate(e); err != nil {
+		return err
+	}
+
+	tx := e.db.Begin()
+
+	app := opts.App
+
+	app.Maintenance = opts.Maintenance
+
+	if err := appsUpdate(tx, app); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := e.releases.ReleaseApp(ctx, tx, app, nil); err != nil {
+		tx.Rollback()
+		if err == ErrNoReleases {
+			return nil
+		}
+
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	return e.PublishEvent(opts.Event())
+}
+
 // SetOpts are options provided when setting new config vars on an app.
 type SetOpts struct {
 	// User performing the action.

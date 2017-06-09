@@ -22,10 +22,11 @@ Example:
 }
 
 func runRename(cmd *Command, args []string) {
+	message := getMessage()
 	cmd.AssertNumArgsCorrect(args)
 
 	oldname, newname := args[0], args[1]
-	app, err := client.AppUpdate(oldname, &heroku.AppUpdateOpts{Name: &newname})
+	app, err := client.AppUpdate(oldname, &heroku.AppUpdateOpts{Name: &newname}, message)
 	must(err)
 	log.Printf("Renamed %s to %s.", oldname, app.Name)
 	log.Println("Ensure you update your git remote URL.")
