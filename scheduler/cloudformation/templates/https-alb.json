@@ -148,6 +148,9 @@
     },
     "apiApplicationLoadBalancer": {
       "Properties": {
+        "LoadBalancerAttributes": {
+          "Ref": "AWS::NoValue"
+        },
         "Scheme": "internal",
         "SecurityGroups": [
           "sg-e7387381"
@@ -335,6 +338,9 @@
     },
     "webApplicationLoadBalancer": {
       "Properties": {
+        "LoadBalancerAttributes": {
+          "Ref": "AWS::NoValue"
+        },
         "Scheme": "internal",
         "SecurityGroups": [
           "sg-e7387381"

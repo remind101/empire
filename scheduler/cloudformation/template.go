@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
@@ -35,6 +36,12 @@ const (
 	classicLoadBalancer     = "elb"
 	applicationLoadBalancer = "alb"
 )
+
+// Returns a string that can be used as an S3 prefix for access logging, which
+// makes it easy to search and ensures global uniqueness.
+func AccessLoggingBucketPrefix(app *twelvefactor.Manifest, process *twelvefactor.Process) string {
+	return filepath.Join(app.Name, app.AppID, process.Type)
+}
 
 // Returns the type of load balancer that should be used (ELB/ALB).
 func loadBalancerType(app *twelvefactor.Manifest, process *twelvefactor.Process) string {
@@ -144,6 +151,10 @@ type EmpireTemplate struct {
 
 	// Any extra outputs to attach to the template.
 	ExtraOutputs map[string]troposphere.Output
+
+	// AccessLoggingPolicy is called to determine how access logs are
+	// configured for load balancers.
+	AccessLoggingPolicy func(*twelvefactor.Manifest, *twelvefactor.Process) *AccessLoggingPolicy
 }
 
 // Validate checks that all of the expected values are provided.
@@ -417,8 +428,35 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 			canonicalHostedZoneId interface{}
 		)
 
+		var accessLogs *AccessLoggingPolicy
+		if t.AccessLoggingPolicy != nil {
+			accessLogs = t.AccessLoggingPolicy(app, p)
+		}
+
 		switch loadBalancerType {
 		case applicationLoadBalancer:
+			var loadBalancerAttributes []interface{}
+			if accessLogs != nil {
+				enabled := map[string]interface{}{
+					"Key":   "access_logs.s3.enabled",
+					"Value": accessLogs.Enabled,
+				}
+				bucket := map[string]interface{}{
+					"Key":   "access_logs.s3.bucket",
+					"Value": accessLogs.S3BucketName,
+				}
+				prefix := map[string]interface{}{
+					"Key":   "access_logs.s3.prefix",
+					"Value": accessLogs.S3BucketPrefix,
+				}
+				loadBalancerAttributes = append(loadBalancerAttributes, []interface{}{enabled, bucket, prefix})
+			}
+
+			attributes := Ref("AWS::NoValue")
+			if len(loadBalancerAttributes) > 0 {
+				attributes = loadBalancerAttributes
+			}
+
 			loadBalancer = troposphere.NamedResource{
 				Name: fmt.Sprintf("%sApplicationLoadBalancer", key),
 				Resource: troposphere.Resource{
@@ -428,6 +466,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 						"SecurityGroups": []string{sg},
 						"Subnets":        subnets,
 						"Tags":           append(stackTags, tags...),
+						"LoadBalancerAttributes": attributes,
 					},
 				},
 			}
@@ -617,6 +656,10 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 				}
 			}
 
+			accessLoggingPolicy := Ref("AWS::NoValue")
+			if accessLogs != nil {
+				accessLoggingPolicy = accessLogs
+			}
 			loadBalancer.Resource = troposphere.Resource{
 				Type: "AWS::ElasticLoadBalancing::LoadBalancer",
 				Properties: map[string]interface{}{
@@ -630,6 +673,7 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 						"Enabled": true,
 						"Timeout": defaultConnectionDrainingTimeout,
 					},
+					"AccessLoggingPolicy": accessLoggingPolicy,
 				},
 			}
 			tmpl.AddResource(loadBalancer)

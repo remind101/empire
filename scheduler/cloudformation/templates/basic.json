@@ -155,6 +155,9 @@
     },
     "webLoadBalancer": {
       "Properties": {
+        "AccessLoggingPolicy": {
+          "Ref": "AWS::NoValue"
+        },
         "ConnectionDrainingPolicy": {
           "Enabled": true,
           "Timeout": 30

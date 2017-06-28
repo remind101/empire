@@ -32,3 +32,10 @@ type CustomTaskDefinitionProperties struct {
 	Volumes              []interface{}
 	TaskRoleArn          interface{} `json:",omitempty"`
 }
+
+type AccessLoggingPolicy struct {
+	EmitInterval   interface{} `json:",omitempty"`
+	Enabled        interface{} `json:",omitempty"`
+	S3BucketName   interface{} `json:",omitempty"`
+	S3BucketPrefix interface{} `json:",omitempty"`
+}

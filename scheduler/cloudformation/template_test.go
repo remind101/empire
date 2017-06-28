@@ -20,10 +20,12 @@ import (
 
 func TestEmpireTemplate(t *testing.T) {
 	tests := []struct {
-		file string
-		app  *twelvefactor.Manifest
+		newTemplate func() *EmpireTemplate
+		file        string
+		app         *twelvefactor.Manifest
 	}{
 		{
+			newTemplate,
 			"basic.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -77,6 +79,7 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			newTemplate,
 			"basic-alb.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -132,6 +135,7 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			newTemplate,
 			"https.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -189,6 +193,7 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			newTemplate,
 			"https-alb.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -254,6 +259,7 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			newTemplate,
 			"custom.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -308,6 +314,7 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			newTemplate,
 			"task-role.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -363,6 +370,7 @@ func TestEmpireTemplate(t *testing.T) {
 		},
 
 		{
+			newTemplate,
 			"cron.json",
 			&twelvefactor.Manifest{
 				AppID:   "1234",
@@ -398,6 +406,77 @@ func TestEmpireTemplate(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			func() *EmpireTemplate {
+				t := newTemplate()
+				t.AccessLoggingPolicy = func(app *twelvefactor.Manifest, process *twelvefactor.Process) *AccessLoggingPolicy {
+					return &AccessLoggingPolicy{
+						Enabled:        aws.Bool(true),
+						S3BucketName:   aws.String("accesslogs"),
+						S3BucketPrefix: AccessLoggingBucketPrefix(app, process),
+					}
+				}
+				return t
+			},
+			"access-logging.json",
+			&twelvefactor.Manifest{
+				AppID:   "1234",
+				Release: "v1",
+				Name:    "acme-inc",
+				Processes: []*twelvefactor.Process{
+					{
+						Type:    "web",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"PORT": "8080",
+						},
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &twelvefactor.HTTP{},
+								},
+							},
+						},
+						Labels: map[string]string{
+							"empire.app.process": "web",
+						},
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
+					},
+					{
+						Type:    "http",
+						Image:   image.Image{Repository: "remind101/acme-inc", Tag: "latest"},
+						Command: []string{"./bin/web"},
+						Env: map[string]string{
+							"PORT":               "8080",
+							"LOAD_BALANCER_TYPE": "alb",
+						},
+						Exposure: &twelvefactor.Exposure{
+							Ports: []twelvefactor.Port{
+								{
+									Host:      80,
+									Container: 8080,
+									Protocol:  &twelvefactor.HTTP{},
+								},
+							},
+						},
+						Labels: map[string]string{
+							"empire.app.process": "http",
+						},
+						Memory:    128 * bytesize.MB,
+						CPUShares: 256,
+						Quantity:  1,
+						Nproc:     256,
+					},
+				},
+			},
+		},
 	}
 
 	stackTags := []*cloudformation.Tag{
@@ -406,7 +485,7 @@ func TestEmpireTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
-			tmpl := newTemplate()
+			tmpl := tt.newTemplate()
 			tmpl.NoCompress = true
 			buf := new(bytes.Buffer)
 

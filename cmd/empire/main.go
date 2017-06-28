@@ -64,9 +64,11 @@ const (
 	FlagECSAttachedEnabled   = "ecs.attached.enabled"
 	FlagECSDockerCert        = "ecs.docker.cert"
 
-	FlagELBSGPrivate = "elb.sg.private"
-	FlagELBSGPublic  = "elb.sg.public"
-	FlagELBVpcId     = "elb.vpc.id"
+	FlagELBSGPrivate          = "elb.sg.private"
+	FlagELBSGPublic           = "elb.sg.public"
+	FlagELBVpcId              = "elb.vpc.id"
+	FlagELBAccessLogs         = "elb.access_logs"
+	FlagELBAccessLogsInterval = "elb.access_logs.interval"
 
 	FlagEC2SubnetsPrivate = "ec2.subnets.private"
 	FlagEC2SubnetsPublic  = "ec2.subnets.public"
@@ -344,6 +346,18 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagELBVpcId,
 		Usage:  "The comma separated private subnet ids",
 		EnvVar: "EMPIRE_ELB_VPC_ID",
+	},
+	cli.StringFlag{
+		Name:   FlagELBAccessLogs,
+		Usage:  "An s3 bucket location to send ELB access logs to.",
+		Value:  "",
+		EnvVar: "EMPIRE_ELB_ACCESS_LOGS",
+	},
+	cli.IntFlag{
+		Name:   FlagELBAccessLogsInterval,
+		Usage:  "How often (in minutes) ELB will send access logs to the access logs bucket. See http://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html for details on valid values. Not used for ALB.",
+		Value:  60,
+		EnvVar: "EMPIRE_ELB_ACCESS_LOGS_INTERVAL",
 	},
 	cli.StringSliceFlag{
 		Name:   FlagEC2SubnetsPrivate,

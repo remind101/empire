@@ -28,6 +28,7 @@ import (
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/config"
 )
@@ -147,6 +148,21 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 		ExtraOutputs: map[string]troposphere.Output{
 			"EmpireVersion": troposphere.Output{Value: empire.Version},
 		},
+	}
+
+	// Configure access logging policy if an S3 bucket is provided for
+	// storing access logs.
+	if bucket := c.String(FlagELBAccessLogs); bucket != "" {
+		t.AccessLoggingPolicy = func(app *twelvefactor.Manifest, process *twelvefactor.Process) *cloudformation.AccessLoggingPolicy {
+			// <app name>/<app id>/<process>
+			prefix := cloudformation.AccessLoggingBucketPrefix(app, process)
+			return &cloudformation.AccessLoggingPolicy{
+				Enabled:        aws.Bool(true),
+				EmitInterval:   aws.Int(c.Int(FlagELBAccessLogsInterval)),
+				S3BucketName:   aws.String(bucket),
+				S3BucketPrefix: prefix,
+			}
+		}
 	}
 
 	if err := t.Validate(); err != nil {

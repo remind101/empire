@@ -33,10 +33,10 @@
               "Fn::Join": [
                 "=",
                 [
-                  "worker",
+                  "http",
                   {
                     "Fn::GetAtt": [
-                      "workerService",
+                      "httpService",
                       "DeploymentId"
                     ]
                   }
@@ -73,9 +73,9 @@
               "Fn::Join": [
                 "=",
                 [
-                  "worker",
+                  "http",
                   {
-                    "Ref": "workerService"
+                    "Ref": "httpService"
                   }
                 ]
               ]
@@ -96,10 +96,10 @@
       "Description": "Key used to trigger a restart of an app",
       "Default": "default"
     },
-    "webScale": {
+    "httpScale": {
       "Type": "String"
     },
-    "workerScale": {
+    "webScale": {
       "Type": "String"
     }
   },
@@ -112,7 +112,7 @@
         "ResourceRecords": [
           {
             "Fn::GetAtt": [
-              "webApplicationLoadBalancer",
+              "webLoadBalancer",
               "DNSName"
             ]
           }
@@ -122,35 +122,48 @@
       },
       "Type": "AWS::Route53::RecordSet"
     },
-    "webAlias": {
+    "httpAlias": {
       "Condition": "DNSCondition",
       "Properties": {
         "AliasTarget": {
           "DNSName": {
             "Fn::GetAtt": [
-              "webApplicationLoadBalancer",
+              "httpApplicationLoadBalancer",
               "DNSName"
             ]
           },
           "EvaluateTargetHealth": "true",
           "HostedZoneId": {
             "Fn::GetAtt": [
-              "webApplicationLoadBalancer",
+              "httpApplicationLoadBalancer",
               "CanonicalHostedZoneID"
             ]
           }
         },
         "HostedZoneId": "Z3DG6IL3SJCGPX",
-        "Name": "web.acme-inc.empire",
+        "Name": "http.acme-inc.empire",
         "Type": "A"
       },
       "Type": "AWS::Route53::RecordSet"
     },
-    "webApplicationLoadBalancer": {
+    "httpApplicationLoadBalancer": {
       "Properties": {
-        "LoadBalancerAttributes": {
-          "Ref": "AWS::NoValue"
-        },
+        "LoadBalancerAttributes": [
+          [
+            {
+              "Key": "access_logs.s3.enabled",
+              "Value": true
+            },
+            {
+              "Key": "access_logs.s3.bucket",
+              "Value": "accesslogs"
+            },
+            {
+              "Key": "access_logs.s3.prefix",
+              "Value": "acme-inc/1234/http"
+            }
+          ]
+        ],
         "Scheme": "internal",
         "SecurityGroups": [
           "sg-e7387381"
@@ -166,58 +179,58 @@
           },
           {
             "Key": "empire.app.process",
-            "Value": "web"
+            "Value": "http"
           }
         ]
       },
       "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
     },
-    "webApplicationLoadBalancerPort80Listener": {
+    "httpApplicationLoadBalancerPort80Listener": {
       "Properties": {
         "DefaultActions": [
           {
             "TargetGroupArn": {
-              "Ref": "webTargetGroup"
+              "Ref": "httpTargetGroup"
             },
             "Type": "forward"
           }
         ],
         "LoadBalancerArn": {
-          "Ref": "webApplicationLoadBalancer"
+          "Ref": "httpApplicationLoadBalancer"
         },
         "Port": 80,
         "Protocol": "HTTP"
       },
       "Type": "AWS::ElasticLoadBalancingV2::Listener"
     },
-    "webService": {
+    "httpService": {
       "DependsOn": [
-        "webApplicationLoadBalancerPort80Listener"
+        "httpApplicationLoadBalancerPort80Listener"
       ],
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
-          "Ref": "webScale"
+          "Ref": "httpScale"
         },
         "LoadBalancers": [
           {
-            "ContainerName": "web",
+            "ContainerName": "http",
             "ContainerPort": 8080,
             "TargetGroupArn": {
-              "Ref": "webTargetGroup"
+              "Ref": "httpTargetGroup"
             }
           }
         ],
         "Role": "ecsServiceRole",
-        "ServiceName": "acme-inc-web",
+        "ServiceName": "acme-inc-http",
         "ServiceToken": "sns topic arn",
         "TaskDefinition": {
-          "Ref": "webTaskDefinition"
+          "Ref": "httpTaskDefinition"
         }
       },
       "Type": "Custom::ECSService"
     },
-    "webTargetGroup": {
+    "httpTargetGroup": {
       "Properties": {
         "Port": 65535,
         "Protocol": "HTTP",
@@ -228,14 +241,14 @@
           },
           {
             "Key": "empire.app.process",
-            "Value": "web"
+            "Value": "http"
           }
         ],
         "VpcId": ""
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
     },
-    "webTaskDefinition": {
+    "httpTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
           {
@@ -247,21 +260,9 @@
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
               },
-              "empire.app.process": "web"
+              "empire.app.process": "http"
             },
             "Environment": [
-              {
-                "Name": "A",
-                "Value": "foobar"
-              },
-              {
-                "Name": "B",
-                "Value": "bar"
-              },
-              {
-                "Name": "C",
-                "Value": "foo"
-              },
               {
                 "Name": "LOAD_BALANCER_TYPE",
                 "Value": "alb"
@@ -274,7 +275,7 @@
             "Essential": true,
             "Image": "remind101/acme-inc:latest",
             "Memory": 128,
-            "Name": "web",
+            "Name": "http",
             "PortMappings": [
               {
                 "ContainerPort": 8080,
@@ -294,62 +295,145 @@
       },
       "Type": "AWS::ECS::TaskDefinition"
     },
-    "workerService": {
+    "web8080InstancePort": {
+      "Properties": {
+        "ServiceToken": "sns topic arn"
+      },
+      "Type": "Custom::InstancePort",
+      "Version": "1.0"
+    },
+    "webAlias": {
+      "Condition": "DNSCondition",
+      "Properties": {
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": "true",
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "webLoadBalancer",
+              "CanonicalHostedZoneNameID"
+            ]
+          }
+        },
+        "HostedZoneId": "Z3DG6IL3SJCGPX",
+        "Name": "web.acme-inc.empire",
+        "Type": "A"
+      },
+      "Type": "AWS::Route53::RecordSet"
+    },
+    "webLoadBalancer": {
+      "Properties": {
+        "AccessLoggingPolicy": {
+          "Enabled": true,
+          "S3BucketName": "accesslogs",
+          "S3BucketPrefix": "acme-inc/1234/web"
+        },
+        "ConnectionDrainingPolicy": {
+          "Enabled": true,
+          "Timeout": 30
+        },
+        "CrossZone": true,
+        "Listeners": [
+          {
+            "InstancePort": {
+              "Fn::GetAtt": [
+                "web8080InstancePort",
+                "InstancePort"
+              ]
+            },
+            "InstanceProtocol": "http",
+            "LoadBalancerPort": 80,
+            "Protocol": "http"
+          }
+        ],
+        "Scheme": "internal",
+        "SecurityGroups": [
+          "sg-e7387381"
+        ],
+        "Subnets": [
+          "subnet-bb01c4cd",
+          "subnet-c85f4091"
+        ],
+        "Tags": [
+          {
+            "Key": "empire.app.process",
+            "Value": "web"
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "webService": {
       "Properties": {
         "Cluster": "cluster",
         "DesiredCount": {
-          "Ref": "workerScale"
+          "Ref": "webScale"
         },
-        "LoadBalancers": [],
-        "ServiceName": "acme-inc-worker",
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 8080,
+            "LoadBalancerName": {
+              "Ref": "webLoadBalancer"
+            }
+          }
+        ],
+        "Role": "ecsServiceRole",
+        "ServiceName": "acme-inc-web",
         "ServiceToken": "sns topic arn",
         "TaskDefinition": {
-          "Ref": "workerTaskDefinition"
+          "Ref": "webTaskDefinition"
         }
       },
       "Type": "Custom::ECSService"
     },
-    "workerTaskDefinition": {
+    "webTaskDefinition": {
       "Properties": {
         "ContainerDefinitions": [
           {
             "Command": [
-              "./bin/worker"
+              "./bin/web"
             ],
-            "Cpu": 0,
+            "Cpu": 256,
             "DockerLabels": {
               "cloudformation.restart-key": {
                 "Ref": "RestartKey"
               },
-              "empire.app.process": "worker"
+              "empire.app.process": "web"
             },
             "Environment": [
               {
-                "Name": "A",
-                "Value": "foobar"
-              },
-              {
-                "Name": "B",
-                "Value": "bar"
-              },
-              {
-                "Name": "C",
-                "Value": "foo"
-              },
-              {
-                "Name": "FOO",
-                "Value": "BAR"
-              },
-              {
-                "Name": "LOAD_BALANCER_TYPE",
-                "Value": "alb"
+                "Name": "PORT",
+                "Value": "8080"
               }
             ],
             "Essential": true,
             "Image": "remind101/acme-inc:latest",
-            "Memory": 0,
-            "Name": "worker",
-            "Ulimits": []
+            "Memory": 128,
+            "Name": "web",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": {
+                  "Fn::GetAtt": [
+                    "web8080InstancePort",
+                    "InstancePort"
+                  ]
+                }
+              }
+            ],
+            "Ulimits": [
+              {
+                "HardLimit": 256,
+                "Name": "nproc",
+                "SoftLimit": 256
+              }
+            ]
           }
         ],
         "Volumes": []
