@@ -729,11 +729,6 @@
 			"revisionTime": "2016-06-23T23:37:46Z"
 		},
 		{
-			"path": "github.com/remind101/migrate",
-			"revision": "d22d647232c20dbea6d2aa1dda7f2737cccce614",
-			"revisionTime": "2016-04-23T08:09:09+07:00"
-		},
-		{
 			"path": "github.com/remind101/newrelic",
 			"revision": "04b4810fa8c0ae0978c2d8e8c7ddc7e811d92d70"
 		},
