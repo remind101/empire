@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"github.com/remind101/empire/procfile/internal/yaml"
 )
 
 // Procfile is a Go representation of process configuration.
