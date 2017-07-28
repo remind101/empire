@@ -8,10 +8,9 @@ import (
 	"io"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	"github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/dockerutil"
+	"github.com/remind101/empire/pkg/uuid"
 	"github.com/remind101/empire/twelvefactor"
 	"golang.org/x/net/context"
 )

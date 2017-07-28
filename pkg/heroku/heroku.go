@@ -18,7 +18,7 @@ import (
 	"runtime"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/remind101/empire/pkg/uuid"
 )
 
 const (
