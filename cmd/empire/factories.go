@@ -22,6 +22,7 @@ import (
 	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/events/stdout"
+	"github.com/remind101/empire/extractor"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/troposphere"
@@ -69,7 +70,7 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 	e := empire.New(db)
 	e.Scheduler = scheduler
 	e.EventStream = empire.AsyncEvents(streams)
-	e.ProcfileExtractor = empire.PullAndExtract(docker)
+	e.ProcfileExtractor = extractor.PullAndExtract(docker)
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
