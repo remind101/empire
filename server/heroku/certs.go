@@ -5,11 +5,12 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
-	"golang.org/x/net/context"
 )
 
-func (h *Server) PostCerts(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) PostCerts(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	a, err := h.findApp(r)
 	if err != nil {
 		return err
 	}

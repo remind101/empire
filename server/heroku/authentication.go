@@ -43,9 +43,9 @@ func (t *AccessToken) IsValid() error {
 	return nil
 }
 
-// ServeHTTPContext implements the httpx.Handler interface. It will ensure that
-// there is a Bearer token present and that it is valid.
-func (s *Server) Authenticate(ctx context.Context, r *http.Request, strategies ...string) (context.Context, error) {
+func (s *Server) Authenticate(r *http.Request, strategies ...string) (context.Context, error) {
+	ctx := r.Context()
+
 	// Add an auth strategy for authenticating with an access token.
 	auther := s.Auth.PrependAuthenticator(auth.StrategyAccessToken, &accessTokenAuthenticator{
 		findAccessToken: s.AccessTokensFind,

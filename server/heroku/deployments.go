@@ -8,7 +8,6 @@ import (
 	"github.com/remind101/empire/server/auth"
 
 	"github.com/remind101/empire"
-	"golang.org/x/net/context"
 )
 
 // PostDeployForm is the form object that represents the POST body.
@@ -18,8 +17,10 @@ type PostDeployForm struct {
 }
 
 // ServeHTTPContext implements the Handler interface.
-func (h *Server) PostDeploys(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
-	opts, err := newDeployOpts(ctx, w, req)
+func (h *Server) PostDeploys(w http.ResponseWriter, req *http.Request) error {
+	ctx := req.Context()
+
+	opts, err := newDeployOpts(w, req)
 	if err != nil {
 		return err
 	}
@@ -36,7 +37,9 @@ func (h *Server) PostDeploys(ctx context.Context, w http.ResponseWriter, req *ht
 	return nil
 }
 
-func newDeployOpts(ctx context.Context, w http.ResponseWriter, req *http.Request) (*empire.DeployOpts, error) {
+func newDeployOpts(w http.ResponseWriter, req *http.Request) (*empire.DeployOpts, error) {
+	ctx := req.Context()
+
 	var form PostDeployForm
 
 	if err := Decode(req, &form); err != nil {

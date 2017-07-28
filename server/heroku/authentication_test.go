@@ -8,7 +8,6 @@ import (
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
-	"github.com/remind101/pkg/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
@@ -51,7 +50,7 @@ func TestServer_Authenticate_UsernamePassword(t *testing.T) {
 
 	a.On("Authenticate", "username", "password", "").Return(auth.NewSession(&empire.User{}), nil)
 
-	_, err := m.Authenticate(ctx, req)
+	_, err := m.Authenticate(req.WithContext(ctx))
 	assert.NoError(t, err)
 }
 
@@ -65,7 +64,7 @@ func TestServer_Authenticate_WithUnknownStrategy(t *testing.T) {
 	a.On("Authenticate", "username", "password", "").Return(&empire.User{}, nil)
 
 	assert.Panics(t, func() {
-		m.Authenticate(ctx, req, "mock")
+		m.Authenticate(req.WithContext(ctx), "mock")
 	}, "Calling Authenticate with an unknown strategy should panic")
 }
 
@@ -78,12 +77,12 @@ func TestServer_Authenticate_WithStrategy(t *testing.T) {
 
 	a.On("Authenticate", "username", "password", "").Return(auth.NewSession(&empire.User{}), nil)
 
-	_, err := m.Authenticate(ctx, req)
+	_, err := m.Authenticate(req.WithContext(ctx))
 	assert.NoError(t, err)
 
 	// The provided credentials aren't an access token, so this should
 	// return ErrUnauthorized.
-	_, err = m.Authenticate(ctx, req, auth.StrategyAccessToken)
+	_, err = m.Authenticate(req.WithContext(ctx), auth.StrategyAccessToken)
 	assert.Equal(t, ErrUnauthorized, err)
 }
 
@@ -97,7 +96,7 @@ func TestServer_Authenticate_UsernamePasswordWithOTP(t *testing.T) {
 
 	a.On("Authenticate", "username", "password", "otp").Return(auth.NewSession(&empire.User{}), nil)
 
-	_, err := m.Authenticate(ctx, req)
+	_, err := m.Authenticate(req.WithContext(ctx))
 	assert.NoError(t, err)
 }
 
@@ -110,7 +109,7 @@ func TestServer_Authenticate_ErrTwoFactor(t *testing.T) {
 
 	a.On("Authenticate", "username", "password", "").Return(nil, auth.ErrTwoFactor)
 
-	_, err := m.Authenticate(ctx, req)
+	_, err := m.Authenticate(req.WithContext(ctx))
 	assert.Equal(t, ErrTwoFactor, err)
 }
 
@@ -123,7 +122,7 @@ func TestServer_Authenticate_ErrForbidden(t *testing.T) {
 
 	a.On("Authenticate", "username", "password", "").Return(nil, auth.ErrForbidden)
 
-	_, err := m.Authenticate(ctx, req)
+	_, err := m.Authenticate(req.WithContext(ctx))
 	assert.Equal(t, ErrUnauthorized, err) // TODO: ErrForbidden?
 }
 
@@ -138,7 +137,7 @@ func TestServer_Authenticate_UnauthorizedError(t *testing.T) {
 		Reason: "Because you smell",
 	})
 
-	_, err := m.Authenticate(ctx, req)
+	_, err := m.Authenticate(req.WithContext(ctx))
 	assert.Equal(t, &ErrorResource{
 		Status:  http.StatusUnauthorized,
 		ID:      "unauthorized",
@@ -269,13 +268,4 @@ func newAuth(a *mockAuthenticator) *auth.Auth {
 			},
 		},
 	}
-}
-
-// ensureUserInContext returns and httpx.Handler that raises an error if the
-// user isn't set in the context.
-func ensureUserInContext(t testing.TB) httpx.Handler {
-	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		auth.UserFromContext(ctx) // Panics if user is not set.
-		return nil
-	})
 }

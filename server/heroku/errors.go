@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"golang.org/x/net/context"
-
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
-	"github.com/remind101/pkg/httpx"
 )
 
 // Named matching heroku's error codes. See
@@ -123,9 +120,9 @@ func SAMLUnauthorized(loginURL string) func(error) *ErrorResource {
 	}
 }
 
-// errHandler returns an httpx.Handler that responds with the given error.
-func errHandler(err error) httpx.Handler {
-	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+// errHandler returns a handler that responds with the given error.
+func errHandler(err error) handlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		return err
-	})
+	}
 }

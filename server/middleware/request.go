@@ -20,6 +20,6 @@ func WithRequest(h http.Handler) http.Handler {
 		// Add the request id
 		reporter.AddContext(ctx, "request_id", httpx.RequestID(ctx))
 
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

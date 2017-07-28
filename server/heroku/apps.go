@@ -6,9 +6,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
-	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
 type App heroku.App
@@ -34,7 +32,7 @@ func newApps(as []*empire.App) []*App {
 	return apps
 }
 
-func (h *Server) GetApps(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) GetApps(w http.ResponseWriter, r *http.Request) error {
 	apps, err := h.Apps(empire.AppsQuery{})
 	if err != nil {
 		return err
@@ -44,8 +42,8 @@ func (h *Server) GetApps(ctx context.Context, w http.ResponseWriter, r *http.Req
 	return Encode(w, newApps(apps))
 }
 
-func (h *Server) GetAppInfo(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) GetAppInfo(w http.ResponseWriter, r *http.Request) error {
+	a, err := h.findApp(r)
 	if err != nil {
 		return err
 	}
@@ -54,8 +52,10 @@ func (h *Server) GetAppInfo(ctx context.Context, w http.ResponseWriter, r *http.
 	return Encode(w, newApp(a))
 }
 
-func (h *Server) DeleteApp(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) DeleteApp(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	a, err := h.findApp(r)
 	if err != nil {
 		return err
 	}
@@ -76,13 +76,15 @@ func (h *Server) DeleteApp(ctx context.Context, w http.ResponseWriter, r *http.R
 	return NoContent(w)
 }
 
-func (h *Server) DeployApp(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) DeployApp(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	a, err := h.findApp(r)
 	if err != nil {
 		return err
 	}
 
-	opts, err := newDeployOpts(ctx, w, r)
+	opts, err := newDeployOpts(w, r)
 	opts.App = a
 	if err != nil {
 		return err
@@ -95,7 +97,9 @@ type PostAppsForm struct {
 	Name string `json:"name"`
 }
 
-func (h *Server) PostApps(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostApps(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	var form PostAppsForm
 
 	if err := Decode(r, &form); err != nil {
@@ -120,8 +124,10 @@ func (h *Server) PostApps(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return Encode(w, newApp(a))
 }
 
-func (h *Server) PatchApp(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) PatchApp(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	a, err := h.findApp(r)
 	if err != nil {
 		return err
 	}
@@ -161,13 +167,11 @@ func (h *Server) PatchApp(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return Encode(w, newApp(a))
 }
 
-func findApp(ctx context.Context, e interface {
-	AppsFind(empire.AppsQuery) (*empire.App, error)
-}) (*empire.App, error) {
-	vars := httpx.Vars(ctx)
+func (h *Server) findApp(r *http.Request) (*empire.App, error) {
+	vars := Vars(r)
 	name := vars["app"]
 
-	a, err := e.AppsFind(empire.AppsQuery{Name: &name})
-	reporter.AddContext(ctx, "app", a.Name)
+	a, err := h.AppsFind(empire.AppsQuery{Name: &name})
+	reporter.AddContext(r.Context(), "app", a.Name)
 	return a, err
 }

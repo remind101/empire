@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -14,6 +15,9 @@ func TestHandlerName(t *testing.T) {
 
 	n := handlerName(s.GetProcesses)
 	assert.Equal(t, "GetProcesses", n)
+
+	n = handlerName(func(http.ResponseWriter, *http.Request) error { return nil })
+	assert.Equal(t, "", n)
 }
 
 func TestEncode(t *testing.T) {

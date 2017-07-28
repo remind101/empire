@@ -5,7 +5,6 @@ import (
 
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -32,7 +31,9 @@ func newAuthorization(token *AccessToken) *Authorization {
 	}
 }
 
-func (h *Server) PostAuthorizations(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *Server) PostAuthorizations(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	session := auth.SessionFromContext(ctx)
 
 	at, err := h.AccessTokensCreate(&AccessToken{

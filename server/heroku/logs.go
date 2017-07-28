@@ -5,15 +5,14 @@ import (
 	"time"
 
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
-	"golang.org/x/net/context"
 )
 
 type PostLogsForm struct {
 	Duration int64
 }
 
-func (h *Server) PostLogs(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	a, err := findApp(ctx, h)
+func (h *Server) PostLogs(w http.ResponseWriter, r *http.Request) error {
+	a, err := h.findApp(r)
 	if err != nil {
 		return err
 	}

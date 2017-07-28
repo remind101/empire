@@ -12,22 +12,23 @@ import (
 	"runtime"
 	"time"
 
-	"golang.org/x/net/context"
-
+	"github.com/gorilla/mux"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/headerutil"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/stats"
-	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
 )
+
+// Function used to obtain URL parameters.
+var Vars = mux.Vars
 
 // The Accept header that controls the api version. See
 // https://devcenter.heroku.com/articles/platform-api-reference#clients
 const AcceptHeader = "application/vnd.heroku+json; version=3"
 
-// Server provides an httpx.Handler for serving the Heroku compatible API.
+// Server provides an http.Handler for serving the Heroku compatible API.
 type Server struct {
 	*empire.Empire
 
@@ -44,14 +45,14 @@ type Server struct {
 	// (e.g. when SAML is enabled).
 	Unauthorized func(reason error) *ErrorResource
 
-	mux *httpx.Router
+	mux *mux.Router
 }
 
 // New returns a new Server instance to serve the Heroku compatible API.
 func New(e *empire.Empire) *Server {
 	r := &Server{
 		Empire: e,
-		mux:    httpx.NewRouter(),
+		mux:    mux.NewRouter(),
 	}
 
 	// Apps
@@ -102,10 +103,10 @@ func New(e *empire.Empire) *Server {
 
 	// SSL
 	sslRemoved := errHandler(ErrSSLRemoved)
-	r.mux.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("GET")           // hk ssl
-	r.mux.Handle("/apps/{app}/ssl-endpoints", sslRemoved).Methods("POST")          // hk ssl-cert-add
-	r.mux.Handle("/apps/{app}/ssl-endpoints/{cert}", sslRemoved).Methods("PATCH")  // hk ssl-cert-add, hk ssl-cert-rollback
-	r.mux.Handle("/apps/{app}/ssl-endpoints/{cert}", sslRemoved).Methods("DELETE") // hk ssl-destroy
+	r.handle("GET", "/apps/{app}/ssl-endpoints", sslRemoved)           // hk ssl
+	r.handle("POST", "/apps/{app}/ssl-endpoints", sslRemoved)          // hk ssl-cert-add
+	r.handle("PATCH", "/apps/{app}/ssl-endpoints/{cert}", sslRemoved)  // hk ssl-cert-add, hk ssl-cert-rollback
+	r.handle("DELETE", "/apps/{app}/ssl-endpoints/{cert}", sslRemoved) // hk ssl-destroy
 
 	// Logs
 	r.handle("POST", "/apps/{app}/log-sessions", r.PostLogs) // hk log
@@ -113,13 +114,16 @@ func New(e *empire.Empire) *Server {
 	return r
 }
 
-// route wraps an http.HandlerFunc with a name and convenience methods to
+// handlerFunc is a function that an endpoint will be routed to.
+type handlerFunc func(http.ResponseWriter, *http.Request) error
+
+// route wraps a handlerFunc with a name and convenience methods to
 // configure the route.
 type route struct {
-	httpx.HandlerFunc
-
 	// The name of this handler.
 	Name string
+
+	handler handlerFunc
 
 	// When true, disables the authentication check.
 	authStrategies []string
@@ -133,44 +137,42 @@ func (r *route) AuthWith(strategies ...string) *route {
 	return r
 }
 
-func (r *route) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, req *http.Request) error {
+func (r *route) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if err := r.handle(w, req); err != nil {
+		Error(w, err, http.StatusInternalServerError)
+		reporter.Report(req.Context(), err)
+	}
+	return
+}
+
+func (r *route) handle(w http.ResponseWriter, req *http.Request) error {
 	// Authenticate the request.
-	ctx, err := r.s.Authenticate(ctx, req, r.authStrategies...)
+	ctx, err := r.s.Authenticate(req, r.authStrategies...)
 	if err != nil {
 		return err
 	}
 
 	// Track metrics for this endpoint.
-	m := withMetrics(r.Name, r.HandlerFunc)
+	m := withMetrics(r.Name, r.handler)
 
-	return m.ServeHTTPContext(ctx, w, req)
-}
-
-// ServeHTTPContext implements the httpx.Handler interface.
-func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if err := s.mux.ServeHTTPContext(ctx, w, r); err != nil {
-		Error(w, err, http.StatusInternalServerError)
-		reporter.Report(ctx, err)
-	}
-
-	return nil
+	return m(w, req.WithContext(ctx))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.ServeHTTPContext(r.Context(), w, r)
+	s.mux.ServeHTTP(w, r)
 }
 
 // handle adds a new handler to the router, which also increments a counter.
-func (s *Server) handle(method, path string, h httpx.HandlerFunc, authStrategy ...string) *route {
+func (s *Server) handle(method, path string, h handlerFunc, authStrategy ...string) *route {
 	r := s.route(h)
 	s.mux.Handle(path, r).Methods(method)
 	return r
 }
 
 // route creates a new route object for the given handler.
-func (s *Server) route(h httpx.HandlerFunc) *route {
+func (s *Server) route(h handlerFunc) *route {
 	name := handlerName(h)
-	return &route{HandlerFunc: h, Name: name, s: s}
+	return &route{Name: name, handler: h, s: s}
 }
 
 // Encode json encodes v into w.
@@ -261,22 +263,28 @@ var nameRegexp = regexp.MustCompile(`^.*\.(.*)-fm$`)
 
 // handlerName returns the name of the handler, which can be used as a metrics
 // postfix.
-func handlerName(h httpx.HandlerFunc) string {
+func handlerName(h handlerFunc) string {
 	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
-	return nameRegexp.FindStringSubmatch(name)[1]
+	parts := nameRegexp.FindStringSubmatch(name)
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[1]
 }
 
-func withMetrics(handlerName string, h httpx.HandlerFunc) httpx.Handler {
-	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func withMetrics(handlerName string, h handlerFunc) handlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+
 		tags := []string{
 			fmt.Sprintf("handler:%s", handlerName),
 			fmt.Sprintf("user:%s", auth.UserFromContext(ctx).Name),
 		}
 		start := time.Now()
-		err := h(ctx, w, r)
+		err := h(w, r)
 		d := time.Since(start)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request"), d, 1.0, tags)
 		stats.Timing(ctx, fmt.Sprintf("heroku.request.%s", handlerName), d, 1.0, tags)
 		return err
-	})
+	}
 }

@@ -50,6 +50,6 @@ func PrefixRequestID(h http.Handler) http.Handler {
 			}
 		}
 
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
