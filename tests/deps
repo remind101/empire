@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -eo pipefail
+
+dependencies() {
+  local package="$1"
+  go list -f '{{join .Deps "\n"}}'
+}
+
+not_stdlib() {
+  xargs go list -f '{{if not .Standard}}{{.ImportPath}}{{end}}'
+}
+
+external() {
+  grep 'vendor/'
+}
+
+fail() {
+  echo "$@"
+}
+
+# Check that we have a reasonable number of external dependencies on the core
+# package.
+if ! diff <(dependencies github.com/remind101/empire | not_stdlib | external) <(
+  echo "github.com/remind101/empire/vendor/github.com/jinzhu/gorm"
+  echo "github.com/remind101/empire/vendor/github.com/lib/pq/hstore"
+  echo "github.com/remind101/empire/vendor/golang.org/x/net/context"); then
+  fail "github.com/remind101/empire has new external dependencies"
+fi
