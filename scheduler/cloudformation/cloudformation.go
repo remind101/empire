@@ -285,7 +285,7 @@ func (s *Scheduler) submit(ctx context.Context, tx *sql.Tx, app *twelvefactor.Ma
 		fmt.Sprintf("stack:%s", stackName),
 	})
 
-	twelvefactor.Publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
+	publish(ctx, ss, fmt.Sprintf("Created cloudformation template: %v (%d/%d bytes)", *t.URL, t.Size, MaxTemplateSize))
 
 	var parameters []*cloudformation.Parameter
 	if opts.NoDNS != nil {
@@ -347,7 +347,7 @@ func (s *Scheduler) waitUntilStable(ctx context.Context, stack *cloudformation.S
 	}
 	deploymentStatuses := s.waitForDeploymentsToStabilize(ctx, deployments)
 	for status := range deploymentStatuses {
-		twelvefactor.Publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
+		publish(ctx, ss, fmt.Sprintf("Service %s became %s", status.deployment.process, status))
 	}
 	// TODO publish notification to empire
 	return nil
@@ -524,7 +524,7 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 		close(locked)
 		err := s.executeStackUpdate(input)
 		if err == nil {
-			twelvefactor.Publish(ctx, ss, "Stack update submitted")
+			publish(ctx, ss, "Stack update submitted")
 		}
 		submitted <- err
 		return err
@@ -538,7 +538,7 @@ func (s *Scheduler) updateStack(ctx context.Context, input *updateStackInput, ou
 	var err error
 	select {
 	case <-s.after(lockWait):
-		twelvefactor.Publish(ctx, ss, "Waiting for existing stack operation to complete")
+		publish(ctx, ss, "Waiting for existing stack operation to complete")
 		// FIXME: At this point, we don't want to affect UX by waiting
 		// around, so we return. But, if the stack update times out, or
 		// there's an error, that information is essentially silenced.
@@ -584,7 +584,7 @@ func (s *Scheduler) performStackOperation(ctx context.Context, stackName string,
 		//
 		// TODO: Should we return an error here?
 		if err == pglock.Canceled {
-			twelvefactor.Publish(ctx, ss, "Operation superseded by newer release")
+			publish(ctx, ss, "Operation superseded by newer release")
 			return nil, nil
 		}
 		return nil, fmt.Errorf("error obtaining stack operation lock %s: %v", stackName, err)
@@ -1129,12 +1129,12 @@ func (s *Scheduler) waitFor(ctx context.Context, op stackOperation, ss twelvefac
 		tags := []string{
 			fmt.Sprintf("stack:%s", *input.StackName),
 		}
-		twelvefactor.Publish(ctx, ss, waiter.startMessage)
+		publish(ctx, ss, waiter.startMessage)
 		start := time.Now()
 		err := wait(input)
 		stats.Timing(ctx, fmt.Sprintf("scheduler.cloudformation.%s", op), time.Since(start), 1.0, tags)
 		if err == nil {
-			twelvefactor.Publish(ctx, ss, waiter.successMessage)
+			publish(ctx, ss, waiter.successMessage)
 		}
 		return err
 	}
@@ -1358,4 +1358,12 @@ func tryClose(w io.Writer) error {
 	}
 
 	return nil
+}
+
+func publish(ctx context.Context, stream twelvefactor.StatusStream, msg string) {
+	if stream != nil {
+		if err := stream.Publish(twelvefactor.Status{Message: msg}); err != nil {
+			logger.Warn(ctx, fmt.Sprintf("error publishing to stream: %v", err))
+		}
+	}
 }
