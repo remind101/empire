@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/remind101/empire/pkg/saml/testsaml"
+	"github.com/remind101/empire/internal/saml/testsaml"
 
 	. "gopkg.in/check.v1"
 )

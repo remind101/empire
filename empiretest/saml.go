@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/remind101/empire/pkg/saml"
+	"github.com/remind101/empire/internal/saml"
 )
 
 // IdentityProvider wraps a saml.IdentityProvider to serve it via an

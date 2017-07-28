@@ -12,7 +12,7 @@ import (
 
 	"github.com/crewjam/go-xmlsec"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/remind101/empire/pkg/saml/testsaml"
+	"github.com/remind101/empire/internal/saml/testsaml"
 	. "gopkg.in/check.v1"
 )
 

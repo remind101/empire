@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/codegangsta/cli"
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/pkg/saml"
+	"github.com/remind101/empire/internal/saml"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
