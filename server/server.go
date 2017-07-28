@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/pkg/saml"
+	"github.com/remind101/empire/internal/saml"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/pkg/httpx"

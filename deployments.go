@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/pkg/jsonmessage"
 	"github.com/remind101/empire/twelvefactor"
 	"golang.org/x/net/context"
 )

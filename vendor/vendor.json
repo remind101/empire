@@ -643,10 +643,6 @@
 			"revision": "d67e0b7d1797975196499f79bcc322c08b9f218b"
 		},
 		{
-			"path": "github.com/mattn/go-shellwords",
-			"revision": "f4e566c536cf69158e808ec28ef4182a37fdc981"
-		},
-		{
 			"path": "github.com/mgutz/ansi",
 			"revision": "376eb392d7d7e2ae025da0037c73cf8c20a428d8",
 			"revisionTime": "2013-05-14T23:54:47-07:00"
@@ -731,11 +727,6 @@
 			"path": "github.com/remind101/kinesumer/redispool",
 			"revision": "1aebc6e371765089eb8bbede347ec34d4dfee1d2",
 			"revisionTime": "2016-06-23T23:37:46Z"
-		},
-		{
-			"path": "github.com/remind101/migrate",
-			"revision": "d22d647232c20dbea6d2aa1dda7f2737cccce614",
-			"revisionTime": "2016-04-23T08:09:09+07:00"
 		},
 		{
 			"path": "github.com/remind101/newrelic",

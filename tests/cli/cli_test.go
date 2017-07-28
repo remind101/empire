@@ -12,9 +12,9 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/empiretest/cli"
+	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/heroku"
-	"github.com/remind101/pkg/timex"
 )
 
 // empPath can be used to change what binary is used to run the tests.

@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/lib/pq/hstore"
+	"github.com/remind101/empire/internal/migrate"
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/procfile"
-	"github.com/remind101/migrate"
 )
 
 var migrations = []migrate.Migration{

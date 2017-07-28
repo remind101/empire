@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	shellwords "github.com/mattn/go-shellwords"
+	"github.com/remind101/empire/internal/shellwords"
 	"github.com/remind101/empire/pkg/constraints"
 )
 

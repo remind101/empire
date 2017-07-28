@@ -4,9 +4,22 @@ import (
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/hashicorp/go-multierror"
 )
+
+type multiError struct {
+	Errors []error
+}
+
+func (e *multiError) Error() string {
+	points := make([]string, len(e.Errors))
+	for i, err := range e.Errors {
+		points[i] = fmt.Sprintf("* %s", err)
+	}
+
+	return fmt.Sprintf(
+		"%d error(s) occurred:\n\n%s",
+		len(e.Errors), strings.Join(points, "\n"))
+}
 
 func appendCommitMessage(main, commit string) string {
 	output := main
@@ -318,13 +331,16 @@ var NullEventStream = EventStreamFunc(func(event Event) error {
 type MultiEventStream []EventStream
 
 func (streams MultiEventStream) PublishEvent(e Event) error {
-	var result *multierror.Error
+	var result *multiError
 	for _, s := range streams {
 		if err := s.PublishEvent(e); err != nil {
-			result = multierror.Append(result, err)
+			result.Errors = append(result.Errors, err)
 		}
 	}
-	return result.ErrorOrNil()
+	if len(result.Errors) == 0 {
+		return nil
+	}
+	return result
 }
 
 // asyncEventStream wraps an array of EventStreams to publish events

@@ -22,6 +22,8 @@ import (
 	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/events/stdout"
+	"github.com/remind101/empire/extractor"
+	"github.com/remind101/empire/logs"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/troposphere"
@@ -69,7 +71,7 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 	e := empire.New(db)
 	e.Scheduler = scheduler
 	e.EventStream = empire.AsyncEvents(streams)
-	e.ProcfileExtractor = empire.PullAndExtract(docker)
+	e.ProcfileExtractor = extractor.PullAndExtract(docker)
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
@@ -249,7 +251,7 @@ func newLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 
 func newKinesisLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 	log.Println("Using Kinesis backend for log streaming")
-	return empire.NewKinesisLogsStreamer(), nil
+	return logs.NewKinesisLogsStreamer(), nil
 }
 
 // Events ==============================
@@ -317,10 +319,10 @@ func newRunRecorder(c *Context) (empire.RunRecorder, error) {
 		log.Println("Using CloudWatch run logs backend with the following configuration:")
 		log.Println(fmt.Sprintf("  LogGroup: %s", group))
 
-		return empire.RecordToCloudWatch(group, c), nil
+		return logs.RecordToCloudWatch(group, c), nil
 	case "stdout":
 		log.Println("Using Stdout run logs backend")
-		return empire.RecordTo(os.Stdout), nil
+		return logs.RecordTo(os.Stdout), nil
 	default:
 		panic(fmt.Sprintf("unknown run logs backend: %v", backend))
 	}

@@ -5,7 +5,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/remind101/empire/dbtest"
-	"github.com/remind101/migrate"
+	"github.com/remind101/empire/internal/migrate"
 	"github.com/stretchr/testify/assert"
 )
 

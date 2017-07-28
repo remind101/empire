@@ -3,14 +3,12 @@
 package twelvefactor
 
 import (
-	"fmt"
 	"io"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/image"
-	"github.com/remind101/pkg/logger"
 )
 
 type Manifest struct {
@@ -236,11 +234,3 @@ func (fn StatusStreamFunc) Publish(status Status) error {
 var NullStatusStream = StatusStreamFunc(func(status Status) error {
 	return nil
 })
-
-func Publish(ctx context.Context, stream StatusStream, msg string) {
-	if stream != nil {
-		if err := stream.Publish(Status{Message: msg}); err != nil {
-			logger.Warn(ctx, fmt.Sprintf("error publishing to stream: %v", err))
-		}
-	}
-}

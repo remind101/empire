@@ -6,8 +6,8 @@ import (
 	"net/url"
 
 	"github.com/jinzhu/gorm"
+	"github.com/remind101/empire/internal/migrate"
 	"github.com/remind101/empire/pkg/headerutil"
-	"github.com/remind101/migrate"
 )
 
 // Empire only supports postgres at the moment.

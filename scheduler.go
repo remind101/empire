@@ -5,8 +5,8 @@ import (
 	"io"
 	"sync"
 
+	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/twelvefactor"
-	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 

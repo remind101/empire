@@ -9,9 +9,9 @@ import (
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
+	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/httpx"
-	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 

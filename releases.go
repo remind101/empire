@@ -6,9 +6,9 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/headerutil"
+	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/twelvefactor"
-	"github.com/remind101/pkg/timex"
 	"golang.org/x/net/context"
 )
 

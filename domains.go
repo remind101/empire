@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/pkg/timex"
+	"github.com/remind101/empire/pkg/timex"
 )
 
 type Domain struct {

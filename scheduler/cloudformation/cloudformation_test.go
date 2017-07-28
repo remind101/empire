@@ -14,7 +14,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -24,6 +23,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	_ "github.com/lib/pq"
 	"github.com/remind101/empire/dbtest"
+	"github.com/remind101/empire/internal/uuid"
 	"github.com/remind101/empire/pkg/bytesize"
 	"github.com/remind101/empire/twelvefactor"
 	"github.com/stretchr/testify/assert"

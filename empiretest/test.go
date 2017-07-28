@@ -15,6 +15,7 @@ import (
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/dbtest"
+	"github.com/remind101/empire/logs"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
@@ -45,7 +46,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 	e := empire.New(db)
 	e.Scheduler = empire.NewFakeScheduler()
 	e.ProcfileExtractor = ExtractProcfile(nil)
-	e.RunRecorder = empire.RecordTo(ioutil.Discard)
+	e.RunRecorder = logs.RecordTo(ioutil.Discard)
 
 	if err := e.Reset(); err != nil {
 		t.Fatal(err)

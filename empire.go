@@ -6,9 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
 	"github.com/jinzhu/gorm"
-	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
@@ -812,28 +810,4 @@ type MessageRequiredError struct{}
 
 func (e *MessageRequiredError) Error() string {
 	return "Missing required option: 'Message'"
-}
-
-// PullAndExtract returns a ProcfileExtractor that will pull the image using the
-// docker client, then attempt to extract the the Procfile, or fallback to the
-// CMD directive in the Dockerfile.
-func PullAndExtract(c *dockerutil.Client) ProcfileExtractor {
-	e := multiExtractor(
-		newFileExtractor(c),
-		newCMDExtractor(c),
-	)
-
-	return ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		if err := c.PullImage(ctx, docker.PullImageOptions{
-			Registry:      img.Registry,
-			Repository:    img.Repository,
-			Tag:           img.Tag,
-			OutputStream:  w,
-			RawJSONStream: true,
-		}); err != nil {
-			return nil, err
-		}
-
-		return e.Extract(ctx, img, w)
-	})
 }

@@ -26,6 +26,7 @@ ci: cmds test vet
 
 test: build/emp
 	go test -race $(shell go list ./... | grep -v /vendor/)
+	./tests/deps
 
 vet:
 	go vet $(shell go list ./... | grep -v /vendor/)
