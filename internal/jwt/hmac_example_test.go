@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/remind101/empire/pkg/jwt"
+	"github.com/remind101/empire/internal/jwt"
 )
 
 // For HMAC signing method, the key can be any []byte. It is recommended to generate

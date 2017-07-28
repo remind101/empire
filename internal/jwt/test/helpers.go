@@ -4,7 +4,7 @@ import (
 	"crypto/rsa"
 	"io/ioutil"
 
-	"github.com/remind101/empire/pkg/jwt"
+	"github.com/remind101/empire/internal/jwt"
 )
 
 func LoadRSAPrivateKeyFromDisk(location string) *rsa.PrivateKey {

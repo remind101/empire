@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/remind101/empire/pkg/jwt"
+	"github.com/remind101/empire/internal/jwt"
 )
 
 var ecdsaTestData = []struct {

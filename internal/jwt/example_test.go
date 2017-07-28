@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/remind101/empire/pkg/jwt"
+	"github.com/remind101/empire/internal/jwt"
 )
 
 // Example (atypical) using the StandardClaims type by itself to parse a token.
