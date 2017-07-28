@@ -643,10 +643,6 @@
 			"revision": "d67e0b7d1797975196499f79bcc322c08b9f218b"
 		},
 		{
-			"path": "github.com/mattn/go-shellwords",
-			"revision": "f4e566c536cf69158e808ec28ef4182a37fdc981"
-		},
-		{
 			"path": "github.com/mgutz/ansi",
 			"revision": "376eb392d7d7e2ae025da0037c73cf8c20a428d8",
 			"revisionTime": "2013-05-14T23:54:47-07:00"
