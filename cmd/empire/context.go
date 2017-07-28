@@ -61,17 +61,22 @@ func newContext(c *cli.Context) (ctx *Context, err error) {
 		return
 	}
 
-	if ctx.reporter != nil {
-		ctx.netCtx = reporter.WithReporter(ctx.netCtx, ctx.reporter)
-	}
-	if ctx.logger != nil {
-		ctx.netCtx = logger.WithLogger(ctx.netCtx, ctx.logger)
-	}
-	if ctx.stats != nil {
-		ctx.netCtx = stats.WithStats(ctx.netCtx, ctx.stats)
-	}
+	ctx.netCtx = ctx.embed(ctx.netCtx)
 
 	return
+}
+
+func (c *Context) embed(ctx context.Context) context.Context {
+	if c.reporter != nil {
+		ctx = reporter.WithReporter(ctx, c.reporter)
+	}
+	if c.logger != nil {
+		ctx = logger.WithLogger(ctx, c.logger)
+	}
+	if c.stats != nil {
+		ctx = stats.WithStats(ctx, c.stats)
+	}
+	return ctx
 }
 
 func (c *Context) URL(name string) *url.URL {

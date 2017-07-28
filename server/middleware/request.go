@@ -3,15 +3,15 @@ package middleware
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
-
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/reporter"
 )
 
 // WithRequest adds information about the http.Request to reported errors.
-func WithRequest(h httpx.Handler) httpx.Handler {
-	return httpx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func WithRequest(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		ctx = httpx.WithRequest(ctx, r)
 
 		// Add the request to the context.
@@ -20,6 +20,6 @@ func WithRequest(h httpx.Handler) httpx.Handler {
 		// Add the request id
 		reporter.AddContext(ctx, "request_id", httpx.RequestID(ctx))
 
-		return h.ServeHTTPContext(ctx, w, r)
+		h.ServeHTTP(w, r)
 	})
 }

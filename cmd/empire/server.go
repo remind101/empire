@@ -92,8 +92,11 @@ func newServer(c *Context, e *empire.Empire) http.Handler {
 		s.Heroku.Unauthorized = heroku.SAMLUnauthorized(c.String(FlagURL) + "/saml/login")
 	}
 
-	h := middleware.Common(s)
-	return middleware.Handler(c, h)
+	m := middleware.Common(s)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := c.embed(r.Context())
+		m.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *Context) *cloudformation.CustomResourceProvisioner {

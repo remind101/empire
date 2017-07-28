@@ -156,6 +156,10 @@ func (s *Server) ServeHTTPContext(ctx context.Context, w http.ResponseWriter, r 
 	return nil
 }
 
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.ServeHTTPContext(r.Context(), w, r)
+}
+
 // handle adds a new handler to the router, which also increments a counter.
 func (s *Server) handle(method, path string, h httpx.HandlerFunc, authStrategy ...string) *route {
 	r := s.route(h)

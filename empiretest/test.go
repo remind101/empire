@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -22,7 +23,6 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
-	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -84,14 +84,16 @@ func newTestServer(t testing.TB, e *empire.Empire, opts server.Options) *Server 
 		e = NewEmpire(t)
 	}
 
-	// Log reporter errors to stderr
-	ctx := reporter.WithReporter(context.Background(), reporter.ReporterFunc(func(ctx context.Context, err error) error {
-		fmt.Fprintf(os.Stderr, "reported error: %v\n", err)
-		return nil
-	}))
-
 	s := server.New(e, opts)
-	svr := httptest.NewUnstartedServer(middleware.Handler(ctx, s))
+	h := func(w http.ResponseWriter, r *http.Request) {
+		// Log reporter errors to stderr
+		ctx := reporter.WithReporter(r.Context(), reporter.ReporterFunc(func(ctx context.Context, err error) error {
+			fmt.Fprintf(os.Stderr, "reported error: %v\n", err)
+			return nil
+		}))
+		s.ServeHTTP(w, r.WithContext(ctx))
+	}
+	svr := httptest.NewUnstartedServer(http.HandlerFunc(h))
 	u, _ := url.Parse(svr.URL)
 	s.URL = u
 	return &Server{

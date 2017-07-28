@@ -11,36 +11,36 @@ import (
 	samlauth "github.com/remind101/empire/server/auth/saml"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
 // SAMLLogin starts a Service Provider initiated login. It generates an
 // AuthnRequest, signs the generated id and stores it in a cookie, then starts
 // the login with the IdP.
-func (s *Server) SAMLLogin(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (s *Server) SAMLLogin(w http.ResponseWriter, r *http.Request) {
 	if s.ServiceProvider == nil {
 		http.NotFound(w, r)
-		return nil
+		return
 	}
 
-	return s.ServiceProvider.InitiateLogin(w)
+	// TODO(ejholmes): Handle error
+	_ = s.ServiceProvider.InitiateLogin(w)
 }
 
 // SAMLACS handles the SAML Response call. It will validate the SAML Response
 // and assertions, generate an API token, then present the token to the user.
-func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (s *Server) SAMLACS(w http.ResponseWriter, r *http.Request) {
 	if s.ServiceProvider == nil {
 		http.NotFound(w, r)
-		return nil
+		return
 	}
 
 	assertion, err := s.ServiceProvider.Parse(w, r)
 	if err != nil {
 		if err, ok := err.(*saml.InvalidResponseError); ok {
-			reporter.Report(ctx, err.PrivateErr)
+			reporter.Report(r.Context(), err.PrivateErr)
 		}
 		http.Error(w, err.Error(), 403)
-		return nil
+		return
 	}
 
 	session := samlauth.SessionFromAssertion(assertion)
@@ -52,7 +52,7 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 	})
 	if err != nil {
 		http.Error(w, err.Error(), 403)
-		return nil
+		return
 	}
 
 	switch r.Header.Get("Accept") {
@@ -67,7 +67,6 @@ func (s *Server) SAMLACS(ctx context.Context, w http.ResponseWriter, r *http.Req
 			Token: at,
 		})
 	}
-	return nil
 }
 
 type instructionsData struct {

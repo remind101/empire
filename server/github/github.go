@@ -12,7 +12,6 @@ import (
 	"github.com/ejholmes/hookshot"
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/empire"
-	"github.com/remind101/pkg/httpx"
 	"golang.org/x/net/context"
 )
 
@@ -33,7 +32,7 @@ type Options struct {
 	Deployer Deployer
 }
 
-func New(e *empire.Empire, opts Options) httpx.Handler {
+func New(e *empire.Empire, opts Options) http.Handler {
 	r := hookshot.NewRouter()
 
 	secret := opts.Secret
