@@ -23,6 +23,7 @@ import (
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/events/stdout"
 	"github.com/remind101/empire/extractor"
+	"github.com/remind101/empire/logs"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/troposphere"
@@ -250,7 +251,7 @@ func newLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 
 func newKinesisLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 	log.Println("Using Kinesis backend for log streaming")
-	return empire.NewKinesisLogsStreamer(), nil
+	return logs.NewKinesisLogsStreamer(), nil
 }
 
 // Events ==============================
