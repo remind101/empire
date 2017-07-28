@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/ejholmes/cloudwatch"
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/pkg/uuid"
+	"github.com/remind101/empire/internal/uuid"
 	"github.com/remind101/kinesumer"
 )
 

@@ -18,7 +18,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/remind101/empire/pkg/uuid"
+	"github.com/remind101/empire/internal/uuid"
 )
 
 const (
