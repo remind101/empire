@@ -13,9 +13,9 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/twelvefactor"
-	"github.com/remind101/pkg/timex"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
