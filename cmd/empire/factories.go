@@ -319,10 +319,10 @@ func newRunRecorder(c *Context) (empire.RunRecorder, error) {
 		log.Println("Using CloudWatch run logs backend with the following configuration:")
 		log.Println(fmt.Sprintf("  LogGroup: %s", group))
 
-		return empire.RecordToCloudWatch(group, c), nil
+		return logs.RecordToCloudWatch(group, c), nil
 	case "stdout":
 		log.Println("Using Stdout run logs backend")
-		return empire.RecordTo(os.Stdout), nil
+		return logs.RecordTo(os.Stdout), nil
 	default:
 		panic(fmt.Sprintf("unknown run logs backend: %v", backend))
 	}
