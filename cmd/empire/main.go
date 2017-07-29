@@ -73,6 +73,8 @@ const (
 
 	FlagRoute53InternalZoneID = "route53.zoneid.internal"
 
+	FlagCloudFormationStackNameTemplate = "cloudformation.stack-name-template"
+
 	FlagSNSTopic           = "sns.topic"
 	FlagCloudWatchLogGroup = "cloudwatch.loggroup"
 
@@ -374,6 +376,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "The route53 zone ID of the internal 'empire.' zone.",
 		EnvVar: "EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
+	},
+	cli.StringFlag{
+		Name:   FlagCloudFormationStackNameTemplate,
+		Value:  "",
+		Usage:  "If provided, this should be a Go text/template that will be used to generate a CloudFormation stack name for an application. If not provided, and the `--" + FlagEnvironment + "` flag is provided, that will be used as a prefix to the stack name.",
+		EnvVar: "EMPIRE_CLOUDFORMATION_STACK_NAME_TEMPLATE",
 	},
 	cli.StringFlag{
 		Name:   FlagLogsStreamer,

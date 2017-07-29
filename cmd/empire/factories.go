@@ -163,7 +163,11 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 	s := cloudformation.NewScheduler(db.DB.DB(), c)
 	s.Cluster = c.String(FlagECSCluster)
 	s.Template = t
-	s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
+	if v := c.String(FlagCloudFormationStackNameTemplate); v != "" {
+		s.StackNameTemplate = stackNameTemplate(v)
+	} else {
+		s.StackNameTemplate = prefixedStackName(c.String(FlagEnvironment))
+	}
 	s.Bucket = c.String(FlagS3TemplateBucket)
 	s.Tags = tags
 	s.NewDockerClient = func(ec2Instance *ec2.Instance) (cloudformation.DockerClient, error) {
@@ -221,6 +225,10 @@ func newLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfigurati
 // the given prefix, if it's set.
 func prefixedStackName(prefix string) *template.Template {
 	t := `{{ if "` + prefix + `" }}{{"` + prefix + `"}}-{{ end }}{{.Name}}`
+	return stackNameTemplate(t)
+}
+
+func stackNameTemplate(t string) *template.Template {
 	return template.Must(template.New("stack_name").Parse(t))
 }
 
