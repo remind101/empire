@@ -464,16 +464,22 @@
 			"revision": "3c37e99d21fd913bd81c35b3c2f661cd04f2b1e8"
 		},
 		{
+			"checksumSHA1": "VAsOU1TGCoonYVb4gQFiutr7vGI=",
 			"path": "github.com/ejholmes/hookshot",
-			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
+			"revision": "9585af7fb64a2799beadb94f9e6247288d6298a4",
+			"revisionTime": "2017-07-29T00:30:51Z"
 		},
 		{
+			"checksumSHA1": "SwfdMjUoUpliHWFgCDjoIJ2dcaI=",
 			"path": "github.com/ejholmes/hookshot/events",
-			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
+			"revision": "9585af7fb64a2799beadb94f9e6247288d6298a4",
+			"revisionTime": "2017-07-29T00:30:51Z"
 		},
 		{
+			"checksumSHA1": "UDuGQF2f89p+tF7kVgYyFSWRVRc=",
 			"path": "github.com/ejholmes/hookshot/hooker",
-			"revision": "4802bea385193a8f3268b38a2918d46049931d6b"
+			"revision": "9585af7fb64a2799beadb94f9e6247288d6298a4",
+			"revisionTime": "2017-07-29T00:30:51Z"
 		},
 		{
 			"path": "github.com/ernesto-jimenez/go-querystring/query",
