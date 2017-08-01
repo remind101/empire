@@ -4,3 +4,7 @@ build
 *.dump
 *.key
 *.cert
+
+# Emacs temporary files
+\#*\#
+.\#*
