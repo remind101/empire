@@ -4,10 +4,28 @@ package dotenv
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 )
+
+// Write writes a map of environment variables as a .env formatted string to w.
+func Write(w io.Writer, envVars map[string]string) error {
+	var keys []string
+	for k := range envVars {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if _, err := fmt.Fprintf(w, "%s=%q\n", k, envVars[k]); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
 
 // ReadFile reads parses the .env formatted file at filename and returns the
 // environment variables as a map.

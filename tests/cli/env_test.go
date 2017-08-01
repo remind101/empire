@@ -20,7 +20,7 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			"RAILS_ENV=production",
+			`RAILS_ENV="production"`,
 		},
 		{
 			"set DATABASE_URL=postgres://localhost AUTH=foo -a acme-inc",
@@ -32,8 +32,8 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			`AUTH=foo
-DATABASE_URL=postgres://localhost`,
+			`AUTH="foo"
+DATABASE_URL="postgres://localhost"`,
 		},
 		{
 			"set EMPTY_VAR= -a acme-inc",
@@ -41,9 +41,9 @@ DATABASE_URL=postgres://localhost`,
 		},
 		{
 			"env -a acme-inc",
-			`AUTH=foo
-DATABASE_URL=postgres://localhost
-EMPTY_VAR=`,
+			`AUTH="foo"
+DATABASE_URL="postgres://localhost"
+EMPTY_VAR=""`,
 		},
 	})
 }
@@ -96,7 +96,7 @@ func TestConfigConsistency(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			"FOO1=foo1",
+			`FOO1="foo1"`,
 		},
 		{
 			"set FOO2=foo2 -a acme-inc",
@@ -104,7 +104,8 @@ func TestConfigConsistency(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			"FOO1=foo1\nFOO2=foo2",
+			`FOO1="foo1"
+FOO2="foo2"`,
 		},
 		{
 			"set FOO3=foo3 -a acme-inc",
@@ -112,12 +113,14 @@ func TestConfigConsistency(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			"FOO1=foo1\nFOO2=foo2\nFOO3=foo3",
+			`FOO1="foo1"
+FOO2="foo2"
+FOO3="foo3"`,
 		},
 	})
 }
 
-func TestEnvConfig(t *testing.T) {
+func TestEnvLoad(t *testing.T) {
 	f, err := ioutil.TempFile(os.TempDir(), "acme-inc.env")
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +138,8 @@ func TestEnvConfig(t *testing.T) {
 		},
 		{
 			"env -a acme-inc",
-			"BAR=foo\nFOO=bar\\nmoarbar",
+			`BAR="foo"
+FOO="bar\\nmoarbar"`,
 		},
 	})
 }

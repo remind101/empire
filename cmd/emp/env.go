@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/remind101/empire/pkg/dotenv"
@@ -25,14 +24,7 @@ func runEnv(cmd *Command, args []string) {
 	cmd.AssertNumArgsCorrect(args)
 	config, err := client.ConfigVarInfo(mustApp())
 	must(err)
-	var configKeys []string
-	for k := range config {
-		configKeys = append(configKeys, k)
-	}
-	sort.Strings(configKeys)
-	for _, k := range configKeys {
-		fmt.Printf("%s=%s\n", k, config[k])
-	}
+	dotenv.Write(os.Stdout, config)
 }
 
 var cmdGet = &Command{

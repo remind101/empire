@@ -1,8 +1,11 @@
 package dotenv
 
 import (
+	"bytes"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var noopPresets = make(map[string]string)
@@ -33,6 +36,40 @@ func loadEnvAndCompareValues(t *testing.T, loader func(files ...string) error, e
 		if envValue != v {
 			t.Errorf("Mismatch for key '%v': expected '%v' got '%v'", k, v, envValue)
 		}
+	}
+}
+
+// Tests that writing -> reading always results in the same thing initial input.
+func TestIdempotency(t *testing.T) {
+	tests := []struct {
+		in, out map[string]string
+	}{
+		{nil, map[string]string{}},
+		{
+			map[string]string{"OPTION_A": "bar"},
+			map[string]string{"OPTION_A": "bar"},
+		},
+		{
+			map[string]string{"OPTION_A": "bar\nbar"},
+			map[string]string{"OPTION_A": "bar\nbar"},
+		},
+		{
+			map[string]string{"OPTION_A": `bar"bar`},
+			map[string]string{"OPTION_A": `bar"bar`},
+		},
+	}
+
+	for _, tt := range tests {
+		b := new(bytes.Buffer)
+		err := Write(b, tt.in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err := Read(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, tt.out, out)
 	}
 }
 
