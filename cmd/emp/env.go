@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"sort"
@@ -156,7 +157,17 @@ func runEnvLoad(cmd *Command, args []string) {
 	message := getMessage()
 	cmd.AssertNumArgsCorrect(args)
 
-	parsedVars, err := dotenv.Read(args[0])
+	var r io.Reader
+	if len(args) == 0 || args[0] == "-" {
+		r = os.Stdin
+	} else {
+		file, err := os.Open(args[0])
+		must(err)
+		defer file.Close()
+		r = file
+	}
+
+	parsedVars, err := dotenv.Read(r)
 	must(err)
 
 	config := make(map[string]*string)

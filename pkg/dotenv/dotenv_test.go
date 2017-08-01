@@ -36,36 +36,6 @@ func loadEnvAndCompareValues(t *testing.T, loader func(files ...string) error, e
 	}
 }
 
-func TestLoadWithNoArgsLoadsDotEnv(t *testing.T) {
-	err := Load()
-	pathError := err.(*os.PathError)
-	if pathError == nil || pathError.Op != "open" || pathError.Path != ".env" {
-		t.Errorf("Didn't try and open .env by default")
-	}
-}
-
-func TestOverloadWithNoArgsOverloadsDotEnv(t *testing.T) {
-	err := Overload()
-	pathError := err.(*os.PathError)
-	if pathError == nil || pathError.Op != "open" || pathError.Path != ".env" {
-		t.Errorf("Didn't try and open .env by default")
-	}
-}
-
-func TestLoadFileNotFound(t *testing.T) {
-	err := Load("somefilethatwillneverexistever.env")
-	if err == nil {
-		t.Error("File wasn't found but Load didn't return an error")
-	}
-}
-
-func TestOverloadFileNotFound(t *testing.T) {
-	err := Overload("somefilethatwillneverexistever.env")
-	if err == nil {
-		t.Error("File wasn't found but Overload didn't return an error")
-	}
-}
-
 func TestReadPlainEnv(t *testing.T) {
 	envFileName := "fixtures/plain.env"
 	expectedValues := map[string]string{
@@ -78,7 +48,7 @@ func TestReadPlainEnv(t *testing.T) {
 		"OPTION_G": "",
 	}
 
-	envMap, err := Read(envFileName)
+	envMap, err := ReadFile(envFileName)
 	if err != nil {
 		t.Error("Error reading file")
 	}
@@ -91,94 +61,6 @@ func TestReadPlainEnv(t *testing.T) {
 		if envMap[key] != value {
 			t.Error("Read got one of the keys wrong")
 		}
-	}
-}
-
-func TestLoadDoesNotOverride(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-
-	// ensure NO overload
-	presets := map[string]string{
-		"OPTION_A": "do_not_override",
-		"OPTION_B": "",
-	}
-
-	expectedValues := map[string]string{
-		"OPTION_A": "do_not_override",
-		"OPTION_B": "",
-	}
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, presets)
-}
-
-func TestOveroadDoesOverride(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-
-	// ensure NO overload
-	presets := map[string]string{
-		"OPTION_A": "do_not_override",
-	}
-
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-	}
-	loadEnvAndCompareValues(t, Overload, envFileName, expectedValues, presets)
-}
-
-func TestLoadPlainEnv(t *testing.T) {
-	envFileName := "fixtures/plain.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-		"OPTION_B": "2",
-		"OPTION_C": "3",
-		"OPTION_D": "4",
-		"OPTION_E": "5",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestLoadExportedEnv(t *testing.T) {
-	envFileName := "fixtures/exported.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "2",
-		"OPTION_B": "\n",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestLoadEqualsEnv(t *testing.T) {
-	envFileName := "fixtures/equals.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "postgres://localhost:5432/database?sslmode=disable",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestLoadQuotedEnv(t *testing.T) {
-	envFileName := "fixtures/quoted.env"
-	expectedValues := map[string]string{
-		"OPTION_A": "1",
-		"OPTION_B": "2",
-		"OPTION_C": "",
-		"OPTION_D": "\n",
-		"OPTION_E": "1",
-		"OPTION_F": "2",
-		"OPTION_G": "",
-		"OPTION_H": "\n",
-	}
-
-	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, noopPresets)
-}
-
-func TestActualEnvVarsAreLeftAlone(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("OPTION_A", "actualenv")
-	_ = Load("fixtures/plain.env")
-
-	if os.Getenv("OPTION_A") != "actualenv" {
-		t.Error("An ENV var set earlier was overwritten")
 	}
 }
 
@@ -276,7 +158,7 @@ func TestLinesToIgnore(t *testing.T) {
 
 func TestErrorReadDirectory(t *testing.T) {
 	envFileName := "fixtures/"
-	envMap, err := Read(envFileName)
+	envMap, err := ReadFile(envFileName)
 
 	if err == nil {
 		t.Errorf("Expected error, got %v", envMap)
@@ -285,7 +167,7 @@ func TestErrorReadDirectory(t *testing.T) {
 
 func TestErrorParsing(t *testing.T) {
 	envFileName := "fixtures/invalid1.env"
-	envMap, err := Read(envFileName)
+	envMap, err := ReadFile(envFileName)
 	if err == nil {
 		t.Errorf("Expected error, got %v", envMap)
 	}
