@@ -27,6 +27,10 @@ func (e *IncompatibleSchemaError) Error() string {
 
 // DB wraps a gorm.DB and provides the datastore layer for Empire.
 type DB struct {
+	// Schema is the Schema instance that will be used to migrate the
+	// database to the latest schema. The zero value is DefaultSchema.
+	Schema *Schema
+
 	*gorm.DB
 
 	uri string
@@ -72,7 +76,11 @@ func NewDB(conn *sql.DB) (*DB, error) {
 
 // MigrateUp migrates the database to the latest version of the schema.
 func (db *DB) MigrateUp() error {
-	return db.migrator.Exec(migrate.Up, migrations...)
+	return db.migrator.Exec(migrate.Up, db.migrations()...)
+}
+
+func (db *DB) migrations() []migrate.Migration {
+	return db.schema().migrations()
 }
 
 // Reset resets the database to a pristine state.
@@ -87,7 +95,7 @@ func (db *DB) Reset() error {
 	exec(`TRUNCATE TABLE apps CASCADE`)
 	exec(`TRUNCATE TABLE ports CASCADE`)
 	exec(`TRUNCATE TABLE slugs CASCADE`)
-	exec(`INSERT INTO ports (port) (SELECT generate_series(9000,10000))`)
+	exec(`UPDATE ports SET app_id = NULL`)
 
 	return err
 }
@@ -113,7 +121,7 @@ func (db *DB) CheckSchemaVersion() error {
 		return fmt.Errorf("error fetching schema version: %v", err)
 	}
 
-	expectedSchemaVersion := latestSchema()
+	expectedSchemaVersion := db.schema().latestSchema()
 	if schemaVersion != expectedSchemaVersion {
 		return &IncompatibleSchemaError{
 			SchemaVersion:         schemaVersion,
@@ -135,6 +143,13 @@ func (db *DB) SchemaVersion() (int, error) {
 // Debug puts the db in debug mode, which logs all queries.
 func (db *DB) Debug() {
 	db.DB = db.DB.Debug()
+}
+
+func (db *DB) schema() *Schema {
+	if db.Schema == nil {
+		return DefaultSchema
+	}
+	return db.Schema
 }
 
 // scope is an interface that scopes a gorm.DB. Scopes are used in

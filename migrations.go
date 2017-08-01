@@ -4,12 +4,77 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/lib/pq/hstore"
 	"github.com/remind101/empire/internal/migrate"
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/procfile"
 )
+
+const (
+	DefaultInstancePortPoolStart = 9000
+	DefaultInstancePortPoolEnd   = 10000
+)
+
+// DefaultSchema is the default Schema that will be used to migrate the database
+// if none is provided.
+var DefaultSchema = &Schema{
+	InstancePortPool: &InstancePortPool{
+		Start: DefaultInstancePortPoolStart,
+		End:   DefaultInstancePortPoolEnd,
+	},
+}
+
+type InstancePortPool struct {
+	Start, End uint
+}
+
+type Schema struct {
+	// For legacy ELB's (not ALB) Empire manages a pool of host ports to
+	// ensure that all applications have a unique port on the EC2 instance.
+	// This option specifies the beginning and end of that range.
+	InstancePortPool *InstancePortPool
+}
+
+// latestSchema returns the schema version that this version of Empire should be
+// using.
+func (s *Schema) latestSchema() int {
+	migrations := s.migrations()
+	return migrations[len(migrations)-1].ID
+}
+
+func (s *Schema) migrations() []migrate.Migration {
+	ports := migrate.Migration{
+		ID: 4,
+		Up: func(tx *sql.Tx) error {
+			const table = `CREATE TABLE ports (
+  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
+  port integer,
+  app_id uuid references apps(id) ON DELETE SET NULL
+)`
+			if _, err := tx.Exec(table); err != nil {
+				return fmt.Errorf("unable to create ports table: %v", err)
+			}
+
+			ports := fmt.Sprintf(`INSERT INTO ports (port) (SELECT generate_series(%d,%d))`, s.InstancePortPool.Start, s.InstancePortPool.End)
+
+			if _, err := tx.Exec(ports); err != nil {
+				return fmt.Errorf("unable to generate a series of instance ports: %v", err)
+			}
+
+			return nil
+		},
+		Down: migrate.Queries([]string{
+			`DROP TABLE ports CASCADE`,
+		}),
+	}
+
+	migrations := migrate.ByID(append(migrations, ports))
+	sort.Sort(migrations)
+
+	return migrations
+}
 
 var migrations = []migrate.Migration{
 	{
@@ -126,21 +191,6 @@ var migrations = []migrate.Migration{
   command text NOT NULL,
   updated_at timestamp without time zone default (now() at time zone 'utc')
 )`,
-		}),
-	},
-	{
-		ID: 4,
-		Up: migrate.Queries([]string{
-			`CREATE TABLE ports (
-  id uuid NOT NULL DEFAULT uuid_generate_v4() primary key,
-  port integer,
-  app_id uuid references apps(id) ON DELETE SET NULL
-)`,
-			`-- Insert 1000 ports
-INSERT INTO ports (port) (SELECT generate_series(9000,10000))`,
-		}),
-		Down: migrate.Queries([]string{
-			`DROP TABLE ports CASCADE`,
 		}),
 	},
 	{
@@ -629,10 +679,4 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`ALTER TABLE apps DROP COLUMN maintenance`,
 		}),
 	},
-}
-
-// latestSchema returns the schema version that this version of Empire should be
-// using.
-func latestSchema() int {
-	return migrations[len(migrations)-1].ID
 }

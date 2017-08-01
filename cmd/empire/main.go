@@ -71,6 +71,9 @@ const (
 	FlagEC2SubnetsPrivate = "ec2.subnets.private"
 	FlagEC2SubnetsPublic  = "ec2.subnets.public"
 
+	FlagInstancePortPoolStart = "instance-port-pool.start"
+	FlagInstancePortPoolEnd   = "instance-port-pool.end"
+
 	FlagRoute53InternalZoneID = "route53.zoneid.internal"
 
 	FlagCloudFormationStackNameTemplate = "cloudformation.stack-name-template"
@@ -358,6 +361,18 @@ var EmpireFlags = []cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  "The comma separated public subnet ids",
 		EnvVar: "EMPIRE_EC2_SUBNETS_PUBLIC",
+	},
+	cli.IntFlag{
+		Name:   FlagInstancePortPoolStart,
+		Value:  empire.DefaultInstancePortPoolStart,
+		Usage:  "The start of the range of instance ports to allocate from.",
+		EnvVar: "EMPIRE_INSTANCE_PORT_POOL_START",
+	},
+	cli.IntFlag{
+		Name:   FlagInstancePortPoolEnd,
+		Value:  empire.DefaultInstancePortPoolEnd,
+		Usage:  "The end of the range of instance ports to allocate from.",
+		EnvVar: "EMPIRE_INSTANCE_PORT_POOL_END",
 	},
 	cli.StringFlag{
 		Name:   FlagSecret,

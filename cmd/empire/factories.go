@@ -37,7 +37,19 @@ import (
 // DB ===================================
 
 func newDB(c *Context) (*empire.DB, error) {
-	return empire.OpenDB(c.String(FlagDB))
+	db, err := empire.OpenDB(c.String(FlagDB))
+	if err != nil {
+		return nil, err
+	}
+
+	db.Schema = &empire.Schema{
+		InstancePortPool: &empire.InstancePortPool{
+			Start: uint(c.Int(FlagInstancePortPoolStart)),
+			End:   uint(c.Int(FlagInstancePortPoolEnd)),
+		},
+	}
+
+	return db, nil
 }
 
 // Empire ===============================
