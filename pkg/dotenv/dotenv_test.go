@@ -1,4 +1,4 @@
-package godotenv
+package dotenv
 
 import (
 	"os"
@@ -74,6 +74,8 @@ func TestReadPlainEnv(t *testing.T) {
 		"OPTION_C": "3",
 		"OPTION_D": "4",
 		"OPTION_E": "5",
+		"OPTION_F": "",
+		"OPTION_G": "",
 	}
 
 	envMap, err := Read(envFileName)
@@ -98,10 +100,12 @@ func TestLoadDoesNotOverride(t *testing.T) {
 	// ensure NO overload
 	presets := map[string]string{
 		"OPTION_A": "do_not_override",
+		"OPTION_B": "",
 	}
 
 	expectedValues := map[string]string{
 		"OPTION_A": "do_not_override",
+		"OPTION_B": "",
 	}
 	loadEnvAndCompareValues(t, Load, envFileName, expectedValues, presets)
 }
@@ -187,24 +191,24 @@ func TestParsing(t *testing.T) {
 	parseAndCompare(t, "FOO= bar", "FOO", "bar")
 
 	// parses double quoted values
-	parseAndCompare(t, "FOO=\"bar\"", "FOO", "bar")
+	parseAndCompare(t, `FOO="bar"`, "FOO", "bar")
 
 	// parses single quoted values
 	parseAndCompare(t, "FOO='bar'", "FOO", "bar")
 
 	// parses escaped double quotes
-	parseAndCompare(t, "FOO=escaped\\\"bar\"", "FOO", "escaped\"bar")
+	parseAndCompare(t, `FOO="escaped\"bar"`, "FOO", `escaped"bar`)
 
 	// parses yaml style options
 	parseAndCompare(t, "OPTION_A: 1", "OPTION_A", "1")
 
 	// parses export keyword
 	parseAndCompare(t, "export OPTION_A=2", "OPTION_A", "2")
-	parseAndCompare(t, "export OPTION_B='\\n'", "OPTION_B", "\n")
+	parseAndCompare(t, `export OPTION_B='\n'`, "OPTION_B", "\n")
 
 	// it 'expands newlines in quoted strings' do
 	// expect(env('FOO="bar\nbaz"')).to eql('FOO' => "bar\nbaz")
-	parseAndCompare(t, "FOO=\"bar\\nbaz\"", "FOO", "bar\nbaz")
+	parseAndCompare(t, `FOO="bar\nbaz"`, "FOO", "bar\nbaz")
 
 	// it 'parses varibales with "." in the name' do
 	// expect(env('FOO.BAR=foobar')).to eql('FOO.BAR' => 'foobar')
@@ -224,14 +228,14 @@ func TestParsing(t *testing.T) {
 
 	// it 'allows # in quoted value' do
 	// expect(env('foo="bar#baz" # comment')).to eql('foo' => 'bar#baz')
-	parseAndCompare(t, "FOO=\"bar#baz\" # comment", "FOO", "bar#baz")
+	parseAndCompare(t, `FOO="bar#baz" # comment`, "FOO", "bar#baz")
 	parseAndCompare(t, "FOO='bar#baz' # comment", "FOO", "bar#baz")
-	parseAndCompare(t, "FOO=\"bar#baz#bang\" # comment", "FOO", "bar#baz#bang")
+	parseAndCompare(t, `FOO="bar#baz#bang" # comment`, "FOO", "bar#baz#bang")
 
 	// it 'parses # in quoted values' do
 	// expect(env('foo="ba#r"')).to eql('foo' => 'ba#r')
 	// expect(env("foo='ba#r'")).to eql('foo' => 'ba#r')
-	parseAndCompare(t, "FOO=\"ba#r\"", "FOO", "ba#r")
+	parseAndCompare(t, `FOO="ba#r"`, "FOO", "ba#r")
 	parseAndCompare(t, "FOO='ba#r'", "FOO", "ba#r")
 
 	// it 'throws an error if line format is incorrect' do
@@ -265,7 +269,24 @@ func TestLinesToIgnore(t *testing.T) {
 	}
 
 	// make sure we're not getting false positives
-	if isIgnoredLine("export OPTION_B='\\n'") {
+	if isIgnoredLine(`export OPTION_B='\n'`) {
 		t.Error("ignoring a perfectly valid line to parse")
+	}
+}
+
+func TestErrorReadDirectory(t *testing.T) {
+	envFileName := "fixtures/"
+	envMap, err := Read(envFileName)
+
+	if err == nil {
+		t.Errorf("Expected error, got %v", envMap)
+	}
+}
+
+func TestErrorParsing(t *testing.T) {
+	envFileName := "fixtures/invalid1.env"
+	envMap, err := Read(envFileName)
+	if err == nil {
+		t.Errorf("Expected error, got %v", envMap)
 	}
 }

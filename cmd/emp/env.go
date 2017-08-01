@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/joho/godotenv"
+	"github.com/remind101/empire/pkg/dotenv"
 )
 
 var cmdEnv = &Command{
@@ -156,7 +156,7 @@ func runEnvLoad(cmd *Command, args []string) {
 	message := getMessage()
 	cmd.AssertNumArgsCorrect(args)
 
-	parsedVars, err := godotenv.Read(args[0])
+	parsedVars, err := dotenv.Read(args[0])
 	must(err)
 
 	config := make(map[string]*string)

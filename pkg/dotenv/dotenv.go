@@ -1,4 +1,4 @@
-// Package godotenv is a go port of the ruby dotenv library (https://github.com/bkeepers/dotenv)
+// Package dotenv is a go port of the ruby dotenv library (https://github.com/bkeepers/dotenv)
 //
 // Examples/readme can be found on the github page at https://github.com/joho/godotenv
 //
@@ -8,10 +8,10 @@
 //
 // and then in your go code you can call
 //
-// 		godotenv.Load()
+// 		dotenv.Load()
 //
 // and all the env vars declared in .env will be avaiable through os.Getenv("SOME_ENV_VAR")
-package godotenv
+package dotenv
 
 import (
 	"bufio"
@@ -29,7 +29,7 @@ import (
 //
 // You can otherwise tell it which files to load (there can be more than one) like
 //
-//		godotenv.Load("fileone", "filetwo")
+//		dotenv.Load("fileone", "filetwo")
 //
 // It's important to note that it WILL NOT OVERRIDE an env variable that already exists - consider the .env file to set dev vars or sensible defaults
 func Load(filenames ...string) (err error) {
@@ -52,7 +52,7 @@ func Load(filenames ...string) (err error) {
 //
 // You can otherwise tell it which files to load (there can be more than one) like
 //
-//		godotenv.Overload("fileone", "filetwo")
+//		dotenv.Overload("fileone", "filetwo")
 //
 // It's important to note this WILL OVERRIDE an env variable that already exists - consider the .env file to forcefilly set all vars.
 func Overload(filenames ...string) (err error) {
@@ -119,8 +119,15 @@ func loadFile(filename string, overload bool) error {
 		return err
 	}
 
+	currentEnv := map[string]bool{}
+	rawEnv := os.Environ()
+	for _, rawEnvLine := range rawEnv {
+		key := strings.Split(rawEnvLine, "=")[0]
+		currentEnv[key] = true
+	}
+
 	for key, value := range envMap {
-		if os.Getenv(key) == "" || overload {
+		if !currentEnv[key] || overload {
 			os.Setenv(key, value)
 		}
 	}
@@ -143,13 +150,19 @@ func readFile(filename string) (envMap map[string]string, err error) {
 		lines = append(lines, scanner.Text())
 	}
 
+	if err = scanner.Err(); err != nil {
+		return
+	}
+
 	for _, fullLine := range lines {
 		if !isIgnoredLine(fullLine) {
-			key, value, err := parseLine(fullLine)
+			var key, value string
+			key, value, err = parseLine(fullLine)
 
-			if err == nil {
-				envMap[key] = value
+			if err != nil {
+				return
 			}
+			envMap[key] = value
 		}
 	}
 	return
@@ -206,18 +219,23 @@ func parseLine(line string) (key string, value string, err error) {
 
 	// Parse the value
 	value = splitString[1]
+
 	// trim
 	value = strings.Trim(value, " ")
 
 	// check if we've got quoted values
-	if strings.Count(value, "\"") == 2 || strings.Count(value, "'") == 2 {
-		// pull the quotes off the edges
-		value = strings.Trim(value, "\"'")
+	if value != "" {
+		first := string(value[0:1])
+		last := string(value[len(value)-1:])
+		if first == last && strings.ContainsAny(first, `"'`) {
+			// pull the quotes off the edges
+			value = strings.Trim(value, `"'`)
 
-		// expand quotes
-		value = strings.Replace(value, "\\\"", "\"", -1)
-		// expand newlines
-		value = strings.Replace(value, "\\n", "\n", -1)
+			// expand quotes
+			value = strings.Replace(value, `\"`, `"`, -1)
+			// expand newlines
+			value = strings.Replace(value, `\n`, "\n", -1)
+		}
 	}
 
 	return
