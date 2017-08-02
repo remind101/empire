@@ -8,3 +8,5 @@ build
 # Emacs temporary files
 \#*\#
 .\#*
+
+packages

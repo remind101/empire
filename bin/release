@@ -16,7 +16,7 @@ gh release \
     --repo ${repo} \
     --tag ${tag}
 
-for f in ${artifacts_dir}/*; do
+for f in "$@"; do
   gh upload \
     --user ${user} \
     --repo ${repo} \

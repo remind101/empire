@@ -1,0 +1,91 @@
+#!/bin/bash
+
+repo="remind101/empire"
+
+phase=$1
+target=$2
+
+case "$target" in
+  all) echo "test" ;;
+
+  # This target generates a list of all of the Go packages in this codebase
+  # (excluding vendored packages).
+  packages)
+    case "$phase" in
+      deps) go list ./... | grep -v /vendor/ ;;
+      exec) $0 deps $target > $target ;;
+    esac ;;
+
+  src)
+    case "$phase" in
+      deps) find . -type f -iname '*.go' ;;
+    esac ;;
+
+  # Target for executing the test suite.
+  test|tests)
+    case "$phase" in
+      deps) echo "tests/all" ;;
+    esac ;;
+
+  # Target that `go vet`'s all of the packages in this codebase.
+  vet)
+    case "$phase" in
+      deps) echo "packages" ;;
+      exec) go vet $(cat packages) ;;
+    esac ;;
+
+  # Target for testing in CI.
+  ci)
+    case "$phase" in
+      deps)
+        echo "cmds"
+        echo "test"
+        echo "vet"
+    esac ;;
+
+  # Creates a new release of Empire.
+  release)
+    case "$phase" in
+      deps) 
+    esac ;;
+
+  # Target that will build all of the commands in ./cmd.
+  cmds)
+    case "$phase" in
+      deps)
+        echo "build/emp"
+        echo "build/empire"
+        ;;
+    esac ;;
+
+  # Target for bootstraping a local (non-docker) development environment.
+  bootstrap)
+    case "$phase" in
+      deps) echo "build/empire" ;;
+      exec) createdb empire 2>/dev/null || true ;;
+    esac ;;
+
+  # Target that builds the Empire Docker image.
+  build)
+    case "$phase" in
+      deps)
+        echo "VERSION"
+        echo "Dockerfile"
+        ;;
+      exec) docker build --build-arg version=$(cat VERSION) -t "$repo" . ;;
+    esac ;;
+
+  version.go)
+    case "$phase" in
+      deps) echo "VERSION" ;;
+      exec) cat <<EOF > "$target"
+package empire
+
+// The version of Empire.
+const Version = "$(cat VERSION)"
+EOF
+    esac ;;
+
+  Dockerfile|VERSION|*.go) ;;
+  *) >&2 echo "No rule for target \"$target\"" && exit 1 ;;
+esac

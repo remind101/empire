@@ -1,7 +1,9 @@
 FROM golang:1.7.0
 MAINTAINER Eric Holmes <eric@remind101.com>
 
-LABEL version 0.12.0
+ARG version
+
+LABEL version $version
 
 RUN apt-get update -yy && \
   apt-get install -yy git make curl libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1

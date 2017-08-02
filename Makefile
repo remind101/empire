@@ -1,39 +1,7 @@
 .PHONY: build test bootstrap
 
-REPO = remind101/empire
-TYPE = patch
-ARTIFACTS = ${CIRCLE_ARTIFACTS}
-
-cmds: build/empire build/emp
-
-clean:
-	rm -rf build/*
-
-build/empire:
-	go build -o build/empire ./cmd/empire
-
-build/emp:
-	go build -o build/emp ./cmd/emp
-
-bootstrap: cmds
-	createdb empire || true
-	./build/empire migrate
-
-build: Dockerfile
-	docker build -t ${REPO} .
-
-ci: cmds test vet
-
-test: build/emp
-	go test -race $(shell go list ./... | grep -v /vendor/)
-	./tests/deps
-
-vet:
-	go vet $(shell go list ./... | grep -v /vendor/)
-
-bump:
-	pip install --upgrade bumpversion
-	bumpversion ${TYPE}
+test:
+	walk -v test
 
 release: release/docker release/emp release/empire release/github
 

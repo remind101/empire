@@ -4,7 +4,7 @@ set -eo pipefail
 
 dependencies() {
   local package="$1"
-  go list -f '{{join .Deps "\n"}}'
+  go list -f '{{join .Deps "\n"}}' "$package"
 }
 
 not_stdlib() {

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+phase=$1
+target=$2
+
+case "$target" in
+  all)
+    case "$phase" in
+      deps)
+        echo "../packages"
+        echo "../build/emp"
+        echo "deps"
+        ;;
+      exec) go test -race $(cat "../packages") ;;
+    esac ;;
+
+  deps)
+    case "$phase" in
+      exec) ./deps ;;
+    esac ;;
+
+  *) >&2 echo "No rule for target \"$target\"" && exit 1 ;;
+esac

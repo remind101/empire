@@ -1,0 +1,21 @@
+#!/bin/bash
+
+phase=$1
+target=$2
+
+case "$target" in
+  dev.go)
+    case "$phase" in
+      deps) echo "../../VERSION" ;;
+      exec) cat <<EOF > "$target"
+package main
+
+const (
+	Version = "$(cat ../../VERSION)"
+)
+EOF
+    esac ;;
+
+  *.go) ;;
+  *) >&2 echo "No rule for target \"$target\"" && exit 1 ;;
+esac

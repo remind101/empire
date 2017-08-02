@@ -1,0 +1,14 @@
+#!/bin/bash
+
+phase=$1
+target=$2
+
+case "$target" in
+  emp|empire)
+    case "$phase" in
+      deps) echo "../src" ;;
+      exec) go build -o "$target" "../cmd/$target" ;;
+    esac ;;
+
+  *) >&2 echo "No rule for target \"$target\"" && exit 1 ;;
+esac
