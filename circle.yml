@@ -1,45 +1,30 @@
 machine:
-  environment:
-    GODIST: "go1.7.linux-amd64.tar.gz"
+  pre:
+    - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
   services:
     - docker
-  post:
-    - mkdir -p download
-    - test -e download/$GODIST || curl -o download/$GODIST https://storage.googleapis.com/golang/$GODIST
-    - sudo rm -rf /usr/local/go
-    - sudo tar -C /usr/local -xzf download/$GODIST
-    - sudo ln -s /usr/local/go/bin/go /usr/bin/go
-    - sudo go install -a -race std
-
-checkout:
-  post:
-    - rm -rf ~/.go_workspace/src/github.com/remind101
-    - mkdir -p ~/.go_workspace/src/github.com/remind101
-    - cp -R ~/empire ~/.go_workspace/src/github.com/remind101/empire
+  environment:
+    COMPOSE_FILE: docker-compose.test.yml
+    DOCKER_API_VERSION: "1.22"
 
 dependencies:
-  cache_directories:
-    - ~/download
-  pre:
-    - go get github.com/aktau/github-release
-    - sudo pip install awscli
-    - go version
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make bootstrap
   override:
-    - /bin/true
+    - sudo curl -L -o /usr/local/bin/docker-compose https://github.com/docker/compose/releases/download/1.9.0/docker-compose-`uname -s`-`uname -m`; sudo chmod 0755 /usr/local/bin/docker-compose
+    - docker-compose build
+    - docker-compose pull
 
 test:
   override:
-    - cd ~/.go_workspace/src/github.com/remind101/empire && make ci
+    - docker-compose run walk ci
 
 deployment:
   aws: 
     branch: master
     commands:
-      - AWS_REGION=us-east-1 aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read 
+      - docker-compose run walk docs
   release:
     tag: /v[0-9]+(\.[0-9]+)*/
     owner: remind101
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - cd ~/.go_workspace/src/github.com/remind101/empire && make release
+      - docker-compose run walk release

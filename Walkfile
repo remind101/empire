@@ -31,7 +31,7 @@ case "$target" in
   vet)
     case "$phase" in
       deps) echo "packages" ;;
-      exec) go vet $(cat packages) ;;
+      exec) cat packages | xargs go vet
     esac ;;
 
   # Target for testing in CI.
@@ -41,6 +41,7 @@ case "$target" in
         echo "cmds"
         echo "test"
         echo "vet"
+        echo "docker"
     esac ;;
 
   # Creates a new release of Empire.
@@ -66,7 +67,7 @@ case "$target" in
     esac ;;
 
   # Target that builds the Empire Docker image.
-  build)
+  docker)
     case "$phase" in
       deps)
         echo "VERSION"

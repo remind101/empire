@@ -1,10 +1,20 @@
 FROM golang:1.7.0
 MAINTAINER Eric Holmes <eric@remind101.com>
 
+RUN curl -L https://github.com/ejholmes/walk/releases/download/v0.3.1/walk-linux > /usr/local/bin/walk && \
+      chmod +x /usr/local/bin/walk
+
 RUN apt-get update -yy && \
   apt-get install -yy git make curl libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
 
+RUN curl -L https://download.docker.com/linux/static/stable/x86_64/docker-17.06.0-ce.tgz > /tmp/docker.tgz && \
+      tar xzvf /tmp/docker.tgz && \
+      mv docker/docker /usr/bin/ && \
+      rm -rf docker
+
+RUN go get github.com/aktau/github-release
+
 WORKDIR /go/src/github.com/remind101/empire
 
-ENTRYPOINT ["make"]
+ENTRYPOINT ["walk", "-v"]
 CMD ["test"]

@@ -1,17 +1,20 @@
 version: '2'
 
 services:
-  tests:
+  walk:
     build:
       context: .
       dockerfile: Dockerfile.test
-    entrypoint: make
     command: test
     links:
       - db:db
     volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
       - ".:/go/src/github.com/remind101/empire"
     environment:
+      SHELL: bash
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_API_VERSION:
       TEST_DATABASE_URL: "postgres://postgres:postgres@db/postgres?sslmode=disable"
   db:
     image: postgres

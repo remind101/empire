@@ -11,7 +11,7 @@ case "$target" in
         echo "../build/emp"
         echo "deps"
         ;;
-      exec) go test -race $(cat "../packages") ;;
+      exec) cat ../packages | xargs go test -race ;;
     esac ;;
 
   deps)
