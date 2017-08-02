@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/tugboat"
-	"golang.org/x/net/context"
 )
 
 // Deployer represents something that can deploy a github deployment.

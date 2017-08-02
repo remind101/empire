@@ -1,9 +1,8 @@
 package empire
 
 import (
+	"context"
 	"io"
-
-	"golang.org/x/net/context"
 )
 
 // RunRecorder is a function that returns an io.Writer that will be written to

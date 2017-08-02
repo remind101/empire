@@ -1,12 +1,12 @@
 package cloudformation
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
-	"golang.org/x/net/context"
 )
 
 // envClient mocks the Empire interface we use.

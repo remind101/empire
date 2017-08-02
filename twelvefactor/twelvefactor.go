@@ -3,10 +3,9 @@
 package twelvefactor
 
 import (
+	"context"
 	"io"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/image"
 )

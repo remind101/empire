@@ -1,6 +1,7 @@
 package empiretest
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,8 +11,6 @@ import (
 	"os"
 	"testing"
 	"text/template"
-
-	"golang.org/x/net/context"
 
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"

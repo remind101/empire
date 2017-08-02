@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/timex"
-	"golang.org/x/net/context"
 )
 
 const (

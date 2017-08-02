@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lib/pq/hstore"
-	"golang.org/x/net/context"
 )
 
 // Config represents a collection of environment variables.

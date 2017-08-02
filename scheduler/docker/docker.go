@@ -3,6 +3,7 @@ package docker
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +13,6 @@ import (
 	"github.com/remind101/empire/internal/uuid"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/twelvefactor"
-	"golang.org/x/net/context"
 )
 
 // The amount of time to wait for a container to stop before sending a SIGKILL.

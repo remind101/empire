@@ -1,14 +1,13 @@
 package empire_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
 	"sort"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"

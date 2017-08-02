@@ -3,11 +3,10 @@ package extractor
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"path"
-
-	"golang.org/x/net/context"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire"

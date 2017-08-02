@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -10,7 +11,6 @@ import (
 	"github.com/remind101/empire/server/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/net/context"
 )
 
 var testSecret = []byte("secret")

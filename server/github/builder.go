@@ -2,13 +2,13 @@ package github
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"text/template"
 
 	"github.com/ejholmes/hookshot/events"
 	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/empire/pkg/image"
-	"golang.org/x/net/context"
 )
 
 // ImageBuilder is an interface that represents something that can build and

@@ -1,6 +1,7 @@
 package cloudformation
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
 var (

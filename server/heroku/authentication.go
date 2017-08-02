@@ -1,6 +1,7 @@
 package heroku
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
-	"golang.org/x/net/context"
 )
 
 // AccessToken represents a token that allow access to the api.

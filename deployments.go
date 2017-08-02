@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,7 +9,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/jsonmessage"
 	"github.com/remind101/empire/twelvefactor"
-	"golang.org/x/net/context"
 )
 
 // deployerService is an implementation of the deployer interface that performs

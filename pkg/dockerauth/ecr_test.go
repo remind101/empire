@@ -1,9 +1,9 @@
 package dockerauth
 
 import (
-	"testing"
-	"fmt"
 	"encoding/base64"
+	"fmt"
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -76,8 +76,8 @@ func newGetAuthorizationTokenOutput(registryId string, region string, unEncodedT
 	authData := []*ecr.AuthorizationData{
 		&ecr.AuthorizationData{
 			AuthorizationToken: aws.String(encodeToken(unEncodedToken)),
-			ExpiresAt: aws.Time(newExpiry()),
-			ProxyEndpoint: aws.String(fmt.Sprintf("https://%s.dkr.ecr.%s.amazonaws.com", registryId, region)),
+			ExpiresAt:          aws.Time(newExpiry()),
+			ProxyEndpoint:      aws.String(fmt.Sprintf("https://%s.dkr.ecr.%s.amazonaws.com", registryId, region)),
 		},
 	}
 

@@ -1,11 +1,10 @@
 package empire
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
-
-	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"

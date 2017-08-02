@@ -1,12 +1,12 @@
 package empire
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/remind101/empire/pkg/constraints"
 	"github.com/remind101/empire/twelvefactor"
-	"golang.org/x/net/context"
 )
 
 // Host represents the host of the task

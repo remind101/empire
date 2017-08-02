@@ -4,6 +4,7 @@ package cloudformation
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"database/sql"
 	"errors"
@@ -29,7 +30,6 @@ import (
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/logger"
-	"golang.org/x/net/context"
 )
 
 // newTimestamp returns the current time in seconds since epoch. Set to a var

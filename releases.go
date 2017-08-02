@@ -1,6 +1,7 @@
 package empire
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/twelvefactor"
-	"golang.org/x/net/context"
 )
 
 // Release is a combination of a Config and a Slug, which form a deployable

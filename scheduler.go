@@ -1,13 +1,13 @@
 package empire
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sync"
 
 	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/twelvefactor"
-	"golang.org/x/net/context"
 )
 
 type Scheduler twelvefactor.Scheduler

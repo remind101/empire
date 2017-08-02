@@ -2,9 +2,8 @@
 package stats
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Stats provides an interface for generating instruments, like guages and

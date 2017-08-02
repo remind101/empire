@@ -1,6 +1,7 @@
 package cloudformation
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 func TestSQSDispatcher_Handle(t *testing.T) {
