@@ -79,11 +79,5 @@ environment:
   EMPIRE_X_LOAD_BALANCER_TYPE: "alb"
 ```
 
-Supported environment variables that can either be set via `emp set` for the whole application or
-inside the `Procfile` for a specific process.
-
-Name | Default value | Available options | Description
------|---------------|-------------------|------------
-`EMPIRE_X_LOAD_BALANCER_TYPE` | `elb` | `alb`, `elb`| Determines whether you will use an ALB or ELB
-`EMPIRE_X_TASK_DEFINITION_TYPE` | not set | `custom` | Determines whether we use the Custom::ECSTaskDefinition (better explanation needed)
-`EMPIRE_X_TASK_ROLE_ARN` | not set | any IAM role ARN | Sets the IAM role for that app/process. **Your ECS cluster MUST have Task Role support enabled before this can work!**
+See [documentation about deploying an application](../docs/deploying_an_application.md#environment-variables)
+for a list of other supported environment variables.

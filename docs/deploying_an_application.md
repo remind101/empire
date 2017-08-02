@@ -226,7 +226,15 @@ migrate:
 
 ## Environment variables
 
-TODO
+Environment variables that start with `EMPIRE_X_` should be considered experimental and subject to
+change in the future.
+
+Name | Default value | Available options | Description
+-----|---------------|-------------------|------------
+`EMPIRE_X_LOAD_BALANCER_TYPE` | `elb` | `alb`, `elb`| Determines whether you will use an ALB or ELB
+`EMPIRE_X_TASK_DEFINITION_TYPE` | not set | `custom` | Determines whether we use the Custom::ECSTaskDefinition (better explanation needed)
+`EMPIRE_X_TASK_ROLE_ARN` | not set | any IAM role ARN | Sets the IAM role for that app/process. **Your ECS cluster MUST have Task Role support enabled before this can work!**
+
 
 [procfile]: https://devcenter.heroku.com/articles/procfile
 [extended-procfile]: https://github.com/remind101/empire/tree/master/procfile
