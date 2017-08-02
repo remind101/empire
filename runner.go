@@ -48,7 +48,7 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 	if err != nil {
 		return err
 	}
-	p, err := newSchedulerProcess(release, procName, proc)
+	p, err := newSchedulerProcess(release, procName, proc, a.Env)
 	if err != nil {
 		return err
 	}

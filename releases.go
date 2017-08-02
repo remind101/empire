@@ -306,6 +306,11 @@ func releasesCreate(db *gorm.DB, release *Release) (*Release, error) {
 func newSchedulerApp(release *Release) (*twelvefactor.Manifest, error) {
 	var processes []*twelvefactor.Process
 
+	env := environment(release.Config.Vars)
+	env["EMPIRE_APPID"] = release.App.ID
+	env["EMPIRE_APPNAME"] = release.App.Name
+	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
+
 	for name, p := range release.Formation {
 		if p.NoService {
 			// If the entry is marked as "NoService", don't send it
@@ -319,17 +324,12 @@ func newSchedulerApp(release *Release) (*twelvefactor.Manifest, error) {
 			continue
 		}
 
-		process, err := newSchedulerProcess(release, name, p)
+		process, err := newSchedulerProcess(release, name, p, env)
 		if err != nil {
 			return nil, err
 		}
 		processes = append(processes, process)
 	}
-
-	env := environment(release.Config.Vars)
-	env["EMPIRE_APPID"] = release.App.ID
-	env["EMPIRE_APPNAME"] = release.App.Name
-	env["EMPIRE_RELEASE"] = fmt.Sprintf("v%d", release.Version)
 
 	labels := map[string]string{
 		"empire.app.id":      release.App.ID,
@@ -347,7 +347,7 @@ func newSchedulerApp(release *Release) (*twelvefactor.Manifest, error) {
 	}, nil
 }
 
-func newSchedulerProcess(release *Release, name string, p Process) (*twelvefactor.Process, error) {
+func newSchedulerProcess(release *Release, name string, p Process, appEnv map[string]string) (*twelvefactor.Process, error) {
 	env := make(map[string]string)
 	for k, v := range p.Environment {
 		env[k] = v
@@ -365,14 +365,25 @@ func newSchedulerProcess(release *Release, name string, p Process) (*twelvefacto
 		exposure *twelvefactor.Exposure
 		err      error
 	)
+	mergedEnv := twelvefactor.Merge(appEnv, env)
+
+	isExternal := release.App.Exposure == exposePublic
+	if v, ok := mergedEnv["EMPIRE_X_EXPOSURE"]; ok {
+		if v == exposePublic {
+			isExternal = true
+		} else if v == exposePrivate {
+			isExternal = false
+		}
+	}
+
 	// For `web` processes defined in the standard procfile, we'll
 	// generate a default exposure setting and also set the PORT
-	// environment variable for backwards compatability.
+	// environment variable for backwards compatibility.
 	if name == webProcessType && len(p.Ports) == 0 {
-		exposure = standardWebExposure(release.App)
+		exposure = standardWebExposure(release.App, isExternal)
 		env["PORT"] = "8080"
 	} else {
-		exposure, err = processExposure(release.App, name, p)
+		exposure, err = processExposure(release.App, name, p, isExternal)
 		if err != nil {
 			return nil, err
 		}
@@ -411,7 +422,7 @@ func environment(vars Vars) map[string]string {
 
 // standardWebExposure generates a scheduler.Exposure for a web process in the
 // standard Procfile format.
-func standardWebExposure(app *App) *twelvefactor.Exposure {
+func standardWebExposure(app *App, isExternal bool) *twelvefactor.Exposure {
 	ports := []twelvefactor.Port{
 		{
 			Container: 8080,
@@ -432,12 +443,12 @@ func standardWebExposure(app *App) *twelvefactor.Exposure {
 	}
 
 	return &twelvefactor.Exposure{
-		External: app.Exposure == exposePublic,
+		External: isExternal,
 		Ports:    ports,
 	}
 }
 
-func processExposure(app *App, name string, process Process) (*twelvefactor.Exposure, error) {
+func processExposure(app *App, name string, process Process, isExternal bool) (*twelvefactor.Exposure, error) {
 	// No ports == not exposed
 	if len(process.Ports) == 0 {
 		return nil, nil
@@ -474,8 +485,9 @@ func processExposure(app *App, name string, process Process) (*twelvefactor.Expo
 			Protocol:  protocol,
 		})
 	}
+
 	return &twelvefactor.Exposure{
-		External: app.Exposure == exposePublic,
+		External: isExternal,
 		Ports:    ports,
 	}, nil
 }
