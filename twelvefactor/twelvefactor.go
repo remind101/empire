@@ -154,14 +154,10 @@ type Task struct {
 	UpdatedAt time.Time
 }
 
-type Runner interface {
-	// Run runs a process.
-	Run(ctx context.Context, app *Manifest, process *Process, in io.Reader, out io.Writer) error
-}
-
 // Scheduler is an interface for interfacing with Services.
 type Scheduler interface {
-	Runner
+	// Run runs a process.
+	Run(ctx context.Context, app *Manifest, in io.Reader, out io.Writer) error
 
 	// Submit submits an app, creating it or updating it as necessary.
 	// When StatusStream is nil, Submit should return as quickly as possible,

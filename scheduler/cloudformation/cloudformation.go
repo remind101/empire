@@ -922,70 +922,72 @@ func (s *Scheduler) Stop(ctx context.Context, taskID string) error {
 }
 
 // Run registers a TaskDefinition for the process, and calls RunTask.
-func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, process *twelvefactor.Process, in io.Reader, out io.Writer) error {
+func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
 	var attached bool
 	if out != nil {
 		attached = true
 	}
 
-	t, ok := m.Template.(interface {
-		ContainerDefinition(*twelvefactor.Manifest, *twelvefactor.Process) *ecs.ContainerDefinition
-	})
-	if !ok {
-		return errors.New("provided template can't generate a container definition for this process")
-	}
-
-	containerDefinition := t.ContainerDefinition(app, process)
-	if attached {
-		if containerDefinition.DockerLabels == nil {
-			containerDefinition.DockerLabels = make(map[string]*string)
-		}
-		// NOTE: Currently, this depends on a patched version of the
-		// Amazon ECS Container Agent, since the official agent doesn't
-		// provide a method to pass these down to the `CreateContainer`
-		// call.
-		containerDefinition.DockerLabels["docker.config.Tty"] = aws.String("true")
-		containerDefinition.DockerLabels["docker.config.OpenStdin"] = aws.String("true")
-	}
-
-	resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
-		Family:      aws.String(fmt.Sprintf("%s--%s", app.AppID, process.Type)),
-		TaskRoleArn: taskRoleArn(app),
-		ContainerDefinitions: []*ecs.ContainerDefinition{
-			containerDefinition,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("error registering TaskDefinition: %v", err)
-	}
-
-	runResp, err := m.ecs.RunTask(&ecs.RunTaskInput{
-		TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
-		Cluster:        aws.String(m.Cluster),
-		Count:          aws.Int64(1),
-		StartedBy:      aws.String(app.AppID),
-	})
-	if err != nil {
-		return fmt.Errorf("error calling RunTask: %v", err)
-	}
-
-	for _, f := range runResp.Failures {
-		return fmt.Errorf("error running task %s: %s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
-	}
-
-	task := runResp.Tasks[0]
-
-	if attached {
-		// Ensure that we atleast try to stop the task, after we detach
-		// from the process. This ensures that we don't have zombie
-		// one-off processes lying around.
-		defer m.ecs.StopTask(&ecs.StopTaskInput{
-			Cluster: task.ClusterArn,
-			Task:    task.TaskArn,
+	for _, process := range app.Processes {
+		t, ok := m.Template.(interface {
+			ContainerDefinition(*twelvefactor.Manifest, *twelvefactor.Process) *ecs.ContainerDefinition
 		})
+		if !ok {
+			return errors.New("provided template can't generate a container definition for this process")
+		}
 
-		if err := m.attach(ctx, task, in, out); err != nil {
-			return err
+		containerDefinition := t.ContainerDefinition(app, process)
+		if attached {
+			if containerDefinition.DockerLabels == nil {
+				containerDefinition.DockerLabels = make(map[string]*string)
+			}
+			// NOTE: Currently, this depends on a patched version of the
+			// Amazon ECS Container Agent, since the official agent doesn't
+			// provide a method to pass these down to the `CreateContainer`
+			// call.
+			containerDefinition.DockerLabels["docker.config.Tty"] = aws.String("true")
+			containerDefinition.DockerLabels["docker.config.OpenStdin"] = aws.String("true")
+		}
+
+		resp, err := m.ecs.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+			Family:      aws.String(fmt.Sprintf("%s--%s", app.AppID, process.Type)),
+			TaskRoleArn: taskRoleArn(app),
+			ContainerDefinitions: []*ecs.ContainerDefinition{
+				containerDefinition,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("error registering TaskDefinition: %v", err)
+		}
+
+		runResp, err := m.ecs.RunTask(&ecs.RunTaskInput{
+			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
+			Cluster:        aws.String(m.Cluster),
+			Count:          aws.Int64(1),
+			StartedBy:      aws.String(app.AppID),
+		})
+		if err != nil {
+			return fmt.Errorf("error calling RunTask: %v", err)
+		}
+
+		for _, f := range runResp.Failures {
+			return fmt.Errorf("error running task %s: %s", aws.StringValue(f.Arn), aws.StringValue(f.Reason))
+		}
+
+		task := runResp.Tasks[0]
+
+		if attached {
+			// Ensure that we atleast try to stop the task, after we detach
+			// from the process. This ensures that we don't have zombie
+			// one-off processes lying around.
+			defer m.ecs.StopTask(&ecs.StopTaskInput{
+				Cluster: task.ClusterArn,
+				Task:    task.TaskArn,
+			})
+
+			if err := m.attach(ctx, task, in, out); err != nil {
+				return err
+			}
 		}
 	}
 

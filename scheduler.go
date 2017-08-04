@@ -63,9 +63,11 @@ func (m *FakeScheduler) Stop(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-func (m *FakeScheduler) Run(ctx context.Context, app *twelvefactor.Manifest, p *twelvefactor.Process, in io.Reader, out io.Writer) error {
+func (m *FakeScheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
 	if out != nil {
-		fmt.Fprintf(out, "Fake output for `%s` on %s\n", p.Command, app.Name)
+		for _, p := range app.Processes {
+			fmt.Fprintf(out, "Fake output for `%s` on %s\n", p.Command, app.Name)
+		}
 	}
 	return nil
 }
