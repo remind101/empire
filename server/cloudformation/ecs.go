@@ -52,16 +52,28 @@ type LoadBalancer struct {
 // ECSServiceProperties represents the properties for the Custom::ECSService
 // resource.
 type ECSServiceProperties struct {
-	ServiceName    *string
-	Cluster        *string
-	DesiredCount   *customresources.IntValue `hash:"ignore"`
-	LoadBalancers  []LoadBalancer
-	Role           *string
-	TaskDefinition *string `hash:"ignore"`
+	ServiceName          *string
+	Cluster              *string
+	DesiredCount         *customresources.IntValue `hash:"ignore"`
+	LoadBalancers        []LoadBalancer
+	Role                 *string
+	TaskDefinition       *string `hash:"ignore"`
+	PlacementConstraints []ECSPlacementConstraint
+	PlacementStrategy    []ECSPlacementStrategy
 }
 
 func (p *ECSServiceProperties) ReplacementHash() (uint64, error) {
 	return hashstructure.Hash(p, nil)
+}
+
+type ECSPlacementConstraint struct {
+	Type       *string
+	Expression *string
+}
+
+type ECSPlacementStrategy struct {
+	Type  *string
+	Field *string
 }
 
 // ECSServiceResource is a Provisioner that creates and updates ECS services.
@@ -95,19 +107,37 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 		})
 	}
 
+	var placementConstraints []*ecs.PlacementConstraint
+	for _, v := range properties.PlacementConstraints {
+		placementConstraints = append(placementConstraints, &ecs.PlacementConstraint{
+			Type:       v.Type,
+			Expression: v.Expression,
+		})
+	}
+
+	var placementStrategy []*ecs.PlacementStrategy
+	for _, v := range properties.PlacementStrategy {
+		placementStrategy = append(placementStrategy, &ecs.PlacementStrategy{
+			Type:  v.Type,
+			Field: v.Field,
+		})
+	}
+
 	var serviceName *string
 	if properties.ServiceName != nil {
 		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, clientToken))
 	}
 
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
-		ClientToken:    aws.String(clientToken),
-		ServiceName:    serviceName,
-		Cluster:        properties.Cluster,
-		DesiredCount:   properties.DesiredCount.Value(),
-		Role:           properties.Role,
-		TaskDefinition: properties.TaskDefinition,
-		LoadBalancers:  loadBalancers,
+		ClientToken:          aws.String(clientToken),
+		ServiceName:          serviceName,
+		Cluster:              properties.Cluster,
+		DesiredCount:         properties.DesiredCount.Value(),
+		Role:                 properties.Role,
+		TaskDefinition:       properties.TaskDefinition,
+		LoadBalancers:        loadBalancers,
+		PlacementConstraints: placementConstraints,
+		PlacementStrategy:    placementStrategy,
 	})
 	if err != nil {
 		return "", nil, fmt.Errorf("error creating service: %v", err)

@@ -53,16 +53,17 @@ const (
 	FlagDockerCert = "docker.cert"
 	FlagDockerAuth = "docker.auth"
 
-	FlagAWSDebug             = "aws.debug"
-	FlagS3TemplateBucket     = "s3.templatebucket"
-	FlagCustomResourcesTopic = "customresources.topic"
-	FlagCustomResourcesQueue = "customresources.queue"
-	FlagECSCluster           = "ecs.cluster"
-	FlagECSServiceRole       = "ecs.service.role"
-	FlagECSLogDriver         = "ecs.logdriver"
-	FlagECSLogOpts           = "ecs.logopt"
-	FlagECSAttachedEnabled   = "ecs.attached.enabled"
-	FlagECSDockerCert        = "ecs.docker.cert"
+	FlagAWSDebug                       = "aws.debug"
+	FlagS3TemplateBucket               = "s3.templatebucket"
+	FlagCustomResourcesTopic           = "customresources.topic"
+	FlagCustomResourcesQueue           = "customresources.queue"
+	FlagECSCluster                     = "ecs.cluster"
+	FlagECSServiceRole                 = "ecs.service.role"
+	FlagECSLogDriver                   = "ecs.logdriver"
+	FlagECSLogOpts                     = "ecs.logopt"
+	FlagECSAttachedEnabled             = "ecs.attached.enabled"
+	FlagECSDockerCert                  = "ecs.docker.cert"
+	FlagECSPlacementConstraintsDefault = "ecs.placement-constraints.default"
 
 	FlagELBSGPrivate = "elb.sg.private"
 	FlagELBSGPublic  = "elb.sg.public"
@@ -332,6 +333,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "A path to the certificates to use when connecting to Docker daemon's on container instances.",
 		EnvVar: "EMPIRE_ECS_DOCKER_CERT_PATH",
+	},
+	cli.StringFlag{
+		Name:   FlagECSPlacementConstraintsDefault,
+		Value:  "",
+		Usage:  "ECS placement constraints to set when a process does not set any.",
+		EnvVar: "EMPIRE_ECS_PLACEMENT_CONSTRAINTS_DEFAULT",
 	},
 	cli.StringFlag{
 		Name:   FlagELBSGPrivate,
