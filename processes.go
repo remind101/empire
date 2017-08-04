@@ -9,6 +9,7 @@ import (
 
 	"github.com/remind101/empire/internal/shellwords"
 	"github.com/remind101/empire/pkg/constraints"
+	"github.com/remind101/empire/procfile"
 )
 
 // DefaultQuantities maps a process type to the default number of instances to
@@ -96,6 +97,9 @@ type Process struct {
 
 	// An process specific environment variables.
 	Environment map[string]string `json:"Environment,omitempty"`
+
+	// ECS specific parameters.
+	ECS *procfile.ECS `json:"ECS,omitempty"`
 }
 
 type Port struct {

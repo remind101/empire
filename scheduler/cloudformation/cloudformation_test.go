@@ -1480,10 +1480,7 @@ func TestScheduler_Restart(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err = s.Restart(context.Background(), &twelvefactor.Manifest{
-		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name:  "acme-inc",
-	}, twelvefactor.NullStatusStream)
+	err = s.Restart(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)
@@ -1543,9 +1540,12 @@ func TestScheduler_Run_Detached(t *testing.T) {
 		Env: map[string]string{
 			"EMPIRE_X_TASK_ROLE_ARN": "arn:aws:iam::897883143566:role/app",
 		},
-	}, &twelvefactor.Process{
-		Type:    "run",
-		Command: []string{"bundle exec rake db:migrate"},
+		Processes: []*twelvefactor.Process{
+			&twelvefactor.Process{
+				Type:    "run",
+				Command: []string{"bundle exec rake db:migrate"},
+			},
+		},
 	}, nil, nil)
 	assert.NoError(t, err)
 
@@ -1679,9 +1679,12 @@ func TestScheduler_Run_Attached(t *testing.T) {
 	err = s.Run(context.Background(), &twelvefactor.Manifest{
 		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
 		Name:  "acme-inc",
-	}, &twelvefactor.Process{
-		Type:    "run",
-		Command: []string{"bundle", "exec", "rake", "db:migrate"},
+		Processes: []*twelvefactor.Process{
+			&twelvefactor.Process{
+				Type:    "run",
+				Command: []string{"bundle", "exec", "rake", "db:migrate"},
+			},
+		},
 	}, stdin, stdout)
 	assert.NoError(t, err)
 
