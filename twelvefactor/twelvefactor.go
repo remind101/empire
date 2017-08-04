@@ -177,7 +177,7 @@ type Scheduler interface {
 	Stop(ctx context.Context, instanceID string) error
 
 	// Restart restarts the processes within the App.
-	Restart(context.Context, *Manifest, StatusStream) error
+	Restart(context.Context, string, StatusStream) error
 }
 
 // Env merges the App environment with any environment variables provided

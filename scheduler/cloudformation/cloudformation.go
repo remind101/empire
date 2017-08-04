@@ -225,8 +225,8 @@ func (s *Scheduler) SubmitWithOptions(ctx context.Context, app *twelvefactor.Man
 	return tx.Commit()
 }
 
-func (s *Scheduler) Restart(ctx context.Context, app *twelvefactor.Manifest, ss twelvefactor.StatusStream) error {
-	stackName, err := s.stackName(app.AppID)
+func (s *Scheduler) Restart(ctx context.Context, appID string, ss twelvefactor.StatusStream) error {
+	stackName, err := s.stackName(appID)
 	if err != nil {
 		return err
 	}
