@@ -180,6 +180,31 @@ type Scheduler interface {
 	Restart(context.Context, string, StatusStream) error
 }
 
+// Trasnform wraps a Scheduler to perform transformations on the Manifest. This
+// can be used to, for example, add defaults placement constraints before
+// providing it to the backend scheduler.
+func Transform(s Scheduler, fn func(*Manifest) *Manifest) Scheduler {
+	return &transformer{s, fn}
+}
+
+// transfomer wraps a Scheduler to perform transformations on the Manifest. This
+// can be used to, for example, add defaults placement constraints before
+// providing it to the backend scheduler.
+type transformer struct {
+	Scheduler
+
+	// Transform will be called on Submit and Run.
+	Transform func(*Manifest) *Manifest
+}
+
+func (t *transformer) Submit(ctx context.Context, app *Manifest, ss StatusStream) error {
+	return t.Scheduler.Submit(ctx, t.Transform(app), ss)
+}
+
+func (t *transformer) Run(ctx context.Context, app *Manifest, in io.Reader, out io.Writer) error {
+	return t.Scheduler.Run(ctx, t.Transform(app), in, out)
+}
+
 // Env merges the App environment with any environment variables provided
 // in the process.
 func Env(app *Manifest, process *Process) map[string]string {
