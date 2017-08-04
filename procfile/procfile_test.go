@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -119,6 +121,33 @@ web:
 				},
 				Environment: map[string]string{
 					"ENABLE_FOO": "true",
+				},
+			},
+		},
+	},
+
+	// ECS placement constraints
+	{
+		strings.NewReader(`---
+web:
+  command: nginx
+  ecs:
+    placement_constraints:
+      - type: memberOf
+        expression: "attribute:ecs.instance-type =~ t2.*"
+    placement_strategy:
+      - type: spread
+        field: "attribute:ecs.availability-zone"`),
+		ExtendedProcfile{
+			"web": Process{
+				Command: "nginx",
+				ECS: &ECS{
+					PlacementConstraints: []*ecs.PlacementConstraint{
+						{Type: aws.String("memberOf"), Expression: aws.String("attribute:ecs.instance-type =~ t2.*")},
+					},
+					PlacementStrategy: []*ecs.PlacementStrategy{
+						{Type: aws.String("spread"), Field: aws.String("attribute:ecs.availability-zone")},
+					},
 				},
 			},
 		},

@@ -81,3 +81,19 @@ environment:
 
 See [documentation about deploying an application](../docs/deploying_an_application.md#environment-variables)
 for a list of other supported environment variables.
+
+**ECS**
+
+This allows you to specify any ECS specific properties, like placement strategies and constraints:
+
+```yaml
+ecs:
+  placement_constraints:
+    - type: memberOf
+      expression: "attribute:ecs.instance-type =~ t2.*"
+  placement_strategy:
+    - type: spread
+      field: "attribute:ecs.availability-zone"
+```
+
+See http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement.html for details.

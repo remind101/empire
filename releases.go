@@ -378,6 +378,7 @@ func newSchedulerProcess(release *Release, name string, p Process) (*twelvefacto
 		Nproc:     uint(p.Nproc),
 		Exposure:  exposure,
 		Schedule:  processSchedule(name, p),
+		ECS:       p.ECS,
 	}, nil
 }
 

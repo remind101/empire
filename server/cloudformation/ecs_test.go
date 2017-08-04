@@ -230,6 +230,61 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
+func TestECSServiceResource_Update_Placement(t *testing.T) {
+	e := new(mockECS)
+	p := newECSServiceProvisioner(&ECSServiceResource{
+		ecs: e,
+	})
+
+	e.On("CreateService", &ecs.CreateServiceInput{
+		ClientToken:    aws.String("dxRU5tYsnzt"),
+		ServiceName:    aws.String("acme-inc-web-dxRU5tYsnzt"),
+		Cluster:        aws.String("clusterA"),
+		DesiredCount:   aws.Int64(2),
+		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+		PlacementConstraints: []*ecs.PlacementConstraint{
+			{Type: aws.String("memberOf"), Expression: aws.String("attribute:ecs.instance-type =~ t2.*")},
+		},
+	}).Return(&ecs.CreateServiceOutput{
+		Service: &ecs.Service{
+			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
+			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
+		},
+	}, nil)
+
+	e.On("WaitUntilServicesStable", &ecs.DescribeServicesInput{
+		Cluster:  aws.String("clusterA"),
+		Services: []*string{aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt")},
+	}).Return(nil)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
+		RequestType:        customresources.Update,
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt",
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:        aws.String("clusterA"),
+			ServiceName:    aws.String("acme-inc-web"),
+			DesiredCount:   customresources.Int(2),
+			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+			PlacementConstraints: []ECSPlacementConstraint{
+				{Type: aws.String("memberOf"), Expression: aws.String("attribute:ecs.instance-type =~ t2.*")},
+			},
+		},
+		OldResourceProperties: &ECSServiceProperties{
+			Cluster:        aws.String("clusterA"),
+			ServiceName:    aws.String("acme-inc-web"),
+			DesiredCount:   customresources.Int(1),
+			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+
+	e.AssertExpectations(t)
+}
+
 func TestECSServiceResource_Delete(t *testing.T) {
 	e := new(mockECS)
 	p := newECSServiceProvisioner(&ECSServiceResource{
@@ -349,6 +404,12 @@ func TestECSTaskDefinition_Create(t *testing.T) {
 				},
 			},
 		},
+		PlacementConstraints: []*ecs.TaskDefinitionPlacementConstraint{
+			{
+				Type:       aws.String("memberOf"),
+				Expression: aws.String("attribute:instance-type =~ t1.micro"),
+			},
+		},
 	}).Return(&ecs.RegisterTaskDefinitionOutput{
 		TaskDefinition: &ecs.TaskDefinition{
 			TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-1:012345678901:task-definition/acme-inc-web"),
@@ -365,6 +426,12 @@ func TestECSTaskDefinition_Create(t *testing.T) {
 						"003483d3-74b8-465d-8c2e-06e005dda776",
 						"ccc8a1ac-32f9-4576-bec6-4ca36520deb3",
 					},
+				},
+			},
+			PlacementConstraints: []ECSPlacementConstraint{
+				{
+					Type:       aws.String("memberOf"),
+					Expression: aws.String("attribute:instance-type =~ t1.micro"),
 				},
 			},
 		},

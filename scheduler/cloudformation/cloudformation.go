@@ -960,12 +960,19 @@ func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.R
 			return fmt.Errorf("error registering TaskDefinition: %v", err)
 		}
 
-		runResp, err := m.ecs.RunTask(&ecs.RunTaskInput{
+		input := &ecs.RunTaskInput{
 			TaskDefinition: resp.TaskDefinition.TaskDefinitionArn,
 			Cluster:        aws.String(m.Cluster),
 			Count:          aws.Int64(1),
 			StartedBy:      aws.String(app.AppID),
-		})
+		}
+
+		if v := process.ECS; v != nil {
+			input.PlacementConstraints = v.PlacementConstraints
+			input.PlacementStrategy = v.PlacementStrategy
+		}
+
+		runResp, err := m.ecs.RunTask(input)
 		if err != nil {
 			return fmt.Errorf("error calling RunTask: %v", err)
 		}

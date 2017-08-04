@@ -10,6 +10,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
@@ -501,6 +503,15 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 				Labels: map[string]string{
 					"empire.app.process": "rake",
 					"empire.user":        "ejholmes",
+				},
+				ECS: &procfile.ECS{
+					PlacementConstraints: []*ecs.PlacementConstraint{
+						&ecs.PlacementConstraint{
+							Type:       aws.String("memberOf"),
+							Expression: aws.String("attribute:profile = background"),
+						},
+					},
+					PlacementStrategy: []*ecs.PlacementStrategy{},
 				},
 			},
 		},

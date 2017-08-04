@@ -289,6 +289,18 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *twel
 	// running tasks.
 	taskRole := toInterface(taskRoleArn(app))
 
+	var placementConstraints []*PlacementConstraint
+	if v := p.ECS; v != nil {
+		if len(v.PlacementConstraints) > 0 {
+			for _, c := range v.PlacementConstraints {
+				placementConstraints = append(placementConstraints, &PlacementConstraint{
+					Type:       c.Type,
+					Expression: c.Expression,
+				})
+			}
+		}
+	}
+
 	var taskDefinitionProperties interface{}
 	taskDefinitionType := taskDefinitionResourceType(app)
 	if taskDefinitionType == "Custom::ECSTaskDefinition" {
@@ -314,7 +326,8 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *twel
 			ContainerDefinitions: []*ContainerDefinitionProperties{
 				containerDefinition,
 			},
-			TaskRoleArn: taskRole,
+			TaskRoleArn:          taskRole,
+			PlacementConstraints: placementConstraints,
 		}
 	} else {
 		containerDefinition.Environment = cd.Environment
@@ -323,7 +336,8 @@ func (t *EmpireTemplate) addTaskDefinition(tmpl *troposphere.Template, app *twel
 			ContainerDefinitions: []*ContainerDefinitionProperties{
 				containerDefinition,
 			},
-			TaskRoleArn: taskRole,
+			TaskRoleArn:          taskRole,
+			PlacementConstraints: placementConstraints,
 		}
 	}
 
@@ -689,6 +703,18 @@ func (t *EmpireTemplate) addService(tmpl *troposphere.Template, app *twelvefacto
 		"TaskDefinition": Ref(taskDefinition),
 		"ServiceName":    fmt.Sprintf("%s-%s", app.Name, p.Type),
 		"ServiceToken":   t.CustomResourcesTopic,
+	}
+	if v := p.ECS; v != nil {
+		if len(v.PlacementStrategy) > 0 {
+			var placementStrategy []interface{}
+			for _, c := range v.PlacementStrategy {
+				placementStrategy = append(placementStrategy, map[string]interface{}{
+					"Type":  c.Type,
+					"Field": c.Field,
+				})
+			}
+			serviceProperties["PlacementStrategy"] = placementStrategy
+		}
 	}
 	if len(loadBalancers) > 0 {
 		serviceProperties["Role"] = t.ServiceRole
