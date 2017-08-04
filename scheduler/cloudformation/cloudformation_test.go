@@ -1480,10 +1480,7 @@ func TestScheduler_Restart(t *testing.T) {
 		StackName: aws.String("acme-inc"),
 	}).Return(nil)
 
-	err = s.Restart(context.Background(), &twelvefactor.Manifest{
-		AppID: "c9366591-ab68-4d49-a333-95ce5a23df68",
-		Name:  "acme-inc",
-	}, twelvefactor.NullStatusStream)
+	err = s.Restart(context.Background(), "c9366591-ab68-4d49-a333-95ce5a23df68", twelvefactor.NullStatusStream)
 	assert.NoError(t, err)
 
 	c.AssertExpectations(t)

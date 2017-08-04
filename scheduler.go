@@ -30,8 +30,8 @@ func (m *FakeScheduler) Submit(ctx context.Context, app *twelvefactor.Manifest, 
 	return nil
 }
 
-func (m *FakeScheduler) Restart(ctx context.Context, app *twelvefactor.Manifest, ss twelvefactor.StatusStream) error {
-	return m.Submit(ctx, app, ss)
+func (m *FakeScheduler) Restart(ctx context.Context, appID string, ss twelvefactor.StatusStream) error {
+	return nil
 }
 
 func (m *FakeScheduler) Remove(ctx context.Context, appID string) error {
