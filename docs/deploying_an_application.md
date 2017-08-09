@@ -224,6 +224,24 @@ migrate:
   noservice: true
 ```
 
+## ECS Specific Configuration
+
+The extended Procfile supports specifying some ECS specific options, like placement constraints and placement strategies.
+
+For example, to ensure that a task runs on an instance that has a statsd daemon available, you might do something like this:
+
+```
+worker:
+  ecs:
+    placement_constraints:
+      - type: memberOf
+        expression: "attribute:capability.statsd == true"
+```
+
+Note that, by default, ECS services won't have any placement constraints/strategies applied, which means processes could run on any host within the ECS cluster. If you'd like to specify some default placement constraints for processes that don't define any, you can use the `EMPIRE_ECS_PLACEMENT_CONSTRAINTS_DEFAULT` option when starting the Empire daemon.
+
+See [Procfile specification docs][extended-procfile] for details.
+
 ## Environment variables
 
 Environment variables that start with `EMPIRE_X_` should be considered experimental and subject to
