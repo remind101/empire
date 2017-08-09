@@ -1,6 +1,7 @@
 package cloudformation
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 
@@ -46,4 +47,32 @@ func (p *InstancePortsProvisioner) Provision(_ context.Context, req customresour
 	}
 
 	return
+}
+
+// dbPortAllocator implements the portAllocator interface backed by database/sql.
+type dbPortAllocator struct {
+	db *sql.DB
+}
+
+// NewdbPortAllocator returns a new dbPortAllocator uses the given database
+// connection to perform queries.
+func newDBPortAllocator(db *sql.DB) *dbPortAllocator {
+	return &dbPortAllocator{db: db}
+}
+
+// Get finds an existing allocated port from the `ports` table. If one is not
+// allocated for the process, it allocates one and returns it.
+func (a *dbPortAllocator) Get() (int64, error) {
+	sql := `UPDATE ports SET taken = true WHERE port = (SELECT port FROM ports WHERE taken IS NULL ORDER BY port ASC LIMIT 1) RETURNING port`
+	var port int64
+	err := a.db.QueryRow(sql).Scan(&port)
+	return port, err
+}
+
+// Put releases any allocated port for the process, returning it back to the
+// pool.
+func (a *dbPortAllocator) Put(port int64) error {
+	sql := `UPDATE ports SET taken = NULL WHERE port = $1`
+	_, err := a.db.Exec(sql, port)
+	return err
 }

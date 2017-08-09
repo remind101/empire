@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/cloudformation/customresources"
-	"github.com/remind101/empire/scheduler/ecs/lb"
 	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 )
@@ -56,7 +55,7 @@ func NewCustomResourceProvisioner(empire *empire.Empire, config client.ConfigPro
 	}
 
 	p.add("Custom::InstancePort", &InstancePortsProvisioner{
-		ports: lb.NewDBPortAllocator(db),
+		ports: newDBPortAllocator(db),
 	})
 
 	ecs := newECSClient(config)

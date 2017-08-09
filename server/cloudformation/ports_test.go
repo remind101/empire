@@ -1,4 +1,4 @@
-package lb
+package cloudformation
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 
 func TestDBPortAllocator_Get(t *testing.T) {
 	db := dbtest.Open(t)
-	a := &DBPortAllocator{
+	a := &dbPortAllocator{
 		db: db,
 	}
 
