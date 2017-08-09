@@ -25,6 +25,19 @@ When submitting a pull request, here are some things to keep in mind:
 * Did you add appropriate test coverage? Submissions that add features or change core functionality will not be accepted without sufficient tests. We favor stability over anything else.
 * Did you update the CHANGELOG?
 
+## Code Structure
+
+Empire is a fairly large codebase, separated into packages that depend on each other. In a nutshell, the most important packages are:
+
+* **[github.com/remind101/empire](./)**: This is the "core" internal API of Empire, which "control" layers (like the REST API) consume.
+* **[github.com/remind101/empire/server](./server)**: This contains an [http.Handler](https://golang.org/pkg/net/http/#Handler) implementation for serving the Empire API, which is what the `emp` CLI communicates with.
+* **[github.com/remind101/empire/scheduler](./scheduler)**: This is the layer that the core of Empire interacts with for submitting releases to be scheduled on a cluster of machines. The canonical implementation uses CloudFormation + ECS to run applications.
+* **[github.com/remind101/empire/cmd](./cmd)**: Holds both the [empire](./cmd/empire) (daemon) command and [emp](./cmd/emp) (client) command.
+
+The dependency graph for the packages above, and how they interact with each other looks like this:
+
+![](./docs/deps.png)
+
 ## Tests
 
 Unit tests live alongside each go file as `_test.go`.
