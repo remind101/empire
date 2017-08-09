@@ -2,8 +2,6 @@ site_name: Empire Documentation
 theme: readthedocs
 pages:
   - 'Introduction': 'index.md'
-  - Overview:
-    - "Known Limitations": "known_limitations.md"
   - Getting Started:
     - "Quickstart: Installing": "quickstart_installing.md"
     - "Quickstart: Using": "quickstart_using.md"
