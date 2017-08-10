@@ -10,6 +10,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/empiretest"
 	"github.com/remind101/empire/pkg/image"
@@ -308,26 +310,28 @@ func TestEmpire_Run(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-	},
-		&twelvefactor.Process{
-			Type:      "run",
-			Image:     img,
-			Command:   []string{"bundle", "exec", "rake", "db:migrate"},
-			Quantity:  1,
-			Memory:    536870912,
-			CPUShares: 256,
-			Nproc:     256,
-			Env: map[string]string{
-				"EMPIRE_PROCESS":       "run",
-				"EMPIRE_PROCESS_SCALE": "1",
-				"SOURCE":               "acme-inc.run.v1",
-				"TERM":                 "xterm",
+		Processes: []*twelvefactor.Process{
+			&twelvefactor.Process{
+				Type:      "run",
+				Image:     img,
+				Command:   []string{"bundle", "exec", "rake", "db:migrate"},
+				Quantity:  1,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
+				Env: map[string]string{
+					"EMPIRE_PROCESS":       "run",
+					"EMPIRE_PROCESS_SCALE": "1",
+					"SOURCE":               "acme-inc.run.v1",
+					"TERM":                 "xterm",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "run",
+					"empire.user":        "ejholmes",
+				},
 			},
-			Labels: map[string]string{
-				"empire.app.process": "run",
-				"empire.user":        "ejholmes",
-			},
-		}, nil, nil).Return(nil)
+		},
+	}, nil, nil).Return(nil)
 
 	err = e.Run(context.Background(), empire.RunOpts{
 		User:    user,
@@ -384,26 +388,28 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 			"empire.app.id":      app.ID,
 			"empire.app.release": "v1",
 		},
-	},
-		&twelvefactor.Process{
-			Type:      "run",
-			Image:     img,
-			Command:   []string{"bundle", "exec", "rake", "db:migrate"},
-			Quantity:  1,
-			Memory:    1073741824,
-			CPUShares: 512,
-			Nproc:     512,
-			Env: map[string]string{
-				"EMPIRE_PROCESS":       "run",
-				"EMPIRE_PROCESS_SCALE": "1",
-				"SOURCE":               "acme-inc.run.v1",
-				"TERM":                 "xterm",
+		Processes: []*twelvefactor.Process{
+			&twelvefactor.Process{
+				Type:      "run",
+				Image:     img,
+				Command:   []string{"bundle", "exec", "rake", "db:migrate"},
+				Quantity:  1,
+				Memory:    1073741824,
+				CPUShares: 512,
+				Nproc:     512,
+				Env: map[string]string{
+					"EMPIRE_PROCESS":       "run",
+					"EMPIRE_PROCESS_SCALE": "1",
+					"SOURCE":               "acme-inc.run.v1",
+					"TERM":                 "xterm",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "run",
+					"empire.user":        "ejholmes",
+				},
 			},
-			Labels: map[string]string{
-				"empire.app.process": "run",
-				"empire.user":        "ejholmes",
-			},
-		}, nil, nil).Return(nil)
+		},
+	}, nil, nil).Return(nil)
 
 	constraints := empire.NamedConstraints["2X"]
 	err = e.Run(context.Background(), empire.RunOpts{
@@ -479,26 +485,37 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 			"empire.app.name":    "acme-inc",
 			"empire.app.release": "v1",
 		},
-	},
-		&twelvefactor.Process{
-			Type:      "rake",
-			Image:     img,
-			Command:   []string{"bundle", "exec", "rake", "db:migrate"},
-			Quantity:  1,
-			Memory:    536870912,
-			CPUShares: 256,
-			Nproc:     256,
-			Env: map[string]string{
-				"EMPIRE_PROCESS":       "rake",
-				"EMPIRE_PROCESS_SCALE": "1",
-				"SOURCE":               "acme-inc.rake.v1",
-				"TERM":                 "xterm",
+		Processes: []*twelvefactor.Process{
+			&twelvefactor.Process{
+				Type:      "rake",
+				Image:     img,
+				Command:   []string{"bundle", "exec", "rake", "db:migrate"},
+				Quantity:  1,
+				Memory:    536870912,
+				CPUShares: 256,
+				Nproc:     256,
+				Env: map[string]string{
+					"EMPIRE_PROCESS":       "rake",
+					"EMPIRE_PROCESS_SCALE": "1",
+					"SOURCE":               "acme-inc.rake.v1",
+					"TERM":                 "xterm",
+				},
+				Labels: map[string]string{
+					"empire.app.process": "rake",
+					"empire.user":        "ejholmes",
+				},
+				ECS: &procfile.ECS{
+					PlacementConstraints: []*ecs.PlacementConstraint{
+						&ecs.PlacementConstraint{
+							Type:       aws.String("memberOf"),
+							Expression: aws.String("attribute:profile = background"),
+						},
+					},
+					PlacementStrategy: []*ecs.PlacementStrategy{},
+				},
 			},
-			Labels: map[string]string{
-				"empire.app.process": "rake",
-				"empire.user":        "ejholmes",
-			},
-		}, nil, nil).Return(nil)
+		},
+	}, nil, nil).Return(nil)
 
 	err = e.Run(context.Background(), empire.RunOpts{
 		User:    user,
@@ -683,8 +700,7 @@ func (m *mockScheduler) Submit(_ context.Context, app *twelvefactor.Manifest, ss
 	return args.Error(0)
 }
 
-func (m *mockScheduler) Run(_ context.Context, app *twelvefactor.Manifest, process *twelvefactor.Process, in io.Reader, out io.Writer) error {
-	app.Processes = nil // This is bogus and doesn't actually matter for Runs.
-	args := m.Called(app, process, in, out)
+func (m *mockScheduler) Run(_ context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
+	args := m.Called(app, in, out)
 	return args.Error(0)
 }

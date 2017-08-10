@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/procfile"
 )
 
 type Manifest struct {
@@ -65,6 +66,9 @@ type Process struct {
 
 	// Can be used to setup a CRON schedule to run this task periodically.
 	Schedule Schedule
+
+	// Any ECS specific configuration.
+	ECS *procfile.ECS
 }
 
 // Schedule represents a Schedule for scheduled tasks that run periodically.
@@ -154,14 +158,10 @@ type Task struct {
 	UpdatedAt time.Time
 }
 
-type Runner interface {
-	// Run runs a process.
-	Run(ctx context.Context, app *Manifest, process *Process, in io.Reader, out io.Writer) error
-}
-
 // Scheduler is an interface for interfacing with Services.
 type Scheduler interface {
-	Runner
+	// Run runs a process.
+	Run(ctx context.Context, app *Manifest, in io.Reader, out io.Writer) error
 
 	// Submit submits an app, creating it or updating it as necessary.
 	// When StatusStream is nil, Submit should return as quickly as possible,
@@ -181,7 +181,32 @@ type Scheduler interface {
 	Stop(ctx context.Context, instanceID string) error
 
 	// Restart restarts the processes within the App.
-	Restart(context.Context, *Manifest, StatusStream) error
+	Restart(context.Context, string, StatusStream) error
+}
+
+// Trasnform wraps a Scheduler to perform transformations on the Manifest. This
+// can be used to, for example, add defaults placement constraints before
+// providing it to the backend scheduler.
+func Transform(s Scheduler, fn func(*Manifest) *Manifest) Scheduler {
+	return &transformer{s, fn}
+}
+
+// transfomer wraps a Scheduler to perform transformations on the Manifest. This
+// can be used to, for example, add defaults placement constraints before
+// providing it to the backend scheduler.
+type transformer struct {
+	Scheduler
+
+	// Transform will be called on Submit and Run.
+	Transform func(*Manifest) *Manifest
+}
+
+func (t *transformer) Submit(ctx context.Context, app *Manifest, ss StatusStream) error {
+	return t.Scheduler.Submit(ctx, t.Transform(app), ss)
+}
+
+func (t *transformer) Run(ctx context.Context, app *Manifest, in io.Reader, out io.Writer) error {
+	return t.Scheduler.Run(ctx, t.Transform(app), in, out)
 }
 
 // Env merges the App environment with any environment variables provided

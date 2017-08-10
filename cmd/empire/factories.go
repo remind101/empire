@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -27,9 +28,11 @@ import (
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/troposphere"
+	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/stats"
+	"github.com/remind101/empire/twelvefactor"
 	"github.com/remind101/pkg/reporter"
 	"github.com/remind101/pkg/reporter/config"
 )
@@ -136,7 +139,7 @@ func newScheduler(db *empire.DB, c *Context) (empire.Scheduler, error) {
 	return a, nil
 }
 
-func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Scheduler, error) {
+func newCloudFormationScheduler(db *empire.DB, c *Context) (twelvefactor.Scheduler, error) {
 	logDriver := c.String(FlagECSLogDriver)
 	logOpts := c.StringSlice(FlagECSLogOpts)
 	logConfiguration := newLogConfiguration(logDriver, logOpts)
@@ -209,7 +212,31 @@ func newCloudFormationScheduler(db *empire.DB, c *Context) (*cloudformation.Sche
 	log.Println(fmt.Sprintf("  ZoneID: %v", zoneID))
 	log.Println(fmt.Sprintf("  LogConfiguration: %v", t.LogConfiguration))
 
+	if v := c.String(FlagECSPlacementConstraintsDefault); v != "" {
+		var placementConstraints []*ecs.PlacementConstraint
+		if err := json.Unmarshal([]byte(v), &placementConstraints); err != nil {
+			return nil, fmt.Errorf("unable to unmarshal placement constraints: %v", err)
+		}
+		log.Println(fmt.Sprintf("  DefaultPlacementConstraints: %v", placementConstraints))
+		return twelvefactor.Transform(s, setDefaultPlacementConstraints(placementConstraints)), nil
+	}
+
 	return s, nil
+}
+
+func setDefaultPlacementConstraints(placementConstraints []*ecs.PlacementConstraint) func(*twelvefactor.Manifest) *twelvefactor.Manifest {
+	return func(m *twelvefactor.Manifest) *twelvefactor.Manifest {
+		for _, p := range m.Processes {
+			if p.ECS == nil {
+				p.ECS = &procfile.ECS{}
+			}
+
+			if p.ECS.PlacementConstraints == nil {
+				p.ECS.PlacementConstraints = placementConstraints
+			}
+		}
+		return m
+	}
 }
 
 func newLogConfiguration(logDriver string, logOpts []string) *ecs.LogConfiguration {

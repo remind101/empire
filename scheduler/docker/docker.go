@@ -72,14 +72,14 @@ func RunAttachedWithDocker(s twelvefactor.Scheduler, client *dockerutil.Client) 
 
 // Run runs attached processes using the docker scheduler, and detached
 // processes using the wrapped scheduler.
-func (s *AttachedScheduler) Run(ctx context.Context, app *twelvefactor.Manifest, process *twelvefactor.Process, in io.Reader, out io.Writer) error {
+func (s *AttachedScheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
 	// Attached means stdout, stdin is attached.
 	attached := out != nil || in != nil
 
 	if attached {
-		return s.dockerScheduler.Run(ctx, app, process, in, out)
+		return s.dockerScheduler.Run(ctx, app, in, out)
 	} else {
-		return s.Scheduler.Run(ctx, app, process, in, out)
+		return s.Scheduler.Run(ctx, app, in, out)
 	}
 }
 
@@ -146,73 +146,75 @@ func NewScheduler(client *dockerutil.Client) *Scheduler {
 	}
 }
 
-func (s *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, p *twelvefactor.Process, in io.Reader, out io.Writer) error {
+func (s *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
 	attached := out != nil || in != nil
 
 	if !attached {
 		return errors.New("cannot run detached processes with Docker scheduler")
 	}
 
-	labels := twelvefactor.Labels(app, p)
-	labels[runLabel] = Attached
+	for _, p := range app.Processes {
+		labels := twelvefactor.Labels(app, p)
+		labels[runLabel] = Attached
 
-	if err := s.docker.PullImage(ctx, docker.PullImageOptions{
-		Registry:     p.Image.Registry,
-		Repository:   p.Image.Repository,
-		Tag:          p.Image.Tag,
-		OutputStream: replaceNL(out),
-	}); err != nil {
-		return fmt.Errorf("error pulling image: %v", err)
-	}
+		if err := s.docker.PullImage(ctx, docker.PullImageOptions{
+			Registry:     p.Image.Registry,
+			Repository:   p.Image.Repository,
+			Tag:          p.Image.Tag,
+			OutputStream: replaceNL(out),
+		}); err != nil {
+			return fmt.Errorf("error pulling image: %v", err)
+		}
 
-	container, err := s.docker.CreateContainer(ctx, docker.CreateContainerOptions{
-		Name: uuid.New(),
-		Config: &docker.Config{
-			Tty:          true,
-			AttachStdin:  true,
-			AttachStdout: true,
-			AttachStderr: true,
-			OpenStdin:    true,
-			Memory:       int64(p.Memory),
-			CPUShares:    int64(p.CPUShares),
-			Image:        p.Image.String(),
-			Cmd:          p.Command,
-			Env:          envKeys(twelvefactor.Env(app, p)),
-			Labels:       labels,
-		},
-		HostConfig: &docker.HostConfig{
-			LogConfig: docker.LogConfig{
-				Type: "json-file",
+		container, err := s.docker.CreateContainer(ctx, docker.CreateContainerOptions{
+			Name: uuid.New(),
+			Config: &docker.Config{
+				Tty:          true,
+				AttachStdin:  true,
+				AttachStdout: true,
+				AttachStderr: true,
+				OpenStdin:    true,
+				Memory:       int64(p.Memory),
+				CPUShares:    int64(p.CPUShares),
+				Image:        p.Image.String(),
+				Cmd:          p.Command,
+				Env:          envKeys(twelvefactor.Env(app, p)),
+				Labels:       labels,
 			},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("error creating container: %v", err)
-	}
-	defer s.docker.RemoveContainer(ctx, docker.RemoveContainerOptions{
-		ID:            container.ID,
-		RemoveVolumes: true,
-		Force:         true,
-	})
+			HostConfig: &docker.HostConfig{
+				LogConfig: docker.LogConfig{
+					Type: "json-file",
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("error creating container: %v", err)
+		}
+		defer s.docker.RemoveContainer(ctx, docker.RemoveContainerOptions{
+			ID:            container.ID,
+			RemoveVolumes: true,
+			Force:         true,
+		})
 
-	if err := s.docker.StartContainer(ctx, container.ID, nil); err != nil {
-		return fmt.Errorf("error starting container: %v", err)
-	}
-	defer tryClose(out)
+		if err := s.docker.StartContainer(ctx, container.ID, nil); err != nil {
+			return fmt.Errorf("error starting container: %v", err)
+		}
+		defer tryClose(out)
 
-	if err := s.docker.AttachToContainer(ctx, docker.AttachToContainerOptions{
-		Container:    container.ID,
-		InputStream:  in,
-		OutputStream: out,
-		ErrorStream:  out,
-		Logs:         true,
-		Stream:       true,
-		Stdin:        true,
-		Stdout:       true,
-		Stderr:       true,
-		RawTerminal:  true,
-	}); err != nil {
-		return fmt.Errorf("error attaching to container: %v", err)
+		if err := s.docker.AttachToContainer(ctx, docker.AttachToContainerOptions{
+			Container:    container.ID,
+			InputStream:  in,
+			OutputStream: out,
+			ErrorStream:  out,
+			Logs:         true,
+			Stream:       true,
+			Stdin:        true,
+			Stdout:       true,
+			Stderr:       true,
+			RawTerminal:  true,
+		}); err != nil {
+			return fmt.Errorf("error attaching to container: %v", err)
+		}
 	}
 
 	return nil

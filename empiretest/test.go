@@ -13,6 +13,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/dbtest"
@@ -155,6 +157,14 @@ var defaultProcfile = procfile.ExtendedProcfile{
 	"rake": procfile.Process{
 		Command:   "bundle exec rake",
 		NoService: true,
+		ECS: &procfile.ECS{
+			PlacementConstraints: []*ecs.PlacementConstraint{
+				&ecs.PlacementConstraint{
+					Type:       aws.String("memberOf"),
+					Expression: aws.String("attribute:profile = background"),
+				},
+			},
+		},
 	},
 }
 
