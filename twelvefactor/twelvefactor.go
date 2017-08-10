@@ -69,6 +69,10 @@ type Process struct {
 
 	// Any ECS specific configuration.
 	ECS *procfile.ECS
+
+	// Input/Output streams.
+	Stdin          io.Reader
+	Stdout, Stderr io.Writer
 }
 
 // Schedule represents a Schedule for scheduled tasks that run periodically.
@@ -161,7 +165,7 @@ type Task struct {
 // Scheduler is an interface for interfacing with Services.
 type Scheduler interface {
 	// Run runs a process.
-	Run(ctx context.Context, app *Manifest, in io.Reader, out io.Writer) error
+	Run(ctx context.Context, app *Manifest) error
 
 	// Submit submits an app, creating it or updating it as necessary.
 	// When StatusStream is nil, Submit should return as quickly as possible,
@@ -205,8 +209,8 @@ func (t *transformer) Submit(ctx context.Context, app *Manifest, ss StatusStream
 	return t.Scheduler.Submit(ctx, t.Transform(app), ss)
 }
 
-func (t *transformer) Run(ctx context.Context, app *Manifest, in io.Reader, out io.Writer) error {
-	return t.Scheduler.Run(ctx, t.Transform(app), in, out)
+func (t *transformer) Run(ctx context.Context, app *Manifest) error {
+	return t.Scheduler.Run(ctx, t.Transform(app))
 }
 
 // Env merges the App environment with any environment variables provided

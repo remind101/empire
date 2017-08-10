@@ -2,7 +2,6 @@ package empire
 
 import (
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/remind101/empire/pkg/timex"
@@ -63,10 +62,14 @@ func (m *FakeScheduler) Stop(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-func (m *FakeScheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
-	if out != nil {
-		for _, p := range app.Processes {
-			fmt.Fprintf(out, "Fake output for `%s` on %s\n", p.Command, app.Name)
+func (m *FakeScheduler) Run(ctx context.Context, app *twelvefactor.Manifest) error {
+	for _, p := range app.Processes {
+		if p.Stderr != nil {
+			fmt.Fprintf(p.Stdout, "Attaching to container\n")
+		}
+
+		if p.Stdout != nil {
+			fmt.Fprintf(p.Stdout, "Fake output for `%s` on %s\n", p.Command, app.Name)
 		}
 	}
 	return nil

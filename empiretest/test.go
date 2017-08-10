@@ -28,6 +28,13 @@ import (
 	"github.com/remind101/pkg/reporter"
 )
 
+// Marks the test as skipped when running in CI.
+func SkipCI(t testing.TB) {
+	if _, ok := os.LookupEnv("CI"); ok {
+		t.Skip("Skipping test in CI")
+	}
+}
+
 // NewEmpire returns a new Empire instance suitable for testing. It ensures that
 // the database is clean before returning.
 func NewEmpire(t testing.TB) *empire.Empire {

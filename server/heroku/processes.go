@@ -106,8 +106,16 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 		// Prevent the ELB idle connection timeout to close the connection.
 		defer close(streamhttp.Heartbeat(stream, 10*time.Second))
 
-		opts.Input = stream
-		opts.Output = stream
+		opts.Stdin = stream
+
+		// TODO(ejholmes): Currently, both stdout and stderr are written
+		// to the same stream, which means the client cannot
+		// differentiate from stdout/stderr. In the future, this
+		// endpoint should support a new Content-Type header that
+		// multiplexes stdout/stderr so the client can demux them before
+		// printing to the console.
+		opts.Stdout = stream
+		opts.Stderr = stream
 
 		if err := h.Run(ctx, opts); err != nil {
 			if stream.Hijacked {
