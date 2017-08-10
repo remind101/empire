@@ -922,13 +922,13 @@ func (s *Scheduler) Stop(ctx context.Context, taskID string) error {
 }
 
 // Run registers a TaskDefinition for the process, and calls RunTask.
-func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
-	var attached bool
-	if out != nil {
-		attached = true
-	}
-
+func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest) error {
 	for _, process := range app.Processes {
+		var attached bool
+		if process.Stdout != nil || process.Stderr != nil {
+			attached = true
+		}
+
 		t, ok := m.Template.(interface {
 			ContainerDefinition(*twelvefactor.Manifest, *twelvefactor.Process) *ecs.ContainerDefinition
 		})
@@ -992,7 +992,7 @@ func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.R
 				Task:    task.TaskArn,
 			})
 
-			if err := m.attach(ctx, task, in, out); err != nil {
+			if err := m.attach(ctx, task, process.Stdin, process.Stdout, process.Stderr); err != nil {
 				return err
 			}
 		}
@@ -1002,14 +1002,9 @@ func (m *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest, in io.R
 }
 
 // attach attaches to the given ECS task.
-func (m *Scheduler) attach(ctx context.Context, task *ecs.Task, in io.Reader, out io.Writer) error {
-	defer tryClose(out)
-
+func (m *Scheduler) attach(ctx context.Context, task *ecs.Task, stdin io.Reader, stdout, stderr io.Writer) error {
 	if a, _ := arn.Parse(aws.StringValue(task.TaskArn)); a != nil {
-		// TODO: This should really go to a STDERR stream instead. Putting this
-		// on stdout breaks redirection, but not including it leads to
-		// confusion.
-		fmt.Fprintf(out, "Attaching to %s...\r\n", a.Resource)
+		fmt.Fprintf(stderr, "Attaching to %s...\r\n", a.Resource)
 	}
 
 	descContainerInstanceResp, err := m.ecs.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
@@ -1068,9 +1063,9 @@ func (m *Scheduler) attach(ctx context.Context, task *ecs.Task, in io.Reader, ou
 
 	if err := d.AttachToContainer(docker.AttachToContainerOptions{
 		Container:    containerID,
-		InputStream:  in,
-		OutputStream: out,
-		ErrorStream:  out,
+		InputStream:  stdin,
+		OutputStream: stdout,
+		ErrorStream:  stderr,
 		Logs:         true,
 		Stream:       true,
 		Stdin:        true,
@@ -1359,14 +1354,6 @@ func deploymentsToWatch(stack *cloudformation.Stack) (map[string]*ecsDeployment,
 		}
 	}
 	return ecsDeployments, nil
-}
-
-func tryClose(w io.Writer) error {
-	if w, ok := w.(io.Closer); ok {
-		return w.Close()
-	}
-
-	return nil
 }
 
 func publish(ctx context.Context, stream twelvefactor.StatusStream, msg string) {

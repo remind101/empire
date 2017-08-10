@@ -331,7 +331,7 @@ func TestEmpire_Run(t *testing.T) {
 				},
 			},
 		},
-	}, nil, nil).Return(nil)
+	}).Return(nil)
 
 	err = e.Run(context.Background(), empire.RunOpts{
 		User:    user,
@@ -339,8 +339,9 @@ func TestEmpire_Run(t *testing.T) {
 		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
 
 		// Detached Process
-		Output: nil,
-		Input:  nil,
+		Stdin:  nil,
+		Stdout: nil,
+		Stderr: nil,
 
 		Env: map[string]string{
 			"TERM": "xterm",
@@ -409,7 +410,7 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 				},
 			},
 		},
-	}, nil, nil).Return(nil)
+	}).Return(nil)
 
 	constraints := empire.NamedConstraints["2X"]
 	err = e.Run(context.Background(), empire.RunOpts{
@@ -418,8 +419,9 @@ func TestEmpire_Run_WithConstraints(t *testing.T) {
 		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
 
 		// Detached Process
-		Output: nil,
-		Input:  nil,
+		Stdin:  nil,
+		Stdout: nil,
+		Stderr: nil,
 
 		Env: map[string]string{
 			"TERM": "xterm",
@@ -462,8 +464,9 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 		Command: empire.MustParseCommand("bundle exec rake db:migrate"),
 
 		// Detached Process
-		Output: nil,
-		Input:  nil,
+		Stdin:  nil,
+		Stdout: nil,
+		Stderr: nil,
 
 		Env: map[string]string{
 			"TERM": "xterm",
@@ -515,7 +518,7 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 				},
 			},
 		},
-	}, nil, nil).Return(nil)
+	}).Return(nil)
 
 	err = e.Run(context.Background(), empire.RunOpts{
 		User:    user,
@@ -523,8 +526,9 @@ func TestEmpire_Run_WithAllowCommandProcfile(t *testing.T) {
 		Command: empire.MustParseCommand("rake db:migrate"),
 
 		// Detached Process
-		Output: nil,
-		Input:  nil,
+		Stdin:  nil,
+		Stdout: nil,
+		Stderr: nil,
 
 		Env: map[string]string{
 			"TERM": "xterm",
@@ -700,7 +704,7 @@ func (m *mockScheduler) Submit(_ context.Context, app *twelvefactor.Manifest, ss
 	return args.Error(0)
 }
 
-func (m *mockScheduler) Run(_ context.Context, app *twelvefactor.Manifest, in io.Reader, out io.Writer) error {
-	args := m.Called(app, in, out)
+func (m *mockScheduler) Run(_ context.Context, app *twelvefactor.Manifest) error {
+	args := m.Called(app)
 	return args.Error(0)
 }

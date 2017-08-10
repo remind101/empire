@@ -475,11 +475,10 @@ type RunOpts struct {
 	// Commit message
 	Message string
 
-	// If provided, input will be read from this.
-	Input io.Reader
-
-	// If provided, output will be written to this.
-	Output io.Writer
+	// Input/Output streams. The caller is responsible for closing these
+	// streams.
+	Stdin          io.Reader
+	Stdout, Stderr io.Writer
 
 	// Extra environment variables to set.
 	Env map[string]string
@@ -490,7 +489,7 @@ type RunOpts struct {
 
 func (opts RunOpts) Event() RunEvent {
 	var attached bool
-	if opts.Output != nil {
+	if opts.Stdout != nil || opts.Stderr != nil {
 		attached = true
 	}
 
@@ -516,7 +515,7 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	if opts.Input != nil && opts.Output != nil && e.RunRecorder != nil {
+	if e.RunRecorder != nil && (opts.Stdout != nil || opts.Stderr != nil) {
 		w, err := e.RunRecorder()
 		if err != nil {
 			return err
@@ -535,7 +534,12 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 
 		// Write output to both the original output as well as the
 		// record.
-		opts.Output = io.MultiWriter(w, opts.Output)
+		if opts.Stdout != nil {
+			opts.Stdout = io.MultiWriter(w, opts.Stdout)
+		}
+		if opts.Stderr != nil {
+			opts.Stderr = io.MultiWriter(w, opts.Stderr)
+		}
 	}
 
 	if err := e.PublishEvent(event); err != nil {

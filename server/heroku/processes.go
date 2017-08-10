@@ -8,6 +8,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
+	"github.com/remind101/empire/pkg/stdcopy"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/server/auth"
@@ -96,8 +97,15 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if form.Attach {
+		multiplex := r.Header.Get("X-Multiplex") != ""
+
 		header := http.Header{}
-		header.Set("Content-Type", "application/vnd.empire.raw-stream")
+		if multiplex {
+			header.Set("Content-Type", "application/vnd.empire.stdcopy-stream")
+		} else {
+			header.Set("Content-Type", "application/vnd.empire.raw-stream")
+		}
+
 		stream := &hijack.HijackReadWriter{
 			Response: w,
 			Header:   header,
@@ -106,8 +114,18 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 		// Prevent the ELB idle connection timeout to close the connection.
 		defer close(streamhttp.Heartbeat(stream, 10*time.Second))
 
-		opts.Input = stream
-		opts.Output = stream
+		opts.Stdin = stream
+
+		if multiplex {
+			opts.Stdout = stdcopy.NewStdWriter(stream, stdcopy.Stdout)
+			opts.Stderr = stdcopy.NewStdWriter(stream, stdcopy.Stderr)
+		} else {
+			// Backwards compatibility for older clients that don't
+			// know how to de-multiplex a stdcopy stream. For these
+			// clients, stdout/stderr are merged together.
+			opts.Stdout = stream
+			opts.Stderr = stream
+		}
 
 		if err := h.Run(ctx, opts); err != nil {
 			if stream.Hijacked {
