@@ -20,6 +20,7 @@
 * AWS resources for scheduled processes are now always created, unless scaled down to a negative value. [#1064](https://github.com/remind101/empire/pull/1064)
 * Empire now supports reporting its own errors to [Rollbar](https://rollbar.com) in addition to Honeybadger. [#1075](https://github.com/remind101/empire/pull/1075)
 * It's now possible to configure the pool of ports that the `Custom::InstancePort` resource allocates ports from. [#1096](https://github.com/remind101/empire/pull/1096)
+* STDOUT and STDERR in `emp run`'s now show up on STDOUT and STDERR in the terminal, instead of being merged on STDOUT. [#1101](https://github.com/remind101/empire/pull/1101)
 
 ## 0.12.0 (2017-03-10)
 
