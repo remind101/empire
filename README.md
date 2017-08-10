@@ -46,31 +46,9 @@ Apps default to only being exposed internally, unless you add a custom domain to
 
 ### Deploying
 
-Any tagged Docker image can be deployed to Empire as an app. Empire doesn't enforce how you tag your Docker images, but we recommend tagging the image with the git sha that it was built from, and deploying that. We have a tool for performing deployments called [Tugboat][tugboat] that supports deploying Docker images to Empire.
+Any tagged Docker image can be deployed to Empire as an app. Empire doesn't enforce how you tag your Docker images, but we recommend tagging the image with the git sha that it was built from (any any immutable identifier), and deploying that.
 
 When you deploy a Docker image to Empire, it will extract a `Procfile` from the WORKDIR. Like Heroku, you can specify different process types that compose your service (e.g. `web` and `worker`), and scale them individually. Each process type in the Procfile maps directly to an ECS Service.
-
-**Caveats**
-
-Because `docker run` does not exec commands within a shell, commands specified within the Procfile will also not be exec'd within a shell. This means that you cannot specify environment variables in the Procfile. The following is not valid:
-
-```
-web: acme-inc server -port=$PORT
-```
-
-If you need to specify environment variables as part of the command, we recommend splitting out your Procfile commands into small bash shims instead:
-
-```
-web: ./bin/web
-```
-
-```bash
-#!/bin/bash
-
-set -e
-
-exec acme-inc server -port=$PORT
-```
 
 ## Contributing
 
