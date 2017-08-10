@@ -4,23 +4,23 @@
 
 **Features**
 
-* Empire now supports a new (experimental) feature to enable attached processes to be ran with ECS. [#1043](https://github.com/remind101/empire/pull/1043)
-* Empire now supports "maintenance mode" for applications. [#1086](https://github.com/remind101/empire/pull/1086)
-* Added a new configuration option for controlling the generated CloudFormation stack names. [#1094](https://github.com/remind101/empire/pull/1094)
-* Empire now supports ECS placement constraints and strategies in the extended Procfile format. [#1059](https://github.com/remind101/empire/pull/1059)
+* [cmd/empire] Empire now supports a new (experimental) feature to enable attached processes to be ran with ECS. [#1043](https://github.com/remind101/empire/pull/1043)
+* [cmd/emp,cmd/empire] Empire now supports "maintenance mode" for applications. [#1086](https://github.com/remind101/empire/pull/1086)
+* [cmd/empire] Added a new configuration option for controlling the generated CloudFormation stack names. [#1094](https://github.com/remind101/empire/pull/1094)
+* [cmd/empire] Empire now supports ECS placement constraints and strategies in the extended Procfile format. [#1059](https://github.com/remind101/empire/pull/1059)
 
 **Bugs**
 
-* Fixed a regression in env-load, which caused it to set keys to random values. [#1062](https://github.com/remind101/empire/pull/1062)
-* Fixed an issue where the ECS task role was not set on tasks started from `emp run`. [#1063](https://github.com/remind101/empire/pull/1063)
+* [cmd/emp] Fixed a regression in env-load, which caused it to set keys to random values. [#1062](https://github.com/remind101/empire/pull/1062)
+* [cmd/empire] Fixed an issue where the ECS task role was not set on tasks started from `emp run`. [#1063](https://github.com/remind101/empire/pull/1063)
 
 **Improvements**
 
-* Processes can now be scaled down to a negative value to prevent AWS resources from being created. [#1064](https://github.com/remind101/empire/pull/1064)
-* AWS resources for scheduled processes are now always created, unless scaled down to a negative value. [#1064](https://github.com/remind101/empire/pull/1064)
-* Empire now supports reporting its own errors to [Rollbar](https://rollbar.com) in addition to Honeybadger. [#1075](https://github.com/remind101/empire/pull/1075)
-* It's now possible to configure the pool of ports that the `Custom::InstancePort` resource allocates ports from. [#1096](https://github.com/remind101/empire/pull/1096)
-* STDOUT and STDERR in `emp run`'s now show up on STDOUT and STDERR in the terminal, instead of being merged on STDOUT. [#1101](https://github.com/remind101/empire/pull/1101)
+* [cmd/empire] Processes can now be scaled down to a negative value to prevent AWS resources from being created. [#1064](https://github.com/remind101/empire/pull/1064)
+* [cmd/empire] AWS resources for scheduled processes are now always created, unless scaled down to a negative value. [#1064](https://github.com/remind101/empire/pull/1064)
+* [cmd/empire] Empire now supports reporting its own errors to [Rollbar](https://rollbar.com) in addition to Honeybadger. [#1075](https://github.com/remind101/empire/pull/1075)
+* [cmd/empire]It's now possible to configure the pool of ports that the `Custom::InstancePort` resource allocates ports from. [#1096](https://github.com/remind101/empire/pull/1096)
+* [cmd/emp] STDOUT and STDERR in `emp run`'s now show up on STDOUT and STDERR in the terminal, instead of being merged on STDOUT. [#1101](https://github.com/remind101/empire/pull/1101)
 
 ## 0.12.0 (2017-03-10)
 
