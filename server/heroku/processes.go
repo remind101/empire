@@ -8,6 +8,7 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
+	"github.com/remind101/empire/pkg/stdcopy"
 	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/server/auth"
@@ -96,8 +97,15 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if form.Attach {
+		multiplex := r.Header.Get("X-Multiplex") != ""
+
 		header := http.Header{}
-		header.Set("Content-Type", "application/vnd.empire.raw-stream")
+		if multiplex {
+			header.Set("Content-Type", "application/vnd.empire.stdcopy-stream")
+		} else {
+			header.Set("Content-Type", "application/vnd.empire.raw-stream")
+		}
+
 		stream := &hijack.HijackReadWriter{
 			Response: w,
 			Header:   header,
@@ -108,14 +116,16 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 
 		opts.Stdin = stream
 
-		// TODO(ejholmes): Currently, both stdout and stderr are written
-		// to the same stream, which means the client cannot
-		// differentiate from stdout/stderr. In the future, this
-		// endpoint should support a new Content-Type header that
-		// multiplexes stdout/stderr so the client can demux them before
-		// printing to the console.
-		opts.Stdout = stream
-		opts.Stderr = stream
+		if multiplex {
+			opts.Stdout = stdcopy.NewStdWriter(stream, stdcopy.Stdout)
+			opts.Stderr = stdcopy.NewStdWriter(stream, stdcopy.Stderr)
+		} else {
+			// Backwards compatibility for older clients that don't
+			// know how to de-multiplex a stdcopy stream. For these
+			// clients, stdout/stderr are merged together.
+			opts.Stdout = stream
+			opts.Stderr = stream
+		}
 
 		if err := h.Run(ctx, opts); err != nil {
 			if stream.Hijacked {

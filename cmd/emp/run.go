@@ -14,6 +14,7 @@ import (
 
 	"github.com/docker/docker/pkg/term"
 	"github.com/remind101/empire/pkg/heroku"
+	"github.com/remind101/empire/pkg/stdcopy"
 )
 
 var (
@@ -126,7 +127,9 @@ func runRun(cmd *Command, args []string) {
 	}
 
 	rh := heroku.RequestHeaders{CommitMessage: message}
-	req, err := client.NewRequest("POST", "/apps/"+appname+"/dynos", params, rh.Headers())
+	header := rh.Headers()
+	header.Set("X-Multiplex", "1")
+	req, err := client.NewRequest("POST", "/apps/"+appname+"/dynos", params, header)
 	must(err)
 
 	u, err := url.Parse(apiURL)
@@ -175,7 +178,11 @@ func runRun(cmd *Command, args []string) {
 		defer close(exit)
 		defer close(errChanOut)
 		var err error
-		_, err = io.Copy(os.Stdout, br)
+		if res.Header.Get("Content-Type") == "application/vnd.empire.stdcopy-stream" {
+			_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, br)
+		} else {
+			_, err = io.Copy(os.Stdout, br)
+		}
 		errChanOut <- err
 	}()
 	go func() {
