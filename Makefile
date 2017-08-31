@@ -22,8 +22,6 @@ bootstrap: cmds
 build: Dockerfile
 	docker build -t ${REPO} .
 
-ci: cmds test vet
-
 test: build/emp
 	go test -race $(shell go list ./... | grep -v /vendor/)
 	./tests/deps
