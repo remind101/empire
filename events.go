@@ -331,7 +331,7 @@ var NullEventStream = EventStreamFunc(func(event Event) error {
 type MultiEventStream []EventStream
 
 func (streams MultiEventStream) PublishEvent(e Event) error {
-	var result *multiError
+	result := new(multiError)
 	for _, s := range streams {
 		if err := s.PublishEvent(e); err != nil {
 			result.Errors = append(result.Errors, err)

@@ -1,10 +1,21 @@
 package empire
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMultiEventStream(t *testing.T) {
+	boom := errors.New("boom")
+	s := MultiEventStream{EventStreamFunc(func(event Event) error {
+		return boom
+	})}
+	err := s.PublishEvent(RunEvent{User: "ejholmes", App: "acme-inc", Command: []string{"bash"}})
+	assert.EqualError(t, err, "1 error(s) occurred:\n\n* boom")
+
+}
 
 func TestEvents_String(t *testing.T) {
 	tests := []struct {
