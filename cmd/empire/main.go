@@ -411,9 +411,9 @@ var EmpireFlags = []cli.Flag{
 		Usage:  "The location of the logs to stream",
 		EnvVar: "EMPIRE_LOGS_STREAMER",
 	},
-	cli.StringFlag{
+	cli.StringSliceFlag{
 		Name:   FlagEventsBackend,
-		Value:  "",
+		Value:  &cli.StringSlice{},
 		Usage:  "The backend implementation to use to send event notifactions",
 		EnvVar: "EMPIRE_EVENTS_BACKEND",
 	},

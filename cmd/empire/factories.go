@@ -305,22 +305,23 @@ func newKinesisLogsStreamer(c *Context) (empire.LogsStreamer, error) {
 
 func newEventStreams(c *Context) (empire.MultiEventStream, error) {
 	var streams empire.MultiEventStream
-	switch c.String(FlagEventsBackend) {
-	case "sns":
-		e, err := newSNSEventStream(c)
-		if err != nil {
-			return streams, err
+	for _, name := range c.StringSlice(FlagEventsBackend) {
+		switch name {
+		case "sns":
+			e, err := newSNSEventStream(c)
+			if err != nil {
+				return streams, err
+			}
+			streams = append(streams, e)
+		case "stdout":
+			e, err := newStdoutEventStream(c)
+			if err != nil {
+				return streams, err
+			}
+			streams = append(streams, e)
+		default:
+			return streams, fmt.Errorf("unknown event stream backend: %s", name)
 		}
-		streams = append(streams, e)
-	case "stdout":
-		e, err := newStdoutEventStream(c)
-		if err != nil {
-			return streams, err
-		}
-		streams = append(streams, e)
-	default:
-		e := empire.NullEventStream
-		streams = append(streams, e)
 	}
 
 	if c.String(FlagLogsStreamer) == "kinesis" {
@@ -330,6 +331,12 @@ func newEventStreams(c *Context) (empire.MultiEventStream, error) {
 		}
 		streams = append(streams, e)
 	}
+
+	if len(streams) == 0 {
+		e := empire.NullEventStream
+		streams = append(streams, e)
+	}
+
 	return streams, nil
 }
 
