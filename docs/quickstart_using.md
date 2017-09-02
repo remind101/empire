@@ -33,7 +33,7 @@ Good - we haven't deployed any apps, so we shouldn't see any. Lets deploy our fi
 
 ```console
 $ emp deploy remind101/acme-inc:master
-Pulling repository remind101/acme-inc
+master: Pulling from remind101/acme-inc
 345c7524bc96: Download complete
 a1dd7097a8e8: Download complete
 23debee88b99: Download complete
@@ -41,11 +41,15 @@ a1dd7097a8e8: Download complete
 c7388ff7ab91: Download complete
 78fb106ed050: Download complete
 133fcef559c4: Download complete
+Digest: sha256:c6f77d2098bc0e32aef3102e71b51831a9083dd9356a0ccadca860596a1e9007
 Status: Downloaded newer image for remind101/acme-inc:master
+Status: Resolved remind101/acme-inc:master to remind101/acme-inc@sha256:c6f77d2098bc0e32aef3102e71b51831a9083dd9356a0ccadca860596a1e9007
+Status: Extracted Procfile from "/go/src/github.com/remind101/acme-inc/Procfile"
 Status: Created new release v1 for acme-inc
+Status: Finished processing events for release v1 of acme-inc
 ```
 
-So what just happened? We just told the Empire API to go out and get the 'master' tagged image from the remind101/acme-inc repository. The Empire daemon then pulled that image down from [hub.docker.com](http://hub.docker.com/), then extracted the *Procfile* from it to analyze what processes were available. Now lets see what apps we're running:
+So what just happened? We just told the Empire API to go out and get the 'master' tagged image from the remind101/acme-inc repository. The Empire daemon then pulled that image down from [hub.docker.com](http://hub.docker.com/), resolved the image to it's content-adressable identifier, then extracted the *Procfile* from it to analyze what processes were available. Now lets see what apps we're running:
 
 ```console
 $ emp apps

@@ -23,6 +23,9 @@ import (
 type dockerDaemon struct {
 	docker    *dockerutil.Client
 	extractor empire.ProcfileExtractor
+
+	// can be set to false to disable Pull-before-Resolve.
+	noPull bool
 }
 
 // DockerDaemon returns an empire.ImageRegistry that uses a local Docker Daemon
@@ -43,18 +46,45 @@ func (r *dockerDaemon) ExtractProcfile(ctx context.Context, img image.Image, w *
 }
 
 func (r *dockerDaemon) Resolve(ctx context.Context, img image.Image, w *jsonmessage.Stream) (image.Image, error) {
-	if err := r.docker.PullImage(ctx, docker.PullImageOptions{
-		Registry:      img.Registry,
-		Repository:    img.Repository,
-		Tag:           img.Tag,
-		OutputStream:  w,
-		RawJSONStream: true,
-	}); err != nil {
+	if !r.noPull {
+		if err := r.docker.PullImage(ctx, docker.PullImageOptions{
+			Registry:      img.Registry,
+			Repository:    img.Repository,
+			Tag:           img.Tag,
+			OutputStream:  w,
+			RawJSONStream: true,
+		}); err != nil {
+			return img, err
+		}
+	}
+
+	// If the image already references an immutable identifier, there's
+	// nothing for us to do.
+	if img.Digest != "" {
+		return img, nil
+	}
+
+	i, err := r.docker.InspectImage(img.String())
+	if err != nil {
 		return img, err
 	}
 
-	// TODO
-	return img, nil
+	// If there are no repository digests (the case for Docker <= 1.11),
+	// then we just fallback to the original identifier.
+	if len(i.RepoDigests) <= 0 {
+		w.Encode(jsonmessage.JSONMessage{
+			Status: fmt.Sprintf("Status: Image has no repository digests. Using %s as image identifier", img),
+		})
+		return img, nil
+	}
+
+	digest := i.RepoDigests[0]
+
+	w.Encode(jsonmessage.JSONMessage{
+		Status: fmt.Sprintf("Status: Resolved %s to %s", img, digest),
+	})
+
+	return image.Decode(digest)
 }
 
 // cmdExtractor is an Extractor implementation that returns a Procfile based

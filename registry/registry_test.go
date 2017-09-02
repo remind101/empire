@@ -15,6 +15,76 @@ import (
 	"github.com/remind101/empire/pkg/jsonmessage"
 )
 
+func TestResolve(t *testing.T) {
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	)).Add(httpmock.PathHandler(t,
+		"GET /images/remind101:acme-inc/json",
+		200, `{ "RepoDigests": [ "remind101/acme-inc@sha256:c6f77d2098bc0e32aef3102e71b51831a9083dd9356a0ccadca860596a1e9007" ] }`,
+	))
+
+	c, s := newTestDockerClient(t, api)
+	defer s.Close()
+
+	d := dockerDaemon{
+		docker: c,
+		noPull: true,
+	}
+
+	w := jsonmessage.NewStream(ioutil.Discard)
+	img, err := d.Resolve(nil, image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
+	}, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := img, "remind101/acme-inc@sha256:c6f77d2098bc0e32aef3102e71b51831a9083dd9356a0ccadca860596a1e9007"; got.String() != want {
+		t.Fatalf("Resolve() => %s; want %s", got, want)
+	}
+
+	img, err = d.Resolve(nil, img, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := img, "remind101/acme-inc@sha256:c6f77d2098bc0e32aef3102e71b51831a9083dd9356a0ccadca860596a1e9007"; got.String() != want {
+		t.Fatalf("Resolve() => %s; want %s", got, want)
+	}
+}
+
+func TestResolve_NoDigests(t *testing.T) {
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	)).Add(httpmock.PathHandler(t,
+		"GET /images/remind101:acme-inc/json",
+		200, `{ "RepoDigests": [] }`,
+	))
+
+	c, s := newTestDockerClient(t, api)
+	defer s.Close()
+
+	d := dockerDaemon{
+		docker: c,
+		noPull: true,
+	}
+
+	w := jsonmessage.NewStream(ioutil.Discard)
+	img, err := d.Resolve(nil, image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
+	}, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := img, "remind101:acme-inc"; got.String() != want {
+		t.Fatalf("Resolve() => %s; want %s", got, want)
+	}
+}
+
 func TestCMDExtractor(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
 		"GET /version",
