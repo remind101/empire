@@ -1,9 +1,10 @@
-package extractor
+package registry
 
 import (
 	"archive/tar"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"path"
 
@@ -13,31 +14,47 @@ import (
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/jsonmessage"
 	"github.com/remind101/empire/procfile"
 )
 
-// PullAndExtract returns a ProcfileExtractor that will pull the image using the
-// docker client, then attempt to extract the the Procfile, or fallback to the
-// CMD directive in the Dockerfile.
-func PullAndExtract(c *dockerutil.Client) empire.ProcfileExtractor {
+// dockerDaemon is an implementation of the empire.ImageRegistry interface
+// backed by a local Docker daemon.
+type dockerDaemon struct {
+	docker    *dockerutil.Client
+	extractor empire.ProcfileExtractor
+}
+
+// DockerDaemon returns an empire.ImageRegistry that uses a local Docker Daemon
+// to extract procfiles and resolve images.
+func DockerDaemon(c *dockerutil.Client) empire.ImageRegistry {
 	e := multiExtractor(
 		newFileExtractor(c),
 		newCMDExtractor(c),
 	)
+	return &dockerDaemon{
+		docker:    c,
+		extractor: e,
+	}
+}
 
-	return empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		if err := c.PullImage(ctx, docker.PullImageOptions{
-			Registry:      img.Registry,
-			Repository:    img.Repository,
-			Tag:           img.Tag,
-			OutputStream:  w,
-			RawJSONStream: true,
-		}); err != nil {
-			return nil, err
-		}
+func (r *dockerDaemon) ExtractProcfile(ctx context.Context, img image.Image, w *jsonmessage.Stream) ([]byte, error) {
+	return r.extractor.ExtractProcfile(ctx, img, w)
+}
 
-		return e.Extract(ctx, img, w)
-	})
+func (r *dockerDaemon) Resolve(ctx context.Context, img image.Image, w *jsonmessage.Stream) (image.Image, error) {
+	if err := r.docker.PullImage(ctx, docker.PullImageOptions{
+		Registry:      img.Registry,
+		Repository:    img.Repository,
+		Tag:           img.Tag,
+		OutputStream:  w,
+		RawJSONStream: true,
+	}); err != nil {
+		return img, err
+	}
+
+	// TODO
+	return img, nil
 }
 
 // cmdExtractor is an Extractor implementation that returns a Procfile based
@@ -52,11 +69,15 @@ func newCMDExtractor(c *dockerutil.Client) *cmdExtractor {
 	return &cmdExtractor{client: c}
 }
 
-func (e *cmdExtractor) Extract(ctx context.Context, img image.Image, _ io.Writer) ([]byte, error) {
+func (e *cmdExtractor) ExtractProcfile(ctx context.Context, img image.Image, w *jsonmessage.Stream) ([]byte, error) {
 	i, err := e.client.InspectImage(img.String())
 	if err != nil {
 		return nil, err
 	}
+
+	w.Encode(jsonmessage.JSONMessage{
+		Status: fmt.Sprintf("Status: Generating Procfile from CMD: %v", i.Config.Cmd),
+	})
 
 	return procfile.Marshal(procfile.ExtendedProcfile{
 		"web": procfile.Process{
@@ -68,9 +89,9 @@ func (e *cmdExtractor) Extract(ctx context.Context, img image.Image, _ io.Writer
 // multiExtractor is an Extractor implementation that tries multiple Extractors
 // in succession until one succeeds.
 func multiExtractor(extractors ...empire.ProcfileExtractor) empire.ProcfileExtractor {
-	return empire.ProcfileExtractorFunc(func(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
+	return empire.ProcfileExtractorFunc(func(ctx context.Context, image image.Image, w *jsonmessage.Stream) ([]byte, error) {
 		for _, extractor := range extractors {
-			p, err := extractor.Extract(ctx, image, w)
+			p, err := extractor.ExtractProcfile(ctx, image, w)
 
 			// Yay!
 			if err == nil {
@@ -104,7 +125,7 @@ func newFileExtractor(c *dockerutil.Client) *fileExtractor {
 }
 
 // Extract implements Extractor Extract.
-func (e *fileExtractor) Extract(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
+func (e *fileExtractor) ExtractProcfile(ctx context.Context, img image.Image, w *jsonmessage.Stream) ([]byte, error) {
 	c, err := e.createContainer(ctx, img)
 	if err != nil {
 		return nil, err
@@ -121,6 +142,10 @@ func (e *fileExtractor) Extract(ctx context.Context, img image.Image, w io.Write
 	if err != nil {
 		return nil, &empire.ProcfileError{Err: err}
 	}
+
+	w.Encode(jsonmessage.JSONMessage{
+		Status: fmt.Sprintf("Status: Extracted Procfile from %q", pfile),
+	})
 
 	return b, nil
 }

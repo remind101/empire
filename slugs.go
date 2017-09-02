@@ -1,7 +1,7 @@
 package empire
 
 import (
-	"io"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/image"
@@ -36,46 +36,39 @@ func (s *Slug) Formation() (Formation, error) {
 	return formationFromProcfile(p)
 }
 
-// slugsCreate inserts a Slug into the database.
-func slugsCreate(db *gorm.DB, slug *Slug) (*Slug, error) {
-	return slug, db.Create(slug).Error
-}
-
 // slugsService provides convenience methods for creating slugs.
 type slugsService struct {
 	*Empire
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) Create(ctx context.Context, db *gorm.DB, img image.Image, out io.Writer) (*Slug, error) {
-	return slugsCreateByImage(ctx, db, s.ProcfileExtractor, img, out)
+func (s *slugsService) Create(ctx context.Context, db *gorm.DB, img image.Image, w *DeploymentStream) (*Slug, error) {
+	return slugsCreateByImage(ctx, db, s.ImageRegistry, img, w)
+}
+
+// slugsCreate inserts a Slug into the database.
+func slugsCreate(db *gorm.DB, slug *Slug) (*Slug, error) {
+	return slug, db.Create(slug).Error
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(ctx context.Context, db *gorm.DB, e ProcfileExtractor, img image.Image, out io.Writer) (*Slug, error) {
-	slug, err := slugsExtract(ctx, e, img, out)
+func slugsCreateByImage(ctx context.Context, db *gorm.DB, r ImageRegistry, img image.Image, w *DeploymentStream) (*Slug, error) {
+	var (
+		slug Slug
+		err  error
+	)
+
+	slug.Image, err = r.Resolve(ctx, img, w.Stream)
 	if err != nil {
-		return slug, err
+		return nil, fmt.Errorf("resolving %s: %v", img, err)
 	}
 
-	return slugsCreate(db, slug)
-}
-
-// SlugsExtract extracts the process types from the image, then returns a new
-// Slug instance.
-func slugsExtract(ctx context.Context, extractor ProcfileExtractor, img image.Image, out io.Writer) (*Slug, error) {
-	slug := &Slug{
-		Image: img,
-	}
-
-	p, err := extractor.Extract(ctx, img, out)
+	slug.Procfile, err = r.ExtractProcfile(ctx, slug.Image, w.Stream)
 	if err != nil {
-		return slug, err
+		return nil, fmt.Errorf("extracting Procfile from %s: %v", slug.Image, err)
 	}
 
-	slug.Procfile = p
-
-	return slug, nil
+	return slugsCreate(db, &slug)
 }

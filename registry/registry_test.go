@@ -1,8 +1,9 @@
-package extractor
+package registry
 
 import (
 	"archive/tar"
 	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -11,6 +12,7 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/httpmock"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/jsonmessage"
 )
 
 func TestCMDExtractor(t *testing.T) {
@@ -29,10 +31,11 @@ func TestCMDExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(nil, image.Image{
+	w := jsonmessage.NewStream(ioutil.Discard)
+	got, err := e.ExtractProcfile(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	}, nil)
+	}, w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +47,7 @@ func TestCMDExtractor(t *testing.T) {
 `)
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Extract() => %q; want %q", got, want)
+		t.Errorf("ExtractProcfile() => %q; want %q", got, want)
 	}
 }
 
@@ -73,10 +76,11 @@ func TestProcfileExtractor(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(nil, image.Image{
+	w := jsonmessage.NewStream(ioutil.Discard)
+	got, err := e.ExtractProcfile(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	}, nil)
+	}, w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +88,7 @@ func TestProcfileExtractor(t *testing.T) {
 	want := []byte(`web: rails server`)
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Extract() => %q; want %q", got, want)
+		t.Errorf("ExtractProcfile() => %q; want %q", got, want)
 	}
 }
 
@@ -113,10 +117,11 @@ func TestProcfileExtractor_Docker12(t *testing.T) {
 		client: c,
 	}
 
-	got, err := e.Extract(nil, image.Image{
+	w := jsonmessage.NewStream(ioutil.Discard)
+	got, err := e.ExtractProcfile(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	}, nil)
+	}, w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +129,7 @@ func TestProcfileExtractor_Docker12(t *testing.T) {
 	want := []byte(`web: rails server`)
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Extract() => %q; want %q", got, want)
+		t.Errorf("ExtractProcfile() => %q; want %q", got, want)
 	}
 }
 
@@ -157,10 +162,11 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 		newCMDExtractor(c),
 	)
 
-	got, err := e.Extract(nil, image.Image{
+	w := jsonmessage.NewStream(ioutil.Discard)
+	got, err := e.ExtractProcfile(nil, image.Image{
 		Tag:        "acme-inc",
 		Repository: "remind101",
-	}, nil)
+	}, w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +178,7 @@ func TestProcfileFallbackExtractor(t *testing.T) {
 `)
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Extract() => %q; want %q", got, want)
+		t.Errorf("ExtractProcfile() => %q; want %q", got, want)
 	}
 
 }

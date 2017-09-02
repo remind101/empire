@@ -2,7 +2,6 @@ package empire_test
 
 import (
 	"errors"
-	"io"
 	"io/ioutil"
 	"sort"
 	"testing"
@@ -185,9 +184,7 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		return nil, errors.New("image not found")
-	})
+	e.ImageRegistry = empiretest.ExtractProcfile(nil, errors.New("image not found"))
 
 	// Deploying an image to an app that doesn't exist will create a new
 	// app.
@@ -203,72 +200,6 @@ func TestEmpire_Deploy_ImageNotFound(t *testing.T) {
 	apps, err := e.Apps(empire.AppsQuery{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(apps))
-
-	s.AssertExpectations(t)
-}
-
-func TestEmpire_Deploy_Concurrent(t *testing.T) {
-	e := empiretest.NewEmpire(t)
-	s := new(mockScheduler)
-	e.Scheduler = empire.NewFakeScheduler()
-	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
-		"web": procfile.Process{
-			Command: []string{"./bin/web"},
-		},
-	})
-
-	user := &empire.User{Name: "ejholmes"}
-
-	// Create the first release for this app.
-	r, err := e.Deploy(context.Background(), empire.DeployOpts{
-		User:   user,
-		Output: empire.NewDeploymentStream(ioutil.Discard),
-		Image:  image.Image{Repository: "remind101/acme-inc"},
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 1, r.Version)
-
-	// We'll use the procfile extractor to synchronize two concurrent
-	// deployments.
-	v2Started, v3Started := make(chan struct{}), make(chan struct{})
-	e.ProcfileExtractor = empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		switch img.Tag {
-		case "v2":
-			close(v2Started)
-			<-v3Started
-		case "v3":
-			close(v3Started)
-		}
-		return procfile.Marshal(procfile.ExtendedProcfile{
-			"web": procfile.Process{
-				Command: []string{"./bin/web"},
-			},
-		})
-	})
-
-	v2Done := make(chan struct{})
-	go func() {
-		r, err := e.Deploy(context.Background(), empire.DeployOpts{
-			User:   user,
-			Output: empire.NewDeploymentStream(ioutil.Discard),
-			Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v2"},
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, r.Version)
-		close(v2Done)
-	}()
-
-	<-v2Started
-
-	r, err = e.Deploy(context.Background(), empire.DeployOpts{
-		User:   user,
-		Output: empire.NewDeploymentStream(ioutil.Discard),
-		Image:  image.Image{Repository: "remind101/acme-inc", Tag: "v3"},
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 3, r.Version)
-
-	<-v2Done
 
 	s.AssertExpectations(t)
 }
@@ -543,11 +474,11 @@ func TestEmpire_Set(t *testing.T) {
 	e := empiretest.NewEmpire(t)
 	s := new(mockScheduler)
 	e.Scheduler = s
-	e.ProcfileExtractor = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
+	e.ImageRegistry = empiretest.ExtractProcfile(procfile.ExtendedProcfile{
 		"web": procfile.Process{
 			Command: []string{"./bin/web"},
 		},
-	})
+	}, nil)
 
 	user := &empire.User{Name: "ejholmes"}
 

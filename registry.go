@@ -3,11 +3,11 @@ package empire
 import (
 	"errors"
 	"fmt"
-	"io"
 
 	"golang.org/x/net/context"
 
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/jsonmessage"
 	"github.com/remind101/empire/procfile"
 )
 
@@ -26,13 +26,25 @@ const Procfile = "Procfile"
 
 // ProcfileExtractor represents something that can extract a Procfile from an image.
 type ProcfileExtractor interface {
-	Extract(context.Context, image.Image, io.Writer) ([]byte, error)
+	// ExtractProcfile should return extracted a Procfile from an image, returning
+	// it's YAML representation.
+	ExtractProcfile(context.Context, image.Image, *jsonmessage.Stream) ([]byte, error)
 }
 
-type ProcfileExtractorFunc func(context.Context, image.Image, io.Writer) ([]byte, error)
+// ProcfileExtractorFunc implements the ProcfileExtractor interface.
+type ProcfileExtractorFunc func(context.Context, image.Image, *jsonmessage.Stream) ([]byte, error)
 
-func (fn ProcfileExtractorFunc) Extract(ctx context.Context, image image.Image, w io.Writer) ([]byte, error) {
+func (fn ProcfileExtractorFunc) ExtractProcfile(ctx context.Context, image image.Image, w *jsonmessage.Stream) ([]byte, error) {
 	return fn(ctx, image, w)
+}
+
+// ImageRegistry represents something that can interact with container images.
+type ImageRegistry interface {
+	ProcfileExtractor
+
+	// Resolve should resolve an image to an "immutable" reference of the
+	// image.
+	Resolve(context.Context, image.Image, *jsonmessage.Stream) (image.Image, error)
 }
 
 func formationFromProcfile(p procfile.Procfile) (Formation, error) {
