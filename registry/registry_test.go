@@ -3,6 +3,7 @@ package registry
 import (
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +28,7 @@ func TestResolve(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	d := dockerDaemon{
+	d := DockerDaemonRegistry{
 		docker: c,
 		noPull: true,
 	}
@@ -54,7 +55,7 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-func TestResolve_NoDigests(t *testing.T) {
+func TestResolve_NoDigest_WithDigestsPrefer(t *testing.T) {
 	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
 		"GET /version",
 		200, `{ "ApiVersion": "1.20" }`,
@@ -66,9 +67,66 @@ func TestResolve_NoDigests(t *testing.T) {
 	c, s := newTestDockerClient(t, api)
 	defer s.Close()
 
-	d := dockerDaemon{
+	d := DockerDaemonRegistry{
 		docker: c,
 		noPull: true,
+	}
+
+	w := jsonmessage.NewStream(ioutil.Discard)
+	img, err := d.Resolve(nil, image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
+	}, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := img, "remind101:acme-inc"; got.String() != want {
+		t.Fatalf("Resolve() => %s; want %s", got, want)
+	}
+}
+
+func TestResolve_NoDigest_WithDigestsOnly(t *testing.T) {
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	)).Add(httpmock.PathHandler(t,
+		"GET /images/remind101:acme-inc/json",
+		200, `{ "RepoDigests": [] }`,
+	))
+
+	c, s := newTestDockerClient(t, api)
+	defer s.Close()
+
+	d := DockerDaemonRegistry{
+		Digests: DigestsOnly,
+		docker:  c,
+		noPull:  true,
+	}
+
+	w := jsonmessage.NewStream(ioutil.Discard)
+	_, err := d.Resolve(nil, image.Image{
+		Tag:        "acme-inc",
+		Repository: "remind101",
+	}, w)
+	if err == nil {
+		t.Fatal(fmt.Errorf("expected an error"))
+	}
+}
+
+func TestResolve_NoDigest_WithDigestsDisable(t *testing.T) {
+	api := httpmock.NewServeReplay(t).Add(httpmock.PathHandler(t,
+		"GET /version",
+		200, `{ "ApiVersion": "1.20" }`,
+	))
+
+	c, s := newTestDockerClient(t, api)
+	defer s.Close()
+
+	d := DockerDaemonRegistry{
+		Digests: DigestsDisable,
+		docker:  c,
+		noPull:  true,
 	}
 
 	w := jsonmessage.NewStream(ioutil.Discard)

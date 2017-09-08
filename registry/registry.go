@@ -18,9 +18,42 @@ import (
 	"github.com/remind101/empire/procfile"
 )
 
-// dockerDaemon is an implementation of the empire.ImageRegistry interface
+type Digest int
+
+const (
+	// Uses the digest, if it's available. Older versions of Docker do not
+	// always populate the digests.
+	//
+	// See https://github.com/moby/moby/issues/15508
+	DigestsPrefer Digest = iota
+
+	// Always use the digest, and return an error if the image doesn't have
+	// one. The most secure option (and prefered).
+	DigestsOnly
+
+	// Disabling digests entirely, and just use the mutable tag. Unsecure,
+	// and not recommended.
+	DigestsDisable
+)
+
+// NoDigestError can be returned if image digests are enforce, and the image
+// doesn't have an immutable digest.
+type NoDigestError struct {
+	Image string
+}
+
+// Error implements the error interface.
+func (e *NoDigestError) Error() string {
+	return fmt.Sprintf("image %s has no digests", e.Image)
+}
+
+// DockerDaemonRegistry is an implementation of the empire.ImageRegistry interface
 // backed by a local Docker daemon.
-type dockerDaemon struct {
+type DockerDaemonRegistry struct {
+	// Controls whether digests are preferred, enforced, or disabled. See
+	// above for available options.
+	Digests Digest
+
 	docker    *dockerutil.Client
 	extractor empire.ProcfileExtractor
 
@@ -30,22 +63,22 @@ type dockerDaemon struct {
 
 // DockerDaemon returns an empire.ImageRegistry that uses a local Docker Daemon
 // to extract procfiles and resolve images.
-func DockerDaemon(c *dockerutil.Client) empire.ImageRegistry {
+func DockerDaemon(c *dockerutil.Client) *DockerDaemonRegistry {
 	e := multiExtractor(
 		newFileExtractor(c),
 		newCMDExtractor(c),
 	)
-	return &dockerDaemon{
+	return &DockerDaemonRegistry{
 		docker:    c,
 		extractor: e,
 	}
 }
 
-func (r *dockerDaemon) ExtractProcfile(ctx context.Context, img image.Image, w *jsonmessage.Stream) ([]byte, error) {
+func (r *DockerDaemonRegistry) ExtractProcfile(ctx context.Context, img image.Image, w *jsonmessage.Stream) ([]byte, error) {
 	return r.extractor.ExtractProcfile(ctx, img, w)
 }
 
-func (r *dockerDaemon) Resolve(ctx context.Context, img image.Image, w *jsonmessage.Stream) (image.Image, error) {
+func (r *DockerDaemonRegistry) Resolve(ctx context.Context, img image.Image, w *jsonmessage.Stream) (image.Image, error) {
 	if !r.noPull {
 		// From the Docker API docs:
 		//
@@ -81,6 +114,11 @@ func (r *dockerDaemon) Resolve(ctx context.Context, img image.Image, w *jsonmess
 		}
 	}
 
+	// If digests are disable, just return the original image reference.
+	if r.Digests == DigestsDisable {
+		return img, nil
+	}
+
 	// If the image already references an immutable identifier, there's
 	// nothing for us to do.
 	if img.Digest != "" {
@@ -95,10 +133,15 @@ func (r *dockerDaemon) Resolve(ctx context.Context, img image.Image, w *jsonmess
 	// If there are no repository digests (the case for Docker <= 1.11),
 	// then we just fallback to the original identifier.
 	if len(i.RepoDigests) <= 0 {
-		w.Encode(jsonmessage.JSONMessage{
-			Status: fmt.Sprintf("Status: Image has no repository digests. Using %s as image identifier", img),
-		})
-		return img, nil
+		switch r.Digests {
+		case DigestsPrefer:
+			w.Encode(jsonmessage.JSONMessage{
+				Status: fmt.Sprintf("Status: Image has no repository digests. Using %s as image identifier", img),
+			})
+			return img, nil
+		case DigestsOnly:
+			return img, &NoDigestError{Image: img.String()}
+		}
 	}
 
 	digest := i.RepoDigests[0]

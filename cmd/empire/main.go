@@ -49,9 +49,10 @@ const (
 
 	FlagDB = "db"
 
-	FlagDockerHost = "docker.socket"
-	FlagDockerCert = "docker.cert"
-	FlagDockerAuth = "docker.auth"
+	FlagDockerHost    = "docker.socket"
+	FlagDockerCert    = "docker.cert"
+	FlagDockerAuth    = "docker.auth"
+	FlagDockerDigests = "docker.digests"
 
 	FlagAWSDebug                       = "aws.debug"
 	FlagS3TemplateBucket               = "s3.templatebucket"
@@ -278,6 +279,12 @@ var EmpireFlags = []cli.Flag{
 		Value:  path.Join(os.Getenv("HOME"), ".dockercfg"),
 		Usage:  "Path to a docker registry auth file (~/.dockercfg)",
 		EnvVar: "DOCKER_AUTH_PATH",
+	},
+	cli.StringFlag{
+		Name:   FlagDockerDigests,
+		Value:  "prefer",
+		Usage:  "Determines how Empire stores Docker image references. By default, Empire will try to resolve a mutable reference (e.g. remind101/acme-inc:master) to an immutable reference using the images content adressable digest (e.g. remind101/acme-inc@sha256:c6f77d2098bc0e32aef3102e71b51831a9083dd9356a0ccadca860596a1e9007) if the Docker daemon supports it. This can be disabled by setting to \"disable\" or enforce digests by setting to \"enforce\".",
+		EnvVar: "DOCKER_DIGESTS",
 	},
 	cli.BoolFlag{
 		Name:   FlagAWSDebug,
