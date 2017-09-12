@@ -13,6 +13,7 @@
 
 * [cmd/emp] Fixed a regression in env-load, which caused it to set keys to random values. [#1062](https://github.com/remind101/empire/pull/1062)
 * [cmd/empire] Fixed an issue where the ECS task role was not set on tasks started from `emp run`. [#1063](https://github.com/remind101/empire/pull/1063)
+* [cmd/empire] Fixed a bug that prevented Docker images using a digest as a reference from being deployed. [#1104](https://github.com/remind101/empire/pull/1104)
 
 **Improvements**
 
@@ -21,6 +22,10 @@
 * [cmd/empire] Empire now supports reporting its own errors to [Rollbar](https://rollbar.com) in addition to Honeybadger. [#1075](https://github.com/remind101/empire/pull/1075)
 * [cmd/empire]It's now possible to configure the pool of ports that the `Custom::InstancePort` resource allocates ports from. [#1096](https://github.com/remind101/empire/pull/1096)
 * [cmd/emp] STDOUT and STDERR in `emp run`'s now show up on STDOUT and STDERR in the terminal, instead of being merged on STDOUT. [#1101](https://github.com/remind101/empire/pull/1101)
+
+**Security**
+
+* [cmd/empire] Empire can now automatically resolve a Docker tag to it's immutable content addressable identifier. [#1104](https://github.com/remind101/empire/pull/1104)
 
 ## 0.12.0 (2017-03-10)
 
