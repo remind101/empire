@@ -89,9 +89,8 @@ type Empire struct {
 	// LogsStreamer is the backend used to stream application logs.
 	LogsStreamer LogsStreamer
 
-	// ProcfileExtractor is called during deployments to extract the
-	// Formation from the Procfile in the newly deployed image.
-	ProcfileExtractor ProcfileExtractor
+	// ImageRegistry is used to interract with container images.
+	ImageRegistry ImageRegistry
 
 	// Environment represents the environment this Empire server is responsible for
 	Environment string

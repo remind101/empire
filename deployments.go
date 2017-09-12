@@ -1,7 +1,6 @@
 package empire
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 
@@ -102,23 +101,12 @@ func (s *deployerService) Deploy(ctx context.Context, opts DeployOpts) (*Release
 // DeploymentStream provides a wrapper around an io.Writer for writing
 // jsonmessage statuses, and implements the scheduler.StatusStream interface.
 type DeploymentStream struct {
-	w   io.Writer
-	enc *json.Encoder
+	*jsonmessage.Stream
 }
 
 // NewDeploymentStream wraps the io.Writer as a DeploymentStream.
 func NewDeploymentStream(w io.Writer) *DeploymentStream {
-	return &DeploymentStream{
-		w:   w,
-		enc: json.NewEncoder(w),
-	}
-}
-
-// Write implements the io.Writer interface. This allows things like the Docker
-// daemon to write directly to the io.Writer, since it already writes in
-// jsonmessage format.
-func (w *DeploymentStream) Write(b []byte) (int, error) {
-	return w.w.Write(b)
+	return &DeploymentStream{jsonmessage.NewStream(w)}
 }
 
 // Publish implements the scheduler.StatusStream interface.
@@ -129,28 +117,14 @@ func (w *DeploymentStream) Publish(status twelvefactor.Status) error {
 // Status writes a simple status update to the jsonmessage stream.
 func (w *DeploymentStream) Status(message string) error {
 	m := jsonmessage.JSONMessage{Status: fmt.Sprintf("Status: %s", message)}
-	return w.encode(m)
+	return w.Encode(m)
 }
 
 // Error writes the error to the jsonmessage stream. The error that is provided
 // is also returned, so that Error() can be used in return values.
 func (w *DeploymentStream) Error(err error) error {
-	if encErr := w.encode(newJSONMessageError(err)); encErr != nil {
+	if encErr := w.Encode(jsonmessage.NewError(err)); encErr != nil {
 		return encErr
 	}
 	return err
-}
-
-// encode encodes m into the stream.
-func (w *DeploymentStream) encode(m jsonmessage.JSONMessage) error {
-	return w.enc.Encode(m)
-}
-
-func newJSONMessageError(err error) jsonmessage.JSONMessage {
-	return jsonmessage.JSONMessage{
-		ErrorMessage: err.Error(),
-		Error: &jsonmessage.JSONError{
-			Message: err.Error(),
-		},
-	}
 }

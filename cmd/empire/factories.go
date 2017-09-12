@@ -23,12 +23,12 @@ import (
 	"github.com/remind101/empire/events/app"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/events/stdout"
-	"github.com/remind101/empire/extractor"
 	"github.com/remind101/empire/logs"
 	"github.com/remind101/empire/pkg/dockerauth"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/troposphere"
 	"github.com/remind101/empire/procfile"
+	"github.com/remind101/empire/registry"
 	"github.com/remind101/empire/scheduler/cloudformation"
 	"github.com/remind101/empire/scheduler/docker"
 	"github.com/remind101/empire/stats"
@@ -83,10 +83,15 @@ func newEmpire(db *empire.DB, c *Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
+	reg, err := newRegistry(docker, c)
+	if err != nil {
+		return nil, err
+	}
+
 	e := empire.New(db)
 	e.Scheduler = scheduler
 	e.EventStream = empire.AsyncEvents(streams)
-	e.ProcfileExtractor = extractor.PullAndExtract(docker)
+	e.ImageRegistry = reg
 	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
@@ -282,6 +287,26 @@ func newDockerClient(c *Context) (*dockerutil.Client, error) {
 	}
 
 	return dockerutil.NewClient(authProvider, host, certPath)
+}
+
+func newRegistry(client *dockerutil.Client, c *Context) (empire.ImageRegistry, error) {
+	r := registry.DockerDaemon(client)
+
+	digests := c.String(FlagDockerDigests)
+	switch digests {
+	case "prefer":
+		r.Digests = registry.DigestsPrefer
+	case "enforce":
+		log.Println("Image digests are enforced")
+		r.Digests = registry.DigestsOnly
+	case "disable":
+		log.Println("Image digests are disabled")
+		r.Digests = registry.DigestsDisable
+	default:
+		return nil, fmt.Errorf("invalid value for %s: %s", FlagDockerDigests, digests)
+	}
+
+	return r, nil
 }
 
 // LogStreamer =========================

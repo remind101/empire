@@ -2,7 +2,6 @@ package empiretest
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +20,7 @@ import (
 	"github.com/remind101/empire/logs"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
+	"github.com/remind101/empire/pkg/jsonmessage"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
@@ -54,7 +54,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 
 	e := empire.New(db)
 	e.Scheduler = empire.NewFakeScheduler()
-	e.ProcfileExtractor = ExtractProcfile(nil)
+	e.ImageRegistry = ExtractProcfile(nil, nil)
 	e.RunRecorder = logs.RecordTo(ioutil.Discard)
 
 	if err := e.Reset(); err != nil {
@@ -175,20 +175,39 @@ var defaultProcfile = procfile.ExtendedProcfile{
 	},
 }
 
-// Returns a function that can be used as a Procfile extract for Empire. It
-// writes a fake Docker pull to w, and extracts the given Procfile in yaml
-// format.
-func ExtractProcfile(pf procfile.Procfile) empire.ProcfileExtractor {
+// ImageRegistry is a fake implementation of the empire.ImageRegistry interface.
+type ImageRegistry struct {
+	procfile   procfile.Procfile
+	extractErr error
+}
+
+// ExtractProcfile returns an empire.ImageRegistry implementation that writes a
+// fake Docker pull to w, and extracts the given Procfile in yaml format when
+// ExtractProcfile is called.
+func ExtractProcfile(pf procfile.Procfile, err error) empire.ImageRegistry {
 	if pf == nil {
 		pf = defaultProcfile
 	}
 
-	return empire.ProcfileExtractorFunc(func(ctx context.Context, img image.Image, w io.Writer) ([]byte, error) {
-		p, err := procfile.Marshal(pf)
-		if err != nil {
-			return nil, err
-		}
+	return &ImageRegistry{
+		procfile:   pf,
+		extractErr: err,
+	}
+}
 
-		return p, dockerutil.FakePull(img, w)
-	})
+func (r *ImageRegistry) ExtractProcfile(ctx context.Context, img image.Image, w *jsonmessage.Stream) ([]byte, error) {
+	if err := r.extractErr; err != nil {
+		return nil, err
+	}
+
+	p, err := procfile.Marshal(r.procfile)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, dockerutil.FakePull(img, w)
+}
+
+func (r *ImageRegistry) Resolve(ctx context.Context, img image.Image, w *jsonmessage.Stream) (image.Image, error) {
+	return img, nil
 }
