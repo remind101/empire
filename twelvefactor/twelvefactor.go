@@ -67,6 +67,9 @@ type Process struct {
 	// Can be used to setup a CRON schedule to run this task periodically.
 	Schedule Schedule
 
+	// Whether the containers root file system should be read only.
+	ReadonlyRootFilesystem bool
+
 	// Any ECS specific configuration.
 	ECS *procfile.ECS
 

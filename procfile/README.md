@@ -97,3 +97,12 @@ ecs:
 ```
 
 See http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement.html for details.
+
+
+**ReadOnly**
+
+Identical to the `--read-only` flag of `docker run`, this will mount the containers root filesystem as readonly, which can have various performance/security benefits.
+
+```yaml
+read_only: true
+```

@@ -775,16 +775,17 @@ func (t *EmpireTemplate) ContainerDefinition(app *twelvefactor.Manifest, p *twel
 	}
 
 	return &ecs.ContainerDefinition{
-		Name:             aws.String(p.Type),
-		Cpu:              aws.Int64(int64(p.CPUShares)),
-		Command:          command,
-		Image:            aws.String(p.Image.String()),
-		Essential:        aws.Bool(true),
-		Memory:           aws.Int64(int64(p.Memory / bytesize.MB)),
-		Environment:      sortedEnvironment(twelvefactor.Env(app, p)),
-		LogConfiguration: t.LogConfiguration,
-		DockerLabels:     labels,
-		Ulimits:          ulimits,
+		Name:                   aws.String(p.Type),
+		Cpu:                    aws.Int64(int64(p.CPUShares)),
+		Command:                command,
+		Image:                  aws.String(p.Image.String()),
+		Essential:              aws.Bool(true),
+		Memory:                 aws.Int64(int64(p.Memory / bytesize.MB)),
+		Environment:            sortedEnvironment(twelvefactor.Env(app, p)),
+		LogConfiguration:       t.LogConfiguration,
+		DockerLabels:           labels,
+		Ulimits:                ulimits,
+		ReadonlyRootFilesystem: aws.Bool(p.ReadonlyRootFilesystem),
 	}
 }
 

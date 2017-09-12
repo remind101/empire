@@ -32,6 +32,7 @@ type Process struct {
 	Ports       []Port            `yaml:"ports,omitempty"`
 	Environment map[string]string `yaml:"environment,omitempty"`
 	ECS         *ECS              `yaml:"ecs,omitempty"`
+	ReadOnly    bool              `yaml:"read_only,omitempty"`
 }
 
 // ECS specific options.

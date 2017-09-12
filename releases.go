@@ -379,6 +379,7 @@ func newSchedulerProcess(release *Release, name string, p Process) (*twelvefacto
 		Exposure:  exposure,
 		Schedule:  processSchedule(name, p),
 		ECS:       p.ECS,
+		ReadonlyRootFilesystem: p.ReadOnly,
 	}, nil
 }
 

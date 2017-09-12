@@ -85,6 +85,9 @@ type Process struct {
 	// The amount of CPU share to give.
 	CPUShare constraints.CPUShare `json:"CPUShare,omitempty"`
 
+	// Whether the containers root filesystem is read only.
+	ReadOnly bool `json:"ReadOnly,omitempty"`
+
 	// The allow number of unix processes within the container.
 	Nproc constraints.Nproc `json:"Nproc,omitempty"`
 

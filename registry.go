@@ -120,6 +120,7 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 			Ports:       ports,
 			Environment: process.Environment,
 			ECS:         process.ECS,
+			ReadOnly:    process.ReadOnly,
 		}
 	}
 
