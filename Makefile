@@ -1,7 +1,7 @@
 .PHONY: build test bootstrap
 
 REPO = remind101/empire
-TYPE = patch
+TYPE ?= patch
 ARTIFACTS ?= build
 
 cmds: build/empire build/emp
