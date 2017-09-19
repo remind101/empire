@@ -1,6 +1,6 @@
 # Changelog
 
-## HEAD
+## 0.13.0
 
 **Features**
 
