@@ -17,30 +17,25 @@ workflows:
               only: master
 
 jobs:
-  cloudformation_template:
-    docker:
-      - image: circleci/python:2.7
-        environment:
-          AWS_REGION: us-east-1
-
-    steps:
-      - checkout
-      - run:
-          name: Install AWS cli
-          command: sudo pip install awscli
-      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
   build:
     <<: *defaults
 
     docker:
       - image: circleci/golang:1.7
+        environment:
+          ARTIFACTS: /tmp/artifacts
 
     steps:
       - checkout
+      - run: mkdir -p /tmp/artifacts
       - run:
           name: Install System Dependencies
           command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
       - run: make cmds
+      - run: make $ARTIFACTS/all
+      - store_artifacts:
+          path: /tmp/artifacts
+
   test:
     <<: *defaults
 
@@ -62,6 +57,7 @@ jobs:
           name: Wait for db
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: make test
+
   vet:
     <<: *defaults
 
@@ -80,3 +76,16 @@ jobs:
       - setup_remote_docker
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: docker-build
+
+  cloudformation_template:
+    docker:
+      - image: circleci/python:2.7
+        environment:
+          AWS_REGION: us-east-1
+
+    steps:
+      - checkout
+      - run:
+          name: Install AWS cli
+          command: sudo pip install awscli
+      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
