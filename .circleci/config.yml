@@ -15,20 +15,9 @@ workflows:
           filters:
             branches:
               only: master
+      - release
 
 jobs:
-  cloudformation_template:
-    docker:
-      - image: circleci/python:2.7
-        environment:
-          AWS_REGION: us-east-1
-
-    steps:
-      - checkout
-      - run:
-          name: Install AWS cli
-          command: sudo pip install awscli
-      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
   build:
     <<: *defaults
 
@@ -80,3 +69,29 @@ jobs:
       - setup_remote_docker
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: docker-build
+
+  release:
+    <<: *defaults
+
+    docker:
+      - image: circleci/golang:1.7
+
+    steps:
+      - checkout
+      - run:
+          name: Install System Dependencies
+          command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
+      - run: make release
+
+  cloudformation_template:
+    docker:
+      - image: circleci/python:2.7
+        environment:
+          AWS_REGION: us-east-1
+
+    steps:
+      - checkout
+      - run:
+          name: Install AWS cli
+          command: sudo pip install awscli
+      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read

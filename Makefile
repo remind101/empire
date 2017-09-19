@@ -33,20 +33,13 @@ bump:
 	pip install --upgrade bumpversion
 	bumpversion ${TYPE}
 
-release: release/docker release/emp release/empire release/github
+release: release/emp release/empire release/github
 
-release/github::
-	./bin/release $(ARTIFACTS) v$(shell cat VERSION)
-
-release/docker::
-	# Wait for the `master` branch to build on CircleCI before running this. We'll
-	# pull that image and tag it with the new version.
-	docker pull ${REPO}:${CIRCLE_SHA1}
-	docker tag ${REPO}:${CIRCLE_SHA1} ${REPO}:$(shell cat VERSION)
-	docker push ${REPO}:$(shell cat VERSION)
+release/github:
+	./bin/release $(shell ls $(ARTIFACTS))
 
 release/emp: $(ARTIFACTS)/emp-Linux-x86_64 $(ARTIFACTS)/emp-Darwin-x86_64
-release/empire: $(ARTIFACTS)/empire-Linux-x86_64 $(ARTIFACTS)/empire-Darwin-x86_64
+release/empire: $(ARTIFACTS)/empire-Linux-x86_64
 
 $(ARTIFACTS)/emp-Linux-x86_64:
 	env GOOS=linux go build -o $@ ./cmd/emp
@@ -55,5 +48,3 @@ $(ARTIFACTS)/emp-Darwin-x86_64:
 
 $(ARTIFACTS)/empire-Linux-x86_64:
 	env GOOS=linux go build -o $@ ./cmd/empire
-$(ARTIFACTS)/empire-Darwin-x86_64:
-	env GOOS=darwin go build -o $@ ./cmd/empire
