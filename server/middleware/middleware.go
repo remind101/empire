@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/inconshreveable/log15"
+	"github.com/remind101/empire/internal/realip"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
 )
@@ -31,6 +32,8 @@ func LogRequests(h http.Handler) http.Handler {
 		logger.Info(ctx, "request.start",
 			"method", r.Method,
 			"path", r.URL.Path,
+			"user_agent", r.Header.Get("User-Agent"),
+			"remote_ip", realip.RealIP(r),
 		)
 
 		h.ServeHTTP(w, r)
