@@ -14,12 +14,15 @@ import (
 // * Log requests
 // * Recover from panics.
 // * Add the request id to the context.
-func Common(h http.Handler) http.Handler {
+func Common(h http.Handler, r *realip.Resolver) http.Handler {
 	// Log requests to the embedded logger.
 	h = LogRequests(h)
 
 	// Prefix log messages with the request id.
 	h = PrefixRequestID(h)
+
+	// Parse out the real ip address of the request.
+	h = realip.Middleware(h, r)
 
 	// Add information about the request to reported errors.
 	return WithRequest(h)

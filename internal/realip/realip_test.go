@@ -1,6 +1,7 @@
 package realip
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -66,21 +67,30 @@ func TestRealIP(t *testing.T) {
 	anotherRemoteAddr := "119.14.55.11"
 	localAddr := "127.0.0.0"
 
+	trustAll := &Resolver{
+		XRealIp:       true,
+		XForwardedFor: true,
+	}
+
 	testData := []struct {
 		expected string
 		request  *http.Request
+		resolver *Resolver
 	}{
-		{remoteAddr, newRequest(remoteAddr, "", "")}, // no header
-		{remoteAddr, newRequest("", "", remoteAddr)}, // X-Forwarded-For: remoteAddr
-		{remoteAddr, newRequest("", remoteAddr, "")}, // X-RealIP: remoteAddr
+		{remoteAddr, newRequest(remoteAddr, "", ""), trustAll},              // no header
+		{remoteAddr, newRequest("", "", remoteAddr), trustAll},              // X-Forwarded-For: remoteAddr
+		{remoteAddr, newRequest("", remoteAddr, ""), trustAll},              // X-RealIP: remoteAddr
+		{localAddr, newRequest(localAddr, remoteAddr, ""), DefaultResolver}, // X-RealIP: remoteAddr (untrusted)
 
 		// X-Forwarded-For: localAddr, remoteAddr, anotherRemoteAddr
-		{remoteAddr, newRequest("", "", strings.Join([]string{localAddr, remoteAddr, anotherRemoteAddr}, ", "))},
+		{anotherRemoteAddr, newRequest("", "", strings.Join([]string{localAddr, remoteAddr, anotherRemoteAddr, localAddr}, ", ")), trustAll},
 	}
 
-	for _, v := range testData {
-		if actual := RealIP(v.request); v.expected != actual {
-			t.Errorf("expected %s but get %s", v.expected, actual)
-		}
+	for i, v := range testData {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			if actual := v.resolver.RealIP(v.request); v.expected != actual {
+				t.Errorf("expected %s but got %s", v.expected, actual)
+			}
+		})
 	}
 }
