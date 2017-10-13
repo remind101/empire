@@ -927,6 +927,10 @@
               {
                 "Name": "EMPIRE_X_SHOW_ATTACHED",
                 "Value": "true"
+              },
+              {
+                "Name": "EMPIRE_SERVER_REAL_IP",
+                "Value": "X-Forwarded-For"
               }
             ],
             "Command": ["server", "-automigrate=true"],

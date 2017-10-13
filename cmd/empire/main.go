@@ -29,6 +29,7 @@ const (
 
 	FlagServerAuth              = "server.auth"
 	FlagServerSessionExpiration = "server.session.expiration"
+	FlagServerRealIp            = "server.realip"
 
 	FlagSAMLMetadata       = "saml.metadata"
 	FlagSAMLKey            = "saml.key"
@@ -134,6 +135,12 @@ var Commands = []cli.Command{
 				Value:  0,
 				Usage:  "The maximum amount of time that sessions and access tokens exist for. For security, it's a good idea to set this to a low value, like `24h`. Refer to the ParseDuration docs for details on acceptable values (https://golang.org/pkg/time/#ParseDuration). By default, sessions do not expire.",
 				EnvVar: "EMPIRE_SERVER_SESSION_EXPIRATION",
+			},
+			cli.StringSliceFlag{
+				Name:   FlagServerRealIp,
+				Value:  &cli.StringSlice{},
+				Usage:  "Determines the headers that can be trusted to determine the real ip. By default, no headers are trusted and the ip is extracted from the remote address. If you're using ELB, you should set this to X-Forwarded-For. If you're using something like nginx + real_ip module, you can set this to X-Real-Ip.",
+				EnvVar: "EMPIRE_SERVER_REAL_IP",
 			},
 			cli.StringFlag{
 				Name:   FlagSAMLMetadata,

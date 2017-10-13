@@ -2,12 +2,15 @@ package heroku
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/internal/realip"
 	"github.com/remind101/empire/server/auth"
+	"github.com/remind101/empire/stats"
 	"github.com/remind101/pkg/logger"
 	"github.com/remind101/pkg/reporter"
 	"golang.org/x/net/context"
@@ -64,6 +67,8 @@ func (s *Server) Authenticate(r *http.Request, strategies ...string) (context.Co
 	otp := r.Header.Get(HeaderTwoFactor)
 	ctx, err := auther.Authenticate(ctx, username, password, otp, strategies...)
 	if err != nil {
+		instrumentAuthenticationError(r, username, err)
+
 		switch err {
 		case auth.ErrTwoFactor:
 			return nil, ErrTwoFactor
@@ -93,6 +98,38 @@ func (s *Server) Authenticate(r *http.Request, strategies ...string) (context.Co
 	reporter.AddContext(ctx, "user", session.User.Name)
 
 	return ctx, nil
+}
+
+// Called when a request fails authentication/authorization checks, which logs
+// and increments metrics. Can be useful for alerting on.
+func instrumentAuthenticationError(r *http.Request, username string, err error) {
+	ctx := r.Context()
+
+	remoteIP := realip.RealIP(r)
+
+	logger.Info(ctx,
+		"authentication.failure",
+		"username", username,
+		"remote_ip", remoteIP,
+		"err", err,
+	)
+
+	var reason string
+	switch err {
+	case auth.ErrTwoFactor:
+		reason = "two_factor"
+	case auth.ErrForbidden:
+		reason = "forbidden"
+	default:
+		reason = "error"
+	}
+
+	tags := []string{
+		fmt.Sprintf("username:%s", username),
+		fmt.Sprintf("remote_ip:%s", remoteIP),
+		fmt.Sprintf("reason:%s", reason),
+	}
+	stats.Inc(ctx, "authentication.failure", 1, 1.0, tags)
 }
 
 // accessTokenAuthenticator is an Authenticator that uses empire JWT access tokens to

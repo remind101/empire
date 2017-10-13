@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/inconshreveable/log15"
+	"github.com/remind101/empire/internal/realip"
 	"github.com/remind101/pkg/httpx"
 	"github.com/remind101/pkg/logger"
 )
@@ -13,12 +14,15 @@ import (
 // * Log requests
 // * Recover from panics.
 // * Add the request id to the context.
-func Common(h http.Handler) http.Handler {
+func Common(h http.Handler, r *realip.Resolver) http.Handler {
 	// Log requests to the embedded logger.
 	h = LogRequests(h)
 
 	// Prefix log messages with the request id.
 	h = PrefixRequestID(h)
+
+	// Parse out the real ip address of the request.
+	h = realip.Middleware(h, r)
 
 	// Add information about the request to reported errors.
 	return WithRequest(h)
@@ -31,6 +35,8 @@ func LogRequests(h http.Handler) http.Handler {
 		logger.Info(ctx, "request.start",
 			"method", r.Method,
 			"path", r.URL.Path,
+			"user_agent", r.Header.Get("User-Agent"),
+			"remote_ip", realip.RealIP(r),
 		)
 
 		h.ServeHTTP(w, r)

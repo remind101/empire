@@ -11,6 +11,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/internal/realip"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	githubauth "github.com/remind101/empire/server/auth/github"
@@ -92,11 +93,25 @@ func newServer(c *Context, e *empire.Empire) http.Handler {
 		s.Heroku.Unauthorized = heroku.SAMLUnauthorized(c.String(FlagURL) + "/saml/login")
 	}
 
-	m := middleware.Common(s)
+	m := middleware.Common(s, realipResolver(c))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := c.embed(r.Context())
 		m.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func realipResolver(c *Context) *realip.Resolver {
+	r := &realip.Resolver{}
+	for _, header := range c.StringSlice(FlagServerRealIp) {
+		h := http.CanonicalHeaderKey(header)
+		switch h {
+		case "X-Real-Ip":
+			r.XRealIp = true
+		case "X-Forwarded-For":
+			r.XForwardedFor = true
+		}
+	}
+	return r
 }
 
 func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *Context) *cloudformation.CustomResourceProvisioner {
