@@ -80,36 +80,15 @@ func (r *DockerDaemonRegistry) ExtractProcfile(ctx context.Context, img image.Im
 
 func (r *DockerDaemonRegistry) Resolve(ctx context.Context, img image.Image, w *jsonmessage.Stream) (image.Image, error) {
 	if !r.noPull {
-		// From the Docker API docs:
-		//
-		//	Tag or digest. If empty when pulling an image, this
-		//	causes all tags for the given image to be pulled.
-		//
-		// So, we prefer the digest if it's provided.
-		tag := img.Digest
-		if tag == "" {
-			tag = img.Tag
+		pullOptions, err := dockerutil.PullImageOptions(img)
+		if err != nil {
+			return img, err
 		}
 
-		// If there's no tag or digest, error out. Providing an empty
-		// tag to DockerPull will pull all images, which we don't want.
-		if tag == "" {
-			return img, fmt.Errorf("no tag or digest provided")
-		}
+		pullOptions.OutputStream = w
+		pullOptions.RawJSONStream = true
 
-		if err := r.docker.PullImage(ctx, docker.PullImageOptions{
-			// Only required for Docker Engine 1.9 or 1.10 w/ Remote API < 1.21
-			// and Docker Engine < 1.9
-			// This parameter was removed in Docker Engine 1.11
-			//
-			// See https://goo.gl/9y9Bpx
-			Registry: img.Registry,
-
-			Repository:    img.Repository,
-			Tag:           tag,
-			OutputStream:  w,
-			RawJSONStream: true,
-		}); err != nil {
+		if err := r.docker.PullImage(ctx, pullOptions); err != nil {
 			return img, err
 		}
 	}
