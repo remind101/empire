@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1
+
+**Bugs**
+
+* [cmd/empire] Fixed a bug that caused `emp run` to pull multiple tags at once. [#1112](https://github.com/remind101/empire/pull/1112)
+
 ## 0.13.0
 
 **Features**
