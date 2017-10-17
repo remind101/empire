@@ -162,12 +162,13 @@ func (s *Scheduler) Run(ctx context.Context, app *twelvefactor.Manifest) error {
 		labels := twelvefactor.Labels(app, p)
 		labels[runLabel] = Attached
 
-		if err := s.docker.PullImage(ctx, docker.PullImageOptions{
-			Registry:     p.Image.Registry,
-			Repository:   p.Image.Repository,
-			Tag:          p.Image.Tag,
-			OutputStream: replaceNL(p.Stderr),
-		}); err != nil {
+		pullOptions, err := dockerutil.PullImageOptions(p.Image)
+		if err != nil {
+			return err
+		}
+		pullOptions.OutputStream = replaceNL(p.Stderr)
+
+		if err := s.docker.PullImage(ctx, pullOptions); err != nil {
 			return fmt.Errorf("error pulling image: %v", err)
 		}
 

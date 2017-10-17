@@ -10,6 +10,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPullImageOptions(t *testing.T) {
+	img, _ := image.Decode("remind101/acme-inc:latest")
+	options, err := PullImageOptions(img)
+	assert.NoError(t, err)
+	assert.Equal(t, "remind101/acme-inc", options.Repository)
+	assert.Equal(t, "", options.Registry)
+	assert.Equal(t, "latest", options.Tag)
+
+	img, _ = image.Decode("busybox:latest")
+	options, err = PullImageOptions(img)
+	assert.NoError(t, err)
+	assert.Equal(t, "busybox", options.Repository)
+	assert.Equal(t, "", options.Registry)
+	assert.Equal(t, "latest", options.Tag)
+
+	img, _ = image.Decode("quay.io/remind101/acme-inc:latest")
+	options, err = PullImageOptions(img)
+	assert.NoError(t, err)
+	assert.Equal(t, "remind101/acme-inc", options.Repository)
+	assert.Equal(t, "quay.io", options.Registry)
+	assert.Equal(t, "latest", options.Tag)
+
+	img, _ = image.Decode("busybox@sha256:7d3ce4e482101f0c484602dd6687c826bb8bef6295739088c58e84245845912e")
+	options, err = PullImageOptions(img)
+	assert.NoError(t, err)
+	assert.Equal(t, "busybox", options.Repository)
+	assert.Equal(t, "", options.Registry)
+	assert.Equal(t, "sha256:7d3ce4e482101f0c484602dd6687c826bb8bef6295739088c58e84245845912e", options.Tag)
+}
+
 func TestDecodeJSONMessageStream(t *testing.T) {
 	buf := new(bytes.Buffer)
 	w := DecodeJSONMessageStream(buf)

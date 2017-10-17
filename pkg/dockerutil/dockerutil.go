@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/remind101/empire/pkg/image"
 )
 
@@ -31,6 +32,41 @@ func FakePull(img image.Image, w io.Writer) error {
 	}
 
 	return nil
+}
+
+// PullImageOptions generates an appropriate docker.PullImageOptions to pull the
+// target image based on the idiosyncrasies of docker.
+func PullImageOptions(img image.Image) (docker.PullImageOptions, error) {
+	var options docker.PullImageOptions
+
+	// From the Docker API docs:
+	//
+	//	Tag or digest. If empty when pulling an image, this
+	//	causes all tags for the given image to be pulled.
+	//
+	// So, we prefer the digest if it's provided.
+	tag := img.Digest
+	if tag == "" {
+		tag = img.Tag
+	}
+
+	// If there's no tag or digest, error out. Providing an empty
+	// tag to DockerPull will pull all images, which we don't want.
+	if tag == "" {
+		return options, fmt.Errorf("no tag or digest provided")
+	}
+
+	options.Tag = tag
+	options.Repository = img.Repository
+
+	// Only required for Docker Engine 1.9 or 1.10 w/ Remote API < 1.21
+	// and Docker Engine < 1.9
+	// This parameter was removed in Docker Engine 1.11
+	//
+	// See https://goo.gl/9y9Bpx
+	options.Registry = img.Registry
+
+	return options, nil
 }
 
 // DecodeJSONMessageStream wraps an io.Writer to decode a jsonmessage stream into
