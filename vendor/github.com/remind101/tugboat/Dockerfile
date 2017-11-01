@@ -1,5 +1,5 @@
 FROM alpine:3.1
-MAINTAINER Eric Holmes <eric@remind101.com>
+LABEL maintainer="Eric Holmes <eric@remind101.com>"
 
 COPY ./ /go/src/github.com/remind101/tugboat
 COPY ./bin/build /build

@@ -1,5 +1,5 @@
 FROM golang:1.7.6
-MAINTAINER Eric Holmes <eric@remind101.com>
+LABEL maintainer="Eric Holmes <eric@remind101.com>"
 
 RUN apt-get update -yy && \
   apt-get install -yy git make curl libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
