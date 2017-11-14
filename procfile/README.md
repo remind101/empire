@@ -39,10 +39,10 @@ command: ./bin/web
 
 **Cron**
 
-When provided, signifies that the process is a scheduled process. The value should be a valid cron expression.
+When provided, signifies that the process is a scheduled process. The value should be a valid cron expression. See http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html for details on the cron syntax used in Procfiles.
 
 ```yaml
-cron: * * * * * * // Run once every minute
+cron: * * * * ? * // Run once every minute
 ```
 
 **Noservice**
