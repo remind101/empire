@@ -191,7 +191,7 @@ v54.scheduled-job.9b649d34-b4f5-4fb7-bfe2-889d80dbd3c9  1X  RUNNING  11s  "./bin
 v54.web.fd130482-675f-4611-a599-eb0da1879a10            1X  RUNNING   9m  "./bin/web"
 ```
 
-Refer to http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ScheduledEvents.html for details on the cron expression syntax.
+Refer to http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html for details on the cron expression syntax.
 
 ## Run only processes
 
