@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
 )

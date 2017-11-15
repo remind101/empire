@@ -8,7 +8,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/internal/realip"
