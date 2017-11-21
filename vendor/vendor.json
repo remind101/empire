@@ -337,11 +337,6 @@
 			"revisionTime": "2016-07-26T13:51:17Z"
 		},
 		{
-			"comment": "1.2.0-26-gf7ebb76",
-			"path": "github.com/codegangsta/cli",
-			"revision": "f7ebb761e83e21225d1d8954fde853bf8edd46c4"
-		},
-		{
 			"checksumSHA1": "1/QSJFe2AnSuG9vJJ96SB/ICppc=",
 			"path": "github.com/crewjam/errset",
 			"revision": "f78d65de925cf59a953184a376cbfe07cfe65e3d",
@@ -912,6 +907,12 @@
 			"path": "github.com/stvp/rollbar",
 			"revision": "6661f0a4cb6a4b080a91634d1d5cf3dfd52ffe54",
 			"revisionTime": "2017-05-04T23:46:45Z"
+		},
+		{
+			"checksumSHA1": "5S58pVVEL/NJvSY17z01u3+9eF8=",
+			"path": "github.com/urfave/cli",
+			"revision": "44cb242eeb4d76cc813fdc69ba5c4b224677e799",
+			"revisionTime": "2017-11-04T02:35:40Z"
 		},
 		{
 			"path": "golang.org/x/net/context",

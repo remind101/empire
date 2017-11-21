@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/internal/saml"
 	"github.com/remind101/empire/stats"
