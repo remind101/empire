@@ -59,9 +59,9 @@
     },
     "Scheduler": {
       "Type": "String",
-      "Default": "",
+      "Default": "cloudformation",
       "Description": "The scheduling backend to use to run applications. The default is to run applications with ECS.",
-      "AllowedValues": ["", "cloudformation"]
+      "AllowedValues": ["cloudformation"]
     },
     "AmiId" : {
       "Type": "AWS::EC2::Image::Id",
