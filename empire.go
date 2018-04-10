@@ -70,8 +70,9 @@ func (e *NoCertError) Error() string {
 // Empire provides the core public API for Empire. Refer to the package
 // documentation for details.
 type Empire struct {
-	DB *DB
-	db *gorm.DB
+	Storage Storage
+	DB      *DB
+	db      *gorm.DB
 
 	apps     *appsService
 	configs  *configsService
@@ -110,8 +111,9 @@ type Empire struct {
 }
 
 // New returns a new Empire instance.
-func New(db *DB) *Empire {
+func New(db *DB, storage Storage) *Empire {
 	e := &Empire{
+		Storage:      storage,
 		LogsStreamer: logsDisabled,
 		EventStream:  NullEventStream,
 
@@ -133,7 +135,7 @@ func New(db *DB) *Empire {
 
 // AppsFind finds the first app matching the query.
 func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
-	return appsFind(e.db, q)
+	return e.Storage.AppsFind(q)
 }
 
 // Apps returns all Apps.

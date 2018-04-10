@@ -25,6 +25,7 @@ import (
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	"github.com/remind101/empire/server/github"
+	dbstorage "github.com/remind101/empire/storage/db"
 	"github.com/remind101/pkg/reporter"
 )
 
@@ -52,7 +53,7 @@ func NewEmpire(t testing.TB) *empire.Empire {
 		db.Debug()
 	}
 
-	e := empire.New(db)
+	e := empire.New(db, dbstorage.New(db))
 	e.Scheduler = empire.NewFakeScheduler()
 	e.ImageRegistry = ExtractProcfile(nil, nil)
 	e.RunRecorder = logs.RecordTo(ioutil.Discard)
