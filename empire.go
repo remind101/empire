@@ -140,7 +140,7 @@ func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
 
 // Apps returns all Apps.
 func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
-	return apps(e.db, q)
+	return e.Storage.Apps(q)
 }
 
 func (e *Empire) requireMessages(m string) error {

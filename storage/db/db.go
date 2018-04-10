@@ -44,8 +44,25 @@ func (q AppsQuery) scope(db *gorm.DB) *gorm.DB {
 }
 
 func (s *Storage) AppsFind(q empire.AppsQuery) (*empire.App, error) {
+	return appsFind(s.db, AppsQuery(q))
+}
+
+func (s *Storage) Apps(q empire.AppsQuery) ([]*empire.App, error) {
+	return apps(s.db, AppsQuery(q))
+}
+
+// appsFind finds a single app given the scope.
+func appsFind(db *gorm.DB, scope scope) (*empire.App, error) {
 	var app empire.App
-	return &app, first(s.db, AppsQuery(q), &app)
+	return &app, first(db, scope, &app)
+}
+
+// apps finds all apps matching the scope.
+func apps(db *gorm.DB, scope scope) ([]*empire.App, error) {
+	var apps []*empire.App
+	// Default to ordering by name.
+	scope = composedScope{order("name"), scope}
+	return apps, find(db, scope, &apps)
 }
 
 // scope is an interface that scopes a gorm.DB. Scopes are used in
