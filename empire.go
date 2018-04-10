@@ -180,7 +180,7 @@ func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
 		return nil, err
 	}
 
-	a, err := appsCreate(e.db, &App{Name: opts.Name})
+	a, err := e.Storage.AppsCreate(&App{Name: opts.Name})
 	if err != nil {
 		return a, err
 	}
