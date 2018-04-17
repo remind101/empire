@@ -18,7 +18,8 @@ func TestConstraints_UnmarshalJSON(t *testing.T) {
 	}{
 		{"512:1KB", Constraints{512, 1024, 0}, nil},
 		{"512:1KB:nproc=512", Constraints{512, 1024, 512}, nil},
-		{"1025:1KB", Constraints{}, constraints.ErrInvalidCPUShare},
+		{"1025:1KB", Constraints{1025, 1024, 0}, nil},
+		{"0:1KB", Constraints{}, constraints.ErrInvalidCPUShare},
 
 		{"1024", Constraints{}, constraints.ErrInvalidConstraint},
 	}

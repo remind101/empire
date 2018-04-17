@@ -3,7 +3,7 @@
 //
 // <cpushare>:<memory limit>
 //
-// CPUShare can be any number between 2 and 1024. For more details on how the
+// CPUShare can be any number greater than 1. For more details on how the
 // --cpu-shares flag works in Docker/cgroups, see
 // https://docs.docker.com/reference/run/#cpu-share-constraint
 //
@@ -29,7 +29,7 @@ import (
 const ConstraintsSeparator = ":"
 
 var (
-	ErrInvalidCPUShare   = errors.New("CPUShare must be a value between 2 and 1024")
+	ErrInvalidCPUShare   = errors.New("CPUShare must be greater than 1")
 	ErrInvalidMemory     = errors.New("invalid memory format")
 	ErrInvalidConstraint = errors.New("invalid constraints format")
 )
@@ -42,7 +42,7 @@ type CPUShare int
 
 // NewCPUShare casts i to a CPUShare and ensures its validity.
 func NewCPUShare(i int) (CPUShare, error) {
-	if i < 2 || i > 1024 {
+	if i < 2 {
 		return 0, ErrInvalidCPUShare
 	}
 

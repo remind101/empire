@@ -13,7 +13,8 @@ func TestCPUShare_ParseCPUShare(t *testing.T) {
 		err error
 	}{
 		{"1024", 1024, nil},
-		{"1025", 0, ErrInvalidCPUShare},
+		{"1", 0, ErrInvalidCPUShare},
+		{"1025", 1025, nil},
 	}
 
 	for _, tt := range tests {
@@ -106,7 +107,8 @@ func TestConstraints_Parse(t *testing.T) {
 	}{
 		{"512:1KB", Constraints{512, 1024, 0}, nil},
 		{"512:1KB:nproc=512", Constraints{512, 1024, 512}, nil},
-		{"1025:1KB", Constraints{}, ErrInvalidCPUShare},
+		{"2048:1KB:nproc=512", Constraints{2048, 1024, 512}, nil},
+		{"0:1KB", Constraints{}, ErrInvalidCPUShare},
 
 		{"1024", Constraints{}, ErrInvalidConstraint},
 		{"1024:1KB:nproc", Constraints{}, ErrInvalidConstraint},
