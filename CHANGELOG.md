@@ -1,5 +1,11 @@
 # Changelog
 
+## HEAD
+
+**Improvements**
+
+* [cmd/empire] The internal upper bound constraint for CPU shares was removed. [#1124](https://github.com/remind101/empire/pull/1124)
+
 ## 0.13.1
 
 **Bugs**
