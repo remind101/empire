@@ -5,6 +5,7 @@
 **Bugs**
 
 * [cmd/empire] Fixed a bug that caused `emp run` to pull multiple tags at once. [#1112](https://github.com/remind101/empire/pull/1112)
+* [cmd/empire] Fixed a bug that caused `emp run` to lock up. [#1125](https://github.com/remind101/empire/pull/1125)
 
 ## 0.13.0
 
