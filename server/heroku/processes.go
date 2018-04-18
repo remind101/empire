@@ -3,13 +3,11 @@ package heroku
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 	"github.com/remind101/empire/pkg/hijack"
 	"github.com/remind101/empire/pkg/stdcopy"
-	streamhttp "github.com/remind101/empire/pkg/stream/http"
 	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/server/auth"
 )
@@ -111,8 +109,6 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 			Header:   header,
 		}
 		defer stream.Close()
-		// Prevent the ELB idle connection timeout to close the connection.
-		defer close(streamhttp.Heartbeat(stream, 10*time.Second))
 
 		opts.Stdin = stream
 
