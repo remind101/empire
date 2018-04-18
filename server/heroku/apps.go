@@ -16,9 +16,6 @@ func newApp(a *empire.App) *App {
 		Id:          a.ID,
 		Name:        a.Name,
 		Maintenance: a.Maintenance,
-		CreatedAt:   *a.CreatedAt,
-		Cert:        a.Certs["web"], // For backwards compatibility.
-		Certs:       a.Certs,
 	}
 }
 
@@ -111,7 +108,7 @@ func (h *Server) PostApps(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	a, err := h.Create(ctx, empire.CreateOpts{
+	release, err := h.Create(ctx, empire.CreateOpts{
 		User:    auth.UserFromContext(ctx),
 		Name:    form.Name,
 		Message: m,
@@ -121,7 +118,7 @@ func (h *Server) PostApps(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(201)
-	return Encode(w, newApp(a))
+	return Encode(w, newApp(release.App))
 }
 
 func (h *Server) PatchApp(w http.ResponseWriter, r *http.Request) error {
@@ -143,16 +140,6 @@ func (h *Server) PatchApp(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	// DEPRECATED: For backwards compatibility with older emp clients.
-	if form.Cert != nil {
-		if err := h.CertsAttach(ctx, empire.CertsAttachOpts{
-			App:  a,
-			Cert: *form.Cert,
-		}); err != nil {
-			return err
-		}
-	}
-
 	if form.Maintenance != nil {
 		if err := h.SetMaintenanceMode(ctx, empire.SetMaintenanceModeOpts{
 			User:        auth.UserFromContext(ctx),
@@ -170,8 +157,6 @@ func (h *Server) PatchApp(w http.ResponseWriter, r *http.Request) error {
 func (h *Server) findApp(r *http.Request) (*empire.App, error) {
 	vars := Vars(r)
 	name := vars["app"]
-
-	a, err := h.AppsFind(empire.AppsQuery{Name: &name})
-	reporter.AddContext(r.Context(), "app", a.Name)
-	return a, err
+	reporter.AddContext(r.Context(), "app", name)
+	return h.AppsFind(empire.AppsQuery{Name: &name})
 }

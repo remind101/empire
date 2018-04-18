@@ -161,10 +161,6 @@ func (e ScaleEvent) String() string {
 			newConstraints.Memory = previousConstraints.Memory
 		}
 
-		if newConstraints.Nproc == 0 {
-			newConstraints.Nproc = previousConstraints.Nproc
-		}
-
 		msg += fmt.Sprintf(
 			"%s%s scaled `%s` on %s from %d(%s) to %d(%s)",
 			sep,

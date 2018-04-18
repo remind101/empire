@@ -7,11 +7,5 @@ services:
       dockerfile: Dockerfile.test
     entrypoint: make
     command: test
-    links:
-      - db:db
     volumes:
       - ".:/go/src/github.com/remind101/empire"
-    environment:
-      TEST_DATABASE_URL: "postgres://postgres:postgres@db/postgres?sslmode=disable"
-  db:
-    image: postgres

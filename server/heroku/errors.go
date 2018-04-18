@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 )
@@ -60,13 +59,11 @@ type ErrorResource struct {
 }
 
 func newError(err error) *ErrorResource {
-	if err == gorm.RecordNotFound {
-		return ErrNotFound
-	}
-
 	switch err := err.(type) {
 	case *ErrorResource:
 		return err
+	case *empire.NotFoundError:
+		return ErrNotFound
 	case *empire.MessageRequiredError:
 		return ErrMessageRequired
 	case *empire.ValidationError:

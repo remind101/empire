@@ -39,12 +39,6 @@ Status: Finished processing events for release ` + version + ` of acme-inc`,
 	}
 }
 
-// Run the tests with empiretest.Run, which will lock access to the database
-// since it can't be shared by parallel tests.
-func TestMain(m *testing.M) {
-	empiretest.Run(m)
-}
-
 var fakeNow = time.Date(2015, time.January, 1, 1, 1, 1, 1, time.UTC)
 
 // Stubs out time.Now in empire.
@@ -156,6 +150,7 @@ func (c *CLI) Start() {
 
 // RunCommands runs all of the given commands and verifies their output.
 func (c *CLI) RunCommands(t testing.TB, commands []Command) {
+
 	c.Start() // Ensure server is started.
 
 	for _, cmd := range commands {

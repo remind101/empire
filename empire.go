@@ -6,28 +6,27 @@ import (
 	"io"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/image"
 	"golang.org/x/net/context"
 )
 
-const (
-	// webProcessType is the process type we assume are web server processes.
-	webProcessType = "web"
-)
-
 // Various errors that may be returned.
 var (
-	ErrDomainInUse        = errors.New("Domain currently in use by another app.")
-	ErrDomainAlreadyAdded = errors.New("Domain already added to this app.")
-	ErrDomainNotFound     = errors.New("Domain could not be found.")
-	ErrUserName           = errors.New("Name is required")
-	ErrNoReleases         = errors.New("no releases")
+	ErrUserName = errors.New("Name is required")
 	// ErrInvalidName is used to indicate that the app name is not valid.
 	ErrInvalidName = &ValidationError{
 		errors.New("An app name must be alphanumeric and dashes only, 3-30 chars in length."),
 	}
 )
+
+// NotFoundError is returned when an entity doesn't exist.
+type NotFoundError struct {
+	Err error
+}
+
+func (e *NotFoundError) Error() string {
+	return e.Err.Error()
+}
 
 // AllowedCommands specifies what commands are allowed to be Run with Empire.
 type AllowedCommands int
@@ -70,21 +69,11 @@ func (e *NoCertError) Error() string {
 // Empire provides the core public API for Empire. Refer to the package
 // documentation for details.
 type Empire struct {
-	DB *DB
-	db *gorm.DB
+	storage Storage
 
-	apps     *appsService
-	configs  *configsService
-	domains  *domainsService
-	tasks    *tasksService
-	releases *releasesService
-	deployer *deployerService
-	runner   *runnerService
-	slugs    *slugsService
-	certs    *certsService
-
-	// Scheduler is the backend scheduler used to run applications.
-	Scheduler Scheduler
+	tasks  *tasksService
+	runner *runnerService
+	slugs  *slugsService
 
 	// LogsStreamer is the backend used to stream application logs.
 	LogsStreamer LogsStreamer
@@ -110,35 +99,27 @@ type Empire struct {
 }
 
 // New returns a new Empire instance.
-func New(db *DB) *Empire {
+func New(storage Storage) *Empire {
 	e := &Empire{
+		storage:      storage,
 		LogsStreamer: logsDisabled,
 		EventStream:  NullEventStream,
-
-		DB: db,
-		db: db.DB,
 	}
 
-	e.apps = &appsService{Empire: e}
-	e.configs = &configsService{Empire: e}
-	e.deployer = &deployerService{Empire: e}
-	e.domains = &domainsService{Empire: e}
 	e.slugs = &slugsService{Empire: e}
 	e.tasks = &tasksService{Empire: e}
 	e.runner = &runnerService{Empire: e}
-	e.releases = &releasesService{Empire: e}
-	e.certs = &certsService{Empire: e}
 	return e
 }
 
 // AppsFind finds the first app matching the query.
 func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
-	return appsFind(e.db, q)
+	return e.storage.AppsFind(q)
 }
 
 // Apps returns all Apps.
 func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
-	return apps(e.db, q)
+	return e.storage.Apps(q)
 }
 
 func (e *Empire) requireMessages(m string) error {
@@ -173,17 +154,23 @@ func (opts CreateOpts) Validate(e *Empire) error {
 }
 
 // Create creates a new app.
-func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*App, error) {
+func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
 
-	a, err := appsCreate(e.db, &App{Name: opts.Name})
-	if err != nil {
-		return a, err
+	app := &App{
+		Name:        opts.Name,
+		Environment: make(map[string]string),
 	}
 
-	return a, e.PublishEvent(opts.Event())
+	desc := fmt.Sprintf("Creating new application")
+	release, err := e.storage.ReleasesCreate(app, desc)
+	if err != nil {
+		return nil, err
+	}
+
+	return release, e.PublishEvent(opts.Event())
 }
 
 // DestroyOpts are options provided when destroying an application.
@@ -216,14 +203,7 @@ func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
 		return err
 	}
 
-	tx := e.db.Begin()
-
-	if err := e.apps.Destroy(ctx, tx, opts.App); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit().Error; err != nil {
+	if err := e.storage.AppsDestroy(opts.App); err != nil {
 		return err
 	}
 
@@ -231,20 +211,8 @@ func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
 }
 
 // Config returns the current Config for a given app.
-func (e *Empire) Config(app *App) (*Config, error) {
-	tx := e.db.Begin()
-
-	c, err := e.configs.Config(tx, app)
-	if err != nil {
-		tx.Rollback()
-		return c, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return c, err
-	}
-
-	return c, nil
+func (e *Empire) Config(app *App) (map[string]string, error) {
+	return app.Environment, nil
 }
 
 type SetMaintenanceModeOpts struct {
@@ -283,27 +251,10 @@ func (e *Empire) SetMaintenanceMode(ctx context.Context, opts SetMaintenanceMode
 		return err
 	}
 
-	tx := e.db.Begin()
-
 	app := opts.App
-
 	app.Maintenance = opts.Maintenance
 
-	if err := appsUpdate(tx, app); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := e.releases.ReleaseApp(ctx, tx, app, nil); err != nil {
-		tx.Rollback()
-		if err == ErrNoReleases {
-			return nil
-		}
-
-		return err
-	}
-
-	if err := tx.Commit().Error; err != nil {
+	if _, err := e.storage.ReleasesCreate(app, "Enabling maintenance mode"); err != nil {
 		return err
 	}
 
@@ -347,67 +298,20 @@ func (opts SetOpts) Validate(e *Empire) error {
 // Set applies the new config vars to the apps current Config, returning the new
 // Config. If the app has a running release, a new release will be created and
 // run.
-func (e *Empire) Set(ctx context.Context, opts SetOpts) (*Config, error) {
+func (e *Empire) Set(ctx context.Context, opts SetOpts) (map[string]string, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
 
-	tx := e.db.Begin()
+	app, vars := opts.App, opts.Vars
 
-	c, err := e.configs.Set(ctx, tx, opts)
-	if err != nil {
-		tx.Rollback()
-		return c, err
+	app.Environment = newConfig(app.Environment, vars)
+
+	if _, err := e.storage.ReleasesCreate(app, "Setting environment variables"); err != nil {
+		return nil, err
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		return c, err
-	}
-
-	return c, e.PublishEvent(opts.Event())
-}
-
-// DomainsFind returns the first domain matching the query.
-func (e *Empire) DomainsFind(q DomainsQuery) (*Domain, error) {
-	return domainsFind(e.db, q)
-}
-
-// Domains returns all domains matching the query.
-func (e *Empire) Domains(q DomainsQuery) ([]*Domain, error) {
-	return domains(e.db, q)
-}
-
-// DomainsCreate adds a new Domain for an App.
-func (e *Empire) DomainsCreate(ctx context.Context, domain *Domain) (*Domain, error) {
-	tx := e.db.Begin()
-
-	d, err := e.domains.DomainsCreate(ctx, tx, domain)
-	if err != nil {
-		tx.Rollback()
-		return d, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return d, err
-	}
-
-	return d, nil
-}
-
-// DomainsDestroy removes a Domain for an App.
-func (e *Empire) DomainsDestroy(ctx context.Context, domain *Domain) error {
-	tx := e.db.Begin()
-
-	if err := e.domains.DomainsDestroy(ctx, tx, domain); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-
-	return nil
+	return app.Environment, e.PublishEvent(opts.Event())
 }
 
 // Tasks returns the Tasks for the given app.
@@ -448,16 +352,7 @@ func (opts RestartOpts) Validate(e *Empire) error {
 // Restart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
-	if err := opts.Validate(e); err != nil {
-		return err
-	}
-
-	if err := e.apps.Restart(ctx, e.db, opts); err != nil {
-		return err
-	}
-
-	return e.PublishEvent(opts.Event())
-
+	return fmt.Errorf("`emp restart` is currently unsupported")
 }
 
 // RunOpts are options provided when running an attached/detached process.
@@ -465,7 +360,7 @@ type RunOpts struct {
 	// User performing this action.
 	User *User
 
-	// Related app.
+	// Related app to run.
 	App *App
 
 	// The command to run.
@@ -555,12 +450,12 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 
 // Releases returns all Releases for a given App.
 func (e *Empire) Releases(q ReleasesQuery) ([]*Release, error) {
-	return releases(e.db, q)
+	return e.storage.Releases(q)
 }
 
 // ReleasesFind returns the first releases for a given App.
 func (e *Empire) ReleasesFind(q ReleasesQuery) (*Release, error) {
-	return releasesFind(e.db, q)
+	return e.storage.ReleasesFind(q)
 }
 
 // RollbackOpts are options provided when rolling back to an old release.
@@ -599,19 +494,10 @@ func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, err
 		return nil, err
 	}
 
-	tx := e.db.Begin()
+	// TODO
+	return nil, errors.New("not implemented")
 
-	r, err := e.releases.Rollback(ctx, tx, opts)
-	if err != nil {
-		tx.Rollback()
-		return r, err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return r, err
-	}
-
-	return r, e.PublishEvent(opts.Event())
+	//return r, e.PublishEvent(opts.Event())
 }
 
 // DeployOpts represents options that can be passed when deploying to
@@ -660,17 +546,70 @@ func (opts DeployOpts) Validate(e *Empire) error {
 
 // Deploy deploys an image and streams the output to w.
 func (e *Empire) Deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
+	w := opts.Output
+
+	r, err := e.deploy(ctx, opts)
+	if err != nil {
+		return nil, w.Error(err)
+	}
+
+	if err := w.Status(fmt.Sprintf("Created new release v%d for %s", r.App.Version, r.App.Name)); err != nil {
+		return r, err
+	}
+
+	return r, w.Status(fmt.Sprintf("Finished processing events for release v%d of %s", r.App.Version, r.App.Name))
+}
+
+func (e *Empire) deploy(ctx context.Context, opts DeployOpts) (*Release, error) {
 	if err := opts.Validate(e); err != nil {
 		return nil, err
 	}
 
-	r, err := e.deployer.Deploy(ctx, opts)
+	app, img := opts.App, opts.Image
+
+	if app == nil {
+		var err error
+		name := appNameFromRepo(img.Repository)
+		app, err = e.AppsFind(AppsQuery{Name: &name})
+		if err != nil {
+			if err, ok := err.(*NotFoundError); !ok {
+				return nil, err
+			}
+			release, err := e.Create(ctx, CreateOpts{
+				User:    opts.User,
+				Message: fmt.Sprintf("Creating new app from deployment of %s", img),
+				Name:    name,
+			})
+			if err != nil {
+				return nil, err
+			}
+			app = release.App
+		}
+	}
+
+	slug, err := e.slugs.Create(ctx, img, opts.Output)
 	if err != nil {
-		return r, err
+		return nil, err
+	}
+
+	formation, err := slug.Formation()
+	if err != nil {
+		return nil, err
+	}
+
+	app.Image = &slug.Image
+	app.Formation = formation.Merge(app.Formation)
+
+	desc := fmt.Sprintf("Deploy %s", img.String())
+	desc = appendMessageToDescription(desc, opts.User, opts.Message)
+
+	r, err := e.storage.ReleasesCreate(app, desc)
+	if err != nil {
+		return nil, err
 	}
 
 	event := opts.Event()
-	event.Release = r.Version
+	event.Release = r.App.Version
 	event.Environment = e.Environment
 	// Deals with new app creation on first deploy
 	if event.App == "" && r.App != nil {
@@ -739,20 +678,45 @@ func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) 
 		return nil, err
 	}
 
-	tx := e.db.Begin()
+	app := opts.App
+	event := opts.Event()
 
-	ps, err := e.apps.Scale(ctx, tx, opts)
-	if err != nil {
-		tx.Rollback()
-		return ps, err
+	var ps []*Process
+	for i, up := range opts.Updates {
+		t, q, c := up.Process, up.Quantity, up.Constraints
+
+		p, ok := app.Formation[t]
+		if !ok {
+			return nil, &ValidationError{Err: fmt.Errorf("no %s process type in release", t)}
+		}
+
+		eventUpdate := event.Updates[i]
+		eventUpdate.PreviousQuantity = p.Quantity
+		eventUpdate.PreviousConstraints = p.Constraints()
+
+		// Update quantity for this process in the formation
+		p.Quantity = q
+		if c != nil {
+			p.SetConstraints(*c)
+		}
+
+		app.Formation[t] = p
+		ps = append(ps, &p)
 	}
 
-	return ps, tx.Commit().Error
+	// TODO
+	desc := fmt.Sprintf("Scaled processes")
+	_, err := e.storage.ReleasesCreate(app, desc)
+	if err != nil {
+		return nil, err
+	}
+
+	return ps, nil
 }
 
 // ListScale lists the current scale settings for a given App
 func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
-	return currentFormation(e.db, app)
+	return app.Formation, nil
 }
 
 // Streamlogs streams logs from an app.
@@ -764,38 +728,15 @@ func (e *Empire) StreamLogs(app *App, w io.Writer, duration time.Duration) error
 	return nil
 }
 
-type CertsAttachOpts struct {
-	// The certificate to attach.
-	Cert string
-	// The app to attach the cert to.
-	App *App
-
-	// An optional process to attach the cert to. If not provided, "web"
-	// will be used.
-	Process string
-}
-
-// CertsAttach attaches an SSL certificate to the app.
-func (e *Empire) CertsAttach(ctx context.Context, opts CertsAttachOpts) error {
-	tx := e.db.Begin()
-
-	if err := e.certs.CertsAttach(ctx, tx, opts); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
-}
-
 // Reset resets empire.
 func (e *Empire) Reset() error {
-	return e.DB.Reset()
+	return e.storage.Reset()
 }
 
 // IsHealthy returns true if Empire is healthy, which means it can connect to
 // the services it depends on.
 func (e *Empire) IsHealthy() error {
-	return e.DB.IsHealthy()
+	return e.storage.IsHealthy()
 }
 
 // ValidationError is returned when a model is not valid.

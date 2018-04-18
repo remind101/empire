@@ -3,7 +3,6 @@ package empire
 import (
 	"fmt"
 
-	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/procfile"
 	"golang.org/x/net/context"
@@ -11,9 +10,6 @@ import (
 
 // Slug represents a container image with the extracted ProcessType.
 type Slug struct {
-	// A unique uuid that identifies this slug.
-	ID string
-
 	// The Docker image that this slug is for.
 	Image image.Image
 
@@ -42,19 +38,14 @@ type slugsService struct {
 }
 
 // SlugsCreateByImage creates a Slug for the given image.
-func (s *slugsService) Create(ctx context.Context, db *gorm.DB, img image.Image, w *DeploymentStream) (*Slug, error) {
-	return slugsCreateByImage(ctx, db, s.ImageRegistry, img, w)
-}
-
-// slugsCreate inserts a Slug into the database.
-func slugsCreate(db *gorm.DB, slug *Slug) (*Slug, error) {
-	return slug, db.Create(slug).Error
+func (s *slugsService) Create(ctx context.Context, img image.Image, w *DeploymentStream) (*Slug, error) {
+	return slugsCreateByImage(ctx, s.ImageRegistry, img, w)
 }
 
 // SlugsCreateByImage first attempts to find a matching slug for the image. If
 // it's not found, it will fallback to extracting the process types using the
 // provided extractor, then create a slug.
-func slugsCreateByImage(ctx context.Context, db *gorm.DB, r ImageRegistry, img image.Image, w *DeploymentStream) (*Slug, error) {
+func slugsCreateByImage(ctx context.Context, r ImageRegistry, img image.Image, w *DeploymentStream) (*Slug, error) {
 	var (
 		slug Slug
 		err  error
@@ -70,5 +61,5 @@ func slugsCreateByImage(ctx context.Context, db *gorm.DB, r ImageRegistry, img i
 		return nil, fmt.Errorf("extracting Procfile from %s: %v", slug.Image, err)
 	}
 
-	return slugsCreate(db, &slug)
+	return &slug, nil
 }
