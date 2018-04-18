@@ -43,6 +43,21 @@ func (q AppsQuery) scope(db *gorm.DB) *gorm.DB {
 	return scope.scope(db)
 }
 
+func (s *Storage) Begin() empire.Storage {
+	// Make a shallow copy.
+	ss := *s
+	ss.db = s.db.Begin()
+	return &ss
+}
+
+func (s *Storage) Rollback() error {
+	return s.db.Rollback().Error
+}
+
+func (s *Storage) Commit() error {
+	return s.db.Commit().Error
+}
+
 func (s *Storage) AppsFind(q empire.AppsQuery) (*empire.App, error) {
 	return appsFind(s.db, AppsQuery(q))
 }
@@ -53,6 +68,10 @@ func (s *Storage) Apps(q empire.AppsQuery) ([]*empire.App, error) {
 
 func (s *Storage) AppsCreate(app *empire.App) (*empire.App, error) {
 	return appsCreate(s.db, app)
+}
+
+func (s *Storage) AppsDestroy(app *empire.App) error {
+	return appsDestroy(s.db, app)
 }
 
 // appsFind finds a single app given the scope.
@@ -72,6 +91,11 @@ func apps(db *gorm.DB, scope scope) ([]*empire.App, error) {
 // appsCreate inserts the app into the database.
 func appsCreate(db *gorm.DB, app *empire.App) (*empire.App, error) {
 	return app, db.Create(app).Error
+}
+
+// appsDestroy destroys an app.
+func appsDestroy(db *gorm.DB, app *empire.App) error {
+	return db.Delete(app).Error
 }
 
 // scope is an interface that scopes a gorm.DB. Scopes are used in

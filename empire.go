@@ -218,14 +218,14 @@ func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
 		return err
 	}
 
-	tx := e.db.Begin()
+	tx := e.Storage.Begin()
 
 	if err := e.apps.Destroy(ctx, tx, opts.App); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := tx.Commit().Error; err != nil {
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 

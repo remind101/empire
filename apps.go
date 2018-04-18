@@ -147,8 +147,8 @@ type appsService struct {
 }
 
 // Destroy destroys removes an app from the scheduler, then destroys it here.
-func (s *appsService) Destroy(ctx context.Context, db *gorm.DB, app *App) error {
-	if err := appsDestroy(db, app); err != nil {
+func (s *appsService) Destroy(ctx context.Context, db Storage, app *App) error {
+	if err := db.AppsDestroy(app); err != nil {
 		return err
 	}
 
