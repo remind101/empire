@@ -67,12 +67,6 @@ func (c *Constraints) UnmarshalJSON(b []byte) error {
 }
 
 func (c Constraints) String() string {
-	for n, constraint := range NamedConstraints {
-		if c == Constraints(constraint) {
-			return n
-		}
-	}
-
 	if c.Nproc == 0 {
 		return fmt.Sprintf("%d:%s", c.CPUShare, c.Memory)
 	} else {
