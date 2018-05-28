@@ -2,6 +2,7 @@ package heroku
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/auth"
@@ -20,6 +21,27 @@ func (h *Server) GetConfigs(w http.ResponseWriter, r *http.Request) error {
 
 	w.WriteHeader(200)
 	return Encode(w, c.Vars)
+}
+
+func (h *Server) GetConfigsByRelease(w http.ResponseWriter, r *http.Request) error {
+	a, err := h.findApp(r)
+	if err != nil {
+		return err
+	}
+
+	vars := Vars(r)
+	vers, err := strconv.Atoi(vars["version"])
+	if err != nil {
+		return err
+	}
+
+	rel, err := h.ReleasesFind(empire.ReleasesQuery{App: a, Version: &vers})
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(200)
+	return Encode(w, rel.Config.Vars)
 }
 
 func (h *Server) PatchConfigs(w http.ResponseWriter, r *http.Request) error {
