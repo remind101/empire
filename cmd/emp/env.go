@@ -38,7 +38,7 @@ func runEnv(cmd *Command, args []string) {
 
 var cmdGet = &Command{
 	Run:      runGet,
-	Usage:    "get <name>",
+	Usage:    "get <name> [--version=v123]",
 	NeedsApp: true,
 	Category: "config",
 	NumArgs:  1,
@@ -182,5 +182,6 @@ func getConfigInfo() (map[string]string, error) {
 	if version == "" {
 		return client.ConfigVarInfo(a)
 	}
-	return client.ConfigVarInfoByReleaseVersion(a, version)
+	ver := strings.TrimPrefix(version, "v")
+	return client.ConfigVarInfoByReleaseVersion(a, ver)
 }
