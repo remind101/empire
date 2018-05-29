@@ -117,6 +117,40 @@ func TestConfigConsistency(t *testing.T) {
 	})
 }
 
+func TestConfigByRelease(t *testing.T) {
+	run(t, []Command{
+		DeployCommand("latest", "v1"),
+		{
+			"set FOO=foo1 -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"env -a acme-inc",
+			"FOO=foo1",
+		},
+		{
+			"set FOO=foo2 -a acme-inc",
+			"Set env vars and restarted acme-inc.",
+		},
+		{
+			"env -a acme-inc",
+			"FOO=foo2",
+		},
+		{
+			"env -a acme-inc -v v1",
+			"",
+		},
+		{
+			"env -a acme-inc -v v2",
+			"FOO=foo1",
+		},
+		{
+			"env -a acme-inc -v v3",
+			"FOO=foo2",
+		},
+	})
+}
+
 func TestEnvConfig(t *testing.T) {
 	f, err := ioutil.TempFile(os.TempDir(), "acme-inc.env")
 	if err != nil {

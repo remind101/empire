@@ -10,9 +10,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var version string
+
 var cmdEnv = &Command{
 	Run:      runEnv,
-	Usage:    "env",
+	Usage:    "env [--version=v123]",
 	NeedsApp: true,
 	Category: "config",
 	NumArgs:  0,
@@ -22,7 +24,7 @@ var cmdEnv = &Command{
 
 func runEnv(cmd *Command, args []string) {
 	cmd.AssertNumArgsCorrect(args)
-	config, err := client.ConfigVarInfo(mustApp())
+	config, err := getConfigInfo()
 	must(err)
 	var configKeys []string
 	for k := range config {
@@ -36,7 +38,7 @@ func runEnv(cmd *Command, args []string) {
 
 var cmdGet = &Command{
 	Run:      runGet,
-	Usage:    "get <name>",
+	Usage:    "get <name> [--version=v123]",
 	NeedsApp: true,
 	Category: "config",
 	NumArgs:  1,
@@ -53,7 +55,7 @@ Example:
 
 func runGet(cmd *Command, args []string) {
 	cmd.AssertNumArgsCorrect(args)
-	config, err := client.ConfigVarInfo(mustApp())
+	config, err := getConfigInfo()
 	must(err)
 	value, found := config[args[0]]
 	if !found {
@@ -168,4 +170,18 @@ func runEnvLoad(cmd *Command, args []string) {
 	_, err = client.ConfigVarUpdate(appname, config, message)
 	must(err)
 	log.Printf("Updated env vars from %s and restarted %s.", args[0], appname)
+}
+
+func init() {
+	cmdEnv.Flag.StringVarP(&version, "version", "v", "", "view configs at this release version")
+	cmdGet.Flag.StringVarP(&version, "version", "v", "", "view config at this release version")
+}
+
+func getConfigInfo() (map[string]string, error) {
+	a := mustApp()
+	if version == "" {
+		return client.ConfigVarInfo(a)
+	}
+	ver := strings.TrimPrefix(version, "v")
+	return client.ConfigVarInfoByReleaseVersion(a, ver)
 }

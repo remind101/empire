@@ -78,8 +78,9 @@ func New(e *empire.Empire) *Server {
 	r.handle("POST", "/apps/{app}/releases", r.PostReleases)        // hk rollback
 
 	// Configs
-	r.handle("GET", "/apps/{app}/config-vars", r.GetConfigs)     // hk env, hk get
-	r.handle("PATCH", "/apps/{app}/config-vars", r.PatchConfigs) // hk set, hk unset
+	r.handle("GET", "/apps/{app}/config-vars", r.GetConfigs)                    // hk env, hk get
+	r.handle("GET", "/apps/{app}/config-vars/{version}", r.GetConfigsByRelease) // hk env v1, hk get v1
+	r.handle("PATCH", "/apps/{app}/config-vars", r.PatchConfigs)                // hk set, hk unset
 
 	// Processes
 	r.handle("GET", "/apps/{app}/dynos", r.GetProcesses)                     // hk dynos
