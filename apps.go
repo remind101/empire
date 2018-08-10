@@ -86,6 +86,9 @@ type App struct {
 	// The time that this application was created.
 	CreatedAt *time.Time
 
+	// If this is non-nil, the app was deleted at this time.
+	DeletedAt *time.Time
+
 	// Maintenance defines whether the app is in maintenance mode or not.
 	Maintenance bool
 }
@@ -125,7 +128,7 @@ type AppsQuery struct {
 
 // scope implements the scope interface.
 func (q AppsQuery) scope(db *gorm.DB) *gorm.DB {
-	var scope composedScope
+	scope := composedScope{isNull("deleted_at")}
 
 	if q.ID != nil {
 		scope = append(scope, idEquals(*q.ID))
@@ -271,5 +274,7 @@ func appsUpdate(db *gorm.DB, app *App) error {
 
 // appsDestroy destroys an app.
 func appsDestroy(db *gorm.DB, app *App) error {
-	return db.Delete(app).Error
+	now := timex.Now()
+	app.DeletedAt = &now
+	return appsUpdate(db, app)
 }

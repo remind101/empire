@@ -27,11 +27,11 @@ func TestAppsQuery(t *testing.T) {
 	repo := "remind101/acme-inc"
 
 	tests := scopeTests{
-		{AppsQuery{}, "", []interface{}{}},
-		{AppsQuery{ID: &id}, "WHERE (id = $1)", []interface{}{id}},
-		{AppsQuery{Name: &name}, "WHERE (name = $1)", []interface{}{name}},
-		{AppsQuery{Repo: &repo}, "WHERE (repo = $1)", []interface{}{repo}},
-		{AppsQuery{Name: &name, Repo: &repo}, "WHERE (name = $1) AND (repo = $2)", []interface{}{name, repo}},
+		{AppsQuery{}, "WHERE (deleted_at is null)", []interface{}{}},
+		{AppsQuery{ID: &id}, "WHERE (deleted_at is null) AND (id = $1)", []interface{}{id}},
+		{AppsQuery{Name: &name}, "WHERE (deleted_at is null) AND (name = $1)", []interface{}{name}},
+		{AppsQuery{Repo: &repo}, "WHERE (deleted_at is null) AND (repo = $1)", []interface{}{repo}},
+		{AppsQuery{Name: &name, Repo: &repo}, "WHERE (deleted_at is null) AND (name = $1) AND (repo = $2)", []interface{}{name, repo}},
 	}
 
 	tests.Run(t)

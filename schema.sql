@@ -73,7 +73,8 @@ CREATE TABLE apps (
     repo text,
     exposure text DEFAULT 'private'::text NOT NULL,
     certs json,
-    maintenance boolean DEFAULT false NOT NULL
+    maintenance boolean DEFAULT false NOT NULL,
+    deleted_at timestamp without time zone
 );
 
 
@@ -266,13 +267,6 @@ ALTER TABLE ONLY slugs
 
 
 --
--- Name: index_apps_on_name; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name);
-
-
---
 -- Name: index_certificates_on_app_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -319,6 +313,13 @@ CREATE UNIQUE INDEX index_stacks_on_app_id ON stacks USING btree (app_id);
 --
 
 CREATE UNIQUE INDEX index_stacks_on_stack_name ON stacks USING btree (stack_name);
+
+
+--
+-- Name: unique_app_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_app_name ON apps USING btree (name) WHERE (deleted_at IS NULL);
 
 
 --
