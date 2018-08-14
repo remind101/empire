@@ -196,6 +196,12 @@ func fieldEquals(field string, v interface{}) scope {
 	})
 }
 
+func isNull(field string) scope {
+	return scopeFunc(func(db *gorm.DB) *gorm.DB {
+		return db.Where(fmt.Sprintf("%s is null", field))
+	})
+}
+
 // preload returns a scope that preloads the associations.
 func preload(associations ...string) scope {
 	var scope composedScope

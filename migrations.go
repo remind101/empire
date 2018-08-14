@@ -679,4 +679,20 @@ ALTER TABLE apps ADD COLUMN exposure TEXT NOT NULL default 'private'`,
 			`ALTER TABLE apps DROP COLUMN maintenance`,
 		}),
 	},
+
+	// Enables support for soft deletion.
+	{
+
+		ID: 21,
+		Up: migrate.Queries([]string{
+			`ALTER TABLE apps ADD COLUMN deleted_at timestamp without time zone`,
+			`CREATE UNIQUE INDEX unique_app_name ON apps USING btree (name) WHERE deleted_at is null`,
+			`DROP INDEX index_apps_on_name`,
+		}),
+		Down: migrate.Queries([]string{
+			`DROP INDEX unique_app_name`,
+			`CREATE UNIQUE INDEX index_apps_on_name ON apps USING btree (name)`,
+			`ALTER TABLE apps DROP COLUMN deleted_at`,
+		}),
+	},
 }

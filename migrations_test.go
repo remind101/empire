@@ -1,6 +1,8 @@
 package empire
 
 import (
+	"os"
+	"os/exec"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -29,10 +31,20 @@ func TestMigrations(t *testing.T) {
 
 	err = db.migrator.Exec(migrate.Up, migrations...)
 	assert.NoError(t, err)
+
+	f, err := os.Create("schema.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	cmd := exec.Command("pg_dump", "--schema-only", "--no-owner", "--no-acl", *dbtest.DatabaseURL)
+	cmd.Stdout = f
+	cmd.Stderr = os.Stderr
+	assert.NoError(t, cmd.Run())
 }
 
 func TestLatestSchema(t *testing.T) {
-	assert.Equal(t, 20, DefaultSchema.latestSchema())
+	assert.Equal(t, 21, DefaultSchema.latestSchema())
 }
 
 func TestNoDuplicateMigrations(t *testing.T) {
