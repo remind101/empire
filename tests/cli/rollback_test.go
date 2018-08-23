@@ -2,17 +2,22 @@ package cli_test
 
 import "testing"
 
-func TestRollback(t *testing.T) {
+// TODO
+func testRollback(t *testing.T) {
 	run(t, []Command{
-		DeployCommand("latest", "v1"),
+		{
+			"create acme-inc",
+			"Created acme-inc.",
+		},
 		DeployCommand("latest", "v2"),
+		DeployCommand("latest", "v3"),
 		{
 			"set FOO=bar -a acme-inc",
 			"Set env vars and restarted acme-inc.",
 		},
 		{
-			"rollback v1 -a acme-inc",
-			"Rolled back acme-inc to v1 as v4.",
+			"rollback v2 -a acme-inc",
+			"Rolled back acme-inc to v2 as v5.",
 		},
 		{
 			"releases -a acme-inc",

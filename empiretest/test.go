@@ -1,6 +1,8 @@
 package empiretest
 
 import (
+	"container/list"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,11 +14,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/ejholmes/flock"
 	"github.com/remind101/empire"
-	"github.com/remind101/empire/dbtest"
 	"github.com/remind101/empire/logs"
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
@@ -28,6 +26,88 @@ import (
 	"github.com/remind101/pkg/reporter"
 )
 
+// Storage is a fake in memory implementation of the empire.Storage interface.
+type Storage struct {
+	// Maps an app ID to a list of releases of the application.
+	apps map[string]*list.List
+}
+
+func newStorage() *Storage {
+	s := new(Storage)
+	s.Reset()
+	return s
+}
+
+func (s *Storage) AppsFind(q empire.AppsQuery) (*empire.App, error) {
+	releases, ok := s.apps[*q.Name]
+	if !ok {
+		return nil, &empire.NotFoundError{Err: errors.New("not found")}
+	}
+	release := releases.Front().Value.(*empire.Release)
+	return release.App, nil
+}
+
+func (s *Storage) Apps(q empire.AppsQuery) ([]*empire.App, error) {
+	var apps []*empire.App
+	for _, releases := range s.apps {
+		release := releases.Front().Value.(*empire.Release)
+		apps = append(apps, release.App)
+	}
+	return apps, nil
+}
+
+func (s *Storage) AppsDestroy(app *empire.App) error {
+	delete(s.apps, app.Name)
+	return nil
+}
+
+func (s *Storage) ReleasesCreate(app *empire.App, message string) (*empire.Release, error) {
+	app.BeforeCreate()
+
+	releases, ok := s.apps[app.Name]
+	if !ok {
+		releases = list.New()
+		s.apps[app.Name] = releases
+	}
+
+	app2 := *app
+	app2.Version = app.Version + 1
+	release := &empire.Release{
+		App:         &app2,
+		Description: message,
+	}
+	release.BeforeCreate()
+	releases.PushFront(release)
+	return release, nil
+}
+
+func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
+	l, ok := s.apps[q.App.Name]
+	if !ok {
+		return nil, errors.New("no releases")
+	}
+	var releases []*empire.Release
+	for e := l.Front(); e != nil; e = e.Next() {
+		releases = append(releases, e.Value.(*empire.Release))
+	}
+	return releases, nil
+}
+
+func (s *Storage) ReleasesFind(q empire.ReleasesQuery) (*empire.Release, error) {
+	releases := s.apps[q.App.Name]
+	release := releases.Front().Value.(*empire.Release)
+	return release, nil
+}
+
+func (s *Storage) IsHealthy() error {
+	return nil
+}
+
+func (s *Storage) Reset() error {
+	s.apps = make(map[string]*list.List)
+	return nil
+}
+
 // Marks the test as skipped when running in CI.
 func SkipCI(t testing.TB) {
 	if _, ok := os.LookupEnv("CI"); ok {
@@ -38,22 +118,7 @@ func SkipCI(t testing.TB) {
 // NewEmpire returns a new Empire instance suitable for testing. It ensures that
 // the database is clean before returning.
 func NewEmpire(t testing.TB) *empire.Empire {
-	db, err := empire.NewDB(dbtest.Open(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := db.MigrateUp(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Log queries if verbose mode is set.
-	if testing.Verbose() {
-		db.Debug()
-	}
-
-	e := empire.New(db)
-	e.Scheduler = empire.NewFakeScheduler()
+	e := empire.New(newStorage())
 	e.ImageRegistry = ExtractProcfile(nil, nil)
 	e.RunRecorder = logs.RecordTo(ioutil.Discard)
 
@@ -130,21 +195,6 @@ func (s *Server) Close() {
 	s.svr.Close()
 }
 
-var dblock = "/tmp/empire.lock"
-
-// Run runs testing.M after aquiring a lock against the database.
-func Run(m *testing.M) {
-	l, err := flock.NewPath(dblock)
-	if err != nil {
-		panic(err)
-	}
-
-	l.Lock()
-	defer l.Unlock()
-
-	os.Exit(m.Run())
-}
-
 // defaultProcfile represents a basic Procfile, which can be used in integration
 // tests.
 var defaultProcfile = procfile.ExtendedProcfile{
@@ -164,14 +214,6 @@ var defaultProcfile = procfile.ExtendedProcfile{
 	"rake": procfile.Process{
 		Command:   "bundle exec rake",
 		NoService: true,
-		ECS: &procfile.ECS{
-			PlacementConstraints: []*ecs.PlacementConstraint{
-				&ecs.PlacementConstraint{
-					Type:       aws.String("memberOf"),
-					Expression: aws.String("attribute:profile = background"),
-				},
-			},
-		},
 	},
 }
 

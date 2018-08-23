@@ -3,9 +3,7 @@ version: '2'
 services:
   server:
     build: .
-    command: server -automigrate=true
-    links:
-      - db:db
+    command: server
     ports:
       - "8080:8080"
     volumes:
@@ -14,8 +12,5 @@ services:
     env_file: .env
     user: root
     environment:
-      EMPIRE_DATABASE_URL: postgres://postgres:postgres@db/postgres?sslmode=disable
       DOCKER_HOST: unix:///var/run/docker.sock
       EMPIRE_X_SHOW_ATTACHED: 'true'
-  db:
-    image: postgres

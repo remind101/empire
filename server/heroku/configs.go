@@ -14,13 +14,13 @@ func (h *Server) GetConfigs(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	c, err := h.Config(a)
+	env, err := h.Config(a)
 	if err != nil {
 		return err
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, c.Vars)
+	return Encode(w, env)
 }
 
 func (h *Server) GetConfigsByRelease(w http.ResponseWriter, r *http.Request) error {
@@ -41,7 +41,7 @@ func (h *Server) GetConfigsByRelease(w http.ResponseWriter, r *http.Request) err
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, rel.Config.Vars)
+	return Encode(w, rel.App.Environment)
 }
 
 func (h *Server) PatchConfigs(w http.ResponseWriter, r *http.Request) error {
@@ -64,7 +64,7 @@ func (h *Server) PatchConfigs(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Update the config
-	c, err := h.Set(ctx, empire.SetOpts{
+	env, err := h.Set(ctx, empire.SetOpts{
 		User:    auth.UserFromContext(ctx),
 		App:     a,
 		Vars:    configVars,
@@ -75,5 +75,5 @@ func (h *Server) PatchConfigs(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(200)
-	return Encode(w, c.Vars)
+	return Encode(w, env)
 }

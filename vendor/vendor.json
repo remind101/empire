@@ -562,10 +562,6 @@
 			"revision": "352fceb48e895bd1dd0b9f5d3ae8f8516c49af0f"
 		},
 		{
-			"path": "github.com/jinzhu/gorm",
-			"revision": "3c2915a9dfaaeaeb1e049436ae9291f5e84c95fa"
-		},
-		{
 			"comment": "0.2.2",
 			"path": "github.com/jmespath/go-jmespath",
 			"revision": "0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74",

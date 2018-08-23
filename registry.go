@@ -69,8 +69,15 @@ func formationFromStandardProcfile(p procfile.StandardProcfile) (Formation, erro
 			return nil, err
 		}
 
+		var ports []Port
+
+		if name == webProcessType {
+			ports = append(ports, DefaultWebPort)
+		}
+
 		f[name] = Process{
 			Command: cmd,
+			Ports:   ports,
 		}
 	}
 
@@ -113,13 +120,16 @@ func formationFromExtendedProcfile(p procfile.ExtendedProcfile) (Formation, erro
 			})
 		}
 
+		if name == webProcessType && len(ports) == 0 {
+			ports = append(ports, DefaultWebPort)
+		}
+
 		f[name] = Process{
 			Command:     cmd,
 			Cron:        process.Cron,
 			NoService:   process.NoService,
 			Ports:       ports,
 			Environment: process.Environment,
-			ECS:         process.ECS,
 		}
 	}
 

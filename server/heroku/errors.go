@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/pkg/heroku"
 )
@@ -44,6 +43,11 @@ var (
 		Message: "Support for uploading SSL certificates through Empire has been removed and replaced with certificate attachments.",
 		URL:     "http://empire.readthedocs.org/en/latest/ssl_certs/",
 	}
+	ErrLogsRemoved = &ErrorResource{
+		Status:  http.StatusNotFound,
+		ID:      "not_found",
+		Message: "Support for streaming logs has been removed",
+	}
 	ErrMessageRequired = &ErrorResource{
 		Status:  http.StatusBadRequest,
 		ID:      "message_required",
@@ -60,13 +64,11 @@ type ErrorResource struct {
 }
 
 func newError(err error) *ErrorResource {
-	if err == gorm.RecordNotFound {
-		return ErrNotFound
-	}
-
 	switch err := err.(type) {
 	case *ErrorResource:
 		return err
+	case *empire.NotFoundError:
+		return ErrNotFound
 	case *empire.MessageRequiredError:
 		return ErrMessageRequired
 	case *empire.ValidationError:

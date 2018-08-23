@@ -64,11 +64,6 @@ func New(e *empire.Empire) *Server {
 	r.handle("POST", "/apps", r.PostApps)                // hk create
 	r.handle("POST", "/organizations/apps", r.PostApps)  // hk create
 
-	// Domains
-	r.handle("GET", "/apps/{app}/domains", r.GetDomains)                 // hk domains
-	r.handle("POST", "/apps/{app}/domains", r.PostDomains)               // hk domain-add
-	r.handle("DELETE", "/apps/{app}/domains/{hostname}", r.DeleteDomain) // hk domain-remove
-
 	// Deploys
 	r.handle("POST", "/deploys", r.PostDeploys) // Deploy an app
 
@@ -99,9 +94,6 @@ func New(e *empire.Empire) *Server {
 		// handler.
 		AuthWith(auth.StrategyUsernamePassword)
 
-	// Certs
-	r.handle("POST", "/apps/{app}/certs", r.PostCerts)
-
 	// SSL
 	sslRemoved := errHandler(ErrSSLRemoved)
 	r.handle("GET", "/apps/{app}/ssl-endpoints", sslRemoved)           // hk ssl
@@ -110,7 +102,8 @@ func New(e *empire.Empire) *Server {
 	r.handle("DELETE", "/apps/{app}/ssl-endpoints/{cert}", sslRemoved) // hk ssl-destroy
 
 	// Logs
-	r.handle("POST", "/apps/{app}/log-sessions", r.PostLogs) // hk log
+	logsRemoved := errHandler(ErrLogsRemoved)
+	r.handle("POST", "/apps/{app}/log-sessions", logsRemoved) // hk log
 
 	return r
 }

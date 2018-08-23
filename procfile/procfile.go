@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/remind101/empire/procfile/internal/yaml"
 )
 
@@ -31,13 +30,6 @@ type Process struct {
 	NoService   bool              `yaml:"noservice,omitempty"`
 	Ports       []Port            `yaml:"ports,omitempty"`
 	Environment map[string]string `yaml:"environment,omitempty"`
-	ECS         *ECS              `yaml:"ecs,omitempty"`
-}
-
-// ECS specific options.
-type ECS struct {
-	PlacementConstraints []*ecs.PlacementConstraint `yaml:"placement_constraints"`
-	PlacementStrategy    []*ecs.PlacementStrategy   `yaml:"placement_strategy"`
 }
 
 // Port represents a port mapping.

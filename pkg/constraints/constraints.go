@@ -155,22 +155,10 @@ func parseMemory(s string) (uint, error) {
 	return uint(n * float64(mult)), nil
 }
 
-type Nproc uint
-
-func ParseNproc(s string) (Nproc, error) {
-	n, err := strconv.ParseUint(s, 10, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	return Nproc(n), nil
-}
-
 // Constraints is a composition of CPUShares, Memory and Nproc constraints.
 type Constraints struct {
 	CPUShare
 	Memory
-	Nproc
 }
 
 func Parse(s string) (Constraints, error) {
@@ -194,25 +182,6 @@ func Parse(s string) (Constraints, error) {
 	}
 
 	c.Memory = m
-
-	if len(p) == 3 {
-		for _, kvspec := range strings.Split(p[2], ",") {
-			kv := strings.SplitN(kvspec, "=", 2)
-			if len(kv) != 2 {
-				return c, ErrInvalidConstraint
-			}
-
-			if kv[0] == "nproc" {
-				n, err := ParseNproc(kv[1])
-				if err != nil {
-					return c, err
-				}
-				c.Nproc = n
-			} else {
-				return c, ErrInvalidConstraint
-			}
-		}
-	}
 
 	return c, nil
 }

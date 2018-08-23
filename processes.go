@@ -1,21 +1,30 @@
 package empire
 
 import (
-	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/remind101/empire/internal/shellwords"
 	"github.com/remind101/empire/pkg/constraints"
-	"github.com/remind101/empire/procfile"
 )
 
 // DefaultQuantities maps a process type to the default number of instances to
 // run.
 var DefaultQuantities = map[string]int{
 	"web": 1,
+}
+
+const (
+	// webProcessType is the process type we assume are web server processes.
+	webProcessType = "web"
+)
+
+// DefaultWebPort is added to "web" procs that don't have explicit ports.
+var DefaultWebPort = Port{
+	Host:      80,
+	Container: 8080,
+	Protocol:  "http",
 }
 
 // Command represents a command and it's arguments. For example:
@@ -37,31 +46,6 @@ func MustParseCommand(command string) Command {
 	return c
 }
 
-// Scan implements the sql.Scanner interface.
-func (c *Command) Scan(src interface{}) error {
-	bytes, ok := src.([]byte)
-	if !ok {
-		return error(errors.New("Scan source was not []bytes"))
-	}
-
-	var cmd Command
-	if err := json.Unmarshal(bytes, &cmd); err != nil {
-		return err
-	}
-	*c = cmd
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (c Command) Value() (driver.Value, error) {
-	raw, err := json.Marshal(c)
-	if err != nil {
-		return nil, err
-	}
-	return driver.Value(raw), nil
-}
-
 // String returns the string reprsentation of the command.
 func (c Command) String() string {
 	return strings.Join([]string(c), " ")
@@ -70,42 +54,45 @@ func (c Command) String() string {
 // Process holds configuration information about a Process.
 type Process struct {
 	// Command is the command to run.
-	Command Command `json:"Command,omitempty"`
+	Command Command `json:"command,omitempty"`
+
+	// Port mappings from container to load balancer.
+	Ports []Port `json:"ports,omitempty"`
 
 	// Signifies that this is a named one off command and not a long lived
 	// service.
-	NoService bool `json:"Run,omitempty"`
+	NoService bool `json:"no_service,omitempty"`
 
 	// Quantity is the desired number of instances of this process.
-	Quantity int `json:"Quantity,omitempty"`
+	Quantity int `json:"quantity,omitempty"`
 
 	// The memory constraints, in bytes.
-	Memory constraints.Memory `json:"Memory,omitempty"`
+	Memory constraints.Memory `json:"memory,omitempty"`
 
 	// The amount of CPU share to give.
-	CPUShare constraints.CPUShare `json:"CPUShare,omitempty"`
+	CPUShare constraints.CPUShare `json:"cpu_share,omitempty"`
 
 	// The allow number of unix processes within the container.
-	Nproc constraints.Nproc `json:"Nproc,omitempty"`
+	Ulimits []Ulimit `json:"ulimits,omitempty"`
 
 	// A cron expression. If provided, the process will be run as a
 	// scheduled task.
 	Cron *string `json:"cron,omitempty"`
 
-	// Port mappings from container to load balancer.
-	Ports []Port `json:"Ports,omitempty"`
+	// Any process specific environment variables.
+	Environment map[string]string `json:"environment,omitempty"`
+}
 
-	// An process specific environment variables.
-	Environment map[string]string `json:"Environment,omitempty"`
-
-	// ECS specific parameters.
-	ECS *procfile.ECS `json:"ECS,omitempty"`
+type Ulimit struct {
+	Name      string `json:"name"`
+	SoftLimit int    `json:"soft_limit"`
+	HardLimit int    `json:"hard_limit"`
 }
 
 type Port struct {
-	Host      int    `json:"Host"`
-	Container int    `json:"Container"`
-	Protocol  string `json:"Protocol"`
+	Host      int    `json:"host"`
+	Container int    `json:"container"`
+	Protocol  string `json:"protocol"`
 }
 
 // IsValid returns nil if the Process is valid.
@@ -125,7 +112,6 @@ func (p *Process) Constraints() Constraints {
 	return Constraints{
 		Memory:   p.Memory,
 		CPUShare: p.CPUShare,
-		Nproc:    p.Nproc,
 	}
 }
 
@@ -134,7 +120,6 @@ func (p *Process) Constraints() Constraints {
 func (p *Process) SetConstraints(c Constraints) {
 	p.Memory = c.Memory
 	p.CPUShare = c.CPUShare
-	p.Nproc = c.Nproc
 }
 
 // Formation represents a collection of named processes and their configuration.
@@ -151,36 +136,6 @@ func (f Formation) IsValid() error {
 	return nil
 }
 
-// Scan implements the sql.Scanner interface.
-func (f *Formation) Scan(src interface{}) error {
-	bytes, ok := src.([]byte)
-	if !ok {
-		return error(errors.New("Scan source was not []bytes"))
-	}
-
-	formation := make(Formation)
-	if err := json.Unmarshal(bytes, &formation); err != nil {
-		return err
-	}
-	*f = formation
-
-	return nil
-}
-
-// Value implements the driver.Value interface.
-func (f Formation) Value() (driver.Value, error) {
-	if f == nil {
-		return nil, nil
-	}
-
-	raw, err := json.Marshal(f)
-	if err != nil {
-		return nil, err
-	}
-
-	return driver.Value(raw), nil
-}
-
 // Merge merges in the existing quantity and constraints from the old Formation
 // into this Formation.
 func (f Formation) Merge(other Formation) Formation {
@@ -193,6 +148,7 @@ func (f Formation) Merge(other Formation) Formation {
 			// instance count.
 			p.Quantity = existing.Quantity
 			p.SetConstraints(existing.Constraints())
+			p.Ulimits = existing.Ulimits
 		} else {
 			p.Quantity = DefaultQuantities[name]
 			p.SetConstraints(DefaultConstraints)

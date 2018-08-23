@@ -5,9 +5,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/urfave/cli"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/server/github"
+	"github.com/urfave/cli"
 )
 
 const hbExampleURL = "hb://api.honeybadger.io?key=<key>&environment=<environment>"
@@ -16,7 +16,6 @@ const rollbarExampleURL = "rollbar://api.rollbar.com?key=<key>&environment=<envi
 const (
 	FlagURL            = "url"
 	FlagPort           = "port"
-	FlagAutoMigrate    = "automigrate"
 	FlagScheduler      = "scheduler"
 	FlagEventsBackend  = "events.backend"
 	FlagRunLogsBackend = "runlogs.backend"
@@ -30,6 +29,13 @@ const (
 	FlagServerAuth              = "server.auth"
 	FlagServerSessionExpiration = "server.session.expiration"
 	FlagServerRealIp            = "server.realip"
+
+	FlagStorageGitHubAppID          = "storage.github.app_id"
+	FlagStorageGitHubInstallationID = "storage.github.installation_id"
+	FlagStorageGitHubPrivateKey     = "storage.github.private_key"
+	FlagStorageGitHubRepo           = "storage.github.repo"
+	FlagStorageGitHubBasePath       = "storage.github.base_path"
+	FlagStorageGitHubRef            = "storage.github.ref"
 
 	FlagSAMLMetadata       = "saml.metadata"
 	FlagSAMLKey            = "saml.key"
@@ -48,38 +54,12 @@ const (
 
 	FlagConveyorURL = "conveyor.url"
 
-	FlagDB = "db"
-
 	FlagDockerHost    = "docker.socket"
 	FlagDockerCert    = "docker.cert"
 	FlagDockerAuth    = "docker.auth"
 	FlagDockerDigests = "docker.digests"
 
-	FlagAWSDebug                       = "aws.debug"
-	FlagS3TemplateBucket               = "s3.templatebucket"
-	FlagCustomResourcesTopic           = "customresources.topic"
-	FlagCustomResourcesQueue           = "customresources.queue"
-	FlagECSCluster                     = "ecs.cluster"
-	FlagECSServiceRole                 = "ecs.service.role"
-	FlagECSLogDriver                   = "ecs.logdriver"
-	FlagECSLogOpts                     = "ecs.logopt"
-	FlagECSAttachedEnabled             = "ecs.attached.enabled"
-	FlagECSDockerCert                  = "ecs.docker.cert"
-	FlagECSPlacementConstraintsDefault = "ecs.placement-constraints.default"
-
-	FlagELBSGPrivate = "elb.sg.private"
-	FlagELBSGPublic  = "elb.sg.public"
-	FlagELBVpcId     = "elb.vpc.id"
-
-	FlagEC2SubnetsPrivate = "ec2.subnets.private"
-	FlagEC2SubnetsPublic  = "ec2.subnets.public"
-
-	FlagInstancePortPoolStart = "instance-port-pool.start"
-	FlagInstancePortPoolEnd   = "instance-port-pool.end"
-
-	FlagRoute53InternalZoneID = "route53.zoneid.internal"
-
-	FlagCloudFormationStackNameTemplate = "cloudformation.stack-name-template"
+	FlagAWSDebug = "aws.debug"
 
 	FlagSNSTopic           = "sns.topic"
 	FlagCloudWatchLogGroup = "cloudwatch.loggroup"
@@ -114,10 +94,6 @@ var Commands = []cli.Command{
 				Usage:  "The port to run the server on",
 				EnvVar: "EMPIRE_PORT",
 			},
-			cli.BoolFlag{
-				Name:  FlagAutoMigrate,
-				Usage: "Whether to run the migrations at startup or not",
-			},
 			cli.StringFlag{
 				Name:   FlagScheduler,
 				Value:  "cloudformation",
@@ -141,6 +117,37 @@ var Commands = []cli.Command{
 				Value:  &cli.StringSlice{},
 				Usage:  "Determines the headers that can be trusted to determine the real ip. By default, no headers are trusted and the ip is extracted from the remote address. If you're using ELB, you should set this to X-Forwarded-For. If you're using something like nginx + real_ip module, you can set this to X-Real-Ip.",
 				EnvVar: "EMPIRE_SERVER_REAL_IP",
+			},
+			cli.IntFlag{
+				Name:   FlagStorageGitHubAppID,
+				Usage:  "The GitHub app ID that will be used to make automated commits.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_APP_ID",
+			},
+			cli.IntFlag{
+				Name:   FlagStorageGitHubInstallationID,
+				Usage:  "The GitHub app installation ID that will be used to make automated commits.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_INSTALLATION_ID",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubPrivateKey,
+				Usage:  "Base64'd PEM encoded private key for the GitHub app.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_PRIVATE_KEY",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubRepo,
+				Usage:  "The name of the GitHub repo where app configuration will be stored.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_REPO",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubBasePath,
+				Usage:  "The base path for where app configuration will be stored.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_BASE_PATH",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubRef,
+				Value:  "refs/heads/master",
+				Usage:  "The target ref where changes made by Empire will be merged.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_REF",
 			},
 			cli.StringFlag{
 				Name:   FlagSAMLMetadata,
@@ -226,14 +233,8 @@ var Commands = []cli.Command{
 				Usage:  "When combined with the `--" + FlagGithubDeploymentsImageBuilder + "` flag when set to `conveyor`, this determines where the location of a Conveyor instance is to perform Docker image builds.",
 				EnvVar: "EMPIRE_CONVEYOR_URL",
 			},
-		}, append(CommonFlags, append(EmpireFlags, DBFlags...)...)...),
+		}, append(CommonFlags, EmpireFlags...)...),
 		Action: runServer,
-	},
-	{
-		Name:   "migrate",
-		Usage:  "Migrate the database",
-		Flags:  append(CommonFlags, DBFlags...),
-		Action: runMigrate,
 	},
 }
 
@@ -256,15 +257,6 @@ var CommonFlags = []cli.Flag{
 		Usage: fmt.Sprintf("The reporter to use to report errors. Available options are `%s` or `%s`",
 			hbExampleURL, rollbarExampleURL),
 		EnvVar: "EMPIRE_REPORTER",
-	},
-}
-
-var DBFlags = []cli.Flag{
-	cli.StringFlag{
-		Name:   FlagDB,
-		Value:  "postgres://localhost/empire?sslmode=disable",
-		Usage:  "SQL connection string for the database",
-		EnvVar: "EMPIRE_DATABASE_URL",
 	},
 }
 
@@ -299,103 +291,6 @@ var EmpireFlags = []cli.Flag{
 		EnvVar: "EMPIRE_AWS_DEBUG",
 	},
 	cli.StringFlag{
-		Name:   FlagS3TemplateBucket,
-		Usage:  "When using the cloudformation backend, this is the bucket where templates will be stored",
-		EnvVar: "EMPIRE_S3_TEMPLATE_BUCKET",
-	},
-	cli.StringFlag{
-		Name:   FlagCustomResourcesTopic,
-		Usage:  "The ARN of the SNS topic used to create custom resources when using the CloudFormation backend.",
-		EnvVar: "EMPIRE_CUSTOM_RESOURCES_TOPIC",
-	},
-	cli.StringFlag{
-		Name:   FlagCustomResourcesQueue,
-		Usage:  "The queue url of the SQS queue to pull CloudFormation Custom Resource requests from.",
-		EnvVar: "EMPIRE_CUSTOM_RESOURCES_QUEUE",
-	},
-	cli.StringFlag{
-		Name:   FlagECSCluster,
-		Value:  "default",
-		Usage:  "The ECS cluster to create services within",
-		EnvVar: "EMPIRE_ECS_CLUSTER",
-	},
-	cli.StringFlag{
-		Name:   FlagECSServiceRole,
-		Value:  "ecsServiceRole",
-		Usage:  "The IAM Role to use for managing ECS",
-		EnvVar: "EMPIRE_ECS_SERVICE_ROLE",
-	},
-	cli.StringFlag{
-		Name:   FlagECSLogDriver,
-		Value:  "",
-		Usage:  "Log driver to use when running containers. Maps to the --log-driver docker cli arg",
-		EnvVar: "EMPIRE_ECS_LOG_DRIVER",
-	},
-	cli.StringSliceFlag{
-		Name:   FlagECSLogOpts,
-		Value:  &cli.StringSlice{},
-		Usage:  "Log driver to options. Maps to the --log-opt docker cli arg",
-		EnvVar: "EMPIRE_ECS_LOG_OPT",
-	},
-	cli.BoolFlag{
-		Name:   FlagECSAttachedEnabled,
-		Usage:  "When enabled, indicates that ECS tasks can be attached to, using `docker attach`. When provided, this will also use ECS to run attached processes. At the moment, this flag should only be set if you're running a patched ECS agent. See http://empire.readthedocs.io/en/latest/configuration/ for more information.",
-		EnvVar: "EMPIRE_ECS_ATTACHED_ENABLED",
-	},
-	cli.StringFlag{
-		Name:   FlagECSDockerCert,
-		Value:  "",
-		Usage:  "A path to the certificates to use when connecting to Docker daemon's on container instances.",
-		EnvVar: "EMPIRE_ECS_DOCKER_CERT_PATH",
-	},
-	cli.StringFlag{
-		Name:   FlagECSPlacementConstraintsDefault,
-		Value:  "",
-		Usage:  `ECS placement constraints to set when a process does not set any. This should be a JSON formatted array for ECS placement constraints (e.g. '[{"type":"memberOf","expression":"attribute:profile == default"}]'). See http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-constraints.html.`,
-		EnvVar: "EMPIRE_ECS_PLACEMENT_CONSTRAINTS_DEFAULT",
-	},
-	cli.StringFlag{
-		Name:   FlagELBSGPrivate,
-		Value:  "",
-		Usage:  "The ELB security group to assign private load balancers",
-		EnvVar: "EMPIRE_ELB_SG_PRIVATE",
-	},
-	cli.StringFlag{
-		Name:   FlagELBSGPublic,
-		Value:  "",
-		Usage:  "The ELB security group to assign public load balancers",
-		EnvVar: "EMPIRE_ELB_SG_PUBLIC",
-	},
-	cli.StringFlag{
-		Name:   FlagELBVpcId,
-		Usage:  "The comma separated private subnet ids",
-		EnvVar: "EMPIRE_ELB_VPC_ID",
-	},
-	cli.StringSliceFlag{
-		Name:   FlagEC2SubnetsPrivate,
-		Value:  &cli.StringSlice{},
-		Usage:  "The comma separated private subnet ids",
-		EnvVar: "EMPIRE_EC2_SUBNETS_PRIVATE",
-	},
-	cli.StringSliceFlag{
-		Name:   FlagEC2SubnetsPublic,
-		Value:  &cli.StringSlice{},
-		Usage:  "The comma separated public subnet ids",
-		EnvVar: "EMPIRE_EC2_SUBNETS_PUBLIC",
-	},
-	cli.IntFlag{
-		Name:   FlagInstancePortPoolStart,
-		Value:  empire.DefaultInstancePortPoolStart,
-		Usage:  "The start of the range of instance ports to allocate from.",
-		EnvVar: "EMPIRE_INSTANCE_PORT_POOL_START",
-	},
-	cli.IntFlag{
-		Name:   FlagInstancePortPoolEnd,
-		Value:  empire.DefaultInstancePortPoolEnd,
-		Usage:  "The end of the range of instance ports to allocate from.",
-		EnvVar: "EMPIRE_INSTANCE_PORT_POOL_END",
-	},
-	cli.StringFlag{
 		Name:   FlagSecret,
 		Value:  "<change this>",
 		Usage:  "The secret used to sign access tokens",
@@ -406,18 +301,6 @@ var EmpireFlags = []cli.Flag{
 		Value:  "",
 		Usage:  "The location of the container runner api",
 		EnvVar: "EMPIRE_RUNNER",
-	},
-	cli.StringFlag{
-		Name:   FlagRoute53InternalZoneID,
-		Value:  "",
-		Usage:  "The route53 zone ID of the internal 'empire.' zone.",
-		EnvVar: "EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
-	},
-	cli.StringFlag{
-		Name:   FlagCloudFormationStackNameTemplate,
-		Value:  "",
-		Usage:  "If provided, this should be a Go text/template that will be used to generate a CloudFormation stack name for an application. If not provided, and the `--" + FlagEnvironment + "` flag is provided, that will be used as a prefix to the stack name.",
-		EnvVar: "EMPIRE_CLOUDFORMATION_STACK_NAME_TEMPLATE",
 	},
 	cli.StringFlag{
 		Name:   FlagLogsStreamer,

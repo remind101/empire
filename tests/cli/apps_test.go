@@ -26,7 +26,7 @@ func TestApps(t *testing.T) {
 		},
 		{
 			"apps",
-			"acme-inc    Dec 31  2014",
+			"acme-inc    Dec 31  0000",
 		},
 	})
 }
@@ -39,7 +39,7 @@ func TestAppInfo(t *testing.T) {
 		},
 		{
 			"info -a acme-inc",
-			regexp.MustCompile("Name: acme-inc\nID: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\n"),
+			regexp.MustCompile("Name: acme-inc\nID: acme-inc\n"),
 		},
 	})
 }

@@ -32,14 +32,12 @@ func TestNewFormation(t *testing.T) {
 					Command:  Command{"./bin/web"},
 					Memory:   NamedConstraints["1X"].Memory,
 					CPUShare: NamedConstraints["1X"].CPUShare,
-					Nproc:    NamedConstraints["1X"].Nproc,
 				},
 				"worker": Process{
 					Quantity: 0,
 					Command:  Command{"sidekiq"},
 					Memory:   NamedConstraints["1X"].Memory,
 					CPUShare: NamedConstraints["1X"].CPUShare,
-					Nproc:    NamedConstraints["1X"].Nproc,
 				},
 			},
 		},
@@ -58,7 +56,9 @@ func TestNewFormation(t *testing.T) {
 					Quantity: 2,
 					Memory:   NamedConstraints["PX"].Memory,
 					CPUShare: NamedConstraints["PX"].CPUShare,
-					Nproc:    NamedConstraints["PX"].Nproc,
+					Ulimits: []Ulimit{
+						{"nproc", 256, 256},
+					},
 				},
 			},
 			expected: Formation{
@@ -67,7 +67,9 @@ func TestNewFormation(t *testing.T) {
 					Command:  Command{"./bin/web"},
 					Memory:   NamedConstraints["PX"].Memory,
 					CPUShare: NamedConstraints["PX"].CPUShare,
-					Nproc:    NamedConstraints["PX"].Nproc,
+					Ulimits: []Ulimit{
+						{"nproc", 256, 256},
+					},
 				},
 			},
 		},
@@ -85,7 +87,6 @@ func TestNewFormation(t *testing.T) {
 					Quantity: 2,
 					Memory:   NamedConstraints["PX"].Memory,
 					CPUShare: NamedConstraints["PX"].CPUShare,
-					Nproc:    NamedConstraints["PX"].Nproc,
 				},
 			},
 			expected: Formation{
@@ -94,7 +95,6 @@ func TestNewFormation(t *testing.T) {
 					Command:  Command{"./bin/web"},
 					Memory:   NamedConstraints["1X"].Memory,
 					CPUShare: NamedConstraints["1X"].CPUShare,
-					Nproc:    NamedConstraints["1X"].Nproc,
 				},
 			},
 		},

@@ -8,18 +8,17 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/urfave/cli"
 	"github.com/remind101/conveyor/client/conveyor"
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/internal/realip"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
 	githubauth "github.com/remind101/empire/server/auth/github"
-	"github.com/remind101/empire/server/cloudformation"
 	"github.com/remind101/empire/server/github"
 	"github.com/remind101/empire/server/heroku"
 	"github.com/remind101/empire/server/middleware"
 	"github.com/remind101/empire/stats"
+	"github.com/urfave/cli"
 	"golang.org/x/oauth2"
 )
 
@@ -34,16 +33,7 @@ func runServer(c *cli.Context) {
 
 	port := c.String(FlagPort)
 
-	if c.Bool(FlagAutoMigrate) {
-		runMigrate(c)
-	}
-
-	db, err := newDB(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	e, err := newEmpire(db, ctx)
+	e, err := newEmpire(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,19 +41,9 @@ func runServer(c *cli.Context) {
 	// Do a preliminary health check to make sure everything is good at
 	// boot.
 	if err := e.IsHealthy(); err != nil {
-		if err, ok := err.(*empire.IncompatibleSchemaError); ok {
-			log.Fatal(fmt.Errorf("%v. You can resolve this error by running the migrations with `empire migrate` or with the `--automigrate` flag", err))
-		}
-
 		log.Fatal(err)
 	} else {
 		log.Println("Health checks passed")
-	}
-
-	if c.String(FlagCustomResourcesQueue) != "" {
-		p := newCloudFormationCustomResourceProvisioner(e, ctx)
-		log.Printf("Starting CloudFormation custom resource provisioner")
-		go p.Start()
 	}
 
 	s := newServer(ctx, e)
@@ -112,13 +92,6 @@ func realipResolver(c *Context) *realip.Resolver {
 		}
 	}
 	return r
-}
-
-func newCloudFormationCustomResourceProvisioner(e *empire.Empire, c *Context) *cloudformation.CustomResourceProvisioner {
-	p := cloudformation.NewCustomResourceProvisioner(e, c)
-	p.QueueURL = c.String(FlagCustomResourcesQueue)
-	p.Context = c
-	return p
 }
 
 func newImageBuilder(c *Context) github.ImageBuilder {

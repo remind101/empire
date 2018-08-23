@@ -43,19 +43,12 @@ jobs:
       - image: circleci/golang:1.7.6
         environment:
           SHELL: /bin/bash
-      - image: circleci/postgres:9.3
-        environment:
-          POSTGRES_USER: circleci
-          POSTGRES_DB: empire
 
     steps:
       - checkout
       - run:
           name: Install System Dependencies
           command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
-      - run:
-          name: Wait for db
-          command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: make test
 
   vet:
