@@ -1,8 +1,9 @@
 package github
 
 import (
-	"fmt"
+	"bytes"
 	"io"
+	"text/template"
 	"time"
 
 	"github.com/ejholmes/hookshot/events"
@@ -12,6 +13,16 @@ import (
 	"github.com/remind101/tugboat"
 	"golang.org/x/net/context"
 )
+
+var githubDeploymentMessage = template.Must(template.New("message").Parse(`GitHub deployment {{.Deployment.ID}} of {{.Repository.FullName}} to {{.Deployment.Environment}}{{ if .Deployment.Description }}
+
+{{.Deployment.Description}}{{ end }}
+
+Repository: {{.Repository.FullName}}
+SHA: {{.Deployment.Sha}}
+Ref: {{.Deployment.Ref}}
+Deployment-Id: {{.Deployment.ID}}
+Task: {{.Deployment.Task}}`))
 
 // Deployer represents something that can deploy a github deployment.
 type Deployer interface {
@@ -58,16 +69,16 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 	// stream.
 	p := dockerutil.DecodeJSONMessageStream(w)
 
-	message := event.Deployment.Description
-	if message == "" {
-		message = fmt.Sprintf("GitHub deployment #%d of %s", event.Deployment.ID, event.Repository.FullName)
+	buf := new(bytes.Buffer)
+	if err := githubDeploymentMessage.Execute(buf, event); err != nil {
+		return err
 	}
 	_, err = d.empire.Deploy(ctx, empire.DeployOpts{
 		Image:   img,
 		Output:  empire.NewDeploymentStream(p),
 		User:    &empire.User{Name: event.Deployment.Creator.Login},
 		Stream:  true,
-		Message: message,
+		Message: buf.String(),
 	})
 	if err != nil {
 		return err

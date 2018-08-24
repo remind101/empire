@@ -21,22 +21,31 @@ func (e *multiError) Error() string {
 		len(e.Errors), strings.Join(points, "\n"))
 }
 
-func appendCommitMessage(main, commit string) string {
-	output := main
-	if commit != "" {
-		output = fmt.Sprintf("%s: '%s'", main, commit)
-	}
-	return output
+type BaseEvent struct {
+	user    *User
+	message string
+}
+
+func NewBaseEvent(user *User, message string) BaseEvent {
+	return BaseEvent{user: user, message: message}
+}
+
+func (e BaseEvent) User() *User {
+	return e.user
+}
+
+func (e BaseEvent) Message() string {
+	return e.message
 }
 
 // RunEvent is triggered when a user starts or stops a one off process.
 type RunEvent struct {
-	User     string
+	BaseEvent
+
 	App      string
 	Command  Command
 	URL      string
 	Attached bool
-	Message  string
 	Finished bool
 
 	app *App
@@ -56,15 +65,15 @@ func (e RunEvent) String() string {
 		attachment = "attached"
 	}
 
-	action := "started running"
+	action := "Started running"
 	if e.Finished {
-		action = "ran"
+		action = "Ran"
 	}
-	msg := fmt.Sprintf("%s %s `%s` (%s) on %s", e.User, action, e.Command.String(), attachment, e.App)
+	msg := fmt.Sprintf("%s `%s` (%s) on %s", action, e.Command.String(), attachment, e.App)
 	if e.URL != "" {
 		msg = fmt.Sprintf("%s (<%s|logs>)", msg, e.URL)
 	}
-	return appendCommitMessage(msg, e.Message)
+	return msg
 }
 
 func (e RunEvent) GetApp() *App {
@@ -73,10 +82,10 @@ func (e RunEvent) GetApp() *App {
 
 // RestartEvent is triggered when a user restarts an application.
 type RestartEvent struct {
-	User    string
-	App     string
-	PID     string
-	Message string
+	BaseEvent
+
+	App string
+	PID string
 
 	app *App
 }
@@ -88,11 +97,11 @@ func (e RestartEvent) Event() string {
 func (e RestartEvent) String() string {
 	msg := ""
 	if e.PID == "" {
-		msg = fmt.Sprintf("%s restarted %s", e.User, e.App)
+		msg = fmt.Sprintf("Restarted %s", e.App)
 	} else {
-		msg = fmt.Sprintf("%s restarted `%s` on %s", e.User, e.PID, e.App)
+		msg = fmt.Sprintf("Restarted `%s` on %s", e.PID, e.App)
 	}
-	return appendCommitMessage(msg, e.Message)
+	return msg
 }
 
 func (e RestartEvent) GetApp() *App {
@@ -100,10 +109,10 @@ func (e RestartEvent) GetApp() *App {
 }
 
 type MaintenanceEvent struct {
-	User        string
+	BaseEvent
+
 	App         string
 	Maintenance bool
-	Message     string
 
 	app *App
 }
@@ -113,12 +122,12 @@ func (e MaintenanceEvent) Event() string {
 }
 
 func (e MaintenanceEvent) String() string {
-	state := "disabled"
+	state := "Disabled"
 	if e.Maintenance {
-		state = "enabled"
+		state = "Enabled"
 	}
-	msg := fmt.Sprintf("%s %s maintenance mode on %s", e.User, state, e.App)
-	return appendCommitMessage(msg, e.Message)
+	msg := fmt.Sprintf("%s maintenance mode on %s", state, e.App)
+	return msg
 }
 
 func (e MaintenanceEvent) GetApp() *App {
@@ -135,10 +144,10 @@ type ScaleEventUpdate struct {
 
 // ScaleEvent is triggered when a manual scaling event happens.
 type ScaleEvent struct {
-	User    string
+	BaseEvent
+
 	App     string
 	Updates []*ScaleEventUpdate
-	Message string
 
 	app *App
 }
@@ -148,7 +157,7 @@ func (e ScaleEvent) Event() string {
 }
 
 func (e ScaleEvent) String() string {
-	var msg, sep string
+	var updates []string
 	for _, up := range e.Updates {
 		// Deal with no new constraints by copying previous constraint settings.
 		newConstraints := up.Constraints
@@ -161,20 +170,17 @@ func (e ScaleEvent) String() string {
 			newConstraints.Memory = previousConstraints.Memory
 		}
 
-		msg += fmt.Sprintf(
-			"%s%s scaled `%s` on %s from %d(%s) to %d(%s)",
-			sep,
-			e.User,
+		updates = append(updates, fmt.Sprintf(
+			"`%s` on %s from %d(%s) to %d(%s)",
 			up.Process,
 			e.App,
 			up.PreviousQuantity,
 			up.PreviousConstraints,
 			up.Quantity,
 			newConstraints,
-		)
-		sep = "\n"
+		))
 	}
-	return appendCommitMessage(msg, e.Message)
+	return fmt.Sprintf("Scaled %s", strings.Join(updates, ", and"))
 }
 
 func (e ScaleEvent) GetApp() *App {
@@ -183,12 +189,10 @@ func (e ScaleEvent) GetApp() *App {
 
 // DeployEvent is triggered when a user deploys a new image to an app.
 type DeployEvent struct {
-	User        string
-	App         string
-	Image       string
-	Environment string
-	Release     int
-	Message     string
+	BaseEvent
+
+	App   string
+	Image string
 
 	app *App
 }
@@ -200,11 +204,11 @@ func (e DeployEvent) Event() string {
 func (e DeployEvent) String() string {
 	msg := ""
 	if e.App == "" {
-		msg = fmt.Sprintf("%s deployed %s", e.User, e.Image)
+		msg = fmt.Sprintf("Deployed %s", e.Image)
 	} else {
-		msg = fmt.Sprintf("%s deployed %s to %s %s (v%d)", e.User, e.Image, e.App, e.Environment, e.Release)
+		msg = fmt.Sprintf("Deployed %s to %s", e.Image, e.App)
 	}
-	return appendCommitMessage(msg, e.Message)
+	return msg
 }
 
 func (e DeployEvent) GetApp() *App {
@@ -213,10 +217,10 @@ func (e DeployEvent) GetApp() *App {
 
 // RollbackEvent is triggered when a user rolls back to an old version.
 type RollbackEvent struct {
-	User    string
+	BaseEvent
+
 	App     string
 	Version int
-	Message string
 
 	app *App
 }
@@ -226,8 +230,8 @@ func (e RollbackEvent) Event() string {
 }
 
 func (e RollbackEvent) String() string {
-	msg := fmt.Sprintf("%s rolled back %s to v%d", e.User, e.App, e.Version)
-	return appendCommitMessage(msg, e.Message)
+	msg := fmt.Sprintf("Rolled back %s to v%d", e.App, e.Version)
+	return msg
 }
 
 func (e RollbackEvent) GetApp() *App {
@@ -237,10 +241,10 @@ func (e RollbackEvent) GetApp() *App {
 // SetEvent is triggered when environment variables are changed on an
 // application.
 type SetEvent struct {
-	User    string
+	BaseEvent
+
 	App     string
 	Changed []string
-	Message string
 
 	app *App
 }
@@ -250,8 +254,7 @@ func (e SetEvent) Event() string {
 }
 
 func (e SetEvent) String() string {
-	msg := fmt.Sprintf("%s changed environment variables on %s (%s)", e.User, e.App, strings.Join(e.Changed, ", "))
-	return appendCommitMessage(msg, e.Message)
+	return fmt.Sprintf("Changed environment variables on %s (%s)", e.App, strings.Join(e.Changed, ", "))
 }
 
 func (e SetEvent) GetApp() *App {
@@ -260,9 +263,9 @@ func (e SetEvent) GetApp() *App {
 
 // CreateEvent is triggered when a user creates a new application.
 type CreateEvent struct {
-	User    string
-	Name    string
-	Message string
+	BaseEvent
+
+	Name string
 }
 
 func (e CreateEvent) Event() string {
@@ -270,15 +273,14 @@ func (e CreateEvent) Event() string {
 }
 
 func (e CreateEvent) String() string {
-	msg := fmt.Sprintf("%s created %s", e.User, e.Name)
-	return appendCommitMessage(msg, e.Message)
+	return fmt.Sprintf("Created %s", e.Name)
 }
 
 // DestroyEvent is triggered when a user destroys an application.
 type DestroyEvent struct {
-	User    string
-	App     string
-	Message string
+	BaseEvent
+
+	App string
 }
 
 func (e DestroyEvent) Event() string {
@@ -286,8 +288,7 @@ func (e DestroyEvent) Event() string {
 }
 
 func (e DestroyEvent) String() string {
-	msg := fmt.Sprintf("%s destroyed %s", e.User, e.App)
-	return appendCommitMessage(msg, e.Message)
+	return fmt.Sprintf("Destroyed %s", e.App)
 }
 
 // Event represents an event triggered within Empire.
@@ -297,6 +298,13 @@ type Event interface {
 
 	// Returns a human readable string about the event.
 	String() string
+
+	// Returns the commit message that was supplied at the time of the
+	// change.
+	Message() string
+
+	// Returns the user that made the change.
+	User() *User
 }
 
 // AppEvent is an Event that relates to a specific App.

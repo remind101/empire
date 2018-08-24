@@ -45,7 +45,17 @@ func TestStorage(t *testing.T) {
 		},
 	}
 
-	_, err := s.ReleasesCreate(app, "Deploying new image")
+	user := &empire.User{
+		Name: "ejholmes",
+	}
+
+	event := empire.DeployEvent{
+		BaseEvent: empire.NewBaseEvent(user, "Some message included at deploy time"),
+		App:       "acme-inc",
+		Image:     "remind101/acme-inc:latest",
+	}
+
+	_, err := s.ReleasesCreate(app, event)
 	assert.NoError(t, err)
 
 	apps, err := s.Apps(empire.AppsQuery{})
@@ -67,7 +77,7 @@ func TestStorage(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(releases))
-	assert.Equal(t, "Deploying new image", releases[0].Description)
+	assert.Equal(t, "Deployed remind101/acme-inc:latest to acme-inc\n\nSome message included at deploy time", releases[0].Description)
 }
 
 func newHTTPClient(t testing.TB) *http.Client {

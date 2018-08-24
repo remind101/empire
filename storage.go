@@ -7,7 +7,7 @@ type Storage interface {
 
 	ReleasesFind(ReleasesQuery) (*Release, error)
 	Releases(ReleasesQuery) ([]*Release, error)
-	ReleasesCreate(*App, string) (*Release, error)
+	ReleasesCreate(*App, Event) (*Release, error)
 
 	Reset() error
 	IsHealthy() error

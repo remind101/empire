@@ -142,11 +142,17 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		log.Println("Using static authentication backend")
 		// Fake authentication password where the user is "fake" and
 		// password is blank.
+		user := &empire.User{
+			Name:     "fake",
+			FullName: "Fake McFake",
+			Email:    "fake@example.org",
+		}
+
 		return &auth.Auth{
 			Strategies: auth.Strategies{
 				{
 					Name:          auth.StrategyUsernamePassword,
-					Authenticator: withSessionExpiration(auth.StaticAuthenticator("fake", "", "", &empire.User{Name: "fake"})),
+					Authenticator: withSessionExpiration(auth.StaticAuthenticator("fake", "", "", user)),
 				},
 			},
 		}
@@ -154,7 +160,7 @@ func newAuth(c *Context, e *empire.Empire) *auth.Auth {
 		config := &oauth2.Config{
 			ClientID:     c.String(FlagGithubClient),
 			ClientSecret: c.String(FlagGithubClientSecret),
-			Scopes:       []string{"repo_deployment", "read:org"},
+			Scopes:       []string{"read:org", "user:email"},
 		}
 
 		client := githubauth.NewClient(config)

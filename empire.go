@@ -77,9 +77,6 @@ type Empire struct {
 	// ImageRegistry is used to interract with container images.
 	ImageRegistry ImageRegistry
 
-	// Environment represents the environment this Empire server is responsible for
-	Environment string
-
 	// EventStream service for publishing Empire events.
 	EventStream
 
@@ -138,9 +135,11 @@ type CreateOpts struct {
 
 func (opts CreateOpts) Event() CreateEvent {
 	return CreateEvent{
-		User:    opts.User.Name,
-		Name:    opts.Name,
-		Message: opts.Message,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
+		Name: opts.Name,
 	}
 }
 
@@ -156,13 +155,14 @@ func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*Release, error) 
 
 	app := NewApp(opts.Name)
 
-	desc := fmt.Sprintf("Creating new application")
-	release, err := e.storage.ReleasesCreate(app, desc)
+	event := opts.Event()
+
+	release, err := e.storage.ReleasesCreate(app, event)
 	if err != nil {
 		return nil, err
 	}
 
-	return release, e.PublishEvent(opts.Event())
+	return release, e.PublishEvent(event)
 }
 
 // DestroyOpts are options provided when destroying an application.
@@ -179,9 +179,11 @@ type DestroyOpts struct {
 
 func (opts DestroyOpts) Event() DestroyEvent {
 	return DestroyEvent{
-		User:    opts.User.Name,
-		App:     opts.App.Name,
-		Message: opts.Message,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
+		App: opts.App.Name,
 	}
 }
 
@@ -223,10 +225,12 @@ type SetMaintenanceModeOpts struct {
 
 func (opts SetMaintenanceModeOpts) Event() MaintenanceEvent {
 	return MaintenanceEvent{
-		User:        opts.User.Name,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
 		App:         opts.App.Name,
 		Maintenance: opts.Maintenance,
-		Message:     opts.Message,
 	}
 }
 
@@ -246,11 +250,13 @@ func (e *Empire) SetMaintenanceMode(ctx context.Context, opts SetMaintenanceMode
 	app := opts.App
 	app.Maintenance = opts.Maintenance
 
-	if _, err := e.storage.ReleasesCreate(app, "Enabling maintenance mode"); err != nil {
+	event := opts.Event()
+
+	if _, err := e.storage.ReleasesCreate(app, event); err != nil {
 		return err
 	}
 
-	return e.PublishEvent(opts.Event())
+	return e.PublishEvent(event)
 }
 
 // SetOpts are options provided when setting new config vars on an app.
@@ -275,10 +281,12 @@ func (opts SetOpts) Event() SetEvent {
 	}
 
 	return SetEvent{
-		User:    opts.User.Name,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
 		App:     opts.App.Name,
 		Changed: changed,
-		Message: opts.Message,
 		app:     opts.App,
 	}
 }
@@ -296,14 +304,15 @@ func (e *Empire) Set(ctx context.Context, opts SetOpts) (map[string]string, erro
 	}
 
 	app, vars := opts.App, opts.Vars
-
 	app.Environment = newConfig(app.Environment, vars)
 
-	if _, err := e.storage.ReleasesCreate(app, "Setting environment variables"); err != nil {
+	event := opts.Event()
+
+	if _, err := e.storage.ReleasesCreate(app, event); err != nil {
 		return nil, err
 	}
 
-	return app.Environment, e.PublishEvent(opts.Event())
+	return app.Environment, e.PublishEvent(event)
 }
 
 // Tasks returns the Tasks for the given app.
@@ -329,11 +338,13 @@ type RestartOpts struct {
 
 func (opts RestartOpts) Event() RestartEvent {
 	return RestartEvent{
-		User:    opts.User.Name,
-		App:     opts.App.Name,
-		PID:     opts.PID,
-		Message: opts.Message,
-		app:     opts.App,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
+		App: opts.App.Name,
+		PID: opts.PID,
+		app: opts.App,
 	}
 }
 
@@ -380,11 +391,13 @@ func (opts RunOpts) Event() RunEvent {
 	}
 
 	return RunEvent{
-		User:     opts.User.Name,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
 		App:      opts.App.Name,
 		Command:  opts.Command,
 		Attached: attached,
-		Message:  opts.Message,
 		app:      opts.App,
 	}
 }
@@ -415,7 +428,6 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 		}
 
 		msg := fmt.Sprintf("Running `%s` on %s as %s", opts.Command, opts.App.Name, opts.User.Name)
-		msg = appendCommitMessage(msg, opts.Message)
 		io.WriteString(w, fmt.Sprintf("%s\n", msg))
 
 		// Write output to both the original output as well as the
@@ -467,10 +479,12 @@ type RollbackOpts struct {
 
 func (opts RollbackOpts) Event() RollbackEvent {
 	return RollbackEvent{
-		User:    opts.User.Name,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
 		App:     opts.App.Name,
 		Version: opts.Version,
-		Message: opts.Message,
 		app:     opts.App,
 	}
 }
@@ -520,9 +534,11 @@ type DeployOpts struct {
 
 func (opts DeployOpts) Event() DeployEvent {
 	e := DeployEvent{
-		User:    opts.User.Name,
-		Image:   opts.Image.String(),
-		Message: opts.Message,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
+		Image: opts.Image.String(),
 	}
 	if opts.App != nil {
 		e.App = opts.App.Name
@@ -581,21 +597,11 @@ func (e *Empire) deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 	app.Image = &slug.Image
 	app.Formation = formation.Merge(app.Formation)
 
-	desc := fmt.Sprintf("Deploy %s", img.String())
-	desc = appendMessageToDescription(desc, opts.User, opts.Message)
+	event := opts.Event()
 
-	r, err := e.storage.ReleasesCreate(app, desc)
+	r, err := e.storage.ReleasesCreate(app, event)
 	if err != nil {
 		return nil, err
-	}
-
-	event := opts.Event()
-	event.Release = r.App.Version
-	event.Environment = e.Environment
-	// Deals with new app creation on first deploy
-	if event.App == "" && r.App != nil {
-		event.App = r.App.Name
-		event.app = r.App
 	}
 
 	return r, e.PublishEvent(event)
@@ -628,10 +634,12 @@ type ScaleOpts struct {
 
 func (opts ScaleOpts) Event() ScaleEvent {
 	e := ScaleEvent{
-		User:    opts.User.Name,
-		App:     opts.App.Name,
-		Message: opts.Message,
-		app:     opts.App,
+		BaseEvent: BaseEvent{
+			user:    opts.User,
+			message: opts.Message,
+		},
+		App: opts.App.Name,
+		app: opts.App,
 	}
 
 	var updates []*ScaleEventUpdate
@@ -685,14 +693,12 @@ func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) 
 		ps = append(ps, &p)
 	}
 
-	// TODO
-	desc := fmt.Sprintf("Scaled processes")
-	_, err := e.storage.ReleasesCreate(app, desc)
+	_, err := e.storage.ReleasesCreate(app, event)
 	if err != nil {
 		return nil, err
 	}
 
-	return ps, nil
+	return ps, e.PublishEvent(event)
 }
 
 // ListScale lists the current scale settings for a given App

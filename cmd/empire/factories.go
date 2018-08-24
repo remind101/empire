@@ -61,7 +61,6 @@ func newEmpire(c *Context) (*empire.Empire, error) {
 	e := empire.New(storage)
 	e.EventStream = empire.AsyncEvents(streams)
 	e.ImageRegistry = reg
-	e.Environment = c.String(FlagEnvironment)
 	e.RunRecorder = runRecorder
 	e.MessagesRequired = c.Bool(FlagMessagesRequired)
 

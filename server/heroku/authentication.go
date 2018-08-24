@@ -219,9 +219,13 @@ func accessTokenToJwt(token *AccessToken) *jwt.Token {
 	t.Claims["User"] = struct {
 		Name        string
 		GitHubToken string
+		FullName    string
+		Email       string
 	}{
 		Name:        token.User.Name,
 		GitHubToken: token.User.GitHubToken,
+		FullName:    token.User.FullName,
+		Email:       token.User.Email,
 	}
 
 	return t
@@ -249,6 +253,18 @@ func jwtToAccessToken(t *jwt.Token) (*AccessToken, error) {
 			user.GitHubToken = gt
 		} else {
 			return &token, errors.New("missing github token")
+		}
+
+		if fn, ok := u["FullName"].(string); ok {
+			user.FullName = fn
+		} else {
+			return &token, errors.New("missing full name")
+		}
+
+		if e, ok := u["Email"].(string); ok {
+			user.Email = e
+		} else {
+			return &token, errors.New("missing email")
 		}
 
 		token.User = &user

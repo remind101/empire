@@ -15,6 +15,7 @@ import (
 type Event struct {
 	Event   string
 	Message string
+	User    string
 	Data    interface{}
 }
 
@@ -41,6 +42,7 @@ func (e *EventStream) PublishEvent(event empire.Event) error {
 	raw, err := json.Marshal(&Event{
 		Event:   event.Event(),
 		Message: event.String(),
+		User:    event.User().Name,
 		Data:    event,
 	})
 	if err != nil {

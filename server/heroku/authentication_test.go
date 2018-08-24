@@ -211,23 +211,27 @@ var tokenTests = []struct {
 	{
 		&AccessToken{
 			User: &empire.User{
-				Name: "ejholmes",
+				Name:     "ejholmes",
+				FullName: "Eric Holmes",
+				Email:    "eric@example.org",
 			},
 		},
-		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7Ik5hbWUiOiJlamhvbG1lcyIsIkdpdEh1YlRva2VuIjoiIn19.vG51_ah6HX2c9lsOcbC8hdl-xtqDIy_eJQ7ga6CQIEQ",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7Ik5hbWUiOiJlamhvbG1lcyIsIkdpdEh1YlRva2VuIjoiIiwiRnVsbE5hbWUiOiJFcmljIEhvbG1lcyIsIkVtYWlsIjoiZXJpY0BleGFtcGxlLm9yZyJ9fQ.GqPT-ahph-Z9-jENCeRdI9AF_RUTBmLi8hR5pOWOFRs",
 	},
 
 	{
 		&AccessToken{
 			User: &empire.User{
-				Name: "ejholmes",
+				Name:     "ejholmes",
+				FullName: "Eric Holmes",
+				Email:    "eric@example.org",
 			},
 			ExpiresAt: func() *time.Time {
 				t := time.Date(2059, time.November, 10, 23, 0, 0, 0, time.UTC)
 				return &t
 			}(),
 		},
-		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7Ik5hbWUiOiJlamhvbG1lcyIsIkdpdEh1YlRva2VuIjoiIn0sImV4cCI6MjgzNTczMDgwMH0.k0Z1_5wVdI5AMInj5-fl_Xm_K5WVmRuPDblu-bqJ1p8",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyIjp7Ik5hbWUiOiJlamhvbG1lcyIsIkdpdEh1YlRva2VuIjoiIiwiRnVsbE5hbWUiOiJFcmljIEhvbG1lcyIsIkVtYWlsIjoiZXJpY0BleGFtcGxlLm9yZyJ9LCJleHAiOjI4MzU3MzA4MDB9.fW3hKhsIzWhj80uBTojdx_QrI8sBI_siZHxzYvOkbOc",
 	},
 }
 

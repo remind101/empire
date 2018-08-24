@@ -1,6 +1,7 @@
 package github
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -67,7 +68,7 @@ func NewStorage(c *http.Client) *Storage {
 //	> git commit -m "Description of the changes"
 //	> git checkout base-ref
 //	> git merge --no-ff changes
-func (s *Storage) ReleasesCreate(app *empire.App, description string) (*empire.Release, error) {
+func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.Release, error) {
 	// Auto increment the version number for this new release.
 	app.Version = app.Version + 1
 
@@ -96,11 +97,14 @@ func (s *Storage) ReleasesCreate(app *empire.App, description string) (*empire.R
 		return nil, fmt.Errorf("creating tree: %v", err)
 	}
 
+	commitMessage := fmt.Sprintf("%s\n\n%s", event.String(), event.Message())
+
 	// Create a new commit object with our new tree.
 	commit, _, err := s.github.Git.CreateCommit(s.Owner, s.Repo, &github.Commit{
-		Message: github.String(description),
-		Tree:    tree,
-		Parents: []github.Commit{*lastCommit},
+		Message:   github.String(commitMessage),
+		Tree:      tree,
+		Parents:   []github.Commit{*lastCommit},
+		Committer: commitAuthor(event.User()),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating commit: %v", err)
@@ -118,7 +122,7 @@ func (s *Storage) ReleasesCreate(app *empire.App, description string) (*empire.R
 
 	return &empire.Release{
 		App:         app,
-		Description: description,
+		Description: commitMessage,
 	}, nil
 }
 
@@ -146,9 +150,15 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Just read the first line of the commit message as the release
+		// description.
+		r := bufio.NewReader(strings.NewReader(*commit.Commit.Message))
+		desc, _ := r.ReadString('\n')
+
 		releases = append(releases, &empire.Release{
 			App:         app,
-			Description: *commit.Commit.Message,
+			Description: strings.TrimSpace(desc),
 			CreatedAt:   commit.Commit.Committer.Date,
 		})
 	}
@@ -384,4 +394,23 @@ func fileContent(f contentFetcher, path string) ([]byte, error) {
 	}
 
 	return raw, nil
+}
+
+// commitAuthor returns a suitable github.CommitAuthor for an authenticated
+// user.
+func commitAuthor(user *empire.User) *github.CommitAuthor {
+	name := user.FullName
+	if name == "" {
+		name = user.Name
+	}
+
+	email := user.Email
+	if email == "" {
+		email = name
+	}
+
+	return &github.CommitAuthor{
+		Name:  github.String(name),
+		Email: github.String(email),
+	}
 }

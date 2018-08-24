@@ -61,7 +61,7 @@ func (s *Storage) AppsDestroy(app *empire.App) error {
 	return nil
 }
 
-func (s *Storage) ReleasesCreate(app *empire.App, message string) (*empire.Release, error) {
+func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.Release, error) {
 	app.BeforeCreate()
 
 	releases, ok := s.apps[app.Name]
@@ -74,7 +74,7 @@ func (s *Storage) ReleasesCreate(app *empire.App, message string) (*empire.Relea
 	app2.Version = app.Version + 1
 	release := &empire.Release{
 		App:         &app2,
-		Description: message,
+		Description: event.String(),
 	}
 	release.BeforeCreate()
 	releases.PushFront(release)

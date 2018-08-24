@@ -24,8 +24,8 @@ Status: Finished processing events for release v2 of acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			`v1    Dec 31  2014  Creating new application
-v2    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake)`,
+			`v1    Dec 31  2014  Created acme-inc
+v2    Dec 31  2014  Deployed remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2`,
 		},
 		{
 			"deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 -m important",
@@ -40,9 +40,9 @@ Status: Finished processing events for release v3 of acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			`v1    Dec 31  2014  Creating new application
-v2    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake)
-v3    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake: 'important')`,
+			`v1    Dec 31  2014  Created acme-inc
+v2    Dec 31  2014  Deployed remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2
+v3    Dec 31  2014  Deployed remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2`,
 		},
 		{
 			"create my-app",
@@ -61,8 +61,8 @@ Status: Finished processing events for release v2 of my-app`,
 		},
 		{
 			"releases -a my-app",
-			`v1    Dec 31  2014  Creating new application
-v2    Dec 31  2014  Deploy remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 (fake)`,
+			`v1    Dec 31  2014  Created my-app
+v2    Dec 31  2014  Deployed remind101/acme-inc:9ea71ea5abe676f117b2c969a6ea3c1be8ed4098d2118b1fd9ea5a5e59aa24f2 to my-app`,
 		},
 	})
 }
@@ -86,8 +86,8 @@ Status: Finished processing events for release v2 of acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			`v1    Dec 31  2014  Creating new application
-v2    Dec 31  2014  Deploy remind101/acme-inc:latest (fake)`,
+			`v1    Dec 31  2014  Created acme-inc
+v2    Dec 31  2014  Deployed remind101/acme-inc:latest`,
 		},
 	})
 }
@@ -119,7 +119,7 @@ Status: Finished processing events for release v1 of acme-inc`,
 		},
 		{
 			"releases -a acme-inc",
-			"v1    Dec 31  2014  Deploy remind101/acme-inc:latest (fake: 'commit')",
+			"v1    Dec 31  2014  Deployed remind101/acme-inc:latest (fake: 'commit')",
 		},
 	})
 }
