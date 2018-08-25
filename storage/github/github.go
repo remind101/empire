@@ -33,6 +33,15 @@ const (
 	FileServices = "services.json"
 )
 
+// Committer returns a *github.CommitAuthor that gets attributed to the given
+// email.
+func Committer(email string) *github.CommitAuthor {
+	return &github.CommitAuthor{
+		Name:  github.String("GitHub App"),
+		Email: github.String(email),
+	}
+}
+
 // Storage is an implementation of the empire.Storage interface that uses the
 // GitHub Git API to store application configuration withing a GitHub
 // repository.
@@ -40,6 +49,11 @@ const (
 // https://developer.github.com/v3/git/
 // https://developer.github.com/v3/repos/
 type Storage struct {
+	// When provided, this will be used as the committer of all commits
+	// made. If not provided, commits will be attributed to the
+	// authenticated App/User.
+	Committer *github.CommitAuthor
+
 	// The GitHub repository where configuration will be stored.
 	Owner, Repo string
 
@@ -99,12 +113,20 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 
 	commitMessage := fmt.Sprintf("%s\n\n%s", event.String(), event.Message())
 
+	author := commitAuthor(event.User())
+	committer := s.Committer
+	if committer == nil {
+		committer = author
+		author = nil
+	}
+
 	// Create a new commit object with our new tree.
 	commit, _, err := s.github.Git.CreateCommit(s.Owner, s.Repo, &github.Commit{
 		Message:   github.String(commitMessage),
 		Tree:      tree,
 		Parents:   []github.Commit{*lastCommit},
-		Committer: commitAuthor(event.User()),
+		Author:    author,
+		Committer: committer,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating commit: %v", err)

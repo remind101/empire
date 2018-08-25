@@ -98,6 +98,11 @@ func newGitHubStorage(c *Context) (*github.Storage, error) {
 	s.BasePath = c.String(FlagStorageGitHubBasePath)
 	s.Ref = c.String(FlagStorageGitHubRef)
 
+	committerEmail := c.String(FlagStorageGitHubCommitterEmail)
+	if committerEmail != "" {
+		s.Committer = github.Committer(committerEmail)
+	}
+
 	return s, nil
 }
 

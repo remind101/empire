@@ -36,6 +36,7 @@ const (
 	FlagStorageGitHubRepo           = "storage.github.repo"
 	FlagStorageGitHubBasePath       = "storage.github.base_path"
 	FlagStorageGitHubRef            = "storage.github.ref"
+	FlagStorageGitHubCommitterEmail = "storage.github.committer_email"
 
 	FlagSAMLMetadata       = "saml.metadata"
 	FlagSAMLKey            = "saml.key"
@@ -146,6 +147,12 @@ var Commands = []cli.Command{
 				Value:  "refs/heads/master",
 				Usage:  "The target ref where changes made by Empire will be merged.",
 				EnvVar: "EMPIRE_STORAGE_GITHUB_REF",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubCommitterEmail,
+				Value:  "",
+				Usage:  "When present, specifies the email for who to attribute commits to.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_COMMITTER_EMAIL",
 			},
 			cli.StringFlag{
 				Name:   FlagSAMLMetadata,

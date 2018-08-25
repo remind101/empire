@@ -77,7 +77,7 @@ func TestStorage(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(releases))
-	assert.Equal(t, "Deployed remind101/acme-inc:latest to acme-inc\n\nSome message included at deploy time", releases[0].Description)
+	assert.Equal(t, "Deployed remind101/acme-inc:latest to acme-inc", releases[0].Description)
 }
 
 func newHTTPClient(t testing.TB) *http.Client {
