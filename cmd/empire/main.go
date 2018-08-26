@@ -30,13 +30,14 @@ const (
 	FlagServerSessionExpiration = "server.session.expiration"
 	FlagServerRealIp            = "server.realip"
 
-	FlagStorageGitHubAppID          = "storage.github.app_id"
-	FlagStorageGitHubInstallationID = "storage.github.installation_id"
-	FlagStorageGitHubPrivateKey     = "storage.github.private_key"
 	FlagStorageGitHubRepo           = "storage.github.repo"
 	FlagStorageGitHubBasePath       = "storage.github.base_path"
 	FlagStorageGitHubRef            = "storage.github.ref"
 	FlagStorageGitHubCommitterEmail = "storage.github.committer_email"
+	FlagStorageGitHubAccessToken    = "storage.github.access_token"
+	FlagStorageGitHubAppID          = "storage.github.app_id"
+	FlagStorageGitHubInstallationID = "storage.github.installation_id"
+	FlagStorageGitHubPrivateKey     = "storage.github.private_key"
 
 	FlagSAMLMetadata       = "saml.metadata"
 	FlagSAMLKey            = "saml.key"
@@ -117,21 +118,6 @@ var Commands = []cli.Command{
 				Usage:  "Determines the headers that can be trusted to determine the real ip. By default, no headers are trusted and the ip is extracted from the remote address. If you're using ELB, you should set this to X-Forwarded-For. If you're using something like nginx + real_ip module, you can set this to X-Real-Ip.",
 				EnvVar: "EMPIRE_SERVER_REAL_IP",
 			},
-			cli.IntFlag{
-				Name:   FlagStorageGitHubAppID,
-				Usage:  "The GitHub app ID that will be used to make automated commits.",
-				EnvVar: "EMPIRE_STORAGE_GITHUB_APP_ID",
-			},
-			cli.IntFlag{
-				Name:   FlagStorageGitHubInstallationID,
-				Usage:  "The GitHub app installation ID that will be used to make automated commits.",
-				EnvVar: "EMPIRE_STORAGE_GITHUB_INSTALLATION_ID",
-			},
-			cli.StringFlag{
-				Name:   FlagStorageGitHubPrivateKey,
-				Usage:  "Base64'd PEM encoded private key for the GitHub app.",
-				EnvVar: "EMPIRE_STORAGE_GITHUB_PRIVATE_KEY",
-			},
 			cli.StringFlag{
 				Name:   FlagStorageGitHubRepo,
 				Usage:  "The name of the GitHub repo where app configuration will be stored.",
@@ -153,6 +139,26 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "When present, specifies the email for who to attribute commits to.",
 				EnvVar: "EMPIRE_STORAGE_GITHUB_COMMITTER_EMAIL",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubAccessToken,
+				Usage:  "Access key used to authenticate git pushes. Leave blank of specifying a GitHub app.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_ACCESS_TOKEN",
+			},
+			cli.IntFlag{
+				Name:   FlagStorageGitHubAppID,
+				Usage:  "The GitHub app ID that will be used to make automated commits. Leave blank of specifying an access token instead.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_APP_ID",
+			},
+			cli.IntFlag{
+				Name:   FlagStorageGitHubInstallationID,
+				Usage:  "The GitHub app installation ID that will be used to make automated commits. Leave blank of specifying an access token instead.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_INSTALLATION_ID",
+			},
+			cli.StringFlag{
+				Name:   FlagStorageGitHubPrivateKey,
+				Usage:  "Base64'd PEM encoded private key for the GitHub app. Leave blank of specifying an access token instead.",
+				EnvVar: "EMPIRE_STORAGE_GITHUB_PRIVATE_KEY",
 			},
 			cli.StringFlag{
 				Name:   FlagSAMLMetadata,

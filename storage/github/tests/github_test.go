@@ -1,9 +1,12 @@
 package github_test
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"testing"
+
+	"golang.org/x/oauth2"
 
 	"github.com/remind101/empire"
 	"github.com/remind101/empire/internal/ghinstallation"
@@ -13,14 +16,18 @@ import (
 )
 
 var (
-	githubAppID          = flag.Int("test.github.app_id", 0, "GitHub App ID")
-	githubInstallationID = flag.Int("test.github.installation_id", 0, "GitHub Installation ID")
-	githubPrivateKeyPath = flag.String("test.github.private_key", "", "Path to private key")
-
 	githubOwner    = flag.String("test.github.owner", "", "Owner of the repo")
 	githubRepo     = flag.String("test.github.repo", "", "Repo to commit to")
 	githubBasePath = flag.String("test.github.basepath", "apps/test", "Base path to commit to")
 	githubRef      = flag.String("test.github.ref", "refs/heads/master", "Git ref to merge into")
+
+	// You can specify either a hard coded access token
+	githubAccessToken = flag.String("test.github.access_token", "", "GitHub access token to use to make authenticated commits")
+
+	// Or authenticate through a github app
+	githubAppID          = flag.Int("test.github.app_id", 0, "GitHub App ID")
+	githubInstallationID = flag.Int("test.github.installation_id", 0, "GitHub Installation ID")
+	githubPrivateKeyPath = flag.String("test.github.private_key", "", "Path to private key")
 )
 
 // Does an complete functional test against a real GitHub repo.
@@ -81,14 +88,22 @@ func TestStorage(t *testing.T) {
 }
 
 func newHTTPClient(t testing.TB) *http.Client {
-	if *githubAppID == 0 {
+	if *githubAccessToken != "" {
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: *githubAccessToken},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		return tc
+	} else if *githubAppID != 0 {
+		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, *githubAppID, *githubInstallationID, *githubPrivateKeyPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return &http.Client{Transport: itr}
+	} else {
 		t.Skip()
+		return nil
 	}
-
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, *githubAppID, *githubInstallationID, *githubPrivateKeyPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return &http.Client{Transport: itr}
 }

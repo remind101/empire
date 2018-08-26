@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -8,6 +9,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"golang.org/x/oauth2"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -80,18 +83,12 @@ func newStorage(c *Context) (empire.Storage, error) {
 }
 
 func newGitHubStorage(c *Context) (*github.Storage, error) {
-	githubAppID := c.Int(FlagStorageGitHubAppID)
-	githubInstallationID := c.Int(FlagStorageGitHubInstallationID)
-	githubPrivateKey, err := base64.StdEncoding.DecodeString(c.String(FlagStorageGitHubPrivateKey))
-	if err != nil {
-		return nil, err
-	}
-	itr, err := ghinstallation.New(http.DefaultTransport, githubAppID, githubInstallationID, githubPrivateKey)
+	httpClient, err := newGitHubStorageHTTPClient(c)
 	if err != nil {
 		return nil, err
 	}
 
-	s := github.NewStorage(&http.Client{Transport: itr})
+	s := github.NewStorage(httpClient)
 	parts := strings.SplitN(c.String(FlagStorageGitHubRepo), "/", 2)
 	s.Owner = parts[0]
 	s.Repo = parts[1]
@@ -104,6 +101,32 @@ func newGitHubStorage(c *Context) (*github.Storage, error) {
 	}
 
 	return s, nil
+}
+
+func newGitHubStorageHTTPClient(c *Context) (*http.Client, error) {
+	githubAccessToken := c.String(FlagStorageGitHubAccessToken)
+	githubAppID := c.Int(FlagStorageGitHubAppID)
+	if githubAccessToken != "" {
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: githubAccessToken},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		return tc, nil
+	} else if githubAppID != 0 {
+		githubInstallationID := c.Int(FlagStorageGitHubInstallationID)
+		githubPrivateKey, err := base64.StdEncoding.DecodeString(c.String(FlagStorageGitHubPrivateKey))
+		if err != nil {
+			return nil, err
+		}
+		itr, err := ghinstallation.New(http.DefaultTransport, githubAppID, githubInstallationID, githubPrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		return &http.Client{Transport: itr}, nil
+	} else {
+		return nil, fmt.Errorf("no github access token or github app provided")
+	}
 }
 
 // DockerClient ========================
