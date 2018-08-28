@@ -379,7 +379,7 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 		for _, service := range services {
 			d, ok := deployments[*service.ServiceArn]
 			if !ok {
-				return false, fmt.Errorf("missing deployment for: %s", service.ServiceArn)
+				return false, fmt.Errorf("missing deployment for: %s", *service.ServiceArn)
 			}
 			primary := false
 			stable := len(service.Deployments) == 1
@@ -712,6 +712,13 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
 	}); err != nil {
+		// If Empire doesn't have access to delete this stack, just
+		// ignore it. This allows for an easy flow where you can delete
+		// an app from Empire, without actually removing it from
+		// CloudFormation.
+		if err, ok := err.(awserr.Error); ok && err.Code() == "AccessDenied" {
+			return nil
+		}
 		return fmt.Errorf("error deleting stack: %v", err)
 	}
 
