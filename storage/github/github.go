@@ -28,8 +28,8 @@ const BlobPerms = "100644"
 
 const (
 	FileVersion  = "VERSION"
+	FileImage    = "IMAGE"
 	FileEnv      = "app.env"
-	FileImage    = "image.txt"
 	FileServices = "services.json"
 )
 
@@ -168,7 +168,13 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 	// N+1 and results in a lot of API calls to GitHub.
 	for _, commit := range commits {
 		f := s.GetContentsAtRef(*commit.SHA)
-		app, err := loadApp(f, &empire.App{Name: app.Name})
+
+		// Only load the VERSION file when listing releases.
+		include := map[string]bool{
+			FileVersion: true,
+		}
+
+		app, err := loadApp(f, &empire.App{Name: app.Name}, include)
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +247,7 @@ func (s *Storage) AppsFind(q empire.AppsQuery) (*empire.App, error) {
 
 	app := apps[0]
 
-	return loadApp(s, app)
+	return loadApp(s, app, nil)
 }
 
 // GetContents gets some dir/file content in the repo, under the BasePath.
@@ -358,40 +364,59 @@ func (fn contentFetcherFunc) GetContents(elem ...string) (*github.RepositoryCont
 	return fn(elem...)
 }
 
-func loadApp(f contentFetcher, app *empire.App) (*empire.App, error) {
-	version, err := fileContent(f, PathJoin(app.Name, FileVersion))
-	if err != nil {
-		return nil, err
-	}
-	vi, err := strconv.Atoi(strings.TrimSpace(string(version))[1:])
-	if err != nil {
-		return nil, err
-	}
-	app.Version = vi
+var includeAll = map[string]bool{
+	FileVersion:  true,
+	FileImage:    true,
+	FileEnv:      true,
+	FileServices: true,
+}
 
-	if err := decodeFile(f, PathJoin(app.Name, FileServices), &app.Formation); err != nil {
-		return nil, err
+func loadApp(f contentFetcher, app *empire.App, include map[string]bool) (*empire.App, error) {
+	if include == nil {
+		include = includeAll
 	}
 
-	imageContent, err := fileContent(f, PathJoin(app.Name, FileImage))
-	if err != nil {
-		return nil, err
+	if include[FileVersion] {
+		version, err := fileContent(f, PathJoin(app.Name, FileVersion))
+		if err != nil {
+			return nil, err
+		}
+		vi, err := strconv.Atoi(strings.TrimSpace(string(version))[1:])
+		if err != nil {
+			return nil, err
+		}
+		app.Version = vi
 	}
-	img, err := image.Decode(string(imageContent))
-	if err != nil {
-		return nil, err
-	}
-	app.Image = &img
 
-	envContent, err := fileContent(f, PathJoin(app.Name, FileEnv))
-	if err != nil {
-		return nil, err
+	if include[FileServices] {
+		if err := decodeFile(f, PathJoin(app.Name, FileServices), &app.Formation); err != nil {
+			return nil, err
+		}
 	}
-	env, err := dotenv.Read(bytes.NewReader(envContent))
-	if err != nil {
-		return nil, err
+
+	if include[FileImage] {
+		imageContent, err := fileContent(f, PathJoin(app.Name, FileImage))
+		if err != nil {
+			return nil, err
+		}
+		img, err := image.Decode(string(imageContent))
+		if err != nil {
+			return nil, err
+		}
+		app.Image = &img
 	}
-	app.Environment = env
+
+	if include[FileEnv] {
+		envContent, err := fileContent(f, PathJoin(app.Name, FileEnv))
+		if err != nil {
+			return nil, err
+		}
+		env, err := dotenv.Read(bytes.NewReader(envContent))
+		if err != nil {
+			return nil, err
+		}
+		app.Environment = env
+	}
 
 	return app, nil
 }

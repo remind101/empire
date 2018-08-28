@@ -12,16 +12,19 @@ import (
 type Release heroku.Release
 
 func newRelease(r *empire.Release) *Release {
-	return &Release{
-		Version: r.App.Version,
-		Slug: &struct {
-			Id string `json:"id"`
-		}{
-			Id: r.App.Image.String(),
-		},
+	release := &Release{
+		Version:     r.App.Version,
 		Description: r.Description,
 		CreatedAt:   *r.CreatedAt,
 	}
+	if r.App.Image != nil {
+		release.Slug = &struct {
+			Id string `json:"id"`
+		}{
+			Id: r.App.Image.String(),
+		}
+	}
+	return release
 }
 
 func newReleases(rs []*empire.Release) []*Release {
