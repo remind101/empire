@@ -1,11 +1,22 @@
 package empire
 
 import (
-	"fmt"
+	"io"
 	"time"
 
 	"golang.org/x/net/context"
 )
+
+type IO struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+type TaskEngine interface {
+	Run(context.Context, *App, *IO) error
+	Tasks(context.Context, *App) ([]*Task, error)
+}
 
 // Host represents the host of the task
 type Host struct {
@@ -45,5 +56,5 @@ type tasksService struct {
 }
 
 func (s *tasksService) Tasks(ctx context.Context, app *App) ([]*Task, error) {
-	return nil, fmt.Errorf("`emp ps` is currently unsupported")
+	return s.engine.Tasks(ctx, app)
 }

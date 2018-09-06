@@ -19,11 +19,11 @@ func testRestart(t *testing.T) {
 			"scale web=2 -a acme-inc",
 			"Scaled acme-inc to web=2:1X.",
 		},
-		//{
-		//"dynos -a acme-inc",
-		//`v1.web.1  i-aa111aa1  1X  running   5d  "./bin/web"
-		//v1.web.2  i-aa111aa1  1X  running   5d  "./bin/web"`,
-		//},
+		{
+			"dynos -a acme-inc",
+			`v1.web.1  i-aa111aa1  1X  running   5d  "./bin/web"
+v1.web.2  i-aa111aa1  1X  running   5d  "./bin/web"`,
+		},
 		{
 			"restart -a acme-inc",
 			"Restarted all dynos for acme-inc.",

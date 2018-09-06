@@ -65,10 +65,16 @@ func (e *NoCertError) Error() string {
 	return fmt.Sprintf("the %s process does not have a certificate attached", e.Process)
 }
 
+// Engine represents the core pieces of Empire that are swappable.
+type Engine interface {
+	Storage
+	TaskEngine
+}
+
 // Empire provides the core public API for Empire. Refer to the package
 // documentation for details.
 type Empire struct {
-	storage Storage
+	engine Engine
 
 	tasks  *tasksService
 	runner *runnerService
@@ -92,9 +98,9 @@ type Empire struct {
 }
 
 // New returns a new Empire instance.
-func New(storage Storage) *Empire {
+func New(engine Engine) *Empire {
 	e := &Empire{
-		storage:     storage,
+		engine:      engine,
 		EventStream: NullEventStream,
 	}
 
@@ -106,12 +112,12 @@ func New(storage Storage) *Empire {
 
 // AppsFind finds the first app matching the query.
 func (e *Empire) AppsFind(q AppsQuery) (*App, error) {
-	return e.storage.AppsFind(q)
+	return e.engine.AppsFind(q)
 }
 
 // Apps returns all Apps.
 func (e *Empire) Apps(q AppsQuery) ([]*App, error) {
-	return e.storage.Apps(q)
+	return e.engine.Apps(q)
 }
 
 func (e *Empire) requireMessages(m string) error {
@@ -157,7 +163,7 @@ func (e *Empire) Create(ctx context.Context, opts CreateOpts) (*Release, error) 
 
 	event := opts.Event()
 
-	release, err := e.storage.ReleasesCreate(app, event)
+	release, err := e.engine.ReleasesCreate(app, event)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +203,7 @@ func (e *Empire) Destroy(ctx context.Context, opts DestroyOpts) error {
 		return err
 	}
 
-	if err := e.storage.AppsDestroy(opts.App); err != nil {
+	if err := e.engine.AppsDestroy(opts.App); err != nil {
 		return err
 	}
 
@@ -252,7 +258,7 @@ func (e *Empire) SetMaintenanceMode(ctx context.Context, opts SetMaintenanceMode
 
 	event := opts.Event()
 
-	if _, err := e.storage.ReleasesCreate(app, event); err != nil {
+	if _, err := e.engine.ReleasesCreate(app, event); err != nil {
 		return err
 	}
 
@@ -308,7 +314,7 @@ func (e *Empire) Set(ctx context.Context, opts SetOpts) (map[string]string, erro
 
 	event := opts.Event()
 
-	if _, err := e.storage.ReleasesCreate(app, event); err != nil {
+	if _, err := e.engine.ReleasesCreate(app, event); err != nil {
 		return nil, err
 	}
 
@@ -374,8 +380,7 @@ type RunOpts struct {
 
 	// Input/Output streams. The caller is responsible for closing these
 	// streams.
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
+	IO *IO
 
 	// Extra environment variables to set.
 	Env map[string]string
@@ -386,7 +391,7 @@ type RunOpts struct {
 
 func (opts RunOpts) Event() RunEvent {
 	var attached bool
-	if opts.Stdout != nil || opts.Stderr != nil {
+	if opts.IO != nil {
 		attached = true
 	}
 
@@ -414,7 +419,9 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 		return err
 	}
 
-	if e.RunRecorder != nil && (opts.Stdout != nil || opts.Stderr != nil) {
+	if e.RunRecorder != nil && opts.IO != nil {
+		stdio := opts.IO
+
 		w, err := e.RunRecorder()
 		if err != nil {
 			return err
@@ -432,11 +439,11 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 
 		// Write output to both the original output as well as the
 		// record.
-		if opts.Stdout != nil {
-			opts.Stdout = io.MultiWriter(w, opts.Stdout)
+		if stdio.Stdout != nil {
+			stdio.Stdout = io.MultiWriter(w, stdio.Stdout)
 		}
-		if opts.Stderr != nil {
-			opts.Stderr = io.MultiWriter(w, opts.Stderr)
+		if stdio.Stderr != nil {
+			stdio.Stderr = io.MultiWriter(w, stdio.Stderr)
 		}
 	}
 
@@ -454,12 +461,12 @@ func (e *Empire) Run(ctx context.Context, opts RunOpts) error {
 
 // Releases returns all Releases for a given App.
 func (e *Empire) Releases(q ReleasesQuery) ([]*Release, error) {
-	return e.storage.Releases(q)
+	return e.engine.Releases(q)
 }
 
 // ReleasesFind returns the first releases for a given App.
 func (e *Empire) ReleasesFind(q ReleasesQuery) (*Release, error) {
-	return e.storage.ReleasesFind(q)
+	return e.engine.ReleasesFind(q)
 }
 
 // RollbackOpts are options provided when rolling back to an old release.
@@ -599,7 +606,7 @@ func (e *Empire) deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 
 	event := opts.Event()
 
-	r, err := e.storage.ReleasesCreate(app, event)
+	r, err := e.engine.ReleasesCreate(app, event)
 	if err != nil {
 		return nil, err
 	}
@@ -693,7 +700,7 @@ func (e *Empire) Scale(ctx context.Context, opts ScaleOpts) ([]*Process, error) 
 		ps = append(ps, &p)
 	}
 
-	_, err := e.storage.ReleasesCreate(app, event)
+	_, err := e.engine.ReleasesCreate(app, event)
 	if err != nil {
 		return nil, err
 	}
@@ -708,13 +715,13 @@ func (e *Empire) ListScale(ctx context.Context, app *App) (Formation, error) {
 
 // Reset resets empire.
 func (e *Empire) Reset() error {
-	return e.storage.Reset()
+	return e.engine.Reset()
 }
 
 // IsHealthy returns true if Empire is healthy, which means it can connect to
 // the services it depends on.
 func (e *Empire) IsHealthy() error {
-	return e.storage.IsHealthy()
+	return e.engine.IsHealthy()
 }
 
 // ValidationError is returned when a model is not valid.

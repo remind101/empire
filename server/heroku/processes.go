@@ -110,18 +110,22 @@ func (h *Server) PostProcess(w http.ResponseWriter, r *http.Request) error {
 		}
 		defer stream.Close()
 
-		opts.Stdin = stream
+		stdio := &empire.IO{
+			Stdin: stream,
+		}
 
 		if multiplex {
-			opts.Stdout = stdcopy.NewStdWriter(stream, stdcopy.Stdout)
-			opts.Stderr = stdcopy.NewStdWriter(stream, stdcopy.Stderr)
+			stdio.Stdout = stdcopy.NewStdWriter(stream, stdcopy.Stdout)
+			stdio.Stderr = stdcopy.NewStdWriter(stream, stdcopy.Stderr)
 		} else {
 			// Backwards compatibility for older clients that don't
 			// know how to de-multiplex a stdcopy stream. For these
 			// clients, stdout/stderr are merged together.
-			opts.Stdout = stream
-			opts.Stderr = stream
+			stdio.Stdout = stream
+			stdio.Stderr = stream
 		}
+
+		opts.IO = stdio
 
 		if err := h.Run(ctx, opts); err != nil {
 			if stream.Hijacked {

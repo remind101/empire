@@ -19,6 +19,7 @@ import (
 	"github.com/remind101/empire/pkg/dockerutil"
 	"github.com/remind101/empire/pkg/image"
 	"github.com/remind101/empire/pkg/jsonmessage"
+	"github.com/remind101/empire/pkg/timex"
 	"github.com/remind101/empire/procfile"
 	"github.com/remind101/empire/server"
 	"github.com/remind101/empire/server/auth"
@@ -26,19 +27,19 @@ import (
 	"github.com/remind101/pkg/reporter"
 )
 
-// Storage is a fake in memory implementation of the empire.Storage interface.
-type Storage struct {
+// Engine is a fake in memory implementation of the empire.Engine interface.
+type Engine struct {
 	// Maps an app ID to a list of releases of the application.
 	apps map[string]*list.List
 }
 
-func newStorage() *Storage {
-	s := new(Storage)
+func newEngine() *Engine {
+	s := new(Engine)
 	s.Reset()
 	return s
 }
 
-func (s *Storage) AppsFind(q empire.AppsQuery) (*empire.App, error) {
+func (s *Engine) AppsFind(q empire.AppsQuery) (*empire.App, error) {
 	releases, ok := s.apps[*q.Name]
 	if !ok {
 		return nil, &empire.NotFoundError{Err: errors.New("not found")}
@@ -47,7 +48,7 @@ func (s *Storage) AppsFind(q empire.AppsQuery) (*empire.App, error) {
 	return release.App, nil
 }
 
-func (s *Storage) Apps(q empire.AppsQuery) ([]*empire.App, error) {
+func (s *Engine) Apps(q empire.AppsQuery) ([]*empire.App, error) {
 	var apps []*empire.App
 	for _, releases := range s.apps {
 		release := releases.Front().Value.(*empire.Release)
@@ -56,12 +57,12 @@ func (s *Storage) Apps(q empire.AppsQuery) ([]*empire.App, error) {
 	return apps, nil
 }
 
-func (s *Storage) AppsDestroy(app *empire.App) error {
+func (s *Engine) AppsDestroy(app *empire.App) error {
 	delete(s.apps, app.Name)
 	return nil
 }
 
-func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.Release, error) {
+func (s *Engine) ReleasesCreate(app *empire.App, event empire.Event) (*empire.Release, error) {
 	app.BeforeCreate()
 
 	releases, ok := s.apps[app.Name]
@@ -81,7 +82,7 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 	return release, nil
 }
 
-func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
+func (s *Engine) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 	l, ok := s.apps[q.App.Name]
 	if !ok {
 		return nil, errors.New("no releases")
@@ -93,17 +94,48 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 	return releases, nil
 }
 
-func (s *Storage) ReleasesFind(q empire.ReleasesQuery) (*empire.Release, error) {
+func (s *Engine) ReleasesFind(q empire.ReleasesQuery) (*empire.Release, error) {
 	releases := s.apps[q.App.Name]
 	release := releases.Front().Value.(*empire.Release)
 	return release, nil
 }
 
-func (s *Storage) IsHealthy() error {
+func (s *Engine) Run(ctx context.Context, app *empire.App, stdio *empire.IO) error {
+	for _, p := range app.Formation {
+		if stdio != nil {
+			fmt.Fprintf(stdio.Stdout, "Attaching to container\n")
+			fmt.Fprintf(stdio.Stdout, "Fake output for `%s` on %s\n", p.Command, app.Name)
+		}
+	}
 	return nil
 }
 
-func (s *Storage) Reset() error {
+func (s *Engine) Tasks(ctx context.Context, app *empire.App) ([]*empire.Task, error) {
+	var tasks []*empire.Task
+	now := timex.Now()
+	for name, p := range app.Formation {
+		for i := 1; i <= p.Quantity; i++ {
+			id := fmt.Sprintf("%d", i)
+			tasks = append(tasks, &empire.Task{
+				Name:        fmt.Sprintf("v%d.%s.%s", app.Version, name, id),
+				Type:        name,
+				Command:     p.Command,
+				ID:          id,
+				Host:        empire.Host{ID: "i-aa111aa1"},
+				State:       "running",
+				Constraints: p.Constraints(),
+				UpdatedAt:   now,
+			})
+		}
+	}
+	return tasks, nil
+}
+
+func (s *Engine) IsHealthy() error {
+	return nil
+}
+
+func (s *Engine) Reset() error {
 	s.apps = make(map[string]*list.List)
 	return nil
 }
@@ -118,7 +150,7 @@ func SkipCI(t testing.TB) {
 // NewEmpire returns a new Empire instance suitable for testing. It ensures that
 // the database is clean before returning.
 func NewEmpire(t testing.TB) *empire.Empire {
-	e := empire.New(newStorage())
+	e := empire.New(newEngine())
 	e.ImageRegistry = ExtractProcfile(nil, nil)
 	e.RunRecorder = logs.RecordTo(ioutil.Discard)
 

@@ -6,7 +6,7 @@ import (
 	"github.com/remind101/empire/empiretest"
 )
 
-func testRunDetached(t *testing.T) {
+func TestRunDetached(t *testing.T) {
 	empiretest.SkipCI(t)
 
 	run(t, []Command{
@@ -22,7 +22,7 @@ func testRunDetached(t *testing.T) {
 	})
 }
 
-func testRunAttached(t *testing.T) {
+func TestRunAttached(t *testing.T) {
 	empiretest.SkipCI(t)
 
 	run(t, []Command{
@@ -33,7 +33,7 @@ func testRunAttached(t *testing.T) {
 		DeployCommand("latest", "v2"),
 		{
 			"run migration -a acme-inc",
-			"Attaching to container\nFake output for `[migration]` on acme-inc",
+			"Attaching to container\nFake output for `migration` on acme-inc",
 		},
 	})
 }

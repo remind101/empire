@@ -36,7 +36,7 @@ import (
 // Empire ===============================
 
 func newEmpire(c *Context) (*empire.Empire, error) {
-	storage, err := newStorage(c)
+	engine, err := newEngine(c)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func newEmpire(c *Context) (*empire.Empire, error) {
 		return nil, err
 	}
 
-	e := empire.New(storage)
+	e := empire.New(engine)
 	e.EventStream = empire.AsyncEvents(streams)
 	e.ImageRegistry = reg
 	e.RunRecorder = runRecorder
@@ -74,6 +74,19 @@ func newEmpire(c *Context) (*empire.Empire, error) {
 	}
 
 	return e, nil
+}
+
+type basicEngine struct {
+	empire.Storage
+	empire.TaskEngine
+}
+
+func newEngine(c *Context) (empire.Engine, error) {
+	storage, err := newStorage(c)
+	if err != nil {
+		return nil, err
+	}
+	return &basicEngine{storage, nil}, nil
 }
 
 // Storage ==============================
