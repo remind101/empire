@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"text/template"
 
 	"golang.org/x/oauth2"
 
@@ -17,9 +18,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/inconshreveable/log15"
 	"github.com/remind101/empire"
+	"github.com/remind101/empire/engine/ecs"
 	"github.com/remind101/empire/events/sns"
 	"github.com/remind101/empire/events/stdout"
 	"github.com/remind101/empire/internal/ghinstallation"
@@ -86,7 +89,47 @@ func newEngine(c *Context) (empire.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &basicEngine{storage, nil}, nil
+	taskEngine, err := newTaskEngine(c)
+	if err != nil {
+		return nil, err
+	}
+	return &basicEngine{storage, taskEngine}, nil
+}
+
+// TaskEngine ============================
+
+func newTaskEngine(c *Context) (empire.TaskEngine, error) {
+	return newECSTaskEngine(c)
+}
+
+func newECSTaskEngine(c *Context) (*ecs.TaskEngine, error) {
+	s := ecs.NewTaskEngine(c)
+	s.Cluster = c.String(FlagECSCluster)
+	s.NewDockerClient = func(ec2Instance *ec2.Instance) (ecs.DockerClient, error) {
+		certPath := c.String(FlagECSDockerCert)
+		host := ec2Instance.PrivateIpAddress
+		if host == nil {
+			return nil, fmt.Errorf("instance %s does not have a private ip address", aws.StringValue(ec2Instance.InstanceId))
+		}
+		port := "2376"
+		if certPath == "" {
+			port = "2375"
+		}
+		c, err := dockerutil.NewDockerClient(fmt.Sprintf("tcp://%s:%s", *host, port), certPath)
+		if err != nil {
+			return c, err
+		}
+		// Ping the host, just to make sure we can connect.
+		return c, c.Ping()
+	}
+	if v := c.String(FlagCloudFormationStackNameTemplate); v != "" {
+		s.StackNameTemplate = stackNameTemplate(v)
+	}
+	return s, nil
+}
+
+func stackNameTemplate(t string) *template.Template {
+	return template.Must(template.New("stack_name").Parse(t))
 }
 
 // Storage ==============================

@@ -61,7 +61,11 @@ const (
 	FlagDockerAuth    = "docker.auth"
 	FlagDockerDigests = "docker.digests"
 
-	FlagAWSDebug = "aws.debug"
+	FlagAWSDebug      = "aws.debug"
+	FlagECSCluster    = "ecs.cluster"
+	FlagECSDockerCert = "ecs.docker.cert"
+
+	FlagCloudFormationStackNameTemplate = "cloudformation.stack-name-template"
 
 	FlagSNSTopic           = "sns.topic"
 	FlagCloudWatchLogGroup = "cloudwatch.loggroup"
@@ -300,6 +304,24 @@ var EmpireFlags = []cli.Flag{
 		Name:   FlagAWSDebug,
 		Usage:  "Enable verbose debug output for AWS integration.",
 		EnvVar: "EMPIRE_AWS_DEBUG",
+	},
+	cli.StringFlag{
+		Name:   FlagECSCluster,
+		Value:  "default",
+		Usage:  "The ECS cluster to create services within",
+		EnvVar: "EMPIRE_ECS_CLUSTER",
+	},
+	cli.StringFlag{
+		Name:   FlagECSDockerCert,
+		Value:  "",
+		Usage:  "A path to the certificates to use when connecting to Docker daemon's on container instances.",
+		EnvVar: "EMPIRE_ECS_DOCKER_CERT_PATH",
+	},
+	cli.StringFlag{
+		Name:   FlagCloudFormationStackNameTemplate,
+		Value:  "",
+		Usage:  "If provided, this should be a Go text/template that will be used to generate a CloudFormation stack name for an application.",
+		EnvVar: "EMPIRE_CLOUDFORMATION_STACK_NAME_TEMPLATE",
 	},
 	cli.StringFlag{
 		Name:   FlagSecret,
