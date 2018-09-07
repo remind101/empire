@@ -1,0 +1,91 @@
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+  Cluster:
+    Type: String
+  ExecutionRoleArn:
+    Type: String
+  Image:
+    Type: String
+  DesiredCount:
+    Type: Number
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /empire/acme-inc
+      RetentionInDays: 3
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: VpcId
+      GroupDescription: "Security group for  service"
+      SecurityGroupIngress:
+        - FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+  webTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn:
+        Ref: ExecutionRoleArn
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: "512"
+      NetworkMode: awsvpc
+      ContainerDefinitions:
+        - Name: web
+          Image:
+            Ref: Image
+          Essential: true
+          Cpu: "256"
+          Memory: "512"
+          Environment:
+            - Name: "DOCKER"
+              Value: "yes"
+            - Name: "PORT"
+              Value: "80"
+            - Name: "EMPIRE_RELEASE"
+              Value: "v100"
+          PortMappings:
+            - HostPort: 80
+              ContainerPort: 80
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              "awslogs-group":
+                Ref: LogGroup
+              "awslogs-region":
+                Ref: AWS::Region
+              "awslogs-stream-prefix": "web"
+  webService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Ref: Cluster
+      TaskDefinition:
+        Ref: webTaskDefinition
+      DesiredCount:
+        Ref: DesiredCount
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - Ref: SecurityGroup
+          Subnets:
+            Ref: Subnets
+
+Outputs:
+  Services:
+    Value:
+      Fn::Sub: "web=${webService}"
+  TaskDefinitions:
+    Value:
+      Fn::Sub: "web=${webTaskDefinition}"

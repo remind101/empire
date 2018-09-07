@@ -1,0 +1,15 @@
+namespace: ''
+stacker_bucket: ''
+
+stacks:
+  - name: empire-cluster
+    template_path: cluster.yaml
+  - name: acme-inc
+    template_path: acme-inc.yaml
+    variables:
+      VpcId: ${output empire-cluster::VpcId}
+      Subnets: ${output empire-cluster::Subnets}
+      Cluster: ${output empire-cluster::Cluster}
+      ExecutionRoleArn: ${output empire-cluster::ExecutionRoleArn}
+      Image: remind101/acme-inc:master
+      DesiredCount: 1

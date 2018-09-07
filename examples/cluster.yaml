@@ -1,0 +1,113 @@
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: Vpc
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc
+  DefaultRouteRoute: 
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties: 
+        RouteTableId:
+          Ref: RouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: InternetGateway
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      CidrBlock:
+        Fn::Select: [0, { "Fn::Cidr": [{ "Fn::GetAtt": [Vpc, CidrBlock] }, 1, 8] }]
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+        RouteTableId:
+          Ref: RouteTable
+        SubnetId:
+          Ref: Subnet
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  EmpireUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: "empire"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudFormation
+                Effect: Allow
+                Action: cloudformation:DescribeStacks
+                Resource: "*"
+              - Sid: ECS
+                Effect: Allow
+                Action:
+                  - ecs:DescribeTaskDefinition
+                  - ecs:DescribeServices
+                Resource: "*"
+              - Sid: ECSCluster
+                Effect: Allow
+                Action:
+                  - ecs:ListTasks
+                  - ecs:DescribeTasks
+                  - ecs:RunTask
+                  - ecs:StopTask
+                  - ecs:DescribeContainerInstances
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    "ecs:cluster":
+                      Fn::GetAtt: [Cluster, Arn]
+              - Sid: EC2
+                Effect: Allow
+                Action: ec2:DescribeInstances
+                Resource: "*"
+              - Sid: IAMPassExecutionRole
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  Fn::GetAtt: [ExecutionRole, Arn]
+
+Outputs:
+  Cluster:
+    Value:
+      Ref: Cluster
+  Subnets:
+    Value:
+      Ref: Subnet
+  VpcId:
+    Value:
+      Ref: Vpc
+  ExecutionRoleArn:
+    Value:
+      Fn::GetAtt: [ExecutionRole, Arn]
