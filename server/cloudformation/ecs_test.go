@@ -61,6 +61,7 @@ func TestECSServiceResource_Create(t *testing.T) {
 		DesiredCount: aws.Int64(1),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
+			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
 			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
 		},
@@ -84,7 +85,7 @@ func TestECSServiceResource_Create(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
-	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New", "Name": "acme-inc-web-dxRU5tYsnzt"})
 
 	e.AssertExpectations(t)
 }
@@ -102,6 +103,7 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 		DesiredCount: aws.Int64(1),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
+			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
 			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
 		},
@@ -128,7 +130,7 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 		OldResourceProperties: &ECSServiceProperties{},
 	})
 	assert.Equal(t, context.Canceled, err)
-	assert.Equal(t, map[string]string{"DeploymentId": "New"}, data)
+	assert.Equal(t, map[string]string{"DeploymentId": "New", "Name": "acme-inc-web-dxRU5tYsnzt"}, data)
 
 	e.AssertExpectations(t)
 }
@@ -147,6 +149,7 @@ func TestECSServiceResource_Update(t *testing.T) {
 	}).Return(
 		&ecs.UpdateServiceOutput{
 			Service: &ecs.Service{
+				ServiceName: aws.String("acme-inc-web"),
 				Deployments: []*ecs.Deployment{
 					&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")},
 					&ecs.Deployment{Id: aws.String("Old"), Status: aws.String("ACTIVE")},
@@ -176,7 +179,7 @@ func TestECSServiceResource_Update(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
-	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New", "Name": "acme-inc-web"})
 
 	e.AssertExpectations(t)
 }
@@ -195,6 +198,7 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
+			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
 			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
 		},
@@ -225,7 +229,7 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
-	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New", "Name": "acme-inc-web-dxRU5tYsnzt"})
 
 	e.AssertExpectations(t)
 }
@@ -247,6 +251,7 @@ func TestECSServiceResource_Update_Placement(t *testing.T) {
 		},
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
+			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
 			ServiceArn:  aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt"),
 			Deployments: []*ecs.Deployment{&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")}},
 		},
@@ -280,7 +285,7 @@ func TestECSServiceResource_Update_Placement(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web-dxRU5tYsnzt", id)
-	assert.Equal(t, data, map[string]string{"DeploymentId": "New"})
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New", "Name": "acme-inc-web-dxRU5tYsnzt"})
 
 	e.AssertExpectations(t)
 }

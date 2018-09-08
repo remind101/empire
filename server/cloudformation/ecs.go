@@ -142,6 +142,7 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 	if err != nil {
 		return "", nil, fmt.Errorf("error creating service: %v", err)
 	}
+	data["Name"] = *resp.Service.ServiceName
 
 	d := primaryDeployment(resp.Service)
 	if d == nil {
@@ -187,6 +188,7 @@ func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Req
 	if err != nil {
 		return nil, err
 	}
+	data["Name"] = *resp.Service.ServiceName
 
 	d := primaryDeployment(resp.Service)
 	if d == nil {
