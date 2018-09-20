@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -269,7 +270,8 @@ type ECSTaskDefinitionProperties struct {
 }
 
 func (p *ECSTaskDefinitionProperties) ReplacementHash() (uint64, error) {
-	return hashstructure.Hash(p, nil)
+	// ECS Task Definitions always require a replacement.
+	return uint64(rand.Uint32())<<32 + uint64(rand.Uint32()), nil
 }
 
 // ECSTaskDefinitionResource is a custom resource that provisions ECS task
