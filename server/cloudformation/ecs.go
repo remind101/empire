@@ -177,12 +177,18 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 
 func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Request) (interface{}, error) {
 	properties := req.ResourceProperties.(*ECSServiceProperties)
+	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
 	data := make(map[string]string)
+
+	var desiredCount *int64
+	if !properties.DesiredCount.Eq(oldProperties.DesiredCount) {
+		desiredCount = properties.DesiredCount.Value()
+	}
 
 	resp, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
 		Service:        aws.String(req.PhysicalResourceId),
 		Cluster:        properties.Cluster,
-		DesiredCount:   properties.DesiredCount.Value(),
+		DesiredCount:   desiredCount,
 		TaskDefinition: properties.TaskDefinition,
 	})
 	if err != nil {

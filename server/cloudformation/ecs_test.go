@@ -184,6 +184,54 @@ func TestECSServiceResource_Update(t *testing.T) {
 	e.AssertExpectations(t)
 }
 
+func TestECSServiceResource_Update_SameDesiredCount(t *testing.T) {
+	e := new(mockECS)
+	p := newECSServiceProvisioner(&ECSServiceResource{
+		ecs: e,
+	})
+
+	e.On("UpdateService", &ecs.UpdateServiceInput{
+		Service:        aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
+		Cluster:        aws.String("cluster"),
+		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+	}).Return(
+		&ecs.UpdateServiceOutput{
+			Service: &ecs.Service{
+				ServiceName: aws.String("acme-inc-web"),
+				Deployments: []*ecs.Deployment{
+					&ecs.Deployment{Id: aws.String("New"), Status: aws.String("PRIMARY")},
+					&ecs.Deployment{Id: aws.String("Old"), Status: aws.String("ACTIVE")},
+				},
+			},
+		},
+		nil,
+	)
+
+	id, data, err := p.Provision(ctx, customresources.Request{
+		StackId:            "arn:aws:cloudformation:us-east-1:012345678901:stack/acme-inc/bc66fd60-32be-11e6-902b-50d501eb4c17",
+		RequestId:          "411f3f38-565f-4216-a711-aeafd5ba635e",
+		RequestType:        customresources.Update,
+		PhysicalResourceId: "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web",
+		ResourceProperties: &ECSServiceProperties{
+			Cluster:        aws.String("cluster"),
+			ServiceName:    aws.String("acme-inc-web"),
+			DesiredCount:   customresources.Int(2),
+			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+		},
+		OldResourceProperties: &ECSServiceProperties{
+			Cluster:        aws.String("cluster"),
+			ServiceName:    aws.String("acme-inc-web"),
+			DesiredCount:   customresources.Int(2),
+			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web", id)
+	assert.Equal(t, data, map[string]string{"DeploymentId": "New", "Name": "acme-inc-web"})
+
+	e.AssertExpectations(t)
+}
+
 func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 	e := new(mockECS)
 	p := newECSServiceProvisioner(&ECSServiceResource{

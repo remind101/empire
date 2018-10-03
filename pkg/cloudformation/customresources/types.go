@@ -16,6 +16,19 @@ func Int(v int64) *IntValue {
 	return &i
 }
 
+// Eq returns true of other is the same _value_ as i.
+func (i *IntValue) Eq(other *IntValue) bool {
+	if i == nil {
+		return other == nil
+	}
+
+	if other == nil {
+		return i == nil
+	}
+
+	return *i == *other
+}
+
 func (i *IntValue) UnmarshalJSON(b []byte) error {
 	var si int64
 	if err := json.Unmarshal(b, &si); err == nil {
