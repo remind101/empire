@@ -361,7 +361,26 @@ func (opts RestartOpts) Validate(e *Empire) error {
 // Restart restarts processes matching the given prefix for the given Release.
 // If the prefix is empty, it will match all processes for the release.
 func (e *Empire) Restart(ctx context.Context, opts RestartOpts) error {
-	return fmt.Errorf("`emp restart` is currently unsupported")
+	app := opts.App
+
+	event := opts.Event()
+
+	var err error
+
+	switch opts.PID {
+	case "":
+		// No PID provided, restart everything.
+		_, err = e.engine.ReleasesCreate(app, event)
+	default:
+		// PID provided, kill the process.
+		err = e.engine.Stop(ctx, opts.PID)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return e.PublishEvent(event)
 }
 
 // RunOpts are options provided when running an attached/detached process.

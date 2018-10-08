@@ -275,6 +275,15 @@ func (m *TaskEngine) attach(ctx context.Context, task *ecs.Task, stdio *empire.I
 	return nil
 }
 
+// Stop stops the given ECS task.
+func (s *TaskEngine) Stop(ctx context.Context, taskID string) error {
+	_, err := s.ecs.StopTask(&ecs.StopTaskInput{
+		Cluster: aws.String(s.Cluster),
+		Task:    aws.String(taskID),
+	})
+	return err
+}
+
 // Tasks returns all of the running tasks for this application.
 func (s *TaskEngine) Tasks(ctx context.Context, app *empire.App) ([]*empire.Task, error) {
 	stackName, err := s.stackName(app)

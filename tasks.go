@@ -16,6 +16,7 @@ type IO struct {
 type TaskEngine interface {
 	Run(context.Context, *App, *IO) error
 	Tasks(context.Context, *App) ([]*Task, error)
+	Stop(context.Context, string) error
 }
 
 // Host represents the host of the task

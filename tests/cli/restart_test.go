@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func testRestart(t *testing.T) {
+func TestRestart(t *testing.T) {
 	now(time.Now().AddDate(0, 0, -5))
 	defer resetNow()
 
@@ -21,8 +21,8 @@ func testRestart(t *testing.T) {
 		},
 		{
 			"dynos -a acme-inc",
-			`v1.web.1  i-aa111aa1  1X  running   5d  "./bin/web"
-v1.web.2  i-aa111aa1  1X  running   5d  "./bin/web"`,
+			`v3.web.1  i-aa111aa1  1X  running   5d  "./bin/web"
+v3.web.2  i-aa111aa1  1X  running   5d  "./bin/web"`,
 		},
 		{
 			"restart -a acme-inc",

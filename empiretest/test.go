@@ -110,6 +110,10 @@ func (s *Engine) Run(ctx context.Context, app *empire.App, stdio *empire.IO) err
 	return nil
 }
 
+func (s *Engine) Stop(ctx context.Context, taskID string) error {
+	return nil
+}
+
 func (s *Engine) Tasks(ctx context.Context, app *empire.App) ([]*empire.Task, error) {
 	var tasks []*empire.Task
 	now := timex.Now()
