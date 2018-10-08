@@ -587,7 +587,19 @@ func (e *Empire) deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 		name := appNameFromRepo(img.Repository)
 		app, err = e.AppsFind(AppsQuery{Name: &name})
 		if err != nil {
-			return nil, err
+			if _, ok := err.(*NotFoundError); ok {
+				release, err := e.Create(ctx, CreateOpts{
+					User:    opts.User,
+					Message: opts.Message,
+					Name:    name,
+				})
+				if err != nil {
+					return nil, err
+				}
+				app = release.App
+			} else {
+				return nil, err
+			}
 		}
 	}
 
