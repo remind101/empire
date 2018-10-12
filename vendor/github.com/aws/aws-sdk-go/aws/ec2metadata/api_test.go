@@ -2,14 +2,14 @@ package ec2metadata_test
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"path"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -69,8 +69,12 @@ func TestEndpoint(t *testing.T) {
 	}
 
 	req := c.NewRequest(op, nil, nil)
-	assert.Equal(t, "http://169.254.169.254/latest", req.ClientInfo.Endpoint)
-	assert.Equal(t, "http://169.254.169.254/latest/meta-data/testpath", req.HTTPRequest.URL.String())
+	if e, a := "http://169.254.169.254/latest", req.ClientInfo.Endpoint; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "http://169.254.169.254/latest/meta-data/testpath", req.HTTPRequest.URL.String(); e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestGetMetadata(t *testing.T) {
@@ -83,8 +87,66 @@ func TestGetMetadata(t *testing.T) {
 
 	resp, err := c.GetMetadata("some/path")
 
-	assert.NoError(t, err)
-	assert.Equal(t, "success", resp)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := "success", resp; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+}
+
+func TestGetUserData(t *testing.T) {
+	server := initTestServer(
+		"/latest/user-data",
+		"success", // real response includes suffix
+	)
+	defer server.Close()
+	c := ec2metadata.New(unit.Session, &aws.Config{Endpoint: aws.String(server.URL + "/latest")})
+
+	resp, err := c.GetUserData()
+
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := "success", resp; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+}
+
+func TestGetUserData_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reader := strings.NewReader(`<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>404 - Not Found</title>
+ </head>
+ <body>
+  <h1>404 - Not Found</h1>
+ </body>
+</html>`)
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", reader.Len()))
+		w.WriteHeader(http.StatusNotFound)
+		io.Copy(w, reader)
+	}))
+
+	defer server.Close()
+	c := ec2metadata.New(unit.Session, &aws.Config{Endpoint: aws.String(server.URL + "/latest")})
+
+	resp, err := c.GetUserData()
+	if err == nil {
+		t.Errorf("expect error")
+	}
+	if len(resp) != 0 {
+		t.Errorf("expect empty, got %v", resp)
+	}
+
+	aerr := err.(awserr.Error)
+	if e, a := "NotFoundError", aerr.Code(); e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestGetRegion(t *testing.T) {
@@ -97,8 +159,12 @@ func TestGetRegion(t *testing.T) {
 
 	region, err := c.Region()
 
-	assert.NoError(t, err)
-	assert.Equal(t, "us-west-2", region)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := "us-west-2", region; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestMetadataAvailable(t *testing.T) {
@@ -109,9 +175,9 @@ func TestMetadataAvailable(t *testing.T) {
 	defer server.Close()
 	c := ec2metadata.New(unit.Session, &aws.Config{Endpoint: aws.String(server.URL + "/latest")})
 
-	available := c.Available()
-
-	assert.True(t, available)
+	if !c.Available() {
+		t.Errorf("expect available")
+	}
 }
 
 func TestMetadataIAMInfo_success(t *testing.T) {
@@ -123,10 +189,18 @@ func TestMetadataIAMInfo_success(t *testing.T) {
 	c := ec2metadata.New(unit.Session, &aws.Config{Endpoint: aws.String(server.URL + "/latest")})
 
 	iamInfo, err := c.IAMInfo()
-	assert.NoError(t, err)
-	assert.Equal(t, "Success", iamInfo.Code)
-	assert.Equal(t, "arn:aws:iam::123456789012:instance-profile/my-instance-profile", iamInfo.InstanceProfileArn)
-	assert.Equal(t, "AIPAABCDEFGHIJKLMN123", iamInfo.InstanceProfileID)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := "Success", iamInfo.Code; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "arn:aws:iam::123456789012:instance-profile/my-instance-profile", iamInfo.InstanceProfileArn; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "AIPAABCDEFGHIJKLMN123", iamInfo.InstanceProfileID; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestMetadataIAMInfo_failure(t *testing.T) {
@@ -138,10 +212,18 @@ func TestMetadataIAMInfo_failure(t *testing.T) {
 	c := ec2metadata.New(unit.Session, &aws.Config{Endpoint: aws.String(server.URL + "/latest")})
 
 	iamInfo, err := c.IAMInfo()
-	assert.NotNil(t, err)
-	assert.Equal(t, "", iamInfo.Code)
-	assert.Equal(t, "", iamInfo.InstanceProfileArn)
-	assert.Equal(t, "", iamInfo.InstanceProfileID)
+	if err == nil {
+		t.Errorf("expect error")
+	}
+	if e, a := "", iamInfo.Code; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "", iamInfo.InstanceProfileArn; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "", iamInfo.InstanceProfileID; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestMetadataNotAvailable(t *testing.T) {
@@ -157,9 +239,9 @@ func TestMetadataNotAvailable(t *testing.T) {
 		r.Retryable = aws.Bool(true) // network errors are retryable
 	})
 
-	available := c.Available()
-
-	assert.False(t, available)
+	if c.Available() {
+		t.Errorf("expect not available")
+	}
 }
 
 func TestMetadataErrorResponse(t *testing.T) {
@@ -175,8 +257,12 @@ func TestMetadataErrorResponse(t *testing.T) {
 	})
 
 	data, err := c.GetMetadata("uri/path")
-	assert.Empty(t, data)
-	assert.Contains(t, err.Error(), "error message text")
+	if len(data) != 0 {
+		t.Errorf("expect empty, got %v", data)
+	}
+	if e, a := "error message text", err.Error(); !strings.Contains(a, e) {
+		t.Errorf("expect %v to be in %v", e, a)
+	}
 }
 
 func TestEC2RoleProviderInstanceIdentity(t *testing.T) {
@@ -188,8 +274,16 @@ func TestEC2RoleProviderInstanceIdentity(t *testing.T) {
 	c := ec2metadata.New(unit.Session, &aws.Config{Endpoint: aws.String(server.URL + "/latest")})
 
 	doc, err := c.GetInstanceIdentityDocument()
-	assert.Nil(t, err, "Expect no error, %v", err)
-	assert.Equal(t, doc.AccountID, "123456789012")
-	assert.Equal(t, doc.AvailabilityZone, "us-east-1d")
-	assert.Equal(t, doc.Region, "us-east-1")
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := doc.AccountID, "123456789012"; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := doc.AvailabilityZone, "us-east-1d"; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := doc.Region, "us-east-1"; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }

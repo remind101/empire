@@ -2,8 +2,8 @@
 // requests and responses.
 package restxml
 
-//go:generate go run ../../../models/protocol_tests/generate.go ../../../models/protocol_tests/input/rest-xml.json build_test.go
-//go:generate go run ../../../models/protocol_tests/generate.go ../../../models/protocol_tests/output/rest-xml.json unmarshal_test.go
+//go:generate go run -tags codegen ../../../models/protocol_tests/generate.go ../../../models/protocol_tests/input/rest-xml.json build_test.go
+//go:generate go run -tags codegen ../../../models/protocol_tests/generate.go ../../../models/protocol_tests/output/rest-xml.json unmarshal_test.go
 
 import (
 	"bytes"
@@ -36,7 +36,11 @@ func Build(r *request.Request) {
 		var buf bytes.Buffer
 		err := xmlutil.BuildXML(r.Params, xml.NewEncoder(&buf))
 		if err != nil {
-			r.Error = awserr.New("SerializationError", "failed to encode rest XML request", err)
+			r.Error = awserr.NewRequestFailure(
+				awserr.New("SerializationError", "failed to encode rest XML request", err),
+				r.HTTPResponse.StatusCode,
+				r.RequestID,
+			)
 			return
 		}
 		r.SetBufferBody(buf.Bytes())
@@ -50,7 +54,11 @@ func Unmarshal(r *request.Request) {
 		decoder := xml.NewDecoder(r.HTTPResponse.Body)
 		err := xmlutil.UnmarshalXML(r.Data, decoder, "")
 		if err != nil {
-			r.Error = awserr.New("SerializationError", "failed to decode REST XML response", err)
+			r.Error = awserr.NewRequestFailure(
+				awserr.New("SerializationError", "failed to decode REST XML response", err),
+				r.HTTPResponse.StatusCode,
+				r.RequestID,
+			)
 			return
 		}
 	} else {

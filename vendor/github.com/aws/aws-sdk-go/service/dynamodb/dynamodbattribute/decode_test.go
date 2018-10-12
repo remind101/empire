@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestUnmarshalErrorTypes(t *testing.T) {
@@ -235,6 +234,30 @@ func TestUnmarshalListError(t *testing.T) {
 	}
 }
 
+func TestUnmarshalConvertToData(t *testing.T) {
+	type T struct {
+		Int       int
+		Str       string
+		ByteSlice []byte
+		StrSlice  []string
+	}
+
+	exp := T{
+		Int:       42,
+		Str:       "foo",
+		ByteSlice: []byte{42, 97, 83},
+		StrSlice:  []string{"cat", "dog"},
+	}
+	av, err := ConvertToMap(exp)
+	if err != nil {
+		t.Fatalf("expect no error, got %v", err)
+	}
+
+	var act T
+	err = UnmarshalMap(av, &act)
+	assertConvertTest(t, 0, act, exp, err, nil)
+}
+
 func TestUnmarshalMapShared(t *testing.T) {
 	for i, c := range sharedMapTestCases {
 		err := UnmarshalMap(c.in, c.actual)
@@ -266,6 +289,59 @@ func TestUnmarshalMapError(t *testing.T) {
 
 	for i, c := range cases {
 		err := UnmarshalMap(c.in, c.actual)
+		assertConvertTest(t, i, c.actual, c.expected, err, c.err)
+	}
+}
+
+func TestUnmarshalListOfMaps(t *testing.T) {
+	type testItem struct {
+		Value  string
+		Value2 int
+	}
+
+	cases := []struct {
+		in               []map[string]*dynamodb.AttributeValue
+		actual, expected interface{}
+		err              error
+	}{
+		{ // Simple map conversion.
+			in: []map[string]*dynamodb.AttributeValue{
+				{
+					"Value": &dynamodb.AttributeValue{
+						BOOL: aws.Bool(true),
+					},
+				},
+			},
+			actual: &[]map[string]interface{}{},
+			expected: []map[string]interface{}{
+				{
+					"Value": true,
+				},
+			},
+		},
+		{ // attribute to struct.
+			in: []map[string]*dynamodb.AttributeValue{
+				{
+					"Value": &dynamodb.AttributeValue{
+						S: aws.String("abc"),
+					},
+					"Value2": &dynamodb.AttributeValue{
+						N: aws.String("123"),
+					},
+				},
+			},
+			actual: &[]testItem{},
+			expected: []testItem{
+				{
+					Value:  "abc",
+					Value2: 123,
+				},
+			},
+		},
+	}
+
+	for i, c := range cases {
+		err := UnmarshalListOfMaps(c.in, c.actual)
 		assertConvertTest(t, i, c.actual, c.expected, err, c.err)
 	}
 }
@@ -337,12 +413,22 @@ func TestUnmarshalUnmashaler(t *testing.T) {
 	}
 
 	err := Unmarshal(av, u)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
 
-	assert.Equal(t, "value", u.Value)
-	assert.Equal(t, 123, u.Value2)
-	assert.Equal(t, true, u.Value3)
-	assert.Equal(t, testDate, u.Value4)
+	if e, a := "value", u.Value; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := 123, u.Value2; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := true, u.Value3; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := testDate, u.Value4; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestDecodeUseNumber(t *testing.T) {
@@ -359,13 +445,20 @@ func TestDecodeUseNumber(t *testing.T) {
 		d.UseNumber = true
 	})
 	err := decoder.Decode(av, &u)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
 
-	assert.Equal(t, "value", u["abc"])
-	n, ok := u["def"].(Number)
-	assert.True(t, ok)
-	assert.Equal(t, "123", n.String())
-	assert.Equal(t, true, u["ghi"])
+	if e, a := "value", u["abc"]; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	n := u["def"].(Number)
+	if e, a := "123", n.String(); e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := true, u["ghi"]; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
 }
 
 func TestDecodeUseNumberNumberSet(t *testing.T) {
@@ -384,11 +477,146 @@ func TestDecodeUseNumberNumberSet(t *testing.T) {
 		d.UseNumber = true
 	})
 	err := decoder.Decode(av, &u)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
 
-	ns, ok := u["ns"].([]Number)
-	assert.True(t, ok)
+	ns := u["ns"].([]Number)
 
-	assert.Equal(t, "123", ns[0].String())
-	assert.Equal(t, "321", ns[1].String())
+	if e, a := "123", ns[0].String(); e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	if e, a := "321", ns[1].String(); e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+}
+
+func TestDecodeEmbeddedPointerStruct(t *testing.T) {
+	type B struct {
+		Bint int
+	}
+	type C struct {
+		Cint int
+	}
+	type A struct {
+		Aint int
+		*B
+		*C
+	}
+	av := &dynamodb.AttributeValue{
+		M: map[string]*dynamodb.AttributeValue{
+			"Aint": {
+				N: aws.String("321"),
+			},
+			"Bint": {
+				N: aws.String("123"),
+			},
+		},
+	}
+	decoder := NewDecoder()
+	a := A{}
+	err := decoder.Decode(av, &a)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := 321, a.Aint; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	// Embedded pointer struct can be created automatically.
+	if e, a := 123, a.Bint; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+	// But not for absent fields.
+	if a.C != nil {
+		t.Errorf("expect nil, got %v", a.C)
+	}
+}
+
+func TestDecodeBooleanOverlay(t *testing.T) {
+	type BooleanOverlay bool
+
+	av := &dynamodb.AttributeValue{
+		BOOL: aws.Bool(true),
+	}
+
+	decoder := NewDecoder()
+
+	var v BooleanOverlay
+
+	err := decoder.Decode(av, &v)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := BooleanOverlay(true), v; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+}
+
+func TestDecodeUnixTime(t *testing.T) {
+	type A struct {
+		Normal time.Time
+		Tagged time.Time `dynamodbav:",unixtime"`
+		Typed  UnixTime
+	}
+
+	expect := A{
+		Normal: time.Unix(123, 0).UTC(),
+		Tagged: time.Unix(456, 0),
+		Typed:  UnixTime(time.Unix(789, 0)),
+	}
+
+	input := &dynamodb.AttributeValue{
+		M: map[string]*dynamodb.AttributeValue{
+			"Normal": {
+				S: aws.String("1970-01-01T00:02:03Z"),
+			},
+			"Tagged": {
+				N: aws.String("456"),
+			},
+			"Typed": {
+				N: aws.String("789"),
+			},
+		},
+	}
+	actual := A{}
+
+	err := Unmarshal(input, &actual)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if e, a := expect, actual; e != a {
+		t.Errorf("expect %v, got %v", e, a)
+	}
+}
+
+func TestDecodeAliasedUnixTime(t *testing.T) {
+	type A struct {
+		Normal AliasedTime
+		Tagged AliasedTime `dynamodbav:",unixtime"`
+	}
+
+	expect := A{
+		Normal: AliasedTime(time.Unix(123, 0).UTC()),
+		Tagged: AliasedTime(time.Unix(456, 0)),
+	}
+
+	input := &dynamodb.AttributeValue{
+		M: map[string]*dynamodb.AttributeValue{
+			"Normal": {
+				S: aws.String("1970-01-01T00:02:03Z"),
+			},
+			"Tagged": {
+				N: aws.String("456"),
+			},
+		},
+	}
+	actual := A{}
+
+	err := Unmarshal(input, &actual)
+	if err != nil {
+		t.Errorf("expect no error, got %v", err)
+	}
+	if expect != actual {
+		t.Errorf("expect %v, got %v", expect, actual)
+	}
 }

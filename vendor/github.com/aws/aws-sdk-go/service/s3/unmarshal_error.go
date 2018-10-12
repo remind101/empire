@@ -48,6 +48,7 @@ func unmarshalError(r *request.Request) {
 	} else {
 		errCode = resp.Code
 		errMsg = resp.Message
+		err = nil
 	}
 
 	// Fallback to status code converted to message if still no error code
@@ -58,8 +59,19 @@ func unmarshalError(r *request.Request) {
 	}
 
 	r.Error = awserr.NewRequestFailure(
-		awserr.New(errCode, errMsg, nil),
+		awserr.New(errCode, errMsg, err),
 		r.HTTPResponse.StatusCode,
 		r.RequestID,
 	)
+}
+
+// A RequestFailure provides access to the S3 Request ID and Host ID values
+// returned from API operation errors. Getting the error as a string will
+// return the formated error with the same information as awserr.RequestFailure,
+// while also adding the HostID value from the response.
+type RequestFailure interface {
+	awserr.RequestFailure
+
+	// Host ID is the S3 Host ID needed for debug, and contacting support
+	HostID() string
 }

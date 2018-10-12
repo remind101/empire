@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/internal/sdkio"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,23 @@ func TestOffsetReaderRead(t *testing.T) {
 	assert.Equal(t, n, len(buf))
 	assert.Nil(t, err)
 	assert.Equal(t, buf, tempBuf)
+}
+
+func TestOffsetReaderSeek(t *testing.T) {
+	buf := []byte("testData")
+	reader := newOffsetReader(bytes.NewReader(buf), 0)
+
+	orig, err := reader.Seek(0, sdkio.SeekCurrent)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), orig)
+
+	n, err := reader.Seek(0, sdkio.SeekEnd)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(len(buf)), n)
+
+	n, err = reader.Seek(orig, sdkio.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), n)
 }
 
 func TestOffsetReaderClose(t *testing.T) {

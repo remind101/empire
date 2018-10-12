@@ -3,12 +3,13 @@ package ec2metadata
 import (
 	"encoding/json"
 	"fmt"
-	"path"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/internal/sdkuri"
 )
 
 // GetMetadata uses the path provided to request information from the EC2
@@ -18,11 +19,32 @@ func (c *EC2Metadata) GetMetadata(p string) (string, error) {
 	op := &request.Operation{
 		Name:       "GetMetadata",
 		HTTPMethod: "GET",
-		HTTPPath:   path.Join("/", "meta-data", p),
+		HTTPPath:   sdkuri.PathJoin("/meta-data", p),
 	}
 
 	output := &metadataOutput{}
 	req := c.NewRequest(op, nil, output)
+
+	return output.Content, req.Send()
+}
+
+// GetUserData returns the userdata that was configured for the service. If
+// there is no user-data setup for the EC2 instance a "NotFoundError" error
+// code will be returned.
+func (c *EC2Metadata) GetUserData() (string, error) {
+	op := &request.Operation{
+		Name:       "GetUserData",
+		HTTPMethod: "GET",
+		HTTPPath:   "/user-data",
+	}
+
+	output := &metadataOutput{}
+	req := c.NewRequest(op, nil, output)
+	req.Handlers.UnmarshalError.PushBack(func(r *request.Request) {
+		if r.HTTPResponse.StatusCode == http.StatusNotFound {
+			r.Error = awserr.New("NotFoundError", "user-data not found", r.Error)
+		}
+	})
 
 	return output.Content, req.Send()
 }
@@ -34,7 +56,7 @@ func (c *EC2Metadata) GetDynamicData(p string) (string, error) {
 	op := &request.Operation{
 		Name:       "GetDynamicData",
 		HTTPMethod: "GET",
-		HTTPPath:   path.Join("/", "dynamic", p),
+		HTTPPath:   sdkuri.PathJoin("/dynamic", p),
 	}
 
 	output := &metadataOutput{}
@@ -111,7 +133,7 @@ func (c *EC2Metadata) Available() bool {
 	return true
 }
 
-// An EC2IAMInfo provides the shape for unmarshalling
+// An EC2IAMInfo provides the shape for unmarshaling
 // an IAM info from the metadata API
 type EC2IAMInfo struct {
 	Code               string
@@ -120,7 +142,7 @@ type EC2IAMInfo struct {
 	InstanceProfileID  string
 }
 
-// An EC2InstanceIdentityDocument provides the shape for unmarshalling
+// An EC2InstanceIdentityDocument provides the shape for unmarshaling
 // an instance identity document
 type EC2InstanceIdentityDocument struct {
 	DevpayProductCodes []string  `json:"devpayProductCodes"`

@@ -12,6 +12,7 @@ type tag struct {
 	OmitEmptyElem                bool
 	AsString                     bool
 	AsBinSet, AsNumSet, AsStrSet bool
+	AsUnixTime                   bool
 }
 
 func (t *tag) parseAVTag(structTag reflect.StructTag) {
@@ -23,8 +24,8 @@ func (t *tag) parseAVTag(structTag reflect.StructTag) {
 	t.parseTagStr(tagStr)
 }
 
-func (t *tag) parseJSONTag(structTag reflect.StructTag) {
-	tagStr := structTag.Get("json")
+func (t *tag) parseStructTag(tag string, structTag reflect.StructTag) {
+	tagStr := structTag.Get(tag)
 	if len(tagStr) == 0 {
 		return
 	}
@@ -33,7 +34,7 @@ func (t *tag) parseJSONTag(structTag reflect.StructTag) {
 }
 
 func (t *tag) parseTagStr(tagStr string) {
-	parts := strings.SplitN(tagStr, ",", 2)
+	parts := strings.Split(tagStr, ",")
 	if len(parts) == 0 {
 		return
 	}
@@ -60,6 +61,8 @@ func (t *tag) parseTagStr(tagStr string) {
 			t.AsNumSet = true
 		case "stringset":
 			t.AsStrSet = true
+		case "unixtime":
+			t.AsUnixTime = true
 		}
 	}
 }
