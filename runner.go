@@ -61,6 +61,16 @@ func (r *runnerService) Run(ctx context.Context, opts RunOpts) error {
 		proc.SetConstraints(*opts.Constraints)
 	}
 
+	// initialize the proc environment map with string keys and string values.
+	if proc.Environment == nil {
+		proc.Environment = make(map[string]string)
+	}
+
+	// Add additional environment variables to the app.
+	for k, v := range opts.Env {
+		proc.Environment[k] = v
+	}
+
 	app.Formation = Formation{procName: proc}
 
 	return r.engine.Run(ctx, app, opts.IO)
