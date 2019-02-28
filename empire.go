@@ -526,10 +526,32 @@ func (e *Empire) Rollback(ctx context.Context, opts RollbackOpts) (*Release, err
 		return nil, err
 	}
 
-	// TODO
-	return nil, errors.New("`emp rollback` is currently unsupported")
+	q := ReleasesQuery{
+		App:     opts.App,
+		Version: &opts.Version,
+	}
 
-	//return r, e.PublishEvent(opts.Event())
+	oldRelease, err := e.engine.ReleasesFind(q)
+
+	if err != nil {
+		return nil, err
+	}
+
+	app, err := e.AppsFind(AppsQuery{Name: &oldRelease.App.Name})
+	if err != nil {
+		return nil, err
+	}
+
+	newApp := oldRelease.App
+	newApp.Version = app.Version
+
+	newRelease, err := e.engine.ReleasesCreate(newApp, opts.Event())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return newRelease, e.PublishEvent(opts.Event())
 }
 
 // DeployOpts represents options that can be passed when deploying to
