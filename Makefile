@@ -10,11 +10,7 @@ clean:
 	rm -rf build/*
 
 build/empire:
-	# Setting -tags netgo will force the binary to use the Go networking
-	# libraries instead of system libraries, for more consistent behavior.
-	# The -ldflags setting will enable compiling a static binary that's
-	# portable regardless of whether libc is available.
-	go build -ldflags '-extldflags "-static"' -tags netgo -o build/empire ./cmd/empire
+	go build -o build/empire ./cmd/empire
 
 build/emp:
 	# Setting -tags netgo will force the binary to use the Go networking

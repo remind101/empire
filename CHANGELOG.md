@@ -4,7 +4,6 @@
 
 **Improvements**
 
-* [cmd/empire] Produce statically-linked binaries
 * [cmd/emp] Produce statically-linked binaries
 * [cmd/empire] The internal upper bound constraint for CPU shares was removed. [#1124](https://github.com/remind101/empire/pull/1124)
 
