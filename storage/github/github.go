@@ -149,11 +149,11 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 }
 
 // Releases returns a list of the most recent releases for the give application.
-// It does so by looking what commits to the app.json file in the app directory.
+// It does so by looking what commits to the VERSION file in the app directory.
 func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 	app := q.App
 
-	// Get a list of all commits that changed app.json
+	// Get a list of all commits that changed the VERSION file in the app directory.
 	commits, _, err := s.github.Repositories.ListCommits(s.Owner, s.Repo, &github.CommitsListOptions{
 		SHA:  s.Ref,
 		Path: s.Path(app.Name, FileVersion),
