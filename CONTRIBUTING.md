@@ -69,8 +69,7 @@ To get started, run:
 $ make bootstrap
 ```
 
-The bootstrap command assumes you have a running postgres server. It will create a database called `empire`
-using the postgres client connection defaults.
+This command will create a real ECS cluster.
 
 To run the tests:
 
@@ -109,17 +108,16 @@ If you want to contribute to Empire, you may end up wanting to run a local insta
 5. Run Empire with [docker-compose](https://docs.docker.com/compose/):
 
    ```console
-   $ docker-compose up db # Only need to do this the first time, so that the db can initialize.
+   $ docker-compose build
    $ docker-compose up
    ```
 
-   **NOTE**: You might need to run this twice the first time you start it up, to give the postgres container time to initialize.
 6. [Install the emp CLI](./cmd/emp#installation).
 
 Empire will be available at `http://$(docker-machine ip default):8080` and you can point the CLI there.
 
 ```console
-$ export EMPIRE_API_URL=http://$(docker-machine ip default):8080
+$ export EMPIRE_API_URL=http://127.0.0.1:8080
 $ emp deploy remind101/acme-inc
 ```
 
