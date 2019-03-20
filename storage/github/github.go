@@ -188,6 +188,8 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 			App:         app,
 			Description: strings.TrimSpace(desc),
 			CreatedAt:   commit.Commit.Committer.Date,
+			UserId:      *commit.Commit.Committer.Name,
+			UserEmail:   *commit.Commit.Committer.Email,
 		})
 	}
 

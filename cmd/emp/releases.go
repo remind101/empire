@@ -116,7 +116,6 @@ func listReleases(w io.Writer, versions []string) {
 func abbrevEmailReleases(rels []*Release) {
 	domains := make(map[string]int)
 	for _, r := range rels {
-		r.Who = r.User.Email
 		if a := strings.SplitN(r.Who, "@", 2); len(a) == 2 {
 			domains["@"+a[1]]++
 		}
@@ -156,7 +155,7 @@ func (a releasesByVersion) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a releasesByVersion) Less(i, j int) bool { return a[i].Version < a[j].Version }
 
 func newRelease(rel *heroku.Release) *Release {
-	return &Release{*rel, "", ""}
+	return &Release{*rel, "", rel.User.Id}
 }
 
 var cmdReleaseInfo = &Command{
