@@ -3,7 +3,11 @@ version: '2'
 services:
   server:
     build: .
-    command: server -automigrate=true
+    entrypoint: ""
+    command:
+      - bash
+      - -c
+      - "/go/bin/empire migrate && make test"
     links:
       - db:db
     ports:
