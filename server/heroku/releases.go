@@ -16,6 +16,13 @@ func newRelease(r *empire.Release) *Release {
 		Version:     r.App.Version,
 		Description: r.Description,
 		CreatedAt:   *r.CreatedAt,
+		User: struct {
+			Id    string `json:"id"`
+			Email string `json:"email"`
+		}{
+			Id:    r.UserId,
+			Email: r.UserEmail,
+		},
 	}
 	if r.App.Image != nil {
 		release.Slug = &struct {

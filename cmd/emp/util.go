@@ -187,7 +187,7 @@ type prettyTime struct {
 
 func (s prettyTime) String() string {
 	if time.Now().Sub(s.Time) < 12*30*24*time.Hour {
-		return s.Local().Format("Jan _2 15:04")
+		return s.Local().Format("Jan _2 15:04 (MST)")
 	}
 	return s.Local().Format("Jan _2  2006")
 }

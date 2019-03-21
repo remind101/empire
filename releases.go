@@ -22,6 +22,9 @@ type Release struct {
 
 	// The time that this release was created.
 	CreatedAt *time.Time
+
+    // Committer username and email
+	UserId, UserEmail string
 }
 
 // BeforeCreate sets created_at before inserting.
