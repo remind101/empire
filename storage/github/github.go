@@ -78,7 +78,7 @@ func NewStorage(c *http.Client) *Storage {
 // repository. In CLI terminology, it's roughly equivalent to the following:
 //
 //	> git checkout -b changes
-//	> touch app.json app.env image.txt services.json
+//	> touch app.env IMAGE services.json
 //	> git commit -m "Description of the changes"
 //	> git checkout base-ref
 //	> git merge --no-ff changes
@@ -179,8 +179,7 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 			return nil, err
 		}
 
-		// Just read the first line of the commit message as the release
-		// description.
+		// Use first line of the commit message as the release description.
 		r := bufio.NewReader(strings.NewReader(*commit.Commit.Message))
 		desc, _ := r.ReadString('\n')
 
@@ -267,7 +266,18 @@ func (s *Storage) GetContentsAtRef(ref string) contentFetcherFunc {
 
 // ReleasesFind finds a release that matches q.
 func (s *Storage) ReleasesFind(q empire.ReleasesQuery) (*empire.Release, error) {
-	return nil, errors.New("ReleasesFind not implemented")
+	// pass the query struct to the Storage.Releases function.
+	var releases, err = s.Releases(q)
+	if err != nil {
+		return nil, err
+	}
+	// loop over all Releases and return the release with the matching version.
+	for _, release := range releases {
+		if release.App.Version == *q.Version {
+			return release, nil
+		}
+	}
+	return nil, &empire.NotFoundError{Err: errors.New("release not found")}
 }
 
 // Reset does nothing for the GitHub storage backend.
