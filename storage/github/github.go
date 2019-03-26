@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/remind101/empire"
@@ -78,7 +79,7 @@ func NewStorage(c *http.Client) *Storage {
 // repository. In CLI terminology, it's roughly equivalent to the following:
 //
 //	> git checkout -b changes
-//	> touch app.env IMAGE services.json
+//	> touch app.env IMAGE VERSION services.json
 //	> git commit -m "Description of the changes"
 //	> git checkout base-ref
 //	> git merge --no-ff changes
@@ -141,16 +142,18 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 	if err != nil {
 		return nil, fmt.Errorf("merging %q into %q: %v", *commit.SHA, s.Ref, err)
 	}
-
+	created_at := time.Now()
 	return &empire.Release{
 		App:         app,
 		Description: commitMessage,
+		CreatedAt:   &created_at,
 	}, nil
 }
 
 // Releases returns a list of the most recent releases for the give application.
 // It does so by looking what commits to the VERSION file in the app directory.
 func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
+	// grab app from RelaseQuery.
 	app := q.App
 
 	// Get a list of all commits that changed the VERSION file in the app directory.
@@ -172,6 +175,7 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 		// Only load the VERSION file when listing releases.
 		include := map[string]bool{
 			FileVersion: true,
+			FileImage:   true,
 		}
 
 		app, err := loadApp(f, &empire.App{Name: app.Name}, include)
@@ -266,7 +270,8 @@ func (s *Storage) GetContentsAtRef(ref string) contentFetcherFunc {
 
 // ReleasesFind finds a release that matches q.
 func (s *Storage) ReleasesFind(q empire.ReleasesQuery) (*empire.Release, error) {
-	// pass the query struct to the Storage.Releases function.
+	// pass the query struct and map of files to parse and include
+	// to the Storage.Releases function.
 	var releases, err = s.Releases(q)
 	if err != nil {
 		return nil, err
