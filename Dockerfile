@@ -1,4 +1,4 @@
-FROM golang:1.7.6
+FROM golang:1.8.7
 MAINTAINER Eric Holmes <eric@remind101.com>
 
 LABEL version 0.13.0
@@ -8,7 +8,9 @@ RUN apt-get update -yy && \
 
 ADD . /go/src/github.com/remind101/empire
 WORKDIR /go/src/github.com/remind101/empire
-RUN go install ./cmd/empire
+
+# go-xmlsec workaround: https://github.com/crewjam/go-xmlsec/issues/16
+RUN CGO_CFLAGS_ALLOW='-w|-UXMLSEC_CRYPTO_DYNAMIC_LOADING' go install ./cmd/empire
 RUN ldd /go/bin/empire || true
 
 ENTRYPOINT ["/go/bin/empire"]
