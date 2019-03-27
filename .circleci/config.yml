@@ -21,7 +21,7 @@ jobs:
     <<: *defaults
 
     docker:
-      - image: circleci/golang:1.8.7
+      - image: circleci/golang:1.9.7
         environment:
           ARTIFACTS: /tmp/artifacts
 
@@ -40,7 +40,7 @@ jobs:
     <<: *defaults
 
     docker:
-      - image: circleci/golang:1.8.7
+      - image: circleci/golang:1.9.7
         environment:
           SHELL: /bin/bash
       - image: circleci/postgres:9.3
@@ -62,7 +62,7 @@ jobs:
     <<: *defaults
 
     docker:
-      - image: circleci/golang:1.8.7
+      - image: circleci/golang:1.9.7
 
     steps:
       - checkout
