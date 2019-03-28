@@ -21,7 +21,7 @@ jobs:
     <<: *defaults
 
     docker:
-      - image: circleci/golang:1.7.6
+      - image: circleci/golang:1.10-stretch
         environment:
           ARTIFACTS: /tmp/artifacts
 
@@ -40,7 +40,7 @@ jobs:
     <<: *defaults
 
     docker:
-      - image: circleci/golang:1.7.6
+      - image: circleci/golang:1.10-stretch
         environment:
           SHELL: /bin/bash
 
@@ -55,10 +55,13 @@ jobs:
     <<: *defaults
 
     docker:
-      - image: circleci/golang:1.7.6
+      - image: circleci/golang:1.10-stretch
 
     steps:
       - checkout
+      - run:
+          name: Install System Dependencies
+          command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
       - run: make vet
 
   docker_image:
