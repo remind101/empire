@@ -92,6 +92,12 @@ type Authorization struct {
 
 type User struct {
 	Login string `json:"login"`
+	Name  string `json:"name"`
+}
+
+type Email struct {
+	Email   string `json:"email"`
+	Primary bool   `json:"primary"`
 }
 
 type TeamMembership struct {
@@ -165,6 +171,30 @@ func (c *Client) GetUser(token string) (*User, error) {
 	}
 
 	return &u, nil
+}
+
+func (c *Client) GetPrimaryEmail(token string) (*Email, error) {
+	req, err := c.NewRequest("GET", "/user/emails", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenAuth(req, token)
+
+	var emails []Email
+
+	_, err = c.Do(req, &emails)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, email := range emails {
+		if email.Primary {
+			return &email, nil
+		}
+	}
+
+	return nil, nil
 }
 
 // IsOrganizationMember returns true of the authenticated user is a member of the

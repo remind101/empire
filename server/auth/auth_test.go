@@ -9,6 +9,19 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type mockAuthenticator struct {
+	mock.Mock
+}
+
+func (m *mockAuthenticator) Authenticate(username, password, otp string) (*Session, error) {
+	args := m.Called(username, password, otp)
+	session := args.Get(0)
+	if session != nil {
+		return session.(*Session), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func TestStaticAuthenticator(t *testing.T) {
 	u := &empire.User{}
 	a := StaticAuthenticator("username", "password", "otp", u)
@@ -142,17 +155,4 @@ func TestWithMaxSessionDuration_WithLongerExpiresAt(t *testing.T) {
 	assert.Equal(t, s1.Add(12*time.Hour), *session.ExpiresAt)
 
 	m.AssertExpectations(t)
-}
-
-type mockAuthenticator struct {
-	mock.Mock
-}
-
-func (m *mockAuthenticator) Authenticate(username, password, otp string) (*Session, error) {
-	args := m.Called(username, password, otp)
-	session := args.Get(0)
-	if session != nil {
-		return session.(*Session), args.Error(1)
-	}
-	return nil, args.Error(1)
 }
