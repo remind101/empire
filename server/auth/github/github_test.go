@@ -25,6 +25,10 @@ func TestAuthenticator(t *testing.T) {
 		Login: "ejholmes",
 	}, nil)
 
+	c.On("GetPrimaryEmail", "access_token").Return(&Email{
+		Email: "eric@example.org",
+	}, nil)
+
 	session, err := a.Authenticate("username", "password", "otp")
 	assert.NoError(t, err)
 	assert.Equal(t, "ejholmes", session.User.Name)
@@ -150,6 +154,15 @@ func (m *mockClient) GetUser(token string) (*User, error) {
 	user := args.Get(0)
 	if user != nil {
 		return user.(*User), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *mockClient) GetPrimaryEmail(token string) (*Email, error) {
+	args := m.Called(token)
+	email := args.Get(0)
+	if email != nil {
+		return email.(*Email), args.Error(1)
 	}
 	return nil, args.Error(1)
 }

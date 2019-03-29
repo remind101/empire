@@ -17,6 +17,7 @@ type Authenticator struct {
 	client interface {
 		CreateAuthorization(CreateAuthorizationOptions) (*Authorization, error)
 		GetUser(token string) (*User, error)
+		GetPrimaryEmail(token string) (*Email, error)
 	}
 }
 
@@ -54,8 +55,15 @@ func (a *Authenticator) Authenticate(username, password, otp string) (*auth.Sess
 		return nil, fmt.Errorf("unable to fetch GitHub user information: %v", err)
 	}
 
+	email, err := a.client.GetPrimaryEmail(authorization.Token)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch primary email: %v", err)
+	}
+
 	user := &empire.User{
 		Name:        u.Login,
+		FullName:    u.Name,
+		Email:       email.Email,
 		GitHubToken: authorization.Token,
 	}
 
