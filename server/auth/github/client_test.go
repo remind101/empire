@@ -1,3 +1,7 @@
+// it seems like the mock library cannot detect our functions for 
+// any go version over 1.7.6 -- this comment will disable these tests.
+// +build !go1.10
+
 package github
 
 import (
