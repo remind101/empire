@@ -379,7 +379,7 @@ func (s *Scheduler) waitForDeploymentsToStabilize(ctx context.Context, deploymen
 		for _, service := range services {
 			d, ok := deployments[*service.ServiceArn]
 			if !ok {
-				return false, fmt.Errorf("missing deployment for: %s", service.ServiceArn)
+				return false, fmt.Errorf("missing deployment for: %s", *service.ServiceArn)
 			}
 			primary := false
 			stable := len(service.Deployments) == 1
