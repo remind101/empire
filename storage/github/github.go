@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/remind101/empire"
@@ -78,7 +79,7 @@ func NewStorage(c *http.Client) *Storage {
 // repository. In CLI terminology, it's roughly equivalent to the following:
 //
 //	> git checkout -b changes
-//	> touch app.json app.env image.txt services.json
+//	> touch app.env IMAGE VERSION services.json
 //	> git commit -m "Description of the changes"
 //	> git checkout base-ref
 //	> git merge --no-ff changes
@@ -141,19 +142,21 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 	if err != nil {
 		return nil, fmt.Errorf("merging %q into %q: %v", *commit.SHA, s.Ref, err)
 	}
-
+	created_at := time.Now()
 	return &empire.Release{
 		App:         app,
 		Description: commitMessage,
+		CreatedAt:   &created_at,
 	}, nil
 }
 
 // Releases returns a list of the most recent releases for the give application.
-// It does so by looking what commits to the app.json file in the app directory.
+// It does so by looking what commits to the VERSION file in the app directory.
 func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
+	// grab app from RelaseQuery.
 	app := q.App
 
-	// Get a list of all commits that changed app.json
+	// Get a list of all commits that changed the VERSION file in the app directory.
 	commits, _, err := s.github.Repositories.ListCommits(s.Owner, s.Repo, &github.CommitsListOptions{
 		SHA:  s.Ref,
 		Path: s.Path(app.Name, FileVersion),
@@ -172,6 +175,7 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 		// Only load the VERSION file when listing releases.
 		include := map[string]bool{
 			FileVersion: true,
+			FileImage:   true,
 		}
 
 		app, err := loadApp(f, &empire.App{Name: app.Name}, include)
@@ -179,8 +183,7 @@ func (s *Storage) Releases(q empire.ReleasesQuery) ([]*empire.Release, error) {
 			return nil, err
 		}
 
-		// Just read the first line of the commit message as the release
-		// description.
+		// Use first line of the commit message as the release description.
 		r := bufio.NewReader(strings.NewReader(*commit.Commit.Message))
 		desc, _ := r.ReadString('\n')
 
@@ -269,7 +272,19 @@ func (s *Storage) GetContentsAtRef(ref string) contentFetcherFunc {
 
 // ReleasesFind finds a release that matches q.
 func (s *Storage) ReleasesFind(q empire.ReleasesQuery) (*empire.Release, error) {
-	return nil, errors.New("ReleasesFind not implemented")
+	// pass the query struct and map of files to parse and include
+	// to the Storage.Releases function.
+	var releases, err = s.Releases(q)
+	if err != nil {
+		return nil, err
+	}
+	// loop over all Releases and return the release with the matching version.
+	for _, release := range releases {
+		if release.App.Version == *q.Version {
+			return release, nil
+		}
+	}
+	return nil, &empire.NotFoundError{Err: errors.New("release not found")}
 }
 
 // Reset does nothing for the GitHub storage backend.
