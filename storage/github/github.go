@@ -30,6 +30,7 @@ const BlobPerms = "100644"
 const (
 	FileVersion  = "VERSION"
 	FileImage    = "IMAGE"
+	FileHash     = "HASH"
 	FileEnv      = "app.env"
 	FileServices = "services.json"
 )
@@ -84,8 +85,12 @@ func NewStorage(c *http.Client) *Storage {
 //	> git checkout base-ref
 //	> git merge --no-ff changes
 func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.Release, error) {
+
 	// Auto increment the version number for this new release.
 	app.Version = app.Version + 1
+
+	// Set the App hash from event.String().
+	app.Hash = strings.Split(event.String(), ":")[1]
 
 	// Get details about the ref we want to update.
 	ref, _, err := s.github.Git.GetRef(s.Owner, s.Repo, s.Ref)
@@ -329,6 +334,7 @@ func (s *Storage) treeEntries(app *empire.App) ([]github.TreeEntry, error) {
 		},
 	}
 
+	// The environment variables for this application.
 	if app.Environment != nil {
 		envFile := new(bytes.Buffer)
 		if err := dotenv.Write(envFile, app.Environment); err != nil {
@@ -343,14 +349,23 @@ func (s *Storage) treeEntries(app *empire.App) ([]github.TreeEntry, error) {
 	}
 
 	if app.Image != nil {
+		// The "slug" for this application (Docker Image).
 		entries = append(entries, github.TreeEntry{
 			Path:    github.String(s.Path(app.Name, FileImage)),
 			Type:    github.String("blob"),
 			Mode:    github.String(BlobPerms),
 			Content: github.String(app.Image.String()),
 		})
+		// The app repo's git commit hash related to this Docker image.
+		entries = append(entries, github.TreeEntry{
+			Path:    github.String(s.Path(app.Name, FileHash)),
+			Type:    github.String("blob"),
+			Mode:    github.String(BlobPerms),
+			Content: github.String(app.Hash),
+		})
 	}
 
+	// The process formation for this application.
 	if app.Formation != nil {
 		formation, err := jsonMarshal(app.Formation)
 		if err != nil {

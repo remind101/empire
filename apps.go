@@ -35,6 +35,9 @@ type App struct {
 	// The "slug" for this application (Docker Image).
 	Image *image.Image
 
+	// The app repo's git commit hash related to this Docker image.
+	Hash string
+
 	// The process formation for this application.
 	Formation Formation
 }
