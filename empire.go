@@ -561,6 +561,9 @@ type DeployOpts struct {
 	// App is the app that is being deployed to.
 	App *App
 
+	// The application repo's git commit hash for this image.
+	GitSHA string
+
 	// Image is the image that's being deployed.
 	Image image.Image
 
@@ -652,6 +655,7 @@ func (e *Empire) deploy(ctx context.Context, opts DeployOpts) (*Release, error) 
 		return nil, err
 	}
 
+	app.Hash = opts.GitSha
 	app.Image = &slug.Image
 	app.Formation = formation.Merge(app.Formation)
 

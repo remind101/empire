@@ -89,9 +89,6 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 	// Auto increment the version number for this new release.
 	app.Version = app.Version + 1
 
-	// Set the App hash from event.String().
-	app.Hash = strings.Split(event.String(), ":")[1]
-
 	// Get details about the ref we want to update.
 	ref, _, err := s.github.Git.GetRef(s.Owner, s.Repo, s.Ref)
 	if err != nil {

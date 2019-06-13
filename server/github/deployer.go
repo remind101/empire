@@ -75,6 +75,7 @@ func (d *EmpireDeployer) Deploy(ctx context.Context, event events.Deployment, w 
 	}
 	_, err = d.empire.Deploy(ctx, empire.DeployOpts{
 		Image:   img,
+		GitSHA:  event.Sha,
 		Output:  empire.NewDeploymentStream(p),
 		User:    &empire.User{Name: event.Deployment.Creator.Login},
 		Stream:  true,
