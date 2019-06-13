@@ -36,7 +36,7 @@ type App struct {
 	Image *image.Image
 
 	// The app repo's git commit hash related to this Docker image.
-	Hash string
+	GitSHA string
 
 	// The process formation for this application.
 	Formation Formation

@@ -38,6 +38,7 @@ func TestEmpireDeployer_Deploy(t *testing.T) {
 			Repository: "remind101/acme-inc",
 			Tag:        "abcd123",
 		},
+		GitSHA:     "abcd123",
 		Stream: true,
 		Message: `GitHub deployment 53252 of remind101/acme-inc to test
 
