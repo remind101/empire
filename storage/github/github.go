@@ -89,9 +89,6 @@ func (s *Storage) ReleasesCreate(app *empire.App, event empire.Event) (*empire.R
 	// Auto increment the version number for this new release.
 	app.Version = app.Version + 1
 
-	// Set the App hash from event.String().
-	app.Hash = strings.Split(event.String(), ":")[1]
-
 	// Get details about the ref we want to update.
 	ref, _, err := s.github.Git.GetRef(s.Owner, s.Repo, s.Ref)
 	if err != nil {
@@ -356,12 +353,15 @@ func (s *Storage) treeEntries(app *empire.App) ([]github.TreeEntry, error) {
 			Mode:    github.String(BlobPerms),
 			Content: github.String(app.Image.String()),
 		})
+	}
+
+	if app.GitSHA != "" {
 		// The app repo's git commit hash related to this Docker image.
 		entries = append(entries, github.TreeEntry{
 			Path:    github.String(s.Path(app.Name, FileHash)),
 			Type:    github.String("blob"),
 			Mode:    github.String(BlobPerms),
-			Content: github.String(app.Hash),
+			Content: github.String(app.GitSHA),
 		})
 	}
 
