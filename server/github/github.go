@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
@@ -52,10 +53,21 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var p events.Deployment
 
+	log.Printf("level=info msg='attempting to parse a new GitHub Deployment webhook.'")
+
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("level=info msg='successfully parsed new GitHub Deployment webhook.'")
+	log.Printf(
+		"level=info deployment_id=%v environment=%v repo_url=%v ref=%v",
+		p.Deployment.ID,
+		p.Deployment.Environment,
+		p.Deployment.RepositoryURL,
+		p.Deployment.Ref,
+	)
 
 	if !currentEnvironment(p.Deployment.Environment, h.environments) {
 		w.WriteHeader(http.StatusNoContent)
@@ -63,9 +75,11 @@ func (h *DeploymentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Deploy(ctx, p, os.Stdout); err != nil {
+		log.Printf("level=error msg='GitHub Deployment webhook failed to trigger deploy.'")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("level=info msg='GitHub Deployment webhook triggered deploy.'")
 
 	w.WriteHeader(http.StatusAccepted)
 	io.WriteString(w, "Ok\n")
