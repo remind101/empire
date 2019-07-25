@@ -47,6 +47,9 @@ func NewApp(name string) *App {
 		Name:        name,
 		Environment: make(map[string]string),
 		Formation:   make(Formation),
+		Image: &image.Image{
+			Repository: "#none",
+		},
 	}
 }
 
