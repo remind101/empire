@@ -274,6 +274,7 @@ type ECSTaskDefinitionProperties struct {
 	TaskRoleArn          *string
 	ContainerDefinitions []ContainerDefinition
 	PlacementConstraints []ECSPlacementConstraint
+	Tags                 []*ecs.Tag
 }
 
 func (p *ECSTaskDefinitionProperties) ReplacementHash() (uint64, error) {
@@ -385,6 +386,7 @@ func (p *ECSTaskDefinitionResource) register(properties *ECSTaskDefinitionProper
 		TaskRoleArn:          properties.TaskRoleArn,
 		ContainerDefinitions: containerDefinitions,
 		PlacementConstraints: placementConstraints,
+		Tags:                 properties.Tags,
 	})
 	if err != nil {
 		return "", fmt.Errorf("error creating task definition: %v", err)
