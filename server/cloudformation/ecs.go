@@ -58,6 +58,7 @@ type ECSServiceProperties struct {
 	LoadBalancers           []LoadBalancer
 	PlacementConstraints    []ECSPlacementConstraint
 	PlacementStrategy       []ECSPlacementStrategy
+  PropagateTags           *string
 	Role                    *string
 	ServiceName             *string
 	TaskDefinition          *string `hash:"ignore"`
@@ -137,6 +138,7 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 		LoadBalancers:           loadBalancers,
 		PlacementConstraints:    placementConstraints,
 		PlacementStrategy:       placementStrategy,
+    PropagateTags:           properties.PropagateTags,
 		Role:                    properties.Role,
 		ServiceName:             serviceName,
 		TaskDefinition:          properties.TaskDefinition,
@@ -274,6 +276,7 @@ type ECSTaskDefinitionProperties struct {
 	TaskRoleArn          *string
 	ContainerDefinitions []ContainerDefinition
 	PlacementConstraints []ECSPlacementConstraint
+	Tags                 []*ecs.Tag
 }
 
 func (p *ECSTaskDefinitionProperties) ReplacementHash() (uint64, error) {
@@ -385,6 +388,7 @@ func (p *ECSTaskDefinitionResource) register(properties *ECSTaskDefinitionProper
 		TaskRoleArn:          properties.TaskRoleArn,
 		ContainerDefinitions: containerDefinitions,
 		PlacementConstraints: placementConstraints,
+		Tags:                 properties.Tags,
 	})
 	if err != nil {
 		return "", fmt.Errorf("error creating task definition: %v", err)

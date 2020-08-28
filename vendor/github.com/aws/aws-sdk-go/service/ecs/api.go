@@ -3986,6 +3986,13 @@ type CreateServiceInput struct {
 	//
 	// TaskDefinition is a required field
 	TaskDefinition *string `locationName:"taskDefinition" type:"string" required:"true"`
+
+	// Specifies whether to propagate the tags from the task definition or the service to the tasks in the service.
+	// If no value is specified, the tags are not propagated.
+	//
+	// Tags can only be propagated to the tasks within the service during service creation.
+	// To add tags to a task after service creation, use the TagResource API action.
+	PropagateTags *string `locationName:"propagateTags" type:"string"`
 }
 
 // String returns the string representation
@@ -6632,6 +6639,18 @@ func (s *RegisterContainerInstanceOutput) SetContainerInstance(v *ContainerInsta
 	return s
 }
 
+type Tag struct {
+
+	// One part of a key-value pair that make up a tag. A key is a general label
+	// that acts like a category for more specific tag values.
+	Key *string `locationName:"key" min:"1" type:"string"`
+
+	// The optional part of a key-value pair that make up a tag. A value acts as
+	// a descriptor within a tag category (key).
+	Value *string `locationName:"value" type:"string"`
+	// contains filtered or unexported fields
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/ecs-2014-11-13/RegisterTaskDefinitionRequest
 type RegisterTaskDefinitionInput struct {
 	_ struct{} `type:"structure"`
@@ -6682,6 +6701,34 @@ type RegisterTaskDefinitionInput struct {
 	// A list of volume definitions in JSON format that containers in your task
 	// may use.
 	Volumes []*Volume `locationName:"volumes" type:"list"`
+
+	// The metadata that you apply to the task definition to help you categorize
+	// and organize them. Each tag consists of a key and an optional value, both
+	// of which you define.
+	//
+	// The following basic restrictions apply to tags:
+	//
+	//    * Maximum number of tags per resource - 50
+	//
+	//    * For each resource, each tag key must be unique, and each tag key can
+	//    have only one value.
+	//
+	//    * Maximum key length - 128 Unicode characters in UTF-8
+	//
+	//    * Maximum value length - 256 Unicode characters in UTF-8
+	//
+	//    * If your tagging schema is used across multiple services and resources,
+	//    remember that other services may have restrictions on allowed characters.
+	//    Generally allowed characters are: letters, numbers, and spaces representable
+	//    in UTF-8, and the following characters: + - = . _ : / @.
+	//
+	//    * Tag keys and values are case-sensitive.
+	//
+	//    * Do not use aws:, AWS:, or any upper or lowercase combination of such
+	//    as a prefix for either keys or values as it is reserved for AWS use. You
+	//    cannot edit or delete tag keys or values with this prefix. Tags with this
+	//    prefix do not count against your tags per resource limit.
+	Tags []*Tag `locationName:"tags" type:"list"`
 }
 
 // String returns the string representation

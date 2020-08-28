@@ -712,6 +712,13 @@ func (s *Scheduler) remove(_ context.Context, tx *sql.Tx, appID string) error {
 	if _, err := s.cloudformation.DeleteStack(&cloudformation.DeleteStackInput{
 		StackName: aws.String(stackName),
 	}); err != nil {
+		// If Empire doesn't have access to delete this stack, just
+		// ignore it. This allows for an easy flow where you can delete
+		// an app from Empire, without actually removing it from
+		// CloudFormation.
+		if err, ok := err.(awserr.Error); ok && err.Code() == "AccessDenied" {
+			return nil
+		}
 		return fmt.Errorf("error deleting stack: %v", err)
 	}
 
