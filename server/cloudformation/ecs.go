@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -58,7 +59,7 @@ type ECSServiceProperties struct {
 	LoadBalancers           []LoadBalancer
 	PlacementConstraints    []ECSPlacementConstraint
 	PlacementStrategy       []ECSPlacementStrategy
-  PropagateTags           *string
+	PropagateTags           *string
 	Role                    *string
 	ServiceName             *string
 	TaskDefinition          *string `hash:"ignore"`
@@ -95,6 +96,9 @@ func newECSServiceProvisioner(resource *ECSServiceResource) *provisioner {
 }
 
 func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Request) (string, interface{}, error) {
+	// TODO: how to make this a debug log level?
+	log.Println(req)
+
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	clientToken := req.Hash()
 	data := make(map[string]string)
@@ -138,7 +142,7 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 		LoadBalancers:           loadBalancers,
 		PlacementConstraints:    placementConstraints,
 		PlacementStrategy:       placementStrategy,
-    PropagateTags:           properties.PropagateTags,
+		PropagateTags:           properties.PropagateTags,
 		Role:                    properties.Role,
 		ServiceName:             serviceName,
 		TaskDefinition:          properties.TaskDefinition,
@@ -180,6 +184,9 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 }
 
 func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Request) (interface{}, error) {
+	// TODO: how to make this a debug log level?
+	log.Println(req)
+
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
 	data := make(map[string]string)
@@ -210,6 +217,9 @@ func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Req
 }
 
 func (p *ECSServiceResource) Delete(ctx context.Context, req customresources.Request) error {
+	// TODO: how to make this a debug log level?
+	log.Println(req)
+
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	service := aws.String(req.PhysicalResourceId)
 	cluster := properties.Cluster
