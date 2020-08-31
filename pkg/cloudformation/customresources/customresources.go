@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
@@ -226,6 +227,8 @@ type timeoutProvisioner struct {
 }
 
 func (p *timeoutProvisioner) Provision(ctx context.Context, r Request) (string, interface{}, error) {
+	// TODO: how to make this a debug log level?
+	log.Println(r)
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
