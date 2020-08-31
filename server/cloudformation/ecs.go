@@ -97,8 +97,7 @@ func newECSServiceProvisioner(resource *ECSServiceResource) *provisioner {
 
 func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Request) (string, interface{}, error) {
 	// TODO: how to make this a debug log level?
-	log.Println(req)
-	log.Println(req.ResourceProperties)
+    fmt.Printf("%+v\n", req)
 
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	clientToken := req.Hash()
@@ -186,8 +185,7 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 
 func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Request) (interface{}, error) {
 	// TODO: how to make this a debug log level?
-	log.Println(req)
-	log.Println(req.ResourceProperties)
+    fmt.Printf("%+v\n", req)
 
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	oldProperties := req.OldResourceProperties.(*ECSServiceProperties)
@@ -220,8 +218,7 @@ func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Req
 
 func (p *ECSServiceResource) Delete(ctx context.Context, req customresources.Request) error {
 	// TODO: how to make this a debug log level?
-	log.Println(req)
-	log.Println(req.ResourceProperties)
+    fmt.Printf("%+v\n", req)
 
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	service := aws.String(req.PhysicalResourceId)
