@@ -95,9 +95,6 @@ func newECSServiceProvisioner(resource *ECSServiceResource) *provisioner {
 }
 
 func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Request) (string, interface{}, error) {
-	// TODO: how to make this a debug log level?
-	fmt.Printf("%+v\n%+v\n", *req.ResourceProperties, *req.OldResourceProperties)
-
 	properties := req.ResourceProperties.(*ECSServiceProperties)
 	clientToken := req.Hash()
 	data := make(map[string]string)
