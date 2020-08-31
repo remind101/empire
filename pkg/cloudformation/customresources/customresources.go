@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
