@@ -52,15 +52,16 @@ type LoadBalancer struct {
 // ECSServiceProperties represents the properties for the Custom::ECSService
 // resource.
 type ECSServiceProperties struct {
-	ServiceName          *string
-	Cluster              *string
-	DesiredCount         *customresources.IntValue `hash:"ignore"`
-	LoadBalancers        []LoadBalancer
-	Role                 *string
-	TaskDefinition       *string `hash:"ignore"`
-	PlacementConstraints []ECSPlacementConstraint
-	PlacementStrategy    []ECSPlacementStrategy
-	PropagateTags        *string
+	Cluster                 *string
+	DeploymentConfiguration *DeploymentConfiguration  `hash:"ignore"`
+	DesiredCount            *customresources.IntValue `hash:"ignore"`
+	LoadBalancers           []LoadBalancer
+	PlacementConstraints    []ECSPlacementConstraint
+	PlacementStrategy       []ECSPlacementStrategy
+	PropagateTags           *string
+	Role                    *string
+	ServiceName             *string
+	TaskDefinition          *string `hash:"ignore"`
 }
 
 func (p *ECSServiceProperties) ReplacementHash() (uint64, error) {
