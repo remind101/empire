@@ -130,17 +130,26 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 		serviceName = aws.String(fmt.Sprintf("%s-%s", *properties.ServiceName, clientToken))
 	}
 
+	// Build the DeploymentConfiguration, validating that the fields are set
+	// correctly.
+	deploymentConfig, err := deploymentConfiguration(properties)
+	if err != nil {
+		return "", nil, fmt.Errorf("error setting DeploymentConfiguration: %v", err)
+	}
+
+	// Create the service
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
-		ClientToken:          aws.String(clientToken),
-		ServiceName:          serviceName,
-		Cluster:              properties.Cluster,
-		DesiredCount:         properties.DesiredCount.Value(),
-		Role:                 properties.Role,
-		TaskDefinition:       properties.TaskDefinition,
-		LoadBalancers:        loadBalancers,
-		PlacementConstraints: placementConstraints,
-		PlacementStrategy:    placementStrategy,
-		PropagateTags:        properties.PropagateTags,
+		ClientToken:             aws.String(clientToken),
+		Cluster:                 properties.Cluster,
+		DeploymentConfiguration: deploymentConfig,
+		DesiredCount:            properties.DesiredCount.Value(),
+		LoadBalancers:           loadBalancers,
+		PlacementConstraints:    placementConstraints,
+		PlacementStrategy:       placementStrategy,
+		PropagateTags:           properties.PropagateTags,
+		Role:                    properties.Role,
+		ServiceName:             serviceName,
+		TaskDefinition:          properties.TaskDefinition,
 	})
 	if err != nil {
 		return "", nil, fmt.Errorf("error creating service: %v", err)
@@ -188,11 +197,19 @@ func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Req
 		desiredCount = properties.DesiredCount.Value()
 	}
 
+	// Build the DeploymentConfiguration, validating that the fields are set
+	// correctly.
+	deploymentConfig, err := deploymentConfiguration(properties)
+	if err != nil {
+		return "", nil, fmt.Errorf("error setting DeploymentConfiguration: %v", err)
+	}
+
 	resp, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
-		Service:        aws.String(req.PhysicalResourceId),
-		Cluster:        properties.Cluster,
-		DesiredCount:   desiredCount,
-		TaskDefinition: properties.TaskDefinition,
+		Cluster:                 properties.Cluster,
+		DeploymentConfiguration: deploymentConfig,
+		DesiredCount:            desiredCount,
+		Service:                 aws.String(req.PhysicalResourceId),
+		TaskDefinition:          properties.TaskDefinition,
 	})
 	if err != nil {
 		return nil, err
@@ -216,9 +233,9 @@ func (p *ECSServiceResource) Delete(ctx context.Context, req customresources.Req
 	// We have to scale the service down to 0, before we're able to
 	// destroy it.
 	if _, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
-		Service:      service,
 		Cluster:      cluster,
 		DesiredCount: aws.Int64(0),
+		Service:      service,
 	}); err != nil {
 		if err, ok := err.(awserr.Error); ok && strings.Contains(err.Message(), "Service was not ACTIVE") {
 			// If the service is not active, it was probably manually
@@ -495,4 +512,29 @@ func primaryDeployment(service *ecs.Service) *ecs.Deployment {
 		}
 	}
 	return nil
+}
+
+func deploymentConfiguration(props *ECSServiceProperties) (*ecs.DeploymentConfiguration, error) {
+	// If a deployment configuration was passed, make sure it's valid.
+	if properties.DeploymentConfiguration == nil {
+		return nil, nil
+	}
+
+	// If the MaximumPercent is missing, it isn't valid.
+	if properties.DeploymentConfiguration.MaximumPercent == nil {
+		return nil, fmt.Errorf("Invalid DeploymentConfiguration: MaximumPercent missing")
+	}
+
+	// If the MinimumHealthyPercent is missing, it isn't valid.
+	if properties.DeploymentConfiguration.MinimumHealthyPercent == nil {
+		return nil, fmt.Errorf("Invalid DeploymentConfiguration: MinimumHealthyPercent missing")
+	}
+
+	// Make a DeploymentConfiguration, using the Value() method to convert our
+	// custom IntValue (which is actually an int64 parsed from a string) to an
+	// *int64.
+	return &ecs.DeploymentConfiguration{
+		MaximumPercent:        properties.DeploymentConfiguration.MaximumPercent.Value(),
+		MinimumHealthyPercent: properties.DeploymentConfiguration.MinimumHealthyPercent.Value(),
+	}, nil
 }
