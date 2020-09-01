@@ -101,8 +101,6 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 	if err != nil {
 		return fmt.Errorf("error unmarshalling sqs message body: %v", err)
 	}
-	// Log the raw payload we got over SNS->SQS for debugging.
-	logger.Debug("SQS message payload: %s", m.Message)
 
 	var req customresources.Request
 	err = json.Unmarshal([]byte(m.Message), &req)
@@ -117,6 +115,7 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		"resource_type", req.ResourceType,
 		"logical_resource_id", req.LogicalResourceId,
 		"physical_resource_id", req.PhysicalResourceId,
+		"request_payload", m.Message,
 	)
 
 	resp := customresources.NewResponseFromRequest(req)
