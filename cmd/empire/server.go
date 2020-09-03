@@ -73,6 +73,7 @@ func runServer(c *cli.Context) {
 
 func newServer(c *Context, e *empire.Empire) http.Handler {
 	var opts server.Options
+	opts.OauthRedirectURL = c.String(FlagOAuthRedirectUrl)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
 	opts.GitHub.Deployments.Environments = strings.Split(c.String(FlagGithubDeploymentsEnvironments), ",")
 	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
