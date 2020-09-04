@@ -14,4 +14,7 @@ services:
     environment:
       TEST_DATABASE_URL: "postgres://postgres:postgres@db/postgres?sslmode=disable"
   db:
-    image: postgres
+    image: postgres:9
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+
