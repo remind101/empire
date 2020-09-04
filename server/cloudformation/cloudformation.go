@@ -115,7 +115,6 @@ func (c *CustomResourceProvisioner) Handle(ctx context.Context, message *sqs.Mes
 		"resource_type", req.ResourceType,
 		"logical_resource_id", req.LogicalResourceId,
 		"physical_resource_id", req.PhysicalResourceId,
-		"request_payload", m.Message,
 	)
 
 	resp := customresources.NewResponseFromRequest(req)
