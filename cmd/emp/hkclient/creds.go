@@ -11,7 +11,7 @@ import (
 )
 
 type NetRc struct {
-	netrc.Netrc
+	*netrc.Netrc
 }
 
 func netRcPath() string {
@@ -26,12 +26,12 @@ func LoadNetRc() (nrc *NetRc, err error) {
 	onrc, err := netrc.ParseFile(netRcPath())
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &NetRc{}, nil
+			return &NetRc{&netrc.Netrc{}}, nil
 		}
 		return nil, err
 	}
 
-	return &NetRc{*onrc}, nil
+	return &NetRc{onrc}, nil
 }
 
 func (nrc *NetRc) GetCreds(apiURL *url.URL) (user, pass string, err error) {

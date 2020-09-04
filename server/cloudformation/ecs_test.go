@@ -59,6 +59,10 @@ func TestECSServiceResource_Create(t *testing.T) {
 		ServiceName:  aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
 			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
@@ -77,6 +81,10 @@ func TestECSServiceResource_Create(t *testing.T) {
 		RequestId:   "411f3f38-565f-4216-a711-aeafd5ba635e",
 		RequestType: customresources.Create,
 		ResourceProperties: &ECSServiceProperties{
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
 			DesiredCount: customresources.Int(1),
@@ -101,6 +109,10 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 		ServiceName:  aws.String("acme-inc-web-dxRU5tYsnzt"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(1),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
 			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
@@ -126,6 +138,10 @@ func TestECSServiceResource_Create_Canceled(t *testing.T) {
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
 			DesiredCount: customresources.Int(1),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{},
 	})
@@ -146,6 +162,10 @@ func TestECSServiceResource_Update(t *testing.T) {
 		Cluster:        aws.String("cluster"),
 		DesiredCount:   aws.Int64(2),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(
 		&ecs.UpdateServiceOutput{
 			Service: &ecs.Service{
@@ -169,12 +189,20 @@ func TestECSServiceResource_Update(t *testing.T) {
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("cluster"),
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 	})
 	assert.NoError(t, err)
@@ -194,6 +222,10 @@ func TestECSServiceResource_Update_SameDesiredCount(t *testing.T) {
 		Service:        aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
 		Cluster:        aws.String("cluster"),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(
 		&ecs.UpdateServiceOutput{
 			Service: &ecs.Service{
@@ -217,12 +249,20 @@ func TestECSServiceResource_Update_SameDesiredCount(t *testing.T) {
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("cluster"),
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 	})
 	assert.NoError(t, err)
@@ -244,6 +284,10 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 		Cluster:        aws.String("clusterB"),
 		DesiredCount:   aws.Int64(2),
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
 			ServiceName: aws.String("acme-inc-web-dxRU5tYsnzt"),
@@ -267,12 +311,20 @@ func TestECSServiceResource_Update_RequiresReplacement(t *testing.T) {
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(2),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterA"),
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 	})
 	assert.NoError(t, err)
@@ -296,6 +348,10 @@ func TestECSServiceResource_Update_Placement(t *testing.T) {
 		TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:2"),
 		PlacementConstraints: []*ecs.PlacementConstraint{
 			{Type: aws.String("memberOf"), Expression: aws.String("attribute:ecs.instance-type =~ t2.*")},
+		},
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
 		},
 	}).Return(&ecs.CreateServiceOutput{
 		Service: &ecs.Service{
@@ -323,12 +379,20 @@ func TestECSServiceResource_Update_Placement(t *testing.T) {
 			PlacementConstraints: []ECSPlacementConstraint{
 				{Type: aws.String("memberOf"), Expression: aws.String("attribute:ecs.instance-type =~ t2.*")},
 			},
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:        aws.String("clusterA"),
 			ServiceName:    aws.String("acme-inc-web"),
 			DesiredCount:   customresources.Int(1),
 			TaskDefinition: aws.String("arn:aws:ecs:us-east-1:012345678910:task-definition/acme-inc:1"),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 	})
 	assert.NoError(t, err)
@@ -348,6 +412,10 @@ func TestECSServiceResource_Delete(t *testing.T) {
 		Service:      aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(0),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(
 		&ecs.UpdateServiceOutput{
 			Service: &ecs.Service{
@@ -372,11 +440,19 @@ func TestECSServiceResource_Delete(t *testing.T) {
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
 			DesiredCount: customresources.Int(1),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
 			DesiredCount: customresources.Int(1),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 	})
 	assert.NoError(t, err)
@@ -396,6 +472,10 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 		Service:      aws.String("arn:aws:ecs:us-east-1:012345678901:service/acme-inc-web"),
 		Cluster:      aws.String("cluster"),
 		DesiredCount: aws.Int64(0),
+		DeploymentConfiguration: &ecs.DeploymentConfiguration{
+			MaximumPercent: aws.Int64(100),
+			MinimumHealthyPercent: aws.Int64(80),
+		},
 	}).Return(&ecs.UpdateServiceOutput{}, awserr.New("ServiceNotActiveException", "Service was not ACTIVE", errors.New("")))
 
 	id, data, err := p.Provision(ctx, customresources.Request{
@@ -405,11 +485,19 @@ func TestECSServiceResource_Delete_NotActive(t *testing.T) {
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
 			DesiredCount: customresources.Int(1),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 		OldResourceProperties: &ECSServiceProperties{
 			Cluster:      aws.String("cluster"),
 			ServiceName:  aws.String("acme-inc-web"),
 			DesiredCount: customresources.Int(1),
+			DeploymentConfiguration: &DeploymentConfiguration{
+				MaximumPercent: customresources.Int(100),
+				MinimumHealthyPercent: customresources.Int(80),
+			},
 		},
 	})
 	assert.NoError(t, err)
