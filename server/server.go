@@ -5,6 +5,7 @@ package server
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -57,9 +58,10 @@ func New(e *empire.Empire, options Options) *Server {
 
 	if options.OauthRedirectURL != "" {
 		parsedUrl, err := url.Parse(options.OauthRedirectURL)
-		if err == nil {
-			s.OauthRedirectURL = parsedUrl
+		if err != nil {
+			log.Fatal(err)
 		}
+		s.OauthRedirectURL = parsedUrl
 	}
 	if options.GitHub.Webhooks.Secret != "" {
 		// Mount GitHub webhooks
@@ -109,7 +111,7 @@ func (s *Server) handler(r *http.Request) http.Handler {
 		return s.Heroku
 	}
 
-	if s.OauthRedirectURL != nil && r.URL.Path =="/oauth/exchange" {
+	if r.URL.Path =="/oauth/exchange" && r.FormValue("code") != "" && s.OauthRedirectURL != nil   {
 		return http.HandlerFunc(s.redirectOauth)
 	}
 
