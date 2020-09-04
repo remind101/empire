@@ -33,19 +33,29 @@ func (a *Authenticator) Authenticate(username, password, otp string) (*auth.Sess
 		return nil, auth.ErrForbidden
 	}
 
-	authorization, err := a.client.CreateAuthorization(CreateAuthorizationOptions{
-		Username: username,
-		Password: password,
-		OTP:      otp,
-	})
-	if err != nil {
-		switch err {
-		case errTwoFactor:
-			return nil, auth.ErrTwoFactor
-		case errUnauthorized:
-			return nil, auth.ErrForbidden
-		default:
-			return nil, fmt.Errorf("unable to create github authorization: %v", err)
+	var err error
+	var authorization *Authorization
+
+	if username == "$token$" {
+		authorization = &Authorization{Token: password}
+	} else {
+		// This path relies on a deprecated Github API
+		// https://developer.github.com/changes/2020-02-14-deprecating-oauth-auth-endpoint/
+		authorization, err = a.client.CreateAuthorization(CreateAuthorizationOptions{
+			Username: username,
+			Password: password,
+			OTP:      otp,
+		})
+
+		if err != nil {
+			switch err {
+			case errTwoFactor:
+				return nil, auth.ErrTwoFactor
+			case errUnauthorized:
+				return nil, auth.ErrForbidden
+			default:
+				return nil, fmt.Errorf("unable to create github authorization: %v", err)
+			}
 		}
 	}
 

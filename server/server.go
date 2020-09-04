@@ -4,6 +4,8 @@
 package server
 
 import (
+	"fmt"
+	"golang.org/x/oauth2"
 	"io"
 	"log"
 	"net/http"
@@ -20,7 +22,6 @@ var (
 )
 
 type Options struct {
-	OauthRedirectURL string
 	GitHub struct {
 		// Deployments
 		Webhooks struct {
@@ -30,6 +31,12 @@ type Options struct {
 			Environments []string
 			ImageBuilder github.ImageBuilder
 			TugboatURL   string
+		}
+		OAuth struct {
+			ClientID string
+			ClientSecret string
+			RedirectURL string
+			Scopes []string
 		}
 	}
 }
@@ -50,19 +57,12 @@ type Server struct {
 	// If provided, enables the SAML integration.
 	ServiceProvider *saml.ServiceProvider
 
-	OauthRedirectURL *url.URL
+	AuthConfig *oauth2.Config
 }
 
 func New(e *empire.Empire, options Options) *Server {
 	s := &Server{}
 
-	if options.OauthRedirectURL != "" {
-		parsedUrl, err := url.Parse(options.OauthRedirectURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-		s.OauthRedirectURL = parsedUrl
-	}
 	if options.GitHub.Webhooks.Secret != "" {
 		// Mount GitHub webhooks
 		s.GitHubWebhooks = github.New(e, github.Options{
@@ -72,10 +72,65 @@ func New(e *empire.Empire, options Options) *Server {
 		})
 	}
 
+	if options.GitHub.OAuth.ClientID != "" {
+		s.AuthConfig = &oauth2.Config{
+			ClientID: options.GitHub.OAuth.ClientID,
+			ClientSecret: options.GitHub.OAuth.ClientSecret,
+			Scopes: options.GitHub.OAuth.Scopes,
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://github.com/login/oauth/authorize",
+				TokenURL: "https://github.com/login/oauth/access_token",
+			},
+			RedirectURL: options.GitHub.OAuth.RedirectURL + "/oauth/exchange",
+		}
+	}
+
 	s.Heroku = heroku.New(e)
 	s.Health = NewHealthHandler(e)
 
 	return s
+}
+
+func (s *Server) StartWebFlow(w http.ResponseWriter, r *http.Request) {
+	// Construct a URL for the initial webflow request
+	url := s.AuthConfig.AuthCodeURL(fmt.Sprintf(r.FormValue("port")))
+	// Issue a redirect
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func reportOAuthFailure(w http.ResponseWriter, r *http.Request, port string, err ...interface{}) {
+	query := url.Values{}
+	query.Add("message", fmt.Sprint(err...))
+	redirectUrl := url.URL{
+		Host: fmt.Sprintf("localhost:%s",port),
+		RawQuery: query.Encode(),
+		Path: "/oauth/failure",
+	}
+	http.Redirect(w, r, redirectUrl.String(), http.StatusTemporaryRedirect)
+}
+
+func (s *Server) PerformCodeExchange(w http.ResponseWriter, r *http.Request) {
+	token, err := s.AuthConfig.Exchange(oauth2.NoContext, r.FormValue("code"))
+	port := r.FormValue("state")
+	if err != nil {
+		reportOAuthFailure(w, r, port, err)
+		return
+	}
+
+	if token == nil || token.AccessToken == "" {
+		reportOAuthFailure(w, r, port, "Could not retrieve auth token")
+		return
+	}
+
+	// We COULD directly generate and return the Signed JWT to the client here and return it to the client, but it kind of feels out
+	// of place.  We've opted instead for re-using as much of the existing authentication path as possible
+	// It's worth thinking about the security implications here.  The JWT is signed and can't be modified, and has an expiration date in
+	// the near future.  But the Github token we're sending back typically has a lifetime of a year.  This is mitigated by the fact
+	// that the Github token we're sending back is being sent to the browser is over https as a redirect response.  The browser then makes
+	// an unencrypted http request, but only to localhost, so an attacker would have to be able to capture packets on the loopback interface
+	// to get it, which in turn requires root access, so the entire client machine would already be compromised at that point.
+	redirectUrl := fmt.Sprintf("http://localhost:%s/oauth/token?token=%s", r.FormValue("state"), url.QueryEscape(token.AccessToken))
+	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
 }
 
 func (s *Server) Handler(r *http.Request) http.Handler {
@@ -84,21 +139,6 @@ func (s *Server) Handler(r *http.Request) http.Handler {
 		h = http.NotFoundHandler()
 	}
 	return h
-}
-
-func (s *Server) redirectOauth(w http.ResponseWriter, req *http.Request) {
-	// Shallow copy the existing URL
-	newDest := req.URL
-	// Replace the hostname with the provided hostname
-	newDest.Host = s.OauthRedirectURL.Host
-	// If we've specified a scheme, use that as well
-	if s.OauthRedirectURL.Scheme != "" {
-		newDest.Scheme = s.OauthRedirectURL.Scheme
-	} else {
-		newDest.Scheme = "https"
-	}
-	// Redirect the original request to the new location
-	http.Redirect(w, req, newDest.String(), http.StatusTemporaryRedirect)
 }
 
 func (s *Server) handler(r *http.Request) http.Handler {
@@ -111,10 +151,6 @@ func (s *Server) handler(r *http.Request) http.Handler {
 		return s.Heroku
 	}
 
-	if r.URL.Path =="/oauth/exchange" && r.FormValue("code") != "" && s.OauthRedirectURL != nil   {
-		return http.HandlerFunc(s.redirectOauth)
-	}
-
 	switch r.URL.Path {
 	case "/saml/login":
 		return http.HandlerFunc(s.SAMLLogin)
@@ -122,6 +158,13 @@ func (s *Server) handler(r *http.Request) http.Handler {
 		return http.HandlerFunc(s.SAMLACS)
 	case "/health":
 		return s.Health
+
+	// These endpoints get hit by clients using the browser in order to do the web-flow
+	// version of authentication
+	case "/oauth/start":
+		return http.HandlerFunc(s.StartWebFlow)
+	case "/oauth/exchange":
+		return http.HandlerFunc(s.PerformCodeExchange)
 	}
 
 	return nil

@@ -69,3 +69,28 @@ You can also [join](https://empire-slack.herokuapp.com/) our Slack team for disc
 [emp]: https://github.com/remind101/emp
 [guide]: http://empire.readthedocs.org/en/latest/
 [empire-dev]: https://groups.google.com/forum/#!forum/empire-dev
+
+## Auth Flow
+
+The current authentication model used by `emp login` relies on a [deprecated](https://developer.github.com/changes/2020-02-14-deprecating-oauth-auth-endpoint/) GitHub endpoint that is scheduled to be deactivated in November 2020.  Therefore both the client and the server need to be updated to support the [web authentication flow](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#web-application-flow)
+
+The web flow works like this
+
+1. The user runs a command like `emp web-login`
+1. The client starts up a HTTP listener on a free local port
+1. The client opens a browser window on the local machine to `$EMPIRE_API_URL/oauth/start?port=?????`
+    * The port parameter specifies where the client is listening
+1. The browser executes a GET against the URL
+1. The Empire server sees the request and constructs an OAuth request URL that will hit the GitHub OAuth endpoint and returns it as a redirect
+1. The browser makes the request to the GitHub auth endpoint, which shows the UI a request to authorize the application
+    * If they've previously authorized it will just immediately grant the request
+1. GitHub redirects the browser back to the redirect URL specified in the configuration, meaning back to the Empire server
+1. The Empire server receives the browser request and can now perform the [code exchange](https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#2-users-are-redirected-back-to-your-site-by-github) to turn the provided code into an actual authentication token
+    * This is just like it would have received from the old endpoint.  However, it's not usable yet because it still isn't in the possession of the client, only the browser
+1. The Empire server now redirects the browser back to `localhost` on the original port provided by the client
+1. The client receives the token, but can't use it directly.  The Empire server expects it to be wrapped in a JSON Web Token that only the server can create.
+1. The client can now make a request directly to the Empire server (its first in this sequence) providing the token and requesting a JSON Web Token in response
+1. The client stores the received token just as it would have with the response to an `emp login` command
+1. The client is authenticated    
+
+In theory the Empire server could construct the JWT directly after the code exchange and push that directly to the client, but the abstraction doesn't really seem to easily support that flow

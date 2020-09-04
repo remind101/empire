@@ -36,6 +36,7 @@ const (
 	FlagSAMLCert           = "saml.cert"
 	FlagGithubClient       = "github.client.id"
 	FlagGithubClientSecret = "github.client.secret"
+	FlagGithubClientRedirectURL = "github.client.redirect.url"
 	FlagGithubOrg          = "github.organization"
 	FlagGithubApiURL       = "github.api.url"
 	FlagGithubTeam         = "github.team.id"
@@ -45,8 +46,6 @@ const (
 	FlagGithubDeploymentsImageBuilder  = "github.deployments.image_builder"
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
-
-	FlagOAuthRedirectUrl = "oauth.redirect.url"
 
 	FlagConveyorURL = "conveyor.url"
 
@@ -163,12 +162,6 @@ var Commands = []cli.Command{
 				EnvVar: "EMPIRE_SAML_CERT",
 			},
 			cli.StringFlag{
-				Name:   FlagOAuthRedirectUrl,
-				Value:  "",
-				Usage:  "Redirect location for the actual server for Github OAuth token exchange",
-				EnvVar: "EMPIRE_OAUTH_REDIRECT_URL",
-			},
-			cli.StringFlag{
 				Name:   FlagGithubClient,
 				Value:  "",
 				Usage:  "The client id for the GitHub OAuth application",
@@ -179,6 +172,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The client secret for the GitHub OAuth application",
 				EnvVar: "EMPIRE_GITHUB_CLIENT_SECRET",
+			},
+			cli.StringFlag{
+				Name:   FlagGithubClientRedirectURL,
+				Value:  "",
+				Usage:  "The base redirect URL for the GitHub OAuth application",
+				EnvVar: "EMPIRE_GITHUB_CLIENT_REDIRECT_URL",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubOrg,

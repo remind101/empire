@@ -149,6 +149,7 @@ var commands = []*Command{
 	cmdCreds,
 	cmdGet,
 	cmdLogin,
+	cmdWebLogin,
 	cmdLogout,
 	cmdMaintenance,
 	cmdMaintenanceEnable,
