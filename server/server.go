@@ -109,7 +109,7 @@ func (s *Server) handler(r *http.Request) http.Handler {
 		return s.Heroku
 	}
 
-	if s.OauthRedirectURL != nil && r.URL.Path =="/oauth" {
+	if s.OauthRedirectURL != nil && r.URL.Path =="/oauth/exchange" {
 		return http.HandlerFunc(s.redirectOauth)
 	}
 
