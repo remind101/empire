@@ -1,6 +1,7 @@
 package hkclient
 
 import (
+	"github.com/bgentry/go-netrc/netrc"
 	"os"
 	"reflect"
 	"testing"
@@ -16,7 +17,7 @@ func TestLoadNetRc(t *testing.T) {
 	if nrc == nil {
 		t.Fatal("expected an empty NetRc, got nil")
 	}
-	if !reflect.DeepEqual(*nrc, NetRc{}) {
+	if !reflect.DeepEqual(*nrc, NetRc{&netrc.Netrc{}}) {
 		t.Errorf("expected an empty NetRc, got %v", *nrc)
 	}
 

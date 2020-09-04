@@ -66,6 +66,9 @@ jobs:
 
     steps:
       - checkout
+      - run:
+          name: Install System Dependencies
+          command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1 postgresql-client
       - run: make vet
 
   docker_image:
