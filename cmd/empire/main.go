@@ -46,6 +46,8 @@ const (
 	FlagGithubDeploymentsImageTemplate = "github.deployments.template"
 	FlagGithubDeploymentsTugboatURL    = "github.deployments.tugboat.url"
 
+	FlagOAuthRedirectUrl = "oauth.redirect.url"
+
 	FlagConveyorURL = "conveyor.url"
 
 	FlagDB = "db"
@@ -159,6 +161,12 @@ var Commands = []cli.Command{
 				Value:  "",
 				Usage:  "The location of the public key for this service provider. (e.g. file:///etc/empire/saml.cert)",
 				EnvVar: "EMPIRE_SAML_CERT",
+			},
+			cli.StringFlag{
+				Name:   FlagOAuthRedirectUrl,
+				Value:  "",
+				Usage:  "Redirect location for the actual server for Github OAuth token exchange",
+				EnvVar: "EMPIRE_OAUTH_REDIRECT_URL",
 			},
 			cli.StringFlag{
 				Name:   FlagGithubClient,

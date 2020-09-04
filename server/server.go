@@ -5,6 +5,7 @@ package server
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -19,6 +20,7 @@ var (
 )
 
 type Options struct {
+	OauthRedirectURL string
 	GitHub struct {
 		// Deployments
 		Webhooks struct {
@@ -47,11 +49,20 @@ type Server struct {
 
 	// If provided, enables the SAML integration.
 	ServiceProvider *saml.ServiceProvider
+
+	OauthRedirectURL *url.URL
 }
 
 func New(e *empire.Empire, options Options) *Server {
 	s := &Server{}
 
+	if options.OauthRedirectURL != "" {
+		parsedUrl, err := url.Parse(options.OauthRedirectURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		s.OauthRedirectURL = parsedUrl
+	}
 	if options.GitHub.Webhooks.Secret != "" {
 		// Mount GitHub webhooks
 		s.GitHubWebhooks = github.New(e, github.Options{
@@ -75,6 +86,21 @@ func (s *Server) Handler(r *http.Request) http.Handler {
 	return h
 }
 
+func (s *Server) redirectOauth(w http.ResponseWriter, req *http.Request) {
+	// Shallow copy the existing URL
+	newDest := req.URL
+	// Replace the hostname with the provided hostname
+	newDest.Host = s.OauthRedirectURL.Host
+	// If we've specified a scheme, use that as well
+	if s.OauthRedirectURL.Scheme != "" {
+		newDest.Scheme = s.OauthRedirectURL.Scheme
+	} else {
+		newDest.Scheme = "https"
+	}
+	// Redirect the original request to the new location
+	http.Redirect(w, req, newDest.String(), http.StatusTemporaryRedirect)
+}
+
 func (s *Server) handler(r *http.Request) http.Handler {
 	if r.Header.Get("X-GitHub-Event") != "" {
 		return s.GitHubWebhooks
@@ -83,6 +109,10 @@ func (s *Server) handler(r *http.Request) http.Handler {
 	// Route to Heroku API.
 	if r.Header.Get("Accept") == heroku.AcceptHeader {
 		return s.Heroku
+	}
+
+	if r.URL.Path =="/oauth/exchange" && r.FormValue("code") != "" && s.OauthRedirectURL != nil   {
+		return http.HandlerFunc(s.redirectOauth)
 	}
 
 	switch r.URL.Path {
