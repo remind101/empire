@@ -104,7 +104,6 @@ type DeploymentConfiguration struct {
 // resource.
 type ECSServiceProperties struct {
 	Cluster                 *string
-	DeploymentConfiguration *DeploymentConfiguration
 	DesiredCount            *customresources.IntValue `hash:"ignore"`
 	LoadBalancers           []LoadBalancer
 	PlacementConstraints    []ECSPlacementConstraint
@@ -184,10 +183,6 @@ func (p *ECSServiceResource) Create(ctx context.Context, req customresources.Req
 	resp, err := p.ecs.CreateService(&ecs.CreateServiceInput{
 		ClientToken: aws.String(clientToken),
 		Cluster:     properties.Cluster,
-		DeploymentConfiguration: &ecs.DeploymentConfiguration{
-			MaximumPercent:        properties.DeploymentConfiguration.MaximumPercent.Value(),
-			MinimumHealthyPercent: properties.DeploymentConfiguration.MinimumHealthyPercent.Value(),
-		},
 		DesiredCount:         properties.DesiredCount.Value(),
 		LoadBalancers:        loadBalancers,
 		PlacementConstraints: placementConstraints,
@@ -245,10 +240,6 @@ func (p *ECSServiceResource) Update(ctx context.Context, req customresources.Req
 
 	resp, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
 		Cluster: properties.Cluster,
-		DeploymentConfiguration: &ecs.DeploymentConfiguration{
-			MaximumPercent:        properties.DeploymentConfiguration.MaximumPercent.Value(),
-			MinimumHealthyPercent: properties.DeploymentConfiguration.MinimumHealthyPercent.Value(),
-		},
 		DesiredCount:   desiredCount,
 		Service:        aws.String(req.PhysicalResourceId),
 		TaskDefinition: properties.TaskDefinition,
@@ -279,10 +270,6 @@ func (p *ECSServiceResource) Delete(ctx context.Context, req customresources.Req
 	// destroy it.
 	if _, err := p.ecs.UpdateService(&ecs.UpdateServiceInput{
 		Cluster: cluster,
-		DeploymentConfiguration: &ecs.DeploymentConfiguration{
-			MaximumPercent:        properties.DeploymentConfiguration.MaximumPercent.Value(),
-			MinimumHealthyPercent: properties.DeploymentConfiguration.MinimumHealthyPercent.Value(),
-		},
 		DesiredCount: aws.Int64(0),
 		Service:      service,
 	}); err != nil {
