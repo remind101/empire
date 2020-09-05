@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 	"net"
 	"net/http"
 	"runtime"
@@ -109,8 +111,11 @@ complete by providing token via a callback URL
 type OAuthWebFlow struct {
 	wg *sync.WaitGroup
 	srv *http.Server
-	token string
 	port int
+	email string // The email associated with the GitHub token
+	githubToken string // A GitHub bearer token for API access
+	empireToken string // A signed JTW containing details about the Empire login
+	empireAddress string // The server address for the empire token
 	startUrl string
 }
 
@@ -132,7 +137,7 @@ func (wf*OAuthWebFlow) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (wf*OAuthWebFlow) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 	defer wf.wg.Done() // let main know we are done cleaning up
-	wf.token = r.FormValue("token")
+	wf.githubToken = r.FormValue("token")
 	fmt.Fprintf(w, "You may close this browser window and return to your empire client\n")
 }
 
@@ -141,15 +146,68 @@ func (wf*OAuthWebFlow) handleOAuthError(w http.ResponseWriter, r *http.Request) 
 	fmt.Fprintf(w, r.FormValue("err"))
 }
 
-func (wf*OAuthWebFlow) waitForToken() {
+func (wf*OAuthWebFlow) waitForGithubToken() {
 	// Wait for success or failure
 	wf.wg.Wait()
 	// Shut down the http server
 	wf.srv.Shutdown(context.Background())
 
-	if wf.token == "" {
+	if wf.githubToken == "" {
 		printFatal("No token was received, check your browser for an error")
 	}
+}
+
+func (wf*OAuthWebFlow) fetchEmpireToken() {
+	var err error
+	// Use the token directly as part of the basic-auth header, with the special $token$ username
+	// This tells the server to treat the password as like the token it would have received from
+	// the original username/password authentication endpoint
+	wf.empireAddress, wf.empireToken, err = attemptLogin("$token$", wf.githubToken, "")
+	if err != nil {
+		printFatal(err.Error())
+	}
+}
+
+func (wf*OAuthWebFlow) extractEmail() {
+	// We don't have the email associated with the token, but we can get it from the JWT
+	token := parseUnsignedToken(wf.empireToken)
+
+	userEntry := token.Claims["User"]
+	if userEntry == nil {
+		printError("Unable to parse token from server: no User details")
+	}
+
+	user := userEntry.(map[string]interface{})
+	emailEntry := user["Email"]
+
+	if emailEntry != nil {
+		wf.email = emailEntry.(string)
+	} else {
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: wf.githubToken},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		client := github.NewClient(tc)
+		user, _, err := client.Users.Get("")
+		if err != nil {
+			printFatal(err.Error())
+		}
+		wf.email = *user.Email
+	}
+
+	if wf.email == "" {
+		printFatal("Unable to parse email address from token")
+	}
+}
+
+func (wf*OAuthWebFlow) persist() {
+	if wf.empireAddress == "" || wf.email == "" || wf.empireToken == "" {
+		printFatal("Unable to persist credentials, login failed")
+		return
+	}
+	// Save the credentials to disk using the shared logic with the old `login` command
+	persistCredentials(wf.empireAddress, wf.email, wf.empireToken)
 }
 
 func newWebFlow() *OAuthWebFlow {
@@ -232,7 +290,20 @@ func openBrowser(url string) {
 	}
 }
 
+func parseUnsignedToken(tokenString string) *jwt.Token {
+	// We're passing a nonsense keyFunc because we're not actually going to attempt to
+	// validate the signature
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return "", nil
+	})
 
+	// We can't validate the signature as the client, so ignore ONLY that specific error
+	if err != nil && err.(*jwt.ValidationError).Errors != jwt.ValidationErrorSignatureInvalid {
+		printFatal(err.Error())
+	}
+
+	return token
+}
 
 func runWebLogin(cmd *Command, args []string) {
 	// Creating a web flow automatically starts the
@@ -244,31 +315,14 @@ func runWebLogin(cmd *Command, args []string) {
 	// handleOAuthToken
 	go openBrowser(wf.startUrl)
 
-	wf.waitForToken()
+	wf.waitForGithubToken()
 
-	// Use the token directly as part of the basic-auth header, with the special $token$ username
-	// This tells the server to treat the password as like the token it would have received from
-	// the original username/password authentication endpoint
-	address, tokenString, err := attemptLogin("$token$", wf.token, "")
-	if err != nil {
-		printFatal(err.Error())
-	}
+	wf.fetchEmpireToken()
 
-	// We don't have the email associated with the token, but we can get it from the JWT
-	// We're passing a nonsense keyFunc because we're not actually going to attempt to
-	// validate the signature
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		return "", nil
-	})
-	// We can't validate the signature as the client, so ignore ONLY that specific error
-	if err != nil && err.(*jwt.ValidationError).Errors != jwt.ValidationErrorSignatureInvalid {
-		printFatal(err.Error())
-	}
-	// Cast the crap out of this because JWT claims are almost completely freeform in terms of typing
-	email := token.Claims["User"].(map[string]interface{})["Email"].(string)
+	wf.extractEmail()
 
-	// Save the credentials to disk using the shared logic with the old `login` command
-	persistCredentials(address, email, tokenString)
+	wf.persist()
+
 	fmt.Println("Logged in.")
 }
 

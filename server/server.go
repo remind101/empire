@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"golang.org/x/oauth2"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
