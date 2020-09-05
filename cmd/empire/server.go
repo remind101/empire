@@ -68,12 +68,6 @@ func runServer(c *cli.Context) {
 
 	s := newServer(ctx, e)
 	log.Printf("Starting on port %s", port)
-	go func() {
-		err = http.ListenAndServeTLS(":8443", "server.crt", "server.key", s)
-		if (err != nil) {
-			log.Fatal(err)
-		}
-	}()
 	log.Fatal(http.ListenAndServe(":"+port, s))
 }
 
