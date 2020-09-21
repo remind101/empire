@@ -1,9 +1,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
+	"net"
+	"net/http"
+	"runtime"
+	"sync"
+
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -85,6 +95,237 @@ func runCreds(cmd *Command, args []string) {
 	fmt.Println(user, pass)
 }
 
+var cmdWebLogin = &Command{
+	Run:      runWebLogin,
+	Usage:    "weblogin",
+	Category: "emp",
+	NumArgs:  0,
+	Short:    "Trigger a web-authentication workflow",
+	Long: `
+Ask the empire server to provide a URL that will trigger the web authentication 
+workflow, then open that URL in a browser and wait for authentication to 
+complete by providing token via a callback URL
+`,
+}
+
+type OAuthWebFlow struct {
+	wg *sync.WaitGroup
+	srv *http.Server
+	port int
+	email string // The email associated with the GitHub token
+	githubToken string // A GitHub bearer token for API access
+	empireToken string // A signed JTW containing details about the Empire login
+	empireAddress string // The server address for the empire token
+	startUrl string
+}
+
+func (wf*OAuthWebFlow) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/oauth/token":
+		wf.handleOAuthToken(w, r)
+		return
+
+	case "/oauth/failure":
+		wf.handleOAuthError(w, r)
+		return
+
+	case "/started":
+		fmt.Fprintf(w, "OK!")
+		return
+	}
+}
+
+func (wf*OAuthWebFlow) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
+	defer wf.wg.Done() // let main know we are done cleaning up
+	wf.githubToken = r.FormValue("token")
+	fmt.Fprintf(w, "You may close this browser window and return to your empire client\n")
+}
+
+func (wf*OAuthWebFlow) handleOAuthError(w http.ResponseWriter, r *http.Request) {
+	defer wf.wg.Done() // let main know we are done cleaning up
+	fmt.Fprintf(w, r.FormValue("err"))
+}
+
+func (wf*OAuthWebFlow) waitForGithubToken() {
+	// Wait for success or failure
+	wf.wg.Wait()
+	// Shut down the http server
+	wf.srv.Shutdown(context.Background())
+
+	if wf.githubToken == "" {
+		printFatal("No token was received, check your browser for an error")
+	}
+}
+
+func (wf*OAuthWebFlow) fetchEmpireToken() {
+	var err error
+	// Use the token directly as part of the basic-auth header, with the special $token$ username
+	// This tells the server to treat the password as like the token it would have received from
+	// the original username/password authentication endpoint
+	wf.empireAddress, wf.empireToken, err = attemptLogin("$token$", wf.githubToken, "")
+	if err != nil {
+		printFatal(err.Error())
+	}
+}
+
+func (wf*OAuthWebFlow) extractEmail() {
+	// We don't have the email associated with the token, but we can get it from the JWT
+	token := parseUnsignedToken(wf.empireToken)
+
+	userEntry := token.Claims["User"]
+	if userEntry == nil {
+		printError("Unable to parse token from server: no User details")
+	}
+
+	user := userEntry.(map[string]interface{})
+	emailEntry := user["Email"]
+
+	if emailEntry != nil {
+		wf.email = emailEntry.(string)
+	} else {
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: wf.githubToken},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		client := github.NewClient(tc)
+		user, _, err := client.Users.Get("")
+		if err != nil {
+			printFatal(err.Error())
+		}
+		wf.email = *user.Email
+	}
+
+	if wf.email == "" {
+		printFatal("Unable to parse email address from token")
+	}
+}
+
+func (wf*OAuthWebFlow) persist() {
+	if wf.empireAddress == "" || wf.email == "" || wf.empireToken == "" {
+		printFatal("Unable to persist credentials, login failed")
+		return
+	}
+	// Save the credentials to disk using the shared logic with the old `login` command
+	persistCredentials(wf.empireAddress, wf.email, wf.empireToken)
+}
+
+func newWebFlow() *OAuthWebFlow {
+	// Create the base object
+	wf := &OAuthWebFlow{
+		wg: &sync.WaitGroup{},
+	}
+	wf.wg.Add(1)
+
+	{
+		// Bind to a free local port
+		listener, err := net.Listen("tcp", ":0")
+		if err != nil {
+			printFatal(err.Error())
+		}
+
+		wf.port = listener.Addr().(*net.TCPAddr).Port
+
+		wf.srv = &http.Server{
+			Handler: wf,
+		}
+
+		// Start the server, record the port on which we're listening
+		go func() {
+			err = wf.srv.Serve(listener)
+			if err != nil && err != http.ErrServerClosed {
+				panic(err)
+			}
+		}()
+	}
+
+
+	// Wait for the server to start up
+	{
+		client := http.Client{ Timeout: 5 * time.Millisecond, }
+		startedUrl := fmt.Sprintf("http://localhost:%d/started", wf.port)
+		for {
+			_, err := client.Get(startedUrl)
+			if err == nil {
+				break;
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+	}
+
+	// Generate the starting URL to initiate the web flow in the browser
+	{
+		u, err := url.Parse(client.URL)
+		if err != nil {
+			panic(err)
+		}
+		u.Path = "/oauth/start"
+		q, err := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			panic(err)
+		}
+		q.Add("port", fmt.Sprintf("%d", wf.port))
+		u.RawQuery = q.Encode()
+		wf.startUrl = u.String()
+	}
+
+	return wf
+}
+
+
+func openBrowser(url string) {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		printFatal(err.Error())
+	}
+}
+
+func parseUnsignedToken(tokenString string) *jwt.Token {
+	// We're passing a nonsense keyFunc because we're not actually going to attempt to
+	// validate the signature
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return "", nil
+	})
+
+	// We can't validate the signature as the client, so ignore ONLY that specific error
+	if err != nil && err.(*jwt.ValidationError).Errors != jwt.ValidationErrorSignatureInvalid {
+		printFatal(err.Error())
+	}
+
+	return token
+}
+
+func runWebLogin(cmd *Command, args []string) {
+	// Creating a web flow automatically starts the
+	wf := newWebFlow()
+
+	// Currently the start URL is the Empire API server. However, a better use experience would probably involve
+	// Opening the browser to a localhost address and having the webFlow handler write out some HTML that will
+	// create a oop-up window for the web flow, which can then be reliably closed by HTML/JS written by
+	// handleOAuthToken
+	go openBrowser(wf.startUrl)
+
+	wf.waitForGithubToken()
+
+	wf.fetchEmpireToken()
+
+	wf.extractEmail()
+
+	wf.persist()
+
+	fmt.Println("Logged in.")
+}
+
 var cmdLogin = &Command{
 	Run:      runLogin,
 	Usage:    "login",
@@ -107,6 +348,7 @@ Example:
 
 func runLogin(cmd *Command, args []string) {
 	cmd.AssertNumArgsCorrect(args)
+	fmt.Println("The login command is deprecated and will stop working in Nov 2020.  Please use weblogin.")
 
 	oldEmail := client.Username
 	var email string
@@ -151,7 +393,13 @@ func runLogin(cmd *Command, args []string) {
 		}
 	}
 
-	nrc, err = hkclient.LoadNetRc()
+
+	persistCredentials(address, email, token)
+	fmt.Println("Logged in.")
+}
+
+func persistCredentials(address string, email string, token string) {
+	nrc, err := hkclient.LoadNetRc()
 	if err != nil {
 		printFatal("loading netrc: " + err.Error())
 	}
@@ -160,7 +408,6 @@ func runLogin(cmd *Command, args []string) {
 	if err != nil {
 		printFatal("saving new token: " + err.Error())
 	}
-	fmt.Println("Logged in.")
 }
 
 func readPassword(prompt string) (password string, err error) {

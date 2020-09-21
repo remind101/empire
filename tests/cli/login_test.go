@@ -33,7 +33,7 @@ func TestLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := string(out), "Enter email: Logged in.\n"; got != want {
+	if got, want := string(out), "The login command is deprecated and will stop working in Nov 2020.  Please use weblogin.\nEnter email: Logged in.\n"; got != want {
 		t.Fatalf("%q", got)
 	}
 }
@@ -54,7 +54,7 @@ func TestLoginUnauthorized(t *testing.T) {
 		t.Fatal("Expected an error")
 	}
 
-	if got, want := string(out), "Enter email: error: Request not authenticated, API token is missing, invalid or expired Log in with `emp login`.\n"; got != want {
+	if got, want := string(out), "The login command is deprecated and will stop working in Nov 2020.  Please use weblogin.\nEnter email: error: Request not authenticated, API token is missing, invalid or expired Log in with `emp login`.\n"; got != want {
 		t.Fatalf("%q", got)
 	}
 }
@@ -75,7 +75,7 @@ func TestLoginTwoFactor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := string(out), "Enter email: Enter two-factor auth code: Logged in.\n"; got != want {
+	if got, want := string(out), "The login command is deprecated and will stop working in Nov 2020.  Please use weblogin.\nEnter email: Enter two-factor auth code: Logged in.\n"; got != want {
 		t.Fatalf("%q", got)
 	}
 }

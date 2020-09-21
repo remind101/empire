@@ -73,11 +73,14 @@ func runServer(c *cli.Context) {
 
 func newServer(c *Context, e *empire.Empire) http.Handler {
 	var opts server.Options
-	opts.OauthRedirectURL = c.String(FlagOAuthRedirectUrl)
 	opts.GitHub.Webhooks.Secret = c.String(FlagGithubWebhooksSecret)
 	opts.GitHub.Deployments.Environments = strings.Split(c.String(FlagGithubDeploymentsEnvironments), ",")
 	opts.GitHub.Deployments.ImageBuilder = newImageBuilder(c)
 	opts.GitHub.Deployments.TugboatURL = c.String(FlagGithubDeploymentsTugboatURL)
+	opts.GitHub.OAuth.ClientID = c.String(FlagGithubClient)
+	opts.GitHub.OAuth.ClientSecret = c.String(FlagGithubClientSecret)
+	opts.GitHub.OAuth.RedirectURL = c.String(FlagGithubClientRedirectURL)
+	opts.GitHub.OAuth.Scopes = []string{"read:org", "user:email"}
 
 	s := server.New(e, opts)
 	s.URL = c.URL(FlagURL)
