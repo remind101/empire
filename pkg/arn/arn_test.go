@@ -23,6 +23,14 @@ func TestParse(t *testing.T) {
 			Account:  "249285743859",
 			Resource: "service/acme-inc:web",
 		}},
+		{"arn:aws:ecs:us-east-1:249285743859:service/my-cluster/acme-inc:web", ARN{
+			ARN:      "arn",
+			AWS:      "aws",
+			Service:  "ecs",
+			Region:   "us-east-1",
+			Account:  "249285743859",
+			Resource: "service/my-cluster/acme-inc:web",
+		}},
 	}
 
 	for i, tt := range tests {
@@ -41,6 +49,7 @@ func TestSplitResource(t *testing.T) {
 		err          error
 	}{
 		{"service/acme-inc", "service", "acme-inc", nil},
+		{"service/my-cluster-name/acme-inc", "service", "my-cluster-name/acme-inc", nil},
 		{"service", "", "", ErrInvalidResource},
 	}
 
