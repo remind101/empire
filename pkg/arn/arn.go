@@ -63,7 +63,7 @@ func (a *ARN) String() string {
 // SplitResource splits the Resource section of an ARN into its type and id
 // components.
 func SplitResource(r string) (resource, id string, err error) {
-	p := strings.Split(r, "/")
+	p := strings.SplitN(r, "/", 2)
 
 	if len(p) != 2 {
 		err = ErrInvalidResource
