@@ -3,13 +3,12 @@ package empire
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"github.com/jinzhu/gorm"
+	"regexp"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
-
-	"github.com/jinzhu/gorm"
 	"github.com/remind101/empire/pkg/timex"
 	"golang.org/x/net/context"
 )
