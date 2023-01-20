@@ -2,11 +2,11 @@ package cli_test
 
 import (
 	"fmt"
+	"testing"
 	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/remind101/empire"
