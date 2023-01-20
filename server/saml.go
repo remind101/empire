@@ -1,8 +1,8 @@
 package server
 
 import (
-	"io"
 	"net/http"
+	"io"
 	"net/url"
 	"text/template"
 
